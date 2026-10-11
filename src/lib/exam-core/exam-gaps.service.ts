@@ -22,9 +22,49 @@ export interface GapAggregate {
   perStudent: Array<{ studentId: string; gaps: number; concepts: Array<{ canonicalConceptId: string; name: string; studentConceptId: string | null }> }>;
 }
 
-export async function examGapsFor(studentIds: string[], opts: { families?: string[]; includePerStudent: boolean }): Promise<GapAggregate> {
-  if (studentIds.length === 0) return { studentsWithResults: 0, byDomain: [], byObjective: [], byConcept: [], perStudent: [] };
-  const rows = (
+/** One gap row: a Student's gap objective in one exam, with the canonical concept (and its subject) behind it, if any. */
+export interface GapRow { student_id: string; family: string; exam: string; objective_id: string; code: string | null; description: string; domain: string; canonical_concept_id: string | null; canonical_subject_id: string | null; concept_name: string | null; student_concept_id: string | null }
+
+export interface ExamGapOptions {
+  families?: string[];
+  includePerStudent: boolean;
+  /**
+   * CR-L8-01 -- subject-aware aggregates. When GIVEN, every aggregate (domain, objective, concept, per Student)
+   * is built only from gap objectives that have a PUBLISHED mapping to a canonical concept of one of these
+   * canonical subjects. It fails closed: an objective with no published concept mapping is omitted, an
+   * objective mapped to concepts of several subjects contributes only its in-subject slice, and an empty or
+   * malformed list returns no gaps at all. When ABSENT (undefined) the behaviour is the unscoped one, as before.
+   *
+   * This is assessment semantics only. WHO may ask for which subject is the caller's authorization decision;
+   * this service never derives a subject from the actor and never widens the Student set.
+   */
+  canonicalSubjectIds?: readonly string[];
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const EMPTY_GAPS: GapAggregate = { studentsWithResults: 0, byDomain: [], byObjective: [], byConcept: [], perStudent: [] };
+
+/**
+ * The subject scope a call asked for: `null` = unscoped (option absent); otherwise the valid subject ids,
+ * possibly none. A list that is present but empty, or holds no valid id, is a scope that matches nothing.
+ */
+export function subjectScopeOf(canonicalSubjectIds: readonly string[] | undefined): string[] | null {
+  if (canonicalSubjectIds === undefined) return null;
+  return [...new Set(canonicalSubjectIds.filter((id) => typeof id === 'string' && UUID.test(id)).map((id) => id.toLowerCase()))];
+}
+
+/** Keeps the rows a subject scope admits. Pure; the query applies the same predicate, this is the tested authority. */
+export function scopeGapRowsToSubjects<R extends Pick<GapRow, 'canonical_concept_id' | 'canonical_subject_id'>>(rows: readonly R[], scope: readonly string[] | null): R[] {
+  if (scope === null) return [...rows];
+  const allowed = new Set(scope.map((id) => id.toLowerCase()));
+  return rows.filter((r) => !!r.canonical_concept_id && !!r.canonical_subject_id && allowed.has(r.canonical_subject_id.toLowerCase()));
+}
+
+export async function examGapsFor(studentIds: string[], opts: ExamGapOptions): Promise<GapAggregate> {
+  if (studentIds.length === 0) return { ...EMPTY_GAPS };
+  const scope = subjectScopeOf(opts.canonicalSubjectIds);
+  if (scope !== null && scope.length === 0) return { ...EMPTY_GAPS };
+  const fetched = (
     await db.query(
       `WITH latest AS (
          SELECT DISTINCT ON (sa.student_id, d.id) sa.student_id, d.id AS definition_id, d.name AS exam, d.exam_family AS family, r.objective_results, sa.exam_version_id
@@ -44,7 +84,7 @@ export async function examGapsFor(studentIds: string[], opts: { families?: strin
        )
        SELECT g.student_id, g.family, g.exam, lo.id AS objective_id, lo.code, lo.description,
               COALESCE(ac.name, '') AS domain,
-              cc.id AS canonical_concept_id, cc.name AS concept_name,
+              cc.id AS canonical_concept_id, cc.canonical_subject_id, cc.name AS concept_name,
               (SELECT c.id FROM concepts c JOIN subjects s ON s.id = c.subject_id JOIN concept_catalog_mapping ccm ON ccm.learner_concept_id = c.id
                 WHERE s.student_id = g.student_id AND ccm.canonical_concept_id = cc.id AND ccm.status = 'MATCHED' LIMIT 1) AS student_concept_id
          FROM gaps g
@@ -58,14 +98,21 @@ export async function examGapsFor(studentIds: string[], opts: { families?: strin
             ORDER BY ac.sequence_order NULLS LAST, ac.name LIMIT 1
          ) ac ON true
          LEFT JOIN objective_concept_mappings m ON m.learning_objective_id = lo.id AND m.status = 'PUBLISHED'
-         LEFT JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id`,
-      [studentIds, opts.families?.length ? opts.families : null]
+         LEFT JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id
+        -- CR-L8-01: a subject scope keeps only objectives with a published concept of those subjects
+        WHERE ($3::uuid[] IS NULL OR cc.canonical_subject_id = ANY($3::uuid[]))`,
+      [studentIds, opts.families?.length ? opts.families : null, scope]
     )
-  ).rows as Array<{ student_id: string; family: string; exam: string; objective_id: string; code: string | null; description: string; domain: string; canonical_concept_id: string | null; concept_name: string | null; student_concept_id: string | null }>;
+  ).rows as GapRow[];
+  return aggregateGapRows(scopeGapRowsToSubjects(fetched, scope), opts.includePerStudent);
+}
+
+/** Aggregates gap rows as numbers of distinct Students. Pure. */
+export function aggregateGapRows(rows: readonly GapRow[], includePerStudent: boolean): GapAggregate {
 
   const distinct = (xs: string[]) => new Set(xs).size;
-  const group = <K extends string>(keyOf: (r: (typeof rows)[number]) => K) => {
-    const m = new Map<K, typeof rows>();
+  const group = <K extends string>(keyOf: (r: GapRow) => K) => {
+    const m = new Map<K, GapRow[]>();
     for (const r of rows) m.set(keyOf(r), [...(m.get(keyOf(r)) ?? []), r]);
     return m;
   };
@@ -82,8 +129,8 @@ export async function examGapsFor(studentIds: string[], opts: { families?: strin
     studentsWithResults: distinct(rows.map((r) => r.student_id)),
     byDomain: sort(byDomain),
     byObjective: sort(byObjective),
-    byConcept: sort(byConcept).map((c) => (opts.includePerStudent ? c : { ...c, studentIds: [] })),
-    perStudent: opts.includePerStudent
+    byConcept: sort(byConcept).map((c) => (includePerStudent ? c : { ...c, studentIds: [] })),
+    perStudent: includePerStudent
       ? [...group((r) => r.student_id).values()].map((rs) => ({
           studentId: rs[0].student_id,
           gaps: distinct(rs.map((r) => r.objective_id)),
