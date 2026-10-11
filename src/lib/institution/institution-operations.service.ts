@@ -21,7 +21,7 @@ import { recordGovernanceEvent } from './academic-governance';
 import { resolveDisplayIdentities } from '@/lib/identity/display-identity';
 import { notifyUser } from '@/lib/notifications/role-notifications.service';
 import { assignClassCurriculum, compatibleCurriculaForClass } from './curriculum-management.service';
-import { endClassEnrollment, getInstitutionById, inviteInstitutionAdmin, isActiveCanonicalSubject } from '@/services/institution.service';
+import { endClassEnrollment, enrollStudentDirectly, getClassEnrollmentState, getInstitutionById, inviteInstitutionAdmin, isActiveCanonicalSubject } from '@/services/institution.service';
 import { inviteToClassAndNotify } from './class-invitations';
 
 export class InstitutionOpsError extends Error {
@@ -520,21 +520,24 @@ async function isInstitutionStudent(institutionId: string, studentId: string) {
   const r = await db.query(`SELECT 1 FROM class_enrollments ce JOIN classes c ON c.id = ce.class_id WHERE ce.student_id = $1 AND c.institution_id = $2 AND ce.status = 'ACTIVE' LIMIT 1`, [studentId, institutionId]);
   return r.rows.length > 0;
 }
+/**
+ * CR-L9-02 (L10, on the Orchestrator's change request): direct ACTIVE
+ * enrolment goes through the canonical lifecycle in institution.service.ts.
+ * A learner who LEFT, was REMOVED from or DECLINED this class is never put
+ * back directly -- INVALID_STATE; the coordinator uses "add student", which
+ * sends an invitation the Student must accept. No closed row is reopened.
+ */
 async function enrollActive(classId: string, studentId: string, actorUserId: string) {
-  const r = await db.query(
-    `INSERT INTO class_enrollments (class_id, student_id, status, invited_by_user_id, responded_at) VALUES ($1, $2, 'ACTIVE', $3, now())
-     ON CONFLICT (class_id, student_id) DO UPDATE SET status = 'ACTIVE', ended_at = NULL, responded_at = now()
-       WHERE class_enrollments.status IN ('DECLINED', 'ENDED', 'PENDING')
-     RETURNING id`,
-    [classId, studentId, actorUserId]
-  );
-  if (!r.rows[0]) throw new InstitutionOpsError('ALREADY_ENROLLED');
-  return r.rows[0].id as string;
+  const result = await enrollStudentDirectly(classId, studentId, actorUserId);
+  if (result.outcome === 'REQUIRES_INVITATION') throw new InstitutionOpsError('INVALID_STATE');
+  if (result.outcome !== 'ENROLLED') throw new InstitutionOpsError('ALREADY_ENROLLED');
+  return result.enrollmentId;
 }
 
 /**
  * "Añadir estudiante" by email to a class. Never creates a Student:
- *   - a student of THIS institution already -> enrolled ACTIVE directly in the class;
+ *   - a student of THIS institution already -> enrolled ACTIVE directly in the class,
+ *     unless they left, were removed from or declined THIS class before (CR-L9-02): then invited;
  *   - any other existing student -> invited (PENDING until they accept: consent);
  *   - no student account -> NO_STUDENT_ACCOUNT.
  */
@@ -545,9 +548,11 @@ export async function addStudentToClass(institutionId: string, classId: string, 
     [email.trim()]
   )).rows[0];
   if (!student) throw new InstitutionOpsError('NO_STUDENT_ACCOUNT');
-  const existing = (await db.query(`SELECT status FROM class_enrollments WHERE class_id = $1 AND student_id = $2`, [classId, student.id])).rows[0];
-  if (existing?.status === 'ACTIVE' || existing?.status === 'PENDING') throw new InstitutionOpsError('ALREADY_ENROLLED');
-  if (await isInstitutionStudent(institutionId, student.id)) {
+  // CR-L9-02: a learner with a CLOSED enrolment in this class (left, removed or declined) is always
+  // INVITED again and must accept -- never enrolled directly, even while active elsewhere in the institution.
+  const state = await getClassEnrollmentState(classId, student.id);
+  if (state.open) throw new InstitutionOpsError('ALREADY_ENROLLED');
+  if (!state.lastClosed && (await isInstitutionStudent(institutionId, student.id))) {
     const enrollmentId = await enrollActive(classId, student.id, actorUserId);
     await audit(institutionId, actorUserId, 'ENROLLMENT', enrollmentId, 'STUDENT_ENROLLED', {}, { classId, studentId: student.id, via: 'INSTITUTION_STUDENT' });
     return { outcome: 'ENROLLED', studentId: student.id };

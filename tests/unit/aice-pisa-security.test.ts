@@ -15,8 +15,8 @@ vi.mock('@/lib/institution-intelligence', () => {
   return { InstitutionIntelligenceAccessDeniedError, requireLearnerInInstitution: vi.fn(), requireInstitutionAccess: vi.fn() };
 });
 vi.mock('@/lib/teacher/read-model.service', () => ({ getTeacherClassRoster: vi.fn() }));
-// L8 TE-2: the route is gated on the class's Teacher (getTeacherClass), then the roster guard.
-vi.mock('@/lib/teacher/class-assignment.service', () => ({ getTeacherClass: vi.fn() }));
+// L10 SF-4 / CR-L8-01: Teacher exam gaps come only through the shared, teacher-only, subject-scoped entry point.
+vi.mock('@/lib/authorization/teacher-exam-scope', () => ({ getTeacherClassExamGaps: vi.fn() }));
 vi.mock('@/lib/exam-core/aice/plan.service', () => {
   class AicePlanError extends Error {
     constructor(public readonly code: string) {
@@ -30,7 +30,7 @@ vi.mock('@/lib/exam-core/exam-gaps.service', () => ({ examGapsFor: vi.fn(async (
 import { requireActor, requireOwnerOf, ownStudentId } from '@/lib/exam-core/route-auth';
 import { requireLearnerInInstitution, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
 import { getTeacherClassRoster } from '@/lib/teacher/read-model.service';
-import { getTeacherClass } from '@/lib/teacher/class-assignment.service';
+import { getTeacherClassExamGaps } from '@/lib/authorization/teacher-exam-scope';
 import { addPlanEntry, updatePlanEntry, recordResult, AicePlanError, getPlanView } from '@/lib/exam-core/aice/plan.service';
 import { examGoalsFor, examGapsFor } from '@/lib/exam-core/exam-gaps.service';
 import { GET as planGET } from '@/app/api/aice/plan/route';
@@ -52,7 +52,6 @@ beforeEach(() => {
   vi.mocked(requireActor).mockResolvedValue({ ok: true, actorUserId: 'actor' } as any);
   vi.mocked(ownStudentId).mockResolvedValue(STUDENT);
   vi.mocked(requireOwnerOf).mockResolvedValue({ ok: true, actorUserId: 'actor' } as any);
-  vi.mocked(getTeacherClass).mockResolvedValue({ id: CLASS, name: 'C', institutionId: INST, institutionName: 'I', gradeName: null, subjectId: null, subjectName: null });
 });
 
 describe('Diploma plan: owner only, server-derived numbers', () => {
@@ -105,16 +104,21 @@ describe('Cambridge results: never the Student', () => {
 
 describe('Teacher exam insights: own roster only', () => {
   it('a Teacher without an assignment for the class is 403 and no data is read', async () => {
+    vi.mocked(getTeacherClassExamGaps).mockRejectedValue(new Error('denied'));
     vi.mocked(getTeacherClassRoster).mockRejectedValue(new Error('denied'));
     expect((await (teacherGET as any)(req('GET', undefined, `http://localhost/api/teacher/exam-insights?classId=${CLASS}`))).status).toBe(403);
     expect(examGapsFor).not.toHaveBeenCalled();
+    expect(examGoalsFor).not.toHaveBeenCalled();
   });
   it('the aggregation is limited to the roster Students', async () => {
     vi.mocked(getTeacherClassRoster).mockResolvedValue([{ studentId: STUDENT, name: 'A' }] as any);
+    vi.mocked(getTeacherClassExamGaps).mockResolvedValue({ classId: CLASS, canonicalSubjectId: null, studentIds: [STUDENT], gaps: { studentsWithResults: 0, byDomain: [], byObjective: [], byConcept: [], perStudent: [], subjectScope: { canonicalSubjectId: null, objectiveAggregates: 'WITHHELD' } }, goals: { studentsPreparing: 0, byFramework: [], byObjective: [], perStudent: [] }, aice: [], withheld: ['EXAM_GOALS', 'AICE_ENTRIES'] } as any);
     expect((await (teacherGET as any)(req('GET', undefined, `http://localhost/api/teacher/exam-insights?classId=${CLASS}&family=PISA`))).status).toBe(200);
-    expect(examGapsFor).toHaveBeenCalledWith([STUDENT], { families: ['PISA'], includePerStudent: true });
-    // Objective first: the class's exam goals, for the same roster only.
-    expect(examGoalsFor).toHaveBeenCalledWith([STUDENT], { includePerStudent: true });
+    // Gaps: through the shared entry point (class teacher + class roster + class subject), never the bridge directly.
+    expect(getTeacherClassExamGaps).toHaveBeenCalledWith('actor', CLASS, { family: 'PISA' });
+    expect(examGapsFor).not.toHaveBeenCalled();
+    // L10-R1: goals and AICE entries are subject-scoped too; the Teacher route no longer reads them from the bridge.
+    expect(examGoalsFor).not.toHaveBeenCalled();
   });
   it('manipulated ids / families are rejected', async () => {
     expect((await (teacherGET as any)(req('GET', undefined, 'http://localhost/api/teacher/exam-insights?classId=x'))).status).toBe(400);

@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
+import { canReadLearnerRoute } from '@/lib/authorization/teacher-subject-scope';
 import { createStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import { db } from '@/lib/db';
 import { z } from 'zod';
@@ -30,7 +31,8 @@ export async function GET(request: NextRequest) {
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
 
-  const allowed = await canAccessLearner(actor.id, studentId, 'LEARNER_PROFILE_VIEW');
+  // L10-R2: the learner's exam goals are not attributable to one subject -- a reader who is only their Teacher is refused.
+  const allowed = await canReadLearnerRoute(actor.id, studentId, 'LEARNER_PROFILE_VIEW', 'DENY');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   // Track B: a preparation the Student removed (ARCHIVED) is no longer part of it.

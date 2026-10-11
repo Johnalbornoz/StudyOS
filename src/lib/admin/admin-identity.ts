@@ -17,26 +17,12 @@
  * those checks are allowed to look at.
  */
 import { isAdminEmail } from '@/services/admin.service';
+import { resolveVerifiedPrimaryEmail, type ClerkEmailIdentity } from '@/lib/identity/verified-email';
 
-/** The subset of a Clerk backend `User` this module reads (structural, so tests need no Clerk object). */
-export interface ClerkEmailIdentity {
-  primaryEmailAddressId?: string | null;
-  emailAddresses?: ReadonlyArray<{
-    id?: string | null;
-    emailAddress?: string | null;
-    verification?: { status?: string | null } | null;
-  }> | null;
-}
-
-export function resolveVerifiedPrimaryEmail(user: ClerkEmailIdentity | null | undefined): string | null {
-  const primaryId = user?.primaryEmailAddressId;
-  if (!primaryId) return null;
-  const primary = (user?.emailAddresses ?? []).find((e) => e?.id === primaryId);
-  if (!primary) return null;
-  if (primary.verification?.status !== 'verified') return null;
-  const email = (primary.emailAddress ?? '').trim().toLowerCase();
-  return email || null;
-}
+// L10 SF-6: the resolver itself lives in src/lib/identity/verified-email.ts (one
+// rule for admin decisions and for invitation matching). Re-exported so every
+// existing admin import keeps working.
+export { resolveVerifiedPrimaryEmail, type ClerkEmailIdentity };
 
 /** True only for a Clerk user whose VERIFIED PRIMARY email is on the platform-admin allowlist. */
 export function isAllowlistedAdminUser(user: ClerkEmailIdentity | null | undefined, env: Record<string, string | undefined> = process.env): boolean {

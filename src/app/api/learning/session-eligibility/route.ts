@@ -21,7 +21,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { canAccessLearner } from '@/lib/authorization';
+import { canReadLearnerRoute } from '@/lib/authorization/teacher-subject-scope';
 import { canUseCapability } from '@/lib/entitlements';
 
 export async function GET(request: NextRequest) {
@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
 
   const [authorized, entitled] = await Promise.all([
-    canAccessLearner(actor.id, studentId, 'LEARNER_PROGRESS_VIEW'),
+    // L10-R2: learner-wide -- a reader who is only this learner's Teacher is not authorized here.
+    canReadLearnerRoute(actor.id, studentId, 'LEARNER_PROGRESS_VIEW', 'DENY'),
     canUseCapability(actor.id, studentId, 'LEARNING_FULL_ACCESS'),
   ]);
 

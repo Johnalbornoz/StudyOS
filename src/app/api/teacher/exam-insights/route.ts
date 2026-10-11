@@ -1,16 +1,17 @@
 /**
  * Exam insights for a Teacher's class -- GET /api/teacher/exam-insights?classId=&family=
- * Only a Teacher with an ACTIVE assignment covering this class. An admin
- * (Coordinator) of the class's institution is NOT admitted here (L8 TE-2:
- * per-Student detail belongs to the class's Teacher). Gaps by domain /
- * objective / concept for the class, per-Student gap concepts (for assigning
- * reinforcement through /api/teacher/interventions), those Students' exam
- * goals (objective first: which exam each prepares), and their
- * AICE Diploma subjects with their readiness. Never other classes' Students.
+ * Only a Teacher with an ACTIVE assignment covering this class -- never an
+ * admin of its institution (L10 SF-4). Gaps within the class's own subject
+ * only (CR-L8-01): by concept for the class, per-Student gap concepts (for assigning
+ * reinforcement through /api/teacher/interventions). Exam goals and AICE
+ * entries are subject-scoped as well and cannot be attributed to a subject
+ * yet, so they are returned empty (`withheld` names them). Never other
+ * classes' Students.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { requireActor } from '@/lib/exam-core/route-auth';
-import { getTeacherClassExamInsights, TeacherExamInsightsAccessDeniedError } from '@/lib/teacher/exam-insights.service';
+import { getTeacherClassRoster } from '@/lib/teacher/read-model.service';
+import { getTeacherClassExamGaps } from '@/lib/authorization/teacher-exam-scope';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -22,15 +23,20 @@ async function handleGET(request: NextRequest) {
   const classId = sp.get('classId') ?? '';
   const family = sp.get('family');
   if (!UUID.test(classId) || (family && !/^[A-Z]{2,12}$/.test(family))) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
-  let insights;
+  // L10 SF-4 / CR-L8-01: the class's TEACHER only (never an institution admin), and gaps only within
+  // the class's own canonical subject -- both enforced in the one shared entry point.
+  let roster: Array<{ studentId: string; name: string }>;
+  let scoped;
   try {
-    insights = await getTeacherClassExamInsights(gate.actorUserId, classId, { family });
-  } catch (error) {
-    if (error instanceof TeacherExamInsightsAccessDeniedError) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
-    throw error;
+    scoped = await getTeacherClassExamGaps(gate.actorUserId, classId, { family });
+    roster = await getTeacherClassRoster(gate.actorUserId, classId);
+  } catch {
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
-  const { students, gaps, goals, aice } = insights;
-  return NextResponse.json({ success: true, data: { classId, students, gaps, goals, aice } });
+  // Goals and AICE entries are subject-scoped too (L10-R1) and cannot be attributed to a subject yet:
+  // the shared entry point returns them empty and says what was withheld. Nothing is read here.
+  const { gaps, goals, aice, withheld } = scoped;
+  return NextResponse.json({ success: true, data: { classId, students: roster, gaps, goals, aice, withheld } });
 }
 
 export const GET = withAiRequestMetrics('GET /api/teacher/exam-insights', handleGET);

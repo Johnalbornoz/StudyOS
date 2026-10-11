@@ -255,7 +255,7 @@ async function main() {
   const invite = await post(`/api/teacher/classes/${classA}/enrollments`, 'teacher-a', { email: emailFor('student-a') });
   check('S10.invite-sofia', invite.status === 201 && invite.body?.data?.outcome === 'INVITED', invite.text.slice(0, 100));
   check('S10.invite-idempotent', (await post(`/api/teacher/classes/${classA}/enrollments`, 'teacher-a', { email: emailFor('student-a') })).body?.data?.outcome === 'ALREADY_PENDING');
-  check('S10.one-enrollment-row', (await n(`SELECT COUNT(*) n FROM class_enrollments WHERE class_id = $1 AND student_id = $2`, [classA, sofia])) === 1);
+  check('S10.one-enrollment-row', (await n(`SELECT COUNT(*) n FROM class_enrollments WHERE class_id = $1 AND student_id = $2 AND status IN ('PENDING', 'ACTIVE')`, [classA, sofia])) === 1); // one OPEN row; closed rows are history (20261120_1100)
   check('S10.pending-grants-nothing', denied(await get(`/api/teacher/classes/${classA}/students/${sofia}`, 'teacher-a')));
 
   // 11 -- Sofía accepts (other students cannot accept for her).
@@ -372,7 +372,7 @@ async function main() {
   check('PAGE.16b-teacherB-not-found-on-sofia', foreignLearner.status === 404 && !foreignLearner.text.includes('Estado de aprendizaje'), `${foreignLearner.status}`);
 
   // 17 -- removal revokes access immediately.
-  const enrollment = await q1(`SELECT id FROM class_enrollments WHERE class_id = $1 AND student_id = $2`, [classA, sofia]);
+  const enrollment = await q1(`SELECT id FROM class_enrollments WHERE class_id = $1 AND student_id = $2 AND status IN ('PENDING', 'ACTIVE')`, [classA, sofia]);
   check('S17.teacher-removes-sofia', (await post(`/api/teacher/classes/${classA}/enrollments/${enrollment.id}/end`, 'teacher-a')).status === 200);
   check('S17.access-revoked', denied(await get(`/api/teacher/classes/${classA}/students/${sofia}`, 'teacher-a')));
   check('S17.reinvite-reopens', (await post(`/api/teacher/classes/${classA}/enrollments`, 'teacher-a', { email: emailFor('student-a') })).body?.data?.outcome === 'INVITED');

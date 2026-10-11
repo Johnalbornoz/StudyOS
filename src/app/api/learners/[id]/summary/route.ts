@@ -19,7 +19,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { canAccessLearner } from '@/lib/authorization';
+import { canReadLearnerRoute } from '@/lib/authorization/teacher-subject-scope';
 import { getChildOverview } from '@/services/parent.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -29,7 +29,8 @@ async function handleGET(_request: NextRequest, { params }: { params: Promise<{ 
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
-  const allowed = await canAccessLearner(actor.id, learnerId, 'LEARNER_PROGRESS_VIEW');
+  // L10-R2: learner-wide payload -- it cannot be sliced by subject, so a reader who is only this learner's Teacher is refused.
+  const allowed = await canReadLearnerRoute(actor.id, learnerId, 'LEARNER_PROGRESS_VIEW', 'DENY');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const overview = await getChildOverview(learnerId);

@@ -23,10 +23,9 @@
  */
 
 import { db } from '@/lib/db';
-import { canTeacherAccessLearner, canAccessClass } from '@/lib/authorization';
-import { getStudentMastery } from '@/services/mastery.service';
-import { getActiveDebts } from '@/services/learning-debt.service';
-import { getLatestReadinessSnapshot } from '@/lib/readiness/readiness.service';
+import { canTeacherAccessLearner, resolveTeacherClassScope } from '@/lib/authorization';
+import { activeRoleSql } from '@/lib/identity/access-predicates';
+import { learnerConceptsInTeacherSubjects } from '@/lib/authorization/teacher-subject-scope';
 import type { ReadinessSnapshot } from '@/lib/readiness/types';
 
 export class TeacherAccessDeniedError extends Error {
@@ -42,18 +41,17 @@ async function requireLearnerAccess(actorUserId: string, studentId: string): Pro
 }
 
 /**
- * canAccessClass's `permission` argument is currently not
- * differentiated internally (confirmed by inspection -- every
- * InstitutionPermission value resolves identically today), so any
- * valid enum member gates the exact same real relationship check
- * (institution admin OR an ACTIVE teacher assignment covering this
- * class). TEACHER_ASSIGNMENT_MANAGE is used here as the closest
- * semantic fit; changing this pre-existing behavior is out of scope
- * for F11-A.
+ * L10 SF-4 (L4-06, CR-L8-01, CR-L8-02): the Teacher read models are for the
+ * class's TEACHER only. This used to go through `canAccessClass`, which also
+ * admits the institution's admins -- so a Coordinator could read the class
+ * roster and per-student exam data through the Teacher routes. It now uses
+ * `resolveTeacherClassScope` (teacher of this exact class, never an
+ * institution admin). A Coordinator's learner-level reads are bounded by
+ * LEARNER_READ_SCOPE.COORDINATOR and served by the institution's own routes.
  */
 async function requireClassAccess(actorUserId: string, classId: string): Promise<void> {
-  const allowed = await canAccessClass(actorUserId, classId, 'TEACHER_ASSIGNMENT_MANAGE');
-  if (!allowed) throw new TeacherAccessDeniedError(classId);
+  const scope = await resolveTeacherClassScope(actorUserId, classId);
+  if (!scope) throw new TeacherAccessDeniedError(classId);
 }
 
 export interface TeacherAssignedClass {
@@ -86,6 +84,8 @@ export async function getTeacherAssignedClasses(actorUserId: string): Promise<Te
       AND ta.status = 'ACTIVE'
       AND c.institution_id = im.institution_id
       AND c.status = 'ACTIVE' -- an archived class leaves the teacher's working list (its history stays)
+      AND EXISTS (SELECT 1 FROM institutions i WHERE i.id = im.institution_id AND i.status = 'ACTIVE') -- L10 SF-3
+      AND ${activeRoleSql('$1', 'TEACHER')} -- L10 SF-1
     ORDER BY c.name
     `,
     [actorUserId]
@@ -121,72 +121,60 @@ export async function getTeacherClassRoster(actorUserId: string, classId: string
   return result.rows.map((r) => ({ studentId: r.id, name: r.name || r.email }));
 }
 
-interface ActiveExamProfile {
-  id: string;
-}
-
-/**
- * No reusable "active exam profile for a student" service export
- * exists anywhere in the codebase (F7's own route and F10's Parent
- * Read Model each independently query student_exam_profiles directly
- * for this same reason -- see F10_NEXT_PHASE_HANDOFF.md item 4). This
- * is now the THIRD call site duplicating this narrow lookup; F10 is
- * frozen and not modified here, so this is recorded as an open
- * decision (promote a shared getActiveExamProfile(studentId) export
- * in a future phase) rather than silently accepted or unilaterally
- * fixed by touching frozen F10 code.
- */
-async function getActiveExamProfileId(studentId: string): Promise<string | null> {
-  const result = await db.query(
-    `SELECT id FROM student_exam_profiles WHERE student_id = $1 AND status = 'ACTIVE' ORDER BY created_at DESC LIMIT 1`,
-    [studentId]
-  );
-  return result.rows[0]?.id ?? null;
-}
-
 export interface TeacherStudentOverview {
   studentId: string;
   name: string;
   conceptsWithEvidence: number;
   areasNeedingAttentionCount: number;
-  latestReadinessStatus: ReadinessSnapshot['overallStatus'] | 'NO_ACTIVE_EXAM_PROFILE';
+  /** L10-R2: readiness is exam-wide and cannot be attributed to the teacher's subject -- always 'WITHHELD' for a Teacher. */
+  latestReadinessStatus: ReadinessSnapshot['overallStatus'] | 'NO_ACTIVE_EXAM_PROFILE' | 'WITHHELD';
   lastActivityAt: string | null;
+  /** L10-R2: the canonical subjects these numbers are limited to (the teacher's authorized subjects for this learner). */
+  subjectScope: { canonicalSubjectIds: string[] };
 }
 
 /**
- * Minimum "teacher-scoped learner learning information" projection
- * (task's own phrasing) -- a straight reuse of F5's mastery/debt reads
- * and F9's readiness engine, never a new calculation. Field selection
- * deliberately mirrors what F10's Parent overview already proved safe
- * to expose (counts and status enums, never raw evidence rows or
- * internal sub-scores) -- Teacher-appropriate minimization is at least
- * as strict as Parent's, not looser.
+ * Minimum "teacher-scoped learner learning information" projection: counts
+ * and a date, never raw evidence rows or internal sub-scores.
+ *
+ * L10-R2 (Teacher whole-learner scope). This used to count over the WHOLE
+ * learner -- every subject they study -- and to return the readiness status
+ * of their personal exam preparation. Teacher learner data requires an
+ * authorized Student, Class AND Subject, so:
+ *   - the two counts and the last-activity date are taken over the learner's
+ *     concepts inside the subject(s) this teacher is authorized for with this
+ *     learner (`learnerConceptsInTeacherSubjects`), and nothing else;
+ *   - readiness is exam-wide, cannot be sliced, and is withheld;
+ *   - a teacher with no subject scope for the learner gets zeros.
+ * The count predicates are the ones the mastery and learning-debt read
+ * models use (a mastery record; an active or monitored debt of an active
+ * subject); only the concept filter is added.
  */
 export async function getTeacherStudentOverview(actorUserId: string, studentId: string): Promise<TeacherStudentOverview> {
   await requireLearnerAccess(actorUserId, studentId);
 
-  const [studentRow, masteryRecords, debts, examProfileId, lastActivityResult] = await Promise.all([
+  const [studentRow, scope] = await Promise.all([
     db.query(`SELECT name, email FROM students WHERE id = $1`, [studentId]),
-    getStudentMastery(studentId, undefined, 'en').catch(() => []),
-    getActiveDebts(studentId, undefined, 'en').catch(() => []),
-    getActiveExamProfileId(studentId),
-    db.query(`SELECT MAX("timestamp") AS last_at FROM learning_evidence WHERE student_id = $1`, [studentId]),
+    learnerConceptsInTeacherSubjects(actorUserId, studentId),
   ]);
-
-  let latestReadinessStatus: TeacherStudentOverview['latestReadinessStatus'] = 'NO_ACTIVE_EXAM_PROFILE';
-  if (examProfileId) {
-    const snapshot = await getLatestReadinessSnapshot(examProfileId).catch(() => null);
-    if (snapshot) latestReadinessStatus = snapshot.overallStatus;
-  }
-
   const name = studentRow.rows[0]?.name || studentRow.rows[0]?.email || '';
+  const conceptIds = [...scope.conceptIds];
+  const base = { studentId, name, latestReadinessStatus: 'WITHHELD' as const, subjectScope: { canonicalSubjectIds: scope.subjectIds } };
+  if (conceptIds.length === 0) return { ...base, conceptsWithEvidence: 0, areasNeedingAttentionCount: 0, lastActivityAt: null };
 
+  const [mastery, debts, lastActivity] = await Promise.all([
+    db.query(`SELECT count(*)::int AS n FROM mastery_records WHERE student_id = $1 AND concept_id = ANY($2::uuid[])`, [studentId, conceptIds]),
+    db.query(
+      `SELECT count(*)::int AS n FROM learning_debt ld JOIN subjects s ON s.id = ld.subject_id
+        WHERE ld.student_id = $1 AND ld.status IN ('active', 'monitoring') AND s.status = 'active' AND ld.concept_id = ANY($2::uuid[])`,
+      [studentId, conceptIds]
+    ),
+    db.query(`SELECT MAX("timestamp") AS last_at FROM learning_evidence WHERE student_id = $1 AND concept_id = ANY($2::uuid[])`, [studentId, conceptIds]),
+  ]);
   return {
-    studentId,
-    name,
-    conceptsWithEvidence: masteryRecords.length,
-    areasNeedingAttentionCount: debts.length,
-    latestReadinessStatus,
-    lastActivityAt: lastActivityResult.rows[0]?.last_at ?? null,
+    ...base,
+    conceptsWithEvidence: mastery.rows[0]?.n ?? 0,
+    areasNeedingAttentionCount: debts.rows[0]?.n ?? 0,
+    lastActivityAt: lastActivity.rows[0]?.last_at ?? null,
   };
 }

@@ -12,6 +12,8 @@
  */
 import { db, type DbExecutor } from '@/lib/db';
 import type { TransferDistance, TransferModality, NoveltyDimension } from '@/lib/transfer-policy';
+import { buildOperationKey } from '@/lib/algorithms/evidence-idempotency';
+import { launchLockId } from '@/services/activity-launch-lock.service';
 
 export interface TransferTaskInstance {
   id: string; // == transferTaskId
@@ -145,4 +147,93 @@ export async function getRecentTransferTaskFingerprints(
     [studentId, conceptId, Math.max(1, Math.floor(limit))],
   );
   return res.rows.map((r) => ({ transferTaskId: r.id, promptFingerprint: r.prompt_fingerprint }));
+}
+
+/**
+ * CR-L11-06 -- has this Transfer task already been answered and graded?
+ *
+ * The proof is state that already exists: a graded submission is applied
+ * through `updateMastery` with the identity `TRANSFER :: <transferTaskId> ::
+ * <conceptId>`, and that call claims `learning_evidence.operation_key` under
+ * a unique index before anything else is written. One row with that key is
+ * therefore exactly "this task was graded once" -- no marker column and no
+ * schema change are needed. A submission that failed before the evidence was
+ * written (a grading error) leaves no row, so the Student can still answer.
+ *
+ * The caller checks this BEFORE grading and refuses a repeat, so the AI
+ * grader is not invoked again for a task that already has its answer.
+ * It deliberately does not swallow errors: if the state cannot be read the
+ * submission must not proceed to a paid grading call.
+ *
+ * On its own this closes the sequential repeat only. The concurrent case --
+ * two FIRST submissions at the same instant, both reading "not graded" -- is
+ * closed by `runTransferSubmissionExclusively` below, which is what the
+ * submit route calls.
+ */
+export async function isTransferTaskAlreadyGraded(transferTaskId: string, conceptId: string, client: DbExecutor = db): Promise<boolean> {
+  const operationKey = buildOperationKey({ operationType: 'TRANSFER', operationId: transferTaskId, conceptId });
+  const result = await client.query(`SELECT 1 FROM learning_evidence WHERE operation_key = $1 LIMIT 1`, [operationKey]);
+  return (result.rows?.length ?? 0) > 0;
+}
+
+export type TransferSubmissionOutcome<T> =
+  | { outcome: 'COMPLETED'; value: T }
+  /** The task already has its graded answer. */
+  | { outcome: 'ALREADY_ANSWERED' }
+  /** Another request holds the claim on this task right now (it is being graded). */
+  | { outcome: 'IN_PROGRESS' };
+
+/** The advisory-lock key of one Transfer task's submission (same identity as its evidence operation key). */
+export function transferSubmissionLockKey(transferTaskId: string, conceptId: string): string {
+  return `transfer-submit:${buildOperationKey({ operationType: 'TRANSFER', operationId: transferTaskId, conceptId })}`;
+}
+
+/**
+ * CR-L11-06 / L10-R2 -- Transfer CONCURRENT exactly-once.
+ *
+ * Runs `gradeAndRecord` (the AI grading call and the evidence write) at most
+ * once per Transfer task, also when two submissions arrive together.
+ *
+ * The exclusive claim is existing transactional state, not a new column: a
+ * TRANSACTION-scoped advisory lock on a dedicated connection -- the same
+ * mechanism, with the same reasoning, as the activity launch lock
+ * (src/services/activity-launch-lock.service.ts: a transaction is pinned to
+ * one server connection even behind Neon's transaction pooler, and the lock
+ * ends with the transaction; a session-level lock is not safe there).
+ *
+ *   1. BEGIN, then `pg_try_advisory_xact_lock(task key)` -- it never waits.
+ *      Not obtained => another request is grading this task: IN_PROGRESS.
+ *   2. Holding the claim, read the persisted answer state
+ *      (`isTransferTaskAlreadyGraded`). Graded => ALREADY_ANSWERED.
+ *   3. Still holding it, run `gradeAndRecord`. The evidence it writes is
+ *      committed on its own connection before the claim is released, so any
+ *      request that obtains the claim afterwards sees it in step 2.
+ *   4. End the transaction (the claim is released), whatever happened.
+ *
+ * Why this is exactly-once: a request can only reach the grader while it
+ * holds the claim and after it has seen "not graded"; a second request
+ * either cannot get the claim (the first still holds it) or gets it after
+ * the first has written its evidence.
+ *
+ * Crash / retry: nothing is persisted by the claim itself. If the process
+ * dies, or grading throws, the transaction ends and the lock goes with it;
+ * no evidence was written, so the task is still OPEN and can be answered.
+ * There is no lease to expire and nothing to clean up.
+ *
+ * Cost: one pooled connection is held, idle in a transaction, for the
+ * duration of one grading call.
+ */
+export async function runTransferSubmissionExclusively<T>(transferTaskId: string, conceptId: string, gradeAndRecord: () => Promise<T>): Promise<TransferSubmissionOutcome<T>> {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const claim = await client.query(`SELECT pg_try_advisory_xact_lock($1::bigint) AS locked`, [launchLockId(transferSubmissionLockKey(transferTaskId, conceptId))]);
+    if (claim.rows?.[0]?.locked !== true) return { outcome: 'IN_PROGRESS' };
+    if (await isTransferTaskAlreadyGraded(transferTaskId, conceptId)) return { outcome: 'ALREADY_ANSWERED' };
+    return { outcome: 'COMPLETED', value: await gradeAndRecord() };
+  } finally {
+    // Nothing was written on this connection; ending the transaction is what releases the claim.
+    await client.query('ROLLBACK').catch(() => {});
+    client.release();
+  }
 }

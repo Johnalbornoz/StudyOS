@@ -34,6 +34,18 @@ export class InvalidMembershipTransitionError extends Error {
     super('INVALID_MEMBERSHIP_TRANSITION');
   }
 }
+/**
+ * CR-L11-05 -- a manual payment approval was requested for a subscription row
+ * an administrator set (a licence grant, a revoked grant, an administrative
+ * suspension). Refused: see `approveManualPayment`.
+ */
+export class AdminControlledSubscriptionError extends Error {
+  constructor() {
+    super('ADMIN_CONTROLLED_SUBSCRIPTION');
+    this.name = 'AdminControlledSubscriptionError';
+  }
+}
+
 export class PayerLacksRelationshipError extends Error {
   constructor() {
     super('PAYER_LACKS_ACTIVE_RELATIONSHIP');
@@ -285,6 +297,15 @@ export interface ApproveManualPaymentParams {
 export async function approveManualPayment(actorUserId: string, params: ApproveManualPaymentParams): Promise<{ subscriptionId: string }> {
   const subscriptionId = await ensureSubscriptionRow(params.studentId);
   const before = await getSubscription(params.studentId);
+
+  // CR-L11-05 (Orchestrator ruling, this release): fail closed. On a row an administrator set, access
+  // is decided by the grant fields (`manually_set_by_admin`, `grant_expires_at`), which this function
+  // does not convert. Approving a payment there produced a row that reads "active" and grants nothing
+  // (an expired grant), or quietly lifted an administrative suspension or revocation. A complete paid
+  // conversion is entitlement policy and is not performed here, so the approval is refused before
+  // anything is written -- no payment row, no status change. The working paths stay: re-grant the
+  // licence, or reactivate the membership, through their own audited routes.
+  if (before.manuallySetByAdmin) throw new AdminControlledSubscriptionError();
 
   try {
     await db.query(

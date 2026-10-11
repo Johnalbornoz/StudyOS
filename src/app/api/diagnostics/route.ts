@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { canAccessLearner } from '@/lib/authorization';
+import { canReadLearnerRoute } from '@/lib/authorization/teacher-subject-scope';
 import { listDiagnosesForStudentConcept } from '@/lib/diagnostics/diagnosis.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -22,7 +22,8 @@ async function handleGET(request: NextRequest) {
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
 
-  const allowed = await canAccessLearner(actor.id, studentId, 'LEARNER_PROGRESS_VIEW');
+  // L10-R2: one concept of the learner -- a Teacher reads it only inside a subject they are authorized for with this learner.
+  const allowed = await canReadLearnerRoute(actor.id, studentId, 'LEARNER_PROGRESS_VIEW', { learnerConceptId: conceptId });
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const diagnoses = await listDiagnosesForStudentConcept(studentId, conceptId);

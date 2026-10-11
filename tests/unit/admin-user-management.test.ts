@@ -261,11 +261,24 @@ describe('case 17: TEST account with real dependencies cannot be cleaned up', ()
 });
 
 describe('case 18: a partial Clerk/Postgres failure never silently reports success', () => {
-  it('if the Clerk ban call throws, the Postgres status update never runs and the caller sees the error', async () => {
+  // L10 SF-1 (L4-12): the database status is an authorization gate of its own now, so it is written
+  // FIRST. A Clerk failure afterwards leaves the account DENIED (never half-suspended and still served),
+  // is audited as a failed sync, and still reaches the caller.
+  it('if the Clerk ban call throws, the account is already SUSPENDED in Postgres, the failure is audited, and the caller sees the error', async () => {
     usersBanMock.mockRejectedValue(new Error('Clerk API unavailable'));
     await expect(suspendUser(ACTOR, TARGET, TARGET_CLERK, 'test')).rejects.toThrow('Clerk API unavailable');
     const sqlCalls = dbQueryMock.mock.calls.map((c) => c[0]);
-    expect(sqlCalls.some((sql: string) => sql.includes("SET status = 'SUSPENDED'"))).toBe(false);
+    expect(sqlCalls.some((sql: string) => sql.includes("SET status = 'SUSPENDED'"))).toBe(true);
+    expect(recordAdminActionMock).toHaveBeenCalledWith(expect.objectContaining({ action: 'USER_SUSPENDED', newState: expect.objectContaining({ clerkSyncFailed: true }) }));
+    expect(recordAdminActionMock).not.toHaveBeenCalledWith(expect.objectContaining({ newState: expect.objectContaining({ sessionsRevoked: expect.anything() }) }));
+  });
+
+  it('if the Clerk unban call throws, the account stays SUSPENDED in Postgres (reactivation restores access last)', async () => {
+    usersUnbanMock.mockRejectedValueOnce(new Error('Clerk API unavailable'));
+    await expect(reactivateUser(ACTOR, TARGET, TARGET_CLERK)).rejects.toThrow('Clerk API unavailable');
+    const sqlCalls = dbQueryMock.mock.calls.map((c) => c[0]);
+    expect(sqlCalls.some((sql: string) => sql.includes("SET status = 'ACTIVE'"))).toBe(false);
+    expect(recordAdminActionMock).toHaveBeenCalledWith(expect.objectContaining({ action: 'USER_REACTIVATED', newState: expect.objectContaining({ clerkSyncFailed: true, reactivated: false }) }));
   });
 });
 

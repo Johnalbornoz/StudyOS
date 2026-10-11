@@ -22,6 +22,7 @@
 import { randomUUID } from 'crypto';
 import { db } from '@/lib/db';
 import { canTeacherAccessLearner } from '@/lib/authorization';
+import { activeRoleSql } from '@/lib/identity/access-predicates';
 import { ensureConceptInLearnerPlan, learnersHavingCanonicalConcept } from './plan-enrollment.service';
 import { reconcileCompletionsForStudent, getEffectiveStatus, type TeacherInterventionStatus } from '@/lib/student/teacher-intervention-execution.service';
 import { notifyUser } from '@/lib/notifications/role-notifications.service';
@@ -39,14 +40,22 @@ export class TeacherClassAccessDeniedError extends Error {
  * covering the class, same institution). Deliberately NOT canAccessClass:
  * that also admits institution admins, who can see a class but are not its
  * teacher and must never publish learner work or read per-learner results.
+ *
+ * L10 SF-3 (L4-08): the institution must be ACTIVE and the class not
+ * archived -- suspending an institution ends its teachers' access on the
+ * next request, as it already did for its coordinators.
+ * L10 SF-1 (L4-04): the account and its TEACHER role must be ACTIVE.
  */
 const TEACHER_CLASS_SQL = `
   SELECT DISTINCT c.id
   FROM teacher_assignments ta
   JOIN institution_memberships im ON im.id = ta.institution_membership_id
+  JOIN institutions ti ON ti.id = im.institution_id AND ti.status = 'ACTIVE'
   JOIN classes c ON (c.id = ta.class_id OR (ta.class_id IS NULL AND ta.grade_id IS NOT NULL AND c.grade_id = ta.grade_id))
   WHERE im.user_id = $1 AND im.membership_role = 'TEACHER' AND im.status = 'APPROVED'
     AND ta.status = 'ACTIVE' AND c.institution_id = im.institution_id
+    AND c.status = 'ACTIVE'
+    AND ${activeRoleSql('$1', 'TEACHER')}
 `;
 
 export async function isTeacherOfClass(actorUserId: string, classId: string): Promise<boolean> {
