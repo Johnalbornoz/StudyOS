@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { SITE_URL, SITE_NAME } from "@/lib/seo";
+import { PATHNAME_HEADER } from "@/lib/admin/shell-context";
+import { resolveDocumentLanguage } from "@/lib/i18n/document-language";
 import "./globals.css";
 
 // No `weight` array: Inter is a variable font, so omitting it keeps
@@ -37,14 +40,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // The document language follows the route locale (/es, /en, ...). The
+  // path is the one src/proxy.ts forwards; reading it renders per request.
+  const lang = resolveDocumentLanguage((await headers()).get(PATHNAME_HEADER));
+
   return (
     <ClerkProvider>
-      <html lang="en" className={inter.variable}>
+      <html lang={lang} className={inter.variable}>
         <body>{children}</body>
       </html>
     </ClerkProvider>
