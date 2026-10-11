@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 import { ConceptExplanationPanel, ConceptExplanationData } from '@/app/dashboard/subjects/[id]/ConceptExplanationPanel';
+import { isEntitlementRequired } from '@/lib/lx/access-required';
 
 interface ErrorPattern {
   errorType: string;
@@ -30,6 +31,8 @@ export default function ErrorPatternList({
   const [guidance, setGuidance] = useState<Record<string, ConceptExplanationData>>({});
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  // L6 / CR-L11-02: the licence gate (403 ENTITLEMENT_REQUIRED) is an access state, not an error.
+  const [accessKey, setAccessKey] = useState<string | null>(null);
 
   function keyOf(p: ErrorPattern) {
     return `${p.subjectId}-${p.errorType}`;
@@ -46,6 +49,7 @@ export default function ErrorPatternList({
 
     setLoadingKey(key);
     setErrorKey(null);
+    setAccessKey(null);
     try {
       const params = new URLSearchParams({
         studentId,
@@ -60,6 +64,8 @@ export default function ErrorPatternList({
       const body = await res.json();
       if (res.ok) {
         setGuidance((prev) => ({ ...prev, [key]: body.data.guidance }));
+      } else if (isEntitlementRequired(res.status, body)) {
+        setAccessKey(key);
       } else {
         setErrorKey(key);
       }
@@ -104,6 +110,7 @@ export default function ErrorPatternList({
                   locale={locale}
                   loading={loadingKey === key}
                   error={errorKey === key}
+                  accessRequired={accessKey === key}
                   data={guidance[key]}
                   headerLabel={t['debt.guidanceLabel']}
                 />

@@ -152,3 +152,182 @@ Before merging, a Human Operator should open `/dashboard/plan` as a Student and 
 ## NEXT SAFE ACTION
 
 Orchestrator picks which L6 branch is canonical and marks the other `SUPERSEDED`.
+
+---
+
+# L6 final micro-remediation — CR-L11-02 (entitlement UX) — 2026-10-11 (UTC), appended
+
+Continuation of the same lane on the canonical L6 branch. `24810e7` is the accepted base and was not amended. The superseded branch `fix/l6-student-st3-st4` was not used. The sections above describe `24810e7`.
+
+## LANE
+
+| | |
+|---|---|
+| Lane | `L6_STUDENT` |
+| Scope | CR-L11-02 only: Student-facing UX for `403 { error: "ENTITLEMENT_REQUIRED" }` |
+| Worktree | `/Users/jalbornoz/PROYECTOS/studyos-l6-student-wave0` |
+| Branch | `feat/l6-student-wave0` (local only, not pushed) |
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+## BASE SHA
+
+`24810e7` — verified with `git log` on `feat/l6-student-wave0`; tree clean before starting.
+
+## FINAL SHA
+
+The single commit on `feat/l6-student-wave0` whose parent is `24810e7`. Run `git rev-parse feat/l6-student-wave0`.
+
+## FILES CHANGED
+
+New shared handling (3):
+
+- `src/lib/lx/access-required.ts` — `isEntitlementRequired(status, body)`, `responseIsEntitlementRequired(res)`, `ACCESS_CTA_PATH`
+- `src/components/ui/AccessRequiredNotice.tsx` — the one access-required state
+- `src/lib/i18n/l6-access-messages.ts` — its copy, five locales (per-lane file; `messages.ts` not edited)
+
+Surfaces (9):
+
+- `src/app/dashboard/subjects/[id]/ConceptExplanationPanel.tsx` — new optional `accessRequired` prop
+- `src/app/dashboard/subjects/[id]/concepts/[conceptId]/ConceptExplanationDisclosure.tsx`
+- `src/app/dashboard/subjects/[id]/AddConceptTab.tsx`
+- `src/app/dashboard/learning-debt/ErrorPatternList.tsx`
+- `src/app/dashboard/quiz/TeachingIntro.tsx`
+- `src/app/dashboard/cognitive/transfer/page.tsx`
+- `src/app/dashboard/cognitive/explain/page.tsx`
+- `src/app/dashboard/assignments/StartAssignmentButton.tsx`
+- `src/app/dashboard/assignments/page.tsx` — passes `locale` to the button
+
+Tests (2): `tests/unit/l6-cr-l11-02-access-required.test.ts` (new), `tests/unit/lx4p-perf-r1-parallel-runtime.test.ts` (one pinned type string gained `'access'`).
+
+Documentation (2): this report, `docs/orchestration/status/L6_STATUS.md`.
+
+Not touched: schema, migrations, any `src/app/api/**` route, `src/lib/entitlements/**`, any guard, ST-3 / ST-4 files, the Student navigation, `src/lib/i18n/messages.ts`, `src/app/dashboard/quiz/page.tsx`, `ConceptList.tsx`, `HierarchicalConceptList.tsx`.
+
+## LOCKS USED
+
+NONE.
+
+## TESTS
+
+| Command | Result |
+|---|---|
+| `npx vitest run tests/unit/l6-cr-l11-02-access-required.test.ts` | 1 file, 40 tests passed |
+| Same file with the panel's `accessRequired` branch disabled | 1 of 40 failed (the access-state render test); branch restored |
+| Full suite, first run | 2 failures in existing source-text tests, both caused by this change: `lx5-continuation` (a condition I had widened; widening reverted, it was redundant) and `lx4p-perf-r1-parallel-runtime` (pins the `guideState` type; updated) |
+| Full suite, final run (`env -u DATABASE_URL ... npx vitest run`) | 522 files, 9,348 tests passed |
+| `npx tsc --noEmit -p .` | no output |
+| `npx next build` | exit 0; 228/228 static pages |
+| Browser | NOT_RUN — not required in this lane |
+
+The suite has no DOM. Required cases and how each is covered:
+
+| # | Case | Coverage |
+|---|---|---|
+| 1 | 403 + `ENTITLEMENT_REQUIRED` gives the access state, not the generic error | classifier unit test; server render of `AccessRequiredNotice` and of `ConceptExplanationPanel` with `accessRequired`; each surface pinned by source to the classifier and the notice |
+| 2 | unrelated 403 keeps existing behaviour | classifier returns false for other 403 bodies; each surface's existing error path asserted still present |
+| 3 | 500 / network / general errors keep existing behaviour | classifier false for 500, 423, 404, 409, 401, 400, no status, unparseable body; panel renders the existing error line |
+| 4 | allowed / open attempt renders normally | classifier false for 2xx bodies including a `RECOVERED` start; panel renders the explanation; submit and start are never disabled by the access state |
+| 5 | no raw `ENTITLEMENT_REQUIRED` reaches the Student | rendered notice and all copy checked against status code, error code and entitlement vocabulary in five locales; no surface file contains the literal |
+
+Click-through behaviour of the stateful surfaces (state set after a real fetch) is NOT_VERIFIED by execution; it is covered by source assertions and the build only.
+
+## FINDINGS
+
+### 1. One rule, one component
+
+`isEntitlementRequired` is true only for status 403 with body `error === 'ENTITLEMENT_REQUIRED'`. Each surface sends its request exactly as before and asks that one question about the answer. There is no eligibility pre-check and no control is disabled by the access state, so the server stays the authority and an attempt it still allows continues.
+
+`AccessRequiredNotice` is informational (`role="status"`), with the suggested title "Esta actividad requiere acceso activo.", a body naming the Student's own plan and access from their institution, and one link.
+
+### 2. CTA
+
+The link is "Ver mi acceso" to `/dashboard/billing`, the destination `StartSessionButton` and the quiz page already use for the licence state (`LICENSE_CTA_PATH`). The label is neutral on purpose: the existing label there is "Activar licencia", which reads as a purchase instruction to a sponsored Student. No checkout was added.
+
+### 3. Surface by surface
+
+| Surface | Request | Before | Now |
+|---|---|---|---|
+| Concept Explanation (Concept Mission disclosure) | `GET concepts/[id]/explanation` | red "could not load" line | access state inside the panel; reopening asks the server again |
+| Error-pattern guidance | `GET learning-debt/error-guidance` | same red line | access state inside the panel |
+| Guided Practice | `POST learning/guided-practice` | "failed" alert with Retry | access state with Exit, no Retry |
+| Interactive Formula | `GET concepts/[id]/interactive-formula` | nothing shown on any failure | unchanged; see below |
+| Transfer, start | `POST cognitive/transfer/generate` | "could not prepare" alert with Retry | access state with back-to-concept |
+| Transfer, submit | `POST cognitive/transfer/submit` | generic "server" submit failure | access state above the answer; text kept, button still enabled |
+| Explain and Defend, start and submit | `cognitive/explain/*` | as Transfer | as Transfer |
+| Teacher-assigned start | `POST student/teacher-interventions/[id]/start` | "could not start" | access state under the button |
+| Add concept, explanation step | `GET concepts/[id]/explanation` | **the raw error code as text** | access state; the concept itself was created and the list refreshes |
+
+Interactive Formula needed no change. The widget is optional, is requested only after an explanation has loaded, and its hook already turns every failure into "no widget". It cannot show an error, and when the gate applies the explanation is refused first. A test pins that.
+
+The explanation fetch inside `TeachingIntro` also needed no change: a refused explanation drops the EXPLAIN and MODEL stages silently, as any failure already did, and the flow reaches Guided Practice (access state) or question generation (the quiz page's existing licence card).
+
+### 4. Surfaces that could not use the shared handling
+
+- `src/app/dashboard/subjects/[id]/ConceptList.tsx` — the explanation toggle on the subject page. It is in the B5 diff, which the Wave 0 conditions told L6 not to touch. It will show the panel's generic red line. The fix is three lines, the same as `ErrorPatternList.tsx`: set a key on `isEntitlementRequired`, pass `accessRequired` to the panel.
+- `src/app/dashboard/quiz/page.tsx` — also in the B5 diff. Quiz generation already shows a licence card there. The per-question check and the hint show their existing generic "unavailable" copy if refused. I did not verify whether L11 can refuse them inside an open attempt.
+- `src/app/dashboard/learning-debt/StartRemediationButton.tsx` — calls a gated route but nothing imports it. Left alone.
+
+Neither of the first two exposes the raw code.
+
+### 5. Open attempts
+
+No client-side block was added anywhere. "Continue" on an assignment sends the same request as "Start"; a submit on Transfer or Explain is always sent. A refused Transfer replay, an expired task and every other submit failure still go through the unchanged `classifySubmitFailure`.
+
+### 6. Things to know
+
+- **The L11 gate is not on this branch.** The UI was written against the contract text and `learning-gate.ts` read from `fd9dfa6`. The first real exercise is after convergence.
+- `AddConceptTab` still prints other server error codes as text (`err.message`). Only the gate case was in scope.
+- `StartAssignmentButton` now requires a `locale` prop. Its only caller is updated.
+- The quiz page's existing licence card and `StartSessionButton` keep their older copy ("Actividad incluida en la licencia", "Activar licencia"). Two wordings for one condition now exist.
+
+## BLOCKERS
+
+NONE.
+
+## CHANGE_REQUESTS
+
+No lock request. For whoever converges B5:
+
+| Files | Change | Why not done here |
+|---|---|---|
+| `src/app/dashboard/subjects/[id]/ConceptList.tsx` | use `isEntitlementRequired` and pass `accessRequired` to `ConceptExplanationPanel` | file is in the B5 diff |
+| `src/app/dashboard/quiz/page.tsx` | decide whether the licence card should use `AccessRequiredNotice`; handle a gated check or hint if L11 can refuse them | file is in the B5 diff |
+
+Product decisions still open:
+
+- Whether the access page (`/dashboard/billing`) is the right place for a Student whose access comes from an institution. Today it is a billing page.
+- Whether to unify the older licence copy with the new access copy.
+
+## MERGE RECOMMENDATION
+
+Merge `feat/l6-student-wave0` (two commits on `4fb45b0`). No file in this commit is in L11's diff (`git diff --stat 4fb45b0..fd9dfa6`), so order against L11 does not matter textually. After L11 and L6 are both in, exercise one unlicensed Student on Stage through the surfaces in the table.
+
+## NEXT SAFE ACTION
+
+Orchestrator review.
+
+## RETURN
+
+```
+CR_L11_02 = CLOSED
+ENTITLEMENT_ACCESS_STATE = PASS
+GUIDED_PRACTICE_UX = PASS
+CONCEPT_EXPLANATION_UX = PASS
+INTERACTIVE_FORMULA_UX = PASS
+ERROR_PATTERN_UX = PASS
+TRANSFER_UX = PASS
+TEACHER_ASSIGNED_START_UX = PASS
+
+OPEN_ATTEMPT_CONTINUATION_UI = PASS
+
+TESTS = 522 files, 9,348 passed, 0 failed (focused file: 40 passed)
+TYPECHECK = clean
+BUILD = exit 0, 228/228
+
+L6_READY_FOR_FINAL_CONVERGENCE = YES
+```
+
+These are the lane's own results from unit tests, source assertions, typecheck and build. Nothing was run in a browser or against the L11 routes. CONCEPT_EXPLANATION_UX covers the Concept Mission disclosure and the add-concept step, not `ConceptList.tsx`.
