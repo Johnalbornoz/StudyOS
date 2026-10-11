@@ -6,6 +6,8 @@ import { listTeachers } from '@/lib/institution/institution-operations.service';
 import { listInstitutionClassesWithStaff } from '@/services/institution.service';
 import { InstitutionSubNav } from '../InstitutionSubNav';
 import { InviteTeacherForm, AssignClassForm, RowMenu, type MenuItem } from '../OpsActions';
+import { BulkInviteTeachersForm } from '../BulkAddForms';
+import { rosterMessages } from '@/lib/i18n/institution-roster-messages';
 
 const TONE: Record<string, string> = { APPROVED: 'chip chip-good', INVITED: 'chip chip-warn', PENDING: 'chip chip-warn', SUSPENDED: 'chip chip-critical', REJECTED: 'chip', REVOKED: 'chip' };
 
@@ -16,7 +18,7 @@ const TONE: Record<string, string> = { APPROVED: 'chip chip-good', INVITED: 'chi
  */
 export default async function InstitutionTeachersPage({ params }: { params: Promise<{ institutionId: string }> }) {
   const { institutionId } = await params;
-  const { t, tr, overview } = await institutionPageContext(institutionId);
+  const { t, tr, overview, locale } = await institutionPageContext(institutionId);
   const [teachers, classes] = await Promise.all([listTeachers(institutionId), listInstitutionClassesWithStaff(institutionId)]);
   const l = opsLabels(tr);
   const base = `/dashboard/institution/${institutionId}`;
@@ -32,6 +34,9 @@ export default async function InstitutionTeachersPage({ params }: { params: Prom
 
       <section className="card ta-card">
         <InviteTeacherForm institutionId={institutionId} l={l} />
+      </section>
+      <section className="card ta-card">
+        <BulkInviteTeachersForm institutionId={institutionId} l={rosterMessages(locale)} />
       </section>
 
       {teachers.length === 0 ? (
