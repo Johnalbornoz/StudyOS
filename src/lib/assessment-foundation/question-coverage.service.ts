@@ -19,7 +19,7 @@ export interface QuestionCoverageProvider {
 
 const pgArray = (v: unknown): string[] | null => (Array.isArray(v) ? (v as string[]) : null);
 
-type ContentCarrierFacts = Pick<ReviewedBankItemRow, 'itemConcepts' | 'itemRights' | 'stimulus' | 'assets'>;
+type ContentCarrierFacts = Pick<ReviewedBankItemRow, 'itemConcepts' | 'itemRights' | 'stimulus' | 'assets' | 'curriculumTrace'>;
 
 /**
  * Question Bank content-carrier facts of item versions: attribution, stimulus, assets and the rights of each
@@ -34,6 +34,7 @@ async function loadContentCarrierFacts(ids: readonly string[], client: DbExecuto
     client.query(`SELECT approved_item_id, canonical_concept_id, role FROM question_bank_item_concepts WHERE approved_item_id = ANY($1::uuid[]) ORDER BY approved_item_id, role, canonical_concept_id`, [ids]),
     client.query(
       `SELECT s.approved_item_id, s.position, v.id AS stimulus_version_id, v.stimulus_id, v.lifecycle_status, (st.current_version_id = v.id) AS is_current, (st.retired_at IS NOT NULL) AS retired,
+              st.kind, v.selection_min_items, v.selection_max_items,
               EXISTS (SELECT 1 FROM question_bank_stimulus_reviews r WHERE r.stimulus_version_id = v.id AND r.decision = 'APPROVED') AS approved
          FROM question_bank_item_stimulus s
          JOIN question_bank_stimulus_versions v ON v.id = s.stimulus_version_id
@@ -75,10 +76,38 @@ async function loadContentCarrierFacts(ids: readonly string[], client: DbExecuto
   for (const s of stimuli.rows as any[]) {
     factsOf(s.approved_item_id).stimulus = {
       stimulusId: s.stimulus_id, stimulusVersionId: s.stimulus_version_id, position: Number(s.position), lifecycle: s.lifecycle_status,
-      humanApproved: s.approved === true, isCurrentVersion: s.is_current === true, retired: s.retired === true, rights: rightsOf.get(`STIMULUS_VERSION:${s.stimulus_version_id}`) ?? null,
+      humanApproved: s.approved === true, isCurrentVersion: s.is_current === true, retired: s.retired === true,
+      // The group rule is the stimulus version's own: both NULL = whole (the schema allows no half-declared range).
+      kind: s.kind, selection: s.selection_min_items === null || s.selection_max_items === null ? null : { minItems: Number(s.selection_min_items), maxItems: Number(s.selection_max_items) },
+      rights: rightsOf.get(`STIMULUS_VERSION:${s.stimulus_version_id}`) ?? null,
     };
   }
   for (const a of assets.rows as any[]) factsOf(a.approved_item_id).assets!.push({ assetId: a.asset_id, lifecycle: a.lifecycle_status, rights: rightsOf.get(`ASSET:${a.asset_id}`) ?? null });
+  // Curriculum traceability (migration 20261111_1000). Where that table is not applied, no item is traced.
+  const traceReady = await client.query(`SELECT to_regclass('public.question_bank_item_curriculum_nodes') IS NOT NULL AS ready`);
+  if (traceReady.rows[0]?.ready === true) {
+    const traces = await client.query(
+      `SELECT l.approved_item_id, t.id AS node_id, t.node_type, t.status AS node_status, t.source AS node_source, t.structure_version_id, sv.status AS version_status,
+              p.id AS parent_id, p.node_type AS parent_type, p.status AS parent_status, p.source AS parent_source,
+              (t.structure_version_id = on_.structure_version_id) AS in_objective_version
+         FROM question_bank_item_curriculum_nodes l
+         JOIN structure_nodes t ON t.id = l.structure_node_id
+         JOIN structure_versions sv ON sv.id = t.structure_version_id
+         LEFT JOIN structure_nodes p ON p.id = t.parent_id
+         JOIN approved_items ai ON ai.id = l.approved_item_id
+         JOIN learning_objectives lo ON lo.id = ai.learning_objective_id
+         JOIN structure_nodes on_ ON on_.id = lo.structure_node_id
+        WHERE l.approved_item_id = ANY($1::uuid[])`,
+      [ids]
+    );
+    for (const x of traces.rows as any[]) {
+      factsOf(x.approved_item_id).curriculumTrace = {
+        nodeId: x.node_id, nodeType: x.node_type, nodeStatus: x.node_status, nodeSource: x.node_source ?? null,
+        parent: x.parent_id ? { nodeId: x.parent_id, nodeType: x.parent_type, status: x.parent_status, source: x.parent_source ?? null } : null,
+        structureVersionId: x.structure_version_id, structureVersionStatus: x.version_status, inObjectiveStructureVersion: x.in_objective_version === true,
+      };
+    }
+  }
   return out;
 }
 

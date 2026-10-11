@@ -212,8 +212,8 @@ describe('B5-D answers in progress', () => {
     }
     const service = code('src/lib/assessment-execution/assessment-draft.service.ts');
     expect((service.match(/\b(INSERT INTO|DELETE FROM|UPDATE(?! SET)) (\w+)/g) ?? []).sort()).toEqual(['DELETE FROM quiz_responses', 'INSERT INTO quiz_responses']);
-    // no new response model and no migration for it
-    expect(readdirSync(join(ROOT, 'database/migrations')).filter((f) => f > '20261111_1000_qb_item_curriculum_nodes.sql')).toEqual([]);
+    // no new response model and no migration for it: the only later migration is QB-R1C's approval trigger (Stage convergence)
+    expect(readdirSync(join(ROOT, 'database/migrations')).filter((f) => f > '20261111_1000_qb_item_curriculum_nodes.sql')).toEqual(['20261112_1000_qb_review_requires_primary_attribution.sql']);
   });
 
   it('every answer format survives save and restore', () => {

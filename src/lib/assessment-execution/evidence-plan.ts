@@ -200,6 +200,8 @@ function coverageOfFrozenItem(item: FrozenItem): QuestionCoverage {
     rights: [],
     stimulus: null,
     assets: [],
+    // not established for this frozen snapshot: never rebuilt from the live curriculum; pilot eligibility fails closed on null (CR-CONV-01)
+    curriculumTrace: null,
     usage: UNKNOWN,
     review: { lifecycle: UNKNOWN, humanReviewed: UNKNOWN },
     bankFacts: null,

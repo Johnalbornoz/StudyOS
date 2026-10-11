@@ -47,7 +47,7 @@ import OnboardingPage from '@/app/dashboard/onboarding/page';
 
 /** Simulates F1 state: roles held (after the allowlist grant) and the stored workspace. */
 function actor(opts: { email: string; roles: Array<'STUDENT' | 'PARENT' | 'ADMIN'>; stored?: 'STUDENT' | 'ADMIN' | null; allowlisted?: boolean }) {
-  h.currentUserMock.mockResolvedValue({ primaryEmailAddress: { emailAddress: opts.email }, emailAddresses: [] });
+  h.currentUserMock.mockResolvedValue({ primaryEmailAddressId: 'e1', primaryEmailAddress: { emailAddress: opts.email }, emailAddresses: [{ id: 'e1', emailAddress: opts.email, verification: { status: 'verified' } }] });
   h.getOrCreateCanonicalUserMock.mockResolvedValue({ id: 'user-1', status: 'ACTIVE' });
   const roles = [...opts.roles];
   h.bootstrapMock.mockImplementation(async () => {

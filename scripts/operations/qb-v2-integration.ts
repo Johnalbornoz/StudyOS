@@ -17,6 +17,7 @@ import { listBankVersions, loadVersionHealthInputs } from '@/lib/exam-core/quest
 import { enqueueManual } from '@/lib/exam-core/question-bank/queue.service';
 import { runFactory } from '@/lib/exam-core/question-bank/factory.service';
 import { factoryConfig, type FactoryConfig } from '@/lib/exam-core/question-bank/policy';
+import { setItemAttribution } from '@/lib/exam-core/question-bank/item-attribution.service';
 import { reviewVersion, correctVersion } from '@/lib/exam-core/question-bank/review.service';
 import { reviewQueue, questionDetail, exposureMetrics } from '@/lib/exam-core/question-bank/review-admin.service';
 import { versionDemand } from '@/lib/exam-core/question-bank/demand.service';
@@ -85,8 +86,38 @@ const cfg: FactoryConfig = { ...factoryConfig({ QUESTION_BANK_FACTORY_ENABLED: '
 async function main() {
   guard();
   process.env.AI_MAX_CALLS_PER_DAY = '5000';
-  const [editor, reviewer] = (await db.query(`SELECT id FROM users WHERE is_system ORDER BY created_at, id LIMIT 2`)).rows.map((r: any) => r.id);
   const paa = (await listBankVersions()).find((v) => v.configKey === 'v2.paa')!;
+  // Reviewer governance (20261110_1500): approvals in this certification are made by two PEOPLE the harness names
+  // explicitly, each holding a qualification that was granted through the operator procedure
+  // (qb-reviewer-qualification.ts grant) for the PAA cell reviewed here. Nothing is looked up, nobody is
+  // qualified by this script, and a system account is never used: without them the certification stops.
+  const named = (process.env.QB_CERT_REVIEWER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  if (named.length !== 2 || named[0] === named[1]) throw new Error('NO_QUALIFIED_REVIEWER: set QB_CERT_REVIEWER_IDS to the two human reviewer user ids that hold a PAA qualification for this cell (grant them with qb-reviewer-qualification.ts)');
+  const people = (await db.query(`SELECT u.id, u.is_system, (SELECT count(*)::int FROM question_bank_reviewer_qualifications q WHERE q.user_id = u.id AND q.exam_family = 'PAA' AND q.revoked_at IS NULL AND q.valid_from <= now() AND (q.valid_to IS NULL OR q.valid_to > now())) AS qualifications FROM users u WHERE u.id = ANY($1::uuid[])`, [named])).rows as Array<{ id: string; is_system: boolean; qualifications: number }>;
+  for (const id of named) {
+    const p = people.find((x) => x.id === id);
+    if (!p) throw new Error(`NO_QUALIFIED_REVIEWER: user ${id} does not exist`);
+    if (p.is_system) throw new Error(`NO_QUALIFIED_REVIEWER: user ${id} is a system account; a system account is never a qualified reviewer`);
+    if (p.qualifications === 0) throw new Error(`NO_QUALIFIED_REVIEWER: user ${id} holds no valid PAA qualification; grant one explicitly, this script creates none`);
+  }
+  const [editor, reviewer] = named;
+  // PRIMARY_ATTRIBUTION_BEFORE_APPROVAL: a reviewer establishes what a version is about before anybody approves it.
+  // The certification's fake items are all linear-equation stems, so that is the concept the reviewer names.
+  const linear = (await db.query(`SELECT cc.id FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id WHERE cs.name = 'Matemáticas' AND cc.name = 'Ecuaciones lineales' AND cc.status = 'ACTIVE'`)).rows[0]?.id as string | undefined;
+  if (!linear) throw new Error('NO_QUALIFIED_REVIEWER: the canonical concept the certification attributes is missing; apply the learning catalogue first');
+  const attribute = async (approvedItemId: string, reviewerUserId: string) => {
+    const tx = await db.connect();
+    try {
+      await tx.query('BEGIN');
+      await setItemAttribution(tx, { approvedItemId, reviewerUserId, primaryConceptId: linear, reason: 'certification: linear equation stem' });
+      await tx.query('COMMIT');
+    } catch (e) {
+      await tx.query('ROLLBACK');
+      throw e;
+    } finally {
+      tx.release();
+    }
+  };
 
   // ---------------- backfill of quality metadata ----------------
   check('BACKFILL.fixture-versions-full-usage-mock-ready', (await n(`SELECT count(*) n FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.provenance = 'FIXTURE' AND NOT (ai.usage_eligibility @> ARRAY['PRACTICE','REDUCED_MOCK','FULL_MOCK']::text[] AND ai.exam_alignment = 'MOCK_READY')`)) === 0);
@@ -128,8 +159,10 @@ async function main() {
   check('GATE.self-review-refused', await refused(() => reviewVersion({ versionId: g1, reviewerUserId: gen[0].created_by, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 3, usage: ['PRACTICE'], alignment: 'EXAM_STYLE' } }), /SELF_REVIEW/));
   check('OFFICIAL.reviewer-refused', await refused(() => reviewVersion({ versionId: g1, reviewerUserId: reviewer, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 3, usage: ['PRACTICE'], alignment: 'OFFICIAL' } }), /OFFICIAL_NOT_ALLOWED/));
   check('OFFICIAL.db-refused', await refused(() => db.query(`UPDATE approved_items SET exam_alignment = 'OFFICIAL' WHERE id = $1`, [g1]), /OFFICIAL_NEEDS_OFFICIAL_PROVENANCE/));
+  await attribute(g1, reviewer);
   const approvedMock = await reviewVersion({ versionId: g1, reviewerUserId: reviewer, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 4, usage: ['PRACTICE', 'QUIZ', 'REDUCED_MOCK'], alignment: 'MOCK_READY' } });
   check('GATE.approved-active-with-reviewer-metadata', approvedMock.lifecycle === 'ACTIVE' && (await n(`SELECT count(*) n FROM approved_items WHERE id = $1 AND bank_lifecycle_status = 'ACTIVE' AND validated_difficulty = 4 AND exam_alignment = 'MOCK_READY' AND 'REDUCED_MOCK' = ANY(usage_eligibility)`, [g1])) === 1);
+  await attribute(g2, reviewer);
   await reviewVersion({ versionId: g2, reviewerUserId: reviewer, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 2, usage: ['PRACTICE'], alignment: 'EXAM_STYLE' } });
   const rejected = await reviewVersion({ versionId: g3, reviewerUserId: reviewer, input: { decision: 'REJECTED', notes: 'El distractor C también puede defenderse.', validatedDifficulty: null, usage: null, alignment: null } });
   check('GATE.rejected', rejected.lifecycle === 'REJECTED');
@@ -138,6 +171,7 @@ async function main() {
   const fixed = await correctVersion({ versionId: g4, editorUserId: reviewer, patch: { question: 'Si g(t) = 3t - 5 con t real, ¿para qué valor de t se cumple que g(t) = 13?' }, notes: 'Se aclara el dominio de t.' });
   check('CORRECTION.new-version-validated-pilot', fixed.versionNumber === 2 && fixed.lifecycle === 'PILOT' && (await n(`SELECT count(*) n FROM approved_items WHERE id = $1 AND bank_lifecycle_status = 'SUPERSEDED'`, [g4])) === 1, fixed);
   check('CORRECTION.editor-cannot-certify-own-correction', await refused(() => reviewVersion({ versionId: fixed.versionId, reviewerUserId: reviewer, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 3, usage: ['PRACTICE'], alignment: 'EXAM_STYLE' } }), /SELF_REVIEW/));
+  await attribute(fixed.versionId, editor);
   const otherApproval = await reviewVersion({ versionId: fixed.versionId, reviewerUserId: editor, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 3, usage: ['PRACTICE'], alignment: 'EXAM_STYLE' } });
   check('CORRECTION.other-reviewer-approves', otherApproval.lifecycle === 'ACTIVE');
   check('AUDIT.reviews-and-events', (await n(`SELECT count(*) n FROM question_bank_reviews WHERE approved_item_id = ANY($1::uuid[])`, [[g1, g2, g3, g4, fixed.versionId]])) === 5 && (await n(`SELECT count(*) n FROM question_bank_lifecycle_events WHERE reason LIKE 'REVIEW:%' AND approved_item_id = ANY($1::uuid[])`, [[g1, g2, g3, g4, fixed.versionId]])) >= 5);
@@ -161,7 +195,7 @@ async function main() {
   const b1 = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: students[1], examProfileId: await profile(students[1]), examVersionId: paa.examVersionId, componentIds: comps, mode: 'MOCK' });
   const a2 = await createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: students[0], examProfileId: await profile(students[0]), examVersionId: paa.examVersionId, componentIds: comps, mode: 'MOCK' });
   // Minimum possible overlap per objective = max(0, need_first + need_second - eligible items).
-  const needs = (await db.query(`SELECT t.learning_objective_id lo, count(*)::int need FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id WHERE b.exam_version_id = $1 GROUP BY 1`, [paa.examVersionId])).rows;
+  const needs = (await db.query(`SELECT t.learning_objective_id lo, count(*)::int need FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id WHERE b.exam_version_id = $1 AND to_jsonb(b) ->> 'purpose' IS NULL GROUP BY 1`, [paa.examVersionId])).rows;
   const eligible = new Map<string, number>();
   for (const r of (await db.query(`SELECT ai.learning_objective_id lo, count(*)::int n FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('REDUCED_MOCK')} GROUP BY 1`)).rows) eligible.set(r.lo, r.n);
   const minOverlap = needs.reduce((s: number, r: any) => s + Math.max(0, 2 * r.need - (eligible.get(r.lo) ?? 0)), 0);

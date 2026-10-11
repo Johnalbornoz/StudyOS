@@ -1,6 +1,7 @@
 import { getSubscription } from './subscription.service';
 import type { Capability, SubscriptionStatus } from './types';
 import { resolveLearningAccess, isLearnerOwner } from './learning-access';
+import { resolveSelfReactivation } from './self-reactivation';
 
 export type { Capability, SubscriptionStatus, Plan, SubscriptionRecord } from './types';
 export { getSubscription, getEffectiveSubscription, ensureSubscription, transitionSubscriptionStatus } from './subscription.service';
@@ -58,7 +59,10 @@ async function canUseSubscriptionReactivate(actorUserId: string, learnerId: stri
   const canManage = await canUseBillingManage(actorUserId, learnerId);
   if (!canManage) return false;
   const sub = await getSubscription(learnerId);
-  return REACTIVATABLE_STATUSES.includes(sub.status);
+  if (!REACTIVATABLE_STATUSES.includes(sub.status)) return false;
+  // L4-R1: never a self-service undo of an administrator's suspension / revocation, and
+  // never access without an entitlement basis (see self-reactivation.ts).
+  return (await resolveSelfReactivation(sub)).allowed;
 }
 
 export async function canUseCapability(actorUserId: string, learnerId: string, capability: Capability): Promise<boolean> {

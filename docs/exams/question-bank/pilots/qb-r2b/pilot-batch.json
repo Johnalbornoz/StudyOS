@@ -1,0 +1,1251 @@
+{
+ "v": 2,
+ "batchKey": "qb-r2b-pilot-001",
+ "generatedAt": "2026-10-11T02:00:00Z",
+ "stimuli": [
+  {
+   "stimulusKey": "r2b.lect.huertos",
+   "kind": "PASSAGE",
+   "language": "es",
+   "provenance": "STUDYUS_GENERATED",
+   "parts": [
+    {
+     "label": null,
+     "partKind": "TEXT",
+     "text": "En muchas ciudades latinoamericanas, las azoteas y los patios traseros se han convertido en pequeños huertos. Lo que comenzó como un pasatiempo de unos cuantos vecinos es hoy una práctica extendida: familias enteras cultivan tomates, hierbas y lechugas en cajones de madera o en botellas recicladas. Quienes promueven estos huertos sostienen que sus beneficios van más allá del ahorro. Cuidar una planta exige constancia, y esa rutina, afirman, reduce el estrés y fortalece los lazos entre vecinos que intercambian semillas y consejos. Sin embargo, los especialistas advierten que un huerto urbano difícilmente abastece por completo a un hogar. El espacio es limitado, el agua cuesta y no todos los cultivos prosperan a la sombra de los edificios. Aun así, reconocen que estas iniciativas cumplen una función educativa valiosa: quienes siembran aprenden de dónde provienen sus alimentos y tienden a desperdiciar menos."
+    }
+   ]
+  },
+  {
+   "stimulusKey": "r2b.lect.tarde",
+   "kind": "POEM",
+   "language": "es",
+   "provenance": "STUDYUS_GENERATED",
+   "parts": [
+    {
+     "label": "I",
+     "partKind": "VERSE",
+     "text": "La tarde se deshace en el tejado\ncomo un terrón de azúcar en el té;\nel viento, niño inquieto, ha despeinado\nlos álamos que nadie ve."
+    },
+    {
+     "label": "II",
+     "partKind": "VERSE",
+     "text": "Regresa el día a su rincón callado,\nla sombra crece y no sé por qué\nel corazón, que estaba tan cansado,\nse pone, despacito, en pie."
+    }
+   ]
+  },
+  {
+   "stimulusKey": "r2b.red.vidrio",
+   "kind": "NUMBERED_TEXT",
+   "language": "es",
+   "provenance": "STUDYUS_GENERATED",
+   "parts": [
+    {
+     "label": null,
+     "partKind": "NUMBERED_TEXT",
+     "text": "(1) El reciclaje de vidrio es un proceso que se puede repetir una y otra vez de manera repetida sin que el material pierda calidad. (2) En la planta, las botellas se separan por color. (3) Luego se trituran. (4) Después se funden en hornos a altas temperaturas. (5) En la escuela se recolectaron botellas de refresco, frascos de mermelada, envases de salsa y vasos rotos. (6) La campaña fue un éxito. (7) Los estudiantes subieron arriba al segundo piso para entregar los envases."
+    }
+   ]
+  },
+  {
+   "stimulusKey": "r2b.ing.mobile-library",
+   "kind": "PASSAGE",
+   "language": "en",
+   "provenance": "STUDYUS_GENERATED",
+   "parts": [
+    {
+     "label": null,
+     "partKind": "TEXT",
+     "text": "Every Saturday morning, a brightly painted bus parks beside the market in San Rafael. Inside, instead of seats, there are shelves holding more than two thousand books. The mobile library was started six years ago by a retired teacher, Elena Ruiz, who noticed that the nearest public library was an hour away by road. At first, only a handful of children came. Today, more than a hundred readers of all ages borrow books each week, and volunteers offer free reading classes for adults. The town council recently offered to build a permanent library, but Ruiz has asked that the bus keep running as well. \"A building waits for people,\" she says. \"The bus goes to them.\""
+    }
+   ]
+  }
+ ],
+ "candidates": [
+  {
+   "v": 2,
+   "candidateKey": "r2b-L1",
+   "cellKey": "PRACTICE|001|read.vocabulary-in-context|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "En el texto, la palabra «prosperan» significa:",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "se enriquecen"
+    },
+    {
+     "id": "B",
+     "text": "se desarrollan bien"
+    },
+    {
+     "id": "C",
+     "text": "se comercializan"
+    },
+    {
+     "id": "D",
+     "text": "se marchitan"
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "En «no todos los cultivos prosperan a la sombra de los edificios», el verbo se refiere a que las plantas crecen y se desarrollan bien.",
+   "distractorRationales": {
+    "A": "Toma el sentido económico de «prosperar», que no se aplica a un cultivo.",
+    "C": "Confunde crecer con venderse; el texto no habla de comercio.",
+    "D": "Es el sentido contrario al del verbo."
+   },
+   "primaryConceptStableId": "read.vocabulary-in-context",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.lect.huertos",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-L2",
+   "cellKey": "DIAGNOSTIC|004|read.explicit-information|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "Según el texto, ¿qué advierten los especialistas sobre los huertos urbanos?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Que difícilmente abastecen por completo a un hogar."
+    },
+    {
+     "id": "B",
+     "text": "Que aumentan el estrés de quienes los cuidan."
+    },
+    {
+     "id": "C",
+     "text": "Que consumen más agua que la agricultura tradicional."
+    },
+    {
+     "id": "D",
+     "text": "Que solo sirven como pasatiempo."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "El texto lo afirma de manera literal: «los especialistas advierten que un huerto urbano difícilmente abastece por completo a un hogar».",
+   "distractorRationales": {
+    "B": "El texto dice lo contrario: la rutina de cuidar una planta reduce el estrés.",
+    "C": "El texto solo menciona que el agua cuesta; no la compara con la agricultura tradicional.",
+    "D": "El texto dice que comenzó como pasatiempo y que hoy cumple además una función educativa."
+   },
+   "primaryConceptStableId": "read.explicit-information",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.lect.huertos",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-L3",
+   "cellKey": "PRACTICE|008|read.inference|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "De la última oración del texto se puede inferir que quienes cultivan sus propios alimentos:",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "valoran más los alimentos porque conocen lo que cuesta producirlos."
+    },
+    {
+     "id": "B",
+     "text": "dejan de comprar alimentos en los mercados."
+    },
+    {
+     "id": "C",
+     "text": "producen más alimentos de los que consumen."
+    },
+    {
+     "id": "D",
+     "text": "prefieren los cultivos que crecen a la sombra."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "Si quienes siembran aprenden de dónde provienen sus alimentos y desperdician menos, se infiere que ese conocimiento los lleva a valorarlos más.",
+   "distractorRationales": {
+    "B": "Contradice el texto: un huerto difícilmente abastece por completo a un hogar.",
+    "C": "No hay nada en el texto que lo sugiera; el espacio es limitado.",
+    "D": "Mezcla un detalle anterior (la sombra de los edificios) que no se relaciona con la última oración."
+   },
+   "primaryConceptStableId": "read.inference",
+   "proposedSupportingConceptStableIds": [
+    "read.explicit-information"
+   ],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.lect.huertos",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-L4",
+   "cellKey": "VERIFICATION|007|read.central-idea|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "¿Cuál es la idea central del texto?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Los huertos urbanos no bastan para alimentar a un hogar, pero aportan beneficios sociales y educativos."
+    },
+    {
+     "id": "B",
+     "text": "Los huertos urbanos son una moda pasajera entre vecinos."
+    },
+    {
+     "id": "C",
+     "text": "Los especialistas rechazan los huertos urbanos por su alto costo."
+    },
+    {
+     "id": "D",
+     "text": "Las familias latinoamericanas ahorran dinero al cultivar sus alimentos."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "El texto presenta los beneficios que defienden sus promotores, el límite que señalan los especialistas y el valor educativo que estos reconocen; la opción A reúne esas tres partes.",
+   "distractorRationales": {
+    "B": "El texto dice que es una práctica extendida, no pasajera.",
+    "C": "Los especialistas advierten un límite, pero reconocen su valor; no los rechazan.",
+    "D": "Es un detalle parcial: el texto dice que los beneficios van más allá del ahorro."
+   },
+   "primaryConceptStableId": "read.central-idea",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.lect.huertos",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-L5",
+   "cellKey": "PRACTICE|020|lit.figurative-language|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "En los versos «La tarde se deshace en el tejado / como un terrón de azúcar en el té», el recurso literario predominante es:",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "el símil"
+    },
+    {
+     "id": "B",
+     "text": "la hipérbole"
+    },
+    {
+     "id": "C",
+     "text": "la anáfora"
+    },
+    {
+     "id": "D",
+     "text": "la onomatopeya"
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "Se compara de forma explícita, mediante «como», la manera en que termina la tarde con un terrón de azúcar que se disuelve.",
+   "distractorRationales": {
+    "B": "No hay exageración: la imagen es una comparación.",
+    "C": "La anáfora repite palabras al inicio de los versos, lo que no ocurre aquí.",
+    "D": "Ninguna palabra imita un sonido."
+   },
+   "primaryConceptStableId": "lit.figurative-language",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.lect.tarde",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-L6",
+   "cellKey": "DIAGNOSTIC|019|lit.poetic-elements|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "¿Cuál es el esquema de rima de la primera estrofa del poema?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "ABAB"
+    },
+    {
+     "id": "B",
+     "text": "ABBA"
+    },
+    {
+     "id": "C",
+     "text": "AABB"
+    },
+    {
+     "id": "D",
+     "text": "ABCB"
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "«tejado» rima con «despeinado» (versos 1 y 3) y «té» rima con «ve» (versos 2 y 4): rima alterna, ABAB.",
+   "distractorRationales": {
+    "B": "Exigiría que rimaran los versos 1 y 4, y 2 y 3.",
+    "C": "Exigiría que rimaran los versos 1 y 2, y 3 y 4.",
+    "D": "Supone que el verso 3 queda sin rima, pero «despeinado» rima con «tejado»."
+   },
+   "primaryConceptStableId": "lit.poetic-elements",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.lect.tarde",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-R1",
+   "cellKey": "PRACTICE|021|write.concision-elision|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "¿Cuál es la mejor versión de la oración 1, sin palabras innecesarias y sin cambiar su sentido?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "El reciclaje de vidrio puede repetirse indefinidamente sin que el material pierda calidad."
+    },
+    {
+     "id": "B",
+     "text": "El reciclaje de vidrio es un proceso que se puede repetir una y otra vez de manera repetida."
+    },
+    {
+     "id": "C",
+     "text": "El vidrio pierde calidad cuando se recicla una y otra vez."
+    },
+    {
+     "id": "D",
+     "text": "El reciclaje de vidrio es un proceso repetido que no pierde."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "Elimina la redundancia («una y otra vez de manera repetida») y la perífrasis («es un proceso que se puede») conservando toda la información.",
+   "distractorRationales": {
+    "B": "Mantiene la redundancia y elimina la idea de que el material no pierde calidad.",
+    "C": "Afirma lo contrario de la oración original.",
+    "D": "Queda incompleta: no dice qué es lo que no se pierde."
+   },
+   "primaryConceptStableId": "write.concision-elision",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.red.vidrio",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-R2",
+   "cellKey": "DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "En la oración 5, la enumeración «botellas de refresco, frascos de mermelada, envases de salsa y vasos rotos» puede sustituirse, sin alterar el sentido, por:",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "distintos objetos de vidrio"
+    },
+    {
+     "id": "B",
+     "text": "residuos de la cafetería"
+    },
+    {
+     "id": "C",
+     "text": "botellas vacías"
+    },
+    {
+     "id": "D",
+     "text": "materiales reciclables de todo tipo"
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "Todos los elementos enumerados son objetos de vidrio; el término general los abarca a todos y solo a ellos.",
+   "distractorRationales": {
+    "B": "El texto no dice de dónde provienen los objetos.",
+    "C": "Deja fuera los frascos, los envases y los vasos.",
+    "D": "Es demasiado amplio: incluiría papel, plástico o metal, que la oración no menciona."
+   },
+   "primaryConceptStableId": "write.generalization",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.red.vidrio",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-R3",
+   "cellKey": "PRACTICE|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "¿Cuál opción integra mejor las oraciones 2, 3 y 4 en una sola?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "En la planta, las botellas se separan por color, se trituran y se funden en hornos a altas temperaturas."
+    },
+    {
+     "id": "B",
+     "text": "En la planta, las botellas se funden, se separan por color y luego se trituran."
+    },
+    {
+     "id": "C",
+     "text": "En la planta, las botellas se separan por color porque se trituran en hornos."
+    },
+    {
+     "id": "D",
+     "text": "Las botellas se trituran en la planta a altas temperaturas."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "Reúne las tres acciones en el orden del texto y conserva todos los datos.",
+   "distractorRationales": {
+    "B": "Altera el orden del proceso.",
+    "C": "Introduce una relación de causa que el texto no establece y mezcla dos pasos.",
+    "D": "Omite la separación por color y la fundición, y atribuye la temperatura a la trituración."
+   },
+   "primaryConceptStableId": "write.global-synthesis",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.red.vidrio",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-R4",
+   "cellKey": "VERIFICATION|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "¿Qué información conviene añadir al final de la oración 6 para ampliarla de manera coherente con el texto?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": ", pues se reunieron más de doscientos envases en una semana."
+    },
+    {
+     "id": "B",
+     "text": ", aunque el plástico tarda siglos en degradarse."
+    },
+    {
+     "id": "C",
+     "text": ", porque los hornos alcanzan altas temperaturas."
+    },
+    {
+     "id": "D",
+     "text": ", y el director llegó tarde ese día."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "Añade un dato que explica y respalda la afirmación de que la campaña fue un éxito.",
+   "distractorRationales": {
+    "B": "Introduce otro material y una idea que no se relaciona con el éxito de la campaña.",
+    "C": "La temperatura de los hornos no explica el éxito de una campaña escolar.",
+    "D": "Es un dato irrelevante para la idea de la oración."
+   },
+   "primaryConceptStableId": "write.stylistic-addition",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.red.vidrio",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-R5",
+   "cellKey": "PRACTICE|025|write.indirect-expression|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "¿Cuál opción expresa la idea de la oración 6 de forma indirecta, mediante un hecho concreto?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Al terminar la semana, los contenedores de la escuela estaban llenos hasta el borde."
+    },
+    {
+     "id": "B",
+     "text": "La campaña fue todo un triunfo."
+    },
+    {
+     "id": "C",
+     "text": "Muchas campañas escolares fracasan."
+    },
+    {
+     "id": "D",
+     "text": "La campaña duró una semana."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "No dice que la campaña fue un éxito: lo deja entender a través de un hecho particular que lo muestra.",
+   "distractorRationales": {
+    "B": "Repite la idea de manera directa, con otras palabras.",
+    "C": "Es una afirmación general sobre otras campañas.",
+    "D": "Es un hecho concreto, pero no permite concluir que la campaña tuvo éxito."
+   },
+   "primaryConceptStableId": "write.indirect-expression",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.red.vidrio",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-R6",
+   "cellKey": "FULL_MOCK_1|021|write.concision-elision|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "En la oración 7, ¿qué palabra puede eliminarse sin cambiar el significado?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "arriba"
+    },
+    {
+     "id": "B",
+     "text": "segundo"
+    },
+    {
+     "id": "C",
+     "text": "entregar"
+    },
+    {
+     "id": "D",
+     "text": "envases"
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "«Subir» ya indica el movimiento hacia arriba: la palabra es redundante.",
+   "distractorRationales": {
+    "B": "Indica a qué piso subieron; sin ella se pierde información.",
+    "C": "Es el propósito de la acción.",
+    "D": "Es lo que entregaron."
+   },
+   "primaryConceptStableId": "write.concision-elision",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "r2b.red.vidrio",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-M1",
+   "cellKey": "PRACTICE|029|math.num.percent|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "Una tienda rebaja un pantalón de $80 000 a $68 000. ¿Qué porcentaje de descuento aplicó?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "12 %"
+    },
+    {
+     "id": "B",
+     "text": "15 %"
+    },
+    {
+     "id": "C",
+     "text": "17,6 %"
+    },
+    {
+     "id": "D",
+     "text": "85 %"
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "El descuento es de $12 000; 12 000 ÷ 80 000 = 0,15, es decir, 15 %.",
+   "distractorRationales": {
+    "A": "Lee el descuento en miles de pesos como si fuera el porcentaje.",
+    "C": "Divide el descuento entre el precio final (12 000 ÷ 68 000) en lugar del precio original.",
+    "D": "Es el porcentaje del precio que se paga, no el descuento."
+   },
+   "primaryConceptStableId": "math.num.percent",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-M2",
+   "cellKey": "DIAGNOSTIC|036|math.alg.linear-equations|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "Si 3x − 7 = 2x + 5, ¿cuál es el valor de x?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "−2"
+    },
+    {
+     "id": "B",
+     "text": "2,4"
+    },
+    {
+     "id": "C",
+     "text": "12"
+    },
+    {
+     "id": "D",
+     "text": "−12"
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "Al restar 2x y sumar 7 en ambos lados queda x = 12.",
+   "distractorRationales": {
+    "A": "Resta 7 de 5 en lugar de sumarlo al pasar el término al otro lado.",
+    "B": "Suma los coeficientes de x (5x = 12) en lugar de restarlos.",
+    "D": "Obtiene el valor correcto con el signo cambiado."
+   },
+   "primaryConceptStableId": "math.alg.linear-equations",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-M3",
+   "cellKey": "FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "Un mapa está dibujado a una escala en la que 4 cm representan 10 km. ¿Cuántos kilómetros representan 14 cm en ese mapa?",
+   "responseFormat": "STUDENT_PRODUCED",
+   "options": [],
+   "answerKey": "35",
+   "rationale": "Cada centímetro representa 2,5 km (10 ÷ 4); 14 × 2,5 = 35 km.",
+   "distractorRationales": {},
+   "primaryConceptStableId": "math.num.ratio-proportion",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-M4",
+   "cellKey": "PRACTICE|066|math.prob.counting|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "¿Cuántos números pares de tres cifras distintas pueden formarse con los dígitos 1, 2, 3, 4 y 5?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "24"
+    },
+    {
+     "id": "B",
+     "text": "60"
+    },
+    {
+     "id": "C",
+     "text": "12"
+    },
+    {
+     "id": "D",
+     "text": "50"
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "La última cifra debe ser 2 o 4 (2 opciones); para las otras dos cifras quedan 4 y 3 opciones: 2 × 4 × 3 = 24.",
+   "distractorRationales": {
+    "B": "Cuenta todos los números de tres cifras distintas (5 × 4 × 3), sin exigir que sean pares.",
+    "C": "Considera una sola cifra par para la última posición.",
+    "D": "Permite repetir cifras (5 × 5 × 2)."
+   },
+   "primaryConceptStableId": "math.prob.counting",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-M5",
+   "cellKey": "VERIFICATION|051|math.alg.linear-systems|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "En una papelería, 2 cuadernos y 3 lápices cuestan $9 000, y 1 cuaderno y 1 lápiz cuestan $4 000. ¿Cuánto cuesta un cuaderno?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "$1 000"
+    },
+    {
+     "id": "B",
+     "text": "$2 500"
+    },
+    {
+     "id": "C",
+     "text": "$3 000"
+    },
+    {
+     "id": "D",
+     "text": "$4 500"
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "De c + l = 4 000 se obtiene l = 4 000 − c; al sustituir en 2c + 3l = 9 000 resulta c = 3 000.",
+   "distractorRationales": {
+    "A": "Es el precio del lápiz.",
+    "B": "Resta las dos compras ($5 000) y divide entre 2, como si la diferencia correspondiera a dos cuadernos.",
+    "D": "Divide $9 000 entre los 2 cuadernos, sin contar los lápices."
+   },
+   "primaryConceptStableId": "math.alg.linear-systems",
+   "proposedSupportingConceptStableIds": [
+    "math.alg.linear-equations"
+   ],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-M6",
+   "cellKey": "PRACTICE|027|math.num.fractions-decimals|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "¿Cuál es el resultado de 3/4 − 1/6?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "1"
+    },
+    {
+     "id": "B",
+     "text": "7/12"
+    },
+    {
+     "id": "C",
+     "text": "1/5"
+    },
+    {
+     "id": "D",
+     "text": "11/12"
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "Con denominador común 12: 9/12 − 2/12 = 7/12.",
+   "distractorRationales": {
+    "A": "Resta numeradores y denominadores por separado y toma el resultado sin signo.",
+    "C": "Resta los numeradores y suma los denominadores (2/10).",
+    "D": "Suma las fracciones en lugar de restarlas."
+   },
+   "primaryConceptStableId": "math.num.fractions-decimals",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-E1",
+   "cellKey": "PRACTICE|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "Choose the option that best completes the sentence.\n\nShe ______ to school by bus every day.",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "go"
+    },
+    {
+     "id": "B",
+     "text": "goes"
+    },
+    {
+     "id": "C",
+     "text": "going"
+    },
+    {
+     "id": "D",
+     "text": "gone"
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "A habitual action with a third-person singular subject takes the simple present with -es.",
+   "distractorRationales": {
+    "A": "Base form: it does not agree with a third-person singular subject.",
+    "C": "The -ing form needs an auxiliary verb.",
+    "D": "The past participle needs an auxiliary verb."
+   },
+   "primaryConceptStableId": "efl.grammar.verb-forms",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-E2",
+   "cellKey": "DIAGNOSTIC|072|efl.grammar.function-words|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "Choose the option that best completes the sentence.\n\nThe meeting has been postponed ______ next Monday.",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "until"
+    },
+    {
+     "id": "B",
+     "text": "since"
+    },
+    {
+     "id": "C",
+     "text": "during"
+    },
+    {
+     "id": "D",
+     "text": "at"
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "'Postponed until' marks the point in time up to which something is delayed.",
+   "distractorRationales": {
+    "B": "'Since' marks the start of a period that continues to the present.",
+    "C": "'During' needs a period of time, not a point.",
+    "D": "'At' is used with clock times, not with days."
+   },
+   "primaryConceptStableId": "efl.grammar.function-words",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-E3",
+   "cellKey": "PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "Choose the option that best completes the sentence.\n\nAlthough the instructions seemed ______ at first, most students understood them after a second reading.",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "ambiguous"
+    },
+    {
+     "id": "B",
+     "text": "generous"
+    },
+    {
+     "id": "C",
+     "text": "reluctant"
+    },
+    {
+     "id": "D",
+     "text": "fragile"
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "The contrast with 'understood them after a second reading' calls for a word meaning unclear.",
+   "distractorRationales": {
+    "B": "'Generous' describes people or amounts, not instructions that are hard to understand.",
+    "C": "'Reluctant' describes an unwilling person.",
+    "D": "'Fragile' describes something easily broken."
+   },
+   "primaryConceptStableId": "efl.vocabulary",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-E4",
+   "cellKey": "PRACTICE|075|efl.reading.literal|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "According to the passage, why did Elena Ruiz start the mobile library?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "The nearest public library was far away."
+    },
+    {
+     "id": "B",
+     "text": "The town council asked her to do it."
+    },
+    {
+     "id": "C",
+     "text": "The market needed more visitors."
+    },
+    {
+     "id": "D",
+     "text": "The local schools had closed."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "The passage states that she 'noticed that the nearest public library was an hour away by road'.",
+   "distractorRationales": {
+    "B": "The council appears later, offering to build a permanent library.",
+    "C": "The bus parks beside the market, but the market is not the reason.",
+    "D": "The passage does not mention schools closing."
+   },
+   "primaryConceptStableId": "efl.reading.literal",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": "r2b.ing.mobile-library",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-E5",
+   "cellKey": "VERIFICATION|080|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "What does Ruiz most likely mean when she says, \"A building waits for people. The bus goes to them\"?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "A mobile library reaches readers who would not travel to a fixed one."
+    },
+    {
+     "id": "B",
+     "text": "A building is too expensive for a small town."
+    },
+    {
+     "id": "C",
+     "text": "The bus is faster than walking to the market."
+    },
+    {
+     "id": "D",
+     "text": "People in San Rafael prefer buses to libraries."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "She contrasts a fixed library, which readers must travel to, with a bus that brings books to where they are; that is why she wants it to keep running.",
+   "distractorRationales": {
+    "B": "Cost is not mentioned; the council has offered to build the library.",
+    "C": "The quotation is about access to books, not travel speed.",
+    "D": "The bus is itself a library; she is not comparing preferences."
+   },
+   "primaryConceptStableId": "efl.reading.interpretive",
+   "proposedSupportingConceptStableIds": [
+    "efl.reading.literal"
+   ],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": "r2b.ing.mobile-library",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "r2b-E6",
+   "cellKey": "PRACTICE|083|efl.writing.complex-sentences|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2b-pilot-001",
+   "stem": "Which sentence correctly combines the two ideas?\n\nThe road was closed. We took a longer route.",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "The road was closed, so we took a longer route."
+    },
+    {
+     "id": "B",
+     "text": "The road was closed, but we took a longer route."
+    },
+    {
+     "id": "C",
+     "text": "Because we took a longer route, the road was closed."
+    },
+    {
+     "id": "D",
+     "text": "The road was closed we took a longer route."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "'So' expresses the result: the closed road is the reason for the longer route.",
+   "distractorRationales": {
+    "B": "'But' signals a contrast, and the second idea is a consequence of the first.",
+    "C": "Reverses cause and effect.",
+    "D": "Joins two sentences with no connector or punctuation."
+   },
+   "primaryConceptStableId": "efl.writing.complex-sentences",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "in-session-authoring-v0",
+    "runId": "qb-r2b-pilot-001",
+    "requestedBy": "operator:q1-question-bank",
+    "generatedAt": "2026-10-11T02:00:00Z",
+    "humanEdits": []
+   }
+  }
+ ]
+}

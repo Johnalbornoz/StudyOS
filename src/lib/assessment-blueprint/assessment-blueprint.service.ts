@@ -6,7 +6,7 @@
  * route or by an existing selector -- B2 certifies the engine; enabling it at runtime is a later decision.
  */
 import { db, type DbExecutor } from '@/lib/db';
-import { loadQuestionCoverage } from '@/lib/assessment-foundation/question-coverage.service';
+import { loadQuestionCoverage, reviewedExamBankCoverageProvider } from '@/lib/assessment-foundation/question-coverage.service';
 import type { QuestionCoverage } from '@/lib/assessment-foundation/question-coverage';
 import { loadStudentAssessmentContext } from '@/lib/assessment-foundation/student-assessment-context.service';
 import type { IntentIssue } from '@/lib/assessment-foundation/student-assessment-context';
@@ -18,6 +18,7 @@ import { solveLearningBlueprint, type ExposureIndex } from './pipeline';
 import type { BlueprintSolution } from './result';
 import { evaluateFeasibility, type FeasibilityReport } from './readiness/feasibility';
 import { LOGICAL_POOLS, type LogicalPool, type PoolAssignments } from './protected/pools';
+import type { ProtectedSelectionFacts } from './protected/protected-runtime';
 
 /** B2_SELECTION_POLICY: a question delivered within this many days counts as recently seen. */
 export const RECENT_EXPOSURE_DAYS = 14;
@@ -116,7 +117,7 @@ export async function solveLearningForStudent(studentId: string, request: Learni
  */
 export async function evaluateExamVersionReadiness(examVersionId: string, client: DbExecutor = db): Promise<FeasibilityReport> {
   const [objectives, items, policy] = await Promise.all([
-    client.query(`SELECT DISTINCT t.learning_objective_id FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id WHERE b.exam_version_id = $1 ORDER BY 1`, [examVersionId]),
+    client.query(`SELECT DISTINCT t.learning_objective_id FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id WHERE b.exam_version_id = $1 AND b.purpose IS NULL ORDER BY 1`, [examVersionId]),
     client.query(`SELECT ai.id FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.exam_version_id = $1 AND qi.current_version_id = ai.id ORDER BY ai.id`, [examVersionId]),
     loadEvidenceCountPolicy(client),
   ]);
@@ -177,4 +178,52 @@ export async function loadReviewedBankPoolAssignments(examVersionId: string, cli
     out.set(key, [...(out.get(key) ?? []), row.pool as LogicalPool]);
   }
   return out;
+}
+
+/**
+ * B2-B2 -- the stimuli a Student has met, from the same delivery ledger. A stimulus is exposed when ANY
+ * version of ANY question ever asked about ANY of its versions was delivered to the Student -- including a
+ * question that is no longer a member of the group. Reported as stimulus ids and as every version of those
+ * stimuli (a frozen form records a version). Read-only; where the stimulus schema is absent nothing is exposed.
+ */
+export async function loadReviewedBankStimulusExposure(studentId: string, asOf: string, client: DbExecutor = db): Promise<ProtectedSelectionFacts['exposedStimuli']> {
+  const out = { stimulusIds: new Set<string>(), stimulusVersionIds: new Set<string>() };
+  const ready = await client.query(`SELECT to_regclass('public.question_bank_item_stimulus') IS NOT NULL AS ready`);
+  if (ready.rows[0]?.ready !== true) return out;
+  const r = await client.query(
+    `SELECT DISTINCT v.stimulus_id, every_version.id AS stimulus_version_id
+       FROM exam_item_usage u
+       JOIN approved_items seen ON seen.id = u.approved_item_id
+       JOIN approved_items sibling ON sibling.id = seen.id OR (seen.bank_item_id IS NOT NULL AND sibling.bank_item_id = seen.bank_item_id)
+       JOIN question_bank_item_stimulus s ON s.approved_item_id = sibling.id
+       JOIN question_bank_stimulus_versions v ON v.id = s.stimulus_version_id
+       JOIN question_bank_stimulus_versions every_version ON every_version.stimulus_id = v.stimulus_id
+      WHERE u.student_id = $1 AND u.used_at <= $2
+      ORDER BY 1, 2`,
+    [studentId, asOf]
+  );
+  for (const row of r.rows as Array<{ stimulus_id: string; stimulus_version_id: string }>) {
+    out.stimulusIds.add(row.stimulus_id);
+    out.stimulusVersionIds.add(row.stimulus_version_id);
+  }
+  return out;
+}
+
+/**
+ * B2-B2 -- the ONE read-only entry point of a protected selection: everything the pure selector needs about
+ * an exam version's reviewed bank (coverage with attribution / stimulus / rights, pool membership) and,
+ * when a Student is named, their exposure (items and stimuli) as of `asOf`.
+ *
+ * `studentId: null` = a fixed-form assembly: no exposure is read. Nothing is selected or written here, and
+ * no route calls it.
+ */
+export async function loadProtectedSelectionInputs(examVersionId: string, studentId: string | null, asOf: string, client: DbExecutor = db): Promise<ProtectedSelectionFacts> {
+  const items = await client.query(`SELECT ai.id FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.exam_version_id = $1 AND qi.current_version_id = ai.id ORDER BY ai.id`, [examVersionId]);
+  const [coverages, poolAssignments, exposure, exposedStimuli] = await Promise.all([
+    loadQuestionCoverage(items.rows.map((r: any) => ({ store: 'REVIEWED_EXAM_BANK' as const, id: r.id as string })), [reviewedExamBankCoverageProvider(client)]),
+    loadReviewedBankPoolAssignments(examVersionId, client),
+    studentId === null ? Promise.resolve<ExposureIndex>(new Map()) : loadReviewedBankExposure(studentId, asOf, client),
+    studentId === null ? Promise.resolve({ stimulusIds: new Set<string>(), stimulusVersionIds: new Set<string>() }) : loadReviewedBankStimulusExposure(studentId, asOf, client),
+  ]);
+  return { examVersionId, coverages, poolAssignments, exposure, exposedStimuli };
 }

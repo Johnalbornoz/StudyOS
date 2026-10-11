@@ -8,9 +8,10 @@
  *                             (Diagnostic, Verification, Reduced Mock, Full Mock 1, Full Mock 2)
  *
  * The rule is chosen by the blueprint's pool, so nothing changes for selections that do not go through a
- * protected pool. Exposure of a stimulus group and exposure by answer reveal are not available from the
- * current data: the first waits for Question Bank stimulus facts, the second is carried as an optional
- * fact that no source fills yet.
+ * protected pool. Exposure of a stimulus group is the group's (B2-B2): any of its questions delivered, in any
+ * version, exposes the whole set -- derived in `selection-unit` from the same per-item facts plus the stimuli
+ * the delivery ledger shows the Student has met. Exposure by answer reveal is carried as an optional fact
+ * that no source fills yet.
  */
 import type { ExposureFacts } from '../solver/candidate';
 import { PROTECTED_POOLS, type LogicalPool } from './pools';

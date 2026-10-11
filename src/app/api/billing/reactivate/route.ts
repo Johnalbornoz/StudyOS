@@ -17,6 +17,7 @@ import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability, getSubscription, transitionSubscriptionStatus, InvalidSubscriptionTransitionError } from '@/lib/entitlements';
+import { resolveSelfReactivation, recordSelfReactivation } from '@/lib/entitlements/self-reactivation';
 
 const Schema = z.object({ studentId: z.string().uuid() });
 
@@ -36,10 +37,17 @@ export async function POST(request: NextRequest) {
   if (!entitled) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const sub = await getSubscription(validated.studentId);
-  const nextStatus = sub.status === 'suspended' ? 'reactivated' : sub.status === 'past_due' ? 'active' : null;
-  if (!nextStatus) {
-    return NextResponse.json({ error: 'NOT_REACTIVATABLE', currentStatus: sub.status }, { status: 409 });
+  // L4-R1: owning (or paying for) the subscription is not enough. An administrator's
+  // suspension / revocation is never reversed from here, and a suspended subscription
+  // needs a real entitlement basis -- see src/lib/entitlements/self-reactivation.ts.
+  const decision = await resolveSelfReactivation(sub);
+  if (!decision.allowed) {
+    if (decision.reason === 'NOT_REACTIVATABLE') {
+      return NextResponse.json({ error: 'NOT_REACTIVATABLE', currentStatus: sub.status }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'REACTIVATION_NOT_PERMITTED', reason: decision.reason }, { status: 403 });
   }
+  const nextStatus = decision.nextStatus;
 
   try {
     await transitionSubscriptionStatus(validated.studentId, nextStatus);
@@ -50,5 +58,6 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 
+  await recordSelfReactivation(sub, actor.id, nextStatus);
   return NextResponse.json({ success: true, data: { status: nextStatus } });
 }

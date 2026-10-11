@@ -41,7 +41,7 @@ const reasons = (over: Partial<ReviewedBankItemRow> = {}) => {
   const v = verdict(over);
   return v.eligible ? [] : v.reasons;
 };
-const activeStimulus = { stimulusId: 'stim-1', stimulusVersionId: 'sv-1', position: 1, lifecycle: 'ACTIVE', humanApproved: true, isCurrentVersion: true, retired: false, rights: owned };
+const activeStimulus = { stimulusId: 'stim-1', stimulusVersionId: 'sv-1', position: 1, lifecycle: 'ACTIVE', humanApproved: true, isCurrentVersion: true, retired: false, kind: 'PASSAGE', selection: null, rights: owned };
 
 describe('B2-B1 rights -- publicly accessible is not reusable', () => {
   it('a publicly accessible source with no reuse right is INELIGIBLE', () => {
@@ -286,8 +286,21 @@ describe('B2-B1 blueprint variants and frozen forms', () => {
   it('this phase wires nothing: no route, start path or existing blueprint reader uses the new schema', () => {
     const walk = (dir: string): string[] => readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.ts') || e.name.endsWith('.tsx') ? [`${dir}/${e.name}`] : []));
     const users = walk('src').filter((f) => /assessment_frozen_form|frozen_form_id|assessment_blueprint_requirements|question_bank_pool_memberships|question_bank_content_rights|question_bank_item_concepts|question_bank_stimul/.test(read(f)));
-    // the two read-only loaders, and the contract file that names the tables in its documentation
-    expect(users.sort()).toEqual(['src/lib/assessment-blueprint/assessment-blueprint.service.ts', 'src/lib/assessment-foundation/question-coverage.service.ts', 'src/lib/assessment-foundation/question-coverage.ts']);
+    // the two read-only loaders, and the contract file that names the tables in its documentation.
+    // B2-B2 adds the B2 persistence adapter (the only writer, of B2-owned tables), its refusal names, and the frozen-form contract's note on `form_hash`.
+    expect(users.sort()).toEqual([
+      'src/lib/assessment-blueprint/assessment-blueprint.service.ts',
+      'src/lib/assessment-blueprint/protected/blueprint-persistence.service.ts',
+      'src/lib/assessment-blueprint/protected/frozen-form.ts',
+      'src/lib/assessment-blueprint/protected/persistence-errors.ts',
+      'src/lib/assessment-foundation/question-coverage.service.ts',
+      'src/lib/assessment-foundation/question-coverage.ts',
+      'src/lib/exam-core/question-bank/item-attribution.service.ts',
+      'src/lib/exam-core/question-bank/reviewer-qualification.service.ts',
+    ]);
+    // still no route and no start path: nothing under src/app touches the schema, and nothing outside the B2 module imports the adapter
+    expect(users.some((f) => f.startsWith('src/app/'))).toBe(false);
+    expect(walk('src').filter((f) => !f.startsWith('src/lib/assessment-blueprint/') && /blueprint-persistence\.service|loadProtectedSelectionInputs/.test(read(f)))).toEqual([]);
     expect(read('src/lib/assessment-foundation/question-coverage.ts')).not.toMatch(/\bquery\(|from '@\/lib\/db'/);
   });
 });

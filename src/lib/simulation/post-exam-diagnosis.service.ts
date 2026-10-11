@@ -40,7 +40,7 @@ export async function runPostExamDiagnosis(examAttemptId: string, studentId: str
     if (!studentConceptId) continue;
 
     const targetRow = await db.query(
-      `SELECT skill_id, command_term_id FROM blueprint_objective_targets WHERE learning_objective_id = $1 AND assessment_component_id = $2 LIMIT 1`,
+      `SELECT skill_id, command_term_id FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id AND b.purpose IS NULL WHERE t.learning_objective_id = $1 AND t.assessment_component_id = $2 LIMIT 1`,
       [row.learning_objective_id, row.assessment_component_id]
     );
     const skillId = targetRow.rows[0]?.skill_id ?? undefined;

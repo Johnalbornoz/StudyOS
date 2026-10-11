@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
-import { isAdminEmail, getStudentById } from '@/services/admin.service';
+import { getStudentById } from '@/services/admin.service';
+import { isAllowlistedAdminUser } from '@/lib/admin/admin-identity';
 import { getChildOverview } from '@/services/parent.service';
 import { getSubscriptionStatus } from '@/services/payment.service';
 import AdminSubjectRow from './AdminSubjectRow';
@@ -13,8 +14,7 @@ import PaymentStatusEditor from './PaymentStatusEditor';
 export default async function AdminStudentDetailPage({ params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params;
   const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
-  if (!isAdminEmail(email)) {
+  if (!isAllowlistedAdminUser(user)) {
     redirect('/dashboard');
   }
 

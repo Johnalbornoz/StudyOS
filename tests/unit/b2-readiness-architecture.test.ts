@@ -215,15 +215,36 @@ const B2_DIR = join(ROOT, 'src/lib/assessment-blueprint');
 const B2_FILES = walk(B2_DIR);
 
 describe('B2 architecture', () => {
-  it('B2 writes nothing: no mutation SQL, no evidence / mastery writer, no persistence of a snapshot', () => {
+  // B2-B2: ONE file of the module writes -- the persistence adapter -- and only the tables B2 owns.
+  const PERSISTENCE_ADAPTER = 'protected/blueprint-persistence.service.ts';
+  const B2_OWNED_TABLES = ['assessment_blueprints', 'assessment_blueprint_requirements', 'assessment_blueprint_requirement_sources', 'assessment_frozen_forms', 'assessment_frozen_form_positions'];
+
+  it('B2 writes no evidence, mastery or snapshot; mutation SQL exists only in the persistence adapter', () => {
     for (const f of B2_FILES) {
       const code = stripComments(readFileSync(f, 'utf8'));
-      expect(code, f).not.toMatch(/\b(INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|ON\s+CONFLICT)\b/i);
+      if (!f.endsWith(PERSISTENCE_ADAPTER)) expect(code, f).not.toMatch(/\b(INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|ON\s+CONFLICT)\b/i);
       expect(code, f).not.toMatch(/updateMastery|recordEvidence|learning_evidence|writeEvidence|\.connect\(/);
     }
-    // IO lives in exactly one file
-    const withIo = B2_FILES.filter((f) => /^import (?!type\b)[^;]*?from '[^']*(@\/lib\/db|\.service)';/m.test(stripComments(readFileSync(f, 'utf8')))).map((f) => f.replace(`${B2_DIR}/`, ''));
-    expect(withIo).toEqual(['assessment-blueprint.service.ts']);
+    // IO lives in exactly two files: the read-only loaders and the persistence adapter
+    const withIo = B2_FILES.filter((f) => /^import (?!type\b)[^;]*?from '[^']*(@\/lib\/db|\.service)';/m.test(stripComments(readFileSync(f, 'utf8')))).map((f) => f.replace(`${B2_DIR}/`, '')).sort();
+    expect(withIo).toEqual(['assessment-blueprint.service.ts', PERSISTENCE_ADAPTER]);
+  });
+
+  it('the persistence adapter writes only the five B2-owned tables: never a Question Bank table, never a legacy blueprint, never an instance', () => {
+    const code = stripComments(read(`src/lib/assessment-blueprint/${PERSISTENCE_ADAPTER}`));
+    const written = [...code.matchAll(/\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?:public\.)?([a-z_]+)/g)].map((m) => m[1]);
+    expect(written.length).toBeGreaterThanOrEqual(6);
+    expect([...new Set(written)].sort()).toEqual([...B2_OWNED_TABLES].sort());
+    expect(written.some((t) => t.startsWith('question_bank_') || t === 'approved_items' || t === 'exam_instances' || t === 'exam_item_usage')).toBe(false);
+    expect(code).not.toMatch(/ON\s+CONFLICT|TRUNCATE|ALTER\s+TABLE|DROP\s+|DISABLE\s+TRIGGER|session_replication_role/i);
+    // every blueprint row it inserts or updates is a variant: the legacy blueprint (purpose NULL) is never written or returned
+    expect(code).toMatch(/INSERT INTO assessment_blueprints \(exam_version_id, purpose, form_number, revision, pool\)/);
+    for (const m of code.matchAll(/UPDATE assessment_blueprints[^`]*`/g)) expect(m[0]).toMatch(/purpose IS NOT NULL/);
+    for (const m of code.matchAll(/(?:FROM|JOIN) assessment_blueprints[^`]*`/g)) expect(m[0]).toMatch(/purpose IS NOT NULL/);
+    // it reads no Question Bank fact either: positions come from the pure form, candidates from B1 coverage
+    expect(code).not.toMatch(/question_bank_|approved_items|reuse_rights|content_rights/);
+    // writers take the caller's transaction (no default executor) and decide no rights or eligibility
+    for (const fn of ['createDraftVariant', 'publishVariant', 'createDraftFrozenForm', 'publishFrozenForm', 'discardDraftFrozenForm']) expect(code).toMatch(new RegExp(`export async function ${fn}\\(tx: DbExecutor,`));
   });
 
   it('no runtime cutover: nothing outside the module imports it', () => {
@@ -264,7 +285,8 @@ describe('B2 architecture', () => {
 
   it('the B2 core added no migration; B2-B1 adds exactly the eight persistence migrations after the B1-E one', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    expect(migrations.filter((f) => f < '20261112')).toHaveLength(81);
+    // CURR-PAA added the curriculum-node link (20261111_1000) after them.
+    expect(migrations.filter((f) => f < '20261110_1800')).toHaveLength(79);
     expect(migrations[70]).toBe('20261109_1000_simulation_type_challenge_reduced_mock.sql');
     // ... followed by B3's assessment snapshot column, renumbered after the B2-B1 set (B5-R), then CURR-PAA's curriculum-node link.
     expect(migrations.slice(71, 79)).toEqual(['20261110_1000_qb_provenance_rights_content_sources.sql', '20261110_1100_qb_asset_registry.sql', '20261110_1200_qb_stimuli.sql', '20261110_1300_qb_item_concept_attribution.sql', '20261110_1400_qb_pool_memberships.sql', '20261110_1500_qb_review_authority_originality.sql', '20261110_1600_assessment_blueprint_variants.sql', '20261110_1700_assessment_frozen_forms.sql']);
@@ -272,6 +294,8 @@ describe('B2 architecture', () => {
     // deferred by decision: answer reveal (migration 9) and the curriculum-node link (migration 10)
     const all = migrations.slice(71, 79).map((f) => readFileSync(join(ROOT, 'database/migrations', f), 'utf8').replace(/^\s*--.*$/gm, '')).join('\n');
     expect(all).not.toMatch(/exam_answer_reveals|question_bank_item_curriculum_nodes/);
+    // 20261110_1800 (assessment snapshot column) comes from the B5 line; it sorts between the eight and the curriculum link.
+    expect(migrations.filter((f) => f >= '20261110_1800')).toEqual(['20261110_1800_assessment_snapshot.sql', '20261111_1000_qb_item_curriculum_nodes.sql', '20261112_1000_qb_review_requires_primary_attribution.sql']);
   });
 
   it('the B1 authorities are consumed, not redefined', () => {

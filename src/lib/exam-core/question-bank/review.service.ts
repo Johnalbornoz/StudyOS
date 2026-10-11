@@ -10,6 +10,7 @@
  * Request correction -> REVIEW_REQUIRED; Reject -> REJECTED (excluded from every use).
  * Every decision is an append-only `question_bank_reviews` row + a lifecycle audit event.
  */
+import { requireReviewerQualification, reviewerGovernanceActive } from './reviewer-qualification.service';
 import type { PoolClient } from 'pg';
 import { db } from '@/lib/db';
 import { createNextVersion, transitionVersion } from './bank.service';
@@ -50,7 +51,7 @@ export async function reviewVersion(p: { versionId: string; reviewerUserId: stri
       `SELECT ai.id, ai.bank_item_id, ai.bank_lifecycle_status, ai.created_by, ai.validation_report, ai.learning_objective_id, ai.content, qi.provenance, qi.item_key,
               (SELECT gr.generation_params->'pilot'->'reviewChecklist' FROM question_bank_generation_requests gr WHERE gr.id = qi.generation_request_id) AS required_checklist,
               (SELECT gr.generation_params->'pilot'->>'batch' FROM question_bank_generation_requests gr WHERE gr.id = qi.generation_request_id) AS pilot_batch,
-              EXISTS (SELECT 1 FROM blueprint_objective_targets t WHERE t.learning_objective_id = ai.learning_objective_id) AS in_cell
+              EXISTS (SELECT 1 FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id AND b.purpose IS NULL WHERE t.learning_objective_id = ai.learning_objective_id) AS in_cell
          FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE ai.id = $1 FOR UPDATE OF ai`,
       [p.versionId]
     );
@@ -65,6 +66,10 @@ export async function reviewVersion(p: { versionId: string; reviewerUserId: stri
       p.reviewerUserId
     );
     const decision = p.input.decision;
+    // Reviewer governance (20261110_1500): an approval needs a qualified person. Checked here so the refusal is
+    // a named one before anything is written; the database enforces the same rule on the insert below. There is
+    // no alternative path -- not for an administrator, not for a system account, not for an old item.
+    if (decision === 'APPROVED' && (await reviewerGovernanceActive(c))) await requireReviewerQualification(c, { approvedItemId: p.versionId, reviewerUserId: p.reviewerUserId });
     const assessment = pilot ? PilotReviewAssessmentSchema.parse(p.input.assessment) : null;
     // Pilot: the validated difficulty IS the reviewer's StudyUs difficulty (never a pre-filled default).
     const validatedDifficulty = assessment ? difficultyInternal(assessment.reviewedDifficulty) : p.input.validatedDifficulty;

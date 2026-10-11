@@ -77,7 +77,7 @@ import DashboardLayout from '@/app/dashboard/layout';
 beforeEach(() => {
   redirectMock.mockClear();
   authMock.mockReset().mockResolvedValue({ userId: 'clerk-user-1' });
-  currentUserMock.mockReset().mockResolvedValue({ firstName: 'Ana', primaryEmailAddress: { emailAddress: 'ana@test.com' }, emailAddresses: [] });
+  currentUserMock.mockReset().mockResolvedValue({ firstName: 'Ana', primaryEmailAddressId: 'e1', primaryEmailAddress: { emailAddress: 'ana@test.com' }, emailAddresses: [{ id: 'e1', emailAddress: 'ana@test.com', verification: { status: 'verified' } }] });
   isAdminEmailMock.mockReset().mockReturnValue(false);
   getOrCreateStudentIdMock.mockReset().mockResolvedValue('student-1');
   getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'user-1', status: 'ACTIVE', activeWorkspace: null });

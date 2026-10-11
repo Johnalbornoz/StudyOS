@@ -8,8 +8,9 @@
  *     -> shared deterministic solver
  *     -> BlueprintResult (+ audit snapshot)
  *
- * It reads the authorities B1 fixed and owns none of them. It writes nothing: no evidence, no mastery, no
- * attempt, no assessment row. No route or runtime selector calls it yet (no cutover).
+ * It reads the authorities B1 fixed and owns none of them. It writes no evidence, no mastery, no attempt and
+ * no assessment row; the one thing it persists is what it owns -- blueprint variants and frozen forms
+ * (`protected/blueprint-persistence.service`). No route or runtime selector calls it yet (no cutover).
  */
 export * from './solver/candidate';
 export * from './solver/plan';
@@ -31,3 +32,7 @@ export * from './protected/selection-unit';
 export * from './protected/diagnostic';
 export * from './protected/frozen-form';
 export * from './protected/protected-selection';
+// B2-B2: units from Question Bank facts, persisted variants -> protected selection, typed persistence refusals.
+// The persistence adapter itself (`protected/blueprint-persistence.service`) is IO and is imported by path, like the loaders.
+export * from './protected/protected-runtime';
+export * from './protected/persistence-errors';

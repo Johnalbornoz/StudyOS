@@ -78,7 +78,7 @@ async function main() {
              EXISTS (SELECT 1 FROM score_conversion_models s WHERE s.exam_version_id = ev.id AND s.status IN ('ACTIVE', 'PUBLISHED')) AS projection
         FROM exam_versions ev JOIN exam_definitions d ON d.id = ev.exam_definition_id
         LEFT JOIN scoring_models sm ON sm.id = ev.scoring_model_id
-        LEFT JOIN assessment_blueprints bp ON bp.exam_version_id = ev.id
+        LEFT JOIN assessment_blueprints bp ON bp.exam_version_id = ev.id AND to_jsonb(bp) ->> 'purpose' IS NULL -- the legacy blueprint; a variant is never certified through this reader
        WHERE ev.status = 'PUBLISHED' AND d.status IN ('ACTIVE', 'DRAFT') ${opt('--exam') ? 'AND d.config_key = $1' : ''}
        ORDER BY d.exam_family, d.config_key NULLS LAST, ev.version_label`, opt('--exam') ? [opt('--exam')] : [])).rows;
 

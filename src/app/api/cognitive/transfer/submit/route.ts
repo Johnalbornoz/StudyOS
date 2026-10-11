@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { verifyAuth, verifyStudentAccess, verifyRemediationStepAccess } from '@/lib/auth';
 import { evaluateTransferResponse, type TransferDistance } from '@/services/transfer.service';
 import { updateMastery } from '@/services/mastery.service';
 import { completeRemediationStep } from '@/services/remediation.service';
@@ -50,6 +50,13 @@ async function handlePOST(request: NextRequest) {
     const validated = Schema.parse(await request.json());
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+    // L4-R1: a remediation step named by the client must belong to THIS student's own
+    // remediation path -- checked before anything is graded or written, so another
+    // student's step can never be completed from here (same rule as explain/submit).
+    if (validated.remediationStepId && !(await verifyRemediationStepAccess(validated.studentId, validated.remediationStepId))) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
 
     // Human Agency P0-4 (Layer B): deterministic safety gate FIRST -- before any
     // other check and before any model call.

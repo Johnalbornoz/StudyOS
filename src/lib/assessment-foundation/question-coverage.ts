@@ -85,6 +85,32 @@ export interface StimulusFact {
   humanApproved: boolean;
   isCurrentVersion: boolean;
   retired: boolean;
+  /** The kind of set, as the Question Bank names it (`question_bank_stimuli.kind`: PASSAGE, PAIRED_PASSAGE, TABLE ...). */
+  kind: string;
+  /**
+   * How many of the group's questions a form may take (`selection_min_items` / `selection_max_items` of the
+   * stimulus version). null = the group is taken whole. B1 reports the rule; B2 applies it.
+   */
+  selection: { minItems: number; maxItems: number } | null;
+}
+
+/**
+ * Where the item version sits in the curriculum hierarchy (`question_bank_item_curriculum_nodes`): the one
+ * node it is linked to and that node's direct parent, as stored. Nothing here is derived from a name or from
+ * the text of an objective. null on the coverage = the version has no link (every legacy item).
+ */
+export interface CurriculumTraceFact {
+  nodeId: string;
+  nodeType: string;
+  /** `structure_nodes.status` of the linked node, as stored. */
+  nodeStatus: string;
+  /** `structure_nodes.source` of the linked node (a Topic's authority: OFFICIAL / STUDYUS_POLICY). */
+  nodeSource: string | null;
+  parent: { nodeId: string; nodeType: string; status: string; source: string | null } | null;
+  structureVersionId: string;
+  structureVersionStatus: string;
+  /** The linked node is in the structure version of the item's own learning objective. */
+  inObjectiveStructureVersion: boolean;
 }
 
 /** A figure / graph the item version depends on, directly or through its stimulus. */
@@ -152,6 +178,7 @@ export interface QuestionCoverage {
   rights: ContentRightsFact[];
   stimulus: StimulusFact | null;
   assets: AssetFact[];
+  curriculumTrace: CurriculumTraceFact | null;
   usage: Known<{ eligibility: string[] | null; examAlignment: string | null }>;
   review: {
     lifecycle: Known<string>;
@@ -196,6 +223,8 @@ export interface ReviewedBankItemRow {
   itemRights?: RightsRecord | null;
   stimulus?: (StimulusFact & { rights: RightsRecord | null }) | null;
   assets?: Array<AssetFact & { rights: RightsRecord | null }>;
+  /** The version's curriculum-node link. null / absent = none exists. */
+  curriculumTrace?: CurriculumTraceFact | null;
 }
 
 export type RightsRecord = Pick<ContentRightsFact, 'sourceAccess' | 'reuseRights' | 'inForce'>;
@@ -266,8 +295,9 @@ export function coverageOfReviewedBankItem(row: ReviewedBankItemRow): QuestionCo
     provenance,
     licensing: row.sourceIds && row.sourceIds.length > 0 ? known({ statuses: [...new Set(row.sourceLicenses)], sourceIds: [...row.sourceIds] }) : UNKNOWN,
     rights,
-    stimulus: stimulus ? { stimulusId: stimulus.stimulusId, stimulusVersionId: stimulus.stimulusVersionId, position: stimulus.position, lifecycle: stimulus.lifecycle, humanApproved: stimulus.humanApproved, isCurrentVersion: stimulus.isCurrentVersion, retired: stimulus.retired } : null,
+    stimulus: stimulus ? { stimulusId: stimulus.stimulusId, stimulusVersionId: stimulus.stimulusVersionId, position: stimulus.position, lifecycle: stimulus.lifecycle, humanApproved: stimulus.humanApproved, isCurrentVersion: stimulus.isCurrentVersion, retired: stimulus.retired, kind: stimulus.kind, selection: stimulus.selection ? { ...stimulus.selection } : null } : null,
     assets: assets.map((a) => ({ assetId: a.assetId, lifecycle: a.lifecycle })),
+    curriculumTrace: row.curriculumTrace ?? null,
     usage: known({ eligibility: row.usageEligibility, examAlignment: row.examAlignment }),
     review: { lifecycle: knownOrUnknown(row.bankLifecycleStatus), humanReviewed: known(row.humanReviewDecisions > 0) },
     bankFacts,
@@ -321,6 +351,7 @@ export function coverageOfLearningCacheItem(row: LearningCacheItemRow): Question
     rights: [],
     stimulus: null,
     assets: [],
+    curriculumTrace: null,
     usage: NOT_APPLICABLE,
     review: { lifecycle: NOT_APPLICABLE, humanReviewed: known(false) },
     bankFacts: null,

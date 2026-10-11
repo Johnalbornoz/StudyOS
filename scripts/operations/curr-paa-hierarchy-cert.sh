@@ -11,6 +11,7 @@
 #   -> seeds again: the bootstrap finds the moved objectives and creates no twin
 #   -> rollback of 20261111_1000 (documented), then re-apply
 #
+#   EXTRA_MIGRATIONS="/path/a.sql /path/b.sql" adds migrations another line already applied to the target environment.
 # Usage: PG_BIN=/opt/homebrew/opt/postgresql@18/bin ./scripts/operations/curr-paa-hierarchy-cert.sh [workdir]
 
 set -euo pipefail
@@ -79,6 +80,11 @@ mkdir -p "$PRE/database/migrations"
 for f in "$REPO_ROOT"/database/migrations/*.sql; do
   [[ "$(basename "$f")" < "$MIGRATION" ]] && cp "$f" "$PRE/database/migrations/"
 done
+# Optional: migrations another line has already applied to the target environment (files not in this checkout).
+# They are applied before this phase's migration, so the certified state matches that environment's ledger.
+if [[ -n "${EXTRA_MIGRATIONS:-}" ]]; then
+  for f in $EXTRA_MIGRATIONS; do cp "$f" "$PRE/database/migrations/"; echo "extra migration in the prior chain: $(basename "$f")"; done
+fi
 echo "--- [1] chain up to 20261110_1700 ($(ls "$PRE/database/migrations" | wc -l | tr -d ' ') files) + seeds: the state before this phase"
 (cd "$PRE" && "${TSX[@]}" "$REPO_ROOT/scripts/db-migrate.ts" 2>&1 | tail -1)
 seed

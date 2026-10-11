@@ -17,6 +17,7 @@
  */
 import { currentUser } from '@clerk/nextjs/server';
 import { bootstrapStudyUSAdminIfEligible } from '@/lib/admin/authorization';
+import { resolveVerifiedPrimaryEmail } from '@/lib/admin/admin-identity';
 import { ADMIN_HOME } from '@/lib/admin/sections';
 import { getOrCreateCanonicalUser } from './canonical-user.service';
 import { getActiveWorkspace, resolveAvailableWorkspaces, resolveDefaultWorkspace } from './workspace.service';
@@ -58,7 +59,7 @@ export async function resolveWorkspaceEntry(clerkUserId: string): Promise<Worksp
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress ?? null;
   const canonical = await getOrCreateCanonicalUser(clerkUserId, email);
-  await bootstrapStudyUSAdminIfEligible(canonical, email);
+  await bootstrapStudyUSAdminIfEligible(canonical, resolveVerifiedPrimaryEmail(user));
 
   const [available, stored, defaultWorkspace] = await Promise.all([
     resolveAvailableWorkspaces(canonical.id),
