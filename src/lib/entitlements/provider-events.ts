@@ -1,0 +1,127 @@
+/**
+ * L11 / EN-3 -- what a payment-provider event may do to a subscription.
+ *
+ * Pure. The webhook (src/services/payment.service.ts) re-fetches the real
+ * resource from the provider and applies exactly what `decideProviderEvent`
+ * returns; nothing else moves a subscription on a provider's word.
+ *
+ * Rules:
+ *  - an administrator's decision is never changed by a provider event: a row
+ *    in `suspended`, `disputed`, `refunded` or `payment_under_review` stays
+ *    where the administrator put it (same protection as self-reactivation.ts);
+ *  - an administrator-set row (`manually_set_by_admin`: a grant, with its own
+ *    expiry) is not governed by the provider: its status and its grant fields
+ *    are left untouched, so the grant expiry keeps applying;
+ *  - `authorized` activates through the state machine, never around it;
+ *  - `paused` / `cancelled` only count for the preapproval the subscription
+ *    is actually running on (an abandoned second checkout cannot cancel it);
+ *  - a cancellation is honoured: `active` ends at the end of the paid period
+ *    (`cancelled_at_period_end`), `past_due` / `reactivated` end now (`expired`).
+ */
+import { isValidTransition } from './subscription-state-machine';
+import type { SubscriptionStatus } from './types';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Statuses only an administrator moves a subscription out of. */
+export const ADMIN_LIFECYCLE_STATUSES: readonly SubscriptionStatus[] = ['suspended', 'disputed', 'refunded', 'payment_under_review'];
+
+/**
+ * The checkout's `external_reference`: the learner the licence is for and the
+ * user who started THIS checkout. The payer is bound to the subscription only
+ * when the provider confirms the payment (never at checkout creation).
+ */
+export function encodeExternalReference(studentId: string, payerUserId: string): string {
+  return `${studentId}:${payerUserId}`;
+}
+
+/** Accepts the current `student:payer` form and the earlier bare `student` form. Anything else is null. */
+export function parseExternalReference(reference: unknown): { studentId: string; payerUserId: string | null } | null {
+  if (typeof reference !== 'string') return null;
+  const [studentId, payerUserId, ...rest] = reference.split(':');
+  if (rest.length > 0 || !UUID_PATTERN.test(studentId ?? '')) return null;
+  if (payerUserId === undefined) return { studentId, payerUserId: null };
+  if (!UUID_PATTERN.test(payerUserId)) return null;
+  return { studentId, payerUserId };
+}
+
+export interface ProviderSubscriptionView {
+  /** '' when the learner has no subscription row yet. */
+  id: string;
+  status: SubscriptionStatus;
+  manuallySetByAdmin: boolean;
+  providerSubscriptionId: string | null;
+  currentPeriodEnd: string | null;
+}
+
+export interface ProviderPreapproval {
+  id: string;
+  /** Mercado Pago preapproval status: pending | authorized | paused | cancelled. */
+  status: string;
+  nextPaymentDate: string | null;
+}
+
+export type ProviderEventSkip =
+  | 'ADMIN_LIFECYCLE'
+  | 'ADMIN_CONTROLLED'
+  | 'NOT_CURRENT_PREAPPROVAL'
+  | 'ALREADY_APPLIED'
+  | 'INVALID_TRANSITION'
+  | 'NO_STATUS_CHANGE';
+
+export type ProviderEventDecision =
+  | { action: 'NONE'; reason: ProviderEventSkip; adoptProviderId: boolean }
+  | {
+      action: 'TRANSITION';
+      to: Extract<SubscriptionStatus, 'active' | 'past_due' | 'cancelled_at_period_end' | 'expired'>;
+      /** New `current_period_end`, when the event defines one. */
+      periodEnd: string | null;
+      adoptProviderId: boolean;
+    };
+
+const skip = (reason: ProviderEventSkip, adoptProviderId = false): ProviderEventDecision => ({ action: 'NONE', reason, adoptProviderId });
+
+function futureIso(value: string | null | undefined, now: Date): string | null {
+  if (!value) return null;
+  const at = new Date(value).getTime();
+  return Number.isFinite(at) && at > now.getTime() ? new Date(at).toISOString() : null;
+}
+
+export function decideProviderEvent(sub: ProviderSubscriptionView, preapproval: ProviderPreapproval, now: Date = new Date()): ProviderEventDecision {
+  if (ADMIN_LIFECYCLE_STATUSES.includes(sub.status)) return skip('ADMIN_LIFECYCLE');
+  if (sub.manuallySetByAdmin) return skip('ADMIN_CONTROLLED');
+
+  if (preapproval.status === 'authorized') {
+    if (sub.status === 'active') return skip('ALREADY_APPLIED', true);
+    if (!isValidTransition(sub.status, 'active')) return skip('INVALID_TRANSITION');
+    return { action: 'TRANSITION', to: 'active', periodEnd: futureIso(preapproval.nextPaymentDate, now), adoptProviderId: true };
+  }
+
+  if (preapproval.status === 'paused' || preapproval.status === 'cancelled') {
+    if (!sub.providerSubscriptionId || sub.providerSubscriptionId !== preapproval.id) return skip('NOT_CURRENT_PREAPPROVAL');
+
+    if (preapproval.status === 'paused') {
+      return isValidTransition(sub.status, 'past_due') ? { action: 'TRANSITION', to: 'past_due', periodEnd: null, adoptProviderId: false } : skip('NO_STATUS_CHANGE');
+    }
+
+    if (sub.status === 'active') {
+      // Access runs to the end of what was already paid; with no known period it ends now.
+      const periodEnd = futureIso(preapproval.nextPaymentDate, now) ?? futureIso(sub.currentPeriodEnd, now) ?? now.toISOString();
+      return { action: 'TRANSITION', to: 'cancelled_at_period_end', periodEnd, adoptProviderId: false };
+    }
+    if (sub.status === 'past_due' || sub.status === 'reactivated') return { action: 'TRANSITION', to: 'expired', periodEnd: null, adoptProviderId: false };
+    return skip('NO_STATUS_CHANGE');
+  }
+
+  return skip('NO_STATUS_CHANGE');
+}
+
+/**
+ * May a checkout be started for this subscription at all? Only when a
+ * confirmed payment could actually activate it -- otherwise the payer would
+ * be charged for a subscription the webhook is not allowed to move.
+ */
+export function isPurchasable(sub: Pick<ProviderSubscriptionView, 'status' | 'manuallySetByAdmin'>): boolean {
+  if (ADMIN_LIFECYCLE_STATUSES.includes(sub.status) || sub.manuallySetByAdmin) return false;
+  return isValidTransition(sub.status, 'active');
+}

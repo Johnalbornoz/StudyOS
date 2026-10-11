@@ -6,6 +6,8 @@
  * Authorization is Student/Owner ONLY, resolved inside the orchestration
  * dispatcher via isOwner -- this route performs no independent
  * authorization logic and never falls back to Teacher or Parent access.
+ * Entitlement (F3) is separate: the Student's own learning licence is
+ * required before the dispatcher runs.
  *
  * F11-C2: this route is unchanged except for calling the new generic
  * dispatcher (`startTeacherInterventionExecution`) instead of the
@@ -17,6 +19,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
+import { ownStudentId } from '@/lib/exam-core/route-auth';
+import { learningLicenceRequiredResponseForActor } from '@/lib/entitlements/learning-gate';
 import {
   startTeacherInterventionExecution,
   StudentInterventionAccessDeniedError,
@@ -41,6 +45,17 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error: any) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
   }
+
+  // L11 / EN-2 (D-8a): starting an assigned task is the learning activity itself, so it
+  // needs the Student's own licence. An actor with no Student account can start nothing
+  // here; refusing now keeps the licence check from ever being skipped.
+  const learnerId = await ownStudentId(actor.id);
+  if (!learnerId) {
+    logPilotEvent('authorization_denied', { route: '/api/student/teacher-interventions/start', actorUserId: actor.id });
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+  const licenceRequired = await learningLicenceRequiredResponseForActor(actor.id, learnerId);
+  if (licenceRequired) return licenceRequired;
 
   try {
     const result = await startTeacherInterventionExecution(actor.id, id, validated.idempotencyKey);

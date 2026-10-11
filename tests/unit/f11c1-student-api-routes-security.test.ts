@@ -22,6 +22,11 @@ vi.mock('@/lib/auth', () => ({
   requireStudentId: (...a: any[]) => requireStudentIdMock(...a),
 }));
 
+// L11 / EN-2: the start route also requires the Student's own learning licence (covered by
+// l11-unlicensed-policy.test.ts). Here the Student is licensed, so the dispatcher is reached.
+vi.mock('@/lib/exam-core/route-auth', () => ({ ownStudentId: vi.fn().mockResolvedValue('11111111-1111-4111-8111-111111111111') }));
+vi.mock('@/lib/entitlements/learning-gate', () => ({ learningLicenceRequiredResponseForActor: vi.fn().mockResolvedValue(null) }));
+
 const getOrCreateCanonicalUserMock = vi.fn();
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
 

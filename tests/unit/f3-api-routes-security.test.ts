@@ -18,6 +18,10 @@ vi.mock('@/lib/db', () => ({ db: { query: vi.fn().mockResolvedValue({ rows: [] }
 const canAccessLearnerMock = vi.fn();
 vi.mock('@/lib/authorization', () => ({ canAccessLearner: (...a: any[]) => canAccessLearnerMock(...a) }));
 
+// L11 / EN-3: billing routes also require a LIVE billing actor (owner, or payer with an accepted
+// relationship) -- covered by l11-billing-live-payer.test.ts. Live here.
+vi.mock('@/services/payment.service', () => ({ isLiveBillingActor: vi.fn().mockResolvedValue(true) }));
+
 const canUseCapabilityMock = vi.fn();
 const getSubscriptionMock = vi.fn();
 const transitionSubscriptionStatusMock = vi.fn();

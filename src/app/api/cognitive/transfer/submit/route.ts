@@ -15,6 +15,7 @@ import { loadTransferTaskInstance } from '@/services/transfer-task-instance.serv
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { learningLicenceRequiredResponse } from '@/lib/entitlements/learning-gate';
 import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 
 const Schema = z.object({
@@ -50,6 +51,11 @@ async function handlePOST(request: NextRequest) {
     const validated = Schema.parse(await request.json());
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+    // L11 / EN-2 (D-8a): AI grading, mastery and evidence are part of the licence --
+    // refused before anything is graded or written (same rule as explain/submit).
+    const licenceRequired = await learningLicenceRequiredResponse(authContext, validated.studentId);
+    if (licenceRequired) return licenceRequired;
 
     // L4-R1: a remediation step named by the client must belong to THIS student's own
     // remediation path -- checked before anything is graded or written, so another
