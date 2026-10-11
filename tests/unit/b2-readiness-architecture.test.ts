@@ -289,7 +289,7 @@ describe('B2 architecture', () => {
     const all = migrations.slice(71, 79).map((f) => readFileSync(join(ROOT, 'database/migrations', f), 'utf8').replace(/^\s*--.*$/gm, '')).join('\n');
     expect(all).not.toMatch(/exam_answer_reveals|question_bank_item_curriculum_nodes/);
     // 20261110_1800 (assessment snapshot column) comes from the B5 line; it sorts between the eight and the curriculum link.
-    expect(migrations.filter((f) => f >= '20261110_1800')).toEqual(['20261110_1800_assessment_snapshot.sql', '20261111_1000_qb_item_curriculum_nodes.sql']);
+    expect(migrations.filter((f) => f >= '20261110_1800')).toEqual(['20261110_1800_assessment_snapshot.sql', '20261111_1000_qb_item_curriculum_nodes.sql', '20261112_1000_qb_review_requires_primary_attribution.sql']);
   });
 
   it('the B1 authorities are consumed, not redefined', () => {
