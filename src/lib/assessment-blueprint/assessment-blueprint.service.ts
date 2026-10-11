@@ -121,3 +121,29 @@ export async function evaluateExamVersionReadiness(examVersionId: string, client
   const coverages = await loadQuestionCoverage(items.rows.map((r: any) => ({ store: 'REVIEWED_EXAM_BANK' as const, id: r.id as string })));
   return evaluateFeasibility({ kind: 'OBJECTIVE', targetIds: objectives.rows.map((r: any) => r.learning_objective_id as string), coverages, eligibility: { family: 'EXAM_PREPARATION', examVersionId }, evidencePolicy: policy });
 }
+
+/**
+ * B2-A -- the Student's item-level exposure in the reviewed bank, from the existing delivery ledger
+ * (`exam_item_usage`), keyed like every other exposure index. Delivery of ANY version of a bank item
+ * exposes the item, so the current version is reported as seen too. Read-only.
+ *
+ * Answer reveal is not recorded anywhere, so `answerRevealed` is not set (ANSWER_REVEAL_EXPOSURE = DEFERRED).
+ */
+export async function loadReviewedBankExposure(studentId: string, asOf: string, client: DbExecutor = db): Promise<ExposureIndex> {
+  const recentFrom = new Date(new Date(asOf).getTime() - RECENT_EXPOSURE_DAYS * 86_400_000).toISOString();
+  const r = await client.query(
+    `SELECT COALESCE(sibling.id, seen.id) AS id, MAX(u.used_at) AS last_used_at
+       FROM exam_item_usage u
+       JOIN approved_items seen ON seen.id = u.approved_item_id
+       LEFT JOIN approved_items sibling ON sibling.bank_item_id = seen.bank_item_id
+      WHERE u.student_id = $1 AND u.used_at <= $2
+      GROUP BY 1 ORDER BY 1`,
+    [studentId, asOf]
+  );
+  const exposure = new Map<string, ExposureFacts>();
+  for (const row of r.rows as Array<{ id: string; last_used_at: Date | string | null }>) {
+    const last = row.last_used_at === null ? null : new Date(row.last_used_at).toISOString();
+    exposure.set(`REVIEWED_EXAM_BANK:${row.id}`, { seen: true, recent: last !== null && last >= recentFrom });
+  }
+  return exposure;
+}
