@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { notFound, redirect } from 'next/navigation';
+import { after } from 'next/server';
 import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
@@ -8,6 +9,7 @@ import { InlineAlert } from '@/components/ui/InlineAlert';
 import { AssessmentAvailability, AssessmentSetup, effortText } from '@/components/assessment/AssessmentExperience';
 import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/assessment-start.service';
 import { canonicalConceptLabels, learningSetupForStudent } from '@/lib/assessment-experience/assessment-experience.service';
+import { requestAssessmentSupply } from '@/lib/assessment-experience/assessment-supply.service';
 import { TODAY_HREF } from '@/lib/assessment-experience/continuation';
 import { hiddenFieldsOf, launchRequestOfQuery, type LaunchQuery } from './launch-params';
 import { StartAssessment } from './StartAssessment';
@@ -41,6 +43,10 @@ export default async function AssessmentSetupPage({ searchParams }: { searchPara
     </div>
   );
   if (!request) return unavailable;
+  // B5-F: the setup is a supply trigger. After the response, ask the existing replenishment worker for these
+  // concepts (deduplicated per Student + concept; the worker decides whether anything is short). Nothing here
+  // waits for it: what is offered below is what is eligible now.
+  after(() => requestAssessmentSupply(studentId, request.scope).catch((err) => console.error('[assessment-supply] request failed', err)));
   const setup = await learningSetupForStudent(studentId, request, new Date().toISOString());
   if (!setup.ok) return unavailable;
 

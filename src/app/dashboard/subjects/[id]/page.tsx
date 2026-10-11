@@ -21,6 +21,7 @@ import UploadPanel from './UploadPanel';
 import AssessmentPanel from './AssessmentPanel';
 import SubjectSettingsPanel from './SubjectSettingsPanel';
 import HierarchicalConceptList from './HierarchicalConceptList';
+import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/execution-flag';
 import { getSubjectAccentColor } from '@/lib/subject-color';
 import { masteryToPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { activityCta } from '../../activityCta';
@@ -256,6 +257,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           hierarchy={hierarchy}
           masteryStates={masteryStates}
           journeyStages={journeyStages}
+          canonicalAssessment={isSnapshotExecutionEnabled()}
         />
       )}
 

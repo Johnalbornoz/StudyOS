@@ -150,7 +150,15 @@ async function main() {
     check(`${path} renders (200) with no hard-coded legacy practice link`, p.status === 200 && legacyLinks.length === 0, { status: p.status, legacyLinks: legacyLinks.slice(0, 3), canonicalLinks: (p.text.match(/\/dashboard\/assessment\?/g) ?? []).length });
   }
 
+  /* ---------------- 2b. subject page: the concept row's independent check (B5-F) ---------------- */
+  const subjectPage = await page('subject', `/dashboard/subjects/${concept.subject_id}`);
+  const canonicalCheck = `/dashboard/assessment?intent=MASTERY_CHECK&amp;origin=LEARNING_PATH&amp;lc=${LC}`;
+  check('Subject page: "Comprobación individual" enters the canonical setup', subjectPage.status === 200 && subjectPage.text.includes(canonicalCheck), { status: subjectPage.status, canonical: subjectPage.text.includes(canonicalCheck) });
+  check('Subject page: no hand-built quick-check link to the legacy quiz remains', !/href="\/dashboard\/quiz\?[^"]*mode=quick_check/.test(subjectPage.text));
+
   /* ---------------- 3. setup: the three depths, from the Blueprint Core ---------------- */
+  const supplyKey = `prepare:${student.id}:${LC}`;
+  const jobsBefore = Number((await one(`SELECT count(*)::int AS n FROM generation_jobs WHERE dedup_key = $1`, [supplyKey])).n);
   // B5D_INTENT=<LearningIntent> runs the journey on that intent (a Student may open practice from My Path whatever
   // Today recommends); without it, the journey follows the launch target the Learning Decision returned.
   const forcedIntent = process.env.B5D_INTENT ?? null;
@@ -169,6 +177,27 @@ async function main() {
   check('setup page renders for the fixture Student', setup.status === 200 && /ax-setup/.test(setup.text), setup.status);
   check('setup carries canonical targets forward (the form names the canonical concept, not the learner-local id)', new RegExp(`name="c" value="${CANON}"`).test(setup.text) && !/name="lc"/.test(setup.text));
   if (hasDepths) check('the three depths are offered with the Blueprint Core\'s own counts', displayed.QUICK !== null && displayed.BALANCED !== null && displayed.DEEP !== null && displayed.QUICK <= displayed.BALANCED && displayed.BALANCED <= displayed.DEEP, displayed);
+  // B5-F: opening the setup asks the existing replenishment queue for this Student + concept (after the response)
+  let supply: any = null;
+  for (let i = 0; i < 10 && !supply; i += 1) {
+    await new Promise((r) => setTimeout(r, 1500));
+    supply = await one(`SELECT status, created_at, updated_at, result FROM generation_jobs WHERE dedup_key = $1 AND created_at > now() - interval '2 minutes' ORDER BY created_at DESC LIMIT 1`, [supplyKey]);
+  }
+  check('QUESTION SUPPLY: opening the setup queued a replenishment request for this Student + concept', !!supply, supply ? { status: supply.status } : 'no job');
+  // the same setup again while one is open must not pile up jobs
+  await api('GET', setupPath);
+  await api('GET', setupPath);
+  const open = Number((await one(`SELECT count(*)::int AS n FROM generation_jobs WHERE dedup_key = $1 AND status IN ('PENDING', 'RUNNING')`, [supplyKey])).n);
+  check('QUESTION SUPPLY: repeated setups never hold more than one open request', open <= 1, { open });
+  let drained: any = null;
+  for (let i = 0; i < 20; i += 1) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const pending = Number((await one(`SELECT count(*)::int AS n FROM generation_jobs WHERE dedup_key = $1 AND status IN ('PENDING', 'RUNNING')`, [supplyKey])).n);
+    drained = await one(`SELECT status, result FROM generation_jobs WHERE dedup_key = $1 ORDER BY updated_at DESC LIMIT 1`, [supplyKey]);
+    if (pending === 0) break;
+  }
+  note('question supply job', { jobsBefore, jobsAfter: Number((await one(`SELECT count(*)::int AS n FROM generation_jobs WHERE dedup_key = $1`, [supplyKey])).n), last: drained });
+  check('QUESTION SUPPLY: the worker accepted and drained the request', drained?.status === 'SUCCEEDED', drained?.status);
   const depth = (process.env.B5D_DEPTH ?? 'QUICK') as 'QUICK' | 'BALANCED' | 'DEEP';
   const request = { family: 'LEARNING', origin: 'TODAY', intent, depth, scope: { canonicalConceptIds: [CANON] } };
   const preview = await page('preview', `/dashboard/assessment?${new URLSearchParams({ intent, origin: 'TODAY', c: CANON, confirm: '1', depth }).toString()}`);

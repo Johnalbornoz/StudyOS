@@ -1,5 +1,6 @@
 'use client';
 
+import { conceptCheckHref } from '@/lib/assessment-experience/entry';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -32,11 +33,14 @@ export default function ConceptList({
   studentId,
   locale,
   concepts,
+  canonicalAssessment = false,
 }: {
   subjectId: string;
   studentId: string;
   locale: Locale;
   concepts: ConceptRow[];
+  /** The server's assessment cutover flag, read by the server page. Decides where the independent check goes. */
+  canonicalAssessment?: boolean;
 }) {
   const t = getMessages(locale);
   const router = useRouter();
@@ -136,7 +140,7 @@ export default function ConceptList({
               {expandedId === c.conceptId ? t['subjectDetail.learnMoreCollapse'] : t['subjectDetail.learnMoreAction']}
             </button>
             <Link
-              href={`/dashboard/quiz?subjectId=${subjectId}&conceptId=${c.conceptId}&mode=quick_check`}
+              href={conceptCheckHref({ subjectId, conceptId: c.conceptId, mode: 'quick_check' }, canonicalAssessment)}
               className="btn btn-ghost"
               style={{ fontSize: 13 }}
             >

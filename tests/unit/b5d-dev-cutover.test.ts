@@ -103,7 +103,7 @@ describe('B5-D entry points', () => {
   });
 
   it('ON: practice / prove / retain enter the canonical setup with the same intent and nothing else', () => {
-    expect(ASSESSMENT_INTENT_OF_QUIZ_MODE).toEqual({ topic_practice: 'CONCEPT_PRACTICE', canonical_prove: 'MASTERY_CHECK', canonical_retain: 'RETENTION_CHECK' });
+    expect(ASSESSMENT_INTENT_OF_QUIZ_MODE).toEqual({ topic_practice: 'CONCEPT_PRACTICE', quick_check: 'MASTERY_CHECK', canonical_prove: 'MASTERY_CHECK', canonical_retain: 'RETENTION_CHECK' });
     const href = entryTargetFor('/dashboard/quiz', { ...quiz, mode: 'topic_practice' }, true)!;
     expect(href).toBe(`/dashboard/assessment?intent=CONCEPT_PRACTICE&origin=TODAY&lc=${LC}`);
     // the engine's count and difficulty do not travel: the Blueprint Core decides them

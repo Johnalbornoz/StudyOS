@@ -171,7 +171,7 @@ describe('B3 is not cut over', () => {
     const canonicalSites = ['src/app/api/assessments/learning/[sessionId]/complete/route.ts', 'src/app/api/assessments/learning/start/route.ts', 'src/lib/exam-core/exam-instance.service.ts', 'src/lib/exam-core/post-completion.ts'];
     // B5-R: the mounted setup page reads ONE thing -- whether the cutover flag is on (it does not exist otherwise).
     // B5-D: plus the two server launch builders and Exam Prep's availability section -- each reads the flag and nothing else.
-    const flagReaders = ['src/app/dashboard/assessment/page.tsx', 'src/lib/pedagogical-decision/canonical-session-launch.ts', 'src/services/learning-session-engine.service.ts', 'src/app/dashboard/exam-prep/[examProfileId]/CanonicalExamAvailability.tsx'];
+    const flagReaders = ['src/app/dashboard/assessment/page.tsx', 'src/lib/pedagogical-decision/canonical-session-launch.ts', 'src/services/learning-session-engine.service.ts', 'src/app/dashboard/exam-prep/[examProfileId]/CanonicalExamAvailability.tsx', 'src/app/dashboard/subjects/[id]/page.tsx'];
     // B5-D: the draft route calls the draft store only (answers in progress; not evidence).
     const draftSites = ['src/app/api/assessments/learning/[sessionId]/answers/route.ts'];
     expect(read(draftSites[0]).match(/^import [^;]*assessment-execution[^;]*;/gm)).toEqual(["import { saveDraftAnswers } from '@/lib/assessment-execution/assessment-draft.service';"]);
