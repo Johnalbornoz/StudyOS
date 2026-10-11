@@ -16,6 +16,8 @@ import { VALID_EXAM_TARGET_PREDICATE, STUDENT_CONTEXT_PATH } from '@/lib/student
 import { gradeDisplayLabel } from '@/lib/i18n/catalog-labels';
 import { levelDisplayLabel, localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
 import { formatTimeContext, storedTimeContext } from '@/lib/student/time-context';
+import { getParentAccessMessages } from '@/lib/i18n/parent-access-messages';
+import ParentAccessCard from './ParentAccessCard';
 
 /**
  * Student Academic Profile. Once saved it is shown as a summary (never asked again
@@ -83,6 +85,7 @@ export default async function AcademicProfilePage({ searchParams }: { searchPara
               </div>
             </details>
           ) : null}
+          <ParentAccessCard labels={getParentAccessMessages(locale)} locale={locale} />
         </div>
       );
     }
@@ -166,6 +169,9 @@ export default async function AcademicProfilePage({ searchParams }: { searchPara
         // REM-T1-06: first-time onboarding can be left through Cancel, back to the context choice.
         exitHref={completed ? null : STUDENT_CONTEXT_PATH}
       />
+
+      {/* L7 PA-1: who can see my progress, invite a family member, remove access. */}
+      <ParentAccessCard labels={getParentAccessMessages(locale)} locale={locale} />
     </div>
   );
 }
