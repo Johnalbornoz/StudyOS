@@ -363,8 +363,9 @@ describe('B0-U architecture guards', () => {
 
   it('this delta adds no migration and no table', () => {
     const migrations = readdirSync(join(ROOT_DIR, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    expect(migrations).toHaveLength(71);
-    expect(migrations.at(-1)).toBe('20261109_1000_simulation_type_challenge_reduced_mock.sql');
+    // The delta itself added none: position 71 is still the B1-E migration. What follows belongs to later blocks (B3).
+    expect(migrations[70]).toBe('20261109_1000_simulation_type_challenge_reduced_mock.sql');
+    expect(migrations.slice(71)).toEqual(['20261110_1000_assessment_snapshot.sql']);
   });
 
   it('nothing in the delivered runtime depends on the new modules yet', () => {

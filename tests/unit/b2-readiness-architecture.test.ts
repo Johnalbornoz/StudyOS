@@ -228,7 +228,9 @@ describe('B2 architecture', () => {
 
   it('no runtime cutover: nothing outside the module imports it', () => {
     const importers = walk(join(ROOT, 'src')).filter((f) => !f.startsWith(B2_DIR) && /from '[^']*assessment-blueprint[^']*'|import\('[^']*assessment-blueprint/.test(readFileSync(f, 'utf8')));
-    expect(importers).toEqual([]);
+    // B3 (assessment-execution) freezes a BlueprintSolution: the one consumer, and itself not wired to any route
+    // (asserted in b3-architecture).
+    expect(importers.filter((f) => !f.includes('/src/lib/assessment-execution/'))).toEqual([]);
   });
 
   it('reads no feature flag and no environment', () => {
@@ -260,8 +262,9 @@ describe('B2 architecture', () => {
 
   it('B2 adds no migration: the chain still ends at the B1-E migration', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    expect(migrations).toHaveLength(71);
-    expect(migrations.at(-1)).toBe('20261109_1000_simulation_type_challenge_reduced_mock.sql');
+    // B2 itself added none: position 71 is still the B1-E migration. What follows belongs to later blocks (B3).
+    expect(migrations[70]).toBe('20261109_1000_simulation_type_challenge_reduced_mock.sql');
+    expect(migrations.slice(71)).toEqual(['20261110_1000_assessment_snapshot.sql']);
   });
 
   it('the B1 authorities are consumed, not redefined', () => {
