@@ -469,3 +469,24 @@ Limits of this certification: the ephemeral seed has 410 fixtures, no generated 
 - **`STUDYUS_AUTHORED` propagated** to `policy.ts` (`PROVENANCES`, origin `AUTHORED`, `needsHumanApproval`), `health.ts`, `mock-certification.ts`, `content-origin.ts` and the identity backfill in `bank.service.ts`. Authored content is certifiable and counts as real content; like generated content it needs a human approval before it counts. Generated never becomes authored. Fixtures stay ineligible. No eligibility rule changed.
 - **Platform chain certification repaired.** The G6 script now asserts that a direct `FULL_MOCK` start is refused and writes nothing (B1-E), and runs its attempts as `MINI_MOCK`. Application behaviour is unchanged. Chain result: 12 of 12 steps, G6 35/35, Journey 29/29, Human Agency 26/26.
 - Re-certified after these changes: tsc clean; 499 files / 8,900 tests; schema certification unchanged (153 invariants per phase, loaders 4 / 15, rollback and re-apply); build exit 0.
+
+### W.7 DEV schema rollout (B2-B1R1, 2026-10-10)
+
+DEV only. Stage and Production were not touched.
+
+| Fact | Value |
+|---|---|
+| Implementation commit | `ae00fdc` |
+| DEV fingerprint | `2a29b99ee14a22b4` |
+| Migrations applied | `20261110_1000` … `20261110_1700` (8 of 8), governed runner (`npm run db:migrate`) after an exact dry-run |
+| Ledger | 80 applied, 0 pending, 0 drift (was 72, latest `20261109_1000`) |
+| Sources | 122 of 122 `PUBLIC` → `source_access = PUBLICLY_ACCESSIBLE` |
+| Rights records created | 0 — source access is not a right to reuse |
+| New content-carrier and B2 tables | all empty (rights, content sources, assets, stimuli, versions, parts, item links, item concepts, context tags, pool memberships, reviewer qualifications, stimulus reviews, originality checks, blueprint requirements, requirement sources, frozen forms, positions) |
+| Review governance | active: 0 qualifications, so no approving review can be recorded until qualifications are granted (`APPROVAL_CAPABILITY = LOCKED_UNTIL_QUALIFICATIONS_GRANTED`); `SABER_APPROVALS_WITHOUT_SUBJECT = BLOCKED_BY_DESIGN` |
+
+Legacy preservation, compared by hash before and after: 168 canonical concepts (224 labels; PAA 61 of 61 bilingual); 373 published and 5 retired objective→concept mappings; 496 items (477 fixture, 19 generated) and 509 versions; 11 versions under review unchanged (3 PAA, 8 Saber); 0 reviews; 92 blueprints, all with `purpose` NULL; 6 exam instances, 16 exam attempts, 12 simulation attempts, none with a frozen form.
+
+Rights rule evaluated read-only over the 496 current versions: 0 eligible for a Student, 0 with a rights record, all report `REUSE_RIGHTS_NOT_ESTABLISHED`.
+
+Open before the first variant row is inserted: the existing blueprint readers must filter `purpose IS NULL`.
