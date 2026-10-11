@@ -16,6 +16,7 @@
  * request (see docs/architecture, Phase 3E "closed loop").
  */
 
+import { resolveLearnerConceptLabel } from '@/lib/learning-plan/labels';
 import { db } from '@/lib/db';
 import { getLearningDecisions } from './adaptive-learning-orchestrator.service';
 import {
@@ -118,25 +119,31 @@ export async function loadConceptLabels(conceptIds: string[], preferredLanguage:
   if (distinctIds.length === 0) return labels;
 
   const result = await db.query(
-    // T1 final delta (G) -- display label priority: the concept's own label in the reader's language; else, for a
-    // concept linked to the catalogue (concept_catalog_mapping MATCHED), the catalogue's label in that language
-    // (canonical_concept_localizations); else any stored label. Display only -- nothing is renamed or translated at runtime.
-    `SELECT c.id, c.canonical_id, COALESCE(own.label, cat.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, s.name AS subject_name
+    // Display label through the ONE shared resolver (learning-plan/labels.ts `resolveLearnerConceptLabel`), the same
+    // as Learn and Exam Prep. The query only gathers the facts: the concept's own labels, and -- when it is linked to
+    // the catalogue (concept_catalog_mapping MATCHED) -- the canonical name and its stored localization.
+    // `label` is the concept's OWN stored label (the reader's language first, else any) -- what a concept the
+    // Student typed always shows.
+    `SELECT c.id, c.canonical_id, s.name AS subject_name,
+            COALESCE(own.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label,
+            cat.canonical_name, cat.catalog_localized
      FROM concepts c
      JOIN subjects s ON s.id = c.subject_id
      LEFT JOIN LATERAL (
        SELECT label FROM concept_localizations WHERE concept_id = c.id AND language = $2 LIMIT 1
      ) own ON true
      LEFT JOIN LATERAL (
-       SELECT l.label FROM concept_catalog_mapping m
-         JOIN canonical_concept_localizations l ON l.canonical_concept_id = m.canonical_concept_id AND l.language = $2
+       SELECT cc.name AS canonical_name, l.label AS catalog_localized FROM concept_catalog_mapping m
+         JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id
+         LEFT JOIN canonical_concept_localizations l ON l.canonical_concept_id = m.canonical_concept_id AND l.language = $2
         WHERE m.learner_concept_id = c.id AND m.status = 'MATCHED' LIMIT 1
      ) cat ON true
      WHERE c.id = ANY($1)`,
     [distinctIds, preferredLanguage]
   );
   for (const row of result.rows) {
-    labels.set(row.id, { label: row.label, canonicalId: row.canonical_id, subjectName: row.subject_name });
+    const label = resolveLearnerConceptLabel({ canonicalName: row.canonical_name, catalogLocalized: row.catalog_localized, storedLabel: row.label }, preferredLanguage) ?? row.label;
+    labels.set(row.id, { label, canonicalId: row.canonical_id, subjectName: row.subject_name });
   }
   return labels;
 }
