@@ -668,8 +668,8 @@ describe('adapt(): a frozen specification, or a named refusal', () => {
     const s = spec(run(RATE_MODEL, PISA_SYSTEM_PROFILE));
     expect(Object.keys(s.provenance).sort()).toEqual([...VARIABLE_DIMENSIONS].sort());
     expect(s.provenance.toolPolicy).toEqual([{ origin: 'COMPONENT_PROFILE_RULE', ref: 'pisa.mathematics.calculator', authority: 'OFFICIAL' }, { origin: 'FAMILY', ref: 'specialization.toolDependency', authority: null }]);
-    expect(s.provenance.numericProfile[0]).toEqual({ origin: 'POLICY_RULE', ref: 'studyus.adaptation.mathematics@0.1.0-provisional#toolInteraction.ALLOWED', authority: 'STUDYUS_POLICY' });
-    expect(s.provenance.context.map((p) => `${p.origin}:${p.ref}:${p.authority}`)).toEqual(['COMPONENT_PROFILE_RULE:pisa.mathematics.contexts:OFFICIAL', 'FAMILY:supportedContexts:null', 'SYSTEM_PROFILE_RULE:pisa.authenticity:STUDYUS_POLICY', 'SYSTEM_PROFILE_RULE:pisa.transfer:STUDYUS_POLICY', 'POLICY_RULE:studyus.adaptation.mathematics@0.1.0-provisional#transfer:STUDYUS_POLICY']);
+    expect(s.provenance.numericProfile[0]).toEqual({ origin: 'POLICY_RULE', ref: 'studyus.adaptation.mathematics@0.2.0-provisional#toolInteraction.ALLOWED', authority: 'STUDYUS_POLICY' });
+    expect(s.provenance.context.map((p) => `${p.origin}:${p.ref}:${p.authority}`)).toEqual(['COMPONENT_PROFILE_RULE:pisa.mathematics.contexts:OFFICIAL', 'FAMILY:supportedContexts:null', 'SYSTEM_PROFILE_RULE:pisa.authenticity:STUDYUS_POLICY', 'SYSTEM_PROFILE_RULE:pisa.transfer:STUDYUS_POLICY', 'POLICY_RULE:studyus.adaptation.mathematics@0.2.0-provisional#transfer:STUDYUS_POLICY']);
     expect(s.provenance.difficulty).toEqual([{ origin: 'REQUEST', ref: 'difficultyBand', authority: null }]);
     expect(spec(run(RATE_MODEL, PISA_SYSTEM_PROFILE, { ...REQUEST, responseFormat: 'NUMERIC_ENTRY' })).provenance.responseFormat[0]).toEqual({ origin: 'REQUEST', ref: 'responseFormat', authority: null });
   });
@@ -1359,7 +1359,8 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     // QB-R2D adds three Production OS modules of the specification-driven path. Same direction (production -> adaptation), still pure, still no route, service or table.
     expect(importers).toEqual([
       'src/lib/exam-core/question-bank/production/generation-contract.ts', 'src/lib/exam-core/question-bank/production/generator/generate-candidates.ts',
-      'src/lib/exam-core/question-bank/production/generator/specification-generation.ts', 'src/lib/exam-core/question-bank/production/specification-candidate.ts', 'src/lib/exam-core/question-bank/production/specification-validators.ts',
+      'src/lib/exam-core/question-bank/production/generator/specification-generation-v2.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation.ts', 'src/lib/exam-core/question-bank/production/specification-candidate.ts',
+      'src/lib/exam-core/question-bank/production/specification-validators-r3.ts', 'src/lib/exam-core/question-bank/production/specification-validators.ts',
     ]);
     expect(walk('src/app').filter((f) => /assessment-adaptation|task-families|AdaptationSpecification/.test(read(f)))).toEqual([]);
     expect(walk('src/services').filter((f) => /assessment-adaptation|task-families|AdaptationSpecification/.test(read(f)))).toEqual([]);

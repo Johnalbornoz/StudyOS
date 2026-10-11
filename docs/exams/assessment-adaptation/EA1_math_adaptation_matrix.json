@@ -4,11 +4,11 @@
   "about": "EA-1 mathematics proof of concept. Ten DRAFT, UNREVIEWED assessment task families adapted into six component profiles of five PROVISIONAL, ILLUSTRATIVE, MIXED-AUTHORITY assessment-system profiles (and into the five system profiles alone, as generic practice) under a PROVISIONAL discipline policy. DEV_TEST_CONTENT specifications only: a draft family may produce nothing else, and no question was generated. Assessment applicability is read from the repository and never inferred. Nothing here is reviewed, certified or approved.",
   "engine": {
     "id": "studyus-adaptation-engine",
-    "version": "2"
+    "version": "3"
   },
   "disciplinePolicy": {
     "policyId": "studyus.adaptation.mathematics",
-    "version": "0.1.0-provisional",
+    "version": "0.2.0-provisional",
     "status": "PROVISIONAL"
   },
   "applicabilityThreshold": {
@@ -472,7 +472,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "fe72768dc737b03a58f64c195377cfd49674cdc99c87e122cfdd37f2f7cfe04a",
+      "specificationId": "16c0c96807811bc717f761b3436ea87a4b2a0c8f45c48260e9afc90d98428735",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -488,7 +488,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "c214b2ab8bfc3a931e28395773cf469950f32a51a0079f153b6f58989c5f26b3",
+      "specificationId": "046b88c9d4eb16b60c0f589e115da07ed4e5e4999f3a8c2f85561578941b876b",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -504,7 +504,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "1fcb00ee84ce6a79718d8480c35dec5c75b1a9c1c69037849d1f6780e741a622",
+      "specificationId": "81b7863c0e5979f865488cb34227645d4a191e674de4c5f9a1ba884ba42c2ef1",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -520,7 +520,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "584fd68f232c0de0fb6558b7e73375e36789a3cb658df612bcbbff11cfe9770e",
+      "specificationId": "ff9b9b5d864b2f950064e3aa3db51571939678c80bc3051165affee34d6c2443",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -536,7 +536,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "f918a5113ddb1836345b7c63e614df81dc8aa0251d806a19287663a617bb2aa3",
+      "specificationId": "ae1b954dc2b47781be99eb24bb15414af9a743b195bb3f0ec6039346a4397adf",
       "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
       "refusal": null
     },
@@ -552,7 +552,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "0f9c1b75ec8cbdd2dda4d4c4dd15a031548c30302391dc69808a5689db57c89a",
+      "specificationId": "331ba0356c152b384f115639037391a4fc89ff3797b9ac2df32d51519eccc429",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -568,7 +568,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "24eea7893ce2c2e481d1714ede085434f12a544444de29c7d0fc722363df98e3",
+      "specificationId": "7e27dd3bfece2220b1e5bdc97b5e45508dcb0d4ae1b45321ee526b713bdc408f",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -584,7 +584,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "2c6721f3d708be62d91dbd3f99c24df92cac432632245681735e8597644a857c",
+      "specificationId": "05d4e5734dee35475ce4697dbe57add7687498e854f5fd8fadf3c806598c2aae",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -619,7 +619,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "83380108b12edb3f3ed3ea534cf41f3ee2cf62613865a08d0563d09c368923bd",
+      "specificationId": "760d63617361e9767a99cc78dd2592f38a8972dfc63ff9d72de6fd87940094bd",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -635,7 +635,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "caee5c2f8bdd98ad629071a5576c17533c4c808bc81be6c15977f277b992ce9f",
+      "specificationId": "8f64a590b11c8d197bc801b401a2157c4afd07970b85f9591a47720fcd558c17",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -651,7 +651,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "290693b8fff9b0440641c6d2ff5a6ae4ee3d9170e00c29949616592998db1d56",
+      "specificationId": "1bd8cf88f079169041cdc5e75e676ada78bd7e5fb5b8e189477b38569d87dfc4",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -667,7 +667,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "79dbfaa73610106dfd2fd173a9a923cc0d158a005ae5d943d9cef8e43fc2133a",
+      "specificationId": "55edc1d66e6c3ea83f79e98799bbecdd0a6a711822fe5dffb4495b4b1edae34c",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -683,7 +683,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "8cf89a34d9ba9826fac636ee8784c60e943b66858b4c3d7c7f96a0de12146c49",
+      "specificationId": "f16db8e27c84c70eec9cda957238e5825c18eac486bd8aa1c636b08bc3645d24",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -699,7 +699,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "39292031d19e5844386003250916b14f7c6139037e5260716239ff01a7ef9159",
+      "specificationId": "04322b69f5c8423bcb602a5c79e00bd88d3644905f02e5ab3d63b6b90c08b145",
       "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
       "refusal": null
     },
@@ -715,7 +715,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "92581330eb969c53b46aeac15a3abfe98d657d714d3202c8b4d1704e52588314",
+      "specificationId": "6ebec5925a89411afb55fb2ca31967cc0807ab7878aa06da16ace8cda2d54ef5",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -731,7 +731,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "db8dc1c67476d7800470dc4a5f10a6ba60418aafee30acbd5dfec63716de028b",
+      "specificationId": "5ac48a459384897110a14e3414f967405f16c59e64996eae8a3894e24c44b8f2",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -747,7 +747,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "6748cf457e23aff344fa8d22c8ef54d9004c83e10599a61e87b297339de5da9b",
+      "specificationId": "32d7f2591e28cd681f545a26b6550b754a8b4884e8c8e03564a87ce5c950cb9f",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -782,7 +782,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "47ee1fffaea3956406fdabaccb122bc5ebe5fa62e90d2530c8a5e55171227126",
+      "specificationId": "2ec4537e4ead4282eeaf73e1880464892d4db5e56da9e9efd546a458aa69e21b",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -798,7 +798,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "baf52c2c6c3720233b805fa78519c0908018b4a3591e70c0ae4851ee8887172d",
+      "specificationId": "84f087e1b3817af2e357805796d50c860fb5d50897e51fdb0df8e277be309415",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -814,7 +814,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "098f0839d54197912262dbb666207a85eaa573964e1ea0c73d8bf278b6ef94ac",
+      "specificationId": "6a07708a93f421e1e5a32e1599cbe0385559c17d5ced1082d6f78266db805b25",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -830,7 +830,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "7e683dd16a01e6ddd995a294ebc24557305fb9d619433a37582feb78df2e768c",
+      "specificationId": "60bf5efe9d969b2eb7e888c3fa2c3df150621603ff19b540cfd6208af8f2bf75",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -846,7 +846,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "a94bb59af42b08d59019969bd71067829d1b444e50d8dd498e295eb604325258",
+      "specificationId": "ed4eff5a34c82416f5cfcf1d49d6f80884ae5d9ccdc803a2f2338e8258e6e214",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -862,7 +862,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "d2bf40e180c6489e9acba9fa0a3b85bf6b71565bceb3699c8c638be441d43804",
+      "specificationId": "34fd322f8ed7a3d74e4e37145216f33aad643ba4e2c763c91f21f09ab4518d5b",
       "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
       "refusal": null
     },
@@ -878,7 +878,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "287e6d2e21f8747923c538198880a1749f2b26e23009546d8a8eff4151dd4b76",
+      "specificationId": "7f2280f3fbde166e9ad50bfa7aebd8d672fae730513ff3b4f44d0fcaddf511bf",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -894,7 +894,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "85b809d4ab7031940e383cfee98b381955f8ce358f836b718db3ae6c75997664",
+      "specificationId": "68bb3c48ad7aa25080844b7adb446f5bc76b05910061fd2da0191b17cab46822",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -910,7 +910,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "aa3d77461b63f33712e3162fd51339ba0c976ffd5281236a7e56cfd421a1aff2",
+      "specificationId": "3b26cf7cf362e0a7889101afa53c01e962dbef651881a0d97d84951d6ea6fc4c",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -926,7 +926,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "ff017a9a1c09d4abd0dea2a9522949d58cf1f5b1d430a9277353bd1101f07b8d",
+      "specificationId": "43624ff45178507e25cc56d097ad4d5d1b70146f1e1ec9bad195298410ad1dcb",
       "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
       "refusal": null
     },
@@ -942,7 +942,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "3314cc4b1c19a0d827ba5e4eb19dfe3d7f09ff8dd135fa42caaa6c3ca52a73fc",
+      "specificationId": "4ce11e8886849eea1009df9088ce1fa08b6f63fb65d1b7c28139bdb0073ab939",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -958,7 +958,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "95900978211af4b76a4498d297b80a45b3ab0f630d10161ea7cc86798448c1c3",
+      "specificationId": "0e21f6f2808ed6cc26a4b6b6132c53d28797beb1909b6a7e1f5a82bedba65875",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -974,7 +974,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "427a7ce7d09b2e037f0a140aef24f03bb23e3622f50af6a3ebb4503631777f99",
+      "specificationId": "dd70ad0f416cb8e816f4362b263edc9d1d97f7b2bc9a38e5d40313724a4a0aaf",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -990,7 +990,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "5651e5f4fcd58762306ebbf5d1f0163437a8627c9c6bb4b8709714c73e154dc7",
+      "specificationId": "ab2306efb125e3fa291f63e73be69cff0f6292533b7d558fef3764ded928df27",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -1006,7 +1006,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "7058bec48ee09ed94f9a38eb75241c4866415038499b973b4628d23cf5a709e5",
+      "specificationId": "2be495b9fefbf7c2009bafc357a55b4b997d5c90b38e3a46aeea7c8d94fcad5f",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -1022,7 +1022,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "5880e6295791463463982cd8855d1ecb39408fecbb0fd5a6ad70d59496acbd0b",
+      "specificationId": "673c8a4773fb6a9809ce76e328d11d0c2872f6f01ad58a03884013732058bf13",
       "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
       "refusal": null
     },
@@ -1038,7 +1038,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "6a88836928467086a5dd96645381b139473be07f57af4b61c13bd462ad552d86",
+      "specificationId": "74fb22c240f16aaf999ae5f318b9befecf66f9cccdf588f2017f3ca7825cbc0d",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -1054,7 +1054,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "abea65b96008b4af5da24793ee36ec0080690be88755e5a931db8efba547996d",
+      "specificationId": "e1c054e8a49d0776631cb2039bcd5724cf162327fe1b0614e259f027d7a96f6a",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -1070,7 +1070,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "fea7f3bdb9aac5be1194fc9bc928523cc3e89ecb525ee4ab6a855407a73ccf1f",
+      "specificationId": "b0c18490a31d974eadbdae181cbe1824e912212a97a607da555680f075582757",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -1086,7 +1086,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "36a50608300e4db134c47bd9842552cdf06d25e1d591a2a3b5b2f22aa9e62e4c",
+      "specificationId": "236d61357d1295262f75ce1c3227ed9a6ace37ced818bfa90bd898f081a69d01",
       "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
       "refusal": null
     },
@@ -1102,7 +1102,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "de3c9656aed8a0753ef51b66f90d32d54a7263ccb337c0eb16531d0dd1b0aec9",
+      "specificationId": "daa7453aedf3ba5a6ae2a956820837c68a032115d794ed754643c42dfdf9d99f",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -1137,7 +1137,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "2cf557ee41b1ac100abbcb6b25778fd6dd55d62d6be156e2bfca1658d04a3c9f",
+      "specificationId": "ff2817e3aeaa35e986ddf43376a45239e3431026b0198f72ef1dd55dc2a94d41",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -1172,7 +1172,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "271c14ec7ce2b9c8f1e7b41176288ac69d3c657f0174ad44bb517363a27238f2",
+      "specificationId": "03b9473dcceefe21138eac38f191433e21f757d80eba02181182fe9d600a3ec9",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -1207,7 +1207,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "5802dac53122c9a4edf17d1c5541e5292d88166d9c2af6abf85d0024ff47575e",
+      "specificationId": "568614ee8c5bc2935df2339fb9440fec4aee454479794942bd44695f7ff5069d",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -1242,7 +1242,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "25de6d61c2c25b71acfd8b9b6fac01d5946081a6f65ef27ec810ab6543ffb25d",
+      "specificationId": "64189ae4f974a81eb941513f6b7305c6e3dbfa2f882cd2e0861e0dbd790dab69",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -1258,7 +1258,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "6f3198643fddca70bd5ccb789628dcd3c572b0f131890ac0ffe38c0388b5d073",
+      "specificationId": "8690aaeb90263db38e19a5550dcc3d463bbae6196f75d2ea6ac4b5ab35d77d2a",
       "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
       "refusal": null
     },
@@ -1274,7 +1274,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "105dca6fe2547b87272bc078d533c3e9678d94b77d5513e20ef32485ab8a116d",
+      "specificationId": "481a3e54a877cf39c0df694478908fcc865bf7f619c5ff5a529c8ca80cf7d78d",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -1290,7 +1290,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "3124399f5ab9674df833617a4d6fa5a001d53c547414ef23989daf6f650c5e25",
+      "specificationId": "b26fccda3417d454ad0a500b794a17116d90c05bc6be265aa5e414d0b567902f",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -1306,7 +1306,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "e8feb57fc5cf1f43bdad9ebc0e4b82e586770ddbce3804daa46db11ecd27fb50",
+      "specificationId": "eb6c9f767b3e5c72f7e20c9607dc1a141775fa58cf3535cb7af8b27019cb2473",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -1322,7 +1322,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "036cb3378c77ebd05ca6a385da2195a6ae6501c2689a4e3bae09967351a4b7a7",
+      "specificationId": "0dc708a903798b79aaead7d6c48e8bacb0cff5b7a2650af6039fb0467715db08",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -1338,7 +1338,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "8da1b8dfdf9108aa41b737bfa904a55c62e8317acfe4a629520a2114745e9e79",
+      "specificationId": "7d963c5188d585242266f2b4e6ae7f795d02eacef402ae80f198321c5335c963",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -1392,7 +1392,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "c8633d32d2c64f424240c7ae154f615a4f32460b9a4a690444acec48bf897f7b",
+      "specificationId": "da0547d379b67c9a4c2ebd663fc4f6e1e21d60a5ec0681161833432c33d81099",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -1408,7 +1408,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "acf591bd36f192899b70d589c2f5af32b6c08e625d0769e86486d5c10375250d",
+      "specificationId": "ef378592e7bb493245f24edc006fea2ea82103097ae28c47198c875eaee29b0e",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -1443,7 +1443,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "7fc2593474f28b0d68fbea13df8170254930aeb1ce1bf4c997b80bb4b149549b",
+      "specificationId": "fb4b7c2b24957a959fce917b717e42f9b09e0039cd6dc4b1dc2a503b5b351f34",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -1459,7 +1459,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "7e8a5102142015aeb8dfed8bc968be3b72229e0d9720e1fcec20f1073778970b",
+      "specificationId": "70fba1fca8dc888eb9f7cc29872aa2eb9c0f3127896151217267a3d1d44f3b40",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -1475,7 +1475,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "fa05effa99b6b27b023a579f9c30a81b0601a7fffffe6ead12c7fcff228f40e9",
+      "specificationId": "3f35cb535105c218c327a25dc1ad0ecb7e6e08854076f8c346e044fd0a291dbe",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -1491,7 +1491,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "a8135c44d2bc3b14192a37e0ebb4cb67fa1773391421abef64699f38ffe5beeb",
+      "specificationId": "4eef14f6c92d0ccd09d51f8e6e90f240fdd46383bc0f98a8c794dbdef7a6cb64",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -1507,7 +1507,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "798508a7cec8affa4c7a1e8f081c2b83d3ed15f3fae1c419477ae658d2ff1dd3",
+      "specificationId": "dfdd29a83e253d8600a565cfa5699acaa30c12afe909cdf85d3584e68026c391",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -1561,7 +1561,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "55f60edd09765ebf8a08f9d62537c43d1582e630a473c50e5f295bd023bda64e",
+      "specificationId": "4ec749b8e04fa582f91c714fb167c05d84a3c634889d259789da9220519059fc",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -1577,7 +1577,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "f84b21f7ffcf561ab23e1dbe364c7869b73f958c88b223521295c2c15bfca0c0",
+      "specificationId": "5dc43dcb31d37175c59c0572ad32eebe853a3e8fd6bd167d56c1acd48f3c5886",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -1612,7 +1612,7 @@
         "basis": "OFFICIAL_EXAM_STRUCTURE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "4edc3b8c201227ff0ecaa68f619c976b269cd455eef9d6aa8031e5e89605846f",
+      "specificationId": "bbdbef2f7f29640ca24e7bb9a511da91106a44ac1097a40122c6160cfe7587e8",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -1628,7 +1628,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "a791871d24ae0b0afa6bb67b30cf11b2e667531bf5de7b3bfa870b82ccc8ddb6",
+      "specificationId": "75fce8a825bf76b9c70f9e7a7fb8fe97c98e38d381463a833016f52a8b83998b",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -1644,7 +1644,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "6f67ac65d888bc9f8cd48af7a0d2b60a62a1442927873b899c6e711cb03c9e76",
+      "specificationId": "70d3dba0032a5c58be8bad241e6cf6051b581ab73511daa79ea151014b05eda6",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -1660,7 +1660,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "ae530021b90b74fb661d3815094d3661377ffd8246af55649c50b117bb263eb6",
+      "specificationId": "fffc7d15120a191120cdcf8f4fec931b6d312592e39b41d78f50e5bfe23fea21",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -1676,7 +1676,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "dfc246b93401343bae77870ccd38b655a0b9a13880ff73102064165ac1c9bbcb",
+      "specificationId": "b8c752e6411989526c8d07a910982f8ff935f456e2ac96040feb6600da4889d0",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -1692,7 +1692,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "dfd15f8e7f7f2e103c6182f5242f788108f265c6691b64dac3234aaa51e1af5e",
+      "specificationId": "02e6b3e998952887a5110916a3348a030dc56106d13e479d714a4e5959209643",
       "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
       "refusal": null
     },
@@ -1708,7 +1708,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "4f74b0114ac03bb0ee51a3e5b4165d10c0cb1a0c9a33f20a5a40c65f086e910c",
+      "specificationId": "350419d2db87cb8a1421bb525bd6cc5fb599cab530b4185542f33b6af817ce7a",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -1724,7 +1724,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "ffa7a4a34ba3c96eb00a9b66a899efb61f5a132a7755b0d0580cfcebf2def81e",
+      "specificationId": "5a4a9b16b7a28032415a16bb52c3c51176c09c0aedc476681128ed650f6d9f26",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -1740,7 +1740,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "83f7f68c973d8be53a75710e3f741e05c07e6fa782d307dfa2abf70785926192",
+      "specificationId": "9a3f05866a73757503f6e06949db00e4f543888db55aa2846a11b52ec416a6aa",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -1775,7 +1775,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "2a7697357586d3471a5eb1eb7661a24c27ec053d4f60f7b3d1eb83eea7ffb2cd",
+      "specificationId": "6d74b218368af9bbe37b891290c6d6861bb229b9dea4286e16f2d9db7066c6d8",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -1791,7 +1791,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "94443105eab296d70693930b771eb3d873b762889683dbb9726afb1f22d05bbb",
+      "specificationId": "934687d6a087c3f950cdbe85b92110fbc27b849872bb0cf2dfb53bb8e460ed44",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -1807,7 +1807,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "72dd93f707a91388beba7896bd7df67547c2256b87f6391b3e7c2df182103623",
+      "specificationId": "fb5ccaeeafa7674a992a6265d944043afd0bd2ed1ec4e51f7752b14492979935",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -1823,7 +1823,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "8cc2fd2a56e957859b11e72c7bd0fb1e673bdee3ddcaaf575823f23bb2f415a6",
+      "specificationId": "fa1e9010805aae6a6e76b1371e8da0f748ec88732d63231ce87b14e3d5fc24dd",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -1839,7 +1839,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "25c05522afb4e79ea777c1cbec52157cd5fb9f463a4f2f0d16499571442b11ee",
+      "specificationId": "e6d2310b2cadbc988a3fbd31e1c96ff86f669f0fa5860db26a9e0b9ffa62d2c0",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -1855,7 +1855,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "d1caa8bbc064fc7bf359fceca13df3473066caeccff342ffe3be97643d907efe",
+      "specificationId": "dc4dcf3fd906fc4fca9b6e5b11c9911cc92b4dc8153ef44d9a490034dbc3a2ba",
       "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
       "refusal": null
     },
@@ -1871,7 +1871,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "ab5547ee60ba7fd7f022780e7df1582700034d75c1462b51edc67ce5acd080d6",
+      "specificationId": "890e21f2ae129a2532122a207fed3ec6d5ccf4026f67bb20af944441359237f1",
       "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
       "refusal": null
     },
@@ -1887,7 +1887,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "46aece2495a984cea288dbbe596fcc16245c788b26d3b57425c00a6a88b930f7",
+      "specificationId": "e94f36dbae1fffa429818caeb87671a569956d9cffe94a7b1dc5ff5e81648ff9",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -1903,7 +1903,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "6e4cdb2fcabbc390efc7e8c3e981781fa5ebf8f1f82afa20c4a32805159f38a9",
+      "specificationId": "ee8db59bef5b7b4d3d7c33fe0b6287eecb856f1bfd1d0c3692fcab7caa515bbf",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -1938,7 +1938,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "0e81d26762c3f40100abbf71339f24d5761e015cb320a3e81774eccf663092cc",
+      "specificationId": "60aea00f74c09205da18b0c86958c140fe961e787ee1f6e6eb2c83e7af9a428f",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -1973,7 +1973,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "e03f9797a3bd4a3236156cee79b7a3eedb573e58a86eb7bb9a2e0bd0c09cc2a1",
+      "specificationId": "492cfb8758336166eb2bde47c8ae9d4ed2bd64b0f61f6c29def0992423a97a7c",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -2008,7 +2008,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "fc5050925c2d9ac4a443fb15bc17ea216f81c1c6d54aec5b74f8ca5af41f1011",
+      "specificationId": "5824d593fad2fa7dc5ea6b8a00410cd09ea796b8c08b8676f50b3d0940f7ac21",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -2081,7 +2081,7 @@
         "basis": "REVIEWED_CATALOGUE_LINK"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "93fd5059c9a4f751aba96c3a2c870ab16615769133f89ebbfac07c795f38c5db",
+      "specificationId": "7f3d4175c02baf33c663f2c3becf88e95590dee9eba3cbc0fd78e2fecf37cc79",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -2116,7 +2116,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "d1c832370e20db1ee62114b2e27cb25984da0ddb7a71f527f8fd1505a2b95311",
+      "specificationId": "c930dcaaffb3498bfa9cfff0d8d0057231de3328a69c3318501a15fb4af63e53",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     },
@@ -2132,7 +2132,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "bb3dd743efbef50d302e5f754a62d0c417f99f8af6975b11dc7e32236892371f",
+      "specificationId": "26b49cc488178792a98acfdc90df78ea3415d370df84719571faaa876af59e39",
       "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
       "refusal": null
     },
@@ -2148,7 +2148,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "5f3d3cf47b6149156643b5f6816fd98c841f2fb2ccc279436ccbbb4a25c8c661",
+      "specificationId": "089580037c64562a776ee6a5423a9583696760e73fc2489952e6cb1be0463998",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null
     },
@@ -2164,7 +2164,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "f661bb90862fe4bfe7886a6548a518f03bf3593547b8efe4c7f666131c916700",
+      "specificationId": "3336a355cc281a1a601168a6b85cf77bcce2864ce915594445222ba82c488e22",
       "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
       "refusal": null
     },
@@ -2180,7 +2180,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "b0a9c84d9852cab19ef4475c39db17839932a8fcf0c726cb4c3361e450d2dea2",
+      "specificationId": "a1e9e6022cc2b52177e71c5a5ad83068c7ad9fe2951e6fb6069287c6eba2d947",
       "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
       "refusal": null
     },
@@ -2234,7 +2234,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "45c09829af66be83b1532f34797917cca02e4300dab86304436917d37b01cf3a",
+      "specificationId": "d4568e76473444efde890063fe922a46af6da12f30f771764e7050a20bdd992c",
       "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
       "refusal": null
     },
@@ -2250,7 +2250,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "0c9b1969758483468dff54b0550e597e8e058e2e37aee781e92e84fffe38faae",
+      "specificationId": "b7eabd857342fff01288c91613b7e220dd758087308932d6490f80030829fb18",
       "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
       "refusal": null
     },
@@ -2285,7 +2285,7 @@
         "basis": "NONE"
       },
       "outcome": "SPECIFICATION",
-      "specificationId": "f82420da0b8e44a60f8228e472cf3e298b33869a98df4488a1e53610a2f0bb97",
+      "specificationId": "a9d8412d28fa1f662ffc862019b223fd20bcd5f7b9581d18673dc8bdaffbebe8",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null
     }
@@ -2396,7 +2396,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -2436,7 +2437,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -2469,7 +2471,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -2502,7 +2505,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -2537,7 +2541,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-            "transfer": "EXPECTED"
+            "transfer": "EXPECTED",
+            "situation": "An everyday pairing of two quantities that only names them (amount and cost, time and distance at a steady rate)."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -2750,7 +2755,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice an individual makes between two offers."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -2790,7 +2796,8 @@
           "context": {
             "kind": "OCCUPATIONAL",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice between two suppliers, tools or processes at work."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -2823,7 +2830,8 @@
           "context": {
             "kind": "OCCUPATIONAL",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice between two suppliers, tools or processes at work."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -2856,7 +2864,8 @@
           "context": {
             "kind": "OCCUPATIONAL",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice between two suppliers, tools or processes at work."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -2892,7 +2901,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-            "transfer": "REQUIRED"
+            "transfer": "REQUIRED",
+            "situation": "A choice an individual makes between two offers."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -2936,7 +2946,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-            "transfer": "EXPECTED"
+            "transfer": "EXPECTED",
+            "situation": "A choice an individual makes between two offers."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -3230,7 +3241,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -3270,7 +3282,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -3303,7 +3316,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -3336,7 +3350,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -3371,7 +3386,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-            "transfer": "EXPECTED"
+            "transfer": "EXPECTED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -3582,7 +3598,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A cost, a saving or a distance that grows steadily for one person."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -3622,7 +3639,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that changes at a constant rate."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -3655,7 +3673,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that changes at a constant rate."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -3688,7 +3707,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that changes at a constant rate."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -3723,7 +3743,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-            "transfer": "REQUIRED"
+            "transfer": "REQUIRED",
+            "situation": "A cost, a saving or a distance that grows steadily for one person."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -3769,7 +3790,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-            "transfer": "EXPECTED"
+            "transfer": "EXPECTED",
+            "situation": "A cost, a saving or a distance that grows steadily for one person."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -4066,7 +4088,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "NUMERIC_ENTRY",
@@ -4099,7 +4122,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -4132,7 +4156,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -4165,7 +4190,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -4305,7 +4331,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A plan with a fixed total to share between two uses."
           },
           "responseFormat": {
             "format": "NUMERIC_ENTRY",
@@ -4338,7 +4365,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that rises and then falls."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -4371,7 +4399,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that rises and then falls."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -4404,7 +4433,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that rises and then falls."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -4440,7 +4470,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-            "transfer": "REQUIRED"
+            "transfer": "REQUIRED",
+            "situation": "A plan with a fixed total to share between two uses."
           },
           "responseFormat": {
             "format": "NUMERIC_ENTRY",
@@ -4646,7 +4677,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -4686,7 +4718,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -4719,7 +4752,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -4752,7 +4786,8 @@
           "context": {
             "kind": "ABSTRACT",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -4787,7 +4822,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-            "transfer": "EXPECTED"
+            "transfer": "EXPECTED",
+            "situation": "A draw, a spin or a pick whose outcomes are listed by counts."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -4998,7 +5034,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice between two games, routes or offers."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -5038,7 +5075,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "Two samples or two trials whose results are compared."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -5071,7 +5109,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "Two samples or two trials whose results are compared."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -5104,7 +5143,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "Two samples or two trials whose results are compared."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -5140,7 +5180,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-            "transfer": "REQUIRED"
+            "transfer": "REQUIRED",
+            "situation": "A choice between two games, routes or offers."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -5185,7 +5226,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-            "transfer": "EXPECTED"
+            "transfer": "EXPECTED",
+            "situation": "A choice between two games, routes or offers."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -5477,7 +5519,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "Measurements by sample or by period."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -5514,7 +5557,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "Measurements by sample or by period."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -5554,7 +5598,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-            "transfer": "REQUIRED"
+            "transfer": "REQUIRED",
+            "situation": "A household or personal record over time."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -5674,7 +5719,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A statement about a class, a team or a household."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -5717,7 +5763,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A conclusion drawn from a small set of measurements."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -5753,7 +5800,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A conclusion drawn from a small set of measurements."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -5789,7 +5837,8 @@
           "context": {
             "kind": "SCIENTIFIC",
             "authenticity": "NONE",
-            "transfer": "NOT_REQUIRED"
+            "transfer": "NOT_REQUIRED",
+            "situation": "A conclusion drawn from a small set of measurements."
           },
           "responseFormat": {
             "format": "SHORT_RESPONSE",
@@ -5827,7 +5876,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-            "transfer": "REQUIRED"
+            "transfer": "REQUIRED",
+            "situation": "A statement about a class, a team or a household."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",
@@ -5873,7 +5923,8 @@
           "context": {
             "kind": "PERSONAL",
             "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-            "transfer": "EXPECTED"
+            "transfer": "EXPECTED",
+            "situation": "A statement about a class, a team or a household."
           },
           "responseFormat": {
             "format": "SELECTED_RESPONSE",

@@ -63,6 +63,8 @@ export const MarkPointSchema = z.strictObject({ kind: z.enum(MARK_POINT_KINDS), 
 export const ConstructedPartSchema = z.strictObject({
   label: z.string().regex(/^[a-h]$/),
   prompt: TEXT,
+  /** QB-R2E, optional: the ONE command term of this part, from the specification's allowed vocabulary. Absent on a candidate made before it; null when the specification has no vocabulary. */
+  commandTerm: z.string().trim().min(2).max(60).nullable().optional(),
   marks: z.number().int().min(1).max(12),
   markScheme: z.array(MarkPointSchema).min(1),
   finalAnswer: TEXT,

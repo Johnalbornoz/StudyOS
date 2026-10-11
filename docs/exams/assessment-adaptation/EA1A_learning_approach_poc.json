@@ -238,7 +238,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "5b9f7fcb8fdd6be2c07a6b49bb89b234b0bb59622baf140e72b014d4cda8c4cb",
+      "specificationId": "f89efcdfa8f18b413aca75d5a4298831c20ae8a79c64d2155f048c1bf841fbde",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -256,7 +256,8 @@
         "context": {
           "kind": "PERSONAL",
           "authenticity": "NONE",
-          "transfer": "NOT_REQUIRED"
+          "transfer": "NOT_REQUIRED",
+          "situation": "A choice an individual makes between two offers."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -305,7 +306,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "384996608beda78cd25efebd889b2a5c78dac3bdc5083f9f7cd792106f851e19",
+      "specificationId": "eb990ab75ab90d964b65b3514518833547855c624e653fe1b260558a1eacca32",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -405,7 +406,8 @@
         "context": {
           "kind": "SOCIETAL",
           "authenticity": "NONE",
-          "transfer": "NOT_REQUIRED"
+          "transfer": "NOT_REQUIRED",
+          "situation": "A comparison of two public services, places or groups by a rate."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -454,7 +456,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "5713688aa676fff3cc951654e4c491ec3595ae62be9ec71358d4b149b3bedfab",
+      "specificationId": "d4521441ac6983d8e477cc69564516238191bbecec7e956e2340887f89505441",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -472,7 +474,8 @@
         "context": {
           "kind": "PERSONAL",
           "authenticity": "NONE",
-          "transfer": "NOT_REQUIRED"
+          "transfer": "NOT_REQUIRED",
+          "situation": "A statement about a class, a team or a household."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -524,7 +527,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "243344e868838b41abd209e78e596dfae86bd4596d2a8eeef179558679fe916e",
+      "specificationId": "d58c44a05ece534dc519d45136667b06f2120702b2835daea45a4e1b83695e66",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -614,7 +617,8 @@
         "context": {
           "kind": "SCIENTIFIC",
           "authenticity": "NONE",
-          "transfer": "NOT_REQUIRED"
+          "transfer": "NOT_REQUIRED",
+          "situation": "A conclusion drawn from a small set of measurements."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -666,7 +670,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "1a95e411fc48e21d7ef549a2d4a7b136a2bd00e53dcb9d352f4b089758fd0900",
+      "specificationId": "9dcc79fe367a649fc9a666c2f536b8255147b04563391023a09eb57cc864a304",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -684,7 +688,8 @@
         "context": {
           "kind": "PERSONAL",
           "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-          "transfer": "REQUIRED"
+          "transfer": "REQUIRED",
+          "situation": "A choice an individual makes between two offers."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -737,7 +742,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "af9b08b90180306164fc4744a2f53beb11f04dfd0ad6d853a716a86afc4f2475",
+      "specificationId": "33ffa462c23283b9b167d296284efc51dad272ff71b89b1a5a197601ca71c102",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -826,7 +831,8 @@
         "context": {
           "kind": "SOCIETAL",
           "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-          "transfer": "REQUIRED"
+          "transfer": "REQUIRED",
+          "situation": "A comparison of two public services, places or groups by a rate."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -879,7 +885,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "6547174d9cebd178611667cdae6ff7d2203690514078f5cffc0ffde72c183625",
+      "specificationId": "41d5fd9b19dc981fdab203763bebb2c2e21c0dd5dc2a8986d63bf68beb9b1604",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -897,7 +903,8 @@
         "context": {
           "kind": "PERSONAL",
           "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-          "transfer": "REQUIRED"
+          "transfer": "REQUIRED",
+          "situation": "A statement about a class, a team or a household."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -952,7 +959,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "b4a13a128e97f35286fa4063c4f4917c627853755f0257329a07ac089579b054",
+      "specificationId": "c7785e6a43326e33ab41208bca7f1fe47700e862f9fba8c69b3e77cffd72dab7",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1031,7 +1038,8 @@
         "context": {
           "kind": "SCIENTIFIC",
           "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-          "transfer": "REQUIRED"
+          "transfer": "REQUIRED",
+          "situation": "A conclusion drawn from a small set of measurements."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -1086,7 +1094,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "231f49da7ef9024eacfa5a49c4d81a9b68d9bfa3bf00f6e51d5daae76295e21e",
+      "specificationId": "d826ac893f153adcb0507c152d49e3f5de761fd86609d5d946a7ffb45a610a68",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1104,16 +1112,17 @@
         "context": {
           "kind": "SOCIETAL",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A comparison of two public services, places or groups by a rate."
         },
         "responseFormat": {
-          "format": "SELECTED_RESPONSE",
-          "productionFormat": "MULTIPLE_CHOICE"
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
         },
         "reasoningDepth": {
-          "depth": "ANSWER_ONLY",
-          "workingShown": false,
-          "justificationRequired": false
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
         },
         "commandTerm": null,
         "stimulus": {
@@ -1131,14 +1140,7 @@
           "calculator": "ALLOWED"
         },
         "numericProfile": "REALISTIC_VALUES",
-        "distractors": {
-          "source": "FAMILY_MISCONCEPTION_MODELS",
-          "misconceptionModelIds": [
-            "one-quantity",
-            "inverted-rate",
-            "difference"
-          ]
-        }
+        "distractors": null
       }
     },
     {
@@ -1153,7 +1155,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "1b88debfcbf1ef9aa04bf7f374786ac55b8537f8e5c9b93b87ade4c4feb58ce3",
+      "specificationId": "421a993058fc37dfcc90abe9a52a570733624624d8657df649acc7176f109e5a",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1222,7 +1224,8 @@
         "context": {
           "kind": "SOCIETAL",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A comparison of two public services, places or groups by a rate."
         },
         "responseFormat": {
           "format": "EXTENDED_RESPONSE",
@@ -1264,7 +1267,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "a85b1cbd435a694611da33a914a543449151f1c06981699bf05a65df7f835d6c",
+      "specificationId": "fe3ae80b5d0a54efd7aeb604d7115eb81d085d98409e22c523e876be5c2bd2d7",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1282,16 +1285,17 @@
         "context": {
           "kind": "SCIENTIFIC",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A conclusion drawn from a small set of measurements."
         },
         "responseFormat": {
-          "format": "SELECTED_RESPONSE",
-          "productionFormat": "MULTIPLE_CHOICE"
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
         },
         "reasoningDepth": {
-          "depth": "ANSWER_ONLY",
-          "workingShown": false,
-          "justificationRequired": false
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
         },
         "commandTerm": null,
         "stimulus": {
@@ -1312,14 +1316,7 @@
           "calculator": "ALLOWED"
         },
         "numericProfile": "REALISTIC_VALUES",
-        "distractors": {
-          "source": "FAMILY_MISCONCEPTION_MODELS",
-          "misconceptionModelIds": [
-            "association-as-cause",
-            "scale-ignored",
-            "plurality-as-majority"
-          ]
-        }
+        "distractors": null
       }
     },
     {
@@ -1334,7 +1331,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "2c72a1246fc3be2a75b7ba77c21369d05e521a67eb58c5da09e3ac6a7060c1e5",
+      "specificationId": "448be151fd8b58088efc858434b082f2ca41c6be4f85c3829342bdd84e0e4313",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1392,7 +1389,8 @@
         "context": {
           "kind": "SCIENTIFIC",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A conclusion drawn from a small set of measurements."
         },
         "responseFormat": {
           "format": "EXTENDED_RESPONSE",
@@ -1437,7 +1435,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "9eab869a3fc43983909dc4211941d890903ea375e6b57f88dc5c35177d1c1201",
+      "specificationId": "200caad61414a3c3866fc8d88c5b4a78853d3c577cc32b038a56855887a172ee",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1455,7 +1453,8 @@
         "context": {
           "kind": "PERSONAL",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A choice an individual makes between two offers."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -1507,7 +1506,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "68689af8b3eea83ccfff4b7821efaec924e58f086940e7a10c2047a5f0a5e7cd",
+      "specificationId": "20a853799686e0b82fedb6651d499f7ef479c69f9b0059426d1948bedfd7b8ad",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1607,7 +1606,8 @@
         "context": {
           "kind": "SOCIETAL",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A comparison of two public services, places or groups by a rate."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -1659,7 +1659,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "a21f1ad208354763cd8729dd27510ac4d23a773142abf497dbfe1295046fb089",
+      "specificationId": "b466cafc587ff428e15368e0879a5f7ddbbcab18624af3621625c93289dd7797",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1677,7 +1677,8 @@
         "context": {
           "kind": "PERSONAL",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A statement about a class, a team or a household."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -1732,7 +1733,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "68a0b341753a35bd88b75c36cbb8eb4727a72fb1e2a2426167e9533fee404ac5",
+      "specificationId": "a0b2e2fa5cec04ae1afcb58dc23d96166758eb559924b00a53ee167b0f971ea5",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1822,7 +1823,8 @@
         "context": {
           "kind": "SCIENTIFIC",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A conclusion drawn from a small set of measurements."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -1877,7 +1879,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "23ced062b0984636e99fffdbe987999af8d35b28c7e678b0ed6c9dbc87987e67",
+      "specificationId": "172bfcccb0b58e5c578435b9b05320480ebfb376bac6833e5bfcab09c185ece2",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1895,7 +1897,8 @@
         "context": {
           "kind": "PERSONAL",
           "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-          "transfer": "REQUIRED"
+          "transfer": "REQUIRED",
+          "situation": "A choice an individual makes between two offers."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -1948,7 +1951,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "30c2c85653c83ddc7afceda1a1abbd03fcdd3c20c3eeaffc4ebcd80512dd3e76",
+      "specificationId": "b97296f0cbf9db0f672801a537071afef77a15825d958359c7c2cd569cc50802",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -2037,7 +2040,8 @@
         "context": {
           "kind": "SOCIETAL",
           "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-          "transfer": "REQUIRED"
+          "transfer": "REQUIRED",
+          "situation": "A comparison of two public services, places or groups by a rate."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -2090,7 +2094,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "7ff65283c4ca840f3c9560d86187d0bca0b107fafa0e20bbf60eeabf31fc41f8",
+      "specificationId": "7ccf408f0a4e19d75889e3ea943abbeb0dfb83daf992ff2489920e344d96c9fa",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -2108,7 +2112,8 @@
         "context": {
           "kind": "PERSONAL",
           "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-          "transfer": "REQUIRED"
+          "transfer": "REQUIRED",
+          "situation": "A statement about a class, a team or a household."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -2163,7 +2168,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "dbc1933f4b5dbc631eb8becf77c4f006aedb1cf31e666004658e5234711a087f",
+      "specificationId": "57f55028e83c5d4dccb0cfaa1c0c2902e4da3e5bcc5e2ed2c1db98d7eaa0dbdc",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -2242,7 +2247,8 @@
         "context": {
           "kind": "SCIENTIFIC",
           "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
-          "transfer": "REQUIRED"
+          "transfer": "REQUIRED",
+          "situation": "A conclusion drawn from a small set of measurements."
         },
         "responseFormat": {
           "format": "SELECTED_RESPONSE",
@@ -2297,7 +2303,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "7c2753d6be19419a6b10b911ff64d18b82dbb6a8f6a9932cc0108ec1c5f333f5",
+      "specificationId": "8102511207ae067f21f4b4019155505713e4719a0b3c77cd458774d3e1c8e863",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -2315,16 +2321,17 @@
         "context": {
           "kind": "SOCIETAL",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A comparison of two public services, places or groups by a rate."
         },
         "responseFormat": {
-          "format": "SELECTED_RESPONSE",
-          "productionFormat": "MULTIPLE_CHOICE"
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
         },
         "reasoningDepth": {
-          "depth": "ANSWER_ONLY",
-          "workingShown": false,
-          "justificationRequired": false
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
         },
         "commandTerm": null,
         "stimulus": {
@@ -2342,14 +2349,7 @@
           "calculator": "ALLOWED"
         },
         "numericProfile": "REALISTIC_VALUES",
-        "distractors": {
-          "source": "FAMILY_MISCONCEPTION_MODELS",
-          "misconceptionModelIds": [
-            "one-quantity",
-            "inverted-rate",
-            "difference"
-          ]
-        }
+        "distractors": null
       }
     },
     {
@@ -2364,7 +2364,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "81c275bae3f3dbd6550168d96465aec0d9b588f4e1755c37667632849d853ae1",
+      "specificationId": "6443eefce7dfd33e576440b7360cf9bca9e78cc8527784885c0faf47f67e0a78",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -2433,7 +2433,8 @@
         "context": {
           "kind": "SOCIETAL",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A comparison of two public services, places or groups by a rate."
         },
         "responseFormat": {
           "format": "EXTENDED_RESPONSE",
@@ -2475,7 +2476,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "806850ef27aaa73817f56f12bf5b615a2b9c2caa33e22c7497afc303944b311b",
+      "specificationId": "b4dbdee7a97a69e05b65b8a3e87906ff24d43ddd96d6f6119f69c96bf627f551",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -2493,16 +2494,17 @@
         "context": {
           "kind": "SCIENTIFIC",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A conclusion drawn from a small set of measurements."
         },
         "responseFormat": {
-          "format": "SELECTED_RESPONSE",
-          "productionFormat": "MULTIPLE_CHOICE"
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
         },
         "reasoningDepth": {
-          "depth": "ANSWER_ONLY",
-          "workingShown": false,
-          "justificationRequired": false
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
         },
         "commandTerm": null,
         "stimulus": {
@@ -2523,14 +2525,7 @@
           "calculator": "ALLOWED"
         },
         "numericProfile": "REALISTIC_VALUES",
-        "distractors": {
-          "source": "FAMILY_MISCONCEPTION_MODELS",
-          "misconceptionModelIds": [
-            "association-as-cause",
-            "scale-ignored",
-            "plurality-as-majority"
-          ]
-        }
+        "distractors": null
       }
     },
     {
@@ -2545,7 +2540,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "3f5818e3d28cc441b172eeed94deaa022ddc64aa1378b0029d885c569680679f",
+      "specificationId": "0a576921589c6beb7d00a8b0c28aa33554053ee54b3d7a271abe10304712d9da",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -2603,7 +2598,8 @@
         "context": {
           "kind": "SCIENTIFIC",
           "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
-          "transfer": "EXPECTED"
+          "transfer": "EXPECTED",
+          "situation": "A conclusion drawn from a small set of measurements."
         },
         "responseFormat": {
           "format": "EXTENDED_RESPONSE",
@@ -2781,9 +2777,7 @@
       "invariantHashEqual": true,
       "conceptEqual": true,
       "changedByApproach": [
-        "responseFormat",
-        "reasoningDepth",
-        "distractors"
+        "responseFormat"
       ],
       "honoured": [
         "stem-plus.response.constructed",
@@ -2807,9 +2801,7 @@
       "invariantHashEqual": true,
       "conceptEqual": true,
       "changedByApproach": [
-        "responseFormat",
-        "reasoningDepth",
-        "distractors"
+        "responseFormat"
       ],
       "honoured": [
         "stem-plus.response.constructed",
@@ -2963,9 +2955,7 @@
       "invariantHashEqual": true,
       "conceptEqual": true,
       "changedByApproach": [
-        "responseFormat",
-        "reasoningDepth",
-        "distractors"
+        "responseFormat"
       ],
       "honoured": [
         "stem-plus.response.constructed",
@@ -2989,9 +2979,7 @@
       "invariantHashEqual": true,
       "conceptEqual": true,
       "changedByApproach": [
-        "responseFormat",
-        "reasoningDepth",
-        "distractors"
+        "responseFormat"
       ],
       "honoured": [
         "stem-plus.response.constructed",

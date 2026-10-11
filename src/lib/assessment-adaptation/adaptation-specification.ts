@@ -24,13 +24,13 @@ import { CALCULATOR_POLICIES, ConceptReferenceSchema, CONTEXT_KINDS, ELICITATION
 import { APPLICABILITY_BASES, APPLICABILITY_STATUSES, ApplicabilityEvidenceSchema } from './assessment-applicability';
 import { AuthorityVersionBindingSchema, AUTHENTICITY_REQUIREMENTS, MARK_STRUCTURES, PROFILE_STATUSES, REASONING_DEPTHS, RUBRIC_STYLES, RULE_AUTHORITIES, STIMULUS_MODES, TRANSFER_EXPECTATIONS } from './assessment-system-profile';
 import { sha256OfCanonicalJson } from './canonical-hash';
-import { NUMERIC_PROFILES, VARIABLE_DIMENSIONS } from './discipline-policy';
+import { MARK_POINT_KINDS, MARK_SCORING_KINDS, NUMERIC_PROFILES, VARIABLE_DIMENSIONS } from './discipline-policy';
 import { ADAPTATION_POOLS, CONTENT_USE_CLASSES, INSTANCE_CLASSES, INSTANCE_PURPOSES } from './instance-lineage';
 import { APPROACH_DIMENSIONS, APPROACH_PARTICIPATION_MODES, APPROACH_STATUSES, EVIDENCE_YIELDS, PREFERENCE_STRENGTHS } from '@/lib/learning-approach/learning-approach-profile';
 import { CURRICULUM_STRUCTURE_STATUSES, ENTITLEMENT_BASES } from '@/lib/learning-approach/institution-configuration';
 
 export const ADAPTATION_SPECIFICATION_VERSION = 2 as const;
-export const ADAPTATION_ENGINE = { id: 'studyus-adaptation-engine', version: '2' } as const;
+export const ADAPTATION_ENGINE = { id: 'studyus-adaptation-engine', version: '3' } as const;
 
 const ID = z.string().trim().min(1).max(200);
 const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
@@ -78,6 +78,8 @@ export const ADAPTATION_REFUSAL_CODES = [
   'ASSESSMENT_PROFILE_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT', 'DEV_TEST_CONTENT_NOT_ALLOWED_FOR_PURPOSE',
   'LEARNING_APPROACH_INVALID', 'LEARNING_APPROACH_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT', 'LEARNING_APPROACH_REQUIREMENT_UNMET', 'PARTICIPATION_MODE_NOT_ALLOWED', 'COLLABORATIVE_ACTIVITY_IS_NOT_INDIVIDUAL_EVIDENCE',
   'CURRICULUM_PROFILE_INVALID', 'CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED',
+  // QB-R2E: a mark structure of marked parts cannot be carried by a closed response format
+  'MARK_STRUCTURE_NOT_REALISABLE_BY_RESPONSE_FORMAT',
 ] as const;
 export type AdaptationRefusalCode = (typeof ADAPTATION_REFUSAL_CODES)[number];
 export interface AdaptationRefusal { code: AdaptationRefusalCode; detail: string }
@@ -164,16 +166,42 @@ export const AdaptationSpecificationSchema = z.strictObject({
   invariants: InvariantsSchema,
   invariantHash: SHA256,
   variable: z.strictObject({
-    context: z.strictObject({ kind: z.enum(CONTEXT_KINDS), authenticity: z.enum(AUTHENTICITY_REQUIREMENTS), transfer: z.enum(TRANSFER_EXPECTATIONS) }),
+    /** `situation` (QB-R2E, optional): the family's own description of what a context of that kind is for this task. */
+    context: z.strictObject({ kind: z.enum(CONTEXT_KINDS), authenticity: z.enum(AUTHENTICITY_REQUIREMENTS), transfer: z.enum(TRANSFER_EXPECTATIONS), situation: z.string().trim().min(3).max(400).optional() }),
     responseFormat: z.strictObject({ format: z.enum(ELICITATION_FORMATS), productionFormat: z.enum(['MULTIPLE_CHOICE', 'STUDENT_PRODUCED']).nullable() }),
     reasoningDepth: z.strictObject({ depth: z.enum(REASONING_DEPTHS), workingShown: z.boolean(), justificationRequired: z.boolean() }),
     commandTerm: z.string().nullable(),
+    /**
+     * QB-R2E, OPTIONAL. Present exactly when the profile has a controlled vocabulary. `commandTerm` above stays the
+     * LEAD term (the one that suits the first action of the evidence target); a task of several parts needs more than
+     * one, so the specification carries the whole vocabulary the profile records and, for each action of the
+     * evidence target, the terms of it that suit that action. No term is invented: every one is the profile's.
+     */
+    commandTerms: z.strictObject({
+      allowed: z.array(z.string().trim().min(2).max(60)).min(1), lead: z.string().trim().min(2).max(60),
+      byEvidenceAction: z.record(z.string(), z.array(z.string().trim().min(2).max(60))),
+      perPart: z.literal('EACH_PART_USES_ONE_ALLOWED_TERM'),
+      provenance: z.array(FieldProvenanceSchema).min(1),
+    }).optional(),
     stimulus: z.strictObject({ mode: z.enum(STIMULUS_MODES), kinds: z.array(ID) }),
     /** Codes of the SYSTEM's competency model this instance would count under. Empty when the system has none. */
     competencies: z.array(ID),
     /** Seconds the system's published totals leave per item or per mark; null when it publishes none. */
     timeBudget: z.strictObject({ secondsPerUnit: z.number().positive().nullable(), unit: z.enum(['ITEM', 'MARK']).nullable() }),
     markStructure: z.enum(MARK_STRUCTURES),
+    /**
+     * QB-R2E, OPTIONAL (absent on a specification made before it). What `markStructure` means for THIS instance:
+     * how it is scored, the range its total marks may take, how many parts, which kinds of mark point, whether it
+     * carries coded credit levels -- and who decided each (provenance, with authority).
+     */
+    marks: z.strictObject({
+      scoredAs: z.enum(MARK_SCORING_KINDS),
+      total: z.strictObject({ min: z.number().int().min(1), max: z.number().int().min(1) }),
+      parts: z.strictObject({ min: z.number().int().min(1), max: z.number().int().min(1) }).nullable(),
+      markPointKinds: z.array(z.enum(MARK_POINT_KINDS)),
+      creditLevels: z.boolean(),
+      provenance: z.array(FieldProvenanceSchema).min(1),
+    }).optional(),
     rubricStyle: z.enum(RUBRIC_STYLES),
     toolPolicy: z.strictObject({ calculator: z.enum(CALCULATOR_POLICIES) }),
     numericProfile: z.enum(NUMERIC_PROFILES),

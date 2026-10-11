@@ -77,3 +77,22 @@ export const MATH_CONSTRUCT_VOCABULARY: readonly ConstructVocabulary[] = [
 ];
 
 export const constructVocabularyOf = (construct: string): ConstructVocabulary | null => MATH_CONSTRUCT_VOCABULARY.find((v) => v.construct === construct) ?? null;
+
+/**
+ * QB-R2E -- what an item of a construct must NOT hand to the learner, because having it removes the work the
+ * construct is evidence of. Statements for the provider; the validators hold their own, independent detection of the
+ * cases a rule can see. Declarative only.
+ */
+export const CONSTRUCT_INTEGRITY: Readonly<Record<string, readonly string[]>> = {
+  DIRECT_PROPORTION_MISSING_VALUE: ['the missing value', 'the constant of proportionality already worked out'],
+  UNIT_RATE_COMPARISON_OF_TWO_OPTIONS: ['either unit rate already worked out', 'which option is better'],
+  LINE_THROUGH_TWO_POINTS: ['the slope', 'the intercept', 'the equation of the line'],
+  LINEAR_MODEL_FIXED_START_CONSTANT_RATE: ['the equation of the model written out', 'a value of the model that is asked for'],
+  QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING: ['the equation in factorised form', 'a root of the equation'],
+  QUADRATIC_MODEL_VERTEX_OPTIMUM: ['the two linear factors written as expressions in the free variable', 'the quadratic already expanded', 'the optimum'],
+  CLASSICAL_PROBABILITY_SINGLE_DRAW: ['the probability already worked out'],
+  COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES: ['either probability already worked out', 'whether the claim holds'],
+  RELATIVE_CHANGE_OR_SHARE_FROM_TABULATED_VALUES: ['the change, the share or the percentage already worked out'],
+  CLAIM_EVALUATION_AGAINST_A_DATA_DISPLAY: ['the verdict', 'a statement of whether the claim is supported'],
+};
+export const constructIntegrityOf = (construct: string): readonly string[] => CONSTRUCT_INTEGRITY[construct] ?? [];

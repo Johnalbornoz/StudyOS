@@ -9,6 +9,10 @@
  * recording, so that the stored artifacts are by construction what a replay gives -- and a unit test replays the
  * stored recording and compares byte for byte.
  *
+ * HISTORICAL. The run is replayed against the specifications STORED with it (`stored-selection.ts`), the version-1
+ * templates and response schema, and revision 2 of the validators -- the versions that produced and scored it.
+ * Later work (QB-R2E) adds new versions beside them and changes none of these.
+ *
  * A unit whose response the harness refuses is a RESULT: it is kept as a failure with the refusal's name. A unit
  * with no recording is NOT_RUN. Neither is repaired, and no item is edited by hand.
  */
@@ -23,7 +27,8 @@ import { evaluateModelOutputRights, evaluateRightsGate, type ModelOutputRightsEv
 import type { SpecificationBatch, SpecificationCandidate, SpecificationGenerationFailure } from '@/lib/exam-core/question-bank/production/specification-candidate';
 import { ANSWER_CLASSES, validateSpecificationCandidate, type SpecificationItemValidation } from '@/lib/exam-core/question-bank/production/specification-validators';
 import type { LiveRecording } from './budget';
-import { buildSelection, unitKeyOf, type SelectedAdaptation } from './selection';
+import { unitKeyOf, type SelectedAdaptation } from './selection';
+import { storedR2dSelection } from './stored-selection';
 
 export const QB_R2D_DIR = 'docs/exams/question-bank/pilots/qb-r2d' as const;
 export const QB_R2D_FILES = {
@@ -49,7 +54,7 @@ export const policyFor = (model: string, language: string) => ({ policyId: QB_R2
 
 export interface PlannedUnit { unitKey: string; selection: SelectedAdaptation; attempt: number; promptHash: string; system: string; user: string }
 /** The units of a run: every selected adaptation once, plus each recorded regeneration. Renders every prompt; calls no provider. */
-export function plannedUnits(model: string, regenerations: LiveRecordingFile['regenerations'] = [], selection: readonly SelectedAdaptation[] = buildSelection()): PlannedUnit[] {
+export function plannedUnits(model: string, regenerations: LiveRecordingFile['regenerations'] = [], selection: readonly SelectedAdaptation[] = storedR2dSelection()): PlannedUnit[] {
   const one = (s: SelectedAdaptation, attempt: number): PlannedUnit => {
     const unitKey = unitKeyOf(s.selectionKey, attempt);
     const construct = String((s.specification.invariants.construct as { construct?: unknown }).construct ?? '');
@@ -84,7 +89,7 @@ const briefOf = (c: SpecificationCandidate, stimulus: CandidateStimulus | null) 
 export interface QbR2dOutput { selection: unknown; specifications: unknown; batch: SpecificationBatch; report: Record<string, unknown> & { rows: ReportRow[] }; sameFamilyProof: Record<string, unknown>; approachProof: Record<string, unknown>; rights: Record<string, unknown> }
 
 /** Replays the recording through the harness and the validators. Deterministic: the same recording gives the same output, byte for byte. */
-export async function runQbR2d(recording: LiveRecordingFile, extraCorpus: readonly ComparisonEntry[] = [], selection: readonly SelectedAdaptation[] = buildSelection()): Promise<QbR2dOutput> {
+export async function runQbR2d(recording: LiveRecordingFile, extraCorpus: readonly ComparisonEntry[] = [], selection: readonly SelectedAdaptation[] = storedR2dSelection()): Promise<QbR2dOutput> {
   const model = recording.run.requestedModel;
   const units = plannedUnits(model, recording.regenerations, selection);
   // what the harness saw for a prompt is the LAST answer recorded for it (the retry, when there was one)

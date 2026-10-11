@@ -21,12 +21,14 @@ import {
 import { MATH_POC_FAMILIES } from '@/lib/exam-core/question-bank/task-families/math-poc-families';
 import { BudgetedLiveProvider, BudgetExceededError, costOf, GUARD_PRICE_BASIS, inputTokenUpperBound, QB_R2D_SPEND_CAP_USD, SpendLedger, type ModelTransport } from '../../scripts/operations/qb-r2d/budget';
 import { malformedCodeOf, plannedUnits, policyFor, QB_R2D_BATCH_KEY } from '../../scripts/operations/qb-r2d/pipeline';
-import { buildSelection, unitKeyOf } from '../../scripts/operations/qb-r2d/selection';
+import { unitKeyOf } from '../../scripts/operations/qb-r2d/selection';
+import { storedR2dSelection } from '../../scripts/operations/qb-r2d/stored-selection';
 
 const ROOT = process.cwd();
 const MODEL = 'fixture-model';
 const NOW = '2026-10-11T12:00:00Z';
-const SELECTION = buildSelection();
+// QB-R2D is pinned to the specifications stored with the run: the engine has moved on (QB-R2E) and would give other ids today.
+const SELECTION = storedR2dSelection();
 const specOf = (selectionKey: string): AdaptationSpecification => SELECTION.find((s) => s.selectionKey === selectionKey)!.specification;
 const constructOf = (s: AdaptationSpecification) => (s.invariants.construct as { construct: string }).construct;
 
@@ -537,13 +539,13 @@ describe('architecture: additive, pure, independent of the generator, and the li
   it('the cell-driven harness is untouched: its registry, its response schema and its provider list are what they were', () => {
     expect(strip(`${PROD}/generator/templates.ts`)).not.toMatch(/spec-/);
     expect(strip(`${PROD}/generator/generate-candidates.ts`)).not.toMatch(/specification-generation|specification-candidate/);
-    expect(readdirSync(join(ROOT, PROD, 'generator')).sort()).toEqual(['generate-candidates.ts', 'provider.ts', 'response-schema.ts', 'specification-generation.ts', 'templates.ts']);
+    expect(readdirSync(join(ROOT, PROD, 'generator')).sort()).toEqual(['generate-candidates.ts', 'provider.ts', 'response-schema.ts', 'specification-generation-v2.ts', 'specification-generation.ts', 'templates.ts']);
   });
   it('the live transport is outside src, and nothing in src imports the lane\'s scripts', () => {
-    expect(readdirSync(join(ROOT, 'scripts/operations/qb-r2d')).sort()).toEqual(['budget.ts', 'live-provider.ts', 'pipeline.ts', 'prior-corpus.ts', 'run.ts', 'selection.ts']);
+    expect(readdirSync(join(ROOT, 'scripts/operations/qb-r2d')).sort()).toEqual(['budget.ts', 'live-provider.ts', 'pipeline.ts', 'prior-corpus.ts', 'run.ts', 'selection.ts', 'stored-selection.ts']);
     for (const f of walk('src')) expect(readFileSync(join(ROOT, f), 'utf8'), f).not.toMatch(/scripts\/operations\/qb-r2d|qb-r2d\/live-provider/);
     // the only file of the lane that names a network endpoint or reads the key is the live transport
-    for (const f of ['budget.ts', 'pipeline.ts', 'selection.ts', 'prior-corpus.ts']) expect(strip(`scripts/operations/qb-r2d/${f}`), f).not.toMatch(/fetch\(|https?:\/\/|process\.env/);
+    for (const f of ['budget.ts', 'pipeline.ts', 'selection.ts', 'prior-corpus.ts', 'stored-selection.ts']) expect(strip(`scripts/operations/qb-r2d/${f}`), f).not.toMatch(/fetch\(|https?:\/\/|process\.env/);
     expect(strip('scripts/operations/qb-r2d/run.ts')).not.toMatch(/fetch\(|https?:\/\//);
     const live = strip('scripts/operations/qb-r2d/live-provider.ts');
     expect(live).toMatch(/Authorization: `Bearer \$\{o\.apiKey\}`/);

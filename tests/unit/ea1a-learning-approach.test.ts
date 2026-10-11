@@ -164,10 +164,11 @@ describe('STANDARD is the emphasis-neutral default, recorded by absence', () => 
   it('the EA-1 matrix artifact is what the function produces; its system-level specification ids are the ones EA-1 was accepted with', () => {
     const matrix = buildMathAdaptationMatrix();
     expect(serializeMathAdaptationMatrix(matrix)).toBe(read(MATH_POC_MATRIX_ARTIFACT));
-    // anchors recorded from the accepted EA-1 artifact (commit af0d763): the engine, the system profiles and the
-    // families are unchanged, so these ids are unchanged
+    // QB-R2E changed the ENGINE (version 3) and the discipline policy (0.2.0): every specification now states its marks
+    // and, where the profile has a vocabulary, its command terms per action. So every id is new; these anchors are the
+    // ids of engine 3. The EA-1 ids (7e8a5102, e03f9797, dfc246b9, f82420da) are those of engine 2 and are not reproduced.
     const id = (familyId: string, targetId: string) => matrix.cells.find((c) => c.familyId === familyId && c.targetId === targetId && c.level === 'SYSTEM')!.specificationId!.slice(0, 8);
-    expect([id('tf.math.proportion.missing-value', 'PAA'), id('tf.math.proportion.rate-comparison-model', 'PISA'), id('tf.math.linear.constant-rate-model', 'IB'), id('tf.math.data.judge-claim-against-display', 'ICFES')]).toEqual(['7e8a5102', 'e03f9797', 'dfc246b9', 'f82420da']);
+    expect([id('tf.math.proportion.missing-value', 'PAA'), id('tf.math.proportion.rate-comparison-model', 'PISA'), id('tf.math.linear.constant-rate-model', 'IB'), id('tf.math.data.judge-claim-against-display', 'ICFES')]).toEqual(['70fba1fc', '492cfb87', 'b8c752e6', 'a9d8412d']);
     // the Cambridge system profile is the one system profile that changed (its OFFICIAL rule gained its syllabus binding): its ids are no longer EA-1's
     expect(id('tf.math.quadratic.solve-by-factorising', 'CAMBRIDGE')).not.toBe('15545c47');
     // numbers, refusals and applicability are exactly EA-1's
@@ -209,8 +210,10 @@ describe('STEM_PLUS: emphasis, preferences and the conflict rule', () => {
   it('STEM_PLUS changes only what an approach controls, and records what it did', () => {
     const standard = spec(run(CLAIM, SCHOOL, null));
     const stem = spec(run(CLAIM, SCHOOL, null, STEM));
-    expect(differingDimensions(standard, stem)).toEqual(['responseFormat', 'reasoningDepth', 'distractors']);
-    expect([standard.variable.responseFormat.format, stem.variable.responseFormat.format, standard.variable.reasoningDepth.depth, stem.variable.reasoningDepth.depth]).toEqual(['SELECTED_RESPONSE', 'EXTENDED_RESPONSE', 'ANSWER_ONLY', 'JUSTIFIED_ARGUMENT']);
+    // QB-R2E: the school profile marks by parts, and a closed format cannot carry marked parts, so STANDARD is now a
+    // SHORT response (it was SELECTED, an unrealisable combination). The approach still moves the format, to EXTENDED.
+    expect(differingDimensions(standard, stem)).toEqual(['responseFormat']);
+    expect([standard.variable.responseFormat.format, stem.variable.responseFormat.format, standard.variable.reasoningDepth.depth, stem.variable.reasoningDepth.depth]).toEqual(['SHORT_RESPONSE', 'EXTENDED_RESPONSE', 'JUSTIFIED_ARGUMENT', 'JUSTIFIED_ARGUMENT']);
     const la = stem.learningApproach!;
     expect(la).toMatchObject({ approachId: 'STEM_PLUS', version: STEM_PLUS_APPROACH.version, status: 'PROVISIONAL', authority: 'STUDYUS_POLICY', participation: { mode: 'INDIVIDUAL', evidenceYield: 'INDIVIDUAL_EVIDENCE' }, unmetPreferences: [] });
     expect(la.honouredPreferences.map((h) => `${h.preferenceId}=${h.decided}`)).toEqual(['stem-plus.response.constructed=EXTENDED_RESPONSE', 'stem-plus.context.situated=SCIENTIFIC', 'stem-plus.tools.available=ALLOWED', 'stem-plus.stimulus.data=OWN_STIMULUS', 'stem-plus.reasoning.justified=JUSTIFIED_ARGUMENT']);
@@ -262,8 +265,11 @@ describe('STEM_PLUS: emphasis, preferences and the conflict rule', () => {
     expect(s.variable.stimulus.mode).toBe('NONE');
     expect(s.learningApproach!.unmetPreferences.find((u) => u.preferenceId === 'stem-plus.stimulus.data')!.overriddenBy).toEqual({ origin: 'FAMILY', ref: 'responseConstraints.stimulusNeed', authority: null });
     // and an explicit request beats a preference, on the record
-    const asked = spec(run(CLAIM, SCHOOL, null, { ...STEM, request: { responseFormat: 'SELECTED_RESPONSE' } }));
-    expect(asked.learningApproach!.unmetPreferences.find((u) => u.dimension === 'responseFormat')!.overriddenBy).toEqual({ origin: 'REQUEST', ref: 'responseFormat', authority: null });
+    const asked = spec(run(CLAIM, SCHOOL, null, { ...STEM, request: { calculatorPolicy: 'NONE' } }));
+    // ... but not when what is asked cannot carry the profile's mark structure: that is refused by name (QB-R2E)
+    const closed = run(CLAIM, SCHOOL, null, { ...STEM, request: { responseFormat: 'SELECTED_RESPONSE' } });
+    expect(closed.ok ? 'SPECIFICATION' : closed.refusal.code).toBe('MARK_STRUCTURE_NOT_REALISABLE_BY_RESPONSE_FORMAT');
+    expect(asked.learningApproach!.unmetPreferences.find((u) => u.dimension === 'toolPolicy')!.overriddenBy).toEqual({ origin: 'REQUEST', ref: 'calculatorPolicy', authority: null });
     // every unmet preference of every proof-of-concept cell names its overrider; none is dropped
     for (const c of POC.cells) if (c.learningApproach) {
       expect(c.learningApproach.honoured.length + c.learningApproach.unmet.length, `${c.country} ${c.targetId} ${c.familyId}`).toBe(STEM_PLUS_APPROACH.preferences.length);
@@ -550,7 +556,7 @@ describe('Mexico and Colombia proofs of concept', () => {
     // against an exam the official rules leave the approach only the context to choose
     for (const [country, targetId] of [['MX', 'PAA.MATEMATICAS'], ['MX', 'PISA.MATHEMATICS'], ['CO', 'ICFES.SABER11_MATEMATICAS'], ['CO', 'PISA.MATHEMATICS']]) for (const f of ['proportion.rate-comparison-model', 'data.judge-claim-against-display']) expect(changed(country, targetId, f).changedByApproach, `${country} ${targetId} ${f}`).toEqual(['context']);
     // in the school's own assessment it also gets the produced response and the justified argument it prefers
-    for (const country of ['MX', 'CO']) for (const f of ['proportion.rate-comparison-model', 'data.judge-claim-against-display']) expect(changed(country, 'SCHOOL_STEM_PERFORMANCE', f).changedByApproach).toEqual(['responseFormat', 'reasoningDepth', 'distractors']);
+    for (const country of ['MX', 'CO']) for (const f of ['proportion.rate-comparison-model', 'data.judge-claim-against-display']) expect(changed(country, 'SCHOOL_STEM_PERFORMANCE', f).changedByApproach).toEqual(['responseFormat']);
     expect(changed('MX', 'SCHOOL_STEM_PERFORMANCE', 'data.judge-claim-against-display').unmet).toEqual([]);
     for (const x of POC.comparisons) for (const d of x.changedByApproach) expect(COMPARED_DIMENSIONS).toContain(d);
     // the official overrides, recorded: PAA and Icfes fix the format and forbid the calculator; PISA fixes the format

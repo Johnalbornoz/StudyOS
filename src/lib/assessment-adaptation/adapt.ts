@@ -243,7 +243,9 @@ function build(input: AdaptInput): AdaptationSpecification {
   if (bands && !bands.bands.includes(request.difficultyBand)) violated('DIFFICULTY_ONLY', request.difficultyBand);
   provenance.difficulty = [requestProvenance('difficultyBand'), ...(bands ? [familyProvenance(`profileSupport.${profile.profileId}.DIFFICULTY_ONLY`)] : [])];
 
-  // 7 -- response format: allowed by the family AND by the profile, inside the family's constraint
+  // 7 -- response format: allowed by the family AND by the profile, inside the family's constraint.
+  // A mark structure of marked parts needs a response that has parts: a closed format (one key) cannot carry it.
+  const carriesTheMarkStructure = (f: ElicitationFormat): boolean => !(rules.markStructure.value === 'MULTI_MARK_PARTS' && CLOSED_FORMATS.has(f));
   const familyFormats = family.responseConstraints.allowedFormats;
   const profileFormats = rules.responseFormats.value;
   const formatConstraint = constraintOf('RESPONSE_FORMAT_ONLY');
@@ -253,12 +255,16 @@ function build(input: AdaptInput): AdaptationSpecification {
     if (!familyFormats.includes(format)) refuse('RESPONSE_FORMAT_NOT_ALLOWED', `${format} is not a format of the family (${familyFormats.join(', ')})`);
     if (!profileFormats.includes(format)) refuse('RESPONSE_FORMAT_NOT_ALLOWED', `${format} is not a format of the profile (${profileFormats.join(', ')})`);
     if (formatConstraint && !formatConstraint.formats.includes(format)) violated('RESPONSE_FORMAT_ONLY', format);
+    if (!carriesTheMarkStructure(format)) refuse('MARK_STRUCTURE_NOT_REALISABLE_BY_RESPONSE_FORMAT', `${format} was asked and the profile's mark structure is ${rules.markStructure.value}`);
     provenance.responseFormat = [requestProvenance('responseFormat'), ruleProvenance(rules, 'responseFormats'), familyProvenance('responseConstraints.allowedFormats')];
   } else {
     const both = familyFormats.filter((f) => profileFormats.includes(f));
     if (both.length === 0) refuseOn('responseFormats', 'RESPONSE_FORMAT_NOT_ALLOWED', `no format is allowed by both: family ${familyFormats.join(', ')} / profile ${profileFormats.join(', ')}`);
-    const open = both.filter((f) => !formatConstraint || formatConstraint.formats.includes(f));
-    if (open.length === 0) violated('RESPONSE_FORMAT_ONLY', both.join(', '));
+    const constrained = both.filter((f) => !formatConstraint || formatConstraint.formats.includes(f));
+    if (constrained.length === 0) violated('RESPONSE_FORMAT_ONLY', both.join(', '));
+    // QB-R2E: a format that cannot carry the profile's mark structure is never chosen; when none can, that is said by name
+    const open = constrained.filter(carriesTheMarkStructure);
+    if (open.length === 0) refuse('MARK_STRUCTURE_NOT_REALISABLE_BY_RESPONSE_FORMAT', `the profile's mark structure is ${rules.markStructure.value} and only ${constrained.join(', ')} are allowed by family and profile`);
     // the discipline's preference decides among what is left; a format the policy does not rank comes last, in the profile's order
     // the approach chooses first, but only among what is left; then the discipline's preference, as before
     const wantedFormat = preferenceOf('responseFormat')?.prefer.find((f) => (open as string[]).includes(f)) as ElicitationFormat | undefined;
@@ -267,7 +273,7 @@ function build(input: AdaptInput): AdaptationSpecification {
   }
   {
     const p = preferenceOf('responseFormat');
-    if (settle(p, format, () => (request.responseFormat !== undefined ? requestProvenance('responseFormat') : !p!.prefer.some((f) => (profileFormats as string[]).includes(f)) ? ruleProvenance(rules, 'responseFormats') : !p!.prefer.some((f) => (familyFormats as string[]).includes(f)) ? familyProvenance('responseConstraints.allowedFormats') : familyProvenance(`profileSupport.${profile.profileId}.RESPONSE_FORMAT_ONLY`))) && request.responseFormat === undefined) provenance.responseFormat.push(approachProvenance(p!));
+    if (settle(p, format, () => (request.responseFormat !== undefined ? requestProvenance('responseFormat') : !p!.prefer.some((f) => (profileFormats as string[]).includes(f)) ? ruleProvenance(rules, 'responseFormats') : !p!.prefer.some((f) => (profileFormats as string[]).includes(f) && carriesTheMarkStructure(f as ElicitationFormat)) ? ruleProvenance(rules, 'markStructure') : !p!.prefer.some((f) => (familyFormats as string[]).includes(f)) ? familyProvenance('responseConstraints.allowedFormats') : familyProvenance(`profileSupport.${profile.profileId}.RESPONSE_FORMAT_ONLY`))) && request.responseFormat === undefined) provenance.responseFormat.push(approachProvenance(p!));
   }
 
   // 8 -- context: one the family supports and the profile offers
@@ -390,6 +396,23 @@ function build(input: AdaptInput): AdaptationSpecification {
   provenance.timeBudget = [ruleProvenance(rules, 'timePressure')];
   provenance.markStructure = [ruleProvenance(rules, 'markStructure')];
   provenance.rubricStyle = [ruleProvenance(rules, 'rubricStyle')];
+  // QB-R2E: what the mark structure means for this instance. The structure is the profile's rule; the range of the
+  // total and of the parts is the discipline policy's (no profile records a total for one question).
+  const markMeaning = policy.marks[rules.markStructure.value];
+  const marks = {
+    scoredAs: markMeaning.scoredAs, total: { ...markMeaning.total }, parts: markMeaning.parts ? { ...markMeaning.parts } : null,
+    markPointKinds: markMeaning.scoredAs === 'MARKED_PARTS' ? [...policy.marks.markPointKinds] : [],
+    creditLevels: rules.rubricStyle.value === 'CODED_CREDIT_LEVELS',
+    provenance: [ruleProvenance(rules, 'markStructure'), policyProvenance(policy, `marks.${rules.markStructure.value}`), ruleProvenance(rules, 'rubricStyle')],
+  };
+  // QB-R2E: the whole vocabulary a task of several parts may draw on, and which of it suits each action it must elicit
+  const commandTerms = vocabulary.use === 'NONE' || commandTerm === null ? null : {
+    allowed: [...vocabulary.terms], lead: commandTerm,
+    byEvidenceAction: Object.fromEntries(family.evidenceTarget.actions.map((a) => [a, policy.commandTermByLeadAction[a].filter((t) => vocabulary.terms.includes(t))])),
+    perPart: 'EACH_PART_USES_ONE_ALLOWED_TERM' as const,
+    provenance: [ruleProvenance(rules, 'commandTerms'), policyProvenance(policy, 'commandTermByLeadAction'), familyProvenance('evidenceTarget.actions')],
+  };
+  const situation = family.supportedContexts.find((c) => c.kind === context)?.note ?? null;
 
   // distractors exist only where there are options, and come from the family's modelled errors
   const distractors = OPTION_FORMATS.has(format) ? { source: 'FAMILY_MISCONCEPTION_MODELS' as const, misconceptionModelIds: [...facts.misconceptionModelIds] } : null;
@@ -417,14 +440,16 @@ function build(input: AdaptInput): AdaptationSpecification {
     invariants,
     invariantHash: invariantHashOf(invariants),
     variable: {
-      context: { kind: context, authenticity, transfer },
+      context: { kind: context, authenticity, transfer, ...(situation ? { situation } : {}) },
       responseFormat: { format, productionFormat: PRODUCTION_FORMAT_OF[format] },
       reasoningDepth: { depth, workingShown: depthMeaning.workingShown, justificationRequired: depthMeaning.justificationRequired },
       commandTerm,
+      ...(commandTerms ? { commandTerms } : {}),
       stimulus: { mode: stimulusMode, kinds: stimulusMode === 'NONE' ? [] : [...family.responseConstraints.stimulusKinds] },
       competencies,
       timeBudget,
       markStructure: rules.markStructure.value,
+      marks,
       rubricStyle: rules.rubricStyle.value,
       toolPolicy: { calculator },
       numericProfile,
