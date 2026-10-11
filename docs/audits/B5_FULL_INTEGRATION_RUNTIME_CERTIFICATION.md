@@ -2,6 +2,9 @@
 
 Date: 2026-10-10 · Worktree: `studyos-assessment-b5` · Branch: `integration/assessment-b5-runtime-certification`
 
+> **B5-F update (2026-10-10).** Sections **AR–AY** at the end record the pre-Stage cleanup, the final DEV SHA and the
+> Stage promotion as far as it went, and supersede AQ.
+>
 > **B5-E update (2026-10-10).** Sections **AM–AQ** at the end record the hydrated browser gate, the question-supply
 > investigation and the Stage entry decision, and supersede AL.
 >
@@ -972,4 +975,205 @@ STAGE_GO_WITH_CONDITIONS
 
 Open product items, not Stage blockers: the subject-page "Comprobación individual" link; a replenishment
 trigger in the canonical flow; the retry cost; exam content.
+
+---
+
+# B5-F — Pre-Stage Cleanup & Stage Certification
+
+Start: `2ae85c6` (code `a2e041e`), clean tree. No unrelated work was merged. Production was not touched. Nothing
+was pushed.
+
+## AR. Canonical Entry-Point Cleanup
+
+Subject page, concept row "Comprobación individual":
+
+| Flag | Link |
+|---|---|
+| OFF | `/dashboard/quiz?subjectId=…&conceptId=…&mode=quick_check` (unchanged) |
+| ON | `/dashboard/assessment?intent=MASTERY_CHECK&origin=LEARNING_PATH&lc=<concept>` → canonical setup → canonical start |
+
+`quick_check` of one concept is now an assessment mode at the same entry boundary Today and My Path use
+(`entry.ts`: `quick_check → MASTERY_CHECK`, independent and unassisted like prove). The concept row calls
+`conceptCheckHref(...)`; it builds no route and reads no flag — the server page reads the flag and hands it down.
+The same mapping also re-points a `quick_check` launched by the legacy session engine.
+
+Student-facing direct quiz links, all of them:
+
+| Surface | Intent | Canonical required? | Action |
+|---|---|---:|---|
+| Subject page, concept row "Comprobación individual" | learner-selected check of one concept | yes | **done** |
+| Subject page "Evaluación acumulativa" | subject-wide cumulative assessment, no concept | no (specialised) | left; `MIXED_CUMULATIVE` exists in B2 but mapping it is a product decision |
+| Subject page "Simulación de examen" | subject-wide exam simulation | no (specialised) | left |
+| Repair Path steps (`remediationStepHref`) | remediation step, carries `remediationStepId` | no (specialised) | left |
+| Today, My Path, continuation, study plan, Start buttons | server launch target | yes | already canonical (B5-D) |
+| Teacher class assignment runner | assignment | no (specialised) | left |
+
+A test now fails if any page or component hand-builds a one-concept practice / check link to the legacy quiz.
+Still not mapped, and only reachable where the legacy decision engine is the authority: its `review` and
+`retention_check` launches.
+
+## AS. Learning Question Supply Lifecycle
+
+```text
+QUESTION_SUPPLY_HEALTHY
+```
+
+```text
+Learning surface / canonical setup      requestAssessmentSupply (after the response)
+  → existing queue                      one open PREPARE_INVENTORY job per Student + concept
+  → existing worker, own invocation     measures the pool against its own safe-depth rule; generates only if short
+  → generators' quality gate            questions stored VALIDATED in the Student's cache
+  → B2 eligibility + selection          only what is eligible now is offered or started
+```
+
+- The setup is a supply **trigger** only (`assessment-supply.service.ts`). It asks for the Student's own
+  concepts behind the scope (ownership enforced in the query; at most 5 per request). The Question Bank / cache
+  stays the content authority and B2 the selection authority.
+- **Start never generates.** A setup with nothing eligible still says "not available yet"; the request makes a
+  later visit succeed.
+- **Idempotent.** It reuses the queue's own rule — `INSERT … ON CONFLICT (dedup_key) WHERE status IN ('PENDING',
+  'RUNNING') DO NOTHING`, key `prepare:<student>:<concept>`. Test: 35 requests, 10 of them concurrent, for the
+  same Student + concept → one job; a new one only after the previous finished.
+- **After completion** the completed session's concepts are requested the same way, in `after()`: it cannot
+  delay, change or fail the result, writes no evidence and does not touch the Learning Decision.
+- No second pipeline: `generation_jobs` still has one writer.
+
+Hosted DEV, `2d3fc68`:
+
+| Case | Result |
+|---|---|
+| Setup opened for the fixture concept (pool already deep) | job queued and drained `SUCCEEDED`, `bankShort: false`, nothing generated |
+| Same setup twice more while open | never more than 1 open job |
+| **Cold concept** (Differentiation, 0 cached questions) | setup: "Esta práctica todavía no está disponible" → job queued → worker generated 15 questions in about 45 s → the same setup now offers QUICK / BALANCED 2 / DEEP 3 |
+
+The worker generates for the concept's current activity in the Learning Decision (here: learn check); the
+Blueprint Core draws from every validated question of the concept. A concept with no activity in the Learning
+Decision is not generated for.
+
+## AT. Final DEV SHA
+
+```text
+FINAL_DEV_CERTIFIED_SHA = 2d3fc68
+```
+
+Deployed to hosted DEV as `dpl_CuzknmyC2JHaGjfcCiqK36Fqpsfc` — `https://study-5v3dno0aa-study-so.vercel.app`.
+
+| Reduced DEV verification (HTTP, fixture `student-a`) | Result |
+|---|---|
+| Subject page → canonical setup; no `quick_check` quiz link left | PASS |
+| Low / cold pool → replenishment queued and drained | PASS |
+| Today / My Path still canonical | PASS |
+| Start → snapshot; resume; complete → result; exactly-once; legacy guard | PASS |
+| Run 1 (mastery check) | 47 / 47 |
+| Run 2 (practice, DEEP) | 48 / 48 |
+| Tests / typecheck / build | 509 files / 9,107 tests, 0 failed; `tsc --noEmit` clean; `next build` OK |
+
+Watch items — both `NON_REPRODUCED_WATCH_ITEM`: the React #418 warning on Today and the unexpected return to
+Today on mobile. Neither was seen again; note that B5-F ran no hydrated browser session, so this is "not
+re-observed", not "ruled out".
+
+## AU. Stage Migration & Deployment
+
+Pre-flight (read-only):
+
+| | Found |
+|---|---|
+| Stage alias `study-os-stage-study-so.vercel.app` | `92e3509`, `dpl_9VrkbGMci5w65bpWqKJeQ99yGpfS` — an ancestor of this branch (145 commits behind, none of its own) |
+| Stage database | Neon `ep-holy-thunder-ayxlpyex`, fingerprint `53d158d5811e7ee0` |
+| Stage ledger | 60 applied, **22 pending**, 0 drifted |
+| Canonical flag | not set in the `preview` environment = OFF |
+| `CANONICAL_ENGINE_V1_ENABLED` | present; value not read |
+| `CRON_SECRET` | present |
+| Worker history | 195 `PREPARE_INVENTORY` and 63 `BANK_REPLENISH` succeeded, last on 2026-10-09 |
+| Safe test Student | **none** — the 4 Students in Stage are real people's accounts |
+
+The 22 pending migrations were not only this line's: they are every migration since `20261031_1000` (exam
+platform, human review, safety routing, academic profile, simulation types, Question Bank carriers, frozen
+forms, the snapshot column, curriculum nodes). They are additive or constraint-widening; none rewrites or
+deletes data. The governed runner's dry-run listed exactly those 22; they were applied in order.
+
+| | After |
+|---|---|
+| Stage ledger | **82 applied, 0 pending, 0 drifted** |
+| Deployed | `2d3fc68` → `dpl_5FagcFXGuom1dSrKjYQryKoa7gcd`, `https://study-oo49i5u29-study-so.vercel.app` (`/api/version`: `2d3fc68`, target `preview`) |
+| Flag on that deployment | OFF — the start route answers 404, i.e. the legacy runtime |
+| Signed-out behaviour | `/dashboard/assessment` → sign-in; worker endpoint without the secret → 401 |
+| Stage alias | **not moved** — still `92e3509`, now running on the migrated schema |
+| Stage flag | **not enabled** |
+
+Why it stops here: enabling the canonical runtime on Stage without being able to exercise it would switch real
+people's accounts to an unverified path. See AV.
+
+## AV. Real Stage Authentication
+
+```text
+STAGE_TEST_IDENTITY_REQUIRED
+```
+
+No safe Stage identity exists, and the real sign-in gate is an operator step in any case (I do not sign a
+browser in through the identity provider, and the fixture tooling is DEV-only by design). Not done.
+
+Needed from the operator:
+
+1. A test Student in the Stage identity instance (not a real learner), signed in through the real sign-in UI.
+2. `ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED=true` in the `preview` environment only, then redeploy **`2d3fc68`**
+   and point the Stage alias at it.
+3. The smoke in AW, desktop and mobile.
+
+## AW. Stage Learning Smoke
+
+Not run (AV). The smoke to run, once signed in:
+
+```text
+Today → canonical setup → Start → answer → reload → answer restored → complete → result → "Ir a Hoy"
+Subject → "Comprobación individual" → canonical setup
+Exam Prep → four attempts shown unavailable, no start link
+```
+
+A new test Student has no cached questions: the first setup will say "not available yet" and queue the
+supply request; it becomes available once the worker has run (about a minute on DEV), provided the Learning
+Decision has an activity for the concept and the concept is canonically linked.
+
+## AX. Stage Question Supply
+
+Configuration is in place (`CRON_SECRET` present; the worker ran successfully on Stage as recently as
+2026-10-09; the endpoint is protected). The new setup-triggered request was **not** exercised on Stage: it needs
+an authenticated setup render.
+
+## AY. Stage Certification
+
+```text
+STAGE_INTEGRATED_ASSESSMENT_FAIL        (not certified — blocked by STAGE_TEST_IDENTITY_REQUIRED)
+```
+
+| # | Gate | Result |
+|---|---|---|
+| 1 | Exact DEV-certified SHA deployed | PASS (`2d3fc68`, immutable deployment; alias not moved) |
+| 2 | Stage migrations clean | PASS (82 / 0 / 0) |
+| 3 | Flag enabled in Stage only | NOT DONE (held until it can be verified) |
+| 4 | Real sign-in path | NOT DONE — operator |
+| 5 | Canonical Learning smoke | NOT RUN |
+| 6 | Resume | NOT RUN |
+| 7 | Subject-page canonical entry | NOT RUN on Stage (PASS on DEV) |
+| 8 | Question replenishment worker | configuration present; new trigger NOT RUN on Stage |
+| 9 | Result / continuation | NOT RUN |
+| 10 | No legacy double evidence | NOT RUN on Stage (PASS on DEV) |
+| 11 | Desktop / mobile | NOT RUN |
+| 12 | Tests / build green | PASS |
+
+Release readiness:
+
+```text
+LEARNING   NOT_EVALUATED — Stage is not certified
+EXAMS      NOT_READY_FOR_PRODUCTION_EXAM_RELEASE — human review, student eligibility, item-level attribution,
+           provenance / licensing and durations are still missing
+```
+
+Things to know before the operator continues:
+
+- The Stage alias now runs old code (`92e3509`) on a schema 22 migrations newer. The migrations are additive,
+  and nothing was observed failing, but only unauthenticated endpoints were checked.
+- Promoting `2d3fc68` to the alias moves Stage forward by 145 commits — every track merged into this line, not
+  only the assessment runtime.
+- With the flag off, `2d3fc68` behaves as the legacy runtime; the cutover is the flag alone.
 
