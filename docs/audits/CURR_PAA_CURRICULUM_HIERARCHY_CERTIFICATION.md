@@ -78,3 +78,23 @@ So a new PAA item has exactly one certified Topic and, through it, exactly one o
 Also on this branch: tsc clean; 500 files / 8,913 tests, 0 failures; platform chain certification 12 of 12 steps; B2-B1 schema certification unchanged; production build exit 0.
 
 The ephemeral seed differs from DEV: 410 fixtures and no attempts, and its Matemáticas V2.1 version is published where DEV's is a draft.
+
+## 6. DEV rollout (2026-10-10)
+
+DEV only (fingerprint `2a29b99ee14a22b4`). Stage and Production were not touched.
+
+Before the write the DEV ledger held 81 rows, not the 80 this line left: another line had applied `20261110_1800_assessment_snapshot` (a nullable `assessment_snapshot` column on `quiz_sessions` and `exam_instances`). The certification was re-run with that file in the prior chain (`EXTRA_MIGRATIONS`) and passed unchanged before anything was applied.
+
+| Step | Result |
+|---|---|
+| `npm run db:migrate -- --dry-run` | exactly `20261111_1000` pending |
+| `npm run db:migrate` | 1 applied; ledger 82, 0 pending, 0 drift |
+| `curr-paa-hierarchy.ts` (dry run) | 4 / 17 / 84 to create; 283 → 388 nodes; 460 objectives unchanged |
+| `curr-paa-hierarchy.ts --write` | applied, 0 problems |
+| Dry run again | creates nothing |
+
+Read-only verification, by hash before and after: objectives and where each hangs (460), every node outside the new hierarchy (283), structure versions (110), concepts (168) and labels, mappings (373 published, 5 retired), items (496) and versions (509), blueprints and targets, exam instances, exam attempts, simulation attempts, sources — all identical. Blueprint objectives per family unchanged (AICE 126, Cambridge 12, IB 256, ICFES 8, PAA 32, PISA 26).
+
+Hierarchy on DEV: Lectura 5 Domains / 20 Topics, Redacción 5 / 5, Matemáticas 4 / 44 (in the draft structure version), Inglés 3 / 15. Topics: 83 `OFFICIAL`, 1 `STUDYUS_POLICY`. No objective hangs from a new node; no item link exists; `paa.red.cohesion` is active under its section node in both configurations that have it; the concept *Cohesión y conectores* is active.
+
+Not applied: objective re-parenting (section 3).
