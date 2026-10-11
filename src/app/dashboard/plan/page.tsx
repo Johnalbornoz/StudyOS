@@ -15,10 +15,11 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import StartSessionButton from '../StartSessionButton';
 import { AddToPlanButton, ArchiveToggle, ExamRecommendationActions } from './PlanActions';
+import SchedulePanel from './SchedulePanel';
 import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 
-type Tab = 'plan' | 'explore' | 'recommended' | 'exam';
-const TABS: Tab[] = ['plan', 'explore', 'recommended', 'exam'];
+type Tab = 'plan' | 'schedule' | 'explore' | 'recommended' | 'exam';
+const TABS: Tab[] = ['plan', 'schedule', 'explore', 'recommended', 'exam'];
 
 /**
  * Track A -- the Student's learning plan: what I'm studying (Mi plan), what I
@@ -27,6 +28,10 @@ const TABS: Tab[] = ['plan', 'explore', 'recommended', 'exam'];
  * through the universal enrollment (one learner state per concept, progress
  * never reset); the Learning Engine is launched through the normal session
  * start. This page decides nothing pedagogical.
+ *
+ * L6 ST-4: the rolling 14-day schedule (formerly its own nav entry at
+ * /dashboard/study-plan) is the "schedule" tab here, so the Student has one
+ * plan destination.
  */
 export default async function LearningPlanPage({ searchParams }: { searchParams: Promise<{ tab?: string; subject?: string; context?: string }> }) {
   const sp = await searchParams;
@@ -47,12 +52,13 @@ export default async function LearningPlanPage({ searchParams }: { searchParams:
       <nav aria-label={t['lp.title']} className="ta-subnav">
         {TABS.map((k) => (
           <Link key={k} href={tabHref(k)} aria-current={k === tab ? 'page' : undefined}>
-            {t[`lp.tab.${k}` as MessageKey]}
+            {k === 'schedule' ? t['nav.studyPlan'] : t[`lp.tab.${k}` as MessageKey]}
           </Link>
         ))}
       </nav>
 
       {tab === 'plan' && <PlanTab />}
+      {tab === 'schedule' && <SchedulePanel />}
       {tab === 'explore' && <ExploreTab />}
       {tab === 'recommended' && <RecommendedTab />}
       {tab === 'exam' && <ExamTab />}

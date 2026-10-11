@@ -74,9 +74,12 @@ export interface LearnerNavInputs {
  *             phone/tablet bottom tabs, plus "Más".
  *             Mis tareas joins PRIMARY only while a teacher has assigned
  *             pending work (badge > 0); otherwise it lives under "Más".
- *   SECONDARY "Más": Tutor, Preparación de examen (also surfaced on
- *             Inicio when an exam goal is active), Mis tareas, Plan de
- *             estudio, Mejorar -- rendered collapsed.
+ *   SECONDARY "Más": Tutor, Mi plan, Preparación de examen (also
+ *             surfaced on Inicio when an exam goal is active), Mis
+ *             tareas, Mejorar -- rendered collapsed. Mi plan is the one
+ *             plan destination (L6 ST-4): the 14-day schedule that used
+ *             to be a second entry ("Plan de estudio") is a tab of it,
+ *             and /dashboard/study-plan redirects there.
  *   UTILITY   "Cuenta" -- rendered collapsed.
  *
  * Grouping is presentation only; routes, permissions and badge counts
@@ -118,10 +121,9 @@ export function buildLearnerNav(inputs: LearnerNavInputs): LearnerNavGroup[] {
     titleKey: 'nav.groupMore',
     items: [
       { key: 'tutor', href: '/dashboard/tutor', labelKey: 'nav.tutor', iconKey: 'MessageCircle' },
-      { key: 'myPlan', href: '/dashboard/plan', labelKey: 'nav.myPlan', iconKey: 'Map' },
+      { key: 'myPlan', href: '/dashboard/plan', labelKey: 'nav.myPlan', iconKey: 'Map', activePrefixes: ['/dashboard/study-plan'] },
       ...(examPrimary ? [] : [examPrep]),
       ...(hasPendingAssignments ? [] : [assignments]),
-      { key: 'studyPlan', href: '/dashboard/study-plan', labelKey: 'nav.studyPlan', iconKey: 'ListChecks' },
       { key: 'debt', href: '/dashboard/learning-debt', labelKey: 'nav.debt', iconKey: 'RotateCcw', badge: inputs.debtCount },
     ],
   };
