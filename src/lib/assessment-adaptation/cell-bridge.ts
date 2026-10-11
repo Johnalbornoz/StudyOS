@@ -12,14 +12,18 @@
  * It takes a STRUCTURAL view of a cell, so that this directory does not import the Production OS: the
  * dependency runs from production to adaptation, never back. A `RequirementCell` satisfies the view as it is.
  *
- * Production is strict where the proof of concept is not: a specification for a cell requires the family's
- * concept to be CERTIFIED for the cell's exam family. A behaviour fit is not enough to produce for an exam.
+ * Production is strict where the proof of concept is not. A specification for a cell:
+ *   - requires ASSESSMENT APPLICABILITY of the concept to be ESTABLISHED for the target (a behaviour fit is not enough
+ *     to produce for an exam), whatever the use class;
+ *   - targets the concrete COMPONENT profile the caller names for the cell (the exam's own module knows which
+ *     component a section is; the cell does not), or is refused where one is required;
+ *   - states its content use class: a DRAFT family yields DEV_TEST_CONTENT only.
  */
 import type { ElicitationFormat, TaskFamily, TaskFamilyRegistry } from '@/lib/exam-core/question-bank/task-families/task-family';
 import { adapt, type AdaptationResult } from './adapt';
-import type { AdaptationRefusalCode, AdaptationRequest, KnowledgeRequirement } from './adaptation-specification';
-import type { AssessmentSystemProfile } from './assessment-system-profile';
-import { INSTANCE_PURPOSES, type InstancePurpose } from './instance-lineage';
+import type { AdaptationRefusalCode, AdaptationRequest, ApplicabilityRequirement } from './adaptation-specification';
+import type { AssessmentComponentProfile, AssessmentSystemProfile } from './assessment-system-profile';
+import { INSTANCE_PURPOSES, type ContentUseClass, type InstancePurpose } from './instance-lineage';
 
 /** The fields of a requirement cell the bridge reads. */
 export interface AdaptationCellView {
@@ -73,15 +77,21 @@ export type CellAdaptationResult = Extract<AdaptationResult, { ok: true }> | { o
 export interface AdaptForCellInput {
   cell: AdaptationCellView;
   family: TaskFamily;
-  /** The profiles to resolve the cell's exam family in. One profile per exam family; none = refusal, never a neighbour's. */
+  /** The system profiles to resolve the cell's exam family in. One per exam family; none = refusal, never a neighbour's. */
   profiles: readonly AssessmentSystemProfile[];
+  /** The component profile of that system the cell's content belongs to. */
+  component?: AssessmentComponentProfile | null;
+  /** The applicability register. */
+  applicability: readonly unknown[];
+  /** What the content is produced for. Stated by the caller; never defaulted. */
+  contentUseClass: ContentUseClass;
   disciplinePolicy: unknown;
   /** The language items of the cell are written in (the exam's own module knows it; the cell does not). */
   language: string;
   registry?: TaskFamilyRegistry;
   adaptedAt?: string | null;
-  /** Defaults to CERTIFIED. Loosening it is a decision, so it is a parameter and never a default. */
-  knowledgeRequirement?: KnowledgeRequirement;
+  /** Defaults to ESTABLISHED. Loosening it is a decision, so it is a parameter and never a default; evidence-bearing content cannot loosen it at all. */
+  applicabilityRequirement?: ApplicabilityRequirement;
 }
 
 /** The specification for ONE cell from ONE family. Everything the cell fixes is asked for explicitly; the engine refuses what does not fit. */
@@ -96,8 +106,8 @@ export function adaptForCell(input: AdaptForCellInput): CellAdaptationResult {
   if (!(INSTANCE_PURPOSES as readonly string[]).includes(cell.intendedPool)) return no('CELL_POOL_IS_NOT_A_KNOWN_PURPOSE', cell.intendedPool);
   if (!stimulusFits(cell, family)) return no('CELL_STIMULUS_DOES_NOT_FIT_THE_FAMILY', `${cell.stimulus.class} / ${family.responseConstraints.stimulusNeed}`);
   const request: AdaptationRequest = {
-    purpose: cell.intendedPool as InstancePurpose, difficultyBand: cell.difficultyBand, language: input.language, targetPrimaryConceptStableId: cell.primaryConcept.stableId, responseFormat,
-    requirementCellKey: cell.cellKey, knowledgeRequirement: input.knowledgeRequirement ?? 'CERTIFIED',
+    purpose: cell.intendedPool as InstancePurpose, contentUseClass: input.contentUseClass, difficultyBand: cell.difficultyBand, language: input.language, targetPrimaryConceptStableId: cell.primaryConcept.stableId, responseFormat,
+    requirementCellKey: cell.cellKey, applicabilityRequirement: input.applicabilityRequirement ?? 'ESTABLISHED',
   };
-  return adapt({ family, profile, disciplinePolicy: input.disciplinePolicy, request, registry: input.registry, adaptedAt: input.adaptedAt });
+  return adapt({ family, profile, component: input.component ?? undefined, applicability: input.applicability, disciplinePolicy: input.disciplinePolicy, request, registry: input.registry, adaptedAt: input.adaptedAt });
 }

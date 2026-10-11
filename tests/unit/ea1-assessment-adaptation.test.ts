@@ -13,20 +13,22 @@ import { join } from 'path';
 import { z } from 'zod';
 import { adapt, invariantsOfFamily, invariantsPreserved, type AdaptationResult } from '@/lib/assessment-adaptation/adapt';
 import { ADAPTATION_REFUSAL_CODES, AdaptationSpecificationSchema, invariantHashOf, PRODUCTION_FORMAT_OF, specificationIdOf, specificationIntegrityIssues, type AdaptationRequest, type AdaptationSpecification } from '@/lib/assessment-adaptation/adaptation-specification';
-import { AssessmentSystemProfileSchema, authorityBreakdown, PROFILE_RULE_DIMENSIONS, RuleAuthoritySchema, validateAssessmentSystemProfile, type AssessmentSystemProfile, type ProfileRules } from '@/lib/assessment-adaptation/assessment-system-profile';
+import { applicabilityRegisterIssues, applicabilityStatusOf, AssessmentApplicabilityRecordSchema, EA1_APPLICABILITY_THRESHOLD, resolveApplicability, type ApplicabilityThresholdPolicy, type AssessmentApplicabilityRecord } from '@/lib/assessment-adaptation/assessment-applicability';
+import { AssessmentComponentProfileSchema, AssessmentSystemProfileSchema, authorityBreakdown, PROFILE_RULE_DIMENSIONS, resolveProfile, RuleAuthoritySchema, validateAssessmentSystemProfile, type AssessmentComponentProfile, type AssessmentSystemProfile, type ProfileRules } from '@/lib/assessment-adaptation/assessment-system-profile';
 import { canonicalJson, sha256OfCanonicalJson } from '@/lib/assessment-adaptation/canonical-hash';
 import { adaptForCell, evidenceTargetOfCell, selectTaskFamilies } from '@/lib/assessment-adaptation/cell-bridge';
 import { DisciplineAdaptationPolicySchema, INVARIANT_DIMENSIONS, MATHEMATICS_ADAPTATION_POLICY, VARIABLE_DIMENSIONS } from '@/lib/assessment-adaptation/discipline-policy';
-import { ADAPTATION_EVIDENCE_FACETS, ADAPTATION_POOLS, AdaptationLineageSchema, INSTANCE_PURPOSES, instanceClassSatisfies, minimumInstanceClassFor, NOT_ESTABLISHED_BY_ADAPTATION, PROMOTION_PATH } from '@/lib/assessment-adaptation/instance-lineage';
-import { buildMathAdaptationMatrix, buildMathPocSpecifications, COMPARED_DIMENSIONS, differingDimensions, MATH_POC_MATRIX_ARTIFACT, MINIMUM_PAIRWISE_DIFFERENCE, serializeMathAdaptationMatrix } from '@/lib/assessment-adaptation/math-poc-matrix';
-import { EA1_SYSTEM_PROFILES, IB_SYSTEM_PROFILE, PAA_SYSTEM_PROFILE, PISA_SYSTEM_PROFILE, systemProfileOf, systemProfileOfExamFamily } from '@/lib/assessment-adaptation/system-profiles';
+import { ADAPTATION_EVIDENCE_FACETS, ADAPTATION_POOLS, AdaptationLineageSchema, AuthoredFamilyLineageSchema, CONTENT_USE_CLASSES, INSTANCE_PURPOSES, instanceClassSatisfies, instancePolicyFor, mayBearEvidence, NOT_ESTABLISHED_BY_ADAPTATION, PROMOTION_PATH } from '@/lib/assessment-adaptation/instance-lineage';
+import { MATH_POC_APPLICABILITY, MATH_POC_COMPONENT_OBJECTIVE_PREFIX, PISA_MATHEMATICS_OBJECTIVE } from '@/lib/assessment-adaptation/math-poc-applicability';
+import { buildMathAdaptationMatrix, buildMathPocSpecifications, COMPARED_DIMENSIONS, differingDimensions, MATH_POC_MATRIX_ARTIFACT, MINIMUM_PAIRWISE_DIFFERENCE, MINIMUM_SAME_SYSTEM_DIFFERENCE, serializeMathAdaptationMatrix } from '@/lib/assessment-adaptation/math-poc-matrix';
+import { CAMBRIDGE_SYSTEM_PROFILE, componentProfileOf, componentProfilesOf, EA1_COMPONENT_PROFILES, EA1_SYSTEM_PROFILES, IB_MATH_AA_HL_P1_COMPONENT, IB_MATH_AA_HL_P2_COMPONENT, IB_SYSTEM_PROFILE, PAA_MATEMATICAS_COMPONENT, PAA_SYSTEM_PROFILE, PISA_MATHEMATICS_COMPONENT, PISA_SYSTEM_PROFILE, systemProfileOf, systemProfileOfExamFamily } from '@/lib/assessment-adaptation/system-profiles';
 import { LOGICAL_POOLS } from '@/lib/assessment-blueprint/protected/pools';
-import { PAA_TOPICS } from '@/lib/curriculum/paa/paa-hierarchy';
+import { PAA_DOMAINS, PAA_TOPICS } from '@/lib/curriculum/paa/paa-hierarchy';
 import { AICE_SYLLABI } from '@/lib/exam-core/aice/aice-syllabi.generated';
 import { allLearningLinks } from '@/lib/exam-core/catalog/objective-learning-links';
 import { ASSESSMENT_SOURCES } from '@/lib/exam-core/catalog/sources';
 import { ComponentDefinitionSchema } from '@/lib/exam-core/component-definition';
-import { DEFAULT_TASK_FAMILY_REGISTRY, EA1_DEFAULT_FAMILY_ASSUMPTION, evidenceDemandByConcept, KNOWN_FAMILY_TYPES, MATH_POC_FAMILIES, MATH_POC_KNOWLEDGE_LINKS, MATH_POC_PROFILE_IDS, MATH_PROBLEM_SPECIALIZATION, mathPocFamilyOf, minimumFamiliesFor, parameterizationViolations, TaskFamilyCommonSchema, type MathTaskFamily, type TaskFamilySpecialization } from '@/lib/exam-core/question-bank/task-families';
+import { DEFAULT_TASK_FAMILY_REGISTRY, EA1_DEFAULT_FAMILY_ASSUMPTION, evidenceDemandByConcept, familyMayFeedEvidenceBearingContent, KNOWN_FAMILY_TYPES, MATH_POC_FAMILIES, MATH_POC_PROFILE_IDS, MATH_PROBLEM_SPECIALIZATION, mathPocFamilyOf, minimumFamiliesFor, parameterizationViolations, TaskFamilyCommonSchema, type AssessmentTaskFamily, type MathTaskFamily, type TaskFamily, type TaskFamilySpecialization } from '@/lib/exam-core/question-bank/task-families';
 import { CALCULATOR_POLICIES, ELICITATION_FORMATS, TASK_DIFFICULTY_BANDS } from '@/lib/exam-core/question-bank/task-families/task-family';
 import { GenerationBatchSchema, lineageGaps, QuestionCandidateSchema, type QuestionCandidate } from '@/lib/exam-core/question-bank/production/generation-contract';
 import { generateCandidates, renderGenerationPrompt, type GenerateCandidatesInput } from '@/lib/exam-core/question-bank/production/generator/generate-candidates';
@@ -61,7 +63,12 @@ const walk = (d: string): string[] => readdirSync(join(ROOT, d), { withFileTypes
 const ADAPTATION_DIR = 'src/lib/assessment-adaptation';
 const FAMILIES_DIR = 'src/lib/exam-core/question-bank/task-families';
 const POLICY = MATHEMATICS_ADAPTATION_POLICY;
-const REQUEST: AdaptationRequest = { purpose: 'PRACTICE', difficultyBand: 'STANDARD', language: 'es' };
+const REQUEST: AdaptationRequest = { purpose: 'PRACTICE', contentUseClass: 'DEV_TEST_CONTENT', difficultyBand: 'STANDARD', language: 'es' };
+const POC_CONCEPT_IDS = ['math.alg.quadratics', 'math.fun.linear-functions-lines', 'math.num.ratio-proportion', 'math.prob.probability', 'math.stat.data-representation'];
+/** The component a test targets when it names only a system: the first one modelled for it. */
+const DEFAULT_COMPONENT: Record<string, AssessmentComponentProfile> = Object.fromEntries(EA1_SYSTEM_PROFILES.map((p) => [p.profileId, componentProfilesOf(p.profileId)[0]]));
+const ICFES_COMPONENT = componentProfileOf('ICFES.SABER11_MATEMATICAS')!;
+const CAMBRIDGE_COMPONENT = componentProfileOf('CAMBRIDGE.9709.P1')!;
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const fam = (id: string): MathTaskFamily => mathPocFamilyOf(id)!;
 const MISSING_VALUE = fam('tf.math.proportion.missing-value');
@@ -69,11 +76,17 @@ const RATE_MODEL = fam('tf.math.proportion.rate-comparison-model');
 const LINEAR_MODEL = fam('tf.math.linear.constant-rate-model');
 const FACTORISING = fam('tf.math.quadratic.solve-by-factorising');
 const DATASET = fam('tf.math.data.rate-of-change-from-realistic-dataset');
-const run = (family: unknown, profile: unknown, request: unknown = REQUEST, policy: unknown = POLICY): AdaptationResult => adapt({ family, profile, disciplinePolicy: policy, request });
+/** Adapts into a COMPONENT: the one given, or the default component of the system. `null` targets the system alone. */
+const run = (family: unknown, profile: unknown, request: unknown = REQUEST, policy: unknown = POLICY, component?: unknown): AdaptationResult => adapt({ family, profile, component: component === undefined ? DEFAULT_COMPONENT[(profile as { profileId?: string })?.profileId ?? ''] : component ?? undefined, applicability: MATH_POC_APPLICABILITY, disciplinePolicy: policy, request });
+const runSystem = (family: unknown, profile: unknown, request: unknown = REQUEST): AdaptationResult => run(family, profile, request, POLICY, null);
+const reviewed = <T extends TaskFamily>(f: T): T => ({ ...clone(f), lifecycle: 'CERTIFIED', reviewStatus: 'REVIEWED' });
 const spec = (r: AdaptationResult): AdaptationSpecification => { if (!r.ok) throw new Error(`refused: ${r.refusal.code} ${r.refusal.detail}`); return r.specification; };
 const refusal = (r: AdaptationResult): string => (r.ok ? 'NOT_REFUSED' : r.refusal.code);
 const MATRIX = buildMathAdaptationMatrix();
-const { specifications: SPECS } = buildMathPocSpecifications();
+const { specifications: ALL_SPECS } = buildMathPocSpecifications();
+/** The component-level specifications, keyed `<familyId>|<componentId>`. */
+const SPECS = new Map([...ALL_SPECS.entries()].filter(([, s]) => s.componentProfile !== null));
+const COMPONENT_CELLS = MATRIX.cells.filter((c) => c.level === 'COMPONENT');
 
 describe('task family: canonical knowledge is referenced, never duplicated', () => {
   it('the ten proof-of-concept families are valid MATH_PROBLEM families, all DRAFT and UNREVIEWED, written by StudyUs with no copied expression', () => {
@@ -105,43 +118,20 @@ describe('task family: canonical knowledge is referenced, never duplicated', () 
     // a family id belongs to no exam either
     for (const f of MATH_POC_FAMILIES) expect(f.familyId).not.toMatch(/paa|pisa|icfes|saber|cambridge|aice|\bib\b/i);
     // the same concept reaches several systems through ONE id: quadratics is specified for four of them
-    expect(new Set([...SPECS.values()].filter((s) => s.primaryConcept.stableId === 'math.alg.quadratics').map((s) => s.assessmentProfile.profileId)).size).toBe(4);
+    expect(new Set([...SPECS.values()].filter((s) => s.primaryConcept.stableId === 'math.alg.quadratics').map((s) => s.systemProfile.profileId)).size).toBe(4);
     expect(new Set([...SPECS.values()].filter((s) => s.primaryConcept.stableId === 'math.alg.quadratics').map((s) => canonicalJson(s.primaryConcept))).size).toBe(1);
   });
 
   it('a family carries its concept\'s own canonical subject: Matemáticas and Mathematics are never merged, aliased or inferred', () => {
     expect([...new Set(MATH_POC_FAMILIES.map((f) => f.canonicalSubject))].sort()).toEqual(['Matemáticas', 'Mathematics']);
     expect(MATH_POC_FAMILIES.filter((f) => f.canonicalSubject === 'Mathematics').map((f) => f.primaryConcepts[0].stableId)).toEqual(['math.alg.quadratics', 'math.alg.quadratics']);
+    // a family says nothing about applicability: the field does not exist, and cannot be added
+    expect(Object.keys(TaskFamilyCommonSchema.shape)).not.toContain('canonicalKnowledgeAvailability');
+    expect(TaskFamilyCommonSchema.safeParse({ ...clone(MISSING_VALUE), assessmentApplicability: {} }).success).toBe(false);
     // a concept of another subject cannot sit in a family, whatever its name
     const mixed = { ...clone(MISSING_VALUE), canonicalSubject: 'Mathematics' };
     expect(TaskFamilyCommonSchema.safeParse(mixed).error?.issues.map((i) => i.message)).toContain('CONCEPT_IS_OF_ANOTHER_CANONICAL_SUBJECT');
     for (const d of [FAMILIES_DIR, ADAPTATION_DIR]) for (const f of walk(d)) expect(code(f), f).not.toMatch(/Matemáticas'\s*[=!]==?\s*'Mathematics|SUBJECT_ALIAS|subjectAlias|equivalentSubject|toLowerCase\(\)\.startsWith\('mat/i);
-  });
-
-  it('canonical-knowledge availability is a fact read from the repository, separate from behaviour support, and never inferred across subjects', () => {
-    const links = allLearningLinks();
-    const prefixOf: Record<string, RegExp> = { PISA: /^pisa\./, IB: /^(aahl|aasl|ai)\./, CAMBRIDGE: /^aice\./, ICFES: /^saber\./ };
-    for (const f of MATH_POC_FAMILIES) {
-      const c = f.primaryConcepts[0];
-      expect(f.canonicalKnowledgeAvailability.PAA.status).toBe('CERTIFIED_FOR_THIS_EXAM_FAMILY');
-      for (const p of ['IB', 'CAMBRIDGE', 'PISA', 'ICFES'] as const) {
-        // every reviewed objective link of that exam family that names this exact (subject, name)
-        const recorded = Object.entries(links).filter(([objective, link]) => prefixOf[p].test(objective) && (link.concepts ?? []).some((x) => x.subject === c.canonicalSubject && x.name === c.canonicalName)).map(([objective]) => objective).sort();
-        expect([...(MATH_POC_KNOWLEDGE_LINKS[c.stableId][p] ?? [])].sort(), `${c.stableId} / ${p}`).toEqual(recorded);
-        expect(f.canonicalKnowledgeAvailability[p].status, `${f.familyId} / ${p}`).toBe(recorded.length > 0 ? 'CATALOGUE_LINK_RECORDED' : 'NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY');
-      }
-    }
-    // the tension, stated: a Matemáticas concept fits IB behaviour and is NOT certified there; nothing bridges the two
-    const s = spec(run(LINEAR_MODEL, IB_SYSTEM_PROFILE));
-    expect([s.primaryConcept.canonicalSubject, s.canonicalKnowledgeAvailability.status]).toEqual(['Matemáticas', 'NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY']);
-    expect(refusal(run(LINEAR_MODEL, IB_SYSTEM_PROFILE, { ...REQUEST, knowledgeRequirement: 'CATALOGUE_LINK_OR_CERTIFIED' }))).toBe('CANONICAL_KNOWLEDGE_NOT_CERTIFIED_FOR_EXAM_FAMILY');
-    // quadratics (Mathematics) is linked for IB in the catalogue, which is weaker than certified and is told apart
-    expect(spec(run(FACTORISING, IB_SYSTEM_PROFILE, { ...REQUEST, knowledgeRequirement: 'CATALOGUE_LINK_OR_CERTIFIED' })).canonicalKnowledgeAvailability.status).toBe('CATALOGUE_LINK_RECORDED');
-    expect(refusal(run(FACTORISING, IB_SYSTEM_PROFILE, { ...REQUEST, knowledgeRequirement: 'CERTIFIED' }))).toBe('CANONICAL_KNOWLEDGE_NOT_CERTIFIED_FOR_EXAM_FAMILY');
-    // a system the family says nothing about is not certified, and not supported
-    const silent = clone(MISSING_VALUE) as MathTaskFamily;
-    delete (silent.canonicalKnowledgeAvailability as Record<string, unknown>).ICFES;
-    expect(spec(run(silent, systemProfileOf('ICFES'))).canonicalKnowledgeAvailability.status).toBe('NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY');
   });
 
   it('the restated vocabularies are the repository\'s own: response formats, calculator policies, bands, stimulus kinds, skills and competencies', () => {
@@ -209,22 +199,206 @@ describe('the discipline specialisation is an open, registered model', () => {
   });
 });
 
-describe('assessment-system profile: behaviour and constraints, with an authority on every rule', () => {
-  it('five profiles (PAA, IB, CAMBRIDGE, PISA, ICFES), each valid, illustrative and linked to an exam family of the taxonomy; no SEP', () => {
+describe('assessment applicability (D1): a recorded fact about a concept and a scope, never a certification and never inferred', () => {
+  const LINKS = allLearningLinks();
+  const name = (stableId: string) => PAA_CONCEPT_IDENTITIES.find((c) => c.stableId === stableId)!;
+  const quad = { stableId: 'math.alg.quadratics', canonicalSubject: 'Mathematics' };
+  const linear = { stableId: 'math.fun.linear-functions-lines', canonicalSubject: 'Matemáticas' };
+
+  it('the register is exactly what the repository records: official PAA Topics and reviewed objective links, nothing added', () => {
+    expect(applicabilityRegisterIssues(MATH_POC_APPLICABILITY)).toEqual([]);
+    const rebuilt: Array<{ key: string; basis: string; refs: string[] }> = [];
+    const mathDomains = new Set(PAA_DOMAINS.filter((d) => d.sectionCode === 'paa.sec.matematicas').map((d) => d.code));
+    for (const id of POC_CONCEPT_IDS) {
+      const c = name(id);
+      // OFFICIAL_EXAM_STRUCTURE: every OFFICIAL Topic of the Matemáticas section whose certified concept is this one
+      const topics = PAA_TOPICS.filter((t) => t.certifiedConceptId === id && t.authority === 'OFFICIAL' && mathDomains.has(t.domainCode));
+      if (topics.length > 0) rebuilt.push({ key: `${id}|${c.canonicalSubject}|PAA.MATEMATICAS`, basis: 'OFFICIAL_EXAM_STRUCTURE', refs: topics.map((t) => `${t.code}@${t.sourceReference}`).sort() });
+      // REVIEWED_CATALOGUE_LINK: every objective of a modelled component whose link names this exact (subject, name)
+      for (const [componentId, prefix] of Object.entries(MATH_POC_COMPONENT_OBJECTIVE_PREFIX)) {
+        const objectives = Object.entries(LINKS).filter(([code, link]) => code.startsWith(prefix) && (componentId !== 'PISA.MATHEMATICS' || PISA_MATHEMATICS_OBJECTIVE.test(code)) && (link.concepts ?? []).some((x) => x.subject === c.canonicalSubject && x.name === c.canonicalName)).map(([code]) => `${code}@null`).sort();
+        if (objectives.length > 0) rebuilt.push({ key: `${id}|${c.canonicalSubject}|${componentId}`, basis: 'REVIEWED_CATALOGUE_LINK', refs: objectives });
+      }
+    }
+    const recorded = MATH_POC_APPLICABILITY.map((r) => ({ key: `${r.concept.stableId}|${r.concept.canonicalSubject}|${r.scope.componentId}`, basis: r.basis, refs: r.evidence.map((e) => `${e.reference}@${e.sourceReference}`).sort() }));
+    const byKey = (a: { key: string }, b: { key: string }) => (a.key < b.key ? -1 : 1);
+    expect([...recorded].sort(byKey)).toEqual(rebuilt.sort(byKey));
+    expect(recorded.length).toBe(9);
+    // review state follows the kind of evidence: a certified structure node, or a link its module declares reviewed
+    for (const r of MATH_POC_APPLICABILITY) for (const e of r.evidence) expect(e.reviewState).toBe(e.kind === 'OFFICIAL_STRUCTURE_NODE_WITH_CERTIFIED_CONCEPT' ? 'CERTIFIED' : 'DECLARED_REVIEWED');
+    expect(read('src/lib/exam-core/catalog/pisa-learning-links.ts')).toMatch(/reviewed links/);
+    expect(read('src/lib/exam-core/catalog/aice-learning-links.ts')).toMatch(/reviewed links/);
+    expect(read('src/lib/exam-core/catalog/objective-learning-links.ts')).toMatch(/reviewed links/);
+  });
+
+  it('a record references the concept and restates nothing of it; it cannot re-key, rename or move it', () => {
+    expect(Object.keys(AssessmentApplicabilityRecordSchema.shape).sort()).toEqual(['basis', 'concept', 'evidence', 'scope', 'v']);
+    expect(Object.keys(AssessmentApplicabilityRecordSchema.shape.concept.shape).sort()).toEqual(['canonicalSubject', 'stableId']);
+    const r = clone(MATH_POC_APPLICABILITY[0]);
+    for (const extra of [{ examConceptId: 'paa.math.ratio' }, { conceptDefinition: 'x' }, { certifiesConcept: true }]) expect(AssessmentApplicabilityRecordSchema.safeParse({ ...r, ...extra }).success).toBe(false);
+    expect(AssessmentApplicabilityRecordSchema.safeParse({ ...r, concept: { ...r.concept, canonicalName: 'Otro nombre' } }).success).toBe(false);
+    // every concept of the register is a certified identity under its OWN canonical subject
+    for (const x of MATH_POC_APPLICABILITY) expect(name(x.concept.stableId).canonicalSubject).toBe(x.concept.canonicalSubject);
+    // the exam's local subject label is a label of the scope: for PAA it reads Matemáticas while the quadratics concept is owned by Mathematics
+    const paaQuad = MATH_POC_APPLICABILITY.find((x) => x.concept.stableId === 'math.alg.quadratics' && x.scope.systemProfileId === 'PAA')!;
+    expect([paaQuad.concept.canonicalSubject, paaQuad.scope.subject, paaQuad.basis]).toEqual(['Mathematics', 'Matemáticas', 'OFFICIAL_EXAM_STRUCTURE']);
+  });
+
+  it('a basis is what its evidence is: it cannot be claimed above it, and NONE has no evidence', () => {
+    const official = clone(MATH_POC_APPLICABILITY.find((x) => x.basis === 'OFFICIAL_EXAM_STRUCTURE')!);
+    const link = clone(MATH_POC_APPLICABILITY.find((x) => x.basis === 'REVIEWED_CATALOGUE_LINK')!);
+    const messages = (r: unknown) => AssessmentApplicabilityRecordSchema.safeParse(r).error?.issues.map((i) => i.message) ?? [];
+    expect(messages({ ...link, basis: 'OFFICIAL_EXAM_STRUCTURE' })).toContain('OFFICIAL_BASIS_NEEDS_AN_OFFICIAL_STRUCTURE_NODE');
+    expect(messages({ ...official, basis: 'REVIEWED_CATALOGUE_LINK' })).toContain('OFFICIAL_EVIDENCE_IS_NOT_A_CATALOGUE_BASIS');
+    expect(messages({ ...link, evidence: [] })).toContain('CATALOGUE_BASIS_NEEDS_A_LINK');
+    expect(messages({ ...link, basis: 'NONE' })).toContain('NO_BASIS_HAS_NO_EVIDENCE');
+    expect(messages({ ...official, evidence: [{ ...official.evidence[0], sourceReference: null }] })).toContain('OFFICIAL_NODE_NEEDS_ITS_SOURCE_REFERENCE');
+    expect(applicabilityRegisterIssues([official, official])[0]).toMatch(/RECORD_LISTED_TWICE/);
+  });
+
+  it('the threshold policy decides which basis, at which review state, ESTABLISHES applicability', () => {
+    expect(EA1_APPLICABILITY_THRESHOLD).toMatchObject({ authority: 'STUDYUS_POLICY', satisfiedBy: [{ basis: 'OFFICIAL_EXAM_STRUCTURE', minimumReviewState: 'CERTIFIED' }, { basis: 'REVIEWED_CATALOGUE_LINK', minimumReviewState: 'DECLARED_REVIEWED' }] });
+    const link = MATH_POC_APPLICABILITY.find((x) => x.basis === 'REVIEWED_CATALOGUE_LINK')!;
+    expect(applicabilityStatusOf(link, EA1_APPLICABILITY_THRESHOLD)).toBe('ESTABLISHED');
+    // a stricter threshold: a link that is only DECLARED reviewed no longer establishes; an unreviewed link never does
+    const strict: ApplicabilityThresholdPolicy = { ...EA1_APPLICABILITY_THRESHOLD, version: 'strict', satisfiedBy: [{ basis: 'OFFICIAL_EXAM_STRUCTURE', minimumReviewState: 'CERTIFIED' }, { basis: 'REVIEWED_CATALOGUE_LINK', minimumReviewState: 'CERTIFIED' }] };
+    expect(applicabilityStatusOf(link, strict)).toBe('NOT_ESTABLISHED');
+    expect(applicabilityStatusOf({ ...link, evidence: link.evidence.map((e) => ({ ...e, reviewState: 'UNREVIEWED' as const })) }, EA1_APPLICABILITY_THRESHOLD)).toBe('NOT_ESTABLISHED');
+    const officialOnly: ApplicabilityThresholdPolicy = { ...EA1_APPLICABILITY_THRESHOLD, version: 'official-only', satisfiedBy: [{ basis: 'OFFICIAL_EXAM_STRUCTURE', minimumReviewState: 'CERTIFIED' }] };
+    expect(applicabilityStatusOf(link, officialOnly)).toBe('NOT_ESTABLISHED');
+    expect(applicabilityStatusOf({ basis: 'NONE', evidence: [] }, EA1_APPLICABILITY_THRESHOLD)).toBe('NOT_ESTABLISHED');
+    // the engine applies the policy it is given, and records which one
+    const p1 = adapt({ family: FACTORISING, profile: IB_SYSTEM_PROFILE, component: IB_MATH_AA_HL_P1_COMPONENT, applicability: MATH_POC_APPLICABILITY, applicabilityPolicy: strict, disciplinePolicy: POLICY, request: REQUEST });
+    expect(spec(p1).assessmentApplicability).toMatchObject({ status: 'NOT_ESTABLISHED', basis: 'REVIEWED_CATALOGUE_LINK', thresholdPolicy: { version: 'strict' } });
+  });
+
+  it('scope: a component is answered by its own record or the system\'s, never by another component\'s; nothing is recorded => NONE', () => {
+    const at = (concept: { stableId: string; canonicalSubject: string }, systemProfileId: string, componentId: string | null) => { const a = resolveApplicability(MATH_POC_APPLICABILITY, concept, { systemProfileId, componentId }); return `${a.status}:${a.basis}`; };
+    expect(at(quad, 'PAA', 'PAA.MATEMATICAS')).toBe('ESTABLISHED:OFFICIAL_EXAM_STRUCTURE');
+    expect(at(quad, 'IB', 'IB.MATH_AA_HL.P1')).toBe('ESTABLISHED:REVIEWED_CATALOGUE_LINK');
+    // the IB link is of a Paper 1 objective: it says nothing about Paper 2
+    expect(at(quad, 'IB', 'IB.MATH_AA_HL.P2')).toBe('NOT_ESTABLISHED:NONE');
+    // the system as a whole assesses the concept somewhere
+    expect(at(quad, 'IB', null)).toBe('ESTABLISHED:REVIEWED_CATALOGUE_LINK');
+    expect(at(quad, 'CAMBRIDGE', 'CAMBRIDGE.9709.P1')).toBe('ESTABLISHED:REVIEWED_CATALOGUE_LINK');
+    expect(at(quad, 'PISA', 'PISA.MATHEMATICS')).toBe('NOT_ESTABLISHED:NONE');
+    expect(at(quad, 'ICFES', 'ICFES.SABER11_MATEMATICAS')).toBe('NOT_ESTABLISHED:NONE');
+    // NO BRIDGE BY NAME: a Matemáticas concept is not applicable to IB because IB assesses "Mathematics", and the
+    // quadratics id under the other subject is another concept
+    expect(at(linear, 'IB', 'IB.MATH_AA_HL.P1')).toBe('NOT_ESTABLISHED:NONE');
+    expect(at({ stableId: 'math.alg.quadratics', canonicalSubject: 'Matemáticas' }, 'IB', 'IB.MATH_AA_HL.P1')).toBe('NOT_ESTABLISHED:NONE');
+    expect(at({ stableId: 'math.alg.quadratics', canonicalSubject: 'Matemáticas' }, 'PAA', 'PAA.MATEMATICAS')).toBe('NOT_ESTABLISHED:NONE');
+    for (const f of [...walk(ADAPTATION_DIR), ...walk(FAMILIES_DIR)]) expect(code(f), f).not.toMatch(/Matemáticas'\s*[=!]==?\s*'Mathematics|SUBJECT_ALIAS|subjectAlias|equivalentSubject|normalizeSubject|toLowerCase\(\)\.startsWith\('mat/i);
+    // an empty register: nothing is established for anything
+    expect(resolveApplicability([], quad, { systemProfileId: 'PAA', componentId: 'PAA.MATEMATICAS' })).toMatchObject({ status: 'NOT_ESTABLISHED', basis: 'NONE', evidence: [] });
+  });
+
+  it('a concept owned by Mathematics is assessed under PAA, IB and Cambridge where applicability exists -- the canonical subject label need not match the exam\'s', () => {
+    for (const [system, component, basis] of [[PAA_SYSTEM_PROFILE, PAA_MATEMATICAS_COMPONENT, 'OFFICIAL_EXAM_STRUCTURE'], [IB_SYSTEM_PROFILE, IB_MATH_AA_HL_P1_COMPONENT, 'REVIEWED_CATALOGUE_LINK'], [CAMBRIDGE_SYSTEM_PROFILE, CAMBRIDGE_COMPONENT, 'REVIEWED_CATALOGUE_LINK']] as const) {
+      const s = spec(run(FACTORISING, system, { ...REQUEST, applicabilityRequirement: 'ESTABLISHED' }, POLICY, component));
+      expect([s.primaryConcept.canonicalSubject, s.assessmentApplicability.status, s.assessmentApplicability.basis], component.componentId).toEqual(['Mathematics', 'ESTABLISHED', basis]);
+      // the specification carries the repository's evidence, with its review state
+      expect(s.assessmentApplicability.evidence.length).toBeGreaterThanOrEqual(1);
+      expect(s.assessmentApplicability.scope.componentId).toBe(component.componentId);
+    }
+    // the same concept object everywhere: one id, one subject, never a per-exam copy
+    expect(new Set([...SPECS.values()].filter((x) => x.primaryConcept.stableId === 'math.alg.quadratics').map((x) => canonicalJson(x.primaryConcept))).size).toBe(1);
+  });
+
+  it('where applicability is NOT established, dev-test content records it and anything that requires it is refused by name', () => {
+    const dev = spec(run(LINEAR_MODEL, IB_SYSTEM_PROFILE));
+    expect([dev.contentUseClass, dev.assessmentApplicability.status, dev.assessmentApplicability.basis]).toEqual(['DEV_TEST_CONTENT', 'NOT_ESTABLISHED', 'NONE']);
+    expect(refusal(run(LINEAR_MODEL, IB_SYSTEM_PROFILE, { ...REQUEST, applicabilityRequirement: 'ESTABLISHED' }))).toBe('ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED');
+    expect(refusal(run(FACTORISING, IB_SYSTEM_PROFILE, { ...REQUEST, applicabilityRequirement: 'ESTABLISHED' }, POLICY, IB_MATH_AA_HL_P2_COMPONENT))).toBe('ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED');
+    // evidence-bearing content requires it whatever the request says -- even from a reviewed family, even asking NOT_REQUIRED
+    const r = run(reviewed(LINEAR_MODEL), IB_SYSTEM_PROFILE, { ...REQUEST, contentUseClass: 'EVIDENCE_BEARING', applicabilityRequirement: 'NOT_REQUIRED' });
+    expect(r).toMatchObject({ ok: false, refusal: { code: 'ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED' } });
+    expect(spec(run(reviewed(FACTORISING), IB_SYSTEM_PROFILE, { ...REQUEST, contentUseClass: 'EVIDENCE_BEARING' })).assessmentApplicability.status).toBe('ESTABLISHED');
+    // no register given = nothing recorded = nothing established
+    expect(refusal(adapt({ family: reviewed(FACTORISING), profile: PAA_SYSTEM_PROFILE, component: PAA_MATEMATICAS_COMPONENT, disciplinePolicy: POLICY, request: { ...REQUEST, contentUseClass: 'EVIDENCE_BEARING' } }))).toBe('ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED');
+    expect(refusal(adapt({ family: MISSING_VALUE, profile: PAA_SYSTEM_PROFILE, component: PAA_MATEMATICAS_COMPONENT, applicability: [{ not: 'a record' }], disciplinePolicy: POLICY, request: REQUEST }))).toBe('APPLICABILITY_REGISTER_INVALID');
+    // applicability grants nothing else: no reviewer qualification, no concept certification, no right
+    expect([...NOT_ESTABLISHED_BY_ADAPTATION]).toEqual(expect.arrayContaining(['REVIEWER_QUALIFICATION', 'CONCEPT_CERTIFICATION', 'REUSE_RIGHTS']));
+  });
+});
+
+describe('profile hierarchy (D2, D3): system profile -> component profile, mixed authority', () => {
+  const def = (cfg: { sections: Array<{ key: string; definition?: unknown }> }, key: string) => cfg.sections.find((s) => s.key === key)!.definition as { responseFormats: string[]; calculatorPolicy: string | null; officialDurationMinutes: number | null; maxMarks: number | null; officialItemCount?: number | null; commandTerms?: string[]; sourceKeys: string[]; distributions?: Array<{ dimension: string; values: Record<string, string> }>; blueprintSpecification?: { status: string } };
+  const over = <K extends keyof ProfileRules>(componentId: string, d: K): NonNullable<AssessmentComponentProfile['overrides'][K]> => componentProfileOf(componentId)!.overrides[d]!;
+  const sourcesOf = (rule: { authority: ProfileRules[keyof ProfileRules]['authority'] }) => (rule.authority.kind === 'OFFICIAL' ? rule.authority.sources.map((x) => x.sourceKey) : []);
+
+  it('five system profiles and six component profiles, all valid, MIXED_AUTHORITY and illustrative; no SEP, no invented paper', () => {
     expect(EA1_SYSTEM_PROFILES.map((p) => p.profileId)).toEqual([...MATH_POC_PROFILE_IDS]);
+    expect(EA1_COMPONENT_PROFILES.map((c) => c.componentId)).toEqual(['PAA.MATEMATICAS', 'IB.MATH_AA_HL.P1', 'IB.MATH_AA_HL.P2', 'CAMBRIDGE.9709.P1', 'PISA.MATHEMATICS', 'ICFES.SABER11_MATEMATICAS']);
     for (const p of EA1_SYSTEM_PROFILES) {
       const v = validateAssessmentSystemProfile(p);
       expect(v.ok, `${p.profileId}: ${v.ok ? '' : v.issues.join('; ')}`).toBe(true);
-      expect([p.status, p.certification]).toEqual(['PROVISIONAL_ILLUSTRATIVE', null]);
+      expect([p.status, p.certification, p.specification.basis]).toEqual(['PROVISIONAL_ILLUSTRATIVE', null, 'MIXED_AUTHORITY']);
       expect(EXAM_FAMILIES as readonly string[]).toContain(p.examFamilyCode);
       expect(systemProfileOfExamFamily(p.examFamilyCode!)).toBe(p);
+      expect(componentProfilesOf(p.profileId).length).toBeGreaterThanOrEqual(1);
+    }
+    for (const c of EA1_COMPONENT_PROFILES) {
+      const parsed = AssessmentComponentProfileSchema.safeParse(c);
+      expect(parsed.success, `${c.componentId}: ${parsed.success ? '' : parsed.error.issues.map((i) => i.message).join('; ')}`).toBe(true);
+      expect([c.status, c.certification, c.specification.basis]).toEqual(['PROVISIONAL_ILLUSTRATIVE', null, 'MIXED_AUTHORITY']);
+      expect(resolveProfile(systemProfileOf(c.systemProfileId), c).ok).toBe(true);
     }
     expect(systemProfileOf('SEP')).toBeNull();
-    // AICE is a family of the taxonomy with no profile of its own: it is not silently resolved to Cambridge
     expect(systemProfileOfExamFamily('AICE')).toBeNull();
+    // every modelled component is one the repository records
+    expect(PAA_V2.sections.map((x) => x.key)).toContain('matematicas');
+    expect(IB_MATH_AA_HL_V2.sections.map((x) => x.key)).toEqual(expect.arrayContaining(['p1', 'p2']));
+    expect(AICE_SYLLABI.find((x) => x.code === '9709')!.components.map((x) => x.key)).toContain('p1');
+    expect([PISA_MATH_V2.sections.length, SABER11_MATH_V2.sections.length]).toEqual([1, 1]);
   });
 
-  it('an OFFICIAL rule without source lineage is refused; a policy rule must say it is provisional', () => {
+  it('inheritance: an override replaces the system\'s rule whole, the rest is inherited, and every dimension says where it came from', () => {
+    const r = resolveProfile(IB_SYSTEM_PROFILE, IB_MATH_AA_HL_P2_COMPONENT);
+    if (!r.ok) throw new Error(r.issue);
+    expect(r.resolved.component).toEqual({ componentId: 'IB.MATH_AA_HL.P2', version: IB_MATH_AA_HL_P2_COMPONENT.version, status: 'PROVISIONAL_ILLUSTRATIVE', localSubject: 'Mathematics: analysis and approaches' });
+    const overridden = ['responseFormats', 'timePressure', 'commandTerms', 'calculatorPolicy'];
+    for (const d of PROFILE_RULE_DIMENSIONS) {
+      expect(r.resolved.ruleOrigin[d], d).toBe(overridden.includes(d) ? 'COMPONENT' : 'SYSTEM');
+      expect(r.resolved.rules[d]).toEqual(overridden.includes(d) ? IB_MATH_AA_HL_P2_COMPONENT.overrides[d] : IB_SYSTEM_PROFILE.rules[d]);
+    }
+    // the override carries ITS OWN authority: the system's fallback is policy, the component's fact is official with its source
+    expect([IB_SYSTEM_PROFILE.rules.calculatorPolicy.authority.kind, r.resolved.rules.calculatorPolicy.authority.kind, r.resolved.rules.calculatorPolicy.value]).toEqual(['STUDYUS_POLICY', 'OFFICIAL', { allowed: ['GDC_REQUIRED'] }]);
+    expect(r.resolved.unsettledDimensions).toEqual([]);
+    // without a component the system's rules stand and its component-dependent dimensions are unsettled
+    const alone = resolveProfile(IB_SYSTEM_PROFILE);
+    if (!alone.ok) throw new Error(alone.issue);
+    expect([alone.resolved.component, alone.resolved.unsettledDimensions, new Set(Object.values(alone.resolved.ruleOrigin)).size]).toEqual([null, ['responseFormats', 'timePressure', 'commandTerms', 'calculatorPolicy'], 1]);
+    // resolution is pure: neither input changes
+    const before = [canonicalJson(IB_SYSTEM_PROFILE), canonicalJson(IB_MATH_AA_HL_P2_COMPONENT)];
+    resolveProfile(IB_SYSTEM_PROFILE, IB_MATH_AA_HL_P2_COMPONENT);
+    expect([canonicalJson(IB_SYSTEM_PROFILE), canonicalJson(IB_MATH_AA_HL_P2_COMPONENT)]).toEqual(before);
+  });
+
+  it('an override preserves authority and source provenance: an OFFICIAL override needs its own source, declared by the component', () => {
+    const c = clone(PAA_MATEMATICAS_COMPONENT) as AssessmentComponentProfile;
+    (c.overrides.calculatorPolicy as { authority: unknown }).authority = { kind: 'OFFICIAL' };
+    expect(AssessmentComponentProfileSchema.safeParse(c).success).toBe(false);
+    (c.overrides.calculatorPolicy as { authority: unknown }).authority = { kind: 'OFFICIAL', sources: [{ sourceKey: 'ibo-math-aa-guide-2021', locator: 'somewhere' }] };
+    expect(AssessmentComponentProfileSchema.safeParse(c).error?.issues.map((i) => i.message)).toContain('SOURCE_NOT_IN_THE_PROFILES_SPECIFICATION_RECORDS');
+    // a component may override only what its system declares component-dependent
+    const stray = clone(PAA_MATEMATICAS_COMPONENT) as AssessmentComponentProfile;
+    stray.overrides.rubricStyle = { ruleId: 'paa.matematicas.rubric', value: 'KEY_ONLY', authority: { kind: 'STUDYUS_POLICY', provisional: true, assumption: 'An override of a dimension the system keeps common.' } };
+    expect(resolveProfile(PAA_SYSTEM_PROFILE, stray)).toMatchObject({ ok: false, issue: 'OVERRIDE_OF_A_DIMENSION_THAT_IS_NOT_COMPONENT_DEPENDENT', details: ['rubricStyle'] });
+    expect(resolveProfile(IB_SYSTEM_PROFILE, PAA_MATEMATICAS_COMPONENT)).toMatchObject({ ok: false, issue: 'COMPONENT_NOT_OF_THE_SYSTEM' });
+    expect(AssessmentComponentProfileSchema.safeParse({ ...clone(PAA_MATEMATICAS_COMPONENT), componentId: 'IB.MATEMATICAS' }).error?.issues.map((i) => i.message)).toContain('COMPONENT_ID_IS_NOT_UNDER_ITS_SYSTEM');
+    // the resolved rules are checked together: a component that overrides the competencies without their elicitation does not resolve
+    const half = clone(PISA_MATHEMATICS_COMPONENT) as AssessmentComponentProfile;
+    delete half.overrides.competencyElicitation;
+    expect(resolveProfile(PISA_SYSTEM_PROFILE, half)).toMatchObject({ ok: false, issue: 'RESOLVED_RULES_INCONSISTENT' });
+    // a dimension that differs by component is never OFFICIAL at system level: what components have in common is an inference
+    const promoted = clone(IB_SYSTEM_PROFILE) as AssessmentSystemProfile;
+    (promoted.rules.calculatorPolicy as { authority: unknown }).authority = { kind: 'OFFICIAL', sources: [{ sourceKey: 'ibo-math-aa-guide-2021', locator: 'union of the two papers' }] };
+    expect(AssessmentSystemProfileSchema.safeParse(promoted).error?.issues.map((i) => i.message)).toContain('COMPONENT_DEPENDENT_FALLBACK_IS_NOT_OFFICIAL');
+    for (const p of EA1_SYSTEM_PROFILES) for (const d of p.componentDependentDimensions) expect(p.rules[d].authority.kind, `${p.profileId}.${d}`).toBe('STUDYUS_POLICY');
+  });
+
+  it('an OFFICIAL rule without source lineage is refused; a policy rule must say it is provisional; never an inference', () => {
     expect(RuleAuthoritySchema.safeParse({ kind: 'OFFICIAL' }).success).toBe(false);
     expect(RuleAuthoritySchema.safeParse({ kind: 'OFFICIAL', sources: [] }).success).toBe(false);
     expect(RuleAuthoritySchema.safeParse({ kind: 'OFFICIAL', sources: [{ sourceKey: 'cb-paa-guia-2021' }] }).success).toBe(false);
@@ -232,111 +406,178 @@ describe('assessment-system profile: behaviour and constraints, with an authorit
     expect(RuleAuthoritySchema.safeParse({ kind: 'STUDYUS_POLICY', assumption: 'A working assumption of StudyUs.' }).success).toBe(false);
     expect(RuleAuthoritySchema.safeParse({ kind: 'STUDYUS_POLICY', provisional: true, assumption: 'A working assumption of StudyUs.', sources: [] }).success).toBe(false);
     const p = clone(PAA_SYSTEM_PROFILE) as AssessmentSystemProfile;
-    // promoting a policy rule to OFFICIAL by relabelling it does not parse ...
     (p.rules.rubricStyle as { authority: unknown }).authority = { kind: 'OFFICIAL' };
     expect(AssessmentSystemProfileSchema.safeParse(p).success).toBe(false);
-    // ... and citing a source the profile's own specification records do not hold is refused too
     (p.rules.rubricStyle as { authority: unknown }).authority = { kind: 'OFFICIAL', sources: [{ sourceKey: 'ibo-math-aa-guide-2021', locator: 'somewhere' }] };
     expect(AssessmentSystemProfileSchema.safeParse(p).error?.issues.map((i) => i.message)).toContain('SOURCE_NOT_IN_THE_PROFILES_SPECIFICATION_RECORDS');
-    // a system with no sourced definition may hold no OFFICIAL rule at all
-    const none = clone(PISA_SYSTEM_PROFILE) as AssessmentSystemProfile;
-    none.specification = { basis: 'NO_CERTIFIED_SPECIFICATION', records: [], note: 'No sourced definition in the repository.' };
-    expect(AssessmentSystemProfileSchema.safeParse(none).error?.issues.map((i) => i.message)).toContain('NO_CERTIFIED_SPECIFICATION_HOLDS_NO_OFFICIAL_RULE');
-    for (const d of PROFILE_RULE_DIMENSIONS) (none.rules[d] as { authority: unknown }).authority = { kind: 'STUDYUS_POLICY', provisional: true, assumption: 'Entirely provisional working assumption.' };
-    expect(AssessmentSystemProfileSchema.safeParse(none).success).toBe(true);
-    // a certified profile needs a certification, which no profile here has
+    // STUDYUS_POLICY_ONLY: a profile the repository records nothing sourced for may hold no OFFICIAL rule and cites nothing
+    const only = clone(CAMBRIDGE_SYSTEM_PROFILE) as AssessmentSystemProfile;
+    only.specification = { basis: 'STUDYUS_POLICY_ONLY', records: [], note: 'No sourced fact in the repository.' };
+    expect(AssessmentSystemProfileSchema.safeParse(only).error?.issues.map((i) => i.message)).toContain('STUDYUS_POLICY_ONLY_HOLDS_NO_OFFICIAL_RULE');
+    for (const d of PROFILE_RULE_DIMENSIONS) (only.rules[d] as { authority: unknown }).authority = { kind: 'STUDYUS_POLICY', provisional: true, assumption: 'Entirely provisional working assumption.' };
+    expect(AssessmentSystemProfileSchema.safeParse(only).success).toBe(true);
+    expect(AssessmentSystemProfileSchema.safeParse({ ...clone(PAA_SYSTEM_PROFILE), specification: { ...PAA_SYSTEM_PROFILE.specification, basis: 'NO_CERTIFIED_SPECIFICATION' } }).success).toBe(false);
     expect(AssessmentSystemProfileSchema.safeParse({ ...clone(PAA_SYSTEM_PROFILE), status: 'CERTIFIED' }).success).toBe(false);
   });
 
   it('every OFFICIAL rule cites sources of the registry, and its value IS what the repository records at the cited place', () => {
     const registry = new Set(ASSESSMENT_SOURCES.map((s) => s.key));
-    for (const p of EA1_SYSTEM_PROFILES) for (const d of authorityBreakdown(p).official) {
-      const a = p.rules[d].authority;
-      if (a.kind === 'OFFICIAL') for (const s of a.sources) expect(registry.has(s.sourceKey), `${p.profileId}.${d}: ${s.sourceKey}`).toBe(true);
-    }
-    const def = (cfg: { sections: Array<{ key: string; definition?: unknown }> }, key: string) => cfg.sections.find((s) => s.key === key)!.definition as { responseFormats: string[]; calculatorPolicy: string | null; officialDurationMinutes: number | null; maxMarks: number | null; officialItemCount?: number | null; commandTerms?: string[]; sourceKeys: string[]; distributions?: Array<{ dimension: string; values: Record<string, string> }>; blueprintSpecification?: { status: string } };
-    const value = <K extends keyof ProfileRules>(id: string, d: K): ProfileRules[K]['value'] => systemProfileOf(id)!.rules[d].value;
-    const sourcesOf = (id: string, d: (typeof PROFILE_RULE_DIMENSIONS)[number]) => { const a = systemProfileOf(id)!.rules[d].authority; return a.kind === 'OFFICIAL' ? a.sources.map((s) => s.sourceKey) : []; };
-    const official = (id: string) => authorityBreakdown(systemProfileOf(id)!).official;
+    const allRules = [...EA1_SYSTEM_PROFILES.flatMap((p) => PROFILE_RULE_DIMENSIONS.map((d) => p.rules[d])), ...EA1_COMPONENT_PROFILES.flatMap((c) => PROFILE_RULE_DIMENSIONS.flatMap((d) => (c.overrides[d] ? [c.overrides[d]!] : [])))];
+    expect(allRules.length).toBe(100);
+    for (const r of allRules) for (const k of sourcesOf(r)) expect(registry.has(k), `${r.ruleId}: ${k}`).toBe(true);
+    expect(allRules.filter((r) => r.authority.kind === 'OFFICIAL').length).toBe(23);
+    // system level: the only official rule is one recorded for a whole syllabus
+    expect(EA1_SYSTEM_PROFILES.map((p) => authorityBreakdown(p).official)).toEqual([[], [], ['competencyEmphasis'], [], []]);
+    const officialOverrides = (id: string) => PROFILE_RULE_DIMENSIONS.filter((d) => componentProfileOf(id)!.overrides[d]?.authority.kind === 'OFFICIAL');
 
     const paa = def(PAA_V2 as never, 'matematicas');
-    expect(official('PAA')).toEqual(['responseFormats', 'timePressure', 'calculatorPolicy']);
-    expect(value('PAA', 'responseFormats')).toEqual(paa.responseFormats);
-    expect(value('PAA', 'timePressure')).toEqual({ officialMinutes: paa.officialDurationMinutes, officialItems: paa.officialItemCount, officialMarks: paa.maxMarks });
-    expect(value('PAA', 'calculatorPolicy')).toEqual({ allowed: [paa.calculatorPolicy] });
-    expect(sourcesOf('PAA', 'calculatorPolicy')).toEqual(paa.sourceKeys);
+    expect(officialOverrides('PAA.MATEMATICAS')).toEqual(['responseFormats', 'timePressure', 'calculatorPolicy']);
+    expect(over('PAA.MATEMATICAS', 'responseFormats').value).toEqual(paa.responseFormats);
+    expect(over('PAA.MATEMATICAS', 'timePressure').value).toEqual({ officialMinutes: paa.officialDurationMinutes, officialItems: paa.officialItemCount, officialMarks: paa.maxMarks });
+    expect(over('PAA.MATEMATICAS', 'calculatorPolicy').value).toEqual({ allowed: [paa.calculatorPolicy] });
+    expect(sourcesOf(over('PAA.MATEMATICAS', 'calculatorPolicy'))).toEqual(paa.sourceKeys);
     expect((PAA_V2 as { commandTerms?: unknown[] }).commandTerms).toEqual([]);
+    // the other PAA sections record other facts: that is why these three dimensions are component-dependent
+    expect(def(PAA_V2 as never, 'lectura')).toMatchObject({ responseFormats: ['SELECTED_RESPONSE'], calculatorPolicy: null, officialItemCount: 45 });
 
-    const p1 = def(IB_MATH_AA_HL_V2 as never, 'p1');
-    const p2 = def(IB_MATH_AA_HL_V2 as never, 'p2');
-    expect(official('IB')).toEqual(['responseFormats', 'timePressure', 'commandTerms', 'calculatorPolicy']);
-    expect(value('IB', 'responseFormats')).toEqual(p1.responseFormats);
-    expect(value('IB', 'timePressure')).toEqual({ officialMinutes: p1.officialDurationMinutes, officialItems: null, officialMarks: p1.maxMarks });
-    expect(value('IB', 'commandTerms')).toEqual({ use: 'CONTROLLED_VOCABULARY', terms: p1.commandTerms });
-    expect(value('IB', 'calculatorPolicy')).toEqual({ allowed: [p1.calculatorPolicy, p2.calculatorPolicy] });
-    expect(sourcesOf('IB', 'commandTerms')).toEqual(p1.sourceKeys);
+    for (const [id, key] of [['IB.MATH_AA_HL.P1', 'p1'], ['IB.MATH_AA_HL.P2', 'p2']] as const) {
+      const d = def(IB_MATH_AA_HL_V2 as never, key);
+      expect(officialOverrides(id)).toEqual(['responseFormats', 'timePressure', 'commandTerms', 'calculatorPolicy']);
+      expect(over(id, 'responseFormats').value).toEqual(d.responseFormats);
+      expect(over(id, 'timePressure').value).toEqual({ officialMinutes: d.officialDurationMinutes, officialItems: null, officialMarks: d.maxMarks });
+      expect(over(id, 'commandTerms').value).toEqual({ use: 'CONTROLLED_VOCABULARY', terms: d.commandTerms });
+      expect(over(id, 'calculatorPolicy').value).toEqual({ allowed: [d.calculatorPolicy] });
+      expect(sourcesOf(over(id, 'commandTerms'))).toEqual(d.sourceKeys);
+    }
+    expect([over('IB.MATH_AA_HL.P1', 'calculatorPolicy').value.allowed, over('IB.MATH_AA_HL.P2', 'calculatorPolicy').value.allowed]).toEqual([['NONE'], ['GDC_REQUIRED']]);
 
     const s9709 = AICE_SYLLABI.find((s) => s.code === '9709')!;
     const c1 = s9709.components.find((c) => c.key === 'p1')!;
-    expect(official('CAMBRIDGE')).toEqual(['timePressure', 'calculatorPolicy', 'competencyEmphasis']);
-    expect(value('CAMBRIDGE', 'timePressure')).toEqual({ officialMinutes: c1.minutes, officialItems: null, officialMarks: c1.marks });
+    expect(officialOverrides('CAMBRIDGE.9709.P1')).toEqual(['timePressure', 'calculatorPolicy']);
+    expect(over('CAMBRIDGE.9709.P1', 'timePressure').value).toEqual({ officialMinutes: c1.minutes, officialItems: null, officialMarks: c1.marks });
     expect(c1.calculator).toMatch(/^Scientific calculator required/);
-    expect(value('CAMBRIDGE', 'calculatorPolicy')).toEqual({ allowed: ['SCIENTIFIC_REQUIRED'] });
-    expect(value('CAMBRIDGE', 'competencyEmphasis')).toEqual(s9709.assessmentObjectives.map((a) => ({ code: a.key, label: a.name, weightPercent: `${a.weightAS} (AS)` })));
-    expect(sourcesOf('CAMBRIDGE', 'calculatorPolicy')).toEqual([s9709.sourceKey]);
+    expect(over('CAMBRIDGE.9709.P1', 'calculatorPolicy').value).toEqual({ allowed: ['SCIENTIFIC_REQUIRED'] });
+    expect(CAMBRIDGE_SYSTEM_PROFILE.rules.competencyEmphasis.value).toEqual(s9709.assessmentObjectives.map((a) => ({ code: a.key, label: a.name, weightPercent: `${a.weightAS} (AS)` })));
+    expect(sourcesOf(over('CAMBRIDGE.9709.P1', 'calculatorPolicy'))).toEqual([s9709.sourceKey]);
     // the command terms the Cambridge profile ASSUMES are the ones the repository records for another syllabus: policy, not official
-    expect(value('CAMBRIDGE', 'commandTerms').terms).toEqual(def(CAMBRIDGE_0580_EXTENDED_V2 as never, 'p2').commandTerms);
-    expect(systemProfileOf('CAMBRIDGE')!.rules.commandTerms.authority.kind).toBe('STUDYUS_POLICY');
+    expect(CAMBRIDGE_SYSTEM_PROFILE.rules.commandTerms.value.terms).toEqual(def(CAMBRIDGE_0580_EXTENDED_V2 as never, 'p2').commandTerms);
+    expect(CAMBRIDGE_SYSTEM_PROFILE.rules.commandTerms.authority.kind).toBe('STUDYUS_POLICY');
 
     const pisa = def(PISA_MATH_V2 as never, 'math');
     const dist = (d: typeof pisa, dimension: string) => d.distributions!.find((x) => x.dimension === dimension)!.values;
-    expect(official('PISA')).toEqual(['responseFormats', 'timePressure', 'contextExpectations', 'calculatorPolicy', 'competencyEmphasis']);
-    expect(value('PISA', 'responseFormats')).toEqual(pisa.responseFormats);
-    expect(value('PISA', 'timePressure')).toEqual({ officialMinutes: pisa.officialDurationMinutes, officialItems: null, officialMarks: pisa.maxMarks });
-    expect(value('PISA', 'calculatorPolicy')).toEqual({ allowed: [pisa.calculatorPolicy] });
-    expect(value('PISA', 'contextExpectations').allowed).toEqual(Object.keys(dist(pisa, 'Context')).map((k) => k.toUpperCase()));
-    expect(value('PISA', 'competencyEmphasis').map((c) => [c.label, c.weightPercent])).toEqual(Object.entries(dist(pisa, 'Process')));
-    expect(sourcesOf('PISA', 'responseFormats')).toEqual(pisa.sourceKeys);
+    // PISA is mixed authority like the others: official where the exact OECD-sourced fact is recorded, policy elsewhere
+    expect(officialOverrides('PISA.MATHEMATICS')).toEqual(['responseFormats', 'timePressure', 'contextExpectations', 'calculatorPolicy', 'competencyEmphasis']);
+    expect(over('PISA.MATHEMATICS', 'responseFormats').value).toEqual(pisa.responseFormats);
+    expect(over('PISA.MATHEMATICS', 'timePressure').value).toEqual({ officialMinutes: pisa.officialDurationMinutes, officialItems: null, officialMarks: pisa.maxMarks });
+    expect(over('PISA.MATHEMATICS', 'calculatorPolicy').value).toEqual({ allowed: [pisa.calculatorPolicy] });
+    expect(over('PISA.MATHEMATICS', 'contextExpectations').value.allowed).toEqual(Object.keys(dist(pisa, 'Context')).map((k) => k.toUpperCase()));
+    expect(over('PISA.MATHEMATICS', 'competencyEmphasis').value.map((c) => [c.label, c.weightPercent])).toEqual(Object.entries(dist(pisa, 'Process')));
+    expect(sourcesOf(over('PISA.MATHEMATICS', 'responseFormats'))).toEqual(pisa.sourceKeys);
+    expect(over('PISA.MATHEMATICS', 'competencyElicitation').authority.kind).toBe('STUDYUS_POLICY');
+    for (const d of ['transferExpectations', 'authenticityRequirements', 'rubricStyle', 'markStructure', 'reasoningDepth', 'stimulusExpectations'] as const) expect(PISA_SYSTEM_PROFILE.rules[d].authority.kind, d).toBe('STUDYUS_POLICY');
 
     const saber = def(SABER11_MATH_V2 as never, 'math');
-    expect(official('ICFES')).toEqual(['responseFormats', 'timePressure', 'calculatorPolicy', 'competencyEmphasis']);
-    expect(value('ICFES', 'responseFormats')).toEqual(saber.responseFormats);
-    expect(value('ICFES', 'timePressure')).toEqual({ officialMinutes: saber.officialDurationMinutes, officialItems: saber.officialItemCount, officialMarks: saber.maxMarks });
-    expect(value('ICFES', 'calculatorPolicy')).toEqual({ allowed: [saber.calculatorPolicy] });
-    expect(value('ICFES', 'competencyEmphasis').map((c) => [c.label, c.weightPercent])).toEqual(Object.entries(dist(saber, 'Competencia')));
-    expect(value('ICFES', 'blueprintConstraints').fullFormSpecification).toBe(saber.blueprintSpecification!.status);
-    expect(sourcesOf('ICFES', 'calculatorPolicy')).toEqual(saber.sourceKeys);
-    // only the Saber definition documents a full form; the others say UNKNOWN or not applicable, never a guess
-    expect(EA1_SYSTEM_PROFILES.map((p) => p.rules.blueprintConstraints.value.fullFormSpecification)).toEqual(['UNKNOWN', 'UNKNOWN', 'UNKNOWN', 'NOT_APPLICABLE_NO_FIXED_FORM', 'DOCUMENTED']);
+    expect(officialOverrides('ICFES.SABER11_MATEMATICAS')).toEqual(['responseFormats', 'timePressure', 'calculatorPolicy', 'competencyEmphasis']);
+    expect(over('ICFES.SABER11_MATEMATICAS', 'responseFormats').value).toEqual(saber.responseFormats);
+    expect(over('ICFES.SABER11_MATEMATICAS', 'timePressure').value).toEqual({ officialMinutes: saber.officialDurationMinutes, officialItems: saber.officialItemCount, officialMarks: saber.maxMarks });
+    expect(over('ICFES.SABER11_MATEMATICAS', 'calculatorPolicy').value).toEqual({ allowed: [saber.calculatorPolicy] });
+    expect(over('ICFES.SABER11_MATEMATICAS', 'competencyEmphasis').value.map((c) => [c.label, c.weightPercent])).toEqual(Object.entries(dist(saber, 'Competencia')));
+    expect(over('ICFES.SABER11_MATEMATICAS', 'blueprintConstraints').value.fullFormSpecification).toBe(saber.blueprintSpecification!.status);
+    expect(sourcesOf(over('ICFES.SABER11_MATEMATICAS', 'calculatorPolicy'))).toEqual(saber.sourceKeys);
   });
 
-  it('a profile has no field that can carry or change canonical knowledge', () => {
+  it('a profile -- system or component -- has no field that can carry or change canonical knowledge, and holds no discipline rule', () => {
     const certified = PAA_CONCEPT_IDENTITIES.flatMap((c) => [c.stableId, c.canonicalName]);
-    for (const p of EA1_SYSTEM_PROFILES) {
+    for (const p of [...EA1_SYSTEM_PROFILES, ...EA1_COMPONENT_PROFILES]) {
       const text = JSON.stringify(p);
-      for (const c of certified) expect(text.includes(`"${c}"`), `${p.profileId}: ${c}`).toBe(false);
+      const id = 'profileId' in p ? p.profileId : p.componentId;
+      for (const c of certified) expect(text.includes(`"${c}"`), `${id}: ${c}`).toBe(false);
       const keys: string[] = [];
       JSON.stringify(p, (k, v) => { if (k) keys.push(k); return v; });
       expect(keys.filter((k) => /concept|definition|masteryStatement|curriculum|topic|learningObjective|canonical/i.test(k))).toEqual([]);
+      expect(keys.filter((k) => /numeric|parameter|misconception|toolInteraction|formatPreference/i.test(k))).toEqual([]);
     }
-    expect(Object.keys(AssessmentSystemProfileSchema.shape).sort()).toEqual(['certification', 'displayName', 'examFamilyCode', 'profileId', 'rules', 'specification', 'status', 'v', 'version']);
+    expect(Object.keys(AssessmentSystemProfileSchema.shape).sort()).toEqual(['certification', 'componentDependentDimensions', 'displayName', 'examFamilyCode', 'profileId', 'rules', 'specification', 'status', 'v', 'version']);
+    expect(Object.keys(AssessmentComponentProfileSchema.shape).sort()).toEqual(['certification', 'componentId', 'displayName', 'localSubject', 'overrides', 'specification', 'status', 'systemProfileId', 'v', 'version']);
     expect([...PROFILE_RULE_DIMENSIONS].sort()).toEqual(['authenticityRequirements', 'blueprintConstraints', 'calculatorPolicy', 'commandTerms', 'competencyElicitation', 'competencyEmphasis', 'contextExpectations', 'markStructure', 'reasoningDepth', 'responseFormats', 'responseLength', 'rubricStyle', 'stimulusExpectations', 'timePressure', 'transferExpectations']);
-    // the schema is strict: a concept cannot be smuggled in at any level
     expect(AssessmentSystemProfileSchema.safeParse({ ...clone(PAA_SYSTEM_PROFILE), concepts: ['math.alg.quadratics'] }).success).toBe(false);
+    expect(AssessmentComponentProfileSchema.safeParse({ ...clone(PAA_MATEMATICAS_COMPONENT), concepts: ['math.alg.quadratics'] }).success).toBe(false);
     const r = clone(PAA_SYSTEM_PROFILE) as AssessmentSystemProfile;
     (r.rules as Record<string, unknown>).conceptDefinitions = { ruleId: 'x', value: 'y', authority: { kind: 'STUDYUS_POLICY', provisional: true, assumption: 'An attempt to add knowledge.' } };
     expect(AssessmentSystemProfileSchema.safeParse(r).success).toBe(false);
-    // and it holds no discipline rule: nothing of the mathematics policy's vocabulary appears in a profile
-    for (const p of EA1_SYSTEM_PROFILES) expect(Object.keys(p.rules).filter((k) => /numeric|parameter|misconception|toolInteraction|formatPreference/i.test(k))).toEqual([]);
+    const c = clone(PAA_MATEMATICAS_COMPONENT) as AssessmentComponentProfile;
+    (c.overrides as Record<string, unknown>).conceptDefinitions = { ruleId: 'x', value: 'y', authority: { kind: 'STUDYUS_POLICY', provisional: true, assumption: 'An attempt to add knowledge.' } };
+    expect(AssessmentComponentProfileSchema.safeParse(c).success).toBe(false);
+    // the local subject of a component is a label; it is never compared with a canonical subject
+    for (const f of walk(ADAPTATION_DIR)) expect(code(f), f).not.toMatch(/localSubject\s*[=!]==?\s*[\w.]*canonicalSubject|canonicalSubject\s*[=!]==?\s*[\w.]*localSubject/);
   });
 
-  it('adapting changes neither the family nor the profile nor the policy, and never the family\'s PRIMARY concept ids', () => {
-    for (const f of MATH_POC_FAMILIES) for (const p of EA1_SYSTEM_PROFILES) {
-      const before = [canonicalJson(f), canonicalJson(p), canonicalJson(POLICY)];
-      const r = run(f, p);
-      expect([canonicalJson(f), canonicalJson(p), canonicalJson(POLICY)]).toEqual(before);
+  it('a specification targets the concrete component, and each profile-derived dimension says SYSTEM or COMPONENT', () => {
+    const s = spec(run(RATE_MODEL, IB_SYSTEM_PROFILE, REQUEST, POLICY, IB_MATH_AA_HL_P2_COMPONENT));
+    expect([s.systemProfile, s.componentProfile]).toEqual([{ profileId: 'IB', version: IB_SYSTEM_PROFILE.version, status: 'PROVISIONAL_ILLUSTRATIVE', examFamilyCode: 'IB' }, { componentId: 'IB.MATH_AA_HL.P2', version: IB_MATH_AA_HL_P2_COMPONENT.version, status: 'PROVISIONAL_ILLUSTRATIVE', localSubject: 'Mathematics: analysis and approaches' }]);
+    expect(s.provenance.toolPolicy[0]).toEqual({ origin: 'COMPONENT_PROFILE_RULE', ref: 'ib.math-aa-hl.p2.calculator', authority: 'OFFICIAL' });
+    expect(s.provenance.rubricStyle).toEqual([{ origin: 'SYSTEM_PROFILE_RULE', ref: 'ib.rubric', authority: 'STUDYUS_POLICY' }]);
+    expect(s.provenance.timeBudget).toEqual([{ origin: 'COMPONENT_PROFILE_RULE', ref: 'ib.math-aa-hl.p2.time', authority: 'OFFICIAL' }]);
+    expect([s.variable.toolPolicy.calculator, s.variable.numericProfile, s.lineage.componentProfileContentHash].map((x) => typeof x === 'string' && x.length === 64 ? 'hash' : x)).toEqual(['GDC_REQUIRED', 'REALISTIC_VALUES', 'hash']);
+    // Paper 1 and Paper 2: one family, one invariant hash, two specifications that differ exactly in the component's own rules
+    const p1 = spec(run(RATE_MODEL, IB_SYSTEM_PROFILE, REQUEST, POLICY, IB_MATH_AA_HL_P1_COMPONENT));
+    expect([p1.invariantHash === s.invariantHash, p1.specificationId === s.specificationId, differingDimensions(p1, s)]).toEqual([true, false, ['toolPolicy', 'numericProfile']]);
+    // every profile-derived provenance entry of every specification names the level its rule really came from
+    for (const x of ALL_SPECS.values()) {
+      const system = systemProfileOf(x.systemProfile.profileId)!;
+      const component = x.componentProfile ? componentProfileOf(x.componentProfile.componentId)! : null;
+      for (const list of Object.values(x.provenance)) for (const pr of list) {
+        if (pr.origin === 'COMPONENT_PROFILE_RULE') expect(PROFILE_RULE_DIMENSIONS.map((d) => component!.overrides[d]).find((r) => r?.ruleId === pr.ref)!.authority.kind).toBe(pr.authority);
+        if (pr.origin === 'SYSTEM_PROFILE_RULE') expect(PROFILE_RULE_DIMENSIONS.map((d) => system.rules[d]).find((r) => r.ruleId === pr.ref)!.authority.kind).toBe(pr.authority);
+        if (pr.origin === 'POLICY_RULE') expect(pr.authority).toBe('STUDYUS_POLICY');
+        if (pr.origin === 'FAMILY' || pr.origin === 'REQUEST') expect(pr.authority).toBeNull();
+      }
+      if (!component) expect(Object.values(x.provenance).flat().some((pr) => pr.origin === 'COMPONENT_PROFILE_RULE')).toBe(false);
+    }
+  });
+
+  it('COMPONENT_REQUIRED: the system alone is enough only for generic dev-test practice that needs nothing component-specific', () => {
+    // generic practice: allowed, and the specification says its component is null
+    const generic = spec(runSystem(RATE_MODEL, IB_SYSTEM_PROFILE));
+    expect([generic.componentProfile, generic.lineage.componentProfileContentHash, generic.variable.timeBudget]).toEqual([null, null, { secondsPerUnit: null, unit: null }]);
+    const why = (r: AdaptationResult) => (r.ok ? 'NOT_REFUSED' : `${r.refusal.code}|${r.refusal.detail.split(': ').slice(1).join(': ')}`);
+    // a. any purpose but practice
+    expect(why(runSystem(RATE_MODEL, IB_SYSTEM_PROFILE, { ...REQUEST, purpose: 'FULL_MOCK_1' }))).toBe('COMPONENT_REQUIRED|purpose FULL_MOCK_1');
+    expect(runSystem(RATE_MODEL, IB_SYSTEM_PROFILE, { ...REQUEST, purpose: 'LOW_STAKES_REINFORCEMENT' }).ok).toBe(true);
+    // b. evidence-bearing content (from a reviewed family, so that maturity is not what refuses)
+    expect(why(runSystem(reviewed(FACTORISING), IB_SYSTEM_PROFILE, { ...REQUEST, contentUseClass: 'EVIDENCE_BEARING' }))).toBe('COMPONENT_REQUIRED|evidence-bearing content');
+    // c. the request fixes a component-dependent dimension
+    expect(why(runSystem(RATE_MODEL, IB_SYSTEM_PROFILE, { ...REQUEST, calculatorPolicy: 'GDC_REQUIRED' }))).toBe('COMPONENT_REQUIRED|request fixes calculatorPolicy');
+    expect(why(runSystem(RATE_MODEL, IB_SYSTEM_PROFILE, { ...REQUEST, responseFormat: 'SHORT_RESPONSE' }))).toBe('COMPONENT_REQUIRED|request fixes responseFormat');
+    //    ... but a dimension the system keeps common may be fixed without a component
+    expect(runSystem(RATE_MODEL, IB_SYSTEM_PROFILE, { ...REQUEST, context: 'PERSONAL' }).ok).toBe(true);
+    expect(why(runSystem(RATE_MODEL, PISA_SYSTEM_PROFILE, { ...REQUEST, context: 'PERSONAL' }))).toBe('COMPONENT_REQUIRED|request fixes context');
+    // d. the family's support is constrained on a component-dependent dimension
+    expect(why(runSystem(FACTORISING, PAA_SYSTEM_PROFILE))).toBe('COMPONENT_REQUIRED|family constraint RESPONSE_FORMAT_ONLY');
+    //    ... a constraint on something else (difficulty) does not need one
+    expect(runSystem(MISSING_VALUE, IB_SYSTEM_PROFILE).ok).toBe(true);
+    // e. the family requires a tool and the tool policy is the component's
+    expect(why(runSystem(DATASET, CAMBRIDGE_SYSTEM_PROFILE))).toBe('COMPONENT_REQUIRED|the family requires a tool');
+    expect(why(runSystem(DATASET, IB_SYSTEM_PROFILE))).toBe('COMPONENT_REQUIRED|family constraint CALCULATOR_ONLY; the family requires a tool');
+    // f. the system-level fallback of a component-dependent dimension offers nothing the family can use
+    expect(refusal(runSystem(fam('tf.math.quadratic.optimum-of-a-model'), PISA_SYSTEM_PROFILE))).toBe('COMPONENT_REQUIRED');
+    // a system with no component-dependent dimension never requires one
+    const flat = { ...clone(IB_SYSTEM_PROFILE), componentDependentDimensions: [] };
+    expect(runSystem(RATE_MODEL, flat, { ...REQUEST, purpose: 'FULL_MOCK_1', calculatorPolicy: 'GDC_REQUIRED' }).ok).toBe(true);
+    // once a component is targeted the dimension-specific answer is given
+    expect(refusal(run(DATASET, IB_SYSTEM_PROFILE, REQUEST, POLICY, IB_MATH_AA_HL_P1_COMPONENT))).toBe('TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE');
+    expect(refusal(run(RATE_MODEL, IB_SYSTEM_PROFILE, REQUEST, POLICY, PAA_MATEMATICAS_COMPONENT))).toBe('COMPONENT_NOT_OF_THE_SYSTEM');
+    expect(refusal(run(RATE_MODEL, IB_SYSTEM_PROFILE, REQUEST, POLICY, { ...clone(IB_MATH_AA_HL_P1_COMPONENT), componentId: 'p1' }))).toBe('COMPONENT_PROFILE_INVALID');
+  });
+
+  it('adapting changes neither the family nor the profiles nor the policy nor the register, and never the family\'s PRIMARY concept ids', () => {
+    for (const f of MATH_POC_FAMILIES) for (const c of EA1_COMPONENT_PROFILES) {
+      const p = systemProfileOf(c.systemProfileId)!;
+      const before = [canonicalJson(f), canonicalJson(p), canonicalJson(c), canonicalJson(POLICY), canonicalJson(MATH_POC_APPLICABILITY)];
+      const r = run(f, p, REQUEST, POLICY, c);
+      expect([canonicalJson(f), canonicalJson(p), canonicalJson(c), canonicalJson(POLICY), canonicalJson(MATH_POC_APPLICABILITY)]).toEqual(before);
       if (r.ok) {
-        expect(r.specification.invariants.primaryConceptStableIds).toEqual(f.primaryConcepts.map((c) => c.stableId).sort());
+        expect(r.specification.invariants.primaryConceptStableIds).toEqual(f.primaryConcepts.map((x) => x.stableId).sort());
         expect(r.specification.primaryConcept).toEqual(f.primaryConcepts[0]);
       }
     }
@@ -359,7 +600,7 @@ describe('discipline adaptation policy: what a profile\'s words mean in mathemat
     const ib = spec(run(RATE_MODEL, IB_SYSTEM_PROFILE)).variable;
     expect([paa.reasoningDepth, paa.numericProfile, paa.toolPolicy.calculator]).toEqual([{ depth: 'ANSWER_ONLY', workingShown: false, justificationRequired: false }, 'EXACT_WITHOUT_TOOL', 'NONE']);
     expect(ib.reasoningDepth).toEqual({ depth: 'METHOD_SHOWN', workingShown: true, justificationRequired: false });
-    expect(spec(run(RATE_MODEL, IB_SYSTEM_PROFILE, { ...REQUEST, calculatorPolicy: 'GDC_REQUIRED' })).variable.numericProfile).toBe('REALISTIC_VALUES');
+    expect(spec(run(RATE_MODEL, IB_SYSTEM_PROFILE, { ...REQUEST, calculatorPolicy: 'GDC_REQUIRED' }, POLICY, IB_MATH_AA_HL_P2_COMPONENT)).variable.numericProfile).toBe('REALISTIC_VALUES');
     // levers: CONTEXT_LOAD only where there is a situation, REPRESENTATION only where there is a stimulus
     expect(spec(run(MISSING_VALUE, PAA_SYSTEM_PROFILE)).variable.difficultyLevers).toEqual(['scale-factor', 'composed-proportion']);
     expect(spec(run(RATE_MODEL, PAA_SYSTEM_PROFILE)).variable.difficultyLevers).toEqual(['rate-visibility', 'unit-mismatch', 'irrelevant-information']);
@@ -375,15 +616,15 @@ describe('adapt(): a frozen specification, or a named refusal', () => {
     const a = spec(run(RATE_MODEL, PISA_SYSTEM_PROFILE));
     const b = spec(run(clone(RATE_MODEL), clone(PISA_SYSTEM_PROFILE), clone(REQUEST), clone(POLICY)));
     expect(canonicalJson(b)).toBe(canonicalJson(a));
-    const stamped = spec(adapt({ family: RATE_MODEL, profile: PISA_SYSTEM_PROFILE, disciplinePolicy: POLICY, request: REQUEST, adaptedAt: '2026-10-11T12:00:00Z' }));
+    const stamped = spec(adapt({ family: RATE_MODEL, profile: PISA_SYSTEM_PROFILE, component: PISA_MATHEMATICS_COMPONENT, applicability: MATH_POC_APPLICABILITY, disciplinePolicy: POLICY, request: REQUEST, adaptedAt: '2026-10-11T12:00:00Z' }));
     expect([stamped.specificationId, stamped.adaptedAt, a.adaptedAt]).toEqual([a.specificationId, '2026-10-11T12:00:00Z', null]);
     expect(a.specificationId).toMatch(/^[0-9a-f]{64}$/);
     expect(specificationIdOf(a)).toBe(a.specificationId);
     expect(AdaptationSpecificationSchema.safeParse(a).success).toBe(true);
     expect(specificationIntegrityIssues(a)).toEqual([]);
     // every request, family version, profile version or policy version that differs gives another id
-    const ids = new Set([a.specificationId, spec(run(RATE_MODEL, PISA_SYSTEM_PROFILE, { ...REQUEST, difficultyBand: 'CHALLENGE' })).specificationId, spec(run({ ...clone(RATE_MODEL), version: '0.2.0' }, PISA_SYSTEM_PROFILE)).specificationId, spec(run(RATE_MODEL, { ...clone(PISA_SYSTEM_PROFILE), version: '0.2.0' })).specificationId, spec(run(RATE_MODEL, PISA_SYSTEM_PROFILE, REQUEST, { ...clone(POLICY), version: '0.2.0' })).specificationId]);
-    expect(ids.size).toBe(5);
+    const ids = new Set([a.specificationId, spec(run(RATE_MODEL, PISA_SYSTEM_PROFILE, { ...REQUEST, difficultyBand: 'CHALLENGE' })).specificationId, spec(run({ ...clone(RATE_MODEL), version: '0.2.0' }, PISA_SYSTEM_PROFILE)).specificationId, spec(run(RATE_MODEL, { ...clone(PISA_SYSTEM_PROFILE), version: '0.2.0' })).specificationId, spec(run(RATE_MODEL, PISA_SYSTEM_PROFILE, REQUEST, { ...clone(POLICY), version: '0.2.0' })).specificationId, spec(run(RATE_MODEL, PISA_SYSTEM_PROFILE, REQUEST, POLICY, { ...clone(PISA_MATHEMATICS_COMPONENT), version: '0.3.0' })).specificationId, spec(adapt({ family: RATE_MODEL, profile: PISA_SYSTEM_PROFILE, component: PISA_MATHEMATICS_COMPONENT, applicability: [], disciplinePolicy: POLICY, request: REQUEST })).specificationId]);
+    expect(ids.size).toBe(7);
     // a family edited WITHOUT a new version is still detectable: its content hash is part of the lineage
     const silentEdit = clone(RATE_MODEL);
     silentEdit.commonMisconceptions.push('An added misconception with no version change.');
@@ -416,27 +657,21 @@ describe('adapt(): a frozen specification, or a named refusal', () => {
     }
   });
 
-  it('records where every variable dimension came from: profile rule with its authority, policy rule, family field or request', () => {
+  it('records where every variable dimension came from: system or component rule with its authority, policy rule, family field or request', () => {
     const s = spec(run(RATE_MODEL, PISA_SYSTEM_PROFILE));
     expect(Object.keys(s.provenance).sort()).toEqual([...VARIABLE_DIMENSIONS].sort());
-    expect(s.provenance.toolPolicy).toEqual([{ origin: 'PROFILE_RULE', ref: 'pisa.calculator', authority: 'OFFICIAL' }, { origin: 'FAMILY', ref: 'specialization.toolDependency', authority: null }]);
+    expect(s.provenance.toolPolicy).toEqual([{ origin: 'COMPONENT_PROFILE_RULE', ref: 'pisa.mathematics.calculator', authority: 'OFFICIAL' }, { origin: 'FAMILY', ref: 'specialization.toolDependency', authority: null }]);
     expect(s.provenance.numericProfile[0]).toEqual({ origin: 'POLICY_RULE', ref: 'studyus.adaptation.mathematics@0.1.0-provisional#toolInteraction.ALLOWED', authority: 'STUDYUS_POLICY' });
-    expect(s.provenance.context.map((p) => `${p.origin}:${p.ref}:${p.authority}`)).toEqual(['PROFILE_RULE:pisa.contexts:OFFICIAL', 'FAMILY:supportedContexts:null', 'PROFILE_RULE:pisa.authenticity:STUDYUS_POLICY', 'PROFILE_RULE:pisa.transfer:STUDYUS_POLICY', 'POLICY_RULE:studyus.adaptation.mathematics@0.1.0-provisional#transfer:STUDYUS_POLICY']);
+    expect(s.provenance.context.map((p) => `${p.origin}:${p.ref}:${p.authority}`)).toEqual(['COMPONENT_PROFILE_RULE:pisa.mathematics.contexts:OFFICIAL', 'FAMILY:supportedContexts:null', 'SYSTEM_PROFILE_RULE:pisa.authenticity:STUDYUS_POLICY', 'SYSTEM_PROFILE_RULE:pisa.transfer:STUDYUS_POLICY', 'POLICY_RULE:studyus.adaptation.mathematics@0.1.0-provisional#transfer:STUDYUS_POLICY']);
     expect(s.provenance.difficulty).toEqual([{ origin: 'REQUEST', ref: 'difficultyBand', authority: null }]);
     expect(spec(run(RATE_MODEL, PISA_SYSTEM_PROFILE, { ...REQUEST, responseFormat: 'NUMERIC_ENTRY' })).provenance.responseFormat[0]).toEqual({ origin: 'REQUEST', ref: 'responseFormat', authority: null });
-    // an OFFICIAL rule and a STUDYUS_POLICY rule are never confused in a specification
-    for (const x of SPECS.values()) for (const list of Object.values(x.provenance)) for (const p of list) {
-      if (p.origin === 'PROFILE_RULE') expect(PROFILE_RULE_DIMENSIONS.map((d) => systemProfileOf(x.assessmentProfile.profileId)!.rules[d]).find((r) => r.ruleId === p.ref)!.authority.kind).toBe(p.authority);
-      if (p.origin === 'POLICY_RULE') expect(p.authority).toBe('STUDYUS_POLICY');
-      if (p.origin === 'FAMILY' || p.origin === 'REQUEST') expect(p.authority).toBeNull();
-    }
   });
 
   it('an UNSUPPORTED profile is refused with the family\'s reason and is never forced, whatever is asked', () => {
     const r = run(MISSING_VALUE, PISA_SYSTEM_PROFILE);
     expect(r).toMatchObject({ ok: false, refusal: { code: 'PROFILE_UNSUPPORTED_BY_FAMILY' } });
     expect(!r.ok && r.refusal.detail).toMatch(/cannot show transfer/);
-    for (const extra of [{ context: 'PERSONAL' }, { responseFormat: 'SELECTED_RESPONSE' }, { knowledgeRequirement: 'NONE' }]) expect(refusal(run(MISSING_VALUE, PISA_SYSTEM_PROFILE, { ...REQUEST, ...extra }))).toBe('PROFILE_UNSUPPORTED_BY_FAMILY');
+    for (const extra of [{ context: 'PERSONAL' }, { responseFormat: 'SELECTED_RESPONSE' }, { applicabilityRequirement: 'NOT_REQUIRED' }]) expect(refusal(run(MISSING_VALUE, PISA_SYSTEM_PROFILE, { ...REQUEST, ...extra }))).toBe('PROFILE_UNSUPPORTED_BY_FAMILY');
     // a system the family does not declare is not a supported one
     const undeclared = clone(MISSING_VALUE) as MathTaskFamily;
     delete (undeclared.profileSupport as Record<string, unknown>).ICFES;
@@ -458,7 +693,8 @@ describe('adapt(): a frozen specification, or a named refusal', () => {
     expect(refusal(run(widened, PAA_SYSTEM_PROFILE, { ...REQUEST, responseFormat: 'SELECTED_RESPONSE' }))).toBe('SUPPORT_CONSTRAINT_VIOLATED');
     expect(spec(run(widened, PAA_SYSTEM_PROFILE)).variable.responseFormat.format).toBe('NUMERIC_ENTRY');
     // IB hosts the realistic-data family only on a component with a calculator
-    expect(spec(run(DATASET, IB_SYSTEM_PROFILE)).variable.toolPolicy.calculator).toBe('GDC_REQUIRED');
+    expect(spec(run(DATASET, IB_SYSTEM_PROFILE, REQUEST, POLICY, IB_MATH_AA_HL_P2_COMPONENT)).variable.toolPolicy.calculator).toBe('GDC_REQUIRED');
+    expect(refusal(run(DATASET, IB_SYSTEM_PROFILE, REQUEST, POLICY, IB_MATH_AA_HL_P1_COMPONENT))).toBe('TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE');
     // a context constraint
     const contextBound = clone(RATE_MODEL) as MathTaskFamily;
     contextBound.profileSupport.PAA = { status: 'SUPPORTED_WITH_CONSTRAINTS', constraints: [{ kind: 'CONTEXT_ONLY', contexts: ['SOCIETAL'], reason: 'Only a societal situation carries this comparison for this system.' }] };
@@ -509,9 +745,9 @@ describe('adapt(): a frozen specification, or a named refusal', () => {
     noStimulus.rules.stimulusExpectations.value = { allowed: ['NONE'], whenOptional: 'NONE' };
     expect(refusal(run(fam('tf.math.data.judge-claim-against-display'), noStimulus))).toBe('STIMULUS_REQUIRED_BY_FAMILY_NOT_OFFERED_BY_PROFILE');
     // a system with a competency model none of whose competencies the task elicits
-    const narrow = clone(PISA_SYSTEM_PROFILE) as AssessmentSystemProfile;
-    narrow.rules.competencyElicitation.value = { FORMULATE: ['RECALL'], EMPLOY: ['RECALL'], INTERPRET_EVALUATE: ['RECALL'], REASON: ['RECALL'] };
-    expect(refusal(run(RATE_MODEL, narrow))).toBe('PROFILE_COMPETENCY_NOT_ELICITED');
+    const narrow = clone(PISA_MATHEMATICS_COMPONENT) as AssessmentComponentProfile;
+    narrow.overrides.competencyElicitation!.value = { FORMULATE: ['RECALL'], EMPLOY: ['RECALL'], INTERPRET_EVALUATE: ['RECALL'], REASON: ['RECALL'] };
+    expect(refusal(run(RATE_MODEL, PISA_SYSTEM_PROFILE, REQUEST, POLICY, narrow))).toBe('PROFILE_COMPETENCY_NOT_ELICITED');
     // a command term outside the profile's vocabulary, or any term where the profile has none
     expect(refusal(run(RATE_MODEL, IB_SYSTEM_PROFILE, { ...REQUEST, commandTerm: 'evaluate' }))).toBe('COMMAND_TERM_NOT_IN_PROFILE_VOCABULARY');
     expect(refusal(run(RATE_MODEL, PAA_SYSTEM_PROFILE, { ...REQUEST, commandTerm: 'solve' }))).toBe('COMMAND_TERM_NOT_IN_PROFILE_VOCABULARY');
@@ -528,6 +764,9 @@ describe('adapt(): a frozen specification, or a named refusal', () => {
     expect(refusal(run(MISSING_VALUE, { ...clone(PAA_SYSTEM_PROFILE), profileId: 'paa' }))).toBe('PROFILE_INVALID');
     expect(refusal(run(MISSING_VALUE, PAA_SYSTEM_PROFILE, REQUEST, { ...clone(POLICY), authority: 'OFFICIAL' }))).toBe('DISCIPLINE_POLICY_INVALID');
     expect(refusal(run(MISSING_VALUE, PAA_SYSTEM_PROFILE, { ...REQUEST, purpose: 'HOMEWORK' }))).toBe('REQUEST_INVALID');
+    // the content use class is stated, never defaulted
+    expect(refusal(run(MISSING_VALUE, PAA_SYSTEM_PROFILE, { purpose: 'PRACTICE', difficultyBand: 'STANDARD', language: 'es' }))).toBe('REQUEST_INVALID');
+    expect(refusal(run(MISSING_VALUE, PAA_SYSTEM_PROFILE, { ...REQUEST, knowledgeRequirement: 'CERTIFIED' }))).toBe('REQUEST_INVALID');
     expect(refusal(run(MISSING_VALUE, PAA_SYSTEM_PROFILE, { ...REQUEST, stem: 'write this' }))).toBe('REQUEST_INVALID');
     expect(refusal(run({ ...clone(MISSING_VALUE), lifecycle: 'RETIRED' }, PAA_SYSTEM_PROFILE))).toBe('FAMILY_RETIRED');
     for (const c of MATRIX.cells) if (c.refusal) expect(ADAPTATION_REFUSAL_CODES as readonly string[]).toContain(c.refusal.code);
@@ -555,11 +794,13 @@ describe('mathematical invariants', () => {
       expect(own.length, f.familyId).toBeGreaterThanOrEqual(2);
       expect(new Set(own.map((s) => s.invariantHash)).size, f.familyId).toBe(1);
       expect(new Set(own.map((s) => canonicalJson(s.invariants))).size).toBe(1);
-      for (const s of own) expect(invariantsPreserved(f, s), `${f.familyId} / ${s.assessmentProfile.profileId}`).toBe(true);
+      for (const s of own) expect(invariantsPreserved(f, s), `${f.familyId} / ${s.componentProfile!.componentId}`).toBe(true);
+      // the system-level specifications of the family carry the same invariants too
+      for (const [k, s] of ALL_SPECS) if (k.startsWith(`${f.familyId}|`)) expect(s.invariantHash).toBe(own[0].invariantHash);
       expect(new Set(own.map((s) => canonicalJson(s.variable))).size, f.familyId).toBe(own.length);
       // the request's own choices (band, format, context, calculator) never move the invariants either
       for (const extra of [{ difficultyBand: 'CHALLENGE' as const }, { purpose: 'FULL_MOCK_1' as const }, { language: 'en' }]) {
-        const r = run(f, systemProfileOf(own[0].assessmentProfile.profileId), { ...REQUEST, ...extra });
+        const r = run(f, systemProfileOf(own[0].systemProfile.profileId), { ...REQUEST, ...extra }, POLICY, componentProfileOf(own[0].componentProfile!.componentId));
         if (r.ok) expect(r.specification.invariantHash).toBe(own[0].invariantHash);
       }
     }
@@ -583,7 +824,7 @@ describe('mathematical invariants', () => {
   });
 });
 
-describe('mathematics proof of concept: 10 families x 5 profiles', () => {
+describe('mathematics proof of concept: 10 families x 6 component profiles (and x 5 system profiles alone)', () => {
   it('the stored artifact is exactly what the function produces', () => {
     expect(serializeMathAdaptationMatrix(MATRIX)).toBe(read(MATH_POC_MATRIX_ARTIFACT));
     expect(serializeMathAdaptationMatrix(buildMathAdaptationMatrix())).toBe(serializeMathAdaptationMatrix(MATRIX));
@@ -591,85 +832,171 @@ describe('mathematics proof of concept: 10 families x 5 profiles', () => {
     expect(script).not.toMatch(/from 'pg'|DATABASE_URL|process\.env|fetch\(|@\/lib\/ai\/|@\/lib\/db/);
   });
 
-  it('50 attempts: 42 specifications and 8 named refusals; the support matrix is not uniform', () => {
-    expect(MATRIX.summary).toMatchObject({ attempts: 50, specifications: 42, refusals: 8, declaredSupport: { SUPPORTED: 35, SUPPORTED_WITH_CONSTRAINTS: 7, UNSUPPORTED: 8 }, refusalCodes: { PROFILE_UNSUPPORTED_BY_FAMILY: 8 }, specificationsByProfile: { PAA: 9, IB: 10, CAMBRIDGE: 10, PISA: 6, ICFES: 7 }, familiesReachingSeveralProfiles: 10, invariantHashIdenticalWithinEveryFamily: true });
-    const refused = MATRIX.cells.filter((c) => c.outcome === 'REFUSED').map((c) => `${c.familyId.replace('tf.math.', '')}|${c.profileId}`);
-    expect(refused).toEqual(['proportion.missing-value|PISA', 'linear.line-through-two-points|PISA', 'quadratic.solve-by-factorising|PISA', 'quadratic.solve-by-factorising|ICFES', 'quadratic.optimum-of-a-model|ICFES', 'probability.single-event-equally-likely|PISA', 'data.rate-of-change-from-realistic-dataset|PAA', 'data.rate-of-change-from-realistic-dataset|ICFES']);
+  it('component level: 60 attempts, 51 DEV_TEST specifications, 9 named refusals -- eight declared by the family, one found by the engine', () => {
+    expect(MATRIX.summary.componentLevel).toEqual({
+      attempts: 60, specifications: 51, refusals: 9, declaredSupport: { SUPPORTED: 42, SUPPORTED_WITH_CONSTRAINTS: 10, UNSUPPORTED: 8 }, refusalCodes: { PROFILE_UNSUPPORTED_BY_FAMILY: 8, TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE: 1 },
+      specificationsByTarget: { 'PAA.MATEMATICAS': 9, 'IB.MATH_AA_HL.P1': 9, 'IB.MATH_AA_HL.P2': 10, 'CAMBRIDGE.9709.P1': 10, 'PISA.MATHEMATICS': 6, 'ICFES.SABER11_MATEMATICAS': 7 },
+    });
+    const refused = COMPONENT_CELLS.filter((c) => c.outcome === 'REFUSED').map((c) => `${c.familyId.replace('tf.math.', '')}|${c.targetId}|${c.refusal!.code}`).sort();
+    expect(refused).toEqual([
+      'data.rate-of-change-from-realistic-dataset|IB.MATH_AA_HL.P1|TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE',
+      'data.rate-of-change-from-realistic-dataset|ICFES.SABER11_MATEMATICAS|PROFILE_UNSUPPORTED_BY_FAMILY',
+      'data.rate-of-change-from-realistic-dataset|PAA.MATEMATICAS|PROFILE_UNSUPPORTED_BY_FAMILY',
+      'linear.line-through-two-points|PISA.MATHEMATICS|PROFILE_UNSUPPORTED_BY_FAMILY',
+      'probability.single-event-equally-likely|PISA.MATHEMATICS|PROFILE_UNSUPPORTED_BY_FAMILY',
+      'proportion.missing-value|PISA.MATHEMATICS|PROFILE_UNSUPPORTED_BY_FAMILY',
+      'quadratic.optimum-of-a-model|ICFES.SABER11_MATEMATICAS|PROFILE_UNSUPPORTED_BY_FAMILY',
+      'quadratic.solve-by-factorising|ICFES.SABER11_MATEMATICAS|PROFILE_UNSUPPORTED_BY_FAMILY',
+      'quadratic.solve-by-factorising|PISA.MATHEMATICS|PROFILE_UNSUPPORTED_BY_FAMILY',
+    ]);
     // every procedural family is refused for PISA; every modelling family reaches it
     expect(MATH_POC_FAMILIES.filter((f) => f.profileSupport.PISA.status === 'UNSUPPORTED').every((f) => !f.evidenceTarget.actions.some((a) => ['FORMULATE', 'INTERPRET', 'EVALUATE'].includes(a)))).toBe(true);
-    // the outcome agrees with the declaration in every cell, and a specification id is unique
-    for (const c of MATRIX.cells) expect(c.outcome === 'REFUSED', `${c.familyId}|${c.profileId}`).toBe(c.declaredSupport === 'UNSUPPORTED');
-    expect(new Set(MATRIX.cells.flatMap((c) => (c.specificationId ? [c.specificationId] : []))).size).toBe(42);
+    // a declared-unsupported system is always refused; the support semantics are the family's, per system
+    for (const c of MATRIX.cells) if (c.declaredSupport === 'UNSUPPORTED') expect(c.refusal?.code, `${c.familyId}|${c.targetId}`).toBe('PROFILE_UNSUPPORTED_BY_FAMILY');
+    expect(new Set(COMPONENT_CELLS.flatMap((c) => (c.specificationId ? [c.specificationId] : []))).size).toBe(51);
+    // every specification says what it is: dev-test content of a draft family, for a named component
+    for (const s of SPECS.values()) expect([s.contentUseClass, s.taskFamily.lifecycle, s.taskFamily.reviewStatus, s.componentProfile !== null, s.purpose.minimumInstanceClass]).toEqual(['DEV_TEST_CONTENT', 'DRAFT', 'UNREVIEWED', true, 'DYNAMIC']);
   });
 
-  it('the canonical-subject tension is in the numbers: 27 of the 42 specifications are for a system where the concept is not certified', () => {
-    expect(MATRIX.summary.knowledgeAvailabilityOfSpecifications).toEqual({ CATALOGUE_LINK_RECORDED: 6, CERTIFIED_FOR_THIS_EXAM_FAMILY: 9, NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY: 27 });
-    expect(MATRIX.summary.specificationsIfKnowledgeRequired).toEqual({ CATALOGUE_LINK_OR_CERTIFIED: 15, CERTIFIED: 9 });
-    // certified = PAA only; linked = quadratics for IB and Cambridge (Mathematics), proportion and probability for PISA (Matemáticas)
-    const linked = MATRIX.cells.filter((c) => c.outcome === 'SPECIFICATION' && c.canonicalKnowledgeAvailability === 'CATALOGUE_LINK_RECORDED').map((c) => `${c.familyId.replace('tf.math.', '')}|${c.profileId}`);
-    expect(linked).toEqual(['proportion.rate-comparison-model|PISA', 'quadratic.solve-by-factorising|IB', 'quadratic.solve-by-factorising|CAMBRIDGE', 'quadratic.optimum-of-a-model|IB', 'quadratic.optimum-of-a-model|CAMBRIDGE', 'probability.compare-chances-to-decide|PISA']);
-    expect(MATRIX.cells.filter((c) => c.canonicalKnowledgeAvailability === 'CERTIFIED_FOR_THIS_EXAM_FAMILY').every((c) => c.profileId === 'PAA')).toBe(true);
-    // no Matemáticas concept is treated as available to a Mathematics curriculum, or the reverse
-    for (const s of SPECS.values()) if (s.primaryConcept.canonicalSubject === 'Matemáticas' && ['IB', 'CAMBRIDGE'].includes(s.assessmentProfile.profileId)) expect(s.canonicalKnowledgeAvailability.status).toBe('NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY');
+  it('system level (generic practice): 50 attempts, 36 specifications, 6 COMPONENT_REQUIRED and the same 8 declared refusals', () => {
+    expect(MATRIX.summary.systemLevel).toEqual({
+      attempts: 50, specifications: 36, refusals: 14, declaredSupport: { SUPPORTED: 35, SUPPORTED_WITH_CONSTRAINTS: 7, UNSUPPORTED: 8 }, refusalCodes: { COMPONENT_REQUIRED: 6, PROFILE_UNSUPPORTED_BY_FAMILY: 8 },
+      specificationsByTarget: { PAA: 7, IB: 9, CAMBRIDGE: 9, PISA: 4, ICFES: 7 },
+    });
+    expect(MATRIX.cells.filter((c) => c.refusal?.code === 'COMPONENT_REQUIRED').map((c) => `${c.familyId.replace('tf.math.', '')}|${c.targetId}`).sort()).toEqual(['data.rate-of-change-from-realistic-dataset|CAMBRIDGE', 'data.rate-of-change-from-realistic-dataset|IB', 'data.rate-of-change-from-realistic-dataset|PISA', 'quadratic.optimum-of-a-model|PAA', 'quadratic.optimum-of-a-model|PISA', 'quadratic.solve-by-factorising|PAA']);
+    for (const [k, s] of ALL_SPECS) if (s.componentProfile === null) expect(MATH_POC_PROFILE_IDS as readonly string[], k).toContain(k.split('|')[1]);
   });
 
-  it(`any two specifications of one family differ in at least ${MINIMUM_PAIRWISE_DIFFERENCE} of the ${COMPARED_DIMENSIONS.length} compared dimensions, with the invariant hash equal`, () => {
+  it('applicability of the 51 component-level specifications: 9 by official exam structure, 6 by reviewed catalogue link, 36 not established', () => {
+    expect(MATRIX.summary.applicabilityOfComponentSpecifications).toEqual({ byBasis: { NONE: 36, OFFICIAL_EXAM_STRUCTURE: 9, REVIEWED_CATALOGUE_LINK: 6 }, byStatus: { ESTABLISHED: 15, NOT_ESTABLISHED: 36 } });
+    const produced = COMPONENT_CELLS.filter((c) => c.outcome === 'SPECIFICATION');
+    expect(produced.filter((c) => c.applicability.basis === 'OFFICIAL_EXAM_STRUCTURE').every((c) => c.targetId === 'PAA.MATEMATICAS')).toBe(true);
+    expect(produced.filter((c) => c.applicability.basis === 'REVIEWED_CATALOGUE_LINK').map((c) => `${c.familyId.replace('tf.math.', '')}|${c.targetId}`).sort()).toEqual(['probability.compare-chances-to-decide|PISA.MATHEMATICS', 'proportion.rate-comparison-model|PISA.MATHEMATICS', 'quadratic.optimum-of-a-model|CAMBRIDGE.9709.P1', 'quadratic.optimum-of-a-model|IB.MATH_AA_HL.P1', 'quadratic.solve-by-factorising|CAMBRIDGE.9709.P1', 'quadratic.solve-by-factorising|IB.MATH_AA_HL.P1']);
+    // the cell's applicability is the specification's
+    for (const c of produced) expect(SPECS.get(`${c.familyId}|${c.targetId}`)!.assessmentApplicability).toMatchObject(c.applicability);
+    // no Matemáticas concept is established for a system on the strength of that system assessing "Mathematics"
+    for (const s of SPECS.values()) if (s.primaryConcept.canonicalSubject === 'Matemáticas' && ['IB', 'CAMBRIDGE'].includes(s.systemProfile.profileId)) expect(s.assessmentApplicability.status).toBe('NOT_ESTABLISHED');
+  });
+
+  it('asked for EVIDENCE_BEARING content, every one of the 60 attempts is refused: all ten families are drafts', () => {
+    expect(MATRIX.summary.evidenceBearingAttempts).toEqual({ attempts: 60, specifications: 0, refusalCodes: { FAMILY_NOT_REVIEWED_FOR_EVIDENCE_BEARING_CONTENT: 60 } });
+  });
+
+  it(`two specifications of one family for different systems differ in at least ${MINIMUM_PAIRWISE_DIFFERENCE} of the ${COMPARED_DIMENSIONS.length} compared dimensions, with the invariant hash equal`, () => {
     expect(COMPARED_DIMENSIONS.length).toBe(12);
-    let pairs = 0;
+    let cross = 0;
+    let same = 0;
     for (const f of MATRIX.fidelity) {
-      expect(f.invariant.identicalAcrossProfiles).toBe(true);
+      expect(f.invariant.identicalAcrossTargets).toBe(true);
       for (const p of f.pairwise) {
-        pairs += 1;
         const a = SPECS.get(`${f.familyId}|${p.a}`)!;
         const b = SPECS.get(`${f.familyId}|${p.b}`)!;
         expect(a.invariantHash).toBe(b.invariantHash);
         expect(differingDimensions(a, b)).toEqual(p.differing);
-        expect(p.differing.length, `${f.familyId}: ${p.a} / ${p.b}`).toBeGreaterThanOrEqual(MINIMUM_PAIRWISE_DIFFERENCE);
+        expect(p.sameSystem).toBe(a.systemProfile.profileId === b.systemProfile.profileId);
+        if (p.sameSystem) { same += 1; expect(p.differing.length, `${f.familyId}: ${p.a} / ${p.b}`).toBeGreaterThanOrEqual(MINIMUM_SAME_SYSTEM_DIFFERENCE); } else { cross += 1; expect(p.differing.length, `${f.familyId}: ${p.a} / ${p.b}`).toBeGreaterThanOrEqual(MINIMUM_PAIRWISE_DIFFERENCE); }
       }
     }
-    expect(pairs).toBe(70);
-    // the floor is the measured minimum, not a comfortable one: PAA / Icfes sit exactly on it
-    expect(MATRIX.summary.minimumPairwiseDifference).toBe(MINIMUM_PAIRWISE_DIFFERENCE);
-    const closest = MATRIX.fidelity.flatMap((f) => f.pairwise.filter((p) => p.differing.length === MINIMUM_PAIRWISE_DIFFERENCE).map((p) => `${p.a}-${p.b}`));
-    expect([...new Set(closest)].sort()).toEqual(['IB-CAMBRIDGE', 'PAA-ICFES']);
-    expect(MATRIX.summary.pairwiseDifferenceDistribution).toEqual({ 'differ-in-03': 8, 'differ-in-04': 3, 'differ-in-05': 6, 'differ-in-06': 4, 'differ-in-07': 9, 'differ-in-08': 5, 'differ-in-09': 9, 'differ-in-10': 10, 'differ-in-11': 15, 'differ-in-12': 1 });
+    expect([cross, same]).toEqual([100, 9]);
+    // the floors are the measured minima, not comfortable ones
+    expect([MATRIX.summary.minimumCrossSystemDifference, MATRIX.summary.minimumSameSystemDifference]).toEqual([MINIMUM_PAIRWISE_DIFFERENCE, MINIMUM_SAME_SYSTEM_DIFFERENCE]);
+    const closest = MATRIX.fidelity.flatMap((f) => f.pairwise.filter((p) => !p.sameSystem && p.differing.length === MINIMUM_PAIRWISE_DIFFERENCE).map((p) => `${p.a}-${p.b}`));
+    expect([...new Set(closest)].sort()).toEqual(['IB.MATH_AA_HL.P2-CAMBRIDGE.9709.P1', 'PAA.MATEMATICAS-ICFES.SABER11_MATEMATICAS']);
+    // the two IB papers differ exactly in what the component owns here: the tool policy and what it does to the numbers
+    for (const f of MATRIX.fidelity) for (const p of f.pairwise) if (p.sameSystem) expect(p.differing).toEqual(['toolPolicy', 'numericProfile']);
+    expect(MATRIX.summary.crossSystemDifferenceDistribution).toEqual({ 'differ-in-03': 11, 'differ-in-04': 9, 'differ-in-05': 6, 'differ-in-06': 4, 'differ-in-07': 9, 'differ-in-08': 6, 'differ-in-09': 14, 'differ-in-10': 17, 'differ-in-11': 23, 'differ-in-12': 1 });
   });
 
-  it('worked fidelity comparison: the linear model, identical in what it is evidence of, materially different in how five systems ask it', () => {
+  it('worked fidelity comparison: the linear model, identical in what it is evidence of, materially different in how six components ask it', () => {
     const f = MATRIX.fidelity.find((x) => x.familyId === 'tf.math.linear.constant-rate-model')!;
-    expect(f.invariant).toMatchObject({ primaryConceptStableIds: ['math.fun.linear-functions-lines'], canonicalSubject: 'Matemáticas', construct: 'LINEAR_MODEL_FIXED_START_CONSTANT_RATE', evidenceActions: ['FORMULATE', 'INTERPRET'], identicalAcrossProfiles: true });
-    expect(f.profiles).toEqual(['PAA', 'IB', 'CAMBRIDGE', 'PISA', 'ICFES']);
-    const v = (p: string) => SPECS.get(`${f.familyId}|${p}`)!.variable;
-    expect([v('PAA'), v('IB'), v('CAMBRIDGE'), v('PISA'), v('ICFES')].map((x) => [x.responseFormat.format, x.context.kind, x.reasoningDepth.depth, x.commandTerm, x.stimulus.mode, x.toolPolicy.calculator, x.markStructure, x.rubricStyle, x.competencies.join('+')])).toEqual([
-      ['SELECTED_RESPONSE', 'PERSONAL', 'ANSWER_ONLY', null, 'NONE', 'NONE', 'ONE_MARK_PER_ITEM', 'KEY_ONLY', ''],
-      ['SHORT_RESPONSE', 'SCIENTIFIC', 'METHOD_SHOWN', 'find', 'NONE', 'NONE', 'MULTI_MARK_PARTS', 'METHOD_AND_ACCURACY', ''],
-      ['SHORT_RESPONSE', 'SCIENTIFIC', 'METHOD_SHOWN', 'work out', 'NONE', 'SCIENTIFIC_REQUIRED', 'MULTI_MARK_PARTS', 'METHOD_AND_ACCURACY', 'AO2'],
-      ['SELECTED_RESPONSE', 'PERSONAL', 'ANSWER_ONLY', null, 'OWN_STIMULUS', 'ALLOWED', 'CODED_CREDIT', 'CODED_CREDIT_LEVELS', 'FORMULATE+INTERPRET_EVALUATE'],
-      ['SELECTED_RESPONSE', 'PERSONAL', 'ANSWER_ONLY', null, 'NONE', 'NONE', 'ONE_MARK_PER_ITEM', 'KEY_ONLY', 'INTERPRETACION_REPRESENTACION+FORMULACION_EJECUCION'],
+    expect(f.invariant).toMatchObject({ primaryConceptStableIds: ['math.fun.linear-functions-lines'], canonicalSubject: 'Matemáticas', construct: 'LINEAR_MODEL_FIXED_START_CONSTANT_RATE', evidenceActions: ['FORMULATE', 'INTERPRET'], identicalAcrossTargets: true });
+    expect(f.targets).toEqual(['PAA.MATEMATICAS', 'IB.MATH_AA_HL.P1', 'IB.MATH_AA_HL.P2', 'CAMBRIDGE.9709.P1', 'PISA.MATHEMATICS', 'ICFES.SABER11_MATEMATICAS']);
+    const v = (t: string) => SPECS.get(`${f.familyId}|${t}`)!.variable;
+    expect(f.targets.map((t) => v(t)).map((x) => [x.responseFormat.format, x.context.kind, x.reasoningDepth.depth, x.commandTerm, x.stimulus.mode, x.toolPolicy.calculator, x.numericProfile, x.markStructure, x.rubricStyle, x.competencies.join('+')])).toEqual([
+      ['SELECTED_RESPONSE', 'PERSONAL', 'ANSWER_ONLY', null, 'NONE', 'NONE', 'EXACT_WITHOUT_TOOL', 'ONE_MARK_PER_ITEM', 'KEY_ONLY', ''],
+      ['SHORT_RESPONSE', 'SCIENTIFIC', 'METHOD_SHOWN', 'find', 'NONE', 'NONE', 'EXACT_WITHOUT_TOOL', 'MULTI_MARK_PARTS', 'METHOD_AND_ACCURACY', ''],
+      ['SHORT_RESPONSE', 'SCIENTIFIC', 'METHOD_SHOWN', 'find', 'NONE', 'GDC_REQUIRED', 'REALISTIC_VALUES', 'MULTI_MARK_PARTS', 'METHOD_AND_ACCURACY', ''],
+      ['SHORT_RESPONSE', 'SCIENTIFIC', 'METHOD_SHOWN', 'work out', 'NONE', 'SCIENTIFIC_REQUIRED', 'REALISTIC_VALUES', 'MULTI_MARK_PARTS', 'METHOD_AND_ACCURACY', 'AO2'],
+      ['SELECTED_RESPONSE', 'PERSONAL', 'ANSWER_ONLY', null, 'OWN_STIMULUS', 'ALLOWED', 'REALISTIC_VALUES', 'CODED_CREDIT', 'CODED_CREDIT_LEVELS', 'FORMULATE+INTERPRET_EVALUATE'],
+      ['SELECTED_RESPONSE', 'PERSONAL', 'ANSWER_ONLY', null, 'NONE', 'NONE', 'EXACT_WITHOUT_TOOL', 'ONE_MARK_PER_ITEM', 'KEY_ONLY', 'INTERPRETACION_REPRESENTACION+FORMULACION_EJECUCION'],
     ]);
-    expect([v('PAA').timeBudget, v('IB').timeBudget, v('CAMBRIDGE').timeBudget, v('PISA').timeBudget]).toEqual([{ secondsPerUnit: 65.45, unit: 'ITEM' }, { secondsPerUnit: 65.45, unit: 'MARK' }, { secondsPerUnit: 88, unit: 'MARK' }, { secondsPerUnit: null, unit: null }]);
-    // only two of the five can be generated by the Production OS today: the constructed formats have no template
-    expect(f.profiles.filter((p) => v(p).responseFormat.productionFormat !== null)).toEqual(['PAA', 'PISA', 'ICFES']);
+    expect([v('PAA.MATEMATICAS').timeBudget, v('IB.MATH_AA_HL.P1').timeBudget, v('CAMBRIDGE.9709.P1').timeBudget, v('PISA.MATHEMATICS').timeBudget]).toEqual([{ secondsPerUnit: 65.45, unit: 'ITEM' }, { secondsPerUnit: 65.45, unit: 'MARK' }, { secondsPerUnit: 88, unit: 'MARK' }, { secondsPerUnit: null, unit: null }]);
+    // applicability of this Matemáticas concept: established for PAA only -- the repository records nothing for the others
+    expect(f.targets.map((t) => SPECS.get(`${f.familyId}|${t}`)!.assessmentApplicability.status)).toEqual(['ESTABLISHED', 'NOT_ESTABLISHED', 'NOT_ESTABLISHED', 'NOT_ESTABLISHED', 'NOT_ESTABLISHED', 'NOT_ESTABLISHED']);
+    // only three of the six can be generated by the Production OS today: the constructed formats have no template
+    expect(f.targets.filter((t) => v(t).responseFormat.productionFormat !== null)).toEqual(['PAA.MATEMATICAS', 'PISA.MATHEMATICS', 'ICFES.SABER11_MATEMATICAS']);
   });
 });
 
-describe('instance class, promotion path and the carriers for B2 and B3', () => {
-  it('the pools are restated identically to the Production OS and to B2; a purpose maps to the least instance class it accepts', () => {
+describe('content use class, instance class and task-family maturity', () => {
+  it('the pools are restated identically to the Production OS and to B2', () => {
     expect([...ADAPTATION_POOLS]).toEqual([...PRODUCTION_POOLS]);
     expect([...ADAPTATION_POOLS]).toEqual([...LOGICAL_POOLS]);
-    expect(INSTANCE_PURPOSES.map((p) => [p, minimumInstanceClassFor(p).minimumClass, minimumInstanceClassFor(p).basis])).toEqual([
-      ['PRACTICE', 'DYNAMIC', 'BRIEF'], ['DIAGNOSTIC', 'CERTIFIED_FROZEN', 'CONSERVATIVE_DEFAULT'], ['VERIFICATION', 'CERTIFIED_FROZEN', 'CONSERVATIVE_DEFAULT'], ['REDUCED_MOCK', 'CERTIFIED_FROZEN', 'BRIEF'], ['FULL_MOCK_1', 'CERTIFIED_FROZEN', 'BRIEF'], ['FULL_MOCK_2', 'CERTIFIED_FROZEN', 'BRIEF'],
-      ['LOW_STAKES_REINFORCEMENT', 'DYNAMIC', 'BRIEF'], ['BENCHMARK', 'CERTIFIED_FROZEN', 'BRIEF'], ['CALIBRATION', 'CERTIFIED_FROZEN', 'BRIEF'], ['PILOT_CERTIFICATION', 'CERTIFIED_FROZEN', 'BRIEF'],
+    expect([...CONTENT_USE_CLASSES]).toEqual(['DEV_TEST_CONTENT', 'EVIDENCE_BEARING']);
+  });
+
+  it('instance policy per purpose x use class: the user\'s decision, as a total function', () => {
+    const row = (purpose: string) => [purpose, instancePolicyFor(purpose, 'EVIDENCE_BEARING').allowedClasses.join('+'), instancePolicyFor(purpose, 'DEV_TEST_CONTENT').allowedClasses.join('+')];
+    expect(INSTANCE_PURPOSES.map(row)).toEqual([
+      ['PRACTICE', 'DYNAMIC+CERTIFIED_FROZEN', 'DYNAMIC+CERTIFIED_FROZEN'],
+      ['DIAGNOSTIC', 'CERTIFIED_FROZEN', 'DYNAMIC+CERTIFIED_FROZEN'],
+      ['VERIFICATION', 'CERTIFIED_FROZEN', 'DYNAMIC+CERTIFIED_FROZEN'],
+      ['REDUCED_MOCK', 'CERTIFIED_FROZEN', 'DYNAMIC+CERTIFIED_FROZEN'],
+      ['FULL_MOCK_1', 'CERTIFIED_FROZEN', 'DYNAMIC+CERTIFIED_FROZEN'],
+      ['FULL_MOCK_2', 'CERTIFIED_FROZEN', 'DYNAMIC+CERTIFIED_FROZEN'],
+      ['LOW_STAKES_REINFORCEMENT', 'DYNAMIC+CERTIFIED_FROZEN', 'DYNAMIC+CERTIFIED_FROZEN'],
+      ['BENCHMARK', 'CERTIFIED_FROZEN', 'DYNAMIC+CERTIFIED_FROZEN'],
+      ['CALIBRATION', 'CERTIFIED_FROZEN', 'DYNAMIC+CERTIFIED_FROZEN'],
+      ['PILOT_CERTIFICATION', 'CERTIFIED_FROZEN', 'DYNAMIC+CERTIFIED_FROZEN'],
     ]);
-    expect(() => minimumInstanceClassFor('HOMEWORK')).toThrow(/UNKNOWN_INSTANCE_PURPOSE/);
-    expect([instanceClassSatisfies('DYNAMIC', 'PRACTICE'), instanceClassSatisfies('DYNAMIC', 'FULL_MOCK_1'), instanceClassSatisfies('CERTIFIED_FROZEN', 'FULL_MOCK_1'), instanceClassSatisfies('CERTIFIED_FROZEN', 'PRACTICE')]).toEqual([true, false, true, true]);
-    expect(spec(run(RATE_MODEL, PAA_SYSTEM_PROFILE, { ...REQUEST, purpose: 'FULL_MOCK_2' })).purpose).toEqual({ purpose: 'FULL_MOCK_2', pool: 'FULL_MOCK_2', minimumInstanceClass: 'CERTIFIED_FROZEN' });
-    expect(spec(run(RATE_MODEL, PAA_SYSTEM_PROFILE, { ...REQUEST, purpose: 'CALIBRATION' })).purpose).toEqual({ purpose: 'CALIBRATION', pool: null, minimumInstanceClass: 'CERTIFIED_FROZEN' });
+    // the six pools in evidence-bearing use, and dynamic Diagnostic / Verification as dev-test content, are the user's decision
+    for (const pool of ADAPTATION_POOLS) expect(instancePolicyFor(pool, 'EVIDENCE_BEARING').basis, pool).toBe('USER_DECISION');
+    expect(['PRACTICE', 'DIAGNOSTIC', 'VERIFICATION'].map((p) => instancePolicyFor(p, 'DEV_TEST_CONTENT').basis)).toEqual(['USER_DECISION', 'USER_DECISION', 'USER_DECISION']);
+    // dynamic dev-test content in the mock pools is this module's reading of the decision, and is marked as such
+    expect(['REDUCED_MOCK', 'FULL_MOCK_1', 'FULL_MOCK_2'].map((p) => instancePolicyFor(p, 'DEV_TEST_CONTENT').basis)).toEqual(['READING_OF_DECISION', 'READING_OF_DECISION', 'READING_OF_DECISION']);
+    expect([instanceClassSatisfies('DYNAMIC', 'PRACTICE', 'EVIDENCE_BEARING'), instanceClassSatisfies('DYNAMIC', 'DIAGNOSTIC', 'EVIDENCE_BEARING'), instanceClassSatisfies('DYNAMIC', 'DIAGNOSTIC', 'DEV_TEST_CONTENT'), instanceClassSatisfies('DYNAMIC', 'FULL_MOCK_1', 'EVIDENCE_BEARING'), instanceClassSatisfies('CERTIFIED_FROZEN', 'FULL_MOCK_1', 'EVIDENCE_BEARING'), instanceClassSatisfies('CERTIFIED_FROZEN', 'PRACTICE', 'EVIDENCE_BEARING')]).toEqual([true, false, true, false, true, true]);
+    expect(() => instancePolicyFor('HOMEWORK', 'EVIDENCE_BEARING')).toThrow(/UNKNOWN_INSTANCE_PURPOSE/);
+    expect(() => instancePolicyFor('PRACTICE', 'STAGING')).toThrow(/UNKNOWN_CONTENT_USE_CLASS/);
+    // dev-test content is a different USE, not weaker evidence: it never bears evidence
+    expect([mayBearEvidence('DEV_TEST_CONTENT'), mayBearEvidence('EVIDENCE_BEARING')]).toEqual([false, true]);
+  });
+
+  it('a specification records the use class it was produced for and the instance classes its purpose accepts', () => {
+    expect(spec(run(RATE_MODEL, PAA_SYSTEM_PROFILE, { ...REQUEST, purpose: 'FULL_MOCK_2' }))).toMatchObject({ contentUseClass: 'DEV_TEST_CONTENT', purpose: { purpose: 'FULL_MOCK_2', pool: 'FULL_MOCK_2', allowedInstanceClasses: ['DYNAMIC', 'CERTIFIED_FROZEN'], minimumInstanceClass: 'DYNAMIC' } });
+    const certified = reviewed(RATE_MODEL);
+    expect(spec(run(certified, PAA_SYSTEM_PROFILE, { ...REQUEST, purpose: 'FULL_MOCK_2', contentUseClass: 'EVIDENCE_BEARING' }))).toMatchObject({ contentUseClass: 'EVIDENCE_BEARING', taskFamily: { lifecycle: 'CERTIFIED', reviewStatus: 'REVIEWED' }, purpose: { allowedInstanceClasses: ['CERTIFIED_FROZEN'], minimumInstanceClass: 'CERTIFIED_FROZEN' } });
+    expect(spec(run(certified, PAA_SYSTEM_PROFILE, { ...REQUEST, purpose: 'DIAGNOSTIC', contentUseClass: 'EVIDENCE_BEARING' })).purpose.allowedInstanceClasses).toEqual(['CERTIFIED_FROZEN']);
+    expect(spec(run(certified, PAA_SYSTEM_PROFILE, { ...REQUEST, purpose: 'PRACTICE', contentUseClass: 'EVIDENCE_BEARING' })).purpose.allowedInstanceClasses).toEqual(['DYNAMIC', 'CERTIFIED_FROZEN']);
+    expect(spec(run(certified, PAA_SYSTEM_PROFILE, { ...REQUEST, purpose: 'CALIBRATION', contentUseClass: 'EVIDENCE_BEARING' })).purpose).toMatchObject({ pool: null, minimumInstanceClass: 'CERTIFIED_FROZEN' });
+    // the use class is part of the identity: the same request for the other use is another specification
+    expect(spec(run(certified, PAA_SYSTEM_PROFILE)).specificationId).not.toBe(spec(run(certified, PAA_SYSTEM_PROFILE, { ...REQUEST, contentUseClass: 'EVIDENCE_BEARING' })).specificationId);
+  });
+
+  it('task-family maturity: a DRAFT or UNREVIEWED family generates DEV_TEST_CONTENT only; evidence-bearing content is refused by name', () => {
+    for (const f of MATH_POC_FAMILIES) {
+      expect(familyMayFeedEvidenceBearingContent(f), f.familyId).toBe(false);
+      for (const purpose of ['PRACTICE', 'DIAGNOSTIC', 'FULL_MOCK_1'] as const) expect(refusal(run(f, PAA_SYSTEM_PROFILE, { ...REQUEST, purpose, contentUseClass: 'EVIDENCE_BEARING' }))).toBe('FAMILY_NOT_REVIEWED_FOR_EVIDENCE_BEARING_CONTENT');
+    }
+    const states: Array<[TaskFamily['lifecycle'], TaskFamily['reviewStatus'], boolean]> = [['DRAFT', 'UNREVIEWED', false], ['DRAFT', 'REVIEWED', false], ['IN_REVIEW', 'IN_REVIEW', false], ['IN_REVIEW', 'REVIEWED', false], ['CERTIFIED', 'REVIEWED', true]];
+    for (const [lifecycle, reviewStatus, ok] of states) {
+      const f = { ...clone(RATE_MODEL), lifecycle, reviewStatus };
+      expect(familyMayFeedEvidenceBearingContent(f), `${lifecycle}/${reviewStatus}`).toBe(ok);
+      expect(run(f, PAA_SYSTEM_PROFILE, { ...REQUEST, contentUseClass: 'EVIDENCE_BEARING' }).ok, `${lifecycle}/${reviewStatus}`).toBe(ok);
+      // every non-retired state may still produce dev-test content
+      expect(run(f, PAA_SYSTEM_PROFILE).ok).toBe(true);
+    }
+    const r = run(RATE_MODEL, PAA_SYSTEM_PROFILE, { ...REQUEST, purpose: 'FULL_MOCK_1', contentUseClass: 'EVIDENCE_BEARING' });
+    expect(!r.ok && r.refusal.detail).toMatch(/DRAFT \/ UNREVIEWED; it may generate DEV_TEST_CONTENT only/);
+    // a reviewed family is still subject to everything else: support, applicability, and every Question Bank gate after generation
+    expect(refusal(run(reviewed(MISSING_VALUE), PISA_SYSTEM_PROFILE, { ...REQUEST, contentUseClass: 'EVIDENCE_BEARING' }))).toBe('PROFILE_UNSUPPORTED_BY_FAMILY');
+    expect(refusal(run(reviewed(MISSING_VALUE), IB_SYSTEM_PROFILE, { ...REQUEST, contentUseClass: 'EVIDENCE_BEARING' }))).toBe('ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED');
+    // no proof-of-concept family was marked reviewed
+    expect(MATH_POC_FAMILIES.map((f) => `${f.lifecycle}/${f.reviewStatus}`)).toEqual(Array(10).fill('DRAFT/UNREVIEWED'));
   });
 
   it('the promotion path DESCRIBES the existing gates and adds none; adaptation establishes no right, review, attribution or pool', () => {
     expect(PROMOTION_PATH.map((s) => s.step)).toEqual(['AUTOMATED_VALIDATION', 'ORIGINALITY', 'RIGHTS', 'HUMAN_REVIEW', 'ATTRIBUTION', 'POOL_ASSIGNMENT']);
-    expect([...NOT_ESTABLISHED_BY_ADAPTATION]).toEqual(['REUSE_RIGHTS', 'ORIGINALITY', 'HUMAN_REVIEW', 'PRIMARY_ATTRIBUTION', 'POOL_MEMBERSHIP', 'INSTANCE_CERTIFICATION', 'EVIDENCE_INDEPENDENCE']);
+    expect([...NOT_ESTABLISHED_BY_ADAPTATION]).toEqual(['REUSE_RIGHTS', 'ORIGINALITY', 'HUMAN_REVIEW', 'PRIMARY_ATTRIBUTION', 'POOL_MEMBERSHIP', 'INSTANCE_CERTIFICATION', 'EVIDENCE_INDEPENDENCE', 'REVIEWER_QUALIFICATION', 'CONCEPT_CERTIFICATION']);
     // the gates are untouched by this phase: neither file was changed, and neither knows a family or a specification
     for (const gate of ['rights-gate.ts', 'review-package.ts', 'pool-assignment.ts', 'originality-gate.ts', 'structural-validation.ts', 'validated-candidate.ts']) expect(read(`src/lib/exam-core/question-bank/production/${gate}`), gate).not.toMatch(/adaptation|taskFamily|task-famil|AdaptationSpecification/i);
     // a generated instance's rights are not establishable without verified evidence -- with or without a specification behind it
@@ -689,7 +1016,7 @@ describe('instance class, promotion path and the carriers for B2 and B3', () => 
     for (const t of ['export interface InstanceIndependenceCarrier', 'export type SiblingRelationship', 'export type ExposureRelationship', 'export interface InstancePairRelationship', 'export interface EvidenceFacetCarrier']) expect(src).toContain(t);
     for (const field of ['familyIdentity', 'parameterizationIdentity', 'variantFamilyIdentity']) expect(src).toContain(field);
     // the only functions of the module are the instance-class contract; nothing computes a relationship or independence
-    expect([...code(`${ADAPTATION_DIR}/instance-lineage.ts`).matchAll(/export (?:function|const) (\w+)\s*(?:=\s*\(|\()/g)].map((m) => m[1]).sort()).toEqual(['instanceClassSatisfies', 'minimumInstanceClassFor']);
+    expect([...code(`${ADAPTATION_DIR}/instance-lineage.ts`).matchAll(/export (?:function|const) (\w+)\s*(?:=\s*\(|\()/g)].map((m) => m[1]).sort()).toEqual(['instanceClassSatisfies', 'instancePolicyFor', 'mayBearEvidence']);
     for (const f of [...walk(ADAPTATION_DIR), ...walk(FAMILIES_DIR)]) expect(code(f), f).not.toMatch(/isIndependent|independenceOf|areIndependent|evidenceWeight|updateMastery|recordEvidence|writeEvidence|learning_evidence|knowledge_state/);
   });
 });
@@ -712,14 +1039,15 @@ describe('Production OS integration: additive, and content without a task family
     ...(adaptationSpecifications ? { adaptationSpecifications } : {}),
   });
   const replay = new RecordedResponseProvider(PILOT_V2_PROVIDER.id, PILOT_V2_PROVIDER.model, new Map(RECORDING.responses.map((r) => [r.promptHash, providerCanonicalJson(r.response)])));
-  const bridged = adaptForCell({ cell: CELL, family: MISSING_VALUE, profiles: EA1_SYSTEM_PROFILES, disciplinePolicy: POLICY, language: 'es' });
+  const BRIDGE = { profiles: EA1_SYSTEM_PROFILES, component: PAA_MATEMATICAS_COMPONENT, applicability: MATH_POC_APPLICABILITY, contentUseClass: 'DEV_TEST_CONTENT' as const, disciplinePolicy: POLICY, language: 'es' };
+  const bridged = adaptForCell({ cell: CELL, family: MISSING_VALUE, ...BRIDGE });
   const SPEC = spec(bridged as AdaptationResult);
 
   it('cell -> evidence target -> family selection -> profile -> specification, from the cell\'s own fields and nothing else', () => {
     expect(evidenceTargetOfCell(CELL)).toEqual({ primaryConcept: CELL.primaryConcept, examFamily: 'PAA', pool: 'FULL_MOCK_1' });
     const selection = selectTaskFamilies(CELL, MATH_POC_FAMILIES);
     expect(selection.candidates.map((f) => f.familyId)).toEqual(['tf.math.proportion.missing-value', 'tf.math.proportion.rate-comparison-model']);
-    expect(SPEC).toMatchObject({ taskFamily: { familyId: 'tf.math.proportion.missing-value' }, assessmentProfile: { profileId: 'PAA', examFamilyCode: 'PAA' }, primaryConcept: CELL.primaryConcept, canonicalKnowledgeAvailability: { status: 'CERTIFIED_FOR_THIS_EXAM_FAMILY' }, blueprintRequirement: { requirementCellKey: CELL.cellKey }, purpose: { pool: 'FULL_MOCK_1', minimumInstanceClass: 'CERTIFIED_FROZEN' }, variable: { responseFormat: { format: 'NUMERIC_ENTRY', productionFormat: 'STUDENT_PRODUCED' }, difficulty: { band: 'STANDARD' }, language: 'es' } });
+    expect(SPEC).toMatchObject({ taskFamily: { familyId: 'tf.math.proportion.missing-value' }, systemProfile: { profileId: 'PAA', examFamilyCode: 'PAA' }, componentProfile: { componentId: 'PAA.MATEMATICAS' }, primaryConcept: CELL.primaryConcept, assessmentApplicability: { status: 'ESTABLISHED', basis: 'OFFICIAL_EXAM_STRUCTURE' }, contentUseClass: 'DEV_TEST_CONTENT', blueprintRequirement: { requirementCellKey: CELL.cellKey }, purpose: { pool: 'FULL_MOCK_1', minimumInstanceClass: 'DYNAMIC' }, variable: { responseFormat: { format: 'NUMERIC_ENTRY', productionFormat: 'STUDENT_PRODUCED' }, difficulty: { band: 'STANDARD' }, language: 'es' } });
     // selection matches by stable id AND canonical subject: a concept of another subject is never matched by its id alone
     expect(selectTaskFamilies({ ...CELL, primaryConcept: { ...CELL.primaryConcept, canonicalSubject: 'Mathematics' } }, MATH_POC_FAMILIES).candidates).toEqual([]);
     const quadratic = CELLS.find((c) => c.primaryConcept.stableId === 'math.alg.quadratics' && c.responseFormat === 'MULTIPLE_CHOICE')!;
@@ -727,16 +1055,22 @@ describe('Production OS integration: additive, and content without a task family
     expect(selectTaskFamilies(quadratic, MATH_POC_FAMILIES)).toMatchObject({ candidates: [], excluded: [{ reason: 'RESPONSE_FORMAT_NOT_OF_THE_FAMILY' }, { reason: 'RESPONSE_FORMAT_NOT_OF_THE_FAMILY' }] });
     expect(selectTaskFamilies(CELLS.find((c) => c.primaryConcept.stableId === 'math.stat.data-representation' && c.stimulus.class === 'STANDALONE') ?? { ...CELL, primaryConcept: { stableId: 'math.stat.data-representation', canonicalSubject: 'Matemáticas', canonicalName: 'x' } }, MATH_POC_FAMILIES).candidates).toEqual([]);
     // named refusals of the bridge
-    expect(adaptForCell({ cell: { ...CELL, examFamily: 'SEP' }, family: MISSING_VALUE, profiles: EA1_SYSTEM_PROFILES, disciplinePolicy: POLICY, language: 'es' })).toMatchObject({ ok: false, refusal: { code: 'NO_PROFILE_FOR_EXAM_FAMILY' } });
-    expect(adaptForCell({ cell: { ...CELL, examFamily: 'AICE' }, family: MISSING_VALUE, profiles: EA1_SYSTEM_PROFILES, disciplinePolicy: POLICY, language: 'es' })).toMatchObject({ ok: false, refusal: { code: 'NO_PROFILE_FOR_EXAM_FAMILY' } });
-    expect(adaptForCell({ cell: CELL, family: FACTORISING, profiles: EA1_SYSTEM_PROFILES, disciplinePolicy: POLICY, language: 'es' })).toMatchObject({ ok: false, refusal: { code: 'FAMILY_DOES_NOT_TARGET_THE_CELLS_CONCEPT' } });
-    // production is strict about knowledge: the same cell under an exam family where the concept is not certified is refused
-    expect(adaptForCell({ cell: { ...CELL, examFamily: 'ICFES', responseFormat: 'MULTIPLE_CHOICE' }, family: MISSING_VALUE, profiles: EA1_SYSTEM_PROFILES, disciplinePolicy: POLICY, language: 'es' })).toMatchObject({ ok: false, refusal: { code: 'CANONICAL_KNOWLEDGE_NOT_CERTIFIED_FOR_EXAM_FAMILY' } });
+    expect(adaptForCell({ cell: { ...CELL, examFamily: 'SEP' }, family: MISSING_VALUE, ...BRIDGE })).toMatchObject({ ok: false, refusal: { code: 'NO_PROFILE_FOR_EXAM_FAMILY' } });
+    expect(adaptForCell({ cell: { ...CELL, examFamily: 'AICE' }, family: MISSING_VALUE, ...BRIDGE })).toMatchObject({ ok: false, refusal: { code: 'NO_PROFILE_FOR_EXAM_FAMILY' } });
+    expect(adaptForCell({ cell: CELL, family: FACTORISING, ...BRIDGE })).toMatchObject({ ok: false, refusal: { code: 'FAMILY_DOES_NOT_TARGET_THE_CELLS_CONCEPT' } });
+    // a cell is content of a component: without one the bridge is refused (a mock pool is never generic practice)
+    expect(adaptForCell({ cell: CELL, family: MISSING_VALUE, ...BRIDGE, component: null })).toMatchObject({ ok: false, refusal: { code: 'COMPONENT_REQUIRED' } });
+    // a draft family cannot produce evidence-bearing content for a cell; a reviewed one can, subject to everything else
+    expect(adaptForCell({ cell: CELL, family: MISSING_VALUE, ...BRIDGE, contentUseClass: 'EVIDENCE_BEARING' })).toMatchObject({ ok: false, refusal: { code: 'FAMILY_NOT_REVIEWED_FOR_EVIDENCE_BEARING_CONTENT' } });
+    expect(adaptForCell({ cell: CELL, family: reviewed(MISSING_VALUE), ...BRIDGE, contentUseClass: 'EVIDENCE_BEARING' })).toMatchObject({ ok: true, specification: { contentUseClass: 'EVIDENCE_BEARING', purpose: { minimumInstanceClass: 'CERTIFIED_FROZEN' } } });
+    // production is strict about applicability, even for dev-test content: the same cell under a system where the repository records none is refused
+    expect(adaptForCell({ cell: { ...CELL, examFamily: 'ICFES', responseFormat: 'MULTIPLE_CHOICE' }, family: MISSING_VALUE, ...BRIDGE, component: ICFES_COMPONENT })).toMatchObject({ ok: false, refusal: { code: 'ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED' } });
+    expect(adaptForCell({ cell: { ...CELL, examFamily: 'ICFES', responseFormat: 'MULTIPLE_CHOICE' }, family: MISSING_VALUE, ...BRIDGE, component: ICFES_COMPONENT, applicabilityRequirement: 'NOT_REQUIRED' }).ok).toBe(true);
     // every PAA cell of the five concepts that has a fitting family gets a specification under the strict rule, or a named refusal
     let specified = 0;
     for (const c of CELLS) for (const f of selectTaskFamilies(c, MATH_POC_FAMILIES).candidates) {
-      const r = adaptForCell({ cell: c, family: f, profiles: EA1_SYSTEM_PROFILES, disciplinePolicy: POLICY, language: 'es' });
-      if (r.ok) { specified += 1; expect(r.specification.blueprintRequirement).toEqual({ requirementCellKey: c.cellKey }); } else expect(['SUPPORT_CONSTRAINT_VIOLATED', 'PROFILE_UNSUPPORTED_BY_FAMILY']).toContain(r.refusal.code);
+      const r = adaptForCell({ cell: c, family: f, ...BRIDGE });
+      if (r.ok) { specified += 1; expect(r.specification.assessmentApplicability.basis).toBe('OFFICIAL_EXAM_STRUCTURE'); expect(r.specification.blueprintRequirement).toEqual({ requirementCellKey: c.cellKey }); } else expect(['SUPPORT_CONSTRAINT_VIOLATED', 'PROFILE_UNSUPPORTED_BY_FAMILY']).toContain(r.refusal.code);
     }
     expect(specified).toBeGreaterThan(20);
   });
@@ -758,7 +1092,7 @@ describe('Production OS integration: additive, and content without a task family
   it('WITH a specification it is part of the prompt, hence of the prompt hash, and its identity is recorded on the candidate', async () => {
     const rendered = renderGenerationPrompt(input(replay, { [SLOT.slotKey]: SPEC }));
     expect(rendered.promptHash).not.toBe(RECORDED.promptHash);
-    expect(rendered.prompt.instruction.adaptation).toEqual([{ slotKey: SLOT.slotKey, specificationId: SPEC.specificationId, taskFamily: { familyId: 'tf.math.proportion.missing-value', version: MISSING_VALUE.version }, assessmentProfile: { profileId: 'PAA', version: PAA_SYSTEM_PROFILE.version }, disciplinePolicy: { policyId: POLICY.policyId, version: POLICY.version }, invariants: SPEC.invariants, invariantHash: SPEC.invariantHash, variable: SPEC.variable, parameterization: SPEC.parameterization }]);
+    expect(rendered.prompt.instruction.adaptation).toEqual([{ slotKey: SLOT.slotKey, specificationId: SPEC.specificationId, contentUseClass: 'DEV_TEST_CONTENT', taskFamily: { familyId: 'tf.math.proportion.missing-value', version: MISSING_VALUE.version }, systemProfile: { profileId: 'PAA', version: PAA_SYSTEM_PROFILE.version }, componentProfile: { componentId: 'PAA.MATEMATICAS', version: PAA_MATEMATICAS_COMPONENT.version }, disciplinePolicy: { policyId: POLICY.policyId, version: POLICY.version }, invariants: SPEC.invariants, invariantHash: SPEC.invariantHash, variable: SPEC.variable, parameterization: SPEC.parameterization }]);
     // everything else in the prompt is unchanged
     const { adaptation: _a, ...rest } = rendered.prompt.instruction;
     expect(canonicalJson(rest)).toBe(canonicalJson(renderGenerationPrompt(input(replay)).prompt.instruction));
@@ -769,7 +1103,7 @@ describe('Production OS integration: additive, and content without a task family
     const batch = await generateCandidates(input(provider, { [SLOT.slotKey]: SPEC }));
     const c = batch.candidates[0];
     const lineage = c.lineage as Extract<QuestionCandidate['lineage'], { kind: 'MODEL' }>;
-    expect(lineage.adaptation).toEqual({ taskFamily: { id: 'tf.math.proportion.missing-value', version: MISSING_VALUE.version }, assessmentProfile: { id: 'PAA', version: PAA_SYSTEM_PROFILE.version }, disciplinePolicy: { id: POLICY.policyId, version: POLICY.version }, adaptationSpecificationId: SPEC.specificationId, invariantHash: SPEC.invariantHash, generationRunId: PILOT_V2_RUN.runId });
+    expect(lineage.adaptation).toEqual({ taskFamily: { id: 'tf.math.proportion.missing-value', version: MISSING_VALUE.version }, systemProfile: { id: 'PAA', version: PAA_SYSTEM_PROFILE.version }, componentProfile: { id: 'PAA.MATEMATICAS', version: PAA_MATEMATICAS_COMPONENT.version }, disciplinePolicy: { id: POLICY.policyId, version: POLICY.version }, adaptationSpecificationId: SPEC.specificationId, invariantHash: SPEC.invariantHash, contentUseClass: 'DEV_TEST_CONTENT', generationRunId: PILOT_V2_RUN.runId });
     expect(AdaptationLineageSchema.safeParse(lineage.adaptation).success).toBe(true);
     expect(lineage.promptHash).toBe(rendered.promptHash);
     // the plan still decides concept, format, band and pool; the specification changed none of them
@@ -802,18 +1136,35 @@ describe('Production OS integration: additive, and content without a task family
     for (const [misfit, r] of cases) expect(() => renderGenerationPrompt(input(replay, { [SLOT.slotKey]: spec(r) })), misfit).toThrow(new RegExp(`ADAPTATION_SPECIFICATION_NOT_FOR_THE_SLOT: .*${misfit}`));
   });
 
-  it('legacy and fixed content needs no task family anywhere: contract, structural validation and the review package', () => {
+  it('legacy and fixed content needs no task family anywhere, and a human-authored item MAY carry one without any generation field', () => {
     const legacy = PILOT_BATCH.candidates.find((c) => c.slotKey === SLOT.slotKey)!;
     expect(QuestionCandidateSchema.safeParse(legacy).success).toBe(true);
-    // a human-written draft has no adaptation lineage either, and cannot be given one by accident
+    // a human-written draft needs no lineage of a family ...
     const human = { ...clone(legacy), provenance: 'STUDYUS_AUTHORED', lineage: { kind: 'HUMAN', authorUserId: '00000000-0000-4000-8000-000000000001', writtenAt: PILOT_V2_RUN.now } };
     expect(QuestionCandidateSchema.safeParse(human).success).toBe(true);
-    const anAdaptation = { taskFamily: { id: 'tf.math.proportion.missing-value', version: '1' }, assessmentProfile: { id: 'PAA', version: '1' }, disciplinePolicy: { id: 'p', version: '1' }, adaptationSpecificationId: 'a'.repeat(64), invariantHash: 'b'.repeat(64), generationRunId: 'r' };
+    // ... and MAY carry one: authorship and task-family lineage are separate dimensions
+    const fromFamilyAlone = { taskFamily: { id: 'tf.math.proportion.missing-value', version: MISSING_VALUE.version }, invariantHash: SPEC.invariantHash, adaptationSpecificationId: null, systemProfile: null, componentProfile: null, contentUseClass: 'DEV_TEST_CONTENT' };
+    const fromSpecification = { ...fromFamilyAlone, adaptationSpecificationId: SPEC.specificationId, systemProfile: { id: 'PAA', version: PAA_SYSTEM_PROFILE.version }, componentProfile: { id: 'PAA.MATEMATICAS', version: PAA_MATEMATICAS_COMPONENT.version } };
+    for (const familyLineage of [fromFamilyAlone, fromSpecification]) {
+      expect(AuthoredFamilyLineageSchema.safeParse(familyLineage).success).toBe(true);
+      const authored = QuestionCandidateSchema.parse({ ...human, lineage: { ...human.lineage, familyLineage } });
+      // it stays authored content: STUDYUS_AUTHORED, a HUMAN lineage, and it passes the same structural gate
+      expect([authored.provenance, authored.lineage.kind]).toEqual(['STUDYUS_AUTHORED', 'HUMAN']);
+      expect(validateCandidateStructure(authored, CELL, { stimuli: PILOT_BATCH.stimuli, draftStage: true, hierarchyViolations: paaCellViolations }).outcome).toBe('PASS');
+    }
+    // the authored carrier has NO generation field: no run, no prompt, no provider, no model
+    expect(Object.keys(AuthoredFamilyLineageSchema.shape).sort()).toEqual(['adaptationSpecificationId', 'componentProfile', 'contentUseClass', 'invariantHash', 'systemProfile', 'taskFamily']);
+    for (const generationField of [{ generationRunId: 'r' }, { promptHash: 'a'.repeat(64) }, { provider: 'x' }, { model: 'm' }]) expect(QuestionCandidateSchema.safeParse({ ...human, lineage: { ...human.lineage, familyLineage: { ...fromFamilyAlone, ...generationField } } }).success).toBe(false);
+    // the GENERATED carrier is not accepted on a human lineage, and the authored one is not accepted on a model lineage
+    const anAdaptation = { taskFamily: { id: 'tf.math.proportion.missing-value', version: '1' }, systemProfile: { id: 'PAA', version: '1' }, componentProfile: null, disciplinePolicy: { id: 'p', version: '1' }, adaptationSpecificationId: 'a'.repeat(64), invariantHash: 'b'.repeat(64), contentUseClass: 'DEV_TEST_CONTENT', generationRunId: 'r' };
     expect(AdaptationLineageSchema.safeParse(anAdaptation).success).toBe(true);
     expect(QuestionCandidateSchema.safeParse({ ...human, lineage: { ...human.lineage, adaptation: anAdaptation } }).success).toBe(false);
-    // on a model draft the member is accepted when whole and refused when partial
+    expect(QuestionCandidateSchema.safeParse({ ...clone(legacy), lineage: { ...legacy.lineage, familyLineage: fromFamilyAlone } }).success).toBe(false);
+    // on a model draft the generated carrier is accepted when whole and refused when partial
     expect(QuestionCandidateSchema.safeParse({ ...clone(legacy), lineage: { ...legacy.lineage, adaptation: anAdaptation } }).success).toBe(true);
     expect(QuestionCandidateSchema.safeParse({ ...clone(legacy), lineage: { ...legacy.lineage, adaptation: { taskFamily: anAdaptation.taskFamily } } }).success).toBe(false);
+    // no backfill: no stored pilot candidate, human or model, carries either member
+    for (const c of PILOT_BATCH.candidates) { expect(c.lineage).not.toHaveProperty('adaptation'); expect(c.lineage).not.toHaveProperty('familyLineage'); }
     // the earliest contract shape (no QB-R2C lineage at all) still parses
     expect(QuestionCandidateSchema.safeParse({ ...clone(legacy), lineage: { kind: 'MODEL', model: 'm', promptVersion: '1', runId: 'r', requestedBy: 'o', generatedAt: PILOT_V2_RUN.now, humanEdits: [] } }).success).toBe(true);
     const ctx = { stimuli: PILOT_BATCH.stimuli, draftStage: true, hierarchyViolations: paaCellViolations };
@@ -827,7 +1178,7 @@ describe('Production OS integration: additive, and content without a task family
 
   it('the cells are untouched: 789 cells, 865 items, the same pools, and adapting changes none of them', () => {
     const before = canonicalJson(CELLS);
-    for (const c of CELLS.slice(0, 80)) for (const f of selectTaskFamilies(c, MATH_POC_FAMILIES).candidates) adaptForCell({ cell: c, family: f, profiles: EA1_SYSTEM_PROFILES, disciplinePolicy: POLICY, language: 'es' });
+    for (const c of CELLS.slice(0, 80)) for (const f of selectTaskFamilies(c, MATH_POC_FAMILIES).candidates) adaptForCell({ cell: c, family: f, ...BRIDGE });
     expect(canonicalJson(CELLS)).toBe(before);
     expect(canonicalJson(resolvePaaRequirementCells())).toBe(before);
     expect([CELLS.length, CELLS.reduce((s, c) => s + c.count, 0)]).toEqual([789, PAA_PLANNED_ITEMS]);
@@ -864,7 +1215,7 @@ describe('the 865 planned items as required evidence instances', () => {
     expect(minimumFamiliesFor({ PRACTICE: 3 }, { maxInstancesPerFamilyPerPool: 1, familyMayServeSeveralPools: true })).toBe(3);
     expect(() => minimumFamiliesFor({ PRACTICE: 3 }, { maxInstancesPerFamilyPerPool: 0, familyMayServeSeveralPools: true })).toThrow(/ASSUMPTION_INVALID/);
     // the five proof-of-concept concepts: 61 instances, two families each under the default assumption -- which is what the proof of concept drafted
-    const poc = DEMAND.scenarios[0].byConcept.filter((c) => Object.keys(MATH_POC_KNOWLEDGE_LINKS).includes(c.conceptStableId));
+    const poc = DEMAND.scenarios[0].byConcept.filter((c) => POC_CONCEPT_IDS.includes(c.conceptStableId));
     expect(poc.map((c) => [c.conceptStableId, c.requiredInstances, c.pools, c.minimumFamilies])).toEqual([['math.alg.quadratics', 12, 6, 2], ['math.fun.linear-functions-lines', 14, 6, 2], ['math.num.ratio-proportion', 12, 6, 2], ['math.prob.probability', 11, 6, 2], ['math.stat.data-representation', 12, 6, 2]]);
     // the three Mathematics-subject concepts of the PAA plan: 28 instances that sit under the other canonical subject
     expect(DEMAND.scenarios[0].byConcept.filter((c) => c.canonicalSubject === 'Mathematics').map((c) => [c.conceptStableId, c.requiredInstances])).toEqual([['math.alg.quadratics', 12], ['math.fun.exponential', 9], ['math.trig.ratios', 7]]);
@@ -876,7 +1227,7 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
   const familyFiles = walk(FAMILIES_DIR);
 
   it('the two directories hold exactly these modules', () => {
-    expect(adaptationFiles.map((f) => f.replace(`${ADAPTATION_DIR}/`, '')).sort()).toEqual(['adapt.ts', 'adaptation-specification.ts', 'assessment-system-profile.ts', 'canonical-hash.ts', 'cell-bridge.ts', 'discipline-policy.ts', 'index.ts', 'instance-lineage.ts', 'math-poc-matrix.ts', 'system-profiles.ts']);
+    expect(adaptationFiles.map((f) => f.replace(`${ADAPTATION_DIR}/`, '')).sort()).toEqual(['adapt.ts', 'adaptation-specification.ts', 'assessment-applicability.ts', 'assessment-system-profile.ts', 'canonical-hash.ts', 'cell-bridge.ts', 'discipline-policy.ts', 'index.ts', 'instance-lineage.ts', 'math-poc-applicability.ts', 'math-poc-matrix.ts', 'system-profiles.ts']);
     expect(familyFiles.map((f) => f.replace(`${FAMILIES_DIR}/`, '')).sort()).toEqual(['family-demand.ts', 'index.ts', 'math-poc-families.ts', 'math-problem.ts', 'task-family.ts']);
   });
 
@@ -919,12 +1270,19 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     expect(lib).toContain('assessment-adaptation');
   });
 
-  it('the Learning Engine\'s TRANSFER task family (Phase 7) is another thing with a similar name: a derived hash on a learner\'s transfer task, not an authored family', () => {
+  it('AssessmentTaskFamily and TransferTaskFamily are two concepts: neither imports the other, and they are not merged', () => {
+    // the explicit name exists and is the same type as the contract's
+    const named: AssessmentTaskFamily = MISSING_VALUE satisfies TaskFamily;
+    expect(named.familyId).toBe('tf.math.proportion.missing-value');
+    expect(read(`${FAMILIES_DIR}/task-family.ts`)).toMatch(/export type AssessmentTaskFamily<S = unknown> = TaskFamily<S>;/);
+    for (const doc of [`${FAMILIES_DIR}/task-family.ts`, `${ADAPTATION_DIR}/instance-lineage.ts`]) expect(read(doc), doc).toMatch(/TRANSFER task family|TransferTaskFamily/);
     // it exists, it is persisted as `transfer_task_instances.task_family_id`, and it already backs one independence rule (ROBUST transfer)
     expect(read('database/migrations/20260908_1000_phase7_transfer_task_instances.sql')).toMatch(/task_family_id TEXT NOT NULL/);
     expect(read('src/lib/transfer-task-identity.ts')).toMatch(/export function computeTransferTaskFamilyId\(/);
     // EA-1 neither imports it nor reuses its identity, and the transfer engine does not import EA-1
-    for (const f of [...adaptationFiles, ...familyFiles]) expect(read(f), f).not.toMatch(/transfer-task-identity|transfer-policy|computeTransferTaskFamilyId|transfer_task_instances/);
+    for (const f of [...adaptationFiles, ...familyFiles]) expect(code(f), f).not.toMatch(/transfer-task-identity|transfer-policy|computeTransferTaskFamilyId|transfer_task_instances/);
+    // the transfer code is untouched by this phase: it knows nothing of assessment families, profiles or specifications
+    for (const f of walk('src').filter((x) => /transfer/i.test(x))) expect(read(f), f).not.toMatch(/assessment-adaptation|question-bank\/task-families|AssessmentTaskFamily|AdaptationSpecification/);
     for (const f of ['src/lib/transfer-task-identity.ts', 'src/lib/transfer-policy.ts', 'src/services/transfer-task-instance.service.ts']) expect(read(f), f).not.toMatch(/assessment-adaptation|question-bank\/task-families/);
     // an authored family id can never be mistaken for a transfer family hash
     for (const f of MATH_POC_FAMILIES) expect(f.familyId).toMatch(/^tf\./);

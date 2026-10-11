@@ -24,8 +24,18 @@
  *                    rule must cite the source key(s) and where in the repository the fact is recorded; the
  *                    schema refuses an OFFICIAL rule without them. A test re-reads the recorded fact.
  *   STUDYUS_POLICY   StudyUs's working assumption for this proof of concept. Provisional by construction.
- * A profile whose rules are illustrative says so (`status: 'PROVISIONAL_ILLUSTRATIVE'`). A system for which the
- * repository records no sourced definition at all is `NO_CERTIFIED_SPECIFICATION` and may hold no OFFICIAL rule.
+ * A profile whose rules are illustrative says so (`status: 'PROVISIONAL_ILLUSTRATIVE'`), and states what its rules
+ * rest on (`specification.basis`: MIXED_AUTHORITY or STUDYUS_POLICY_ONLY).
+ *
+ * HIERARCHY (D2).  AssessmentSystemProfile -> AssessmentComponentProfile
+ *   The SYSTEM profile owns the versioned common rules of the assessment system / qualification / subject context.
+ *   A COMPONENT profile owns the paper- or component-specific OVERRIDES: calculator policy, duration, response
+ *   formats, marks, command-term constraints, section and stimulus behaviour, and any other component rule.
+ *   Rules inherit downward. An override is a whole rule with its own authority: an OFFICIAL override needs its own
+ *   source, exactly like any OFFICIAL rule. `resolveProfile(system, component?)` gives the rules in force and, for
+ *   every dimension, whether it came from the SYSTEM or from the COMPONENT.
+ *   The system profile names its COMPONENT-DEPENDENT dimensions: the ones a component may override. That list is
+ *   what "component-specific behaviour" means, precisely; a component may override no other dimension.
  */
 import { z } from 'zod';
 import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
@@ -71,7 +81,14 @@ export const AUTHENTICITY_REQUIREMENTS = ['NONE', 'PLAUSIBLE_CONTEXT_PREFERRED',
 /** Whether the repository holds a sourced distribution of one full form (`blueprintSpecification.status`), or the system has no fixed form. */
 export const FULL_FORM_SPECIFICATIONS = ['DOCUMENTED', 'PARTIAL', 'UNKNOWN', 'NOT_APPLICABLE_NO_FIXED_FORM'] as const;
 export const PROFILE_STATUSES = ['PROVISIONAL_ILLUSTRATIVE', 'CERTIFIED'] as const;
-export const SPECIFICATION_BASES = ['REPO_SOURCED_COMPONENT_DEFINITION', 'NO_CERTIFIED_SPECIFICATION'] as const;
+/**
+ * What a profile's rules rest on (D3).
+ *   MIXED_AUTHORITY        some rules restate facts the repository records with a source (OFFICIAL, each with its
+ *                          lineage); the others are StudyUs policy. Every profile of the proof of concept is this.
+ *   STUDYUS_POLICY_ONLY    the repository records no sourced fact for it: it may hold no OFFICIAL rule and cites nothing.
+ * Neither is a certification, and an inference is never promoted to OFFICIAL under either.
+ */
+export const SPECIFICATION_BASES = ['MIXED_AUTHORITY', 'STUDYUS_POLICY_ONLY'] as const;
 
 const unique = <T>(list: readonly T[]): boolean => new Set(list).size === list.length;
 
@@ -102,6 +119,47 @@ export const ProfileRulesSchema = z.strictObject({
 export type ProfileRules = z.infer<typeof ProfileRulesSchema>;
 export const PROFILE_RULE_DIMENSIONS = Object.keys(ProfileRulesSchema.shape) as Array<keyof ProfileRules>;
 
+/** Cross-rule consistency of a COMPLETE set of rules. Checked on a system profile and again on every resolved profile. */
+export function ruleConsistencyIssues(r: ProfileRules): Array<{ dimension: keyof ProfileRules; message: string }> {
+  const out: Array<{ dimension: keyof ProfileRules; message: string }> = [];
+  if (!unique(PROFILE_RULE_DIMENSIONS.map((d) => r[d].ruleId))) out.push({ dimension: 'responseFormats', message: 'RULE_ID_LISTED_TWICE' });
+  if (!unique(r.responseFormats.value)) out.push({ dimension: 'responseFormats', message: 'FORMAT_LISTED_TWICE' });
+  if (!unique(r.contextExpectations.value.allowed)) out.push({ dimension: 'contextExpectations', message: 'CONTEXT_LISTED_TWICE' });
+  if (!unique(r.calculatorPolicy.value.allowed)) out.push({ dimension: 'calculatorPolicy', message: 'POLICY_LISTED_TWICE' });
+  if ((r.commandTerms.value.use === 'NONE') !== (r.commandTerms.value.terms.length === 0)) out.push({ dimension: 'commandTerms', message: r.commandTerms.value.use === 'NONE' ? 'NO_VOCABULARY_HAS_NO_TERMS' : 'CONTROLLED_VOCABULARY_NEEDS_TERMS' });
+  if (!r.stimulusExpectations.value.allowed.includes(r.stimulusExpectations.value.whenOptional)) out.push({ dimension: 'stimulusExpectations', message: 'DEFAULT_STIMULUS_MODE_IS_NOT_ALLOWED' });
+  // the elicitation map covers exactly the system's competencies, and is never presented as the system's own statement
+  const codes = r.competencyEmphasis.value.map((c) => c.code);
+  const mapped = Object.keys(r.competencyElicitation.value);
+  if (!unique(codes) || codes.some((c) => !mapped.includes(c)) || mapped.some((c) => !codes.includes(c))) out.push({ dimension: 'competencyElicitation', message: 'ELICITATION_DOES_NOT_MATCH_THE_COMPETENCIES' });
+  if (r.competencyElicitation.authority.kind !== 'STUDYUS_POLICY') out.push({ dimension: 'competencyElicitation', message: 'ELICITATION_IS_ALWAYS_STUDYUS_POLICY' });
+  return out;
+}
+
+const SpecificationSchema = z.strictObject({
+  basis: z.enum(SPECIFICATION_BASES),
+  /** The repository records the OFFICIAL rules of THIS object were read from. */
+  records: z.array(z.strictObject({ recordedIn: SHORT, component: SHORT, sourceKeys: z.array(ID).min(1) })),
+  note: STATEMENT,
+});
+const CertificationSchema = z.strictObject({ certifiedBy: ID, certifiedAt: z.string().datetime({ offset: true }) }).nullable();
+const DIMENSION = z.enum(PROFILE_RULE_DIMENSIONS as [keyof ProfileRules, ...Array<keyof ProfileRules>]);
+
+/** What both levels must respect about authority: a certification is stated, and an OFFICIAL rule cites only declared records. */
+function authorityIssues(p: { status: string; certification: unknown; specification: z.infer<typeof SpecificationSchema> }, rules: Partial<ProfileRules>, ctx: z.RefinementCtx, path: string): void {
+  const present = PROFILE_RULE_DIMENSIONS.filter((d) => rules[d] !== undefined);
+  const official = present.filter((d) => rules[d]!.authority.kind === 'OFFICIAL');
+  if ((p.status === 'CERTIFIED') !== (p.certification !== null)) ctx.addIssue({ code: 'custom', path: ['certification'], message: p.certification === null ? 'CERTIFIED_NEEDS_A_CERTIFICATION' : 'CERTIFICATION_ONLY_FOR_A_CERTIFIED_PROFILE' });
+  // no sourced fact in the repository => nothing may be called official, and nothing is cited
+  if (p.specification.basis === 'STUDYUS_POLICY_ONLY' && (official.length > 0 || p.specification.records.length > 0)) ctx.addIssue({ code: 'custom', path: ['specification'], message: 'STUDYUS_POLICY_ONLY_HOLDS_NO_OFFICIAL_RULE' });
+  if (p.specification.basis === 'MIXED_AUTHORITY' && p.specification.records.length === 0) ctx.addIssue({ code: 'custom', path: ['specification', 'records'], message: 'MIXED_AUTHORITY_NEEDS_A_RECORD' });
+  const declared = new Set(p.specification.records.flatMap((x) => x.sourceKeys));
+  for (const d of official) {
+    const a = rules[d]!.authority;
+    if (a.kind === 'OFFICIAL' && a.sources.some((s) => !declared.has(s.sourceKey))) ctx.addIssue({ code: 'custom', path: [path, d, 'authority', 'sources'], message: 'SOURCE_NOT_IN_THE_PROFILES_SPECIFICATION_RECORDS' });
+  }
+}
+
 export const AssessmentSystemProfileSchema = z
   .strictObject({
     v: z.literal(ASSESSMENT_SYSTEM_PROFILE_CONTRACT_VERSION),
@@ -111,49 +169,99 @@ export const AssessmentSystemProfileSchema = z
     /** The exam family of the repository's taxonomy this profile describes; null when the repository has none. */
     examFamilyCode: z.enum(EXAM_FAMILIES).nullable(),
     status: z.enum(PROFILE_STATUSES),
-    certification: z.strictObject({ certifiedBy: ID, certifiedAt: z.string().datetime({ offset: true }) }).nullable(),
-    /** What the repository holds about the system, and the component(s) the OFFICIAL rules were read from. */
-    specification: z.strictObject({
-      basis: z.enum(SPECIFICATION_BASES),
-      records: z.array(z.strictObject({ recordedIn: SHORT, component: SHORT, sourceKeys: z.array(ID).min(1) })),
-      note: STATEMENT,
-    }),
+    certification: CertificationSchema,
+    specification: SpecificationSchema,
+    /**
+     * The dimensions whose rule depends on the component (paper, section, test) of the system. A component profile
+     * may override these and no other. When this list is not empty, an adaptation that needs any of them settled
+     * must target a concrete component (see `adapt.ts`, COMPONENT_REQUIRED).
+     */
+    componentDependentDimensions: z.array(DIMENSION),
+    /** The common rules. For a component-dependent dimension the rule here is the system-level fallback used by generic practice only. */
     rules: ProfileRulesSchema,
   })
   .superRefine((p, ctx) => {
-    const r = p.rules;
-    const official = PROFILE_RULE_DIMENSIONS.filter((d) => r[d].authority.kind === 'OFFICIAL');
-    if ((p.status === 'CERTIFIED') !== (p.certification !== null)) ctx.addIssue({ code: 'custom', path: ['certification'], message: p.certification === null ? 'CERTIFIED_NEEDS_A_CERTIFICATION' : 'CERTIFICATION_ONLY_FOR_A_CERTIFIED_PROFILE' });
-    // no sourced definition in the repository => nothing may be called official, and nothing is cited
-    if (p.specification.basis === 'NO_CERTIFIED_SPECIFICATION' && (official.length > 0 || p.specification.records.length > 0)) ctx.addIssue({ code: 'custom', path: ['specification'], message: 'NO_CERTIFIED_SPECIFICATION_HOLDS_NO_OFFICIAL_RULE' });
-    if (p.specification.basis === 'REPO_SOURCED_COMPONENT_DEFINITION' && p.specification.records.length === 0) ctx.addIssue({ code: 'custom', path: ['specification', 'records'], message: 'SOURCED_SPECIFICATION_NEEDS_A_RECORD' });
-    // an OFFICIAL rule cites only sources of the records the profile declares
-    const declared = new Set(p.specification.records.flatMap((x) => x.sourceKeys));
-    for (const d of official) {
-      const a = r[d].authority;
-      if (a.kind === 'OFFICIAL' && a.sources.some((s) => !declared.has(s.sourceKey))) ctx.addIssue({ code: 'custom', path: ['rules', d, 'authority', 'sources'], message: 'SOURCE_NOT_IN_THE_PROFILES_SPECIFICATION_RECORDS' });
-    }
-    if (!unique(PROFILE_RULE_DIMENSIONS.map((d) => r[d].ruleId))) ctx.addIssue({ code: 'custom', path: ['rules'], message: 'RULE_ID_LISTED_TWICE' });
-    if (!unique(r.responseFormats.value)) ctx.addIssue({ code: 'custom', path: ['rules', 'responseFormats'], message: 'FORMAT_LISTED_TWICE' });
-    if (!unique(r.contextExpectations.value.allowed)) ctx.addIssue({ code: 'custom', path: ['rules', 'contextExpectations'], message: 'CONTEXT_LISTED_TWICE' });
-    if (!unique(r.calculatorPolicy.value.allowed)) ctx.addIssue({ code: 'custom', path: ['rules', 'calculatorPolicy'], message: 'POLICY_LISTED_TWICE' });
-    if ((r.commandTerms.value.use === 'NONE') !== (r.commandTerms.value.terms.length === 0)) ctx.addIssue({ code: 'custom', path: ['rules', 'commandTerms'], message: r.commandTerms.value.use === 'NONE' ? 'NO_VOCABULARY_HAS_NO_TERMS' : 'CONTROLLED_VOCABULARY_NEEDS_TERMS' });
-    if (!r.stimulusExpectations.value.allowed.includes(r.stimulusExpectations.value.whenOptional)) ctx.addIssue({ code: 'custom', path: ['rules', 'stimulusExpectations'], message: 'DEFAULT_STIMULUS_MODE_IS_NOT_ALLOWED' });
-    // the elicitation map covers exactly the system's competencies, and is never presented as the system's own statement
-    const codes = r.competencyEmphasis.value.map((c) => c.code);
-    const mapped = Object.keys(r.competencyElicitation.value);
-    if (!unique(codes) || codes.some((c) => !mapped.includes(c)) || mapped.some((c) => !codes.includes(c))) ctx.addIssue({ code: 'custom', path: ['rules', 'competencyElicitation'], message: 'ELICITATION_DOES_NOT_MATCH_THE_COMPETENCIES' });
-    if (r.competencyElicitation.authority.kind !== 'STUDYUS_POLICY') ctx.addIssue({ code: 'custom', path: ['rules', 'competencyElicitation', 'authority'], message: 'ELICITATION_IS_ALWAYS_STUDYUS_POLICY' });
+    authorityIssues(p, p.rules, ctx, 'rules');
+    for (const i of ruleConsistencyIssues(p.rules)) ctx.addIssue({ code: 'custom', path: ['rules', i.dimension], message: i.message });
+    if (!unique(p.componentDependentDimensions)) ctx.addIssue({ code: 'custom', path: ['componentDependentDimensions'], message: 'DIMENSION_LISTED_TWICE' });
+    // a fact that differs by component is not a fact of the system: the system-level fallback of such a dimension is never OFFICIAL
+    for (const d of p.componentDependentDimensions) if (p.rules[d].authority.kind === 'OFFICIAL') ctx.addIssue({ code: 'custom', path: ['rules', d, 'authority'], message: 'COMPONENT_DEPENDENT_FALLBACK_IS_NOT_OFFICIAL' });
   });
 export type AssessmentSystemProfile = z.infer<typeof AssessmentSystemProfileSchema>;
+
+export const ASSESSMENT_COMPONENT_PROFILE_CONTRACT_VERSION = 1 as const;
+/** A paper, section or test of a system: the overrides it makes to the system's common rules. */
+export const AssessmentComponentProfileSchema = z
+  .strictObject({
+    v: z.literal(ASSESSMENT_COMPONENT_PROFILE_CONTRACT_VERSION),
+    /** `<SYSTEM>.<COMPONENT...>`; starts with the id of the system it belongs to. */
+    componentId: z.string().regex(/^[A-Z][A-Z0-9_]{1,39}(\.[A-Z0-9_]{1,40}){1,4}$/, 'COMPONENT_ID_FORMAT'),
+    version: ID,
+    systemProfileId: z.string().regex(/^[A-Z][A-Z0-9_]{1,39}$/, 'PROFILE_ID_FORMAT'),
+    displayName: ID,
+    /** The exam's LOCAL subject label of the component, as the repository records it. A label, never a canonical subject. */
+    localSubject: ID.nullable(),
+    status: z.enum(PROFILE_STATUSES),
+    certification: CertificationSchema,
+    specification: SpecificationSchema,
+    /** Whole rules, each with its own authority. A dimension that is absent is inherited from the system. */
+    overrides: ProfileRulesSchema.partial(),
+  })
+  .superRefine((c, ctx) => {
+    authorityIssues(c, c.overrides, ctx, 'overrides');
+    if (!c.componentId.startsWith(`${c.systemProfileId}.`)) ctx.addIssue({ code: 'custom', path: ['componentId'], message: 'COMPONENT_ID_IS_NOT_UNDER_ITS_SYSTEM' });
+    const ids = PROFILE_RULE_DIMENSIONS.flatMap((d) => (c.overrides[d] ? [c.overrides[d]!.ruleId] : []));
+    if (!unique(ids)) ctx.addIssue({ code: 'custom', path: ['overrides'], message: 'RULE_ID_LISTED_TWICE' });
+  });
+export type AssessmentComponentProfile = z.infer<typeof AssessmentComponentProfileSchema>;
 
 export function validateAssessmentSystemProfile(input: unknown): { ok: true; profile: AssessmentSystemProfile } | { ok: false; issues: string[] } {
   const parsed = AssessmentSystemProfileSchema.safeParse(input);
   return parsed.success ? { ok: true, profile: parsed.data } : { ok: false, issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`) };
 }
 
-/** Which rules of a profile are official and which are StudyUs's assumption. The honest summary of a profile. */
-export function authorityBreakdown(profile: AssessmentSystemProfile): { official: Array<keyof ProfileRules>; studyusPolicy: Array<keyof ProfileRules> } {
+export type RuleOrigin = 'SYSTEM' | 'COMPONENT';
+/** The rules in force for a target: the system's, with the component's overrides, and where each one came from. */
+export interface ResolvedProfile {
+  system: Pick<AssessmentSystemProfile, 'profileId' | 'version' | 'status' | 'examFamilyCode'>;
+  component: Pick<AssessmentComponentProfile, 'componentId' | 'version' | 'status' | 'localSubject'> | null;
+  rules: ProfileRules;
+  ruleOrigin: Record<keyof ProfileRules, RuleOrigin>;
+  componentDependentDimensions: Array<keyof ProfileRules>;
+  /** The component-dependent dimensions NOT settled: all of them when no component is targeted, none when one is (a component that does not override a dimension has chosen the system's rule). */
+  unsettledDimensions: Array<keyof ProfileRules>;
+}
+export type ProfileResolutionIssue = 'SYSTEM_PROFILE_INVALID' | 'COMPONENT_PROFILE_INVALID' | 'COMPONENT_NOT_OF_THE_SYSTEM' | 'OVERRIDE_OF_A_DIMENSION_THAT_IS_NOT_COMPONENT_DEPENDENT' | 'RESOLVED_RULES_INCONSISTENT';
+export type ProfileResolution = { ok: true; resolved: ResolvedProfile; system: AssessmentSystemProfile; component: AssessmentComponentProfile | null } | { ok: false; issue: ProfileResolutionIssue; details: string[] };
+
+/**
+ * Inheritance, as a pure function. The component's overrides replace the system's rule of the same dimension,
+ * whole (value AND authority: an override never borrows the authority of the rule it replaces). A component may
+ * override only what its system declares component-dependent. The resolved rules are checked for consistency again.
+ */
+export function resolveProfile(systemInput: unknown, componentInput?: unknown): ProfileResolution {
+  const sys = AssessmentSystemProfileSchema.safeParse(systemInput);
+  if (!sys.success) return { ok: false, issue: 'SYSTEM_PROFILE_INVALID', details: sys.error.issues.slice(0, 4).map((i) => `${i.path.join('.')}: ${i.message}`) };
+  const system = sys.data;
+  const origin = Object.fromEntries(PROFILE_RULE_DIMENSIONS.map((d) => [d, 'SYSTEM'])) as Record<keyof ProfileRules, RuleOrigin>;
+  const head = { profileId: system.profileId, version: system.version, status: system.status, examFamilyCode: system.examFamilyCode };
+  if (componentInput === undefined || componentInput === null) return { ok: true, system, component: null, resolved: { system: head, component: null, rules: system.rules, ruleOrigin: origin, componentDependentDimensions: [...system.componentDependentDimensions], unsettledDimensions: [...system.componentDependentDimensions] } };
+  const comp = AssessmentComponentProfileSchema.safeParse(componentInput);
+  if (!comp.success) return { ok: false, issue: 'COMPONENT_PROFILE_INVALID', details: comp.error.issues.slice(0, 4).map((i) => `${i.path.join('.')}: ${i.message}`) };
+  const component = comp.data;
+  if (component.systemProfileId !== system.profileId) return { ok: false, issue: 'COMPONENT_NOT_OF_THE_SYSTEM', details: [`${component.componentId} belongs to ${component.systemProfileId}, not ${system.profileId}`] };
+  const overridden = PROFILE_RULE_DIMENSIONS.filter((d) => component.overrides[d] !== undefined);
+  const stray = overridden.filter((d) => !system.componentDependentDimensions.includes(d));
+  if (stray.length > 0) return { ok: false, issue: 'OVERRIDE_OF_A_DIMENSION_THAT_IS_NOT_COMPONENT_DEPENDENT', details: stray };
+  const rules = { ...system.rules } as Record<string, unknown>;
+  for (const d of overridden) { rules[d] = component.overrides[d]; origin[d] = 'COMPONENT'; }
+  const inconsistent = ruleConsistencyIssues(rules as ProfileRules);
+  if (inconsistent.length > 0) return { ok: false, issue: 'RESOLVED_RULES_INCONSISTENT', details: inconsistent.map((i) => `${i.dimension}: ${i.message}`) };
+  return { ok: true, system, component, resolved: { system: head, component: { componentId: component.componentId, version: component.version, status: component.status, localSubject: component.localSubject }, rules: rules as ProfileRules, ruleOrigin: origin, componentDependentDimensions: [...system.componentDependentDimensions], unsettledDimensions: [] } };
+}
+
+/** Which rules in force are official and which are StudyUs's assumption. The honest summary of a profile or of a resolved target. */
+export function authorityBreakdown(profile: { rules: ProfileRules }): { official: Array<keyof ProfileRules>; studyusPolicy: Array<keyof ProfileRules> } {
   const official = PROFILE_RULE_DIMENSIONS.filter((d) => profile.rules[d].authority.kind === 'OFFICIAL');
   return { official, studyusPolicy: PROFILE_RULE_DIMENSIONS.filter((d) => !official.includes(d)) };
 }

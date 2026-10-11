@@ -21,11 +21,17 @@
  * concept's canonical subject is the family's: `Matemáticas` and `Mathematics` are two subjects and neither is
  * inferred from the other.
  *
- * TWO DIFFERENT QUESTIONS, TWO FIELDS, about a family and an assessment system (keyed by the system's profile id):
- *   profileSupport                   can this WAY OF ASKING fit how that system elicits evidence? (assessment behaviour)
- *   canonicalKnowledgeAvailability   does the repository certify this CONCEPT for that system's exam family? (curriculum)
- * A family may fit a system's behaviour while its concept is not certified there. The second answer is then
- * NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY and stays visible; it is never inferred from the first.
+ * WHAT A FAMILY DOES NOT SAY. `profileSupport` answers one question only: can this WAY OF ASKING fit how an
+ * assessment system elicits evidence (assessment behaviour)? Whether the family's CONCEPT may legitimately be
+ * assessed by that system is ASSESSMENT APPLICABILITY -- a separate contract, owned by the shared assessment
+ * architecture and read from the Curriculum's mappings (`assessment-adaptation/assessment-applicability.ts`). A
+ * family holds no applicability, never infers one from its support, and never needs its concept's canonical
+ * subject to carry the same label as an exam's local subject.
+ *
+ * NAMING. This is the ASSESSMENT task family: a generation / assessment structure, authored and versioned. The
+ * Learning Engine's TRANSFER task family (`computeTransferTaskFamilyId`, `transfer_task_instances.task_family_id`)
+ * is another concept -- a hash derived from one learner's transfer task, used as evidence of transfer. Neither
+ * imports the other; relating them is deferred to B3.
  *
  * DISCIPLINE SPECIALISATION is an open, registered model: `familyType` is a string, and a registry maps it to the
  * schema of `specialization`. A new type is added by registering a schema; this common schema does not change.
@@ -105,18 +111,6 @@ export const ProfileSupportSchema = z.discriminatedUnion('status', [
 ]);
 export type ProfileSupport = z.infer<typeof ProfileSupportSchema>;
 
-/**
- * Whether the repository certifies the family's concept for a system's exam family.
- *   CERTIFIED_FOR_THIS_EXAM_FAMILY       the concept is one of that family's certified identities
- *   CATALOGUE_LINK_RECORDED              a reviewed objective -> concept link of that family names this exact
- *                                        (subject, name); weaker than a certified identity, and said to be
- *   NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY   neither; nothing is inferred from another subject or another exam
- */
-export const KNOWLEDGE_AVAILABILITY_STATUSES = ['CERTIFIED_FOR_THIS_EXAM_FAMILY', 'CATALOGUE_LINK_RECORDED', 'NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY'] as const;
-export type KnowledgeAvailabilityStatus = (typeof KNOWLEDGE_AVAILABILITY_STATUSES)[number];
-export const KnowledgeAvailabilitySchema = z.strictObject({ status: z.enum(KNOWLEDGE_AVAILABILITY_STATUSES), basis: SHORT });
-export type KnowledgeAvailability = z.infer<typeof KnowledgeAvailabilitySchema>;
-
 /** Every field that does not depend on the discipline. `specialization` is validated by the registered schema of `familyType`. */
 export const TaskFamilyCommonSchema = z
   .strictObject({
@@ -146,8 +140,6 @@ export const TaskFamilyCommonSchema = z
     }),
     /** Keyed by assessment-system profile id. A system that is not listed is UNDECLARED, which is not SUPPORTED. */
     profileSupport: z.record(ID, ProfileSupportSchema),
-    /** Keyed by assessment-system profile id. A system that is not listed is NOT certified. */
-    canonicalKnowledgeAvailability: z.record(ID, KnowledgeAvailabilitySchema),
     provenance: z.strictObject({
       authoredBy: z.literal('STUDYUS'),
       /** Who wrote the first draft, as for a candidate: a person, or a model run requested by a person. */
@@ -186,6 +178,10 @@ export const TaskFamilyCommonSchema = z
     }
   });
 export type TaskFamily<S = unknown> = Omit<z.infer<typeof TaskFamilyCommonSchema>, 'specialization'> & { specialization: S };
+/** The explicit name of the concept, to tell it from the transfer engine's TransferTaskFamily. Same type. */
+export type AssessmentTaskFamily<S = unknown> = TaskFamily<S>;
+/** May a family version feed evidence-bearing (certified) content? Only a REVIEWED and CERTIFIED one; any other generates DEV_TEST_CONTENT only. */
+export const familyMayFeedEvidenceBearingContent = (f: Pick<TaskFamily, 'lifecycle' | 'reviewStatus'>): boolean => f.reviewStatus === 'REVIEWED' && f.lifecycle === 'CERTIFIED';
 
 /**
  * What the adaptation engine may read from a specialisation, whatever the discipline. The engine never looks

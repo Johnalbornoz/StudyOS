@@ -17,12 +17,15 @@
  *   batch      the run's lineage
  * The repeatable generator sets all of them; `lineageGaps` says which are missing.
  *
- * EA-1 adds ONE more optional member, on the same terms: `lineage.adaptation` (task family, assessment-system
- * profile, discipline policy, adaptation specification, run), present only on a draft generated from an
- * adaptation specification. A draft without it is as valid as before and is never reported as a gap.
+ * EA-1 adds two optional members, on the same terms, one per kind of lineage:
+ *   MODEL  `lineage.adaptation`     task family, system and component profile, discipline policy, adaptation
+ *                                   specification, content use class, run -- only on a draft generated from a specification
+ *   HUMAN  `lineage.familyLineage`  the task family a person wrote an instance of (and the specification followed,
+ *                                   if any). No generation field: who wrote it and which family it is of are separate.
+ * A draft without either is as valid as before and is never reported as a gap.
  */
 import { z } from 'zod';
-import { AdaptationLineageSchema } from '@/lib/assessment-adaptation/instance-lineage';
+import { AdaptationLineageSchema, AuthoredFamilyLineageSchema } from '@/lib/assessment-adaptation/instance-lineage';
 import { NumericAnswerKeySchema } from './answer-normalization';
 import { ReferenceIntelligencePackSchema } from './reference-pack';
 import { AssetRequirementSchema, DIFFICULTY_BANDS, RequirementCellSchema, RESPONSE_FORMATS, STIMULUS_KINDS } from './requirement-cell';
@@ -59,7 +62,12 @@ export type GenerationRequest = z.infer<typeof GenerationRequestSchema>;
 export const CANDIDATE_PROVENANCES = ['STUDYUS_AUTHORED', 'STUDYUS_GENERATED'] as const;
 
 export const GenerationLineageSchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('HUMAN'), authorUserId: UUID, writtenAt: z.string().datetime({ offset: true }) }),
+  z.strictObject({
+    kind: z.literal('HUMAN'), authorUserId: UUID, writtenAt: z.string().datetime({ offset: true }),
+    // EA-1: a person may write an instance of an assessment task family. Authorship and task-family lineage are
+    // separate dimensions; this member carries NO generation field, and a draft without it is as valid as before.
+    familyLineage: AuthoredFamilyLineageSchema.optional(),
+  }),
   z.strictObject({
     kind: z.literal('MODEL'), model: ID, promptVersion: ID, runId: ID, requestedBy: ID, generatedAt: z.string().datetime({ offset: true }),
     /** People who edited the model's draft. Editing does not change the provenance. */
