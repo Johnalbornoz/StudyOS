@@ -83,7 +83,8 @@ export interface LearningSelectionRequest {
   asOf: string;
 }
 
-export type LearningSelection = { ok: true; solution: BlueprintSolution } | { ok: false; issues: IntentIssue[] };
+/** `coverages` is the candidate coverage the selection was made from (B5: what a start freezes). */
+export type LearningSelection = { ok: true; solution: BlueprintSolution; coverages?: QuestionCoverage[] } | { ok: false; issues: IntentIssue[] };
 
 /**
  * A LEARNING blueprint for a Student, end to end and read-only: context -> canonical targets -> evidence
@@ -105,7 +106,7 @@ export async function solveLearningForStudent(studentId: string, request: Learni
     exposure: pool.exposure,
     asOf: request.asOf,
   });
-  return { ok: true, solution };
+  return { ok: true, solution, coverages: pool.coverages };
 }
 
 /**

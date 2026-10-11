@@ -6,6 +6,7 @@
  * mark schemes. Persistence stays F7's real recordExamAttemptItemResponse.
  * No exam-family branching anywhere.
  */
+import { executionAuthorityOfExamAttempt } from '@/lib/assessment-execution/assessment-start.service';
 import { db } from '@/lib/db';
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { recordExamAttemptItemResponse } from '@/lib/assessment/evaluation.service';
@@ -119,8 +120,12 @@ export async function recordSimulationItemResponse(params: {
   }
 
   let evidenceWritten = false;
+  // B5: one engine per attempt. An attempt whose instance carries a frozen assessment snapshot is executed by
+  // the canonical loop, which attributes its evidence at completion; this legacy objective -> first-concept
+  // shortcut stands down for it. The score above is unaffected.
+  const legacyEvidenceOwner = (await executionAuthorityOfExamAttempt(params.examAttemptId)) === 'LEGACY';
   // V2: a response awaiting review is not evidence until a reviewer confirms its mark.
-  if (grade.status === 'ANSWERED' && grade.reviewStatus === 'NONE' && params.learningObjectiveId) {
+  if (legacyEvidenceOwner && grade.status === 'ANSWERED' && grade.reviewStatus === 'NONE' && params.learningObjectiveId) {
     const bridge = await resolveActivityMetadataForObjective(params.learningObjectiveId);
     if (bridge && bridge.canonicalConceptIds.length > 0) {
       let studentConceptId: string | null = null;

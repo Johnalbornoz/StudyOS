@@ -40,6 +40,7 @@
  * }
  */
 
+import { executionAuthorityOfQuizSession } from '@/lib/assessment-execution/assessment-start.service';
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse, after } from 'next/server';
 import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
@@ -1534,6 +1535,11 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         { error: 'QUIZ_NOT_FOUND', message: 'Quiz expired or not found. Generate a new quiz.' },
         { status: 400 }
       );
+    }
+    // B5: one engine per attempt. A session started from a frozen assessment snapshot is completed by the
+    // canonical evidence loop; this legacy submission path never grades or writes evidence for it.
+    if ((await executionAuthorityOfQuizSession(validated.quizId)) === 'CANONICAL') {
+      return NextResponse.json({ error: 'ASSESSMENT_EXECUTION_AUTHORITY_CANONICAL', message: 'This assessment is completed through the canonical path.' }, { status: 409 });
     }
     // STUDENT E2E security: a diagnosis / remediation step named by the
     // client must be the authenticated Student's own -- otherwise this

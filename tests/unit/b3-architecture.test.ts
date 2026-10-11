@@ -17,7 +17,10 @@ function walk(dir: string, out: string[] = []): string[] {
   }
   return out;
 }
-const B3 = walk('src/lib/assessment-execution');
+// B5 added the start authority beside the B3 files (assessment-start.service.ts). It is certified by
+// b5-runtime-integration; the guards below keep describing the B3 evidence loop itself.
+const START = 'src/lib/assessment-execution/assessment-start.service.ts';
+const B3 = walk('src/lib/assessment-execution').filter((f) => f !== START);
 const PURE = B3.filter((f) => !f.endsWith('.service.ts'));
 const SERVICE = 'src/lib/assessment-execution/assessment-execution.service.ts';
 const MIGRATION = 'database/migrations/20261110_1000_assessment_snapshot.sql';
@@ -155,7 +158,11 @@ describe('B3 is not cut over', () => {
     // B4: the experience layer and its shared components read B3's result TYPES to present them (asserted
     // type-only below). No page, route or service under src/app imports the execution module.
     const presentation = (f: string) => f.startsWith('src/lib/assessment-experience/') || f.startsWith('src/components/assessment/');
-    expect(importers.filter((f) => !presentation(f))).toEqual([]);
+    // B5: the two legacy evidence write sites import ONE thing -- the execution-authority check that makes them
+    // stand down for a canonical attempt. They import nothing else of the execution module.
+    const legacySites = ['src/app/api/quizzes/generate-and-take/route.ts', 'src/lib/simulation/scoring.service.ts'];
+    expect(importers.filter((f) => !presentation(f)).sort()).toEqual(legacySites);
+    for (const f of legacySites) expect(read(f).match(/^import [^;]*assessment-execution[^;]*;/gm), f).toEqual([expect.stringMatching(/^import \{ executionAuthorityOf(QuizSession|ExamAttempt) \} from '@\/lib\/assessment-execution\/assessment-start\.service';$/)]);
     for (const f of importers.filter(presentation)) expect((read(f).match(/^import [^;]*assessment-execution[^;]*;/gm) ?? []).every((line) => line.startsWith('import type ')), f).toBe(true);
   });
 

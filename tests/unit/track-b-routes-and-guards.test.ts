@@ -181,7 +181,8 @@ describe('source guards: the Exam Core never decides cognition', () => {
   });
   it('evidence is written per response only for a VALID, non-review answer to a server-held item, as non-assisted EXAM_SIMULATION', () => {
     const scoring = read('src/lib/simulation/scoring.service.ts');
-    expect(scoring).toMatch(/if \(grade\.status === 'ANSWERED' && grade\.reviewStatus === 'NONE' && params\.learningObjectiveId\)/);
+    // B5: the same condition, plus the execution-authority guard (a canonical attempt's evidence is not written here).
+    expect(scoring).toMatch(/if \(legacyEvidenceOwner && grade\.status === 'ANSWERED' && grade\.reviewStatus === 'NONE' && params\.learningObjectiveId\)/);
     expect(scoring).toMatch(/sourceType: 'EXAM_SIMULATION'/);
     expect(scoring).toMatch(/aiAssistanceType: 'NONE'/);
     expect(scoring).toMatch(/operationType: 'EXAM_SIMULATION_RESPONSE'/);
