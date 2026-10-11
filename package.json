@@ -9,6 +9,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "tsx --env-file=.env.local scripts/e2e-cognitive-loop.ts",
+    "test:browser": "playwright test",
+    "test:browser:certify": "E2E_KNOWN_FINDINGS=strict playwright test",
     "db:status": "tsx --env-file=.env.local scripts/db-status.ts",
     "db:migrate": "tsx --env-file=.env.local scripts/db-migrate.ts",
     "db:repro-test": "bash scripts/db-reproducibility-test.sh",
@@ -33,6 +35,9 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@clerk/testing": "2.2.28",
+    "@playwright/test": "1.64.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
