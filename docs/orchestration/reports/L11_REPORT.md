@@ -379,3 +379,120 @@ Two existing tests now assert the opposite of what they did (state machine, answ
 ## NEXT SAFE ACTION
 
 Orchestrator review of the R1 commit, in particular the three points under "Grant → paid".
+
+---
+
+# L11-R2 — L10 integration compatibility (CR-L7-04) — 2026-10-11 (UTC), appended
+
+Ruling: "L11 INTEGRATION COMPATIBILITY CHECK". Entitlement semantics were not redesigned. No runtime file was changed.
+
+## LANE
+
+`L11_ENTITLEMENTS`, run R2. Branch `feat/l11-entitlements` in `/Users/jalbornoz/PROYECTOS/studyos-l11-entitlements`.
+
+The merged tree was reproduced in a throwaway worktree, `/Users/jalbornoz/PROYECTOS/studyos-l11-compat-check`, branch `scratch/l11-l10-compat-check` (L11 tip + `git merge 79b7f50`, no conflicts). It is local evidence only: not an integration line, not pushed, and can be deleted.
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+| Classification | Result |
+|---|---|
+| CR_L7_04_L11 | CLOSED |
+| OPEN_ATTEMPT_INTEGRATION | PASS |
+| UNLICENSED_POLICY_INTEGRATION | PASS |
+| PAYMENT_SECURITY_INTEGRATION | PASS |
+| DETERMINISTIC_FAILURES | 0 (9 before) |
+| L11_FINAL_INTEGRATION_READY | YES |
+
+## BASE SHA
+
+`fd9dfa6` (L11-R1). L10 tip checked against: `79b7f50`.
+
+## FINAL SHA
+
+The tip of `feat/l11-entitlements`: `92cd8fd` (tests) plus the commit that adds this section. Run `git rev-parse feat/l11-entitlements`.
+
+## FILES CHANGED
+
+Tests only (3): `tests/unit/l11-open-attempt-continuation.test.ts`, `tests/unit/l11-payment-webhook.test.ts`, `tests/unit/l11-unlicensed-policy.test.ts`. Plus this report and the status file.
+
+## LOCKS USED
+
+`ENTITLEMENTS_AND_PAYMENTS` (own tests). `INTEGRATION_MERGE` not used: the merge exists only on the scratch branch above.
+
+## TESTS
+
+| Command | Tree | Result |
+|---|---|---|
+| Full suite, before any fix | merged (`fd9dfa6` + `79b7f50`) | 3 files, **9 tests failed**, 9,650 passed; no timeout. The same 9 that L7 reported |
+| `npx vitest run tests/unit/l11-*.test.ts` | merged | 7 files, 175 tests passed |
+| Integration-sensitive set: `l11-*`, `l10-*`, `l4r1-*`, `f3-*`, `f11c1-*`, `track-a-routes`, `learn-check-feedback`, `payment-never-grants-parent-relationship`, `premium-entitlement-gating`, `lx4p-perf-r1e-guide-independence` | merged | 33 files, 568 tests passed |
+| Full suite, default timeout | merged | **535 files, 9,666 tests passed**, exit 0, no timeout (load average about 25) |
+| `npx tsc --noEmit -p .` | merged | exit 0 |
+| `npx next build` | merged | exit 0; 229/229 static pages |
+| Full suite, default timeout | `feat/l11-entitlements` alone | 526 files, 9,467 tests passed, exit 0 |
+| `npx tsc --noEmit -p .`, `npx next build` | `feat/l11-entitlements` alone | exit 0; 228/228 static pages |
+| HTTP E2E, any database or deployed environment | | NOT_RUN |
+
+The fixed tests pass on both trees, so the order in which L10 and L11 are merged does not matter for them.
+
+## FINDINGS
+
+### The 9 failures
+
+All nine were in L11's own test files. None is a runtime regression.
+
+| # | Test | Cause | Class |
+|---|---|---|---|
+| 1 | `l11-open-attempt-continuation` › "simulation/attempts/[id]/result loads the attempt and checks the actor against its Student" | The test matched the text `canAccessLearner(actor.id, attempt.studentId`. L10 SF-4 replaced that call on the result route with `resolveLearnerReadScope(actor.id, attempt.studentId)`, which is stricter (scope-shaped result, 404 when not visible) | STALE_SOURCE_ASSERTION |
+| 2 | `l11-payment-webhook` › "the learner paying for themself is bound as an individual payment" | The in-memory database recognised `isOwner` by its pre-L10 SQL text. L10 SF-1/SF-2 rewrote the query (ACTIVE account, ACTIVE STUDENT role, canonical owner match), so the fake threw, `isOwner` caught it and answered false | STALE_TEST_FIXTURE |
+| 3 | `l11-payment-webhook` › "billing rights end with the relationship…" | Same fixture: the owner half of `isLiveBillingActor` | STALE_TEST_FIXTURE |
+| 4 | `l11-unlicensed-policy` › "POST …/teacher-interventions/[id]/start -> 403 ENTITLEMENT_REQUIRED" | The test fed `ownStudentId` through a generic database mock shaped for its pre-L10 query. L10 resolves it through `resolveOwnedStudent`, which reads `access_active`; the mock row had none, so the guard answered "no active learner" and the route returned `FORBIDDEN`. That is the correct result for the input the mock described | STALE_TEST_FIXTURE |
+| 5 | › "the teacher-assigned start reaches the dispatcher" | Same | STALE_TEST_FIXTURE |
+| 6 | › "D-8(c): teacher-assigned task › already started … recovers the same activity" | Same | STALE_TEST_FIXTURE |
+| 7 | › "D-8(c): teacher-assigned task › never started: 403 ENTITLEMENT_REQUIRED" | Same | STALE_TEST_FIXTURE |
+| 8 | › "D-8(c): teacher-assigned task › the dispatcher still decides ownership and validity" | Same | STALE_TEST_FIXTURE |
+| 9 | › "D-8(c): transfer submit › … the answer is graded" | The test mocked `transfer-task-instance.service` with one export. L10 (CR-L11-06) added `runTransferSubmissionExclusively` around grading; it was undefined in the mock, so the route threw before grading | STALE_TEST_FIXTURE |
+
+Totals: STALE_TEST_FIXTURE 8, STALE_SOURCE_ASSERTION 1, REAL_RUNTIME_REGRESSION 0.
+
+Fixes: the tests now mock or match the shared guards at their contract (`ownStudentId` mocked directly; `isOwner` recognised by its parameters; the transfer claim mocked as "open, unclaimed"; the result-route assertion accepts any of the three guard helpers bound to the attempt's Student).
+
+### Canonical ordering on the merged tree
+
+Read from the merged source and covered by tests:
+
+1. **Invalid, inactive or revoked identity or role → authorization fails closed, before entitlement.** On the five L11-gated routes that use `verifyStudentAccess`, a denial returns `403 FORBIDDEN` and the entitlement decision is never asked (new test, 5 cases). On the teacher-assigned start, `ownStudentId` now answers null for a revoked STUDENT role or a non-ACTIVE account, and the route returns `FORBIDDEN` before the open-attempt lookup and before the licence check (new test). The fail-closed branch added in R0 for "no Student account" is what makes this hold.
+2. **Valid active Student, new instructional activity, no licence → `403 ENTITLEMENT_REQUIRED`.** Unchanged; `l11-unlicensed-policy` (6 routes) passes on the merged tree, and L10's `l10-r1-revoked-student-http` passes beside it.
+3. **Open attempt continues (D-8(c)).** Unchanged. On Transfer, L10's exactly-once claim runs after L11's gate: an open task of the Student is graded once without a licence; an already-answered task is refused with 409 and not graded. That closes R1 finding F-5.
+4. **Admin suspension / revocation.** Unchanged; `l11-payment-webhook`, `l11-provider-events`, `l4r1-billing-self-reactivation` pass on the merged tree. L10 also closed CR-L11-05: a manual payment approval on an administrator-set row is refused, which closes R1 finding F-6.
+5. **Parent payer needs a currently accepted relationship.** Stronger on the merged tree: `isActiveParentOf` now also requires an ACTIVE account and an ACTIVE PARENT role, so `isLiveBillingActor` and payer binding inherit that.
+
+### Observation, not a failure
+
+**F-7 — two definitions of "owner" meet at the entitlement decision.** `isLearnerOwner` (`src/lib/entitlements/learning-access.ts:57-64`) matches `students.user_id` only. L10 SF-2's canonical match also accepts a row whose `user_id` was never backfilled, by Clerk id. A Student in that state passes L10 authorization and is then treated as not the owner by the entitlement decision, so they are refused with `ENTITLEMENT_REQUIRED` even with a valid grant. It fails closed, it is not new (F3 behaviour), and it only matters if such rows exist; L3R1 already asks L5 for the count of `students` with `user_id IS NULL`. Aligning `isLearnerOwner` with L10's `STUDENT_OWNER_MATCH_SQL` is a one-query change that can only be made after L10 is merged (the fragment does not exist on this branch), so it is left for the integration line. `NOT_VERIFIED` against any database.
+
+## BLOCKERS
+
+NONE.
+
+## CHANGE_REQUESTS
+
+No new request for a locked area. Status of earlier ones, as seen on the merged tree:
+
+| # | Status |
+|---|---|
+| CR-L11-05 (manual approval on an admin-set row) | Closed by L10 (`79b7f50`): refused, nothing written |
+| CR-L11-06 (Transfer answered marker) | Closed by L10 without schema: exactly-once claim keyed on existing evidence |
+| CR-L11-01, -02, -03, -04 | Open, unchanged |
+
+For the Orchestrator, after L10 and L11 are both on the integration line: decide on F-7 (align `isLearnerOwner` with L10's owner match, or rely on the identity backfill).
+
+## MERGE RECOMMENDATION
+
+`feat/l11-entitlements` at its tip merges with `79b7f50` without conflicts and with a green suite, in either order. L7 can rebase its PA-3/4/5 work on that pair and drop CR-L7-04 from its L11 side.
+
+## NEXT SAFE ACTION
+
+Orchestrator merges L10 and L11 on the integration line and re-runs the full suite there.
