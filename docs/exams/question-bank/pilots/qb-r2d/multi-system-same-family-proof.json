@@ -1,0 +1,1029 @@
+{
+  "kind": "QB_R2D_MULTI_SYSTEM_SAME_FAMILY_PROOF",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- AUTOMATED VALIDATION ONLY, NO HUMAN REVIEW",
+  "about": "One task family (the constant-rate linear model) generated live for six components of five assessment systems. Left: what is identical (concept, construct, evidence target, by invariant hash). Right: what each specification decided differently and the item that was written from it. A proof that the pipeline carries a specification into an item; NOT a judgement that any item is good -- no person has reviewed one.",
+  "familyId": "tf.math.linear.constant-rate-model",
+  "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+  "invariants": {
+    "primaryConceptStableIds": [
+      "math.fun.linear-functions-lines"
+    ],
+    "canonicalSubject": "Matemáticas",
+    "construct": {
+      "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+      "variables": [
+        {
+          "symbol": "b",
+          "role": "PARAMETER",
+          "domain": "RATIONAL"
+        },
+        {
+          "symbol": "m",
+          "role": "PARAMETER",
+          "domain": "RATIONAL"
+        },
+        {
+          "symbol": "x",
+          "role": "GIVEN",
+          "domain": "RATIONAL"
+        },
+        {
+          "symbol": "y",
+          "role": "UNKNOWN",
+          "domain": "RATIONAL"
+        }
+      ],
+      "relationships": [
+        "y = m * x + b"
+      ]
+    },
+    "evidenceTarget": {
+      "actions": [
+        "FORMULATE",
+        "INTERPRET"
+      ],
+      "object": "A situation in which a quantity starts at a fixed value and changes by the same amount for each unit of another quantity.",
+      "observablePerformance": "Writes the linear relation that models the situation and says what its slope and its intercept mean in it."
+    }
+  },
+  "targets": [
+    {
+      "selectionKey": "01.linear-model.paa",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "specificationId": "584fd68f232c0de0fb6558b7e73375e36789a3cb658df612bcbbff11cfe9770e",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "taskFamily": {
+        "id": "tf.math.linear.constant-rate-model",
+        "version": "0.1.0-draft"
+      },
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "NONE",
+          "transfer": "NOT_REQUIRED"
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": 65.45,
+          "unit": "ITEM"
+        },
+        "markStructure": "ONE_MARK_PER_ITEM",
+        "rubricStyle": "KEY_ONLY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "swapped-parameters",
+            "no-start",
+            "slope-as-total"
+          ]
+        }
+      },
+      "language": "es",
+      "generated": true,
+      "unitKey": "01.linear-model.paa#a1",
+      "item": {
+        "stem": "Una aplicación de transporte cobra una tarifa inicial de 120 euros y añade 8 euros por cada kilómetro recorrido. Si x representa los kilómetros y y el costo total en euros, ¿cuál opción formula correctamente la relación y interpreta sus parámetros?",
+        "instruction": "Selecciona la única opción correcta.",
+        "declaredContext": {
+          "kind": "PERSONAL",
+          "description": "Costo de un viaje según la distancia recorrida."
+        },
+        "declaredModel": {
+          "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+          "parameters": {
+            "b": 120,
+            "m": 8,
+            "x": 5
+          }
+        },
+        "marks": 1,
+        "stimulus": null,
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "y = 8x + 120; 8 representa el costo adicional por cada kilómetro y 120 representa el costo inicial."
+            },
+            {
+              "id": "B",
+              "text": "y = 120x + 8; 120 representa el costo adicional por cada kilómetro y 8 representa el costo inicial."
+            },
+            {
+              "id": "C",
+              "text": "y = 8x; 8 representa el costo total inicial y no hay costo fijo antes de recorrer kilómetros."
+            },
+            {
+              "id": "D",
+              "text": "y = 120 - 8x; 120 representa el costo inicial y el costo disminuye 8 euros por cada kilómetro."
+            }
+          ],
+          "answerKey": "A",
+          "target": {
+            "kind": "NOT_MACHINE_CHECKABLE",
+            "reason": "La respuesta debe formular la relación y explicar verbalmente el significado de la pendiente y del intercepto."
+          }
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "validation": {
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED",
+        "profileCompliance": "PASS",
+        "profileComplianceIssues": [],
+        "constructPreservation": "PASS",
+        "answerKey": "DETERMINISTIC_RULE_VERIFIED"
+      }
+    },
+    {
+      "selectionKey": "02.linear-model.ib-p1",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "approach": null,
+      "specificationId": "8cf89a34d9ba9826fac636ee8784c60e943b66858b4c3d7c7f96a0de12146c49",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "taskFamily": {
+        "id": "tf.math.linear.constant-rate-model",
+        "version": "0.1.0-draft"
+      },
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "NONE",
+          "transfer": "NOT_REQUIRED"
+        },
+        "responseFormat": {
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "METHOD_SHOWN",
+          "workingShown": true,
+          "justificationRequired": false
+        },
+        "commandTerm": "find",
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": 65.45,
+          "unit": "MARK"
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "METHOD_AND_ACCURACY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": null
+      },
+      "language": "en",
+      "generated": true,
+      "unitKey": "02.linear-model.ib-p1#a1",
+      "item": {
+        "stem": "A scientific culture starts with 240 cells and gains 12 cells each hour. Let x be the number of hours after the start and let y be the number of cells. Find a linear relation for y in terms of x, and state what the slope and intercept mean in this situation.",
+        "instruction": "Show your working.",
+        "declaredContext": {
+          "kind": "SCIENTIFIC",
+          "description": "A culture starts with a fixed number of cells and increases by a constant number of cells each hour."
+        },
+        "declaredModel": {
+          "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+          "parameters": {
+            "b": 240,
+            "m": 12,
+            "x": 15
+          }
+        },
+        "marks": 4,
+        "stimulus": null,
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 4,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Find the linear relation between y and x.",
+              "marks": 2,
+              "markPoints": [
+                "METHOD1",
+                "ACCURACY1"
+              ],
+              "finalAnswer": "y = 12x + 240",
+              "target": {
+                "kind": "NOT_MACHINE_CHECKABLE",
+                "reason": "The answer is a formulated linear relation rather than a single construct-vocabulary quantity."
+              }
+            },
+            {
+              "label": "b",
+              "prompt": "Find what the slope and the intercept mean in this situation.",
+              "marks": 2,
+              "markPoints": [
+                "REASONING1",
+                "REASONING1"
+              ],
+              "finalAnswer": "The slope is 12 cells per hour, so the culture gains 12 cells each hour. The intercept is 240 cells, so the culture starts with 240 cells.",
+              "target": {
+                "kind": "NOT_MACHINE_CHECKABLE",
+                "reason": "The answer interprets the rate and starting value in words."
+              }
+            }
+          ]
+        },
+        "credit": null
+      },
+      "validation": {
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED",
+        "profileCompliance": "PASS",
+        "profileComplianceIssues": [],
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED"
+      }
+    },
+    {
+      "selectionKey": "03.linear-model.ib-p2",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "specificationId": "a94bb59af42b08d59019969bd71067829d1b444e50d8dd498e295eb604325258",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "taskFamily": {
+        "id": "tf.math.linear.constant-rate-model",
+        "version": "0.1.0-draft"
+      },
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "NONE",
+          "transfer": "NOT_REQUIRED"
+        },
+        "responseFormat": {
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "METHOD_SHOWN",
+          "workingShown": true,
+          "justificationRequired": false
+        },
+        "commandTerm": "find",
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": 65.45,
+          "unit": "MARK"
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "METHOD_AND_ACCURACY",
+        "toolPolicy": {
+          "calculator": "GDC_REQUIRED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": null
+      },
+      "language": "en",
+      "generated": true,
+      "unitKey": "03.linear-model.ib-p2#a2",
+      "item": {
+        "stem": "A laboratory tank contains 240 litres of solution at time 0 minutes. Its volume decreases by 3.5 litres each minute. Let V be the volume, in litres, after t minutes. Find the relationship between V and t, find the volume after 20 minutes, and state what the rate and starting value mean in this situation.",
+        "instruction": "Show your working.",
+        "declaredContext": {
+          "kind": "SCIENTIFIC",
+          "description": "A laboratory tank contains a solution whose volume changes at a constant rate."
+        },
+        "declaredModel": {
+          "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+          "parameters": {
+            "b": 240,
+            "m": -3.5,
+            "x": 20
+          }
+        },
+        "marks": 6,
+        "stimulus": null,
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 6,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Find a linear relationship between V and t.",
+              "marks": 2,
+              "markPoints": [
+                "METHOD1",
+                "ACCURACY1"
+              ],
+              "finalAnswer": "V = -3.5t + 240",
+              "target": {
+                "kind": "NOT_MACHINE_CHECKABLE",
+                "reason": "The keyed response is an algebraic relationship rather than a single construct-vocabulary quantity."
+              }
+            },
+            {
+              "label": "b",
+              "prompt": "Find the volume when t = 20.",
+              "marks": 2,
+              "markPoints": [
+                "METHOD1",
+                "ACCURACY1"
+              ],
+              "finalAnswer": "170 litres",
+              "target": {
+                "kind": "QUANTITY",
+                "quantity": "VALUE_AT_X"
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "State what the rate and the starting value mean in this situation.",
+              "marks": 2,
+              "markPoints": [
+                "REASONING1",
+                "REASONING1"
+              ],
+              "finalAnswer": "The rate is -3.5 litres per minute, meaning that the volume decreases by 3.5 litres each minute. The starting value is 240 litres, meaning that the tank contains 240 litres at time 0.",
+              "target": {
+                "kind": "NOT_MACHINE_CHECKABLE",
+                "reason": "The response interprets the rate and starting value in words."
+              }
+            }
+          ]
+        },
+        "credit": null
+      },
+      "validation": {
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED",
+        "profileCompliance": "PASS",
+        "profileComplianceIssues": [],
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED"
+      }
+    },
+    {
+      "selectionKey": "04.linear-model.cambridge-p1",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "approach": null,
+      "specificationId": "7058bec48ee09ed94f9a38eb75241c4866415038499b973b4628d23cf5a709e5",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "taskFamily": {
+        "id": "tf.math.linear.constant-rate-model",
+        "version": "0.1.0-draft"
+      },
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "NONE",
+          "transfer": "NOT_REQUIRED"
+        },
+        "responseFormat": {
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "METHOD_SHOWN",
+          "workingShown": true,
+          "justificationRequired": false
+        },
+        "commandTerm": "work out",
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [
+          "AO2"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": 88,
+          "unit": "MARK"
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "METHOD_AND_ACCURACY",
+        "toolPolicy": {
+          "calculator": "SCIENTIFIC_REQUIRED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": null
+      },
+      "language": "en",
+      "generated": true,
+      "unitKey": "04.linear-model.cambridge-p1#a1",
+      "item": {
+        "stem": "A culture contains 120 mg of a substance at time 0 hours. Its mass decreases by 3.5 mg for every hour that passes. Work out a linear model for the mass y mg after x hours, and interpret the rate and the starting value.",
+        "instruction": "Show your working.",
+        "declaredContext": {
+          "kind": "SCIENTIFIC",
+          "description": "The mass of a substance in a laboratory culture decreases at a constant rate over time."
+        },
+        "declaredModel": {
+          "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+          "parameters": {
+            "b": 120,
+            "m": -3.5,
+            "x": 8
+          }
+        },
+        "marks": 4,
+        "stimulus": null,
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 4,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Work out a linear relation between y and x for the mass of the substance.",
+              "marks": 2,
+              "markPoints": [
+                "METHOD1",
+                "ACCURACY1"
+              ],
+              "finalAnswer": "y = -3.5x + 120",
+              "target": {
+                "kind": "NOT_MACHINE_CHECKABLE",
+                "reason": "The keyed answer is a linear relation rather than one quantity named in the construct vocabulary."
+              }
+            },
+            {
+              "label": "b",
+              "prompt": "Work out what the slope -3.5 means in this situation.",
+              "marks": 1,
+              "markPoints": [
+                "REASONING1"
+              ],
+              "finalAnswer": "The mass decreases by 3.5 mg per hour.",
+              "target": {
+                "kind": "QUANTITY",
+                "quantity": "RATE"
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Work out what the intercept 120 means in this situation.",
+              "marks": 1,
+              "markPoints": [
+                "REASONING1"
+              ],
+              "finalAnswer": "The starting mass is 120 mg.",
+              "target": {
+                "kind": "QUANTITY",
+                "quantity": "START_VALUE"
+              }
+            }
+          ]
+        },
+        "credit": null
+      },
+      "validation": {
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED",
+        "profileCompliance": "PASS",
+        "profileComplianceIssues": [],
+        "constructPreservation": "PASS",
+        "answerKey": "DETERMINISTIC_RULE_VERIFIED"
+      }
+    },
+    {
+      "selectionKey": "05.linear-model.pisa",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": null,
+      "specificationId": "271c14ec7ce2b9c8f1e7b41176288ac69d3c657f0174ad44bb517363a27238f2",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "taskFamily": {
+        "id": "tf.math.linear.constant-rate-model",
+        "version": "0.1.0-draft"
+      },
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+          "transfer": "REQUIRED"
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [
+          "FORMULATE",
+          "INTERPRET_EVALUATE"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "CODED_CREDIT",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "swapped-parameters",
+            "no-start",
+            "slope-as-total"
+          ]
+        }
+      },
+      "language": "es",
+      "generated": true,
+      "unitKey": "05.linear-model.pisa#a1",
+      "item": {
+        "stem": "La tabla muestra el precio de un viaje según la distancia recorrida. ¿Qué opción formula correctamente la relación entre la distancia x y el precio y, e interpreta el coeficiente de x y el término independiente?",
+        "instruction": "Selecciona la única opción correcta.",
+        "declaredContext": {
+          "kind": "PERSONAL",
+          "description": "Planificar y comprobar el precio de un viaje en una aplicación de transporte."
+        },
+        "declaredModel": {
+          "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+          "parameters": {
+            "b": 4.5,
+            "m": 1.8,
+            "x": 5
+          }
+        },
+        "marks": 1,
+        "stimulus": {
+          "kind": "TABLE",
+          "parts": [
+            {
+              "partKind": "TEXT",
+              "text": "Una aplicación de transporte cobra una tarifa fija al iniciar el viaje y una cantidad constante por cada kilómetro recorrido."
+            },
+            {
+              "partKind": "TABLE",
+              "text": "Distancia y precio del viaje\nDistancia recorrida (km) | Precio total (€)\n0 | 4,5\n5 | 13,5\n8 | 18,9"
+            }
+          ]
+        },
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "y = 4.5x + 1.8; 4.5 es el precio por cada kilómetro y 1.8 es la tarifa inicial."
+            },
+            {
+              "id": "B",
+              "text": "y = 1.8x + 4.5; 1.8 es el precio por cada kilómetro y 4.5 es la tarifa inicial."
+            },
+            {
+              "id": "C",
+              "text": "y = 1.8x; 1.8 es el precio total inicial y no hay una tarifa fija de inicio."
+            },
+            {
+              "id": "D",
+              "text": "y = 13.5x + 4.5; 13.5 es el precio por cada kilómetro y 4.5 es la tarifa inicial."
+            }
+          ],
+          "answerKey": "B",
+          "target": {
+            "kind": "NOT_MACHINE_CHECKABLE",
+            "reason": "La respuesta correcta formula la relación y da significado contextual a la pendiente y al intercepto."
+          }
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Selecciona la opción que formula correctamente el modelo lineal e interpreta sus dos parámetros."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "Selecciona una opción que intercambia, omite o interpreta incorrectamente los parámetros del modelo."
+          }
+        ]
+      },
+      "validation": {
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED",
+        "profileCompliance": "PASS",
+        "profileComplianceIssues": [],
+        "constructPreservation": "PASS",
+        "answerKey": "DETERMINISTIC_RULE_VERIFIED"
+      }
+    },
+    {
+      "selectionKey": "06.linear-model.icfes",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "approach": null,
+      "specificationId": "8da1b8dfdf9108aa41b737bfa904a55c62e8317acfe4a629520a2114745e9e79",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "taskFamily": {
+        "id": "tf.math.linear.constant-rate-model",
+        "version": "0.1.0-draft"
+      },
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED"
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [
+          "INTERPRETACION_REPRESENTACION",
+          "FORMULACION_EJECUCION"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "ONE_MARK_PER_ITEM",
+        "rubricStyle": "KEY_ONLY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "swapped-parameters",
+            "no-start",
+            "slope-as-total"
+          ]
+        }
+      },
+      "language": "es",
+      "generated": true,
+      "unitKey": "06.linear-model.icfes#a1",
+      "item": {
+        "stem": "Una persona tiene 120 pesos ahorrados al comenzar y agrega 15 pesos cada semana. ¿Cuál opción representa correctamente la situación y explica el significado de sus parámetros?",
+        "instruction": "Selecciona la única opción correcta.",
+        "declaredContext": {
+          "kind": "PERSONAL",
+          "description": "Ahorro semanal de una persona."
+        },
+        "declaredModel": {
+          "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+          "parameters": {
+            "b": 120,
+            "m": 15,
+            "x": 4
+          }
+        },
+        "marks": 1,
+        "stimulus": null,
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "La relación es y = 15x + 120; 15 representa la cantidad de pesos que se agregan cada semana y 120 representa el ahorro inicial."
+            },
+            {
+              "id": "B",
+              "text": "La relación es y = 120x + 15; 120 representa la cantidad de pesos que se agregan cada semana y 15 representa el ahorro inicial."
+            },
+            {
+              "id": "C",
+              "text": "La relación es y = 15x; 15 representa la cantidad de pesos que se agregan cada semana y no se considera el ahorro inicial de 120 pesos."
+            },
+            {
+              "id": "D",
+              "text": "La relación es y = 60x + 120; 60 representa la cantidad total de pesos agregados durante 4 semanas y 120 representa el ahorro inicial."
+            }
+          ],
+          "answerKey": "A",
+          "target": {
+            "kind": "NOT_MACHINE_CHECKABLE",
+            "reason": "La respuesta exige seleccionar una formulación e interpretación completa, no una única cantidad del vocabulario."
+          }
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "validation": {
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED",
+        "profileCompliance": "PASS",
+        "profileComplianceIssues": [],
+        "constructPreservation": "PASS",
+        "answerKey": "DETERMINISTIC_RULE_VERIFIED"
+      }
+    }
+  ],
+  "pairwiseSpecificationDifferences": [
+    {
+      "a": "PAA.MATEMATICAS",
+      "b": "IB.MATH_AA_HL.P1",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "responseFormat",
+        "reasoningDepth",
+        "commandTerm",
+        "timeBudget",
+        "markStructure",
+        "rubricStyle",
+        "distractors"
+      ]
+    },
+    {
+      "a": "PAA.MATEMATICAS",
+      "b": "IB.MATH_AA_HL.P2",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "responseFormat",
+        "reasoningDepth",
+        "commandTerm",
+        "timeBudget",
+        "markStructure",
+        "rubricStyle",
+        "toolPolicy",
+        "numericProfile",
+        "distractors"
+      ]
+    },
+    {
+      "a": "PAA.MATEMATICAS",
+      "b": "CAMBRIDGE.9709.P1",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "responseFormat",
+        "reasoningDepth",
+        "commandTerm",
+        "competencies",
+        "timeBudget",
+        "markStructure",
+        "rubricStyle",
+        "toolPolicy",
+        "numericProfile",
+        "distractors"
+      ]
+    },
+    {
+      "a": "PAA.MATEMATICAS",
+      "b": "PISA.MATHEMATICS",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "stimulus",
+        "competencies",
+        "timeBudget",
+        "markStructure",
+        "rubricStyle",
+        "toolPolicy",
+        "numericProfile"
+      ]
+    },
+    {
+      "a": "PAA.MATEMATICAS",
+      "b": "ICFES.SABER11_MATEMATICAS",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "competencies",
+        "timeBudget"
+      ]
+    },
+    {
+      "a": "IB.MATH_AA_HL.P1",
+      "b": "IB.MATH_AA_HL.P2",
+      "sameSystem": true,
+      "differingDimensions": [
+        "toolPolicy",
+        "numericProfile"
+      ]
+    },
+    {
+      "a": "IB.MATH_AA_HL.P1",
+      "b": "CAMBRIDGE.9709.P1",
+      "sameSystem": false,
+      "differingDimensions": [
+        "commandTerm",
+        "competencies",
+        "timeBudget",
+        "toolPolicy",
+        "numericProfile"
+      ]
+    },
+    {
+      "a": "IB.MATH_AA_HL.P1",
+      "b": "PISA.MATHEMATICS",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "responseFormat",
+        "reasoningDepth",
+        "commandTerm",
+        "stimulus",
+        "competencies",
+        "timeBudget",
+        "markStructure",
+        "rubricStyle",
+        "toolPolicy",
+        "numericProfile",
+        "distractors"
+      ]
+    },
+    {
+      "a": "IB.MATH_AA_HL.P1",
+      "b": "ICFES.SABER11_MATEMATICAS",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "responseFormat",
+        "reasoningDepth",
+        "commandTerm",
+        "competencies",
+        "timeBudget",
+        "markStructure",
+        "rubricStyle",
+        "distractors"
+      ]
+    },
+    {
+      "a": "IB.MATH_AA_HL.P2",
+      "b": "CAMBRIDGE.9709.P1",
+      "sameSystem": false,
+      "differingDimensions": [
+        "commandTerm",
+        "competencies",
+        "timeBudget",
+        "toolPolicy"
+      ]
+    },
+    {
+      "a": "IB.MATH_AA_HL.P2",
+      "b": "PISA.MATHEMATICS",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "responseFormat",
+        "reasoningDepth",
+        "commandTerm",
+        "stimulus",
+        "competencies",
+        "timeBudget",
+        "markStructure",
+        "rubricStyle",
+        "toolPolicy",
+        "distractors"
+      ]
+    },
+    {
+      "a": "IB.MATH_AA_HL.P2",
+      "b": "ICFES.SABER11_MATEMATICAS",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "responseFormat",
+        "reasoningDepth",
+        "commandTerm",
+        "competencies",
+        "timeBudget",
+        "markStructure",
+        "rubricStyle",
+        "toolPolicy",
+        "numericProfile",
+        "distractors"
+      ]
+    },
+    {
+      "a": "CAMBRIDGE.9709.P1",
+      "b": "PISA.MATHEMATICS",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "responseFormat",
+        "reasoningDepth",
+        "commandTerm",
+        "stimulus",
+        "competencies",
+        "timeBudget",
+        "markStructure",
+        "rubricStyle",
+        "toolPolicy",
+        "distractors"
+      ]
+    },
+    {
+      "a": "CAMBRIDGE.9709.P1",
+      "b": "ICFES.SABER11_MATEMATICAS",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "responseFormat",
+        "reasoningDepth",
+        "commandTerm",
+        "competencies",
+        "timeBudget",
+        "markStructure",
+        "rubricStyle",
+        "toolPolicy",
+        "numericProfile",
+        "distractors"
+      ]
+    },
+    {
+      "a": "PISA.MATHEMATICS",
+      "b": "ICFES.SABER11_MATEMATICAS",
+      "sameSystem": false,
+      "differingDimensions": [
+        "context",
+        "stimulus",
+        "competencies",
+        "markStructure",
+        "rubricStyle",
+        "toolPolicy",
+        "numericProfile"
+      ]
+    }
+  ],
+  "checks": {
+    "everyAdaptationGenerated": true,
+    "systemsCovered": [
+      "CAMBRIDGE",
+      "IB",
+      "ICFES",
+      "PAA",
+      "PISA"
+    ],
+    "allFiveSystems": true,
+    "oneInvariantHash": true,
+    "onePrimaryConcept": true,
+    "everyItemDeclaresTheFamilysConstruct": true,
+    "everyItemCarriesTheInvariantHashInItsLineage": true,
+    "everyCrossSystemPairDiffersInTheSpecification": true,
+    "everyItemPassesItsItemLevelAutomatedChecks": false,
+    "responseKindsProduced": [
+      "CONSTRUCTED",
+      "SELECTED"
+    ]
+  },
+  "substance": {
+    "holds": true,
+    "means": "one invariant hash on five systems; every specification pair of different systems differs; every latest item was generated, declares the family's construct, complies with its profile at item level, has no construct contradiction and no contradicted key"
+  },
+  "responseContract": {
+    "everyItemClean": false,
+    "itemsNotClean": [
+      {
+        "selectionKey": "04.linear-model.cambridge-p1",
+        "unitKey": "04.linear-model.cambridge-p1#a1",
+        "structuralIssues": [
+          "PART_WITH_A_QUANTITY_TARGET_HAS_NO_NUMERIC_KEY:b",
+          "PART_WITH_A_QUANTITY_TARGET_HAS_NO_NUMERIC_KEY:c"
+        ]
+      }
+    ]
+  },
+  "MULTI_PROFILE_SAME_FAMILY_PROOF": "FAIL"
+}

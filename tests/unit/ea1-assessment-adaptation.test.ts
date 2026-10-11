@@ -1356,7 +1356,11 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
 
   it('no runtime wiring: nothing under src imports the new modules except the two additive Production OS contracts; no route, no service, no table', () => {
     const importers = walk('src').filter((f) => !f.startsWith(ADAPTATION_DIR) && !f.startsWith(FAMILIES_DIR) && /assessment-adaptation|question-bank\/task-families/.test(read(f))).sort();
-    expect(importers).toEqual(['src/lib/exam-core/question-bank/production/generation-contract.ts', 'src/lib/exam-core/question-bank/production/generator/generate-candidates.ts']);
+    // QB-R2D adds three Production OS modules of the specification-driven path. Same direction (production -> adaptation), still pure, still no route, service or table.
+    expect(importers).toEqual([
+      'src/lib/exam-core/question-bank/production/generation-contract.ts', 'src/lib/exam-core/question-bank/production/generator/generate-candidates.ts',
+      'src/lib/exam-core/question-bank/production/generator/specification-generation.ts', 'src/lib/exam-core/question-bank/production/specification-candidate.ts', 'src/lib/exam-core/question-bank/production/specification-validators.ts',
+    ]);
     expect(walk('src/app').filter((f) => /assessment-adaptation|task-families|AdaptationSpecification/.test(read(f)))).toEqual([]);
     expect(walk('src/services').filter((f) => /assessment-adaptation|task-families|AdaptationSpecification/.test(read(f)))).toEqual([]);
     // no migration names anything of this phase: the persistence is a design

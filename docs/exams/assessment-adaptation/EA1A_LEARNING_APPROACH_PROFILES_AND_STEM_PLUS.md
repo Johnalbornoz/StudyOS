@@ -431,13 +431,14 @@ All additive; 1–7 create tables nothing reads; 8 touches one existing function
 | U7 | "An exam system is sat individually" is engine policy | **IMPLEMENTATION DETAIL.** A StudyUs policy constant in the engine; no table depends on it |
 | U8 | Benchmark / calibration / pilot certification refuse dev-test content | **IMPLEMENTATION DETAIL.** A conservative policy constant, flagged `CONSERVATIVE_READING`; no table depends on it |
 | U9 | AICE vs Cambridge | **RESOLVED by D5.** AICE resolves to the CAMBRIDGE system as qualification context |
-| U10 | Applicability of a concept to an institution's own assessment | See A1 below |
+| U10 | Applicability of a concept to an institution's own assessment | **RESOLVED by the A1 ruling** (below): curriculum entitlement of the active context; enrichment deferred |
 
 ### Everything still open
 
 | # | Question | Class | Why |
 |---|---|---|---|
-| A1 | What establishes applicability of a concept for an **institution's own assessment** (`SCHOOL_STEM_PERFORMANCE`)? Today: nothing, so it is `NONE` | **ARCHITECTURE DECISION — but outside the first schema** (see note) | A third applicability basis (the institution's own curriculum selection) would be a new value and one nullable FK on tables 12–13 |
+| A1 | What establishes applicability of a concept for an **institution's own assessment** (`SCHOOL_STEM_PERFORMANCE`)? | **CLOSED by ruling** (see below) | Only concepts already entitled by the active Curriculum / Programme / Class / Subject context; no second mechanism, no new table |
+| X4 | Applicability of extracurricular / enrichment concepts outside curriculum entitlement | DEFERRED BY DECISION | A1 ruling |
 | I1 | PROGRAMME scope target: `academic_programmes` (proposed) or `institution_curricula` | IMPLEMENTATION DETAIL | The pure carrier holds an opaque scope id; either FK fits table 7 |
 | I2 | SUBJECT scope target: `canonical_subjects` (proposed, as `institution_curricula` uses) or `academic_subjects` | IMPLEMENTATION DETAIL | Same |
 | I3 | Which bindings also carry a precise FK (`exam_versions`, `structure_versions`) | IMPLEMENTATION DETAIL | The typed text triple is authoritative; the FK is optional by design |
@@ -454,13 +455,19 @@ All additive; 1–7 create tables nothing reads; 8 touches one existing function
 | X2 | DEV_TEST_CONTENT ingestion | DEFERRED BY DECISION | §10 |
 | X3 | Independence, the individual component of group work, relating AssessmentTaskFamily and TransferTaskFamily | DEFERRED BY DECISION | B3 |
 
-**Note on A1, stated plainly.** It is the one question that is architectural rather than a detail, and no decision covers it. It does **not** shape any of the 15 tables: applicability for exam systems is complete without it, the school profile is an uncertified design that can produce dev-test content only, and adding a basis later is additive (one enum value, one nullable FK). So it cannot honestly be called a blocker of the first schema — but it also cannot be settled as an implementation detail, because it decides *what counts as evidence that an institution may assess a concept*. The proposed readiness value below assumes the Orchestrator classifies A1 as deferred with the institution-assessment profile; if instead it must be in the first schema, readiness is NO until it is decided.
+**A1 — CLOSED by Orchestrator ruling (recorded 2026-10-11).** For the first release `SCHOOL_STEM_PERFORMANCE` may assess **only canonical concepts already entitled by the active Curriculum / Programme / Class / Subject context**. Consequences:
+
+- it creates **no second entitlement mechanism**: applicability for an institution's own assessment is the curriculum entitlement that already exists (derived from published `objective_concept_mappings` under the curriculum's structure version and from `institution_curriculum_concepts`), read for the active context;
+- it needs **no new table**, no new applicability basis and no new column in the 15-table design;
+- applicability of **extracurricular / enrichment** concepts outside curriculum entitlement is **DEFERRED BY DECISION**.
+
+The pure engine is unchanged by this ruling: with an empty entitlement register the school profile still produces dev-test content only. With A1 closed, no ARCHITECTURE DECISION remains open. The schema is **not** to be implemented now.
 
 ## 14. Proposed output fields
 
 | Field | Proposed value | Basis |
 |---|---|---|
-| `EA-1A STATUS` | **PASS** (architecture), subject to the A1 classification | D1–D6 applied and tested; no blocking architecture decision remains for the first schema |
+| `EA-1A STATUS` | **PASS** | D1–D6 applied and tested; A1 closed by ruling; no architecture decision remains open |
 | `LEARNING_APPROACH_PROFILE` | PASS | Contract, STANDARD by absence, engine integration, certification gate (D3), StudyUs-managed (D4) |
 | `STEM_PLUS_PROFILE_CONTRACT` | PASS | Written against the contract; valid; composes with every assessment target. Content `PROVISIONAL`, uncertified |
 | `STEM_PLUS_CATALOGUE_READINESS` | **PARTIAL** | 1 of 6 competencies in the catalogue; 5 are future Curriculum work |
@@ -475,7 +482,7 @@ All additive; 1–7 create tables nothing reads; 8 touches one existing function
 | `COLOMBIA_EVIDENCE_READINESS` | **NO** | Same |
 | `PERSISTENCE_DESIGN` | PASS as a design | 15 tables, 1 view, 8 placeholder migrations; merges justified. Not exercised against a database, by instruction |
 | `DEV_TEST_CONTENT_INGESTION` | **DEFERRED** | None of the five guarantees is provable today (§10) |
-| `READY_FOR_ADAPTATION_SCHEMA_IMPLEMENTATION` | **YES, if A1 is classified as deferred; otherwise NO** | A1 is the only architecture question left; it touches none of the 15 tables |
+| `READY_FOR_ADAPTATION_SCHEMA_IMPLEMENTATION` | **YES** (the schema is NOT to be implemented now) | A1 closed by ruling; it adds no table |
 
 ## 15. Verification
 

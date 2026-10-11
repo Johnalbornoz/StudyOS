@@ -1,0 +1,317 @@
+{
+  "kind": "QB_R2D_RIGHTS_RECORD",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- AUTOMATED VALIDATION ONLY, NO HUMAN REVIEW",
+  "run": {
+    "runId": "qb-r2d-20261011180507",
+    "provider": "live:openai:chat-completions",
+    "requestedModel": "gpt-5.6-luna",
+    "servedModels": [
+      "gpt-5.6-luna"
+    ],
+    "firstResponseAt": "2026-10-11T18:05:08.253Z",
+    "lastResponseAt": "2026-10-11T18:18:08.781Z",
+    "gateway": "BYPASSED_NO_GOVERNANCE_ROW_WRITTEN"
+  },
+  "providerTermsEvidenceInTheRepository": {
+    "searched": "src/, docs/, scripts/ for a recorded reference to provider terms, an agreement, an account or a licence governing model output",
+    "found": "NONE. The repository records that no such reference is on file (QB_R2B_PRODUCTION_PLANNING_AND_PILOT.md: rights gate NOT_ESTABLISHABLE; QB_R2C_PLANNING_HARDENING_AND_REPEATABLE_GENERATOR.md: REUSE_RIGHTS = NOT_ESTABLISHED). No web page was read and no legal question was decided."
+  },
+  "modelOutputRightsEvidence": {
+    "provider": "live:openai:chat-completions",
+    "model": "gpt-5.6-luna",
+    "termsReference": null,
+    "accountContext": null,
+    "termsVersionOrDate": null,
+    "commercialUse": {
+      "permitted": null,
+      "note": null
+    },
+    "restrictions": null,
+    "verification": {
+      "verifiedByPerson": false,
+      "verifiedBy": null,
+      "verifiedAt": null
+    }
+  },
+  "modelOutputRightsGate": {
+    "blockers": [
+      "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+      "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+    ],
+    "missingFields": [
+      "termsReference",
+      "accountContext",
+      "termsVersionOrDate",
+      "commercialUse.permitted",
+      "commercialUse.note",
+      "restrictions",
+      "verification.verifiedBy",
+      "verification.verifiedAt"
+    ]
+  },
+  "candidates": [
+    {
+      "candidateKey": "cand|01.linear-model.paa#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|02.linear-model.ib-p1#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|03.linear-model.ib-p2#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|04.linear-model.cambridge-p1#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|05.linear-model.pisa#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|06.linear-model.icfes#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|07.proportion-missing-value.paa#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|08.proportion-rate-comparison.pisa#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|09.quadratic-factorising.paa#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|12.probability-single-event.icfes#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|15.data-relative-change.ib-p2#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|16.approach.school.standard#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "ORIGINALITY_NOT_ACCEPTED",
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|17.approach.school.stem-plus#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|18.approach.paa.standard#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|19.approach.paa.stem-plus#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "ORIGINALITY_NOT_ACCEPTED",
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|20.approach.pisa.stem-plus#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|03.linear-model.ib-p2#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|09.quadratic-factorising.paa#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|10.quadratic-factorising.ib-p1#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|11.quadratic-optimum.ib-p2#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|12.probability-single-event.icfes#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|13.probability-compare.cambridge-p1#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|14.data-judge-claim.paa#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|15.data-relative-change.ib-p2#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|17.approach.school.stem-plus#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    },
+    {
+      "candidateKey": "cand|20.approach.pisa.stem-plus#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false,
+      "blockers": [
+        "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+        "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+      ]
+    }
+  ],
+  "statement": "Every generated candidate is RIGHTS_NOT_ESTABLISHED. Nothing here is claimed as STUDYUS_OWNED. What is missing is listed in modelOutputRightsGate.missingFields and must be established and verified by a person."
+}
