@@ -1278,3 +1278,59 @@ LEARNING   LEARNING_NOT_READY_FOR_RELEASE — Stage is not certified yet
 EXAMS      EXAMS_NOT_READY_FOR_PRODUCTION_RELEASE
 ```
 
+
+## BJ. B5-G continuation — Stage entitlement, flag and authenticated smoke (2026-10-11)
+
+Ownership of B5-G moved to the canonical Assessment Engine thread by explicit operator instruction. Stage only;
+Production untouched; the four pre-existing Stage Students and their grants were not modified.
+
+**Test identity.** Student `05c6275b-6558-4421-b74c-f3017debef74` (user `6da2a1b2-5f81-4dba-96d4-932bb1dd61f4`),
+created by the operator on 2026-10-11: Mexico, national curriculum, grade 12, subject Matemáticas, one concept
+"Ecuaciones de segundo grado". Not a `+clerk_test` address and `users.is_test = false`.
+
+**Entitlement.** Granted through the supported service `grantAdminLicense` (the mechanism behind the three
+existing Stage grants): subscription `4560826d-4e78-4e7d-b1ec-e3baac202702`, source `ADMIN_PROMOTION`, expires
+2026-10-25, actor = the StudyUs admin account, reason states it was executed for this certification. The script
+refused any database but `ep-holy-thunder-ayxlpyex` and any student but this one. No payment, no provider call.
+`resolveLearningAccess`: `NO_LICENSE` → `LICENSED / ADMIN_GRANT`. Billing page shows "Licencia otorgada por la
+administración. Válida hasta el 25/10/2026".
+
+**Flag and deployment.** `2d3fc68` redeployed to `preview` with `ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED=true` set
+on that deployment only (`--env`), not on the shared `preview` environment: `dpl_HQ64wMCMZiJNCU9Ne2BbSZQGo4aE`,
+`https://study-e499lezjt-study-so.vercel.app`. Stage alias moved to it. Signed-out canonical start: 401 on the new
+deployment, 404 on the flag-OFF one. Database fingerprint `53d158d5811e7ee0`, ledger 82.
+
+Rollback targets, in order: `dpl_5FagcFXGuom1dSrKjYQryKoa7gcd` (`2d3fc68`, flag OFF,
+`study-oo49i5u29-study-so.vercel.app`); `dpl_9VrkbGMci5w65bpWqKJeQ99yGpfS` (`92e3509`).
+Rollback: `vercel alias set study-oo49i5u29-study-so.vercel.app study-os-stage-study-so.vercel.app`.
+
+**Authenticated smoke (operator's signed-in Chrome session, desktop).**
+
+| Check | Result |
+|---|---|
+| Authenticated Student, no demo banner | PASS |
+| Today (cold: "Necesitamos conocerte"; after the activity: next challenge + week + plan) | PASS |
+| Learn / My Path, subject entry, concept entry | PASS |
+| Question supply, cold Student | PASS — 5 questions from inventory (`delivery_source = INVENTORY`) |
+| Learning activity "Comprobar comprensión" (learn-check) | PASS — 5 of 5 answered: MC and AI-graded open answers, correct and incorrect feedback |
+| Reload / resume | PASS — returned to question 2 with the "retomamos" notice |
+| Exactly-once | PASS — a double-click submit produced one response; 1 session, 5 responses, 5 distinct questions, 1 evidence row |
+| Result | PASS — 4 of 5, 80%, next step offered. Note: headline "Todavía no" at 80% |
+| Progress / evidence | PASS — subject page 15%, evidence verified 1/1; mastery, knowledge state, memory state rows written |
+| **Canonical snapshot runtime (`/dashboard/assessment`, MASTERY_CHECK)** | **FAIL — UNAVAILABLE, `SOME_TOPICS_NOT_READY` (`UNRESOLVED_TARGET`)** |
+| Exam Prep entry (PAA) | PASS — profile created, readiness view renders |
+| Exam assessment start | Correctly unavailable: all four modes "No disponible todavía" (no bank) |
+| Feature-flag behaviour | PASS — concept row links to `/dashboard/assessment?intent=MASTERY_CHECK…` with the flag ON |
+| Mobile | NOT VERIFIED — the Chrome window did not resize (viewport stayed 1495 px) |
+| Accessibility (spot check) | PARTIAL — one `h1`, `main` present, no horizontal scroll, images have alt; `<html lang="en">` on a Spanish page; icon links in the collapsed nav groups have no accessible name in the tree |
+
+**Blocker — `STAGE_CONCEPT_NOT_CANONICALLY_LINKED`.** The learn-check is a teaching activity the assessment system
+does not own (`entry.ts`), so it ran on the learning runtime and its session has `assessment_snapshot IS NULL`.
+The snapshot runtime is reached through practice / mastery check, and there the Blueprint Core refuses: the
+Student's concept has `concept_catalog_mapping.status = UNRESOLVED` (no canonical concept). On Stage 50 of 53
+learner concepts are unresolved; the catalogue has "Quadratic functions and inequalities" (Mathematics) but no
+exact label match for "Ecuaciones de segundo grado". No canonical FrozenAssessment has been started on Stage.
+
+```text
+STAGE_INTEGRATED_ASSESSMENT_FAIL   (learning path PASS; canonical snapshot runtime not exercised)
+```
