@@ -30,6 +30,8 @@ export const REFERENCE_SOURCE_TYPES = ['OFFICIAL_SPECIFICATION', 'OFFICIAL_SAMPL
  */
 export const PERMITTED_USE_CLASSES = ['REFERENCE_ONLY', 'ADAPTATION_LICENSED', 'REPRODUCTION_LICENSED', 'ACCESS_NOT_VALIDATED'] as const;
 
+export const ACCESS_STATUSES = ['VALIDATED', 'NOT_VALIDATED', 'NOT_REQUIRED'] as const;
+
 export const ReferenceSourceSchema = z
   .strictObject({
     /** Stable identity of the source: the `assessment_sources.source_key` it is, or will be, registered under. */
@@ -41,19 +43,33 @@ export const ReferenceSourceSchema = z
     /** How the source can be read (`assessment_sources.source_access`). Not a right to reuse. */
     sourceAccess: z.enum(['PUBLICLY_ACCESSIBLE', 'PRIVATE', 'LICENSED_SOURCE', 'NOT_APPLICABLE']),
     permittedUse: z.enum(PERMITTED_USE_CLASSES),
+    /** Has StudyUs's access to the source been validated? A source that needs no validation says so. */
+    accessStatus: z.enum(ACCESS_STATUSES),
+    /** When the source was consulted (ISO date-time). null until it has been. */
+    referencedAt: z.string().datetime({ offset: true }).nullable(),
     /** The licence or authorisation that allows adaptation or reproduction. Required for those two classes. */
     licenceReference: z.string().trim().max(300).nullable(),
   })
   .superRefine((s, ctx) => {
     if ((s.permittedUse === 'ADAPTATION_LICENSED' || s.permittedUse === 'REPRODUCTION_LICENSED') && !s.licenceReference) ctx.addIssue({ code: 'custom', path: ['licenceReference'], message: 'LICENCE_REFERENCE_REQUIRED' });
     // An external teaching source is consulted, never adapted or reproduced, whatever access StudyUs has to it.
+    // The two ways of saying "not validated" agree, and an unvalidated source has not been consulted.
+    if ((s.permittedUse === 'ACCESS_NOT_VALIDATED') !== (s.accessStatus === 'NOT_VALIDATED')) ctx.addIssue({ code: 'custom', path: ['accessStatus'], message: 'ACCESS_STATUS_INCONSISTENT' });
+    if (s.accessStatus === 'NOT_VALIDATED' && s.referencedAt !== null) ctx.addIssue({ code: 'custom', path: ['referencedAt'], message: 'UNVALIDATED_SOURCE_NOT_CONSULTED' });
+    if (s.sourceType === 'PEDAGOGICAL_REFERENCE' && s.accessStatus === 'NOT_REQUIRED') ctx.addIssue({ code: 'custom', path: ['accessStatus'], message: 'PEDAGOGICAL_REFERENCE_NEEDS_ACCESS_VALIDATION' });
     if (s.sourceType === 'PEDAGOGICAL_REFERENCE' && s.permittedUse !== 'REFERENCE_ONLY' && s.permittedUse !== 'ACCESS_NOT_VALIDATED') ctx.addIssue({ code: 'custom', path: ['permittedUse'], message: 'PEDAGOGICAL_REFERENCE_IS_REFERENCE_ONLY' });
   });
 export type ReferenceSource = z.infer<typeof ReferenceSourceSchema>;
 
+/** What a Reference Intelligence Pack may say. Every entry is a fact restated by StudyUs. */
+export const PEDAGOGICAL_FACT_KINDS = [
+  'CURRICULUM_FACT', 'LEARNING_OBJECTIVE', 'CONCEPT_DEFINITION', 'PREREQUISITE', 'COMMON_MISCONCEPTION', 'REASONING_SKILL', 'EXPECTED_DIFFICULTY', 'DIFFICULTY_DRIVER',
+  'APPROPRIATE_CONTEXT', 'TYPICAL_TASK_FORM', 'RESPONSE_FORMAT_GUIDANCE', 'STIMULUS_GUIDANCE', 'STYLE_RULE',
+] as const;
+
 /** A fact about how the concept is taught or assessed, restated by StudyUs. Never a quotation. */
 export const PedagogicalFactSchema = z.strictObject({
-  kind: z.enum(['CONCEPT_DEFINITION', 'COMMON_MISCONCEPTION', 'TYPICAL_TASK_FORM', 'DIFFICULTY_DRIVER', 'PREREQUISITE', 'STYLE_RULE']),
+  kind: z.enum(PEDAGOGICAL_FACT_KINDS),
   /** StudyUs's own statement of the fact. */
   statement: z.string().trim().min(10).max(600),
   /** Which registered source(s) the fact was learned from. */
