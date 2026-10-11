@@ -15,6 +15,8 @@ vi.mock('@/lib/institution-intelligence', () => {
   return { InstitutionIntelligenceAccessDeniedError, requireLearnerInInstitution: vi.fn(), requireInstitutionAccess: vi.fn() };
 });
 vi.mock('@/lib/teacher/read-model.service', () => ({ getTeacherClassRoster: vi.fn() }));
+// L8 TE-2: the route is gated on the class's Teacher (getTeacherClass), then the roster guard.
+vi.mock('@/lib/teacher/class-assignment.service', () => ({ getTeacherClass: vi.fn() }));
 vi.mock('@/lib/exam-core/aice/plan.service', () => {
   class AicePlanError extends Error {
     constructor(public readonly code: string) {
@@ -28,6 +30,7 @@ vi.mock('@/lib/exam-core/exam-gaps.service', () => ({ examGapsFor: vi.fn(async (
 import { requireActor, requireOwnerOf, ownStudentId } from '@/lib/exam-core/route-auth';
 import { requireLearnerInInstitution, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
 import { getTeacherClassRoster } from '@/lib/teacher/read-model.service';
+import { getTeacherClass } from '@/lib/teacher/class-assignment.service';
 import { addPlanEntry, updatePlanEntry, recordResult, AicePlanError, getPlanView } from '@/lib/exam-core/aice/plan.service';
 import { examGoalsFor, examGapsFor } from '@/lib/exam-core/exam-gaps.service';
 import { GET as planGET } from '@/app/api/aice/plan/route';
@@ -49,6 +52,7 @@ beforeEach(() => {
   vi.mocked(requireActor).mockResolvedValue({ ok: true, actorUserId: 'actor' } as any);
   vi.mocked(ownStudentId).mockResolvedValue(STUDENT);
   vi.mocked(requireOwnerOf).mockResolvedValue({ ok: true, actorUserId: 'actor' } as any);
+  vi.mocked(getTeacherClass).mockResolvedValue({ id: CLASS, name: 'C', institutionId: INST, institutionName: 'I', gradeName: null, subjectId: null, subjectName: null });
 });
 
 describe('Diploma plan: owner only, server-derived numbers', () => {

@@ -37,7 +37,7 @@ export default async function TeacherClassPlanPage({ params }: { params: Promise
   if (!klass.subjectId) {
     return (
       <div className="ta-stack">
-        <ClassChrome klass={klass} active="plan" t={t} />
+        <ClassChrome klass={klass} active="plan" t={t} locale={locale} />
         <InlineAlert tone="info" title={t['tc.noSubject.title']} body={t['tcp.plan.noSubject']} />
       </div>
     );
@@ -70,7 +70,7 @@ export default async function TeacherClassPlanPage({ params }: { params: Promise
 
   return (
     <div className="ta-stack">
-      <ClassChrome klass={klass} active="plan" t={t} />
+      <ClassChrome klass={klass} active="plan" t={t} locale={locale} />
       <p className="ta-msg">{t['tcp.plan.subtitle']}</p>
       {!view.hasInstitutionCurriculum && <InlineAlert tone="info" title={t['tcp.plan.suggested']} body={t['tcp.plan.noCurriculum']} />}
       {view.curriculum && (

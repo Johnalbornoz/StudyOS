@@ -41,7 +41,7 @@ export default async function TeacherClassProgressPage({ params, searchParams }:
   if (!klass.subjectId) {
     return (
       <div className="ta-stack">
-        <ClassChrome klass={klass} active="progress" t={t} />
+        <ClassChrome klass={klass} active="progress" t={t} locale={locale} />
         <InlineAlert tone="info" title={t['tc.noSubject.title']} body={t['tcp.plan.noSubject']} />
       </div>
     );
@@ -62,7 +62,7 @@ export default async function TeacherClassProgressPage({ params, searchParams }:
   if (view.options.concepts.length === 0) {
     return (
       <div className="ta-stack">
-        <ClassChrome klass={klass} active="progress" t={t} />
+        <ClassChrome klass={klass} active="progress" t={t} locale={locale} />
         <EmptyState
           title={t['cpi.noConcepts']}
           action={
@@ -122,7 +122,7 @@ export default async function TeacherClassProgressPage({ params, searchParams }:
 
   return (
     <div className="ta-stack">
-      <ClassChrome klass={klass} active="progress" t={t} />
+      <ClassChrome klass={klass} active="progress" t={t} locale={locale} />
       <div>
         <h2 style={{ fontSize: 18 }}>{t['cpi.title']}</h2>
         <p className="ta-msg">{t['cpi.subtitle']}</p>

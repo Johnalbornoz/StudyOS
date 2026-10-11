@@ -12,6 +12,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusBadge, toneForInterventionStatus } from '@/components/ui/StatusBadge';
 import { CancelInterventionButton } from '@/app/dashboard/teacher/students/CancelInterventionButton';
+import { AssignInterventionForm } from '@/app/dashboard/teacher/students/AssignInterventionForm';
+import { listIndividualAssignmentConcepts } from '@/lib/teacher/individual-assignment';
+import { getTeacherL8Messages } from '@/lib/i18n/teacher-l8-messages';
 import { ClassAssignmentComposer } from '../../ClassAssignmentComposer';
 import { attentionLabels } from '../../../../attention-labels';
 
@@ -23,7 +26,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * the Teacher can do; the canonical learning state per topic (stage, next
  * step, valid practice, last successful demonstration, memory, transfer);
  * evidence; gaps (misconceptions, slips vs errors, prerequisites); and
- * this learner's assignments. Read-only over the canonical read models --
+ * this learner's assignments, and (L8 TE-1) the individual practice form
+ * over the learner's own topics of this class. Read-only over the canonical read models --
  * the Teacher can assign or re-assign practice, never edit a phase,
  * mastery or evidence. Anything outside the actor's own class/learner is
  * a plain not-found. Tutor conversations, parent data and billing are
@@ -43,11 +47,12 @@ export default async function TeacherLearnerPage({ params }: { params: Promise<{
     if (error instanceof TeacherLearnerAccessDeniedError) notFound();
     throw error;
   }
-  const assignable = await listAssignableConceptsForClass(actor.id, classId);
+  const [assignable, ownConcepts] = await Promise.all([listAssignableConceptsForClass(actor.id, classId), listIndividualAssignmentConcepts(view)]);
 
   const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
   const labels = attentionLabels(t);
+  const l8 = getTeacherL8Messages(locale);
   const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale) : null);
   const { klass } = view;
   const focus = view.attention.find((a) => a.canonicalConceptId)?.canonicalConceptId ?? undefined;
@@ -260,6 +265,24 @@ export default async function TeacherLearnerPage({ params }: { params: Promise<{
               NO_LEARNERS_TO_ASSIGN: t['tc.error.noLearnersToAssign'],
             REQUEST_CONFLICT: t['inst.common.error'],
             },
+          }}
+        />
+      </div>
+
+      <div id="assign-individual">
+        <AssignInterventionForm
+          classId={classId}
+          studentId={studentId}
+          concepts={ownConcepts}
+          labels={{
+            title: l8['l8.individual.title'],
+            body: l8['l8.individual.body'],
+            concept: l8['l8.individual.concept'],
+            none: l8['l8.individual.none'],
+            instructions: l8['l8.individual.instructions'],
+            submit: l8['l8.individual.submit'],
+            done: l8['l8.individual.done'],
+            error: l8['l8.individual.error'],
           }}
         />
       </div>
