@@ -18,6 +18,7 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability, getSubscription, transitionSubscriptionStatus, InvalidSubscriptionTransitionError } from '@/lib/entitlements';
 import { resolveSelfReactivation, recordSelfReactivation } from '@/lib/entitlements/self-reactivation';
+import { isLiveBillingActor } from '@/services/payment.service';
 
 const Schema = z.object({ studentId: z.string().uuid() });
 
@@ -35,6 +36,9 @@ export async function POST(request: NextRequest) {
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
   const entitled = await canUseCapability(actor.id, validated.studentId, 'SUBSCRIPTION_REACTIVATE');
   if (!entitled) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  // L11 / EN-3: a registered payer keeps billing rights only while the relationship
+  // that let them pay is still accepted (the learner always keeps their own).
+  if (!(await isLiveBillingActor(actor.id, validated.studentId))) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const sub = await getSubscription(validated.studentId);
   // L4-R1: owning (or paying for) the subscription is not enough. An administrator's

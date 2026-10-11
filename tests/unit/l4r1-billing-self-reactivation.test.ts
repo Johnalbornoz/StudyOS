@@ -11,6 +11,10 @@ const verifyAuthMock = vi.fn();
 vi.mock('@/lib/auth', () => ({ verifyAuth: () => verifyAuthMock() }));
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: vi.fn().mockResolvedValue({ id: 'actor-1' }) }));
 
+// L11 / EN-3: billing routes also require a LIVE billing actor (owner, or payer with an accepted
+// relationship) -- covered by l11-billing-live-payer.test.ts. Live here.
+vi.mock('@/services/payment.service', () => ({ isLiveBillingActor: vi.fn().mockResolvedValue(true) }));
+
 const canUseCapabilityMock = vi.fn();
 const getSubscriptionMock = vi.fn();
 const transitionMock = vi.fn();

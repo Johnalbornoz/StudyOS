@@ -24,6 +24,10 @@ vi.mock('@/lib/authorization', () => ({
     (await canAccessLearnerMock(actor, learner, 'LEARNER_PROGRESS_VIEW')) ? { relationships: ['OWNER'], permissions: ['LEARNER_PROGRESS_VIEW', 'LEARNER_PROFILE_VIEW', 'LEARNER_INTERVENTION_CREATE', 'LEARNER_GAPS_VIEW', 'LEARNER_ASSESSMENT_SUMMARY_VIEW', 'LEARNER_ASSESSMENT_DETAIL_VIEW'] } : { relationships: [], permissions: [] },
 }));
 
+// L11 / EN-3: billing routes also require a LIVE billing actor (owner, or payer with an accepted
+// relationship) -- covered by l11-billing-live-payer.test.ts. Live here.
+vi.mock('@/services/payment.service', () => ({ isLiveBillingActor: vi.fn().mockResolvedValue(true) }));
+
 const canUseCapabilityMock = vi.fn();
 const getSubscriptionMock = vi.fn();
 const transitionSubscriptionStatusMock = vi.fn();

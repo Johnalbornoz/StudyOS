@@ -124,11 +124,14 @@ describe('per-question feedback for LEARN_CHECK', () => {
     expect((await res.json()).error).toBe('FEEDBACK_DEFERRED');
   });
 
-  it('authorization is unchanged: not owner -> 403, no licence -> 403, inactive session -> 409', async () => {
+  // L11-R1 / D-8(c): answering inside an OPEN quiz continues an attempt started while the
+  // licence was valid, so the licence is no longer asked for here (it was: "no licence -> 403").
+  // Ownership and the session's own validity are unchanged.
+  it('authorization: not owner -> 403, open session with no licence -> allowed, inactive session -> 409', async () => {
     h.isOwner.mockResolvedValueOnce(false);
     expect((await POST(req({ studentId: STUDENT, questionIndex: 0, answer: 'b' }), params)).status).toBe(403);
-    h.entitled.mockResolvedValueOnce(false);
-    expect((await POST(req({ studentId: STUDENT, questionIndex: 0, answer: 'b' }), params)).status).toBe(403);
+    h.entitled.mockResolvedValue(false);
+    expect((await POST(req({ studentId: STUDENT, questionIndex: 0, answer: 'b' }), params)).status).toBe(200);
     h.getQuizSession.mockResolvedValueOnce(session({ status: 'completed' }));
     expect((await POST(req({ studentId: STUDENT, questionIndex: 0, answer: 'b' }), params)).status).toBe(409);
     h.getQuizSession.mockResolvedValueOnce(session({ studentId: '22222222-2222-4222-8222-222222222222' }));

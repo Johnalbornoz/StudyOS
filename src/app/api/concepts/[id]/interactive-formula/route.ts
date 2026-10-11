@@ -17,6 +17,7 @@ import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { getInteractiveFormula } from '@/services/concept-explanation.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 import { instructionalAssistanceLockedResponse } from '@/lib/ai/instructional-assistance-guard';
+import { learningLicenceRequiredResponse } from '@/lib/entitlements/learning-gate';
 
 async function handleGET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -36,6 +37,10 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<{ i
   if (!canAccess) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
+
+  // L11 / EN-2 (D-8a): instructional AI is part of the licence -- refused before any generation.
+  const licenceRequired = await learningLicenceRequiredResponse(authContext, studentId);
+  if (licenceRequired) return licenceRequired;
 
   // Human Agency P0-1: student-wide, server-authoritative, fail-closed.
   const assistanceLocked = await instructionalAssistanceLockedResponse(studentId);

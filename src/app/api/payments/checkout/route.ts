@@ -15,6 +15,12 @@
  * always the CALLER's own F1 canonical user id, never the student's --
  * the license belongs to the student, the payer is tracked separately
  * (F3 `payer_user_id`).
+ *
+ * L11 / EN-3: starting a checkout binds nobody. The payer travels with the
+ * provider's reference and is bound to the subscription only when the
+ * provider confirms the payment (src/services/payment.service.ts). The
+ * caller's email is the VERIFIED PRIMARY Clerk address, never an index-0
+ * fallback.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
@@ -22,6 +28,7 @@ import { z } from 'zod';
 import { requireStudentId } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { isActiveParentOf } from '@/lib/authorization';
+import { resolveVerifiedPrimaryEmail } from '@/lib/admin/admin-identity';
 import { createMercadoPagoCheckout } from '@/services/payment.service';
 import { SITE_URL } from '@/lib/seo';
 
@@ -34,7 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
+  const email = resolveVerifiedPrimaryEmail(user);
   if (!email) {
     return NextResponse.json({ error: 'NO_EMAIL' }, { status: 400 });
   }
@@ -71,6 +78,9 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (error.message === 'PAYMENT_NOT_CONFIGURED') {
       return NextResponse.json({ error: 'PAYMENT_NOT_CONFIGURED' }, { status: 503 });
+    }
+    if (error.message === 'SUBSCRIPTION_NOT_PURCHASABLE') {
+      return NextResponse.json({ error: 'SUBSCRIPTION_NOT_PURCHASABLE' }, { status: 409 });
     }
     console.error('Error creating Mercado Pago checkout:', error);
     return NextResponse.json({ error: 'CHECKOUT_FAILED' }, { status: 500 });
