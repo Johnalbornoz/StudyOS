@@ -35,7 +35,8 @@ const log: Array<{ sql: string; params: any[] }> = [];
 const UUID = /^[0-9a-f-]{36}$/i;
 async function query(sql: string, params: any[] = []) {
   log.push({ sql, params });
-  if (/FROM students WHERE clerk_id = \$1 AND id = \$2/.test(sql)) {
+  // L10 SF-1/SF-2: the ownership guard now also requires an ACTIVE account and STUDENT role, in the same query.
+  if (/FROM students s\s+JOIN users u[\s\S]*u\.clerk_id = \$1 AND s\.id = \$2/.test(sql)) {
     return { rows: tables.students.filter((s) => s.clerk_id === params[0] && s.id === params[1]), rowCount: tables.students.filter((s) => s.clerk_id === params[0] && s.id === params[1]).length };
   }
   if (/FROM subjects\s+WHERE id = \$1 AND student_id = \$2/.test(sql)) {
@@ -47,7 +48,7 @@ async function query(sql: string, params: any[] = []) {
   }
   return { rows: [], rowCount: 0 };
 }
-vi.mock('@/lib/db', () => ({ db: { query: (sql: string, params?: any[]) => query(sql, params), connect: async () => ({ query: (sql: string, params?: any[]) => query(sql, params), release: () => {} }) } }));
+vi.mock('@/lib/db', () => ({ db: { query: (sql: string, params?: any[]) => query(sql, params), connect: async () => ({ query: (sql: string, params?: any[]) => (/pg_try_advisory_xact_lock/.test(sql) ? Promise.resolve({ rows: [{ locked: true }] }) : query(sql, params)), release: () => {} }) } }));
 
 /** Statements that touch the assessment calendar of a given subject id (read or write). */
 const calendarStatementsFor = (subjectId: string) => log.filter((q) => /assessment_(occurrences|schedule_rules)/.test(q.sql) && q.params.includes(subjectId));

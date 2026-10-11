@@ -35,7 +35,8 @@ vi.mock('@/services/remediation.service', () => ({ completeRemediationStep: vi.f
 vi.mock('@/lib/analytics', () => ({ track: vi.fn() }));
 
 const dbQueryMock = vi.fn().mockResolvedValue({ rows: [] });
-vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a) } }));
+// L10-R2 (CR-L11-06): the submit route takes an exclusive, transaction-scoped claim on the task before grading.
+vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => dbQueryMock(...a), connect: async () => ({ query: async (sql: string) => (/pg_try_advisory_xact_lock/.test(sql) ? { rows: [{ locked: true }] } : { rows: [] }), release: () => {} }) } }));
 
 import { POST as GENERATE } from '@/app/api/cognitive/transfer/generate/route';
 import { POST as SUBMIT } from '@/app/api/cognitive/transfer/submit/route';

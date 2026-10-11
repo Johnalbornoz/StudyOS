@@ -48,12 +48,14 @@ export type AdminAuditAction =
   // Platform runtime configuration (platform_settings), e.g. Question Bank Factory controls.
   | 'PLATFORM_SETTING_UPDATED'
   // Question Bank -- a reviewer's concept attribution of an item version (reviewed content).
-  | 'QUESTION_BANK_ITEM_ATTRIBUTION_SET';
+  | 'QUESTION_BANK_ITEM_ATTRIBUTION_SET'
+  // L10 SF-7 -- a platform administrator ended a parent-learner relationship.
+  | 'PARENT_RELATIONSHIP_ENDED';
 
 export interface RecordAdminActionInput {
   actorUserId: string;
   action: AdminAuditAction;
-  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING' | 'QUESTION_BANK_ITEM_VERSION';
+  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING' | 'QUESTION_BANK_ITEM_VERSION' | 'PARENT_RELATIONSHIP';
   targetId?: string | null;
   previousState?: unknown;
   newState?: unknown;

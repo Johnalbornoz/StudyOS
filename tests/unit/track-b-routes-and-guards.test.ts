@@ -20,7 +20,14 @@ const verifyAuthMock = vi.fn();
 vi.mock('@/lib/auth', () => ({ verifyAuth: () => verifyAuthMock(), checkRateLimit: () => true }));
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: async () => ({ id: 'actor-1' }) }));
 const canAccessLearnerMock = vi.fn();
-vi.mock('@/lib/authorization', () => ({ canAccessLearner: (...a: any[]) => canAccessLearnerMock(...a), isOwner: async () => true }));
+vi.mock('@/lib/authorization', () => ({
+  canAccessLearner: (...a: any[]) => canAccessLearnerMock(...a),
+  isOwner: async () => true,
+  // L10 SF-4: routes that shape one payload for several viewers resolve the whole read scope. In this file the
+  // single allow/deny switch stands for "the owner" vs "no relationship at all".
+  resolveLearnerReadScope: async (actor: string, learner: string) =>
+    (await canAccessLearnerMock(actor, learner, 'LEARNER_PROGRESS_VIEW')) ? { relationships: ['OWNER'], permissions: ['LEARNER_PROGRESS_VIEW', 'LEARNER_PROFILE_VIEW', 'LEARNER_INTERVENTION_CREATE', 'LEARNER_GAPS_VIEW', 'LEARNER_ASSESSMENT_SUMMARY_VIEW', 'LEARNER_ASSESSMENT_DETAIL_VIEW'] } : { relationships: [], permissions: [] },
+}));
 vi.mock('@/lib/db', () => ({ db: { query: vi.fn(async () => ({ rows: [] })) } }));
 
 const svc = {
