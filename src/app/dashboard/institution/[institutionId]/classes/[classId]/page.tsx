@@ -22,6 +22,8 @@ import { classBindingLabels } from '@/lib/institution/admin-labels';
 import { listGrades } from '@/lib/institution/institution-operations.service';
 import { opsLabels } from '@/lib/institution/page-context';
 import { ClassForm, ClassTeacherSelect, AddStudentForm, StudentClassAction, RowMenu } from '../../OpsActions';
+import { BulkAddStudentsForm } from '../../BulkAddForms';
+import { rosterMessages } from '@/lib/i18n/institution-roster-messages';
 import { ClassExamAssignments } from '@/components/exam-eligibility/ClassExamAssignments';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -174,6 +176,7 @@ export default async function InstitutionClassPage({ params }: { params: Promise
       <section className="card ta-card" aria-labelledby="roster-title">
         <h2 id="roster-title">{t['inst.class.rosterTitle']}</h2>
         {!archived && <AddStudentForm institutionId={institutionId} classes={[]} fixedClassId={classId} l={l} />}
+        {!archived && <BulkAddStudentsForm institutionId={institutionId} classes={[]} fixedClassId={classId} l={rosterMessages(locale)} />}
         <p className="ta-msg">{l['iops.students.historyNote']}</p>
         {roster.length === 0 ? (
           <EmptyState title={t['inst.class.rosterEmpty']} />
