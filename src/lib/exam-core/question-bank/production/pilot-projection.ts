@@ -38,6 +38,8 @@ export interface ProjectionInput {
   stage: ProductionStage;
   /** Environment facts that are outside any single package. */
   environment: { qualifiedReviewerAvailable: boolean; structureVersionPublished: boolean; publishedBlueprintVariantForPool: boolean };
+  /** From the requirement cell: the Topic's structure version awaits the PAA cutover. */
+  curriculumCurrentness?: 'CURRENT' | 'CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER';
   lifecycleDeliverable: boolean | null;
   humanReviewDecision: 'APPROVED' | 'REJECTED' | 'CORRECTION_REQUESTED' | null;
   reviewerIsAuthor: boolean | null;
@@ -97,7 +99,9 @@ export function projectPilotEligibility(i: ProjectionInput): PilotProjection {
       : !i.environment.qualifiedReviewerAvailable ? s('BLOCKED', 'attribution is set by a qualified reviewer; none exists')
       : s('UNSATISFIED', `${i.reviewedPrimaryConcepts ?? 0} reviewed PRIMARY concepts`),
     ONE_DOMAIN_ONE_TOPIC: () =>
-      !at(i.stage, 'INGESTED_UNDER_REVIEW') ? later('INGESTED_UNDER_REVIEW')
+      // known from the cell at any stage: the Topic's structure version is not the published one
+      i.curriculumCurrentness === 'CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER' ? s('BLOCKED', 'CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER: the Topic\'s structure version is a draft')
+      : !at(i.stage, 'INGESTED_UNDER_REVIEW') ? later('INGESTED_UNDER_REVIEW')
       : !i.topicLinked ? s('UNSATISFIED', 'the version has no Topic link')
       : !i.topicUnderOfficialDomain ? s('UNSATISFIED', 'the linked Topic is not under an official Domain')
       : !i.environment.structureVersionPublished ? s('BLOCKED', 'the structure version of the Topic is not published')
