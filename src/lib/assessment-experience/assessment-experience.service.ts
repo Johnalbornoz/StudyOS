@@ -15,7 +15,11 @@ import { solveLearningForStudent } from '@/lib/assessment-blueprint/assessment-b
 import { PRACTICE_DEPTHS, type PracticeDepth } from '@/lib/assessment-blueprint/policy/practice-depth';
 import type { BlueprintSolution } from '@/lib/assessment-blueprint/result';
 import type { AssessmentLaunchRequest } from './launch';
-import { learningSetupView, singleSetupView, type AssessmentSetupView } from './views';
+import { db } from '@/lib/db';
+import { readFrozenAssessment } from '@/lib/assessment-execution/frozen-assessment';
+import { toClientQuestion } from '@/lib/quiz/client-question';
+import type { GeneratedQuestion } from '@/services/quiz-generation.service';
+import { learningSetupView, runViewOf, singleSetupView, type AssessmentRunView, type AssessmentSetupView } from './views';
 
 export type SetupUnavailable = 'CONTEXT_UNAVAILABLE' | 'SCOPE_NOT_FOUND' | 'NOTHING_TO_PRACTISE';
 
@@ -51,4 +55,54 @@ export async function learningSetupForStudent(studentId: string, request: Extrac
   }
   const view = depths.length > 1 ? learningSetupView(byDepth) : singleSetupView(byDepth[depths[0]] as BlueprintSolution);
   return { ok: true, view, canonicalConceptIds };
+}
+
+/* ------------------------------------------------------------------ */
+/* B5-R: the read models of the mounted experience                      */
+/* ------------------------------------------------------------------ */
+
+/** The names of canonical concepts, for a scope line or a result row. An unknown id simply has no label. */
+export async function canonicalConceptLabels(canonicalConceptIds: readonly string[]): Promise<Record<string, string>> {
+  if (canonicalConceptIds.length === 0) return {};
+  const r = await db.query(`SELECT id, name FROM canonical_concepts WHERE id::text = ANY($1::text[])`, [[...canonicalConceptIds]]);
+  return Object.fromEntries((r.rows as Array<{ id: string; name: string }>).map((row) => [row.id, row.name]));
+}
+
+export type RunQuestion = ReturnType<typeof toClientQuestion> & { itemKey: string };
+
+export type LearningRunResult =
+  | { ok: true; status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED'; run: AssessmentRunView; questions: RunQuestion[]; conceptLabels: Record<string, string>; canonicalConceptIds: string[] }
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_CANONICAL' };
+
+/**
+ * The active shell of a canonical learning assessment: the FROZEN questions, in the frozen order, with every
+ * answer stripped. It is the same on every load (a resume shows the same assessment); nothing is selected,
+ * counted or reordered here. A session without a snapshot belongs to the existing runtime and is not served.
+ */
+export async function learningRunForStudent(studentId: string, sessionId: string): Promise<LearningRunResult> {
+  const r = await db
+    .query(`SELECT student_id, status, questions, assessment_snapshot, (expires_at <= now()) AS expired FROM quiz_sessions WHERE id = $1`, [sessionId])
+    .catch((e: { code?: string }) => {
+      if (e?.code === '42703') return { rows: [] as any[] };
+      throw e;
+    });
+  const row = r.rows[0];
+  if (!row || row.student_id !== studentId) return { ok: false, reason: 'NOT_FOUND' };
+  const read = readFrozenAssessment(row.assessment_snapshot);
+  if (!read.ok || read.frozen.family !== 'LEARNING') return { ok: false, reason: 'NOT_CANONICAL' };
+  const frozenKeys = new Set(read.frozen.items.map((i) => i.key));
+  const stored = (Array.isArray(row.questions) ? row.questions : []) as Array<GeneratedQuestion & { assessmentItemKey?: string }>;
+  const questions = stored
+    .filter((q) => !!q.assessmentItemKey && frozenKeys.has(q.assessmentItemKey))
+    // the stored option order is kept, so a reload shows the same question the same way
+    .map((q, index) => ({ ...toClientQuestion(q, index, { optionOrder: q.options?.map((o) => o.id) }), itemKey: q.assessmentItemKey as string }));
+  const canonicalConceptIds = [...read.frozen.targets.canonicalConceptIds];
+  return {
+    ok: true,
+    status: row.status === 'active' ? (row.expired ? 'EXPIRED' : 'ACTIVE') : 'COMPLETED',
+    run: runViewOf(read.frozen, []),
+    questions,
+    conceptLabels: await canonicalConceptLabels(canonicalConceptIds),
+    canonicalConceptIds,
+  };
 }

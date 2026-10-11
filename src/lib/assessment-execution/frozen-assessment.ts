@@ -70,6 +70,15 @@ export const FrozenAssessmentSchema = z.strictObject({
   activity: z.strictObject({ quizMode: z.string().max(40), activityType: z.string().max(40), evidenceMode: z.enum(['PRACTICE', 'INDEPENDENT', 'ASSESSMENT']), evidenceSource: z.string().max(40) }).nullable(),
   curriculum: z.array(z.strictObject({ structureVersionId: ID, academicSubjectId: ID })),
   exam: z.strictObject({ examTargetId: ID.nullable(), examVersionId: ID, assessmentComponentIds: z.array(ID) }).nullable(),
+  /**
+   * Exam families: the FORM the attempt executes, by reference. The frozen form (`exam_instances.form`, and
+   * the published fixed-form record when it serves one) is the one authority for positions, items
+   * and their order. This snapshot does not compete with it: `positionsHash` identifies the form it was
+   * frozen for, the snapshot's `items` are per-position provenance of that same form, and a snapshot whose
+   * hash does not match the instance's form is refused. null for LEARNING (there is no shared form: the
+   * snapshot itself freezes the question references and their order).
+   */
+  form: z.strictObject({ positionsHash: z.string().regex(/^[0-9a-f]{64}$/), positions: z.number().int().min(1), frozenForm: z.strictObject({ id: ID.nullable(), formHash: z.string().regex(/^[0-9a-f]{64}$/) }).nullable() }).nullable(),
   /** INTENDED coverage: what the blueprint set out to assess. */
   targets: z.strictObject({ canonicalConceptIds: z.array(ID), learningObjectiveIds: z.array(ID) }),
   items: z.array(FrozenItemSchema).min(1),
@@ -89,6 +98,22 @@ export type FrozenActivity = NonNullable<FrozenAssessment['activity']>;
 
 const knownOrNull = <T>(k: { state: string; value?: T }): T | null => (k.state === 'KNOWN' ? (k.value as T) : null);
 
+export interface FormPositionRef {
+  index: number;
+  itemId: string;
+}
+
+/** Identity of a form's content: its positions and the item at each, in position order. */
+export function formPositionsHash(positions: readonly FormPositionRef[]): string {
+  const ordered = [...positions].sort((a, b) => a.index - b.index).map((p) => [p.index, p.itemId]);
+  return createHash('sha256').update(JSON.stringify(ordered)).digest('hex');
+}
+
+/** The filled positions of a stored exam form (`exam_instances.form`): what the attempt actually serves. */
+export function formPositionsOf(form: { slots?: ReadonlyArray<{ index: number; approvedItemId?: string | null }> } | null | undefined): FormPositionRef[] {
+  return (form?.slots ?? []).filter((s) => !!s.approvedItemId).map((s) => ({ index: s.index, itemId: s.approvedItemId as string }));
+}
+
 function digestOf(content: Omit<FrozenAssessment, 'snapshotId'>): string {
   return createHash('sha256').update(JSON.stringify(content)).digest('hex').slice(0, 32);
 }
@@ -104,6 +129,8 @@ export interface FreezeInput {
   activity?: FrozenActivity | null;
   exam?: FrozenAssessment['exam'];
   contentAudience?: 'STUDENT' | 'TECHNICAL_DEMO';
+  /** Exam families: the published fixed form the instance serves, when it serves one. */
+  frozenForm?: { id: string | null; formHash: string } | null;
 }
 
 export type FreezeRefusal = 'PATH_FAMILY_MISMATCH' | 'NOTHING_SELECTED' | 'OFFICIAL_FORM_INCOMPLETE' | 'EXAM_CONTEXT_REQUIRED' | 'ACTIVITY_REQUIRED' | 'COVERAGE_MISSING_FOR_SELECTED';
@@ -161,6 +188,8 @@ export function freezeAssessment(input: FreezeInput): FrozenAssessment {
     activity: solution.family === 'LEARNING' ? input.activity ?? null : null,
     curriculum: solution.snapshot.curriculum.map((c) => ({ structureVersionId: c.structureVersionId, academicSubjectId: c.academicSubjectId })),
     exam: solution.family === 'LEARNING' ? null : input.exam ?? null,
+    // the form reference is computed from the frozen positions themselves, so it cannot disagree with them
+    form: solution.family === 'LEARNING' ? null : { positionsHash: formPositionsHash(items.map((i) => ({ index: i.slotIndex ?? i.order, itemId: i.question.id }))), positions: items.length, frozenForm: input.frozenForm ?? null },
     targets: {
       canonicalConceptIds: targets.filter((t) => t.kind === 'CONCEPT').map((t) => t.id).sort(),
       // an official form's intended objectives are the objectives of its positions
@@ -178,6 +207,76 @@ export function freezeAssessment(input: FreezeInput): FrozenAssessment {
   return FrozenAssessmentSchema.parse({ ...content, snapshotId: digestOf(content) });
 }
 
+export interface ExamProvenanceInput {
+  /** The positions of the instance's frozen form, exactly as stored. The form stays the authority. */
+  positions: readonly FormPositionRef[];
+  /** Coverage of the form's items, read when the provenance is attached. */
+  coverages: readonly QuestionCoverage[];
+  studentId: string;
+  createdAt: string;
+  path: AssessmentPath;
+  exam: NonNullable<FrozenAssessment['exam']>;
+  /** The official blueprint is the policy; its identity is the exam version (as B1 describes an instance). */
+  policy?: { id: string; version: string };
+  contentAudience?: 'STUDENT' | 'TECHNICAL_DEMO';
+  frozenForm?: { id: string | null; formHash: string } | null;
+}
+
+/**
+ * The FrozenAssessment of an exam instance whose form the Exam Core already froze. It selects nothing: every
+ * position and item is the form's. It adds the provenance the form does not carry -- family, path, policy,
+ * exam context and, per position, the coverage the item had when the attempt started.
+ */
+export function freezeExamInstanceProvenance(input: ExamProvenanceInput): FrozenAssessment {
+  const family = FAMILY_OF_PATH[input.path];
+  if (family === 'LEARNING') throw new FreezeError('PATH_FAMILY_MISMATCH', `${input.path} is not an exam path`);
+  const ordered = [...input.positions].sort((a, b) => a.index - b.index);
+  if (ordered.length === 0) throw new FreezeError('NOTHING_SELECTED');
+  const coverageByKey = new Map(input.coverages.map((c) => [questionRefKey(c.ref), c]));
+  const items: FrozenItem[] = ordered.map((p, order) => {
+    const key = questionRefKey({ store: 'REVIEWED_EXAM_BANK', id: p.itemId });
+    const coverage = coverageByKey.get(key);
+    if (!coverage) throw new FreezeError('COVERAGE_MISSING_FOR_SELECTED', key);
+    return {
+      order,
+      key,
+      question: { store: 'REVIEWED_EXAM_BANK', id: p.itemId },
+      slotIndex: p.index,
+      provenance: coverage.provenance,
+      learningObjectiveIds: [...(knownOrNull<string[]>(coverage.learningObjectiveIds) ?? [])].sort(),
+      coverage: coverage.concepts.map((c) => ({ canonicalConceptId: c.canonicalConceptId, role: c.role, basis: c.basis })).sort((a, b) => a.canonicalConceptId.localeCompare(b.canonicalConceptId)),
+      difficulty: knownOrNull<number>(coverage.difficulty),
+      marks: knownOrNull<number>(coverage.marks),
+      estimatedSeconds: knownOrNull<number>(coverage.estimatedSeconds),
+      questionType: knownOrNull<string>(coverage.questionType),
+      // the form was assembled by the Exam Core: there is no solver contribution to record
+      intended: [],
+      dedicatedTo: null,
+      reasons: ['FILLS_OFFICIAL_SLOT'],
+    };
+  });
+  const positionsHash = formPositionsHash(ordered);
+  const content: Omit<FrozenAssessment, 'snapshotId'> = {
+    v: FROZEN_ASSESSMENT_VERSION,
+    createdAt: input.createdAt,
+    family,
+    path: input.path,
+    intent: null,
+    contentAudience: input.contentAudience ?? 'STUDENT',
+    studentId: input.studentId,
+    policy: input.policy ?? { id: 'official-blueprint', version: input.exam.examVersionId },
+    depth: null,
+    activity: null,
+    curriculum: [],
+    exam: input.exam,
+    form: { positionsHash, positions: ordered.length, frozenForm: input.frozenForm ?? null },
+    targets: { canonicalConceptIds: [], learningObjectiveIds: [...new Set(items.flatMap((i) => i.learningObjectiveIds))].sort() },
+    items,
+    blueprint: { status: 'READY', unmet: [], softShortfalls: [], candidates: { count: ordered.length, digest: positionsHash }, learnerEvidence: null },
+  };
+  return FrozenAssessmentSchema.parse({ ...content, snapshotId: digestOf(content) });
+}
+
 export type SnapshotIssue = 'MALFORMED' | 'DIGEST_MISMATCH';
 
 /** Reads a stored snapshot. A malformed or edited one is refused: an attempt never runs on a reinterpreted assessment. */
@@ -188,7 +287,18 @@ export function readFrozenAssessment(raw: unknown): { ok: true; frozen: FrozenAs
   return digestOf(content) === snapshotId ? { ok: true, frozen: parsed.data } : { ok: false, issue: 'DIGEST_MISMATCH' };
 }
 
-/** The exact questions an attempt serves, in order. The ONLY source of an attempt's content. */
+/** Position of a frozen item in its form: the official slot, or the frozen order. */
+export const positionOf = (item: Pick<FrozenItem, 'slotIndex' | 'order'>): number => item.slotIndex ?? item.order;
+
+/** Does an exam snapshot describe exactly this form? Same positions, same item at each. */
+export function snapshotMatchesForm(frozen: FrozenAssessment, positions: readonly FormPositionRef[]): boolean {
+  return frozen.form !== null && positions.length === frozen.form.positions && formPositionsHash(positions) === frozen.form.positionsHash;
+}
+
+/**
+ * The exact questions an attempt serves, in order. LEARNING: the snapshot is the source. Exam families: the
+ * same list is what `exam_instances.form` holds (verified by `snapshotMatchesForm` before any execution).
+ */
 export const executionRefs = (frozen: FrozenAssessment): Array<{ order: number; slotIndex: number | null; question: QuestionRef }> =>
   frozen.items.map((i) => ({ order: i.order, slotIndex: i.slotIndex, question: { ...i.question } }));
 

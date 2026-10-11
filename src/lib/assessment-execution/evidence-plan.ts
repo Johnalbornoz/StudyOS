@@ -343,7 +343,9 @@ export function planEvidence(frozen: FrozenAssessment, attempt: AttemptContext, 
         // the session id is minted once at generation: the existing key of "this session's evidence for this concept"
         identity: { operationType: 'QUIZ_SUBMISSION', operationId: attempt.assessmentRef, conceptId: learnerConceptId },
         telemetry: { activityType: 'quiz', ...(attempt.learningMode ? { learningMode: attempt.learningMode } : {}), hintsUsed },
-        metadata: { activityType: activity.activityType, evidenceMode: activity.evidenceMode, assessment: assessment(bucket) },
+        // Explicit, so the projector does not have to infer it: independent only when EVERY response behind this
+        // event was an independent demonstration (independent activity, no assistance, single PRIMARY concept).
+        metadata: { activityType: activity.activityType, evidenceMode: activity.evidenceMode, independenceEligible: bucket.every((c) => c.independent), assessment: assessment(bucket) },
         sourceItemKeys: bucket.map((c) => c.item.key),
       });
     }
@@ -371,6 +373,8 @@ export function planEvidence(frozen: FrozenAssessment, attempt: AttemptContext, 
           context: { examAttemptId: attempt.assessmentRef, simulationSource: true },
           framework: { examVersionId: frozen.exam!.examVersionId },
           examScope: examEvidenceScopeMetadata(examScope!),
+          // exam performance is never independent LEARNING evidence (B1): stated, not left to inference
+          independenceEligible: false,
           ...(c.item.questionType ? { questionType: c.item.questionType } : {}),
           assessment: { ...assessment([c]), exam: { ...frozen.exam!, learningObjectiveIds: c.item.learningObjectiveIds, slotIndex: c.item.slotIndex } },
         },

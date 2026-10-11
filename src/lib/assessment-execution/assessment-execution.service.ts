@@ -27,7 +27,7 @@ import { resolveStudentConceptIdentities } from '@/lib/catalog/concept-identity.
 import { deriveExamGaps } from '@/lib/learning-plan/exam-bridge.service';
 import { examGapCandidatesFrom, type ExamGapCandidate, type ExamGapFacts } from '@/lib/assessment-foundation/exam-gap-candidate';
 import type { ConceptIdentity } from '@/lib/catalog/concept-identity';
-import { readFrozenAssessment, type FrozenActivity, type FrozenAssessment } from './frozen-assessment';
+import { formPositionsOf, readFrozenAssessment, snapshotMatchesForm, type FrozenActivity, type FrozenAssessment } from './frozen-assessment';
 import { planEvidence, type AttemptContext, type ScoredResponse } from './evidence-plan';
 import { buildPostAssessmentState, type AssessmentRecord, type ConceptStateChange, type EvidenceApplication, type NextDecisionRef, type PostAssessmentState } from './post-assessment';
 
@@ -60,7 +60,7 @@ const TABLE: Record<AssessmentRecord['kind'], 'quiz_sessions' | 'exam_instances'
 
 const recordKindFor = (frozen: FrozenAssessment): AssessmentRecord['kind'] => (frozen.family === 'LEARNING' ? 'QUIZ_SESSION' : 'EXAM_INSTANCE');
 
-export type PersistSnapshotResult = { ok: true; stored: 'NEW' | 'ALREADY_STORED' } | { ok: false; reason: 'RECORD_NOT_FOUND' | 'RECORD_KIND_MISMATCH' | 'ALREADY_FROZEN_DIFFERENTLY' | 'STUDENT_MISMATCH' };
+export type PersistSnapshotResult = { ok: true; stored: 'NEW' | 'ALREADY_STORED' } | { ok: false; reason: 'RECORD_NOT_FOUND' | 'RECORD_KIND_MISMATCH' | 'ALREADY_FROZEN_DIFFERENTLY' | 'STUDENT_MISMATCH' | 'FORM_NOT_FROZEN' | 'FORM_MISMATCH' };
 
 /**
  * Stores the snapshot on its record, once. A second call with the same snapshot is a no-op; a different
@@ -69,6 +69,15 @@ export type PersistSnapshotResult = { ok: true; stored: 'NEW' | 'ALREADY_STORED'
 export async function persistAssessmentSnapshot(record: AssessmentRecord, frozen: FrozenAssessment, client: DbExecutor = db): Promise<PersistSnapshotResult> {
   if (record.kind !== recordKindFor(frozen)) return { ok: false, reason: 'RECORD_KIND_MISMATCH' };
   const table = TABLE[record.kind];
+  if (record.kind === 'EXAM_INSTANCE') {
+    // The frozen form is the authority for what the attempt serves. The snapshot is stored only for the form
+    // it was frozen for; this statement never writes the form.
+    const instance = await client.query(`SELECT form FROM exam_instances WHERE id = $1`, [record.id]);
+    if (!instance.rows[0]) return { ok: false, reason: 'RECORD_NOT_FOUND' };
+    const positions = formPositionsOf(instance.rows[0].form);
+    if (positions.length === 0) return { ok: false, reason: 'FORM_NOT_FROZEN' };
+    if (!snapshotMatchesForm(frozen, positions)) return { ok: false, reason: 'FORM_MISMATCH' };
+  }
   const written = await client.query(`UPDATE ${table} SET assessment_snapshot = $2::jsonb WHERE id = $1 AND student_id = $3 AND assessment_snapshot IS NULL RETURNING id`, [record.id, JSON.stringify(frozen), frozen.studentId]);
   if ((written.rowCount ?? written.rows.length) > 0) return { ok: true, stored: 'NEW' };
   const existing = await client.query(`SELECT student_id, assessment_snapshot FROM ${table} WHERE id = $1`, [record.id]);
@@ -78,17 +87,24 @@ export async function persistAssessmentSnapshot(record: AssessmentRecord, frozen
   return row.assessment_snapshot?.snapshotId === frozen.snapshotId ? { ok: true, stored: 'ALREADY_STORED' } : { ok: false, reason: 'ALREADY_FROZEN_DIFFERENTLY' };
 }
 
-export type LoadSnapshotResult = { ok: true; frozen: FrozenAssessment; technicalDemo: boolean } | { ok: false; reason: 'RECORD_NOT_FOUND' | 'NO_SNAPSHOT' | 'MALFORMED' | 'DIGEST_MISMATCH' };
+export type LoadSnapshotResult = { ok: true; frozen: FrozenAssessment; technicalDemo: boolean } | { ok: false; reason: 'RECORD_NOT_FOUND' | 'NO_SNAPSHOT' | 'MALFORMED' | 'DIGEST_MISMATCH' | 'FORM_NOT_FROZEN' | 'FORM_MISMATCH' };
 
 /** The snapshot an attempt executes from. Read as stored; an edited or malformed one is refused. */
 export async function loadAssessmentSnapshot(record: AssessmentRecord, client: DbExecutor = db): Promise<LoadSnapshotResult> {
-  const audience = record.kind === 'EXAM_INSTANCE' ? ', content_audience' : '';
+  const audience = record.kind === 'EXAM_INSTANCE' ? ', content_audience, form' : '';
   const r = await client.query(`SELECT assessment_snapshot${audience} FROM ${TABLE[record.kind]} WHERE id = $1`, [record.id]);
   const row = r.rows[0];
   if (!row) return { ok: false, reason: 'RECORD_NOT_FOUND' };
   if (!row.assessment_snapshot) return { ok: false, reason: 'NO_SNAPSHOT' };
   const read = readFrozenAssessment(row.assessment_snapshot);
   if (!read.ok) return { ok: false, reason: read.issue };
+  if (record.kind === 'EXAM_INSTANCE') {
+    // exam form items = executed exam items: the attempt runs `exam_instances.form`, and a snapshot that does
+    // not describe exactly that form is not this attempt's provenance.
+    const positions = formPositionsOf(row.form);
+    if (positions.length === 0) return { ok: false, reason: 'FORM_NOT_FROZEN' };
+    if (!snapshotMatchesForm(read.frozen, positions)) return { ok: false, reason: 'FORM_MISMATCH' };
+  }
   // The record's own audience wins: a technical-demo instance is a demo whatever its snapshot says.
   return { ok: true, frozen: read.frozen, technicalDemo: read.frozen.contentAudience === 'TECHNICAL_DEMO' || row.content_audience === 'TECHNICAL_DEMO' };
 }
@@ -141,7 +157,7 @@ export interface EvidenceLoopInput {
   transferGrading?: AttemptContext['transferGrading'];
 }
 
-export type EvidenceLoopRefusal = 'RECORD_NOT_FOUND' | 'NO_SNAPSHOT' | 'MALFORMED' | 'DIGEST_MISMATCH' | 'STUDENT_MISMATCH' | 'ATTEMPT_NOT_BOUND_TO_SNAPSHOT';
+export type EvidenceLoopRefusal = 'RECORD_NOT_FOUND' | 'NO_SNAPSHOT' | 'MALFORMED' | 'DIGEST_MISMATCH' | 'FORM_NOT_FROZEN' | 'FORM_MISMATCH' | 'STUDENT_MISMATCH' | 'ATTEMPT_NOT_BOUND_TO_SNAPSHOT';
 
 export type EvidenceLoopResult = { ok: true; state: PostAssessmentState } | { ok: false; reason: EvidenceLoopRefusal };
 

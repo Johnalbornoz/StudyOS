@@ -162,7 +162,8 @@ export function ExamAttemptOptions({ options, t, hrefs }: { options: readonly Ex
 /* Active shell header                                                  */
 /* ------------------------------------------------------------------ */
 
-export function AssessmentRunHeader({ view, t, title, timer }: { view: AssessmentRunView; t: T; title: string; timer?: ReactNode }) {
+/** `helpLine={false}` on a surface that offers no help control: the header must not announce one. */
+export function AssessmentRunHeader({ view, t, title, timer, helpLine = true }: { view: AssessmentRunView; t: T; title: string; timer?: ReactNode; helpLine?: boolean }) {
   const { answered, total } = view.progress;
   const c = view.capabilities;
   return (
@@ -175,7 +176,7 @@ export function AssessmentRunHeader({ view, t, title, timer }: { view: Assessmen
         <span style={{ width: `${total > 0 ? Math.round((answered / total) * 100) : 0}%`, background: 'var(--brand)' }} />
       </div>
       <p className="ui-hint tabular">{fillMessage(t['ax.run.answered'], { answered, total })}</p>
-      <p className="ui-hint">{c.requiresIntegrity ? t['ax.run.integrity'] : c.canUseAIHelp ? t['ax.run.helpOn'] : t['ax.run.helpOff']}</p>
+      {(helpLine || c.requiresIntegrity) && <p className="ui-hint">{c.requiresIntegrity ? t['ax.run.integrity'] : c.canUseAIHelp ? t['ax.run.helpOn'] : t['ax.run.helpOff']}</p>}
     </header>
   );
 }

@@ -19,9 +19,9 @@ const query = vi.fn(async (sql: string, params: any[] = []) => {
     }
     return { rows: [], rowCount: 0 };
   }
-  const select = /^SELECT (student_id, )?assessment_snapshot(, content_audience)? FROM (quiz_sessions|exam_instances)/.exec(sql);
+  const select = /^SELECT (student_id, assessment_snapshot|assessment_snapshot(?:, content_audience, form)?|form) FROM (quiz_sessions|exam_instances)/.exec(sql);
   if (select) {
-    const row = store[select[3] as keyof typeof store].get(params[0]);
+    const row = store[select[2] as keyof typeof store].get(params[0]);
     return { rows: row ? [row] : [], rowCount: row ? 1 : 0 };
   }
   throw new Error(`unexpected SQL in test: ${sql}`);
@@ -71,6 +71,8 @@ function learning(coverages: QuestionCoverage[], concepts: string[], opts: { int
   return freezeAssessment({ solution, coverages, studentId: STUDENT, createdAt: opts.createdAt ?? AS_OF, path: 'LEARNING_ACTIVITY', intent, activity: learningActivityFor(opts.activity ?? solution.requirement!.evidence!.activityType, intent) });
 }
 
+/** The form an exam instance holds for a snapshot: the same positions and items (`exam_instances.form`). */
+const formOf = (f: FrozenAssessment) => ({ v: 1, slots: f.items.map((i) => ({ index: i.slotIndex ?? i.order, approvedItemId: i.question.id })) });
 const scored = (itemKey: string, fraction: number, over: Partial<ScoredResponse> = {}): ScoredResponse => ({ itemKey, responseRef: `resp-${itemKey}`, status: 'SCORED', fraction, ...over });
 const L = (id: string) => `LEARNING_ITEM_CACHE:${id}`;
 const B = (id: string) => `REVIEWED_EXAM_BANK:${id}`;
@@ -355,7 +357,7 @@ describe('B3 EXAM_PREPARATION -- frozen, scored, attributed only where the item 
     const f = frozen();
     expect(f).toMatchObject({ family: 'EXAM_PREPARATION', path: 'EXAM_PRACTICE', activity: null, exam: { examVersionId: 'ev-1', examTargetId: 'target-1' }, targets: { canonicalConceptIds: [], learningObjectiveIds: ['lo-1', 'lo-2'] } });
     expect(executionRefs(f).map((r) => r.question.id)).toEqual(['d1', 'e1']);
-    store.exam_instances.set('inst-1', { student_id: STUDENT, assessment_snapshot: f, content_audience: 'STUDENT' });
+    store.exam_instances.set('inst-1', { student_id: STUDENT, assessment_snapshot: f, content_audience: 'STUDENT', form: formOf(f) });
     const w = writer();
     const published: string[] = [];
     const r = await completeAssessmentEvidence(
@@ -395,7 +397,7 @@ describe('B3 EXAM_PREPARATION -- frozen, scored, attributed only where the item 
   });
 
   it('the attempt must be the instance\'s own; the exam target comes from it, never from the caller', async () => {
-    store.exam_instances.set('inst-1', { student_id: STUDENT, assessment_snapshot: frozen(), content_audience: 'STUDENT' });
+    store.exam_instances.set('inst-1', { student_id: STUDENT, assessment_snapshot: frozen(), content_audience: 'STUDENT', form: formOf(frozen()) });
     const w = writer();
     const input = { record: { kind: 'EXAM_INSTANCE' as const, id: 'inst-1' }, studentId: STUDENT, responses: [scored(B('e1'), 1)] };
     expect(await completeAssessmentEvidence({ ...input, attemptRef: 'att-of-someone-else' }, deps(w, ['C3']))).toEqual({ ok: false, reason: 'ATTEMPT_NOT_BOUND_TO_SNAPSHOT' });
@@ -418,7 +420,7 @@ describe('B3 OFFICIAL_EXAM -- the score is authoritative and independent of lear
     const f = freeze();
     expect(executionRefs(f)).toEqual([{ order: 0, slotIndex: 0, question: { store: 'REVIEWED_EXAM_BANK', id: 'i1' } }, { order: 1, slotIndex: 1, question: { store: 'REVIEWED_EXAM_BANK', id: 'i2' } }, { order: 2, slotIndex: 2, question: { store: 'REVIEWED_EXAM_BANK', id: 'i3' } }]);
     expect(f.items.every((i) => i.question.store === 'REVIEWED_EXAM_BANK' && i.coverage.every((c) => c.role === 'UNSPECIFIED' && c.basis === 'OBJECTIVE_MAPPING'))).toBe(true);
-    store.exam_instances.set('inst-1', { student_id: STUDENT, assessment_snapshot: f, content_audience: 'STUDENT' });
+    store.exam_instances.set('inst-1', { student_id: STUDENT, assessment_snapshot: f, content_audience: 'STUDENT', form: formOf(f) });
     const w = writer();
     const r = await completeAssessmentEvidence({ record: { kind: 'EXAM_INSTANCE', id: 'inst-1' }, studentId: STUDENT, attemptRef: 'att-1', responses: [scored(B('i1'), 1), scored(B('i2'), 1), scored(B('i3'), 0)] }, deps(w, ['C1', 'C2', 'C3']));
     expect(r.ok).toBe(true);
@@ -443,7 +445,7 @@ describe('B3 OFFICIAL_EXAM -- the score is authoritative and independent of lear
     // even with explicit item-level attribution and a snapshot that claims STUDENT, the instance's own audience wins
     const explicitBank = BANK.map((c) => ({ ...c, concepts: [{ canonicalConceptId: c.concepts[0].canonicalConceptId, role: 'PRIMARY' as const, basis: 'ITEM_ATTRIBUTION' as const }] }));
     const f = freezeAssessment({ solution: official(explicitBank), coverages: explicitBank, studentId: STUDENT, createdAt: AS_OF, path: 'OFFICIAL_MOCK', exam: { examTargetId: 'target-1', examVersionId: 'ev-1', assessmentComponentIds: ['comp-1'] } });
-    store.exam_instances.set('inst-1', { student_id: STUDENT, assessment_snapshot: f, content_audience: 'TECHNICAL_DEMO' });
+    store.exam_instances.set('inst-1', { student_id: STUDENT, assessment_snapshot: f, content_audience: 'TECHNICAL_DEMO', form: formOf(f) });
     const w = writer();
     const gaps = vi.fn(async () => [gapFacts('lo-1', 'C1', 0)]);
     const decide = vi.fn(async () => ({ any: 'thing' }));
@@ -459,7 +461,7 @@ describe('B3 OFFICIAL_EXAM -- the score is authoritative and independent of lear
     expect(gaps).not.toHaveBeenCalled();
     expect(decide).not.toHaveBeenCalled();
     // the same snapshot on a STUDENT instance does produce evidence: the guard is the audience, not the content
-    store.exam_instances.set('inst-1', { student_id: STUDENT, assessment_snapshot: f, content_audience: 'STUDENT' });
+    store.exam_instances.set('inst-1', { student_id: STUDENT, assessment_snapshot: f, content_audience: 'STUDENT', form: formOf(f) });
     const again = await completeAssessmentEvidence({ record: { kind: 'EXAM_INSTANCE', id: 'inst-1' }, studentId: STUDENT, attemptRef: 'att-1', responses: f.items.map((i) => scored(i.key, 1)) }, deps(w, ['C1', 'C3']));
     expect(again.ok && again.state.learnerEvidence).toBe('CONSEQUENTIAL');
   });

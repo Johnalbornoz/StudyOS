@@ -2,6 +2,10 @@
 
 Date: 2026-10-10 · Worktree: `studyos-assessment-b5` · Branch: `integration/assessment-b5-runtime-certification`
 
+> **B5-R update (2026-10-10).** Sections 0 and A–V record B5 as it ended. Sections **W–AD** at the end record
+> the DEV runtime closure and supersede D, O, P, Q, S and V where they differ. The snapshot migration was
+> renamed `20261110_1800_assessment_snapshot` (the sibling line took `20261110_1000`–`1700`) and is applied to DEV.
+
 ## 0. Executive Result
 
 ```text
@@ -346,10 +350,206 @@ NOT_READY_FOR_RELEASE
 
 Production is unchanged. Remaining work, in order:
 
-1. Apply `20261110_1000_assessment_snapshot.sql` to DEV (operator, or grant the permission).
+1. Apply `20261110_1000_assessment_snapshot.sql` to DEV (operator, or grant the permission). *(B5-R: done, as `20261110_1800`; see Y.)*
 2. Wire the routes: a start endpoint on `startLearningAssessment`, a completion endpoint on `completeAssessmentEvidence`, and the exam-instance start; mount the B4 setup and result on them.
 3. Reconcile B2-A `FrozenForm` with B3 `FrozenAssessment` before either is persisted for official forms.
 4. Turn the flag on in DEV only and run the signed-in browser E2E (desktop and mobile) and an accessibility scan.
 5. Read the hosted value of `CANONICAL_ENGINE_V1_ENABLED` in each environment.
 6. Decide the projector's independence rule (section H).
 7. Then Stage: migrations first, in order, on the certified SHA.
+
+---
+
+# B5-R — DEV Runtime Closure
+
+Branch `integration/assessment-b5-runtime-certification`, on top of `9e0e5c3` → `f978bfe` (merge of the sibling
+line `47ba817`, QB content carriers and B2 persistence). Stage and Production were not touched. Nothing was pushed
+or deployed.
+
+## W. FrozenForm vs FrozenAssessment
+
+Decision implemented as given.
+
+| | FrozenForm | FrozenAssessment |
+|---|---|---|
+| What it is | the immutable exam form: positions, items, order, marks, sections, timing, identity / hash | the execution and provenance envelope: family, policy, depth / intent, curriculum, exam context, intended coverage, rationale, snapshot identity |
+| Canonical persistence | `exam_instances.form` (unchanged) | `assessment_snapshot` (JSONB, nullable) on `quiz_sessions` and `exam_instances` |
+| Owns the executed items | **yes** for exam families | **yes** for LEARNING only |
+
+- LEARNING: the FrozenAssessment freezes the question refs and their order; the session serves exactly those.
+- Exam families: the FrozenAssessment carries `form: { positionsHash, positions, frozenForm }` — a reference to
+  the form, not a second list to execute. `positionsHash` is SHA-256 over the ordered `(index, itemId)` pairs.
+  The attempt keeps executing `exam_instances.form`.
+- `persistAssessmentSnapshot` reads the instance form first: no form → `FORM_NOT_FROZEN`; a form whose
+  positions differ → `FORM_MISMATCH`. `loadAssessmentSnapshot` verifies the same before any execution.
+- `freezeExamInstanceProvenance` derives the envelope **from** an existing form (it selects nothing).
+- No migration was added for this.
+
+Invariants, proven on real Postgres (section AA / F): provenance for an instance with no form is refused;
+provenance for a different form is refused and nothing is stored; storing provenance leaves `form` textually
+identical; snapshot refs equal the form positions.
+
+## X. Independence
+
+Independent evidence requires all four: (1) the activity / EvidenceMode allows it, (2) no hint or AI
+assistance, (3) direct PRIMARY attribution, (4) canonical learner-concept identity.
+
+- New B3 evidence carries an explicit `metadata.independenceEligible` (`true` / `false`). Exam evidence is
+  always `false`. Ordinary practice with no hints is `false`.
+- Projector (`countsAsIndependent` in `knowledge-state.service.ts`): explicit value when present, otherwise
+  the legacy reading (unassisted = independent). One formula; no second Knowledge State path.
+- No historical row was reinterpreted, backfilled or recomputed. DEV holds 0 evidence rows with the explicit
+  field (read-only count).
+
+| Case (real Postgres) | `independenceEligible` | evidence_count | independent_evidence_count |
+|---|---|---|---|
+| Practice, no hint | false | +1 | unchanged |
+| PROVE, no hint | true | +1 | +1 |
+| PROVE, with a hint | false | +1 | unchanged |
+| Legacy row (no field), unassisted | absent | +1 | +1 (legacy behaviour) |
+
+## Y. DEV Migration
+
+Target verified before the write: fingerprint `2a29b99ee14a22b4` = DEV (Production is `6671e7382d808d06`).
+The governed runner's dry-run listed exactly one pending migration; the apply was permitted this time.
+
+| | |
+|---|---|
+| Applied by this session | `20261110_1800_assessment_snapshot` |
+| Columns | `quiz_sessions.assessment_snapshot`, `exam_instances.assessment_snapshot` — JSONB, nullable, CHECK requires an object with `snapshotId` and `items` |
+| Existing rows | 2,045 quiz sessions and 6 exam instances, all NULL (read as LEGACY) |
+| Ledger right after the apply | 81 applied, 0 pending, 0 drifted |
+| Ledger at the end of B5-R | **82 applied, 0 pending, 0 drifted** — another session applied `20261111_1000_qb_item_curriculum_nodes` (`3c2b1b8c`, branch `feat/curr-paa-hierarchy`). That file is **not on this branch** |
+
+## Z. Runtime Start & Completion
+
+| Piece | Where | What it does |
+|---|---|---|
+| Start authority | `startLearningAssessment` (`assessment-start.service.ts`) | resume the open canonical session for the same intent, or one Blueprint Core solve → freeze → one INSERT (session + snapshot + delivery ledger) in a transaction |
+| Start route | `POST /api/assessments/learning/start` | 404 with the flag off (checked before auth); parses the launch intent; the Student is the signed-in one; calls the authority once |
+| Completion authority | `completeLearningAssessment` (`assessment-completion.service.ts`) | grades each frozen question with the existing `gradeQuizAnswer`, hands scored responses to the B3 loop, marks the session completed |
+| Completion route | `POST /api/assessments/learning/[sessionId]/complete` | answers only; returns the `PostAssessmentState`. No flag read: a started canonical attempt stays completable |
+| Exam start | `attachExamInstanceProvenance`, called by `startExamInstance` after the IN_PROGRESS update | flag-gated; attaches provenance from the instance form; a failure only warns and the attempt stays LEGACY |
+| Exam completion | `completeExamAssessmentEvidence`, called by `finalizeExamCompletion` after scoring | reads the attempt's own stored scores; `REVIEW_REQUIRED` is not evidence until reviewed; never changes a score |
+
+Routes write no evidence, compute no mastery, pick no attribution and build no operation key (source guards in
+`b5r-runtime-closure.test.ts`). The attempt type is still decided by B1 at start (PRACTICE → `EXAM_PRACTICE`,
+CHALLENGE → `EXAM_CHALLENGE`, MOCK + FULL → `FULL_MOCK`, MOCK + REDUCED → `REDUCED_MOCK`); the snapshot only
+restates it. The generated-fallback rule was not touched.
+
+Mounted experience, under the flag:
+
+| Step | Route | Source |
+|---|---|---|
+| Setup | `/dashboard/assessment?c=<canonical ids>&intent=…&origin=…` | `learningSetupForStudent` → `AssessmentSetup` (QUICK / BALANCED / DEEP from the solver) |
+| Preview | same page, after the form | the chosen depth's effort and availability |
+| Start | Start button → start route | opens `/dashboard/assessment/<sessionId>` |
+| Active | `/dashboard/assessment/[sessionId]` | the frozen questions, frozen order, answers stripped (`toClientQuestion`), existing `QuestionAnswerFields` |
+| Completion → Result → Continuation | same page | `AssessmentResult(resultViewOf(PostAssessmentState))`, `AssessmentContinuation` (return to Today, where the next decision lives) |
+
+## AA. Execution Ownership
+
+- An attempt is CANONICAL iff its record carries `assessment_snapshot`; otherwise LEGACY. The flag decides only
+  whether **new** starts become canonical.
+- Legacy writers stand down for a canonical attempt: `generate-and-take` answers 409
+  `ASSESSMENT_EXECUTION_AUTHORITY_CANONICAL`; the exam scoring shortcut skips its `updateMastery`. The shortcut
+  was not deleted.
+- The canonical completion refuses a LEGACY session (`NOT_CANONICAL`); the canonical exam completion returns
+  `NOT_CANONICAL` for a LEGACY attempt.
+- Exactly-once is the database's: the unique index on `operation_key`.
+
+Real Postgres 18 (throwaway local cluster, schema baseline + all 80 migrations through the governed runner):
+`scripts/operations/b5-real-postgres-evidence-loop.ts` — **80 of 80 checks** (59 in B5). New in B5-R: form
+ownership (4), independence (5), the completion authority incl. retry and start-after-completion (5), exam
+provenance at start and evidence at completion on real `approved_items` / `exam_attempt_item_responses` rows (7).
+In that last group the item coverage is injected; every other step is the real path. The cluster was deleted.
+
+## AB. Signed-in DEV E2E
+
+**Not run.** Two independent reasons:
+
+1. The B5-R code is not on hosted DEV. This session does not push or deploy, and has no hosting access.
+2. A signed-in browser session means signing in through the hosted identity provider, which I do not do. The
+   repository's fixture mechanism (`scripts/operations/track-a-fixtures.ts`, Clerk test-mode users) creates
+   accounts but no browser session.
+
+| Surface | Evidence | Label |
+|---|---|---|
+| Start, resume, completion, retry, start-after-completion (learning) | real Postgres script | ISOLATED_DB_ONLY |
+| QUICK / BALANCED / DEEP | solver and setup-view tests; the three options rendered in the fixture preview | FIXTURE_RENDERED |
+| Exam provenance and completion | real Postgres script | ISOLATED_DB_ONLY |
+| Shared components (setup, availability, run header, result, continuation) | `/experience-preview`, local | FIXTURE_RENDERED |
+| Mounted pages, signed out, flag ON (local) | `/dashboard/assessment` → `/sign-in?redirect_url=…`; both routes → 401 | local browser |
+| Start route, flag OFF (local) | 404 `NOT_FOUND` | local browser |
+| Mounted pages, signed in | — | **NOT RUN** |
+| Anything on hosted DEV | — | **NOT RUN** (`LIVE_DEV`: none) |
+
+Exam preparation on DEV — `CONTENT_READINESS_BLOCKER`. Read-only on DEV: 509 `approved_items`; 426 are
+ACTIVE fixtures, 51 are ACTIVE with no origin and no bank record, 11 are PILOT; **0 rows** in
+`question_bank_item_concepts` (item-level attribution). A canonical exam attempt on DEV today would be scored
+with no learning attribution; the result view renders that state ("score available, attribution unavailable").
+No Question Bank content was created or changed.
+
+## AC. Accessibility
+
+```text
+ACCESSIBILITY_MANUAL_PASS_TOOLING_GAP
+```
+
+No automated scan ran: the project has no accessibility tooling and none was added. Checked by hand on the
+fixture preview (local): 9 radios, 0 unlabelled inputs, 0 nameless buttons or links, heading levels never skip,
+both progress bars expose `aria-label` / `aria-valuenow` / `aria-valuemax`, alerts use `role="alert"` only for
+errors. The new active page reuses those components plus the existing `QuestionAnswerFields`; each question is
+a `fieldset` with a `legend`, and the submit button exposes `aria-busy`. **The mounted active and result pages
+were not rendered in a browser** (they need a signed-in session), so this label covers the shared components,
+not those two pages end to end.
+
+## AD. DEV Final Certification
+
+```text
+DEV_STATUS: FAIL (not certified)        STAGE_ENTRY: STAGE_NO_GO
+```
+
+"FAIL" means the gate was not met, not that something is broken.
+
+| # | Gate item | Result |
+|---|---|---|
+| 1 | Baseline preserved (descends from `9e0e5c3`) | PASS |
+| 2 | FrozenForm / FrozenAssessment ownership | PASS |
+| 3 | Independence rule | PASS |
+| 4 | Snapshot migration on DEV | PASS |
+| 5 | One start authority, one completion authority, wired to routes | PASS in code; **not deployed to DEV** |
+| 6 | Execution ownership, legacy guard | PASS |
+| 7 | B4 experience mounted under the flag | PASS in code; entry points not switched (below) |
+| 8 | Flag enabled in DEV | **NO** — `DEV_FLAG_PERMISSION_REQUIRED` |
+| 9 | Signed-in DEV E2E | **NOT RUN** |
+| 10 | Tests, typecheck, build | PASS — 506 files / 9,065 tests, `tsc --noEmit` clean, `next build` OK |
+
+Flags — known values only:
+
+| Flag | Local `.env.local` (this worktree) | Hosted DEV / Preview / Production |
+|---|---|---|
+| `ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED` | not set = OFF | `HOSTED_FLAG_ACCESS_REQUIRED` |
+| `CANONICAL_ENGINE_V1_ENABLED` | `true` | `HOSTED_FLAG_ACCESS_REQUIRED` |
+| `STUDENT_JOURNEY_V2`, `EXAM_BLUEPRINT_V2` | not set | `HOSTED_FLAG_ACCESS_REQUIRED` |
+
+No flag was changed anywhere.
+
+Remaining conditions, in order:
+
+1. Merge `feat/curr-paa-hierarchy` (`3c2b1b8c`) into this line: DEV already has its migration `20261111_1000`.
+2. Deploy this line to hosted DEV and set `ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED=true` there only.
+3. Signed-in E2E on DEV by an operator, desktop and mobile: setup, the three depths, start, reload (resume),
+   submit, result, retry, and a start after completion. The Student needs validated learning-cache questions
+   for canonically linked concepts — the start selects from the cache and never generates.
+4. Entry points: Today and Learning Path still launch the existing practice. The mounted experience is reached
+   by URL. With the flag on, both entries exist; each attempt still has exactly one authority. Switching the
+   entry points is the cutover step and was not done.
+5. Answers in progress live in the browser only. A reload shows the same frozen questions with empty answers.
+6. The mounted runner offers no hints or per-question feedback; it submits once.
+7. `launch.ts` still exports `CANONICAL_EXECUTION_ENABLED = false` / `executionPathFor` from B4. Nothing reads
+   them; the mounted pages gate on the flag. Remove or align at cutover.
+8. Exam families: item-level concept attribution and human review of bank items (section AB) before an exam
+   attempt can produce learning evidence.
+9. An automated accessibility scan, once tooling exists.
+

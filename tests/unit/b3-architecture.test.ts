@@ -20,7 +20,9 @@ function walk(dir: string, out: string[] = []): string[] {
 // B5 added the start authority beside the B3 files (assessment-start.service.ts). It is certified by
 // b5-runtime-integration; the guards below keep describing the B3 evidence loop itself.
 const START = 'src/lib/assessment-execution/assessment-start.service.ts';
-const B3 = walk('src/lib/assessment-execution').filter((f) => f !== START);
+// B5-R: the completion authority and the exam-side boundary (certified by b5r-runtime-closure).
+const B5_FILES = [START, 'src/lib/assessment-execution/assessment-completion.service.ts', 'src/lib/assessment-execution/assessment-exam.service.ts'];
+const B3 = walk('src/lib/assessment-execution').filter((f) => !B5_FILES.includes(f));
 const PURE = B3.filter((f) => !f.endsWith('.service.ts'));
 const SERVICE = 'src/lib/assessment-execution/assessment-execution.service.ts';
 const MIGRATION = 'database/migrations/20261110_1800_assessment_snapshot.sql';
@@ -158,13 +160,24 @@ describe('B3 is not cut over', () => {
     const importers = walk('src').filter((f) => !f.startsWith('src/lib/assessment-execution/') && /from '[^']*assessment-execution[^']*'|import\('[^']*assessment-execution/.test(read(f)));
     // B4: the experience layer and its shared components read B3's result TYPES to present them (asserted
     // type-only below). No page, route or service under src/app imports the execution module.
-    const presentation = (f: string) => f.startsWith('src/lib/assessment-experience/') || f.startsWith('src/components/assessment/');
+    const presentation = (f: string) => f.startsWith('src/lib/assessment-experience/') || f.startsWith('src/components/assessment/') || f === 'src/app/dashboard/assessment/[sessionId]/AssessmentRunner.tsx';
     // B5: the two legacy evidence write sites import ONE thing -- the execution-authority check that makes them
     // stand down for a canonical attempt. They import nothing else of the execution module.
     const legacySites = ['src/app/api/quizzes/generate-and-take/route.ts', 'src/lib/simulation/scoring.service.ts'];
-    expect(importers.filter((f) => !presentation(f)).sort()).toEqual(legacySites);
+    // B5-R: the canonical runtime. Two routes (start, completion) and two Exam Core hooks (provenance at
+    // start, evidence at completion) call the ONE authority each; none of them calls the loop, the writer or
+    // the snapshot store directly.
+    const canonicalSites = ['src/app/api/assessments/learning/[sessionId]/complete/route.ts', 'src/app/api/assessments/learning/start/route.ts', 'src/lib/exam-core/exam-instance.service.ts', 'src/lib/exam-core/post-completion.ts'];
+    // B5-R: the mounted setup page reads ONE thing -- whether the cutover flag is on (it does not exist otherwise).
+    const flagReaders = ['src/app/dashboard/assessment/page.tsx'];
+    expect(importers.filter((f) => !presentation(f)).sort()).toEqual([...legacySites, ...canonicalSites, ...flagReaders].sort());
+    for (const f of flagReaders) expect(read(f).match(/^import [^;]*assessment-execution[^;]*;/gm), f).toEqual(["import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/assessment-start.service';"]);
     for (const f of legacySites) expect(read(f).match(/^import [^;]*assessment-execution[^;]*;/gm), f).toEqual([expect.stringMatching(/^import \{ executionAuthorityOf(QuizSession|ExamAttempt) \} from '@\/lib\/assessment-execution\/assessment-start\.service';$/)]);
-    for (const f of importers.filter(presentation)) expect((read(f).match(/^import [^;]*assessment-execution[^;]*;/gm) ?? []).every((line) => line.startsWith('import type ')), f).toBe(true);
+    for (const f of canonicalSites) expect(read(f), f).not.toMatch(/completeAssessmentEvidence\(|persistAssessmentSnapshot\(|updateMastery\(|buildOperationKey\(|planEvidence\(/);
+    // Presentation reads B3's TYPES. One value is allowed: the pure reader that verifies a stored snapshot
+    // (the active shell serves a frozen assessment and must check it is one). No IO, no writer, no loop.
+    const pureReader = "import { readFrozenAssessment } from '@/lib/assessment-execution/frozen-assessment';";
+    for (const f of importers.filter(presentation)) expect((read(f).match(/^import [^;]*assessment-execution[^;]*;/gm) ?? []).every((line) => line.startsWith('import type ') || line === pureReader), f).toBe(true);
   });
 
   it('the existing write sites are still the ones the runtime uses, and historical records read as before', () => {

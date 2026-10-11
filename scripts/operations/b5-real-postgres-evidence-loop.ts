@@ -22,7 +22,10 @@ async function main() {
   const { db } = await import('@/lib/db');
   const { coverageOfLearningCacheItem, coverageOfReviewedBankItem } = await import('@/lib/assessment-foundation/question-coverage');
   const { projectEvidenceNeeds, solveLearningBlueprint, solveExamPreparationBlueprint, solveOfficialBlueprint } = await import('@/lib/assessment-blueprint');
-  const { freezeAssessment, executionRefs } = await import('@/lib/assessment-execution');
+  const { freezeAssessment, executionRefs, positionOf, readFrozenAssessment } = await import('@/lib/assessment-execution');
+  const { completeLearningAssessment } = await import('@/lib/assessment-execution/assessment-completion.service');
+  const { attachExamInstanceProvenance, completeExamAssessmentEvidence } = await import('@/lib/assessment-execution/assessment-exam.service');
+  type FrozenAssessment = import('@/lib/assessment-execution').FrozenAssessment;
   const { completeAssessmentEvidence, learningActivityFor, loadAssessmentSnapshot, persistAssessmentSnapshot } = await import('@/lib/assessment-execution/assessment-execution.service');
   const { resultViewOf } = await import('@/lib/assessment-experience/views');
   type QuestionCoverage = import('@/lib/assessment-foundation/question-coverage').QuestionCoverage;
@@ -113,6 +116,9 @@ async function main() {
   check('the SUPPORTING concept is recorded on the source evidence, not credited', (meta.assessment?.nonConsequential ?? []).some((n: any) => n.canonicalConceptId === C('C2') && n.status === 'NON_CONSEQUENTIAL'));
   check('mastery_records row created and one mastery_events row', before.mastery === undefined && after.mastery !== undefined && (await events(concept.C1.learner)) === 1);
   check('Knowledge State recalculated by the writer (row exists, evidence_count = 1)', before.ks === undefined && Number(after.ks?.evidence_count) === 1, after.ks);
+  // B5-R: ordinary practice without hints is NOT independent evidence -- the row says so explicitly and the projector obeys it
+  check('practice evidence carries independenceEligible = false', meta.independenceEligible === false, meta.independenceEligible);
+  check('practice without hints: evidence counted, independent evidence NOT counted', Number(after.ks?.evidence_count) === 1 && Number(after.ks?.independent_evidence_count) === 0, after.ks);
   check('C2 (SUPPORTING only): no evidence, no mastery, no Knowledge State', (await evidenceRows(concept.C2.learner)).length === 0 && (await mastery(concept.C2.learner)) === undefined && (await ks(concept.C2.learner)) === undefined);
   check('C3 (TRANSITIONAL label link): no evidence', (await evidenceRows(concept.C3.learner)).length === 0);
   check('C4 (single PRIMARY): evidence written', (await evidenceRows(concept.C4.learner)).length === 1);
@@ -154,8 +160,9 @@ async function main() {
   const ksAfterProve = await ks(concept.C1.learner);
   console.log('PROVE  C1', JSON.stringify({ before: ksBeforeProve, after: ksAfterProve }));
   check('independent PROVE: outcome is ATTRIBUTED and independent', prove.ok && prove.state.attributionOutcomes[0]?.status === 'ATTRIBUTED' && prove.state.attributionOutcomes[0]?.independent === true);
-  // The projector's own rule (knowledge-state.service): evidence written without assistance counts as independent,
-  // whatever the activity. B3 changes none of that; this only proves the PROVE evidence went through it.
+  // B5-R rule: independent = the activity allows it + no hint + direct PRIMARY attribution + canonical identity.
+  const proveRows = await evidenceRows(concept.C1.learner);
+  check('independent PROVE evidence carries independenceEligible = true', proveRows[proveRows.length - 1]?.metadata?.independenceEligible === true);
   check('independent PROVE: the projector counted one more evidence and one more independent evidence', Number(ksAfterProve?.evidence_count) === Number(ksBeforeProve?.evidence_count) + 1 && Number(ksAfterProve?.independent_evidence_count) === Number(ksBeforeProve?.independent_evidence_count) + 1, { before: ksBeforeProve, after: ksAfterProve });
   check('Knowledge State moved through the canonical projector (state before -> after reported by the loop)', prove.ok && prove.state.conceptStateChanges[0]?.before === ksBeforeProve?.mastery_state && prove.state.conceptStateChanges[0]?.after === ksAfterProve?.mastery_state, prove.ok ? prove.state.conceptStateChanges : null);
   const recRetain = await session(`b5-${run}-retain`, 'canonical_retain');
@@ -165,6 +172,22 @@ async function main() {
   const memory = await one(`SELECT memory_status, policy_version FROM concept_memory_state WHERE student_id = $1 AND concept_id = $2`, [student, concept.C1.learner]);
   console.log('RETAIN C1', JSON.stringify({ retentionCheckQualified: retain.ok ? retain.state.evidence[0]?.retentionCheckQualified : null, memory }));
   check('retention check: written as RETENTION_CHECK and the memory projector answered (qualified is a boolean, memory state row exists)', retain.ok && retain.state.evidence[0]?.status === 'APPLIED' && typeof retain.state.evidence[0]?.retentionCheckQualified === 'boolean' && memory !== undefined, { memory });
+
+  const recHint = await session(`b5-${run}-prove-hint`, 'canonical_prove');
+  const frozenHint = learn([cached('p2', 'C1')], ['C1'], 'MASTERY_CHECK');
+  await persistAssessmentSnapshot(recHint, frozenHint);
+  const ksBeforeHint = await ks(concept.C1.learner);
+  await completeAssessmentEvidence({ record: recHint, studentId: student, attemptRef: recHint.id, responses: [{ ...scored(frozenHint.items[0].key, 1), hintsUsed: 1 }] }, { log: () => undefined });
+  const ksAfterHint = await ks(concept.C1.learner);
+  const hintRows = await evidenceRows(concept.C1.learner);
+  check('PROVE with a hint: evidence counted, NOT independent (independenceEligible = false)', hintRows[hintRows.length - 1]?.metadata?.independenceEligible === false && Number(ksAfterHint?.evidence_count) === Number(ksBeforeHint?.evidence_count) + 1 && Number(ksAfterHint?.independent_evidence_count) === Number(ksBeforeHint?.independent_evidence_count), { before: ksBeforeHint, after: ksAfterHint });
+  // a historical row (no explicit field) keeps the legacy reading: unassisted = independent. No reinterpretation.
+  const { updateMastery } = await import('@/services/mastery.service');
+  const legacyBefore = await ks(concept.C1.learner);
+  await updateMastery({ studentId: student, conceptId: concept.C1.learner, subjectId: subject, evidence: { studentId: student, conceptId: concept.C1.learner, sourceType: 'PRACTICE_QUIZ', result: 'correct', difficulty: 3, timestamp: new Date() }, identity: { operationType: 'QUIZ_SUBMISSION', operationId: `b5-${run}-legacy-evidence`, conceptId: concept.C1.learner, source: 'SERVER_GENERATED' } } as never);
+  const legacyAfter = await ks(concept.C1.learner);
+  const legacyRows = await evidenceRows(concept.C1.learner);
+  check('legacy evidence (no explicit field): projector keeps the legacy behaviour (unassisted counts as independent)', (legacyRows[legacyRows.length - 1]?.metadata ?? {}).independenceEligible === undefined && Number(legacyAfter?.independent_evidence_count) === Number(legacyBefore?.independent_evidence_count) + 1, { before: legacyBefore, after: legacyAfter });
 
   /* ---------------- 5. cross-curriculum: one state, contextual provenance ---------------- */
   const recA = await session(`b5-${run}-curr-a`, 'topic_practice');
@@ -186,12 +209,14 @@ async function main() {
   const version = (await one(`INSERT INTO exam_versions (exam_definition_id, version_label) VALUES ($1, 'v1') RETURNING id`, [definition])).id as string;
   const profile = (await one(`INSERT INTO student_exam_profiles (student_id, exam_definition_id, exam_version_id) VALUES ($1, $2, $3) RETURNING id`, [student, definition, version])).id as string;
   const component = (await one(`INSERT INTO assessment_components (exam_version_id, name, component_type) VALUES ($1, 'Paper 1', 'PAPER') RETURNING id`, [version])).id as string;
-  const instanceWith = async (mode: string, simulationType: string, audience: 'STUDENT' | 'TECHNICAL_DEMO') => {
+  // the instance's own frozen form: what the attempt executes. A snapshot may only describe exactly this form.
+  const formOf = (frozen: FrozenAssessment | null, fidelity = 'REDUCED') => (frozen ? { v: 1, fidelity, slots: frozen.items.map((i) => ({ index: positionOf(i), approvedItemId: i.question.id })) } : {});
+  const instanceWith = async (mode: string, simulationType: string, audience: 'STUDENT' | 'TECHNICAL_DEMO', form: object = {}) => {
     const attempt = (await one(`INSERT INTO exam_attempts (student_exam_profile_id, exam_version_id, frozen_configuration) VALUES ($1, $2, '{}'::jsonb) RETURNING id`, [profile, version])).id as string;
     const plan = (await one(`INSERT INTO simulation_plans (student_id, exam_version_id, simulation_type, plan) VALUES ($1, $2, $3, '{}'::jsonb) RETURNING id`, [student, version, simulationType])).id as string;
     const sim = (await one(`INSERT INTO simulation_attempts (exam_attempt_id, student_id, exam_profile_id, exam_version_id, simulation_type, simulation_plan_id, timing_mode, pause_allowed, language) VALUES ($1, $2, $3, $4, $5, $6, 'UNTIMED', true, 'es') RETURNING id`, [attempt, student, profile, version, simulationType, plan])).id as string;
-    const instance = (await one(`INSERT INTO exam_instances (student_id, exam_profile_id, exam_version_id, component_ids, mode, timing_mode, status, form, form_frozen_at, simulation_attempt_id, content_audience) VALUES ($1, $2, $3, $4::uuid[], $5, 'UNTIMED', 'IN_PROGRESS', '{}'::jsonb, now(), $6, $7) RETURNING id`, [student, profile, version, [component], mode, sim, audience])).id as string;
-    return { record: { kind: 'EXAM_INSTANCE' as const, id: instance }, attempt };
+    const instance = (await one(`INSERT INTO exam_instances (student_id, exam_profile_id, exam_version_id, component_ids, mode, timing_mode, status, form, form_frozen_at, simulation_attempt_id, content_audience) VALUES ($1, $2, $3, $4::uuid[], $5, 'UNTIMED', 'IN_PROGRESS', $8::jsonb, now(), $6, $7) RETURNING id, form::text AS form_text`, [student, profile, version, [component], mode, sim, audience, JSON.stringify(form)]));
+    return { record: { kind: 'EXAM_INSTANCE' as const, id: instance.id as string }, attempt, sim, formText: instance.form_text as string };
   };
   // the widened CHECK accepts every B1 attempt type on real Postgres
   const types: string[] = [];
@@ -218,7 +243,12 @@ async function main() {
   const prepBank = [bank('prep-derived', 'lo-1', ['C1', 'C2'], false), bank('prep-explicit', 'lo-2', ['C4'], true)];
   const prepSolution = solveExamPreparationBlueprint({ policy: { studentId: student, examTargetId: profile, examVersionId: version, objective: 'COVERAGE', examObjectives: [{ learningObjectiveId: 'lo-1', assessmentComponentId: component, blueprintPositions: 1 }, { learningObjectiveId: 'lo-2', assessmentComponentId: component, blueprintPositions: 1 }], gaps: [] }, coverages: prepBank });
   const prepFrozen = freezeAssessment({ solution: prepSolution, coverages: prepBank, studentId: student, createdAt: AS_OF, path: 'EXAM_PRACTICE', intent: 'COVERAGE', exam });
-  const prep = await instanceWith('PRACTICE', 'EXAM_PRACTICE', 'STUDENT');
+  const prep = await instanceWith('PRACTICE', 'EXAM_PRACTICE', 'STUDENT', formOf(prepFrozen));
+  // FrozenForm owns the items: provenance for an instance with no form, or for a different form, is refused
+  const noForm = await instanceWith('PRACTICE', 'EXAM_PRACTICE', 'STUDENT');
+  check('exam instance without a frozen form: snapshot refused (FORM_NOT_FROZEN)', JSON.stringify(await persistAssessmentSnapshot(noForm.record, prepFrozen)) === JSON.stringify({ ok: false, reason: 'FORM_NOT_FROZEN' }));
+  const otherForm = await instanceWith('PRACTICE', 'EXAM_PRACTICE', 'STUDENT', { v: 1, fidelity: 'REDUCED', slots: [{ index: 0, approvedItemId: 'some-other-item' }, { index: 1, approvedItemId: 'prep-explicit' }] });
+  check('exam instance with a DIFFERENT form: snapshot refused (FORM_MISMATCH), nothing stored', JSON.stringify(await persistAssessmentSnapshot(otherForm.record, prepFrozen)) === JSON.stringify({ ok: false, reason: 'FORM_MISMATCH' }) && (await one(`SELECT assessment_snapshot FROM exam_instances WHERE id = $1`, [otherForm.record.id])).assessment_snapshot === null);
   check('exam instance: snapshot stored on exam_instances', JSON.stringify(await persistAssessmentSnapshot(prep.record, prepFrozen)) === JSON.stringify({ ok: true, stored: 'NEW' }));
   const c4EvidenceBefore = (await evidenceRows(concept.C4.learner)).length;
   const c1EvidenceBefore = (await evidenceRows(concept.C1.learner)).length;
@@ -229,8 +259,12 @@ async function main() {
   check('exam preparation: explicit item attribution -> one EXAM_SIMULATION evidence row', prepRun.ok && c4Rows.length === c4EvidenceBefore + 1 && examRow.source_type === 'EXAM_SIMULATION' && examRow.result === 'partial');
   check('exam preparation: derived-only item -> no evidence for its concepts', (await evidenceRows(concept.C1.learner)).length === c1EvidenceBefore && prepRun.ok && prepRun.state.attributionOutcomes.filter((o) => o.itemKey.endsWith('prep-derived')).every((o) => o.status === 'DERIVED_ONLY'));
   check('exam scope on the evidence row: target (from the attempt FK), version, attempt', examRow.metadata?.examScope?.examTargetId === profile && examRow.metadata?.examScope?.examVersionId === version && examRow.metadata?.examScope?.examAttemptId === prep.attempt && examRow.metadata?.examScope?.source === 'EXAM_ATTEMPT');
+  check('exam evidence is never independent evidence (independenceEligible = false)', examRow.metadata?.independenceEligible === false);
   check('exam operation key is attempt + frozen position', String(examRow.operation_key).startsWith(`EXAM_SIMULATION_RESPONSE::${prep.attempt}.`));
   const prepRetry = await completeAssessmentEvidence({ record: prep.record, studentId: student, attemptRef: prep.attempt, responses: prepFrozen.items.map((i) => scored(i.key, 0.5)) }, noGaps);
+  // "editing assessment provenance cannot change the frozen form" / "the form cannot drift from its provenance"
+  check('storing provenance left exam_instances.form untouched', (await one(`SELECT form::text AS t FROM exam_instances WHERE id = $1`, [prep.record.id])).t === prep.formText);
+  check('exam form items = executed exam items (snapshot refs equal the form positions)', JSON.stringify(executionRefs(prepFrozen).map((r) => [r.slotIndex ?? r.order, r.question.id])) === JSON.stringify(formOf(prepFrozen).slots!.map((s) => [s.index, s.approvedItemId])));
   check('exam preparation retry: nothing written twice', prepRetry.ok && prepRetry.state.evidence.every((e) => e.status === 'DUPLICATE_IDEMPOTENT') && (await evidenceRows(concept.C4.learner)).length === c4EvidenceBefore + 1);
   const foreign = await instanceWith('PRACTICE', 'EXAM_PRACTICE', 'STUDENT');
   check('an attempt that is not the instance\'s own is refused', JSON.stringify(await completeAssessmentEvidence({ record: prep.record, studentId: student, attemptRef: foreign.attempt, responses: [] }, noGaps)) === JSON.stringify({ ok: false, reason: 'ATTEMPT_NOT_BOUND_TO_SNAPSHOT' }));
@@ -239,7 +273,7 @@ async function main() {
   const officialBank = [bank('off-1', 'lo-1', ['C1', 'C2'], false), bank('off-2', 'lo-2', ['C4'], false)];
   const positions = [0, 1].map((index) => ({ index, blueprintObjectiveTargetId: `bot-${index}`, assessmentComponentId: component, learningObjectiveId: `lo-${index + 1}`, questionType: null, difficultyRange: null }));
   const officialFrozen = freezeAssessment({ solution: solveOfficialBlueprint({ policy: { studentId: student, examTargetId: profile, examVersionId: version, blueprintId: null, positions }, coverages: officialBank }), coverages: officialBank, studentId: student, createdAt: AS_OF, path: 'REDUCED_MOCK', exam });
-  const official = await instanceWith('MOCK', 'REDUCED_MOCK', 'STUDENT');
+  const official = await instanceWith('MOCK', 'REDUCED_MOCK', 'STUDENT', formOf(officialFrozen));
   await persistAssessmentSnapshot(official.record, officialFrozen);
   const totalBefore = Number((await one(`SELECT count(*)::int AS n FROM learning_evidence WHERE student_id = $1`, [student])).n);
   const officialRun = await completeAssessmentEvidence({ record: official.record, studentId: student, attemptRef: official.attempt, responses: officialFrozen.items.map((i) => scored(i.key, 1)) }, noGaps);
@@ -250,7 +284,7 @@ async function main() {
   // TECHNICAL_DEMO: explicit attribution and a perfect score still produce nothing
   const demoBank = [bank('demo-1', 'lo-1', ['C1'], true), bank('demo-2', 'lo-2', ['C4'], true)];
   const demoFrozen = freezeAssessment({ solution: solveOfficialBlueprint({ policy: { studentId: student, examTargetId: profile, examVersionId: version, blueprintId: null, positions }, coverages: demoBank }), coverages: demoBank, studentId: student, createdAt: AS_OF, path: 'REDUCED_MOCK', exam });
-  const demo = await instanceWith('MOCK', 'REDUCED_MOCK', 'TECHNICAL_DEMO');
+  const demo = await instanceWith('MOCK', 'REDUCED_MOCK', 'TECHNICAL_DEMO', formOf(demoFrozen));
   await persistAssessmentSnapshot(demo.record, demoFrozen);
   const demoRun = await completeAssessmentEvidence({ record: demo.record, studentId: student, attemptRef: demo.attempt, responses: demoFrozen.items.map((i) => scored(i.key, 1)) }, noGaps);
   const totalDemo = Number((await one(`SELECT count(*)::int AS n FROM learning_evidence WHERE student_id = $1`, [student])).n);
@@ -314,8 +348,56 @@ async function main() {
   const legacyInstance = await instanceWith('PRACTICE', 'EXAM_PRACTICE', 'STUDENT');
   check('execution authority of exam attempts: snapshot instance CANONICAL, plain instance LEGACY', (await executionAuthorityOfExamAttempt(prep.attempt)) === 'CANONICAL' && (await executionAuthorityOfExamAttempt(legacyInstance.attempt)) === 'LEGACY');
   // the started attempt completes through the loop, from its own stored snapshot
-  const startedRun = await completeAssessmentEvidence({ record: started.record, studentId: student, attemptRef: started.record.id, responses: startedRow.questions.map((x: any) => scored(x.assessmentItemKey, 1)) }, { log: () => undefined });
-  check('a started attempt completes through the canonical loop and writes its evidence once', startedRun.ok && startedRun.state.evidence.length === 2 && startedRun.state.evidence.every((e) => e.status === 'APPLIED') && startedRun.state.assessment.snapshotId === started.snapshotId);
+  // B5-R: the ONE completion authority (the route calls exactly this). The grader is injected: no AI call here.
+  const grade = async (_q: unknown, answer: string) => ({ score: answer === 'a' ? 1 : 0 });
+  const answers = startedRow.questions.map((x: any) => ({ itemKey: x.assessmentItemKey, answer: 'a' }));
+  check('completion authority refuses a LEGACY session and another Student', JSON.stringify(await completeLearningAssessment({ studentId: student, sessionId: `b5-${run}-legacy`, answers }, { grade })) === JSON.stringify({ ok: false, reason: 'NOT_CANONICAL' }) && JSON.stringify(await completeLearningAssessment({ studentId: other, sessionId: started.record.id, answers }, { grade })) === JSON.stringify({ ok: false, reason: 'NOT_FOUND' }));
+  const startedRun = await completeLearningAssessment({ studentId: student, sessionId: started.record.id, answers }, { grade, loopDeps: { log: () => undefined } });
+  check('a started attempt completes through the completion authority and writes its evidence once', startedRun.ok && startedRun.state.evidence.length === 2 && startedRun.state.evidence.every((e) => e.status === 'APPLIED') && startedRun.state.assessment.snapshotId === started.snapshotId);
+  check('completion marks the session completed', (await one(`SELECT status, completed_at FROM quiz_sessions WHERE id = $1`, [started.record.id])).status === 'completed');
+  const totalStarted = Number((await one(`SELECT count(*)::int AS n FROM learning_evidence WHERE student_id = $1`, [student])).n);
+  const again = await completeLearningAssessment({ studentId: student, sessionId: started.record.id, answers }, { grade, loopDeps: { log: () => undefined } });
+  check('completion retry: DUPLICATE_IDEMPOTENT, no new evidence row', again.ok && again.state.evidence.every((e) => e.status === 'DUPLICATE_IDEMPOTENT') && Number((await one(`SELECT count(*)::int AS n FROM learning_evidence WHERE student_id = $1`, [student])).n) === totalStarted);
+  const afterCompletion = await startLearningAssessment(startInput, { ...quiet, enabled: () => true });
+  check('a start after completion is a NEW assessment (new session, new selection)', afterCompletion.ok && afterCompletion.resumed === false && afterCompletion.record.id !== started.record.id && solves === 2);
+
+  /* ---------------- 9. exam instance: provenance at start, evidence at completion (real rows) ---------------- */
+  const org = (await one(`INSERT INTO academic_organizations (name) VALUES ($1) RETURNING id`, [`B5 org ${run}`])).id as string;
+  const programme = (await one(`INSERT INTO academic_programmes (organization_id, name, programme_type) VALUES ($1, $2, 'ADMISSION_EXAM') RETURNING id`, [org, `B5 programme ${run}`])).id as string;
+  const academicSubject = (await one(`INSERT INTO academic_subjects (programme_id, name) VALUES ($1, $2) RETURNING id`, [programme, `B5 subject ${run}`])).id as string;
+  const structureVersion = (await one(`INSERT INTO structure_versions (academic_subject_id, version_label) VALUES ($1, 'v1') RETURNING id`, [academicSubject])).id as string;
+  const node = (await one(`INSERT INTO structure_nodes (structure_version_id, node_type, source_label) VALUES ($1, 'TOPIC', 'B5 node') RETURNING id`, [structureVersion])).id as string;
+  const author = (await one(`INSERT INTO users (clerk_id) VALUES ($1) RETURNING id`, [`b5-author-${run}`])).id as string;
+  const approved = async (label: string) => {
+    const objective = (await one(`INSERT INTO learning_objectives (structure_node_id, description) VALUES ($1, $2) RETURNING id`, [node, `B5 objective ${label}`])).id as string;
+    const item = (await one(`INSERT INTO approved_items (learning_objective_id, question_type, content, created_by, status) VALUES ($1, 'multiple_choice', '{"marks":2}'::jsonb, $2, 'PUBLISHED') RETURNING id`, [objective, author])).id as string;
+    return { objective, item };
+  };
+  const derivedItem = await approved('derived');
+  const explicitItem = await approved('explicit');
+  const realForm = { v: 1, fidelity: 'REDUCED', slots: [{ index: 0, approvedItemId: derivedItem.item }, { index: 1, approvedItemId: explicitItem.item }, { index: 2, approvedItemId: null }] };
+  const runtime = await instanceWith('PRACTICE', 'EXAM_PRACTICE', 'STUDENT', realForm);
+  // coverage is injected (the hosted bank has no eligible content to describe); everything else is the real path
+  const loadCoverage = (async () => [bank(derivedItem.item, derivedItem.objective, ['C1', 'C2'], false), bank(explicitItem.item, explicitItem.objective, ['C4'], true)]) as never;
+  check('exam provenance is not attached while the flag is off', JSON.stringify(await attachExamInstanceProvenance(runtime.record.id, AS_OF, { loadCoverage })) === JSON.stringify({ attached: false, reason: 'DISABLED' }) && (await executionAuthorityOfExamAttempt(runtime.attempt)) === 'LEGACY');
+  const attached = await attachExamInstanceProvenance(runtime.record.id, AS_OF, { enabled: () => true, loadCoverage });
+  const runtimeRow = await one(`SELECT form::text AS form_text, assessment_snapshot FROM exam_instances WHERE id = $1`, [runtime.record.id]);
+  const runtimeFrozen = readFrozenAssessment(runtimeRow.assessment_snapshot);
+  check('exam start: provenance attached from the instance form; the attempt is now CANONICAL', attached.attached === true && runtimeFrozen.ok && runtimeFrozen.frozen.path === 'EXAM_PRACTICE' && runtimeFrozen.frozen.form?.positions === 2 && (await executionAuthorityOfExamAttempt(runtime.attempt)) === 'CANONICAL', attached);
+  check('exam start: the stored form is exactly what it was', runtimeRow.form_text === runtime.formText);
+  const respond = (item: { objective: string; item: string }, score: number, review: string) => q(`INSERT INTO exam_attempt_item_responses (exam_attempt_id, assessment_component_id, learning_objective_id, approved_item_id, item_snapshot, score, max_score, review_status) VALUES ($1, $2, $3, $4, '{}'::jsonb, $5, 2, $6)`, [runtime.attempt, component, item.objective, item.item, score, review]);
+  await respond(derivedItem, 2, 'NONE');
+  await respond(explicitItem, 2, 'REVIEW_REQUIRED');
+  const examBefore = Number((await one(`SELECT count(*)::int AS n FROM learning_evidence WHERE student_id = $1`, [student])).n);
+  const pending = await completeExamAssessmentEvidence(runtime.sim, student, noGaps);
+  check('exam completion: derived-only item scored without evidence; an item awaiting review is not evidence yet', pending.ok && pending.state.score.scored === 1 && pending.state.score.pendingReview === 1 && Number((await one(`SELECT count(*)::int AS n FROM learning_evidence WHERE student_id = $1`, [student])).n) === examBefore, pending.ok ? pending.state.score : pending);
+  await q(`UPDATE exam_attempt_item_responses SET review_status = 'REVIEWED' WHERE exam_attempt_id = $1 AND approved_item_id = $2`, [runtime.attempt, explicitItem.item]);
+  const reviewed = await completeExamAssessmentEvidence(runtime.sim, student, noGaps);
+  const runtimeRows = await q(`SELECT operation_key, source_type, metadata FROM learning_evidence WHERE student_id = $1 AND operation_key LIKE $2`, [student, `EXAM_SIMULATION_RESPONSE::${runtime.attempt}.%`]);
+  check('exam completion after review: ONE evidence row, for the explicitly attributed item, keyed by attempt + position 1', reviewed.ok && runtimeRows.length === 1 && runtimeRows[0].operation_key === `EXAM_SIMULATION_RESPONSE::${runtime.attempt}.1::${concept.C4.learner}` && runtimeRows[0].source_type === 'EXAM_SIMULATION' && runtimeRows[0].metadata?.independenceEligible === false, runtimeRows.map((r) => r.operation_key));
+  const reviewedAgain = await completeExamAssessmentEvidence(runtime.sim, student, noGaps);
+  check('exam completion retry: nothing written twice', reviewedAgain.ok && reviewedAgain.state.evidence.every((e) => e.status === 'DUPLICATE_IDEMPOTENT') && Number((await one(`SELECT count(*)::int AS n FROM learning_evidence WHERE student_id = $1`, [student])).n) === examBefore + 1);
+  check('a LEGACY exam attempt is not processed by the canonical completion', JSON.stringify(await completeExamAssessmentEvidence(legacyInstance.sim, student, noGaps)) === JSON.stringify({ ok: false, reason: 'NOT_CANONICAL' }));
 
   /* ---------------- summary ---------------- */
   const failed = checks.filter((c) => !c.ok);

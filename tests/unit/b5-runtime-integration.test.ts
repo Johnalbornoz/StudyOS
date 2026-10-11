@@ -223,7 +223,11 @@ describe('B5 execution authority -- one engine per attempt', () => {
       }
       return out;
     };
-    expect(walk('src/app').filter((f) => /completeAssessmentEvidence|startLearningAssessment|persistAssessmentSnapshot/.test(read(f)))).toEqual([]);
+    // B5-R: the only routes on the canonical path are its own two, and each calls ONE authority; no route
+    // reaches the loop or the snapshot store, and none calls both a canonical and a legacy writer
+    expect(walk('src/app').filter((f) => /completeAssessmentEvidence|persistAssessmentSnapshot/.test(read(f)))).toEqual([]);
+    expect(walk('src/app').filter((f) => /startLearningAssessment|completeLearningAssessment/.test(read(f))).sort()).toEqual(['src/app/api/assessments/learning/[sessionId]/complete/route.ts', 'src/app/api/assessments/learning/start/route.ts']);
+    for (const f of ['src/app/api/assessments/learning/[sessionId]/complete/route.ts', 'src/app/api/assessments/learning/start/route.ts']) expect(read(f), f).not.toMatch(/updateMastery|generate-and-take|storeQuiz|gradeQuizAnswer/);
   });
 });
 

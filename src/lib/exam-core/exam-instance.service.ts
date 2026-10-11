@@ -21,6 +21,7 @@
  * DELETED from any state (rules in `deleteExamInstance`). A "new attempt"
  * is always a NEW instance from zero; an instance is never reset.
  */
+import { attachExamInstanceProvenance } from '@/lib/assessment-execution/assessment-exam.service';
 import { itemDimensionValues } from './slot-constraints';
 import { db } from '@/lib/db';
 import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/blueprint.service';
@@ -520,6 +521,14 @@ export async function startExamInstance(instanceId: string, params: { language: 
     `UPDATE exam_instances SET status = 'IN_PROGRESS', simulation_attempt_id = $2, started_at = now() WHERE id = $1 AND status = 'READY' RETURNING *`,
     [instance.id, simulationAttempt.id]
   );
+  // B5-R: under canonical execution the started instance gets its FrozenAssessment provenance, which
+  // references the form frozen above. It changes nothing of the instance; if it cannot be attached the
+  // attempt stays on the legacy evidence path, and the start never fails because of it.
+  if (r.rows[0]) {
+    await attachExamInstanceProvenance(instance.id, new Date().toISOString())
+      .then((o) => { if (!o.attached && o.reason !== 'DISABLED') console.warn('[b5r-exam-provenance]', JSON.stringify({ instanceId: instance.id, reason: o.reason, detail: o.detail ?? null })); })
+      .catch((e) => console.warn('[b5r-exam-provenance]', JSON.stringify({ instanceId: instance.id, reason: 'ERROR', detail: e instanceof Error ? e.message.slice(0, 160) : null })));
+  }
   return toInstance(r.rows[0]);
 }
 

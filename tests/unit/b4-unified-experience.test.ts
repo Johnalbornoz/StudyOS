@@ -458,7 +458,10 @@ describe('B4 authority guardrails', () => {
 
   it('no runtime cutover: no route imports the Blueprint Core service or the execution service, and no start is wired', () => {
     const app = walk('src/app');
-    expect(app.filter((f) => /assessment-execution\.service|assessment-blueprint\.service|assessment-experience\.service/.test(read(f)))).toEqual([]);
+    // B5-R: the two mounted pages read the experience READ MODELS (setup, active run). Nothing under src/app
+    // imports the Blueprint Core service or the execution service.
+    expect(app.filter((f) => /assessment-execution\.service|assessment-blueprint\.service/.test(read(f)))).toEqual([]);
+    expect(app.filter((f) => /assessment-experience\.service/.test(read(f))).sort()).toEqual(['src/app/dashboard/assessment/[sessionId]/page.tsx', 'src/app/dashboard/assessment/page.tsx']);
     expect(app.filter((f) => /persistAssessmentSnapshot|completeAssessmentEvidence|freezeAssessment|solveLearningForStudent/.test(read(f)))).toEqual([]);
     // the two existing evidence write sites are untouched
     expect(read('src/app/api/quizzes/generate-and-take/route.ts')).toMatch(/await updateMastery\(\{/);
