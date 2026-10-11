@@ -17,7 +17,7 @@ export type TeacherL8MessageKey =
   | 'l8.exams.noLearners' | 'l8.exams.noLearners.body' | 'l8.exams.noData' | 'l8.exams.noData.body'
   | 'l8.exams.summary.learners' | 'l8.exams.summary.withGaps'
  
-  | 'l8.exams.concepts.title'
+  | 'l8.exams.domains.title' | 'l8.exams.objectives.title' | 'l8.exams.concepts.title'
   | 'l8.exams.learnerCount'
   | 'l8.exams.students.title'
   | 'l8.exams.students.gaps' | 'l8.exams.students.noGaps' | 'l8.exams.students.concepts'
@@ -46,7 +46,9 @@ const ES: TeacherL8Messages = {
   'l8.exam.kind.TOPIC_EXAM': 'Tema: {target}',
   'l8.exam.kind.DOMAIN_EXAM': 'Área: {target}',
   'l8.exam.kind.MINI_MOCK': 'Mini simulacro',
-  'l8.exams.withheld': 'Por ahora solo se muestran dificultades por tema. Los totales por área y por objetivo, los exámenes que prepara cada estudiante y los planes AICE no se muestran hasta que puedan limitarse a la materia de esta clase.',
+  'l8.exams.withheld': 'Los exámenes que prepara cada estudiante y los planes AICE no se muestran: todavía no pueden limitarse a la materia de esta clase.',
+  'l8.exams.domains.title': 'Dificultades por área',
+  'l8.exams.objectives.title': 'Dificultades por objetivo',
   'l8.exams.title': 'Dificultades en exámenes',
   'l8.exams.scope': 'Solo ves a los estudiantes activos de esta clase y solo las dificultades de la materia de esta clase. Los datos salen del último intento calificado de cada estudiante en cada examen; nunca se muestran respuestas individuales.',
   'l8.exams.noLearners': 'Esta clase todavía no tiene estudiantes activos.',
@@ -85,7 +87,9 @@ const EN: TeacherL8Messages = {
   'l8.exam.kind.TOPIC_EXAM': 'Topic: {target}',
   'l8.exam.kind.DOMAIN_EXAM': 'Area: {target}',
   'l8.exam.kind.MINI_MOCK': 'Mini mock',
-  'l8.exams.withheld': 'For now only gaps by topic are shown. Totals by area and by objective, the exams each student is preparing and AICE plans are not shown until they can be limited to this class’s subject.',
+  'l8.exams.withheld': 'The exams each student is preparing and AICE plans are not shown: they cannot yet be limited to this class’s subject.',
+  'l8.exams.domains.title': 'Gaps by area',
+  'l8.exams.objectives.title': 'Gaps by objective',
   'l8.exams.title': 'Exam gaps',
   'l8.exams.scope': 'You only see the active students of this class, and only gaps in this class’s subject. The data comes from each student’s latest scored attempt in each exam; individual answers are never shown.',
   'l8.exams.noLearners': 'This class has no active students yet.',
@@ -124,7 +128,9 @@ const DE: TeacherL8Messages = {
   'l8.exam.kind.TOPIC_EXAM': 'Thema: {target}',
   'l8.exam.kind.DOMAIN_EXAM': 'Bereich: {target}',
   'l8.exam.kind.MINI_MOCK': 'Mini-Probeprüfung',
-  'l8.exams.withheld': 'Derzeit werden nur Lücken nach Thema angezeigt. Summen nach Bereich und Lernziel, die Prüfungen der einzelnen Lernenden und AICE-Pläne werden erst angezeigt, wenn sie auf das Fach dieser Klasse begrenzt werden können.',
+  'l8.exams.withheld': 'Die Prüfungen der einzelnen Lernenden und AICE-Pläne werden nicht angezeigt: Sie lassen sich noch nicht auf das Fach dieser Klasse begrenzen.',
+  'l8.exams.domains.title': 'Lücken nach Bereich',
+  'l8.exams.objectives.title': 'Lücken nach Lernziel',
   'l8.exams.title': 'Lücken in Prüfungen',
   'l8.exams.scope': 'Du siehst nur die aktiven Lernenden dieser Klasse und nur Lücken im Fach dieser Klasse. Die Daten stammen aus dem letzten bewerteten Versuch jeder Person pro Prüfung; einzelne Antworten werden nie angezeigt.',
   'l8.exams.noLearners': 'Diese Klasse hat noch keine aktiven Lernenden.',
@@ -163,7 +169,9 @@ const FR: TeacherL8Messages = {
   'l8.exam.kind.TOPIC_EXAM': 'Thème : {target}',
   'l8.exam.kind.DOMAIN_EXAM': 'Domaine : {target}',
   'l8.exam.kind.MINI_MOCK': 'Mini examen blanc',
-  'l8.exams.withheld': 'Pour l’instant, seules les difficultés par thème sont affichées. Les totaux par domaine et par objectif, les examens préparés par chaque élève et les plans AICE ne sont pas affichés tant qu’ils ne peuvent pas être limités à la matière de cette classe.',
+  'l8.exams.withheld': 'Les examens préparés par chaque élève et les plans AICE ne sont pas affichés : ils ne peuvent pas encore être limités à la matière de cette classe.',
+  'l8.exams.domains.title': 'Difficultés par domaine',
+  'l8.exams.objectives.title': 'Difficultés par objectif',
   'l8.exams.title': 'Difficultés aux examens',
   'l8.exams.scope': 'Vous ne voyez que les élèves actifs de cette classe, et seulement les difficultés dans la matière de cette classe. Les données proviennent de la dernière tentative notée de chaque élève à chaque examen ; les réponses individuelles ne sont jamais affichées.',
   'l8.exams.noLearners': 'Cette classe n’a pas encore d’élèves actifs.',
@@ -202,7 +210,9 @@ const PT: TeacherL8Messages = {
   'l8.exam.kind.TOPIC_EXAM': 'Tema: {target}',
   'l8.exam.kind.DOMAIN_EXAM': 'Área: {target}',
   'l8.exam.kind.MINI_MOCK': 'Mini simulado',
-  'l8.exams.withheld': 'Por agora só se mostram dificuldades por tema. Os totais por área e por objetivo, os exames que cada estudante prepara e os planos AICE não são mostrados até poderem ser limitados à disciplina desta turma.',
+  'l8.exams.withheld': 'Os exames que cada estudante prepara e os planos AICE não são mostrados: ainda não podem ser limitados à disciplina desta turma.',
+  'l8.exams.domains.title': 'Dificuldades por área',
+  'l8.exams.objectives.title': 'Dificuldades por objetivo',
   'l8.exams.title': 'Dificuldades em exames',
   'l8.exams.scope': 'Só vês os estudantes ativos desta turma e só as dificuldades da disciplina desta turma. Os dados vêm da última tentativa classificada de cada estudante em cada exame; nunca se mostram respostas individuais.',
   'l8.exams.noLearners': 'Esta turma ainda não tem estudantes ativos.',

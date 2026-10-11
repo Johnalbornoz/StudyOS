@@ -849,3 +849,163 @@ Hand-resolved files to expect: `api/teacher/exam-insights/route.ts` and `tests/u
 ## NEXT SAFE ACTION
 
 Orchestrator reviews the R2 commit and routes CR-L10-03 to L8 and CR-L9-ENROLMENT-LOOKUP to L9.
+
+---
+
+# CR-L8-01 GLOBAL CLOSE — 2026-10-11
+
+Run after the Orchestrator's instruction "CLOSE CR-L8-01 GLOBAL".
+
+## LANE
+
+`L10_SHARED_FOUNDATION`, closing run for CR-L8-01 across L2, L8 and L10.
+
+| | |
+|---|---|
+| Worktree | `/Users/jalbornoz/PROYECTOS/studyos-cr-l8-01-close` (new) |
+| Branch | `fix/cr-l8-01-global-close` (new, local only) |
+| Built from | L8 `8569b81` (which already contains L10 `79b7f50`), plus a local merge of L2 `f54cc14` |
+
+The three inputs were on two unrelated branches, and the change needs all three in one tree, so I made a new branch rather than commit into any lane's branch. No lane branch, integration branch or input commit was modified.
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+```
+L2_SUBJECT_AGGREGATES = PASS
+L10_TEACHER_BRIDGE_SUBJECT_SCOPE = PASS
+L8_DOMAIN_OBJECTIVE_DISPLAY = PASS
+CR_L8_01 = CLOSED
+FULL_SUITE = 531 files, 9,579 tests passed
+TYPECHECK = clean (no output)
+BUILD = exit 0, 229/229 static pages
+READY_FOR_FULL_PRODUCT_CONVERGENCE = YES for these three inputs; see the two caveats below
+```
+
+Caveats on the last line:
+
+1. It covers what I ran: this branch (L10 + L8 + L2). None of the three inputs is on `integration/stage-convergence` yet, and I did not attempt that merge, so conflicts with the B5 line there are unknown.
+2. The L8 page change is not browser-verified (no environment available to this lane).
+
+Of the items L10 was tracking from other lanes, L9's enrolment lookup is fixed on L9's branch (`620a76c`); the L5 preflight is still to be run before any shared database migration.
+
+## BASE SHA
+
+`8569b81` (L8), which contains `79b7f50` (L10). L2 input: `f54cc14`.
+
+## FINAL SHA
+
+Two commits on `fix/cr-l8-01-global-close`: the merge of `f54cc14` (`941cd29`) and the closing commit on top of it. Run `git rev-parse fix/cr-l8-01-global-close`.
+
+## FILES CHANGED
+
+By this run (besides the merge of L2's five files, which are unchanged):
+
+- `src/lib/authorization/teacher-exam-scope.ts` (L10)
+- `src/lib/teacher/exam-insights.service.ts`, `src/app/dashboard/teacher/classes/[classId]/exam-insights/page.tsx`, `src/lib/i18n/teacher-l8-messages.ts` (L8)
+- `tests/unit/l10-cr-l8-01-teacher-exam-subject-scope.test.ts` (rewritten), `tests/unit/l8-teacher-te1-te2.test.ts`
+- `scripts/operations/l10-foundation-integration.ts`
+- this report, `docs/orchestration/status/L10_STATUS.md`
+
+`src/lib/exam-core/**` was not edited; it is L2's `f54cc14` as merged.
+
+## LOCKS USED
+
+`SHARED_FOUNDATION` for the entry point. The three L8 files were edited because the instruction asks for the L8 display to be restored in this run. No migration, no shared database.
+
+## TESTS
+
+| Command | Result |
+|---|---|
+| Focused L2 / L8 / L10: `npx vitest run tests/unit/l2-*.test.ts tests/unit/l8*.test.ts tests/unit/l10-*.test.ts tests/unit/aice-pisa-security.test.ts` | 13 files, 304 tests passed |
+| Full: `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED -u POSTGRES_URL npx vitest run` | 531 files, 9,579 tests passed |
+| `npx tsc --noEmit -p .` | no output |
+| `npx next build` | exit 0; 229/229 static pages |
+| L2's DB certification on this merged tree: `scripts/operations/l2-cr-l8-01-subject-gaps-cert.sh` (throwaway Postgres 18) | `L2_CR_L8_01_SUBJECT_GAPS_CERT = PASS`, 18 checks, the real `examGapsFor` query |
+| L10's DB suite on this merged tree: `scripts/l10-ephemeral-db-test.sh` (throwaway Postgres 14) | ledger 83 → 86; integration 179 passed, 0 failed |
+| Browser, HTTP E2E, DEV / Stage / Production | NOT_RUN |
+
+The seven required regressions, all in `tests/unit/l10-cr-l8-01-teacher-exam-subject-scope.test.ts` unless noted:
+
+| # | Requirement | Test |
+|---|---|---|
+| 1 | Mathematics Teacher receives only Mathematics domain / objective / concept aggregates | "domain, objective, concept and per-student aggregates are all present, and all Mathematics" |
+| 2 | Reading objectives / gaps of the same learner are absent | "no Reading concept, objective, domain or count anywhere in the Mathematics teacher's response" |
+| 3 | Multi-subject exam returns only the authorized subject slice | "one exam (PAA) holds both subjects…" and "an objective mapped to concepts of BOTH subjects contributes only its in-subject slice to each teacher" |
+| 4 | Class with no linked subject returns empty scoped aggregates, never unscoped | "200 with every aggregate empty", "the bridge was asked with an EMPTY scope…", "fails closed even if the bridge ignored the scope" |
+| 5 | Coordinator cannot use the Teacher route | "GET /api/teacher/exam-insights => 403 for the institution's own coordinator; nothing is read" |
+| 6 | Institution / internal unscoped caller remains compatible | "omitting canonicalSubjectIds is still the unscoped behaviour…", "the Institution route still calls the bridge without a subject scope…"; and L2's own unit and DB tests |
+| 7 | L8 concept / exam assignment subject-scope tests remain green | `l8-teacher-te1-te2.test.ts` (22) and `l8r1-teacher-exam-practice.test.ts`, run in the focused set |
+
+How the unit tests reach the bridge: `examGapsFor` is replaced by a stand-in built from L2's own exported pure functions (`subjectScopeOf`, `scopeGapRowsToSubjects`, `aggregateGapRows`) over fixture gap rows of one multi-subject exam. So the subject cut and the aggregation in those tests are L2's real code; only the SQL fetch is replaced. The SQL itself is covered by L2's DB certification, which I ran on this merged tree.
+
+## FINDINGS
+
+### 1. L10 shared entry point
+
+`getTeacherClassExamGaps` now always passes `canonicalSubjectIds` to `examGapsFor`:
+
+| Class | Passed |
+|---|---|
+| has a canonical subject | `[canonicalSubjectId]` |
+| has no governed canonical subject | `[]` (the bridge returns nothing) |
+
+It is never omitted on this path. Before, a class without a subject short-circuited without calling the bridge; it now calls with `[]` as instructed, and still returns empty whatever comes back.
+
+Preserved: the teacher-only gate (`resolveTeacherClassScope`, never an institution admin), the ACTIVE-roster limit, and fail-closed behaviour.
+
+The earlier concept-level cut in this file is gone, because the bridge now does the cut. What replaced it is a check of the bridge's answer:
+
+- if any returned concept is not of the requested subject, the **whole** answer is discarded (its domain and objective rows would be unscoped too);
+- if any returned learner is outside the class roster, the whole answer is discarded;
+- if the subject lookup fails, nothing is returned.
+
+So a regression in the bridge shows up as an empty view, not as a leak.
+
+`withheld` is now `['EXAM_GOALS', 'AICE_ENTRIES']`; `subjectScope.objectiveAggregates` reads `'SUBJECT_SCOPED'`.
+
+### 2. L8 exam insights
+
+- The service still reads exam data only through `getTeacherClassExamGaps`. A test fails on any Teacher file that calls `examGapsFor` or `examGoalsFor`, or reads the AICE plan tables.
+- The page renders again: gaps by area (`byDomain`), by objective (`byObjective`), by topic (`byConcept`) and per student.
+- Goals and AICE entries are not rendered; the notice now names only those two.
+- Messages: `l8.exams.domains.title` and `l8.exams.objectives.title` restored in the five locales with their original wording; `l8.exams.withheld` reworded in the five locales.
+
+One number changed meaning and I adjusted L8 for it: the bridge's per-student `gaps` is the count of in-subject gap **objectives**, while the page labels the per-student figure as **topics**. `examInsightsByStudent` now shows the number of in-subject gap concepts under that label, so the label and the number agree.
+
+### 3. What a Mathematics teacher gets, on the fixture
+
+One multi-subject exam; one learner with a Mathematics gap, a Reading gap, an objective mapped to both subjects, and an objective with no published concept:
+
+| | Unscoped (institution) | Mathematics teacher |
+|---|---|---|
+| Gap objectives | 4 | 2 (the Mathematics one and the mixed one) |
+| Areas | 4 | 2 |
+| Concepts | Mathematics and Reading | Mathematics only |
+| The unmapped objective | present | absent |
+
+### 4. Still not available to a Teacher
+
+Exam goals and AICE entries (no governed subject mapping), and item-level review on exam attempts (a review item carries no subject). These are separate from CR-L8-01 and remain as described in the R1 / R2 sections (CR-L10-08).
+
+## BLOCKERS
+
+NONE.
+
+## CHANGE_REQUESTS
+
+| # | State |
+|---|---|
+| CR-L8-01 | CLOSED on `fix/cr-l8-01-global-close` |
+| CR-L10-01 (L2: subject-aware aggregates) | CLOSED by `f54cc14` for domain / objective aggregates. The part about a subject attribution for exam goals and AICE syllabi remains open |
+| CR-L10-03 (L8: use the shared entry point) | CLOSED by `a93b809` and this run |
+| CR-L10-08 (L2: Student-visibility predicate; subject of review items) | OPEN |
+
+## MERGE RECOMMENDATION
+
+Use `fix/cr-l8-01-global-close` as the convergence input for L8 + L10 + L2 together: it supersedes `8569b81`, `79b7f50` and `f54cc14` taken separately. Merging the three separately would leave `teacher-exam-scope.ts` calling the bridge without the subject option.
+
+## NEXT SAFE ACTION
+
+Orchestrator reviews the two commits on `fix/cr-l8-01-global-close`.

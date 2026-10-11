@@ -1,27 +1,38 @@
 /**
- * CR-L8-01 (Orchestrator) -- Teacher exam-gap visibility is scoped by BOTH the authorized class/student
- * AND the authorized academic subject. A Mathematics teacher must not receive Reading gaps.
+ * CR-L8-01 (Orchestrator) -- GLOBAL CLOSE.
+ *
+ * Teacher exam-gap visibility is scoped by BOTH the authorized class/student AND the authorized academic
+ * subject. A Mathematics teacher must not receive Reading gaps.
+ *
+ * Three parts now meet:
+ *   L2  `examGapsFor(..., { canonicalSubjectIds })` builds every aggregate from in-subject objectives only.
+ *   L10 `getTeacherClassExamGaps` ALWAYS passes `canonicalSubjectIds` on the Teacher path -- `[subject]`, or
+ *       `[]` for a class with no governed subject -- and verifies what comes back.
+ *   L8  reads exam data only through `getTeacherClassExamGaps` and renders the scoped aggregates.
  *
  * Required regressions:
- *   - authorized class + matching subject  => visible
- *   - authorized class + different subject => hidden
- *   - unrelated class                      => hidden
- *   - Coordinator cannot use the Teacher route as a bypass
+ *   1. the Mathematics Teacher receives only Mathematics domain / objective / concept aggregates
+ *   2. Reading objectives / gaps of the same learner are absent
+ *   3. a multi-subject exam returns only the authorized subject slice
+ *   4. a class with no linked canonical subject returns empty scoped aggregates, never unscoped data
+ *   5. a Coordinator cannot use the Teacher route
+ *   6. the existing Institution / internal unscoped caller remains compatible
+ *   7. the L8 concept / exam assignment subject-scope tests stay green (tests/unit/l8*.test.ts, run with this file)
  *
- * The world below is a small relational fixture behind the real guards and the real route; the exam
- * bridge (`examGapsFor`, L2-owned, not modified) is a spy that returns what it returns today: every gap
- * of the learners it is asked for, across all subjects.
+ * The exam bridge is a stand-in built from L2's OWN pure authorities -- `subjectScopeOf`,
+ * `scopeGapRowsToSubjects`, `aggregateGapRows` -- over fixture gap rows of ONE multi-subject exam, so the
+ * aggregation and the subject cut exercised here are L2's real code. Everything else is real: the L10 guards,
+ * the shared entry point, the L8 service and the route.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
-const { MATHS, READING, C_MATH, C_READ, C_UNKNOWN, CLASS_MATHS, CLASS_READING, CLASS_NO_SUBJECT, CLASS_OTHER, ANA, BEN, h, world } = vi.hoisted(() => {
+const { MATHS, READING, C_MATH, C_READ, CLASS_MATHS, CLASS_READING, CLASS_NO_SUBJECT, CLASS_OTHER, ANA, BEN, h, world } = vi.hoisted(() => {
   const MATHS = 'aaaaaaaa-0000-4000-8000-00000000000a';
   const READING = 'bbbbbbbb-0000-4000-8000-00000000000b';
   const C_MATH = 'c0000000-0000-4000-8000-000000000001';
   const C_READ = 'c0000000-0000-4000-8000-000000000002';
-  const C_UNKNOWN = 'c0000000-0000-4000-8000-000000000003';
   const CLASS_MATHS = '11111111-1111-4111-8111-111111111111';
   const CLASS_READING = '22222222-2222-4222-8222-222222222222';
   const CLASS_NO_SUBJECT = '33333333-3333-4333-8333-333333333333';
@@ -38,13 +49,16 @@ const { MATHS, READING, C_MATH, C_READ, C_UNKNOWN, CLASS_MATHS, CLASS_READING, C
     roster: { [CLASS_MATHS]: [ANA], [CLASS_READING]: [ANA], [CLASS_NO_SUBJECT]: [ANA], [CLASS_OTHER]: [BEN] } as Record<string, string[]>,
     concepts: { [C_MATH]: MATHS, [C_READ]: READING } as Record<string, string>,
   };
-  return { MATHS, READING, C_MATH, C_READ, C_UNKNOWN, CLASS_MATHS, CLASS_READING, CLASS_NO_SUBJECT, CLASS_OTHER, ANA, BEN, h, world };
+  return { MATHS, READING, C_MATH, C_READ, CLASS_MATHS, CLASS_READING, CLASS_NO_SUBJECT, CLASS_OTHER, ANA, BEN, h, world };
 });
 
 vi.mock('@/lib/ai/request-metrics', () => ({ withAiRequestMetrics: (_: string, fn: any) => fn }));
 vi.mock('@/lib/exam-core/route-auth', () => ({ requireActor: async () => ({ ok: true, actorUserId: h.actor }) }));
-vi.mock('@/lib/exam-core/catalog/readiness-view', () => ({ stateSql: () => 'NULL' }));
-vi.mock('@/lib/exam-core/exam-gaps.service', () => ({ examGapsFor: (...a: any[]) => h.examGapsFor(...a), examGoalsFor: (...a: any[]) => h.examGoalsFor(...a) }));
+vi.mock('@/lib/exam-core/exam-gaps.service', async (original) => ({
+  ...(await original<typeof import('@/lib/exam-core/exam-gaps.service')>()),
+  examGapsFor: (...a: any[]) => h.examGapsFor(...a),
+  examGoalsFor: (...a: any[]) => h.examGoalsFor(...a),
+}));
 vi.mock('@/lib/db', () => {
   const query = async (sql: string, p: any[] = []) => {
     const s = sql.replace(/\s+/g, ' ');
@@ -53,6 +67,9 @@ vi.mock('@/lib/db', () => {
       const [actor, classId] = p;
       return (world.teaches[actor] ?? []).includes(classId) ? { rows: [{ class_id: classId, institution_id: 'inst-1', canonical_subject_id: world.classes[classId] }] } : { rows: [] };
     }
+    // getTeacherClass (L8 service): TEACHER_CLASS_SQL, then the class row
+    if (/SELECT 1 FROM \( SELECT DISTINCT c\.id FROM teacher_assignments ta/.test(s)) return { rows: (world.teaches[p[0]] ?? []).includes(p[1]) ? [{ id: p[1] }] : [] };
+    if (/FROM classes c JOIN institutions i ON i\.id = c\.institution_id LEFT JOIN grades g/.test(s)) return { rows: [{ id: p[0], name: 'Class', institution_id: 'inst-1', institution_name: 'School', grade_name: null, canonical_subject_id: world.classes[p[0]], subject_name: null }] };
     if (/SELECT student_id FROM class_enrollments WHERE class_id = \$1 AND status = 'ACTIVE'/.test(s)) return { rows: (world.roster[p[0]] ?? []).map((student_id) => ({ student_id })) };
     if (/FROM class_enrollments ce JOIN students s ON s\.id = ce\.student_id/.test(s)) return { rows: (world.roster[p[0]] ?? []).map((id) => ({ id, name: `name-${id.slice(-1)}`, email: null })) };
     if (/FROM canonical_concepts WHERE id = ANY\(\$1::uuid\[\]\) AND canonical_subject_id = \$2/.test(s)) return { rows: (p[0] as string[]).filter((id) => world.concepts[id] === p[1]).map((id) => ({ id })) };
@@ -68,81 +85,175 @@ import { GET as examInsightsGET } from '@/app/api/teacher/exam-insights/route';
 import { getTeacherClassExamGaps, scopeExamGapsToSubject, TeacherExamScopeDeniedError } from '@/lib/authorization/teacher-exam-scope';
 import { resolveTeacherClassScope } from '@/lib/authorization';
 import { getTeacherClassRoster } from '@/lib/teacher/read-model.service';
+import { getTeacherClassExamInsights, examInsightsByStudent } from '@/lib/teacher/exam-insights.service';
+import { aggregateGapRows, scopeGapRowsToSubjects, subjectScopeOf, type GapRow } from '@/lib/exam-core/exam-gaps.service';
 
-/** What the bridge returns today for Ana: a Maths gap AND a Reading gap, plus an objective with no concept. */
-const anaAllSubjects = () => ({
-  studentsWithResults: 1,
-  byDomain: [{ family: 'PAA', exam: 'PAA', domain: 'Matemáticas', students: 1 }, { family: 'PAA', exam: 'PAA', domain: 'Lectura y Redacción', students: 1 }],
-  byObjective: [{ family: 'PAA', exam: 'PAA', code: 'M-ALG-1', description: 'Resolver ecuaciones lineales', students: 1 }, { family: 'PAA', exam: 'PAA', code: 'L-INF-2', description: 'Inferir el propósito del autor', students: 1 }],
-  byConcept: [
-    { canonicalConceptId: C_MATH, name: 'Ecuaciones lineales', students: 1, studentIds: [ANA] },
-    { canonicalConceptId: C_READ, name: 'Inferencia', students: 1, studentIds: [ANA] },
-    { canonicalConceptId: C_UNKNOWN, name: 'Concepto sin materia', students: 1, studentIds: [ANA] },
-  ],
-  perStudent: [{ studentId: ANA, gaps: 3, concepts: [
-    { canonicalConceptId: C_MATH, name: 'Ecuaciones lineales', studentConceptId: null },
-    { canonicalConceptId: C_READ, name: 'Inferencia', studentConceptId: null },
-    { canonicalConceptId: C_UNKNOWN, name: 'Concepto sin materia', studentConceptId: null },
-  ] }],
+const gapRow = (student_id: string, code: string, description: string, domain: string, concept: [string, string, string] | null): GapRow => ({
+  student_id, family: 'PAA', exam: 'PAA', objective_id: `lo-${code}`, code, description, domain,
+  canonical_concept_id: concept?.[0] ?? null, concept_name: concept?.[1] ?? null, canonical_subject_id: concept?.[2] ?? null, student_concept_id: null,
 });
+const math: [string, string, string] = [C_MATH, 'Ecuaciones lineales', MATHS];
+const read: [string, string, string] = [C_READ, 'Inferencia', READING];
+/** ONE multi-subject exam (PAA). Ana: a Mathematics gap, a Reading gap, an objective mapped to BOTH subjects, and one with no published concept. */
+const GAP_ROWS: GapRow[] = [
+  gapRow(ANA, 'M-ALG-1', 'Resolver ecuaciones lineales', 'Matemáticas', math),
+  gapRow(ANA, 'L-INF-2', 'Inferir el propósito del autor', 'Lectura y Redacción', read),
+  gapRow(ANA, 'X-MIX-9', 'Interpretar un texto con datos numéricos', 'Razonamiento', math),
+  gapRow(ANA, 'X-MIX-9', 'Interpretar un texto con datos numéricos', 'Razonamiento', read),
+  gapRow(ANA, 'U-0', 'Objetivo sin concepto publicado', 'Otros', null),
+  gapRow(BEN, 'M-ALG-1', 'Resolver ecuaciones lineales', 'Matemáticas', math),
+];
+/** The bridge, as L2 defines it: subject scope, then aggregation. */
+const bridge = async (ids: string[], opts: { includePerStudent: boolean; canonicalSubjectIds?: readonly string[] }) =>
+  aggregateGapRows(scopeGapRowsToSubjects(GAP_ROWS.filter((r) => ids.includes(r.student_id)), subjectScopeOf(opts.canonicalSubjectIds)), opts.includePerStudent);
 
 const get = (classId: string) => examInsightsGET(new NextRequest(`https://t.test/api/teacher/exam-insights?classId=${classId}`));
-const READING_LEAKS = ['Inferencia', 'Lectura', 'L-INF-2', 'Inferir', C_READ];
+const dataOf = async (classId: string) => (await ((await get(classId)) as any).json()).data;
+const READING_LEAKS = ['Inferencia', 'Lectura', 'L-INF-2', 'Inferir', C_READ, READING];
 
 beforeEach(() => {
   h.actor = 'maths-teacher';
-  h.examGapsFor = vi.fn(async (ids: string[]) => (ids.includes(ANA) ? anaAllSubjects() : { studentsWithResults: 0, byDomain: [], byObjective: [], byConcept: [], perStudent: [] }));
+  h.examGapsFor = vi.fn(bridge);
   h.examGoalsFor = vi.fn(async () => ({ studentsPreparing: 0, byFramework: [], byObjective: [], perStudent: [] }));
 });
 
-describe('authorized class + matching subject => visible', () => {
-  it('the Mathematics teacher sees the Mathematics gap of a student of the class', async () => {
+describe('the Teacher path ALWAYS supplies the subject scope to the bridge', () => {
+  it('a class with a canonical subject => canonicalSubjectIds: [that subject]', async () => {
+    await getTeacherClassExamGaps('maths-teacher', CLASS_MATHS, { family: 'PAA' });
+    expect(h.examGapsFor).toHaveBeenCalledTimes(1);
+    expect(h.examGapsFor).toHaveBeenCalledWith([ANA], { families: ['PAA'], includePerStudent: true, canonicalSubjectIds: [MATHS] });
+  });
+
+  it('a class with NO governed subject => canonicalSubjectIds: [] (a scope that matches nothing) -- never omitted', async () => {
+    await getTeacherClassExamGaps('maths-teacher', CLASS_NO_SUBJECT);
+    const opts = h.examGapsFor.mock.calls[0][1];
+    expect(opts.canonicalSubjectIds).toEqual([]);
+    expect('canonicalSubjectIds' in opts).toBe(true);
+  });
+
+  it('in the source there is exactly one bridge call on this path and it passes the option', () => {
+    const src = readFileSync(join(process.cwd(), 'src/lib/authorization/teacher-exam-scope.ts'), 'utf8').replace(/^\s*(\/\/|\*|\/\*).*$/gm, '');
+    expect(src.match(/examGapsFor\(/g)).toHaveLength(1);
+    expect(src).toMatch(/const canonicalSubjectIds: string\[\] = scope\.canonicalSubjectId \? \[scope\.canonicalSubjectId\] : \[\];/);
+    expect(src).toMatch(/examGapsFor\(studentIds, \{ families: [^}]*includePerStudent: true, canonicalSubjectIds \}\)/);
+  });
+});
+
+describe('1. the Mathematics Teacher receives only Mathematics domain / objective / concept aggregates', () => {
+  it('domain, objective, concept and per-student aggregates are all present, and all Mathematics', async () => {
     const res: any = await get(CLASS_MATHS);
     expect(res.status).toBe(200);
     const { gaps, students } = (await res.json()).data;
     expect(students.map((s: any) => s.studentId)).toEqual([ANA]);
-    expect(gaps.perStudent).toEqual([{ studentId: ANA, gaps: 1, concepts: [{ canonicalConceptId: C_MATH, name: 'Ecuaciones lineales', studentConceptId: null }] }]);
+    expect(gaps.byDomain).toEqual([
+      { family: 'PAA', exam: 'PAA', domain: 'Matemáticas', students: 1 },
+      { family: 'PAA', exam: 'PAA', domain: 'Razonamiento', students: 1 },
+    ]);
+    expect(gaps.byObjective.map((o: any) => o.code).sort()).toEqual(['M-ALG-1', 'X-MIX-9']);
     expect(gaps.byConcept).toEqual([{ canonicalConceptId: C_MATH, name: 'Ecuaciones lineales', students: 1, studentIds: [ANA] }]);
+    expect(gaps.perStudent).toEqual([{ studentId: ANA, gaps: 2, concepts: [{ canonicalConceptId: C_MATH, name: 'Ecuaciones lineales', studentConceptId: null }] }]);
     expect(gaps.studentsWithResults).toBe(1);
-    expect(gaps.subjectScope).toEqual({ canonicalSubjectId: MATHS, objectiveAggregates: 'WITHHELD' });
+    expect(gaps.subjectScope).toEqual({ canonicalSubjectId: MATHS, objectiveAggregates: 'SUBJECT_SCOPED' });
   });
 
-  it('the Reading teacher of the same student sees the Reading gap, and only that', async () => {
+  it('the Reading teacher of the same student receives the Reading aggregates, and only those', async () => {
     h.actor = 'reading-teacher';
-    const gaps = (await (await get(CLASS_READING) as any).json()).data.gaps;
-    expect(gaps.perStudent[0].concepts.map((c: any) => c.canonicalConceptId)).toEqual([C_READ]);
-    expect(JSON.stringify(gaps)).not.toContain('Ecuaciones lineales');
+    const { gaps } = await dataOf(CLASS_READING);
+    expect(gaps.byDomain.map((d: any) => d.domain).sort()).toEqual(['Lectura y Redacción', 'Razonamiento']);
+    expect(gaps.byObjective.map((o: any) => o.code).sort()).toEqual(['L-INF-2', 'X-MIX-9']);
+    expect(gaps.byConcept.map((c: any) => c.canonicalConceptId)).toEqual([C_READ]);
+    const text = JSON.stringify(gaps);
+    for (const leak of ['Ecuaciones lineales', 'M-ALG-1', 'Matemáticas', C_MATH]) expect(text).not.toContain(leak);
   });
 });
 
-describe('authorized class + different subject => hidden', () => {
-  it('the Mathematics teacher receives nothing of the same student\'s Reading gaps -- no concept, no objective, no domain, no count', async () => {
-    const body = JSON.stringify((await (await get(CLASS_MATHS) as any).json()).data);
+describe('2. Reading objectives / gaps of the same learner are absent', () => {
+  it('no Reading concept, objective, domain or count anywhere in the Mathematics teacher\'s response', async () => {
+    const body = JSON.stringify(await dataOf(CLASS_MATHS));
     for (const leak of READING_LEAKS) expect(body).not.toContain(leak);
-    const { gaps } = JSON.parse(body);
-    expect(gaps.perStudent[0].gaps).toBe(1); // not 3: the bridge's count spans every subject
-    expect(gaps.byDomain).toEqual([]);
-    expect(gaps.byObjective).toEqual([]);
   });
 
-  it('a gap whose concept has no confirmed subject is dropped (fails closed)', async () => {
-    const body = JSON.stringify((await (await get(CLASS_MATHS) as any).json()).data);
-    expect(body).not.toContain(C_UNKNOWN);
-    expect(body).not.toContain('Concepto sin materia');
+  it('the per-student gap count is the in-subject one (2 Mathematics objectives), not the learner\'s 4 gap objectives', async () => {
+    const { gaps } = await dataOf(CLASS_MATHS);
+    expect(gaps.perStudent[0].gaps).toBe(2);
+    expect((await bridge([ANA], { includePerStudent: true })).perStudent[0].gaps).toBe(4); // what an unscoped read holds
   });
 
-  it('a class with no linked subject shows no gaps at all, and the bridge is not even asked', async () => {
+  it('an objective with no published concept mapping is omitted (it cannot be attributed to a subject)', async () => {
+    const body = JSON.stringify(await dataOf(CLASS_MATHS));
+    expect(body).not.toContain('U-0');
+    expect(body).not.toContain('Objetivo sin concepto publicado');
+    expect(body).not.toContain('Otros');
+  });
+});
+
+describe('3. a multi-subject exam returns only the authorized subject slice', () => {
+  it('one exam (PAA) holds both subjects; the Mathematics teacher gets the Mathematics slice of it', async () => {
+    const { gaps } = await dataOf(CLASS_MATHS);
+    expect(new Set(gaps.byDomain.map((d: any) => d.exam))).toEqual(new Set(['PAA']));
+    expect(gaps.byObjective).toHaveLength(2); // of the 4 gap objectives of that one exam
+  });
+
+  it('an objective mapped to concepts of BOTH subjects contributes only its in-subject slice to each teacher', async () => {
+    const maths = (await dataOf(CLASS_MATHS)).gaps;
+    expect(maths.byObjective.find((o: any) => o.code === 'X-MIX-9')).toMatchObject({ students: 1 });
+    expect(maths.perStudent[0].concepts.map((c: any) => c.canonicalConceptId)).toEqual([C_MATH]); // never the Reading concept of that objective
+    h.actor = 'reading-teacher';
+    const reading = (await dataOf(CLASS_READING)).gaps;
+    expect(reading.perStudent[0].concepts.map((c: any) => c.canonicalConceptId)).toEqual([C_READ]);
+  });
+});
+
+describe('4. a class with no linked canonical subject returns empty scoped aggregates, never unscoped data', () => {
+  it('200 with every aggregate empty', async () => {
     const res: any = await get(CLASS_NO_SUBJECT);
     expect(res.status).toBe(200);
     const { gaps } = (await res.json()).data;
-    expect([gaps.perStudent, gaps.byConcept, gaps.byDomain, gaps.byObjective]).toEqual([[], [], [], []]);
-    expect(h.examGapsFor).not.toHaveBeenCalled();
+    expect([gaps.studentsWithResults, gaps.byDomain, gaps.byObjective, gaps.byConcept, gaps.perStudent]).toEqual([0, [], [], [], []]);
+    expect(gaps.subjectScope).toEqual({ canonicalSubjectId: null, objectiveAggregates: 'SUBJECT_SCOPED' });
   });
 
-  it('scopeExamGapsToSubject: a student with only out-of-subject gaps disappears from the aggregate', async () => {
-    const onlyReading = { ...anaAllSubjects(), byConcept: [anaAllSubjects().byConcept[1]], perStudent: [{ studentId: ANA, gaps: 1, concepts: [anaAllSubjects().perStudent[0].concepts[1]] }] };
-    const scoped = await scopeExamGapsToSubject(onlyReading, MATHS);
-    expect([scoped.studentsWithResults, scoped.perStudent, scoped.byConcept]).toEqual([0, [], []]);
+  it('the bridge was asked with an EMPTY scope -- the same learner has gaps, and an unscoped call would have returned them', async () => {
+    await get(CLASS_NO_SUBJECT);
+    expect(h.examGapsFor.mock.calls[0][1].canonicalSubjectIds).toEqual([]);
+    expect((await bridge([ANA], { includePerStudent: true })).byObjective.length).toBeGreaterThan(0);
+  });
+
+  it('fails closed even if the bridge ignored the scope: nothing is passed on for a class without a subject', async () => {
+    h.examGapsFor = vi.fn(async (ids: string[]) => bridge(ids, { includePerStudent: true })); // a bridge that returns everything
+    const { gaps } = await dataOf(CLASS_NO_SUBJECT);
+    expect([gaps.byDomain, gaps.byObjective, gaps.byConcept, gaps.perStudent]).toEqual([[], [], [], []]);
+  });
+});
+
+describe('fail closed: the bridge\'s answer is verified, not trusted', () => {
+  it('if the bridge returns ANY concept outside the requested subject, the whole answer is discarded -- its domain / objective rows are unscoped too', async () => {
+    h.examGapsFor = vi.fn(async (ids: string[]) => bridge(ids, { includePerStudent: true })); // ignores canonicalSubjectIds
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { gaps } = await dataOf(CLASS_MATHS);
+    err.mockRestore();
+    expect([gaps.studentsWithResults, gaps.byDomain, gaps.byObjective, gaps.byConcept, gaps.perStudent]).toEqual([0, [], [], [], []]);
+  });
+
+  it('if the bridge returns a learner outside the class roster, the answer is discarded', async () => {
+    h.examGapsFor = vi.fn(async () => bridge([ANA, BEN], { includePerStudent: true, canonicalSubjectIds: [MATHS] }));
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { gaps } = await getTeacherClassExamGaps('maths-teacher', CLASS_MATHS);
+    err.mockRestore();
+    expect(JSON.stringify(gaps)).not.toContain(BEN);
+    expect(gaps.perStudent).toEqual([]);
+  });
+
+  it('scopeExamGapsToSubject: no subject => nothing; a clean in-subject aggregate passes through unchanged', async () => {
+    const clean = await bridge([ANA], { includePerStudent: true, canonicalSubjectIds: [MATHS] });
+    expect((await scopeExamGapsToSubject(clean, null)).perStudent).toEqual([]);
+    const passed = await scopeExamGapsToSubject(clean, MATHS);
+    expect([passed.byDomain, passed.byObjective, passed.byConcept, passed.perStudent]).toEqual([clean.byDomain, clean.byObjective, clean.byConcept, clean.perStudent]);
+  });
+
+  it('only the class roster is ever passed to the bridge', async () => {
+    await getTeacherClassExamGaps('maths-teacher', CLASS_MATHS);
+    expect(h.examGapsFor.mock.calls[0][0]).toEqual([ANA]);
   });
 });
 
@@ -155,49 +266,90 @@ describe('unrelated class => hidden', () => {
     await expect(getTeacherClassExamGaps('maths-teacher', CLASS_READING)).rejects.toBeInstanceOf(TeacherExamScopeDeniedError); // same student, not their class
     expect(await resolveTeacherClassScope('maths-teacher', CLASS_OTHER)).toBeNull();
   });
-
-  it('only the class roster is ever passed to the bridge, and a non-roster student it returned would be dropped', async () => {
-    h.examGapsFor = vi.fn(async () => ({ ...anaAllSubjects(), perStudent: [...anaAllSubjects().perStudent, { studentId: BEN, gaps: 1, concepts: [{ canonicalConceptId: C_MATH, name: 'Ecuaciones lineales', studentConceptId: null }] }], byConcept: [{ canonicalConceptId: C_MATH, name: 'Ecuaciones lineales', students: 2, studentIds: [ANA, BEN] }] }));
-    const { gaps } = await getTeacherClassExamGaps('maths-teacher', CLASS_MATHS);
-    expect(h.examGapsFor.mock.calls[0][0]).toEqual([ANA]);
-    expect(JSON.stringify(gaps)).not.toContain(BEN);
-    expect(gaps.byConcept[0]).toMatchObject({ students: 1, studentIds: [ANA] });
-  });
 });
 
-describe('Coordinator cannot use the Teacher route as a bypass', () => {
+describe('5. a Coordinator cannot use the Teacher route', () => {
   beforeEach(() => {
     h.actor = 'coordinator';
   });
 
   it('GET /api/teacher/exam-insights => 403 for the institution\'s own coordinator; nothing is read', async () => {
-    for (const classId of [CLASS_MATHS, CLASS_READING, CLASS_OTHER]) expect(((await get(classId)) as any).status).toBe(403);
+    for (const classId of [CLASS_MATHS, CLASS_READING, CLASS_OTHER, CLASS_NO_SUBJECT]) expect(((await get(classId)) as any).status).toBe(403);
     expect(h.examGapsFor).not.toHaveBeenCalled();
     expect(h.examGoalsFor).not.toHaveBeenCalled();
   });
 
-  it('the Teacher read model (roster) refuses the coordinator too', async () => {
+  it('the shared entry point, the L8 service and the Teacher roster read model all refuse the coordinator', async () => {
+    await expect(getTeacherClassExamGaps('coordinator', CLASS_MATHS)).rejects.toBeInstanceOf(TeacherExamScopeDeniedError);
+    await expect(getTeacherClassExamInsights('coordinator', CLASS_MATHS)).rejects.toThrow(/not a teacher/);
     await expect(getTeacherClassRoster('coordinator', CLASS_MATHS)).rejects.toThrow(/not authorized/);
     expect((await getTeacherClassRoster('maths-teacher', CLASS_MATHS)).map((r) => r.studentId)).toEqual([ANA]);
   });
 
   it('the teacher scope is resolved from a TEACHER membership only -- its query never consults an INSTITUTION_ADMIN membership', () => {
     const src = readFileSync(join(process.cwd(), 'src/lib/authorization/index.ts'), 'utf8');
-    const fn = src.slice(src.indexOf('export async function resolveTeacherClassScope'), src.indexOf('/**\n * F11-B'));
+    const fn = src.slice(src.indexOf('export async function resolveTeacherClassScope'), src.indexOf('export async function teacherSubjectScopeForLearner'));
     expect(fn).toMatch(/im\.membership_role = 'TEACHER'/);
     expect(fn).not.toMatch(/INSTITUTION_ADMIN|canAccessInstitution|canAccessClass/);
-    const readModel = readFileSync(join(process.cwd(), 'src/lib/teacher/read-model.service.ts'), 'utf8');
-    expect(readModel).not.toMatch(/canAccessClass\(/);
+    expect(readFileSync(join(process.cwd(), 'src/lib/teacher/read-model.service.ts'), 'utf8')).not.toMatch(/canAccessClass\(/);
   });
 });
 
-describe('L10-R1: goals and AICE entries are subject-scoped too', () => {
-  it('a Teacher receives no exam goals and no AICE entries (no governed subject attribution exists: fail closed), and is told what was withheld', async () => {
-    const res: any = await get(CLASS_MATHS);
-    const data = (await res.json()).data;
+describe('6. the existing Institution / internal unscoped caller remains compatible', () => {
+  it('omitting canonicalSubjectIds is still the unscoped behaviour: every gap, including unmapped objectives', async () => {
+    const unscoped = await bridge([ANA], { includePerStudent: false });
+    expect(unscoped.byObjective.map((o) => o.code).sort()).toEqual(['L-INF-2', 'M-ALG-1', 'U-0', 'X-MIX-9']);
+    expect(unscoped.byDomain.map((d) => d.domain).sort()).toEqual(['Lectura y Redacción', 'Matemáticas', 'Otros', 'Razonamiento']);
+    expect(subjectScopeOf(undefined)).toBeNull();
+    expect(subjectScopeOf([])).toEqual([]);
+  });
+
+  it('the Institution route still calls the bridge without a subject scope, for aggregates only (no per-student data)', () => {
+    const route = readFileSync(join(process.cwd(), 'src/app/api/institutions/[id]/intelligence/exam-insights/route.ts'), 'utf8');
+    const call = route.slice(route.indexOf('examGapsFor(ids,'), route.indexOf(')', route.indexOf('examGapsFor(ids,')) + 1);
+    expect(call).toMatch(/includePerStudent: false/);
+    expect(call).not.toMatch(/canonicalSubjectIds/);
+  });
+
+  it('the Teacher path and the Institution route are the ONLY callers of the bridge in application code', () => {
+    const root = process.cwd();
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(n) ? [p] : []; });
+    const callers = walk(join(root, 'src')).filter((f) => !f.endsWith('exam-gaps.service.ts') && /\bexamGapsFor\s*\(/.test(readFileSync(f, 'utf8').replace(/^\s*(\/\/|\*|\/\*).*$/gm, ''))).map((f) => f.slice(root.length + 1)).sort();
+    expect(callers).toEqual(['src/app/api/institutions/[id]/intelligence/exam-insights/route.ts', 'src/lib/authorization/teacher-exam-scope.ts']);
+  });
+});
+
+describe('L8 reads exam data only through the shared entry point, and shows the scoped aggregates', () => {
+  const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(n) ? [p] : []; });
+  const root = process.cwd();
+  const teacherFiles = () => [...walk(join(root, 'src/app/api/teacher')), ...walk(join(root, 'src/lib/teacher')), ...walk(join(root, 'src/app/dashboard/teacher'))];
+  const code = (f: string) => readFileSync(f, 'utf8').replace(/^\s*(\/\/|\*|\/\*).*$/gm, '');
+
+  it('no Teacher route, page or read model calls examGapsFor directly', () => {
+    expect(teacherFiles().filter((f) => /\bexamGapsFor\s*\(/.test(code(f))).map((f) => f.slice(root.length + 1))).toEqual([]);
+  });
+
+  it('the L8 service returns the scoped domain / objective / concept / per-student aggregates of the shared entry point, unchanged', async () => {
+    const view = await getTeacherClassExamInsights('maths-teacher', CLASS_MATHS);
+    const direct = await getTeacherClassExamGaps('maths-teacher', CLASS_MATHS);
+    expect(view.gaps).toEqual(direct.gaps);
+    expect(view.gaps.byDomain.length).toBeGreaterThan(0);
+    expect(view.gaps.byObjective.length).toBeGreaterThan(0);
+    expect(examInsightsByStudent(view)).toEqual([{ studentId: ANA, name: 'name-1', gaps: 1, concepts: [{ canonicalConceptId: C_MATH, name: 'Ecuaciones lineales' }] }]);
+  });
+
+  it('the page renders the area, objective, topic and per-student sections', () => {
+    const page = code(join(root, 'src/app/dashboard/teacher/classes/[classId]/exam-insights/page.tsx'));
+    for (const fragment of ["gaps.byDomain.slice(0, TOP).map", "gaps.byObjective.slice(0, TOP).map", "gaps.byConcept.slice(0, TOP).map", "rows.map((r) =>", "m['l8.exams.domains.title']", "m['l8.exams.objectives.title']"]) expect(page).toContain(fragment);
+  });
+});
+
+describe('still withheld: exam goals and AICE entries (no governed subject mapping)', () => {
+  it('a Teacher receives no exam goals and no AICE entries, and is told so; domain / objective aggregates are no longer withheld', async () => {
+    const data = await dataOf(CLASS_MATHS);
     expect(data.goals).toEqual({ studentsPreparing: 0, byFramework: [], byObjective: [], perStudent: [] });
     expect(data.aice).toEqual([]);
-    expect(data.withheld).toEqual(expect.arrayContaining(['EXAM_GOALS', 'AICE_ENTRIES', 'DOMAIN_AGGREGATES', 'OBJECTIVE_AGGREGATES']));
+    expect([...data.withheld].sort()).toEqual(['AICE_ENTRIES', 'EXAM_GOALS']);
     expect(h.examGoalsFor).not.toHaveBeenCalled();
   });
 
@@ -208,20 +360,10 @@ describe('L10-R1: goals and AICE entries are subject-scoped too', () => {
     const offenders = files.filter((f) => /\bexamGoalsFor\s*\(|aice_plan_entries|aice_diploma_plans/.test(readFileSync(f, 'utf8').replace(/^\s*(\/\/|\*).*$/gm, ''))).map((f) => f.slice(root.length + 1));
     expect(offenders).toEqual([]);
   });
-});
 
-describe('one entry point', () => {
-  const walk = (dir: string): string[] => readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(n) ? [p] : []; });
-
-  it('no Teacher route, page or read model calls the exam bridge\'s examGapsFor directly -- they go through getTeacherClassExamGaps', () => {
-    const root = process.cwd();
-    const files = [...walk(join(root, 'src/app/api/teacher')), ...walk(join(root, 'src/lib/teacher')), ...walk(join(root, 'src/app/dashboard/teacher'))];
-    const offenders = files.filter((f) => /\bexamGapsFor\s*\(/.test(readFileSync(f, 'utf8').replace(/^\s*(\/\/|\*).*$/gm, ''))).map((f) => f.slice(root.length + 1));
-    expect(offenders).toEqual([]);
-  });
-
-  it('the exam bridge itself was not modified for this (it has no subject option yet -- CR-L10-01 to L2)', () => {
-    const bridge = readFileSync(join(process.cwd(), 'src/lib/exam-core/exam-gaps.service.ts'), 'utf8');
-    expect(bridge).toMatch(/opts: \{ families\?: string\[\]; includePerStudent: boolean \}/);
+  it('the page does not render goals or AICE, and says what is withheld', () => {
+    const page = readFileSync(join(process.cwd(), 'src/app/dashboard/teacher/classes/[classId]/exam-insights/page.tsx'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(page).not.toMatch(/goals|aice/i);
+    expect(page).toMatch(/withheld\.length > 0 && <p className="ta-msg">\{m\['l8\.exams\.withheld'\]\}/);
   });
 });

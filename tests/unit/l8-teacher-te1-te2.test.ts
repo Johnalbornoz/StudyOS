@@ -18,11 +18,13 @@ vi.mock('@/lib/db', () => ({ db: { query: (...args: unknown[]) => query(...args)
 vi.mock('@/lib/ai/request-metrics', () => ({ withAiRequestMetrics: (_n: string, h: unknown) => h }));
 vi.mock('@/lib/exam-core/route-auth', () => ({ requireActor: vi.fn() }));
 vi.mock('@/lib/teacher/read-model.service', () => ({ getTeacherClassRoster: vi.fn() }));
-vi.mock('@/lib/exam-core/exam-gaps.service', () => ({ examGapsFor: vi.fn(), examGoalsFor: vi.fn() }));
+// The exam bridge is replaced by a stand-in built from L2's own pure authorities (subject scope + aggregation),
+// over fixture gap rows: it answers exactly as the real `examGapsFor` does for a given `canonicalSubjectIds`.
+vi.mock('@/lib/exam-core/exam-gaps.service', async (original) => ({ ...(await original<typeof import('@/lib/exam-core/exam-gaps.service')>()), examGapsFor: vi.fn(), examGoalsFor: vi.fn() }));
 
 import { requireActor } from '@/lib/exam-core/route-auth';
 import { getTeacherClassRoster } from '@/lib/teacher/read-model.service';
-import { examGapsFor, examGoalsFor } from '@/lib/exam-core/exam-gaps.service';
+import { examGapsFor, examGoalsFor, aggregateGapRows, scopeGapRowsToSubjects, subjectScopeOf, type GapRow } from '@/lib/exam-core/exam-gaps.service';
 import { getTeacherClassExamInsights, examInsightsByStudent, TeacherExamInsightsAccessDeniedError } from '@/lib/teacher/exam-insights.service';
 import { listIndividualAssignmentConcepts } from '@/lib/teacher/individual-assignment';
 import { TEACHER_L8_MESSAGES } from '@/lib/i18n/teacher-l8-messages';
@@ -39,20 +41,19 @@ const TEACHER = 'teacher-user';
 const COORDINATOR = 'coordinator-user';
 const OTHER_TEACHER = 'other-class-teacher';
 
-/** What the exam bridge returns for the roster: Ana has a Mathematics gap AND a Reading gap; an off-roster Student too. */
-const BRIDGE = {
-  studentsWithResults: 2,
-  byDomain: [{ family: 'PISA', exam: 'PISA', domain: 'Reading', students: 1 }],
-  byObjective: [{ family: 'PISA', exam: 'PISA', code: 'R1', description: 'Inference', students: 1 }],
-  byConcept: [
-    { canonicalConceptId: CC_MATH, name: 'Ratios', students: 1, studentIds: [ANA] },
-    { canonicalConceptId: CC_READ, name: 'Inference', students: 2, studentIds: [ANA, OUTSIDER] },
-  ],
-  perStudent: [
-    { studentId: ANA, gaps: 2, concepts: [{ canonicalConceptId: CC_MATH, name: 'Ratios', studentConceptId: null }, { canonicalConceptId: CC_READ, name: 'Inference', studentConceptId: null }] },
-    { studentId: OUTSIDER, gaps: 1, concepts: [{ canonicalConceptId: CC_READ, name: 'Inference', studentConceptId: null }] },
-  ],
-};
+const SUBJ_READ = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const row = (student_id: string, code: string, description: string, domain: string, concept: [string, string, string] | null): GapRow => ({
+  student_id, family: 'PISA', exam: 'PISA', objective_id: `lo-${code}`, code, description, domain,
+  canonical_concept_id: concept?.[0] ?? null, concept_name: concept?.[1] ?? null, canonical_subject_id: concept?.[2] ?? null, student_concept_id: null,
+});
+/** The gap rows behind one multi-subject exam: Ana has a Mathematics gap AND a Reading gap; an off-roster Student too. */
+const GAP_ROWS: GapRow[] = [
+  row(ANA, 'M1', 'Ratios and rates', 'Mathematics', [CC_MATH, 'Ratios', SUBJ_MATH]),
+  row(ANA, 'R1', 'Inference', 'Reading', [CC_READ, 'Inference', SUBJ_READ]),
+  row(OUTSIDER, 'R1', 'Inference', 'Reading', [CC_READ, 'Inference', SUBJ_READ]),
+];
+const bridge = async (ids: string[], opts: { includePerStudent: boolean; canonicalSubjectIds?: readonly string[] }) =>
+  aggregateGapRows(scopeGapRowsToSubjects(GAP_ROWS.filter((r) => ids.includes(r.student_id)), subjectScopeOf(opts.canonicalSubjectIds)), opts.includePerStudent);
 
 let classSubject: string | null = SUBJ_MATH;
 /** Scripts the database: only TEACHER teaches CLASS (a Mathematics class); Ana and Bea are its ACTIVE roster. */
@@ -80,7 +81,7 @@ beforeEach(() => {
   scriptDb();
   vi.mocked(requireActor).mockResolvedValue({ ok: true, actorUserId: TEACHER } as any);
   vi.mocked(getTeacherClassRoster).mockResolvedValue([{ studentId: ANA, name: 'Ana' }, { studentId: BEA, name: 'Bea' }]);
-  vi.mocked(examGapsFor).mockResolvedValue(BRIDGE as any);
+  vi.mocked(examGapsFor).mockImplementation(bridge as any);
 });
 
 describe('TE-2 service: the shared entry point, for the class\'s Teacher only', () => {
@@ -88,7 +89,8 @@ describe('TE-2 service: the shared entry point, for the class\'s Teacher only', 
     const r = await getTeacherClassExamInsights(TEACHER, CLASS, { family: 'PISA' });
     expect(r.klass.id).toBe(CLASS);
     expect(r.students.map((s) => s.studentId)).toEqual([ANA, BEA]);
-    expect(examGapsFor).toHaveBeenCalledWith([ANA, BEA], { families: ['PISA'], includePerStudent: true });
+    // CR-L8-01: the subject scope is ALWAYS passed on the Teacher path -- here the class's own subject.
+    expect(examGapsFor).toHaveBeenCalledWith([ANA, BEA], { families: ['PISA'], includePerStudent: true, canonicalSubjectIds: [SUBJ_MATH] });
     // Mathematics only: the same Student's Reading gap is gone at every level, and so is the off-roster Student.
     expect(r.gaps.byConcept.map((c) => c.canonicalConceptId)).toEqual([CC_MATH]);
     expect(r.gaps.perStudent).toEqual([{ studentId: ANA, gaps: 1, concepts: [expect.objectContaining({ canonicalConceptId: CC_MATH })] }]);
@@ -97,23 +99,27 @@ describe('TE-2 service: the shared entry point, for the class\'s Teacher only', 
     for (const foreign of [CC_READ, 'Inference', 'Reading', OUTSIDER]) expect(text).not.toContain(foreign);
   });
 
-  it('what the entry point withholds stays withheld: no area / objective totals, no goals, no AICE, and none is fetched here', async () => {
+  it('CR-L8-01: area and objective aggregates come back, cut to the class subject', async () => {
     const r = await getTeacherClassExamInsights(TEACHER, CLASS);
-    expect(r.gaps.byDomain).toEqual([]);
-    expect(r.gaps.byObjective).toEqual([]);
+    expect(r.gaps.byDomain).toEqual([{ family: 'PISA', exam: 'PISA', domain: 'Mathematics', students: 1 }]);
+    expect(r.gaps.byObjective).toEqual([{ family: 'PISA', exam: 'PISA', code: 'M1', description: 'Ratios and rates', students: 1 }]);
+    expect(r.gaps.subjectScope).toEqual({ canonicalSubjectId: SUBJ_MATH, objectiveAggregates: 'SUBJECT_SCOPED' });
+  });
+
+  it('what the entry point still withholds stays withheld: no goals, no AICE, and none is fetched here', async () => {
+    const r = await getTeacherClassExamInsights(TEACHER, CLASS);
     expect(r.goals).toEqual({ studentsPreparing: 0, byFramework: [], byObjective: [], perStudent: [] });
     expect(r.aice).toEqual([]);
-    expect([...r.withheld].sort()).toEqual(['AICE_ENTRIES', 'DOMAIN_AGGREGATES', 'EXAM_GOALS', 'OBJECTIVE_AGGREGATES']);
+    expect([...r.withheld].sort()).toEqual(['AICE_ENTRIES', 'EXAM_GOALS']);
     expect(examGoalsFor).not.toHaveBeenCalled();
     expect(query.mock.calls.some(([sql]) => /aice_/.test(String(sql)))).toBe(false);
   });
 
-  it('a class with no linked subject shows no gaps and the bridge is not asked', async () => {
+  it('a class with no linked subject shows no gaps: the bridge is asked with an EMPTY subject scope, never unscoped', async () => {
     classSubject = null;
     const r = await getTeacherClassExamInsights(TEACHER, CLASS);
-    expect(r.gaps.byConcept).toEqual([]);
-    expect(r.gaps.perStudent).toEqual([]);
-    expect(examGapsFor).not.toHaveBeenCalled();
+    expect([r.gaps.byDomain, r.gaps.byObjective, r.gaps.byConcept, r.gaps.perStudent]).toEqual([[], [], [], []]);
+    expect(vi.mocked(examGapsFor).mock.calls[0][1]).toMatchObject({ canonicalSubjectIds: [] });
   });
 
   it.each([['a Coordinator (institution admin)', COORDINATOR], ['a Teacher of another class', OTHER_TEACHER]])('%s is refused; no roster and no gaps are read', async (_who, actor) => {
@@ -218,7 +224,12 @@ describe('L8 surfaces: scope and wiring', () => {
     const page = strip(read('src/app/dashboard/teacher/classes/[classId]/exam-insights/page.tsx'));
     expect(page).toMatch(/getTeacherClassExamInsights\(actor\.id, classId\)/);
     expect(page).toMatch(/error instanceof TeacherExamInsightsAccessDeniedError\) notFound\(\)/);
-    expect(page).not.toMatch(/canAccessClass|canAccessInstitution|getTeacherClassRoster|examGapsFor|examGoalsFor|byDomain|byObjective|aice/);
+    expect(page).not.toMatch(/canAccessClass|canAccessInstitution|getTeacherClassRoster|examGapsFor|examGoalsFor|aice|goals/);
+    // CR-L8-01: the subject-scoped area and objective aggregates are rendered again.
+    expect(page).toMatch(/gaps\.byDomain\.slice\(0, TOP\)\.map/);
+    expect(page).toMatch(/gaps\.byObjective\.slice\(0, TOP\)\.map/);
+    expect(page).toMatch(/m\['l8\.exams\.domains\.title'\]/);
+    expect(page).toMatch(/m\['l8\.exams\.objectives\.title'\]/);
     expect(page).toMatch(/withheld\.length > 0 && <p className="ta-msg">\{m\['l8\.exams\.withheld'\]\}/);
   });
 

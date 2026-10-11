@@ -200,11 +200,17 @@ async function main() {
     byConcept: [{ canonicalConceptId: cMath, name: 'Linear equations', students: 1, studentIds: [s1] }, { canonicalConceptId: cRead, name: 'Inference', students: 1, studentIds: [s1] }],
     perStudent: [{ studentId: s1, gaps: 2, concepts: [{ canonicalConceptId: cMath, name: 'Linear equations', studentConceptId: null }, { canonicalConceptId: cRead, name: 'Inference', studentConceptId: null }] }],
   };
-  const mathsView = await scopeExamGapsToSubject(rawGaps, maths);
-  check('CR-L8-01 authorized class + matching subject => visible', mathsView.perStudent, [{ studentId: s1, gaps: 1, concepts: [{ canonicalConceptId: cMath, name: 'Linear equations', studentConceptId: null }] }]);
-  check('CR-L8-01 authorized class + different subject => hidden', JSON.stringify(mathsView).includes('Inference') || JSON.stringify(mathsView).includes('Lectura') || JSON.stringify(mathsView).includes('Inferir'), false);
-  check('CR-L8-01 a class with no subject sees no gaps', (await scopeExamGapsToSubject(rawGaps, null)).perStudent, []);
-  check('CR-L8-01 real path on an empty attempt history: scoped, empty, subject recorded', (await getTeacherClassExamGaps(tu.id, klass)).gaps.subjectScope, { canonicalSubjectId: maths, objectiveAggregates: 'WITHHELD' });
+  // CR-L8-01 (closed): the exam bridge cuts by subject; the shared entry point verifies its answer.
+  const mathsOnly = { ...rawGaps, byDomain: [{ family: 'PAA', exam: 'PAA', domain: 'Matemáticas', students: 1 }], byObjective: [{ family: 'PAA', exam: 'PAA', code: 'M1', description: 'Ecuaciones', students: 1 }], byConcept: [rawGaps.byConcept[0]], perStudent: [{ studentId: s1, gaps: 1, concepts: [rawGaps.perStudent[0].concepts[0]] }] };
+  const mathsView = await scopeExamGapsToSubject(mathsOnly, maths);
+  check('CR-L8-01 a subject-scoped answer passes through: domain, objective, concept and per-student aggregates', [mathsView.byDomain.length, mathsView.byObjective.length, mathsView.byConcept.length, mathsView.perStudent], [1, 1, 1, mathsOnly.perStudent]);
+  const mixedView = await scopeExamGapsToSubject(rawGaps, maths);
+  check('CR-L8-01 an answer holding a concept of ANOTHER subject is discarded whole (fail closed, never partial)', [mixedView.byDomain, mixedView.byObjective, mixedView.byConcept, mixedView.perStudent], [[], [], [], []]);
+  check('CR-L8-01 a class with no subject sees no gaps', (await scopeExamGapsToSubject(mathsOnly, null)).perStudent, []);
+  check('CR-L8-01 real bridge SQL with the subject scope, on an empty attempt history: scoped, empty, subject recorded', (await getTeacherClassExamGaps(tu.id, klass)).gaps.subjectScope, { canonicalSubjectId: maths, objectiveAggregates: 'SUBJECT_SCOPED' });
+  await db.query(`UPDATE classes SET canonical_subject_id = NULL WHERE id = $1`, [klass]);
+  check('CR-L8-01 real path, class without a governed subject: empty scoped aggregates', (await getTeacherClassExamGaps(tu.id, klass)).gaps, { studentsWithResults: 0, byDomain: [], byObjective: [], byConcept: [], perStudent: [], subjectScope: { canonicalSubjectId: null, objectiveAggregates: 'SUBJECT_SCOPED' } });
+  await db.query(`UPDATE classes SET canonical_subject_id = $2 WHERE id = $1`, [klass, maths]);
   await setRole(cu.id, 'INSTITUTION_ADMIN', 'REVOKED');
   check('SF-1 coordinator: REVOKED role denies canAccessInstitution', await canAccessInstitution(cu.id, inst, 'INSTITUTION_MEMBER_APPROVE'), false);
   check('SF-1 coordinator: REVOKED role denies isCoordinatorOfLearner', await isCoordinatorOfLearner(cu.id, s1), false);

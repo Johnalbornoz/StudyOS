@@ -20,8 +20,10 @@ const TOP = 10;
  * within the class's own subject. Read-only, for the class's Teacher only:
  * anyone else -- another class's Teacher, an institution admin -- gets the
  * same not-found a real 404 would. Everything comes from the shared Teacher
- * entry point (through the L8 service); what it withholds (area / objective
- * totals, exam goals, AICE plans) is not shown and the page says so.
+ * entry point (through the L8 service), already cut to the class's subject:
+ * gaps by area, by objective, by topic and per Student (CR-L8-01). What it
+ * still withholds (exam goals, AICE plans -- no governed subject mapping) is
+ * not shown and the page says so.
  * Individual answers and scores are never read here.
  */
 export default async function TeacherClassExamInsightsPage({ params }: { params: Promise<{ classId: string }> }) {
@@ -87,10 +89,42 @@ export default async function TeacherClassExamInsightsPage({ params }: { params:
         </div>
       </section>
 
-      {gaps.byConcept.length === 0 ? (
+      {gaps.byDomain.length === 0 && gaps.byObjective.length === 0 && gaps.byConcept.length === 0 ? (
         <EmptyState title={m['l8.exams.noData']} body={m['l8.exams.noData.body']} />
       ) : (
         <>
+          {gaps.byDomain.length > 0 && (
+            <section className="card ta-card" aria-labelledby="domains-title">
+              <h2 id="domains-title">{m['l8.exams.domains.title']}</h2>
+              <ul className="role-list ta-compact">
+                {gaps.byDomain.slice(0, TOP).map((d, i) => (
+                  <li key={i} style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', justifyContent: 'space-between' }}>
+                    <span style={{ flex: '1 1 240px', minWidth: 0, overflowWrap: 'anywhere' }}>{[d.exam, d.domain].filter(Boolean).join(' · ')}</span>
+                    <span className="ta-msg">{count(d.students)}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {gaps.byObjective.length > 0 && (
+            <section className="card ta-card" aria-labelledby="objectives-title">
+              <h2 id="objectives-title">{m['l8.exams.objectives.title']}</h2>
+              <ul className="role-list ta-compact">
+                {gaps.byObjective.slice(0, TOP).map((o, i) => (
+                  <li key={i} style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', justifyContent: 'space-between' }}>
+                    <span style={{ flex: '1 1 240px', minWidth: 0, overflowWrap: 'anywhere' }}>
+                      {o.code ? <strong>{o.code} </strong> : null}
+                      {o.description}
+                      <span className="ta-msg"> · {o.exam}</span>
+                    </span>
+                    <span className="ta-msg">{count(o.students)}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <section className="card ta-card" aria-labelledby="concepts-title">
             <h2 id="concepts-title">{m['l8.exams.concepts.title']}</h2>
             <ul className="role-list ta-compact">

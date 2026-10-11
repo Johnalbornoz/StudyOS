@@ -4,10 +4,12 @@
  * Everything about exam data comes from the shared Teacher entry point,
  * `getTeacherClassExamGaps` (L10, src/lib/authorization/teacher-exam-scope):
  * it admits only a Teacher of the class (never an institution admin), limits
- * the learners to the class's ACTIVE roster and cuts the gaps to the class's
- * own subject. This file never reads the exam bridge, exam goals or AICE
- * plans itself; what the entry point withholds (domain / objective
- * aggregates, goals, AICE entries) stays withheld and is passed on as such.
+ * the learners to the class's ACTIVE roster and asks the exam bridge for the
+ * class's own subject only, so every aggregate it returns -- by area, by
+ * objective, by topic, per Student -- is already subject-scoped (CR-L8-01).
+ * This file never reads the exam bridge, exam goals or AICE plans itself;
+ * what the entry point still withholds (goals, AICE entries: no governed
+ * subject mapping) stays withheld and is passed on as such.
  *
  * Added here: the class context for the page and the roster's names.
  */
@@ -71,7 +73,9 @@ export function examInsightsByStudent(data: Pick<TeacherClassExamInsights, 'stud
     .map((s) => ({
       studentId: s.studentId,
       name: s.name,
-      gaps: gapsOf.get(s.studentId)?.gaps ?? 0,
+      // The page labels this number "topics": it is the count of in-subject gap concepts. (The aggregate's own
+      // `gaps` counts in-subject gap OBJECTIVES; several objectives can share one topic.)
+      gaps: (gapsOf.get(s.studentId)?.concepts ?? []).length,
       concepts: (gapsOf.get(s.studentId)?.concepts ?? []).map((c) => ({ canonicalConceptId: c.canonicalConceptId, name: c.name })),
     }))
     .sort((a, b) => b.gaps - a.gaps || a.name.localeCompare(b.name));

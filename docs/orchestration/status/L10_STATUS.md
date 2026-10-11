@@ -1,39 +1,35 @@
 LANE: L10_SHARED_FOUNDATION
 STATE: READY_FOR_ORCHESTRATOR_REVIEW
-LAST_UPDATE: 2026-10-11T19:05Z
-BASE_SHA: 4fb45b0
-CURRENT_SHA: the R2 commit on feat/l10-shared-foundation, parent e094c5a (git rev-parse feat/l10-shared-foundation)
+LAST_UPDATE: 2026-10-11T20:25Z
+BASE_SHA: 8569b81 (L8, contains L10 79b7f50) + merge of L2 f54cc14
+CURRENT_SHA: the closing commit on fix/cr-l8-01-global-close (git rev-parse fix/cr-l8-01-global-close)
 
-CURRENT_PHASE: STOP (L10-R2 report appended, work committed)
+CURRENT_PHASE: STOP (CR-L8-01 global close: report appended, work committed)
 
 NOW_DOING: NONE
 
 COMPLETED:
-- Core (c2bcae9, accepted) and R1 (e094c5a, accepted)
-- R2: migration chain rebuilt as three files (20261120_1000 parent lifecycle, _1100 enrolment history, _1200 one ACTIVE persona); seat-model, institution-student membership and onboarding schema removed (D-2, D-4)
-- R2: Teacher whole-learner scope -- one gate on every learner-wide read route; Teacher overview cut to the authorized subject; readiness withheld
-- R2: Transfer concurrent exactly-once -- exclusive transaction-scoped claim before grading, no schema
-- R2: preflight contract updated for the three-file chain (ledger 83 -> 86)
-- R2: exact selection semantics written for L9's enrollmentOf
+- L10 core, R1, R2 (c2bcae9, e094c5a, 79b7f50 on feat/l10-shared-foundation)
+- CR-L8-01 global close on fix/cr-l8-01-global-close (worktree studyos-cr-l8-01-close): getTeacherClassExamGaps always passes canonicalSubjectIds; the bridge's answer is verified; L8 renders subject-scoped area / objective / topic / per-student aggregates; goals and AICE stay withheld
 
 CURRENT_FINDINGS:
-- A third, unhardened copy of the "classes this actor teaches" query existed in src/lib/teacher/intervention.service.ts; fixed. (R2-3)
-- The Transfer claim holds one pooled connection for the duration of a grading call. (R2-4)
-- CR-L8-01 stays OPEN (L8 call site, L2 aggregates).
-- L9's enrollmentOf must select the open row, else the most recent closed row. (R2-5)
+- The three inputs were on two unrelated branches; a new branch from L8 8569b81 with a local merge of L2 f54cc14 was needed to hold all three.
+- Per-student "gaps" from the bridge counts in-subject objectives; the L8 page labels topics, so the L8 row now counts in-subject concepts.
+- None of the three inputs is on integration/stage-convergence yet; that merge was not attempted.
 
 FILES_READ:
-- As in R1, plus: every route under src/app/api/teacher, src/lib/teacher/{learner-view,class-progress,intervention}.service.ts, the eight remaining whole-learner routes, src/services/activity-launch-lock.service.ts
+- L2 f54cc14 (exam-gaps.service.ts, its tests and cert script), L8 8569b81 (exam-insights service, page, messages, tests), src/lib/authorization/teacher-exam-scope.ts
 
 FILES_MODIFIED:
-- See docs/orchestration/reports/L10_REPORT.md, section "L10-R2", FILES CHANGED
+- See docs/orchestration/reports/L10_REPORT.md, section "CR-L8-01 GLOBAL CLOSE", FILES CHANGED
 
 TESTS:
-- npx vitest run tests/unit/l10-*.test.ts : 9 files, 196 tests passed
-- npx vitest run (no database env) : 528 files, 9,489 tests passed
+- Focused L2 / L8 / L10 : 13 files, 304 tests passed
+- npx vitest run (no database env) : 531 files, 9,579 tests passed
 - npx tsc --noEmit -p . : no output
 - npx next build : exit 0, 229/229 static pages
-- ./scripts/l10-ephemeral-db-test.sh : 3 migrations apply and re-apply; SF-10 pre-check refuses a multi-persona account; governed runner ledger 83 -> 86 (last 20261120_1200); preflight SQL 21 + 6 statements, SELECT only; integration 178 passed, 0 failed (includes the concurrent Transfer regression)
+- scripts/operations/l2-cr-l8-01-subject-gaps-cert.sh (throwaway Postgres) : PASS, 18 checks on the real examGapsFor query
+- scripts/l10-ephemeral-db-test.sh (throwaway Postgres) : ledger 83 -> 86; integration 179 passed, 0 failed
 - Browser, HTTP E2E, DEV/Stage/Production : NOT_RUN
 
 BLOCKERS:
@@ -43,18 +39,13 @@ LOCK_REQUESTS:
 NONE
 
 CROSS_LANE_DEPENDENCIES:
-- L8: CR-L10-03 (use getTeacherClassExamGaps for gaps, goals and AICE); three L10 guard tests fail on the merged line until then
-- L9: CR-L9-ENROLMENT-LOOKUP (enrollmentOf selection semantics); one L10 guard test fails on the merged line until then
-- L2: CR-L10-01, CR-L10-08 (subject-aware aggregates; visibility predicate; subject of review items) -- CR-L8-01 stays OPEN until then
-- L5: run docs/orchestration/L10_MIGRATION_PREFLIGHT.md before any shared database migration; apply the conflict-resolution list in its check 4.6
-- L7: CR-L10-05 (cosmetic)
-- L11: none (CR-L10-07 withdrawn)
+- L5: run docs/orchestration/L10_MIGRATION_PREFLIGHT.md before any shared database migration
+- L2: CR-L10-08 (Student-visibility predicate; subject of review items); subject attribution for exam goals and AICE syllabi
+- L9: enrolment lookup fixed on its branch (620a76c)
 
 NEXT:
-Orchestrator review of the R2 commit.
+Orchestrator review of fix/cr-l8-01-global-close.
 
 PROGRESS:
-- L10 work packages in scope for this release: SF-1, 2, 3, 4, 5, 6, 7, 10 implemented; SF-8 removed by ruling; SF-9, 11, 12, 13 deferred by ruling
-- Migration chain: 3/3 files apply and re-apply on a throwaway Postgres; 0/3 applied to a shared database; expected ledger 83 -> 86
-- Orchestrator change requests: CR-L7-01 closed, CR-L9-02 closed, CR-L11-05 and CR-L11-06 implemented, CR-L8-01 open (external)
-- Convergence: L10 has no open work of its own; two external patches and the L5 preflight are required
+- CR-L8-01: 3/3 parts integrated on one branch (L2 aggregates, L10 entry point, L8 display); 7/7 required regressions pass
+- Convergence line: 0/3 inputs on integration/stage-convergence
