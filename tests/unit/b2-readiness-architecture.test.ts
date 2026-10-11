@@ -260,12 +260,14 @@ describe('B2 architecture', () => {
 
   it('the B2 core added no migration; B2-B1 adds exactly the eight persistence migrations after the B1-E one', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    expect(migrations).toHaveLength(79);
+    // CURR-PAA added the curriculum-node link (20261111_1000) after them.
+    expect(migrations.filter((f) => f < '20261111')).toHaveLength(79);
     expect(migrations[70]).toBe('20261109_1000_simulation_type_challenge_reduced_mock.sql');
-    expect(migrations.slice(71)).toEqual(['20261110_1000_qb_provenance_rights_content_sources.sql', '20261110_1100_qb_asset_registry.sql', '20261110_1200_qb_stimuli.sql', '20261110_1300_qb_item_concept_attribution.sql', '20261110_1400_qb_pool_memberships.sql', '20261110_1500_qb_review_authority_originality.sql', '20261110_1600_assessment_blueprint_variants.sql', '20261110_1700_assessment_frozen_forms.sql']);
+    expect(migrations.slice(71, 79)).toEqual(['20261110_1000_qb_provenance_rights_content_sources.sql', '20261110_1100_qb_asset_registry.sql', '20261110_1200_qb_stimuli.sql', '20261110_1300_qb_item_concept_attribution.sql', '20261110_1400_qb_pool_memberships.sql', '20261110_1500_qb_review_authority_originality.sql', '20261110_1600_assessment_blueprint_variants.sql', '20261110_1700_assessment_frozen_forms.sql']);
     // deferred by decision: answer reveal (migration 9) and the curriculum-node link (migration 10)
-    const all = migrations.slice(71).map((f) => readFileSync(join(ROOT, 'database/migrations', f), 'utf8').replace(/^\s*--.*$/gm, '')).join('\n');
+    const all = migrations.slice(71, 79).map((f) => readFileSync(join(ROOT, 'database/migrations', f), 'utf8').replace(/^\s*--.*$/gm, '')).join('\n');
     expect(all).not.toMatch(/exam_answer_reveals|question_bank_item_curriculum_nodes/);
+    expect(migrations.slice(79)).toEqual(['20261111_1000_qb_item_curriculum_nodes.sql']);
   });
 
   it('the B1 authorities are consumed, not redefined', () => {

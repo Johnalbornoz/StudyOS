@@ -86,7 +86,9 @@ describe('every Student-facing selector uses the one rule', () => {
   // B2: assessment-blueprint/assessment-blueprint.service lists the CURRENT item ids of an exam version for the Q1
   // readiness projection (no content, no delivery) and hands them to that same coverage reader; the one rule is then
   // applied to each through `isEligible` with the STUDENT audience -- asserted in b2-readiness-architecture.
-  const NON_STUDENT = /question-bank\/(review|review-admin|admin|bank|factory|calibration|health|demand)\.service\.ts$|apply-vertical-config\.service\.ts$|assessment\/item-bank\.service\.ts$|assessment-foundation\/question-coverage\.service\.ts$|assessment-blueprint\/assessment-blueprint\.service\.ts$/;
+  // CURR-PAA: curriculum/item-traceability.service reads which objective an item version has, to say whether it hangs
+  // from the same Domain as the item's Topic. It reads no item content and delivers nothing.
+  const NON_STUDENT = /curriculum\/item-traceability\.service\.ts$|question-bank\/(review|review-admin|admin|bank|factory|calibration|health|demand)\.service\.ts$|apply-vertical-config\.service\.ts$|assessment\/item-bank\.service\.ts$|assessment-foundation\/question-coverage\.service\.ts$|assessment-blueprint\/assessment-blueprint\.service\.ts$/;
   const readers = SRC.filter((f) => /FROM approved_items|JOIN approved_items/.test(read(f)) && !NON_STUDENT.test(f));
 
   it('8 / 9 / 10 / 12. the Student readers are exactly: practice & dynamic sourcing, exam instances (practice, diagnostic, mocks), the full-mock guard', () => {

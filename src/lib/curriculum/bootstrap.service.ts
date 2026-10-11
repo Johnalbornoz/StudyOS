@@ -109,7 +109,12 @@ export function ensureAssessmentSectionNode(client: CurriculumExecutor, p: { str
 export function ensureLearningObjective(client: CurriculumExecutor, p: { structureNodeId: string; code: string; description: string }): Promise<string> {
   return ensure(
     client,
-    `SELECT id FROM learning_objectives WHERE structure_node_id = $1 AND code = $2`,
+    // An objective is identified by its code within the STRUCTURE VERSION, not by the node it hangs from: the
+    // Curriculum Authority may have given it real hierarchy (moved it under a Domain node) since the exam
+    // configuration first asked for it, and asking again must find that same objective, never create a twin.
+    `SELECT lo.id FROM learning_objectives lo JOIN structure_nodes n ON n.id = lo.structure_node_id
+      WHERE lo.code = $2 AND n.structure_version_id = (SELECT structure_version_id FROM structure_nodes WHERE id = $1)
+      ORDER BY (lo.structure_node_id = $1) DESC, lo.created_at, lo.id LIMIT 1`,
     [p.structureNodeId, p.code],
     `INSERT INTO learning_objectives (structure_node_id, code, description) VALUES ($1, $2, $3) RETURNING id`,
     [p.structureNodeId, p.code, p.description]
