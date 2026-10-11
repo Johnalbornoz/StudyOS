@@ -80,33 +80,97 @@ export const InstitutionLearningConfigurationSchema = z.strictObject({
 });
 export type InstitutionLearningConfiguration = z.infer<typeof InstitutionLearningConfigurationSchema>;
 
+// ------------------------------------------------------------------------------------------------ scoped assignment (D2)
+/**
+ * ONE scoped carrier for "which approach applies where". An institution assigns an approach at one of four scopes,
+ * least specific first:
+ *     INSTITUTION (default)  <  PROGRAMME (a curriculum / programme of it)  <  CLASS  <  SUBJECT
+ * THE MOST SPECIFIC APPLICABLE ASSIGNMENT WINS; no explicit assignment at all means STANDARD.
+ *   - An assignment applies to a context when it is the context's institution and its scope id is the context's id
+ *     of that scope (an INSTITUTION assignment applies to everything in the institution).
+ *   - CLASS vs SUBJECT, when both apply: SUBJECT wins. That is the decided order (subject is the most specific
+ *     scope): a subject's approach holds in every class of the institution, including a class that has its own.
+ *   - A more specific assignment may name STANDARD: an explicit opt-out from a wider STEM_PLUS.
+ *   - AMBIGUITY is never guessed. Two assignments of the same institution for the same scope (type and id) are
+ *     ambiguous even when they name the same approach -- a scope has at most one -- and the resolution is refused
+ *     by name. Nothing else can tie: the four scope types are totally ordered and a context has one id per scope.
+ * An assigned approach that does not exist is an error, never a silent fall-back to STANDARD.
+ */
+export const ASSIGNMENT_SCOPE_TYPES = ['INSTITUTION', 'PROGRAMME', 'CLASS', 'SUBJECT'] as const;
+export type AssignmentScopeType = (typeof ASSIGNMENT_SCOPE_TYPES)[number];
+export const LearningApproachAssignmentSchema = z
+  .strictObject({
+    assignmentId: ID,
+    institutionKey: ID,
+    scope: z.strictObject({ type: z.enum(ASSIGNMENT_SCOPE_TYPES), id: ID }),
+    /** The approach assigned, by id; a null version means "the current version". An institution selects an approach; it does not author one. */
+    approach: z.strictObject({ approachId: ID, version: ID.nullable() }),
+  })
+  .superRefine((a, ctx) => {
+    if (a.scope.type === 'INSTITUTION' && a.scope.id !== a.institutionKey) ctx.addIssue({ code: 'custom', path: ['scope', 'id'], message: 'INSTITUTION_SCOPE_IS_THE_INSTITUTION' });
+  });
+export type LearningApproachAssignment = z.infer<typeof LearningApproachAssignmentSchema>;
+
+/** Where an activity happens. Every id is optional: a scope the context does not name cannot match an assignment. */
+export interface LearningContext { institutionKey: string | null; programmeId?: string | null; classId?: string | null; subjectId?: string | null }
+export type AssignmentResolutionSource = 'ASSIGNMENT' | 'DEFAULT_NO_ASSIGNMENT' | 'DEFAULT_NO_INSTITUTION';
+export type AssignmentResolution =
+  | { ok: true; approach: LearningApproachProfile; source: AssignmentResolutionSource; decidedBy: { assignmentId: string; scopeType: AssignmentScopeType; scopeId: string } | null; /** The applicable assignments that lost to a more specific one, least specific first. */ overridden: Array<{ assignmentId: string; scopeType: AssignmentScopeType; approachId: string }> }
+  | { ok: false; issue: 'ASSIGNMENT_INVALID' | 'AMBIGUOUS_LEARNING_APPROACH_ASSIGNMENT' | 'UNKNOWN_LEARNING_APPROACH' | 'LEARNING_APPROACH_VERSION_NOT_FOUND'; detail: string };
+
+const scopeIdOf = (context: LearningContext, type: AssignmentScopeType): string | null | undefined => (type === 'INSTITUTION' ? context.institutionKey : type === 'PROGRAMME' ? context.programmeId : type === 'CLASS' ? context.classId : context.subjectId);
+
+/** Context + assignments -> the approach in force. Pure and deterministic: the order of `assignments` does not matter. */
+export function resolveLearningApproach(context: LearningContext | null | undefined, assignments: readonly unknown[], approaches: readonly LearningApproachProfile[]): AssignmentResolution {
+  if (!context || context.institutionKey === null) return { ok: true, approach: STANDARD_APPROACH, source: 'DEFAULT_NO_INSTITUTION', decidedBy: null, overridden: [] };
+  const parsed: LearningApproachAssignment[] = [];
+  for (const a of assignments) {
+    const r = LearningApproachAssignmentSchema.safeParse(a);
+    if (!r.success) return { ok: false, issue: 'ASSIGNMENT_INVALID', detail: r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') };
+    parsed.push(r.data);
+  }
+  const applicable = parsed.filter((a) => a.institutionKey === context.institutionKey && scopeIdOf(context, a.scope.type) === a.scope.id);
+  // a scope has at most one assignment: two for the same scope are ambiguous, whatever they name
+  for (const type of ASSIGNMENT_SCOPE_TYPES) {
+    const same = applicable.filter((a) => a.scope.type === type);
+    if (same.length > 1) return { ok: false, issue: 'AMBIGUOUS_LEARNING_APPROACH_ASSIGNMENT', detail: `${type} ${same[0].scope.id}: ${same.map((a) => a.assignmentId).sort().join(', ')}` };
+  }
+  if (applicable.length === 0) return { ok: true, approach: STANDARD_APPROACH, source: 'DEFAULT_NO_ASSIGNMENT', decidedBy: null, overridden: [] };
+  const ordered = [...applicable].sort((a, b) => ASSIGNMENT_SCOPE_TYPES.indexOf(a.scope.type) - ASSIGNMENT_SCOPE_TYPES.indexOf(b.scope.type));
+  const winner = ordered[ordered.length - 1];
+  const decidedBy = { assignmentId: winner.assignmentId, scopeType: winner.scope.type, scopeId: winner.scope.id };
+  const overridden = ordered.slice(0, -1).map((a) => ({ assignmentId: a.assignmentId, scopeType: a.scope.type, approachId: a.approach.approachId }));
+  if (winner.approach.approachId === STANDARD_APPROACH_ID) return { ok: true, approach: STANDARD_APPROACH, source: 'ASSIGNMENT', decidedBy, overridden };
+  const byId = approaches.filter((a) => a.approachId === winner.approach.approachId);
+  if (byId.length === 0) return { ok: false, issue: 'UNKNOWN_LEARNING_APPROACH', detail: winner.approach.approachId };
+  const found = winner.approach.version === null ? byId[byId.length - 1] : byId.find((a) => a.version === winner.approach.version);
+  if (!found) return { ok: false, issue: 'LEARNING_APPROACH_VERSION_NOT_FOUND', detail: `${winner.approach.approachId}@${winner.approach.version}` };
+  const valid = LearningApproachProfileSchema.safeParse(found);
+  if (!valid.success) return { ok: false, issue: 'ASSIGNMENT_INVALID', detail: `the assigned approach is not a valid profile: ${valid.error.issues[0]?.message ?? ''}` };
+  return { ok: true, approach: valid.data, source: 'ASSIGNMENT', decidedBy, overridden };
+}
+
 export type EffectiveApproachSource = 'INSTITUTION_CONFIGURATION' | 'DEFAULT_NO_APPROACH_CONFIGURED' | 'DEFAULT_NO_INSTITUTION';
 export type EffectiveApproach =
   | { ok: true; approach: LearningApproachProfile; source: EffectiveApproachSource; institutionKey: string | null; curriculumId: string | null }
   | { ok: false; issue: 'CONFIGURATION_INVALID' | 'UNKNOWN_LEARNING_APPROACH' | 'LEARNING_APPROACH_VERSION_NOT_FOUND'; detail: string };
 
 /**
- * Institution configuration -> the approach in force.
+ * The institution-only form of the resolution, kept for callers that have one configuration object: it is the
+ * scoped resolution with at most one INSTITUTION-scope assignment, and is implemented by it.
  *   no institution (an individual learner)     STANDARD
  *   an institution that configured none        STANDARD
- *   an institution that configured one         that approach, at the configured version (any version when null)
- * A configured approach that does not exist is an ERROR, never a silent fall-back to STANDARD: an institution that
- * chose an approach must not be served another one without anybody noticing.
+ *   an institution that configured one         that approach, at the configured version (the current one when null)
  */
 export function resolveEffectiveApproach(configuration: unknown | null | undefined, approaches: readonly LearningApproachProfile[]): EffectiveApproach {
   if (configuration === null || configuration === undefined) return { ok: true, approach: STANDARD_APPROACH, source: 'DEFAULT_NO_INSTITUTION', institutionKey: null, curriculumId: null };
   const parsed = InstitutionLearningConfigurationSchema.safeParse(configuration);
   if (!parsed.success) return { ok: false, issue: 'CONFIGURATION_INVALID', detail: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') };
   const c = parsed.data;
-  if (c.learningApproach === null || c.learningApproach.approachId === STANDARD_APPROACH_ID) return { ok: true, approach: STANDARD_APPROACH, source: c.learningApproach === null ? 'DEFAULT_NO_APPROACH_CONFIGURED' : 'INSTITUTION_CONFIGURATION', institutionKey: c.institutionKey, curriculumId: c.curriculumId };
-  const wanted = c.learningApproach;
-  const byId = approaches.filter((a) => a.approachId === wanted.approachId);
-  if (byId.length === 0) return { ok: false, issue: 'UNKNOWN_LEARNING_APPROACH', detail: wanted.approachId };
-  const found = wanted.version === null ? byId[byId.length - 1] : byId.find((a) => a.version === wanted.version);
-  if (!found) return { ok: false, issue: 'LEARNING_APPROACH_VERSION_NOT_FOUND', detail: `${wanted.approachId}@${wanted.version}` };
-  const valid = LearningApproachProfileSchema.safeParse(found);
-  if (!valid.success) return { ok: false, issue: 'CONFIGURATION_INVALID', detail: `the configured approach is not a valid profile: ${valid.error.issues[0]?.message ?? ''}` };
-  return { ok: true, approach: valid.data, source: 'INSTITUTION_CONFIGURATION', institutionKey: c.institutionKey, curriculumId: c.curriculumId };
+  const assignments = c.learningApproach ? [{ assignmentId: `${c.institutionKey}#institution`, institutionKey: c.institutionKey, scope: { type: 'INSTITUTION', id: c.institutionKey }, approach: c.learningApproach }] : [];
+  const r = resolveLearningApproach({ institutionKey: c.institutionKey }, assignments, approaches);
+  if (!r.ok) return { ok: false, issue: r.issue === 'UNKNOWN_LEARNING_APPROACH' || r.issue === 'LEARNING_APPROACH_VERSION_NOT_FOUND' ? r.issue : 'CONFIGURATION_INVALID', detail: r.detail };
+  return { ok: true, approach: r.approach, source: r.source === 'ASSIGNMENT' ? 'INSTITUTION_CONFIGURATION' : 'DEFAULT_NO_APPROACH_CONFIGURED', institutionKey: c.institutionKey, curriculumId: c.curriculumId };
 }
 
 /** The four compositions the brief names. Institution keys are illustrative labels of a configuration, not institutions. */

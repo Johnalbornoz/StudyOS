@@ -4,6 +4,22 @@ Branch `feat/ea1a-learning-approach`, on EA-1 (`3031e03`). Pure code, tests and 
 
 Everything authored here is provisional: the STEM+ approach and the school STEM performance profile are StudyUs policy drafted in-session by the model working on the phase; the task families are `DRAFT` / `UNREVIEWED`; every assessment profile is `PROVISIONAL_ILLUSTRATIVE`. They test an architecture.
 
+## 0. Orchestrator decisions (DECIDED 2026-10-11)
+
+| # | Decision | Enforced in | Resolves |
+|---|---|---|---|
+| D1 | **Version binding is typed.** A rule / component binds to a versioned authoritative target: `EXAM_VERSION`, `SYLLABUS_VERSION`, `FRAMEWORK_VERSION` or `INSTITUTION_POLICY_VERSION`, preserving target type, identity, version and provenance. No fake exam-version record for Cambridge 9709: it binds to its syllabus version. An OFFICIAL rule still requires an authoritative binding. | `AuthorityVersionBindingSchema`, `officialBindingIssues` (`assessment-system-profile.ts`); `system-profiles.ts` | U2 |
+| D2 | **Learning-approach granularity.** Institution default → Programme / Curriculum override → Class override → Subject override; the most specific applicable assignment wins; ONE scoped carrier; no assignment ⇒ STANDARD. | `LearningApproachAssignmentSchema`, `resolveLearningApproach` (`institution-configuration.ts`) | U3 |
+| D3 | **A PROVISIONAL approach generates DEV_TEST_CONTENT only.** Evidence-bearing use requires a CERTIFIED approach or the implicit STANDARD. | `adapt.ts` step 2b′ → `LEARNING_APPROACH_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT` | U4 |
+| D4 | **Institution-authored approaches: DEFERRED.** StudyUs-managed STANDARD and STEM_PLUS only; institutions select / assign, never author. | `authority: 'STUDYUS_POLICY'` literal, strict schema; no owner structure in the persistence design | U5 |
+| D5 | **Assessment system identity is CAMBRIDGE.** AICE is programme / qualification context, not a separate generation profile. | `QUALIFICATION_CONTEXT_OF_EXAM_FAMILY`, `assessmentSystemOfExamFamily`, `systemProfileOfExamFamily`; cell bridge and harness resolve through it | U9 |
+| D6 | **Rule precedence.** 1 OFFICIAL assessment rule; 2 CERTIFIED StudyUs / institution assessment-profile rule; 3 learning-approach preference. A provisional rule may not govern evidence-bearing content. Every override is recorded. | `adapt.ts` (`settle`): each unmet preference records the overriding rule's authority **and** its profile's certification status | U1 |
+| — | **STEM competency readiness** is a Curriculum / Data gap, separate from the contract. | `catalogueReadinessOf` (pure); §2 "Future canonical catalogue work" | — |
+| — | **Mexico / Colombia readiness**: architecture composition and evidence-bearing curriculum readiness are separate. | POC artifact `readiness[]` | — |
+| — | **DEV test ingestion** stays DEFERRED until all five guarantees are provable. | §10 | — |
+
+**PRE_CONTROL_PLANE_MERGE_EXCEPTION.** The EA-1 work was merged into the integration line (`3031e03`) by the working session before the Orchestrator's control plane was in force. That merge is kept and not reverted, and is recorded here as an exception. From EA-1A on there are no self-merges: this branch is an unmerged implementation candidate.
+
 ## 1. Three independent layers
 
 | Layer | Question it answers | Owner | In code |
@@ -31,9 +47,12 @@ Canonical Knowledge → EvidenceTarget → LearningApproachProfile → Assessmen
 
 In the engine: profile, family and request fix the *feasible set* of each dimension exactly as in EA-1; the approach's preference only chooses inside it.
 
-- **An OFFICIAL assessment constraint always wins** over an approach preference (the brief's rule).
-- **StudyUs policy, flagged for confirmation:** a profile rule of *any* authority (official, StudyUs policy, institution policy) constrains in the same way. An approach never widens what a profile, a family or a request allows.
-- A preference that could not be honoured is **never dropped silently**: the specification records it as unmet, with what was wanted, what was decided and the rule that overrode it (and that rule's authority).
+Rule precedence (D6, decided): **1** an OFFICIAL assessment rule; **2** a CERTIFIED StudyUs or institution assessment-profile rule; **3** a learning-approach preference.
+
+- An OFFICIAL assessment constraint always wins over an approach preference.
+- A certified StudyUs-policy or institution-policy profile rule also overrides a preference. An approach never widens what a profile, a family or a request allows.
+- **A provisional rule may not govern evidence-bearing content.** A rule has no status of its own: it has its profile's. Evidence-bearing content is refused unless the system profile, the component profile and the approach are all CERTIFIED, so no provisional rule can reach it. For `DEV_TEST_CONTENT` provisional rules still shape the specification, and say so.
+- A preference that could not be honoured is **never dropped silently**: the specification records it as unmet, with what was wanted, what was decided, the rule that overrode it, that rule's **authority** and its profile's **certification status** (`overridingRuleCertification`).
 - It is a **refusal** only when the approach marks the preference `REQUIRED_OUTSIDE_EXAMS` and the target is not an exam system (`examFamilyCode === null`). Against an exam system even a required preference yields and is recorded.
 
 ### Where things live
@@ -84,7 +103,26 @@ Why this choice. EA-1 is accepted and its specifications must not change. Had ST
 | `stem-plus.stimulus.data` | stimulus | own, shared | PREFERRED |
 | `stem-plus.tools.available` | tool policy | allowed, scientific, GDC | PREFERRED |
 
-Participation: individual and collaborative. Status `PROVISIONAL`: the brief asks for "the first certified LearningApproachProfile contract"; the *contract* is implemented and tested, and nobody has certified the *content*, so it is not marked certified.
+Participation: individual and collaborative. Status `PROVISIONAL`: the *contract* is implemented and tested; nobody has certified the *content*, so it is not marked certified. By D3 it therefore generates `DEV_TEST_CONTENT` only. By D4 it is StudyUs-managed: an institution assigns it and cannot author another.
+
+Two things are judged separately:
+
+- **STEM_PLUS_PROFILE_CONTRACT** — the approach contract and its integration: sound whatever the catalogue holds.
+- **STEM_PLUS_CATALOGUE_READINESS** — data readiness, computed by `catalogueReadinessOf(approach, catalogueCodes)`: today **PARTIAL** (1 of 6 in the catalogue, 5 missing, no inconsistency).
+
+#### Future canonical catalogue work (owner: Curriculum)
+
+Not created here, and no parallel registry exists. To be added to `competencies` by the Curriculum, with the code proposed for each:
+
+| Competency | Proposed code |
+|---|---|
+| Mathematical modelling | `studyus.transversal.mathematical-modelling` |
+| Engineering design | `studyus.transversal.engineering-design` |
+| Data and computational reasoning | `studyus.transversal.data-computational-reasoning` |
+| Problem solving and transfer | `studyus.transversal.problem-solving-transfer` |
+| Scientific communication and argumentation | `studyus.transversal.scientific-communication-argumentation` |
+
+When one is created, the approach reference must move from `NOT_YET_IN_CATALOGUE` to `IN_CATALOGUE` in a new approach version; until then the readiness report lists the disagreement (`DECLARED_MISSING_BUT_PRESENT`) rather than promoting it silently.
 
 ### Competencies: reuse, not a second system
 
@@ -124,6 +162,18 @@ An approach references a competency by its catalogue code. One of STEM+'s six ex
 | Configured approach does not exist | **error** `UNKNOWN_LEARNING_APPROACH` / `LEARNING_APPROACH_VERSION_NOT_FOUND` | never a silent STANDARD |
 
 Backward compatible by construction: the approach is optional everywhere and its absence changes nothing. The four example compositions (MCCEMS + STANDARD, MCCEMS + STEM_PLUS, MEN + STANDARD, MEN + STEM_PLUS) resolve as expected.
+
+### Scoped assignment (D2)
+
+One carrier, `LearningApproachAssignment { assignmentId, institutionKey, scope { type, id }, approach { approachId, version | null } }`, and one resolver, `resolveLearningApproach(context, assignments, approaches)`, with `context = { institutionKey, programmeId?, classId?, subjectId? }`.
+
+- Specificity, least to most: **INSTITUTION < PROGRAMME < CLASS < SUBJECT**. The most specific applicable assignment wins; the ones it beat are returned as `overridden`.
+- An assignment applies when it is the context's institution and its scope id equals the context's id for that scope. A scope the context does not name cannot match.
+- **Class vs subject, both applicable: SUBJECT wins** — the decided order. A subject's approach holds in every class of the institution, including a class with its own assignment.
+- A more specific assignment may name `STANDARD`: an explicit opt-out.
+- **Ambiguity is refused by name** (`AMBIGUOUS_LEARNING_APPROACH_ASSIGNMENT`): two assignments of one institution for the same scope type and id, even when they agree. Nothing else can tie — the scope types are totally ordered and a context has one id per scope. An ambiguity at a scope that does not apply to the context does not block it.
+- No applicable assignment ⇒ `STANDARD` (`DEFAULT_NO_ASSIGNMENT`); no institution ⇒ `STANDARD` (`DEFAULT_NO_INSTITUTION`). An assigned approach that does not exist is an error.
+- `resolveEffectiveApproach` (the institution-only form) is now implemented by the scoped resolver with a single INSTITUTION assignment; a test checks they agree.
 
 ### What the repository records (facts)
 
@@ -207,6 +257,17 @@ One stable id and one invariant hash per family across two countries, two curric
 - In the school's own assessment STEM+ also obtains the **produced response** and the **justified argument** it prefers.
 - The system competencies, marks, rubric, time budget and command term are the profile's under both approaches.
 
+### Two readiness notions (in the artifact, `readiness[]`)
+
+| | Mexico (MCCEMS) | Colombia (MEN) |
+|---|---|---|
+| **Architecture composition POC** | **PASS** — 8 of 8 checks | **PASS** — 8 of 8 checks |
+| **Evidence-bearing curriculum readiness** | **NO** | **NO** |
+
+Architecture checks, computed from the cells: every cell produced a specification; one concept id per family; one invariant hash per family; the approach changes neither concept nor invariants; the approach moves only approach-controlled dimensions; every preference is honoured or recorded unmet; an official constraint overrode a preference and was recorded; STANDARD is recorded by absence.
+
+Evidence-readiness blockers, derived from the data and identical in kind for both: curriculum structure not imported; curriculum entitlement not established (12 of 12 specifications); assessment applicability not established (Mexico 6 of 12, Colombia 10 of 12); task families not reviewed; assessment profiles not certified; STEM_PLUS not certified; STEM+ catalogue readiness PARTIAL. None is an architecture defect; none was worked around; no entitlement was fabricated.
+
 ### Special cases (in the artifact)
 
 | Case | Outcome |
@@ -230,7 +291,7 @@ One stable id and one invariant hash per family across two countries, two curric
 | Protected mock pools refuse `DEV_TEST_CONTENT`; frozen certified content only | `instance-lineage.ts` (`DEV_TEST_RULES`, `PROTECTED_MOCK_POOLS`); `adapt.ts` step 2c → `DEV_TEST_CONTENT_NOT_ALLOWED_FOR_PURPOSE` | "protected mock pools refuse DEV_TEST_CONTENT…"; EA-1 suite "LOCKED: a protected mock pool refuses…" |
 | Diagnostic / Verification: dynamic dev-test only in non-evidence test execution | `instancePolicyFor`; `mayBearEvidence('DEV_TEST_CONTENT') === false` | same; EA-1 suite "instance policy per purpose x use class" |
 | Provisional / illustrative assessment profiles → `DEV_TEST_CONTENT` only; evidence-bearing needs CERTIFIED | `profileMayFeedEvidenceBearingContent`; `adapt.ts` step 2b → `ASSESSMENT_PROFILE_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT` (system **and** component) | "a PROVISIONAL / ILLUSTRATIVE assessment profile…"; EA-1 suite "LOCKED: a PROVISIONAL…" |
-| Component profiles are version-aware; an OFFICIAL rule needs the binding; a semantic key does not replace it | `AssessmentComponentProfileSchema.versionBinding` / `semanticComponentKey`; `OFFICIAL_RULE_NEEDS_A_VERSION_BINDING`; the specification carries the binding | "a component profile binds to a concrete exam / component version"; EA-1 suite "LOCKED: a component profile is version-aware" |
+| Profiles are version-aware; an OFFICIAL rule needs a typed authoritative binding (D1); a semantic key does not replace it | `AuthorityVersionBindingSchema` on the component (`versionBinding`) and, where a system holds an OFFICIAL rule, on the system; `OFFICIAL_RULE_NEEDS_A_VERSION_BINDING`, `OFFICIAL_RULE_NEEDS_AN_AUTHORITATIVE_BINDING`, `OFFICIAL_SOURCE_IS_NOT_OF_THE_BOUND_VERSION`; the specification carries the binding | "a component profile binds to a concrete exam / component version"; EA-1 suite "LOCKED: a component profile is version-aware" |
 | No new stable key on `canonical_concepts` | nothing added; 82 migrations, none new | "no stable key was added to canonical_concepts…" |
 | `DEV_TEST_CONTENT` ingestion only if five guarantees hold; otherwise deferred | nothing built; audit §10 → **DEFERRED** | same test (no ingestion call in the new code) |
 
@@ -240,8 +301,9 @@ Not named by the rulings and decided conservatively, flagged `CONSERVATIVE_READI
 
 - `instancePolicyFor(mock pool, DEV_TEST_CONTENT)` is no longer permitted; the earlier `READING_OF_DECISION` is gone.
 - Evidence-bearing content additionally requires certified system and component profiles. With what the repository holds (draft families, provisional profiles) **no evidence-bearing specification can be produced at all**; the EA-1 tests that exercise that path now use explicit test doubles (a reviewed family, certified profiles).
-- Component profiles carry `versionBinding` and `semanticComponentKey`; their version is `0.3.0-illustrative`. System profiles are unchanged (`0.2.0-illustrative`).
-- **EA-1 matrix artifact** (`EA1_math_adaptation_matrix.json`): every count, refusal, applicability figure and pairwise result is unchanged; its requests are Practice, so the mock-pool ruling refuses none. The **36 system-level specification ids are unchanged**. The **51 component-level specification ids changed**, for one reason: each embeds the content hash of its component profile, and the version-binding ruling changed that content. No approach-related change touched them: with no approach or with STANDARD, all 110 EA-1 attempts give byte-identical results (asserted).
+- Component profiles carry a typed `versionBinding` and a `semanticComponentKey`; their version is `0.4.0-illustrative`. The Cambridge system profile, the one system profile with an OFFICIAL rule, gained its syllabus binding and is `0.3.0-illustrative`. The other four system profiles are unchanged (`0.2.0-illustrative`).
+- **EA-1 matrix artifact** (`EA1_math_adaptation_matrix.json`): every count, refusal, applicability figure and pairwise result is unchanged; its requests are Practice, so the mock-pool ruling refuses none. Specification ids, against the accepted EA-1 artifact: the **27 system-level ids of PAA, IB, PISA and Icfes are unchanged**; the **9 system-level ids of Cambridge changed** (D1: its system profile gained the syllabus binding its OFFICIAL rule needs); the **51 component-level ids changed** (each embeds its component profile, whose binding was added by the locked ruling and then typed by D1). No approach-related change touched any of them: with no approach or with STANDARD, all 110 EA-1 attempts give byte-identical results (asserted).
+- **EA-1A POC artifact** (`EA1A_learning_approach_poc.json`, now v2), against the first EA-1A cut (`c810e70`): **18 of 24 specification ids changed, 6 did not.** The 16 on exam targets (PAA, PISA, Icfes; both approaches) changed because their component profile's binding was typed. On the school profile, which did not change, the 2 STEM_PLUS specifications that have an unmet preference changed because an unmet preference now records `overridingRuleCertification`; the other 2 STEM_PLUS and the 4 STANDARD ones are byte-identical. Counts and outcomes are the same.
 - `KNOWN_FAMILY_TYPES` gained six names and lost `SCIENCE_INVESTIGATION` (now an alias). `ADAPTATION_EVIDENCE_FACETS` gained `LEARNING_APPROACH`.
 - The harness puts the approach (id, version, competencies, participation) into the prompt and the lineage only when a specification has one; without one the prompt is what it was. Cells and pilot v2 artifacts are untouched.
 
@@ -261,116 +323,160 @@ What does exist: `FIXTURE` provenance is excluded from Student delivery and from
 
 **`DEV_TEST_CONTENT_INGESTION = DEFERRED`.** Dev-test content stays outside the Question Bank: specifications and, later, dynamic instances shown in DEV only. Making any guarantee provable needs a persisted use class and guard changes — a decision and a migration, not part of this phase.
 
-## 11. Persistence design (revised; a design, nothing migrated)
+## 11. Persistence design (second revision; a design, nothing migrated)
 
-This **supersedes** `DRAFT_AUXILIARY_ADAPTATION_PERSISTENCE_SKETCH.md` (the rejected draft: 15 tables and a view). Every table of the draft was revisited. Table and column names of existing objects were read from `database/migrations/`.
+No schema, no migration, no SQL file, no database. This revision applies D1–D6 and **minimises the table count** where one scoped or typed carrier can replace duplicated structures. It supersedes both the rejected draft (`DRAFT_AUXILIARY_ADAPTATION_PERSISTENCE_SKETCH.md`, 15 tables) and the first EA-1A revision (20 tables). Existing table and column names were read from `database/migrations/`.
 
-### Revised table list (20 tables, 1 view)
+### Table list: 15 tables, 1 view
 
-| # | Table | vs the draft | Why |
+| # | Table | Holds | Key constraints |
 |---|---|---|---|
-| 1 | `question_bank_task_families` | unchanged | |
-| 2 | `question_bank_task_family_versions` | **changed**: content now includes `approachSupport` | Optional; a version without it is valid |
-| 3 | `question_bank_task_family_concepts` | unchanged | FK → `canonical_concepts`; **no stable key is added to `canonical_concepts`** |
-| 4 | `question_bank_task_family_competencies` | **new** | `(family_version_id, competency_id → competencies)`: the competencies a family can evidence are references into the existing competency table, never text |
-| 5 | `assessment_system_profiles` | **changed**: `owner_institution_id uuid NULL → institutions(id)` | An `INSTITUTION_POLICY` profile belongs to an institution; CHECK: owner set ⇔ basis `INSTITUTION_POLICY` ⇒ `exam_family IS NULL` |
-| 6 | `assessment_system_profile_versions` | **changed**: basis adds `INSTITUTION_POLICY`; `status` now **gates** evidence-bearing content | Locked ruling |
-| 7 | `assessment_component_profiles` | **changed**: `component_key` is the *stable semantic key* only; the draft's direct `assessment_component_id` is removed from the identity | A stable key gives continuity and binds nothing |
-| 8 | `assessment_component_profile_versions` | **changed**: version binding — `exam_version_id uuid NULL → exam_versions(id)`, `assessment_component_id uuid NULL → assessment_components(id)`, plus `binding_source`, `binding_config_key`, `binding_version_label`, `binding_component_key` as recorded; CHECK: any OFFICIAL rule ⇒ a binding is present; a bound `assessment_component_id` must belong to the bound `exam_version_id` | Locked ruling: official rules belong to a concrete exam / component version |
-| 9 | `assessment_profile_rules` | **changed**: authority adds `INSTITUTION_POLICY`; `institution_id uuid NULL → institutions(id)`, required for that authority and forbidden otherwise | Provenance of an institution's rule is the institution; never confusable with OFFICIAL |
-| 10 | `assessment_profile_rule_sources` | **changed**: a source row is refused on any non-OFFICIAL rule (StudyUs or institution policy) | |
-| 11 | `assessment_discipline_policies` | unchanged | |
-| 12 | `assessment_applicability_threshold_policies` | unchanged | |
-| 13 | `assessment_applicability` | unchanged | |
-| 14 | `assessment_applicability_evidence` | unchanged | Review state derives from `objective_concept_mappings.status / reviewed_by` |
-| 15 | `learning_approach_profiles` | **new** | `(id, approach_key UNIQUE, display_name)`; a row for `STANDARD` is optional — absence of configuration already means STANDARD |
-| 16 | `learning_approach_profile_versions` | **new** | `(approach_profile_id, version, status PROVISIONAL / CERTIFIED, content jsonb, content_hash, certified_by, certified_at)`; immutable once published |
-| 17 | `learning_approach_competencies` | **new** | `(approach_version_id, competency_key, competency_id uuid NULL → competencies(id), proposed_code text NULL)`, exactly one of the two set. A version with any `proposed_code` cannot be `CERTIFIED`: the Curriculum creates the competency first |
-| 18 | `institution_learning_approaches` | **new** | Sits **beside** `institution_curricula`, which is not altered: `(institution_id → institutions, institution_curriculum_id uuid NULL → institution_curricula, approach_version_id → learning_approach_profile_versions, set_by, set_at, retired_at)`; one active row per (institution, curriculum-or-null). **No row = STANDARD. No backfill** |
-| 19 | `question_bank_adaptation_specifications` | **changed**: `learning_approach_version_id uuid NULL`; `academic_programme_id uuid NULL → academic_programmes` (curriculum reference); `component_profile_version_id` carries the binding; `content_use_class` restricted to `EVIDENCE_BEARING` | Dev-test ingestion is deferred, so no dev-test specification is persisted |
-| 20 | `question_bank_item_task_family_lineage` | **changed**: `learning_approach_version_id uuid NULL`, `participation_mode`; `content_use_class` restricted to `EVIDENCE_BEARING`; CHECK `participation_mode = 'INDIVIDUAL'` | A collaborative activity is not individual evidence; dev-test content is not ingested |
-| view | `assessment_component_rules_in_force` | unchanged | Inheritance for reads |
+| 1 | `assessment_profiles` | ONE table for system and component profiles: `level` (`SYSTEM` / `COMPONENT`), `parent_profile_id` (component → its system), `profile_key` (unique; for a component this is the stable semantic key), `exam_family` (NULL for an institution's assessment), `owner_institution_id → institutions` (only for basis `INSTITUTION_POLICY`), `local_subject` | `level = 'SYSTEM'` ⇔ `parent_profile_id IS NULL`; a parent is a `SYSTEM` row (guard); no `AICE` profile — AICE is a qualification context (D5) |
+| 2 | `assessment_profile_versions` | ONE version table: `profile_id`, `version`, `parent_version_id` (component version → the system version it overrides), `status`, `basis`, `component_dependent_dimensions`, the **typed authority binding** as columns (below), `content_hash`, `published_at`, certification | Immutable from `published_at`; publish checks (complete system rules, override ⊂ parent's dependent dimensions, no OFFICIAL fallback on a dependent dimension); an OFFICIAL rule ⇒ authoritative binding present (D1) |
+| 3 | `assessment_profile_rules` | One row per rule of a version: `profile_version_id` (a single FK now), `dimension`, `value`, `authority` (`OFFICIAL` / `STUDYUS_POLICY` / `INSTITUTION_POLICY`), `assumption`, `institution_id → institutions` | Unique `(profile_version_id, dimension)`; `institution_id` set ⇔ `INSTITUTION_POLICY`; that authority only under an `INSTITUTION_POLICY` basis |
+| 4 | `assessment_profile_rule_sources` | `(rule_id, source_key → assessment_sources.source_key, locator)` | Only on OFFICIAL rules; each OFFICIAL rule has ≥ 1 |
+| 5 | `assessment_discipline_policies` | Versioned policy content | Insert-only |
+| 6 | `learning_approach_versions` | ONE table for approaches: `approach_key`, `version`, `status` (`PROVISIONAL` / `CERTIFIED`), `content`, `content_hash`, certification; unique `(approach_key, version)` | StudyUs-managed only (D4): no owner, no authority column. `STANDARD` has **no row**: it is the absence of an approach |
+| 7 | `learning_approach_assignments` | ONE scoped carrier (D2): `institution_id → institutions` (always), `scope_type`, and the scope as typed nullable FKs — `academic_programme_id → academic_programmes`, `class_id → classes`, `canonical_subject_id → canonical_subjects` — plus `approach_key`, `pinned_version_id → learning_approach_versions` (NULL = current), `set_by`, `set_at`, `retired_at` | CHECK: exactly the column of `scope_type` is set (none for `INSTITUTION`); **unique active row per (institution, scope type, scope id)** — the database cannot hold an ambiguous assignment; append-only (retire, never rewrite). No row ⇒ STANDARD; no backfill |
+| 8 | `question_bank_task_families` | Stable identity, `family_type`, `canonical_subject_id` | unchanged |
+| 9 | `question_bank_task_family_versions` | Content (incl. `approachSupport`), hashes, lifecycle, review | Content immutable; forward-only lifecycle |
+| 10 | `question_bank_task_family_concepts` | `(family_version_id, canonical_concept_id → canonical_concepts)` | Same canonical subject as the family. **No stable key added to `canonical_concepts`** |
+| 11 | `assessment_competency_references` | ONE shared reference table into `competencies`: `task_family_version_id` **or** `learning_approach_version_id` (exactly one), `competency_id → competencies` (NOT NULL) | A persisted reference always points at an existing competency; a competency not in the catalogue is not referenced — it is catalogue readiness (§2), and an approach version with any unresolved competency cannot be `CERTIFIED` |
+| 12 | `assessment_applicability` | concept × profile (system or component) × basis | One active per scope; append-only |
+| 13 | `assessment_applicability_evidence` | FK to `structure_nodes` or `objective_concept_mappings`, review state | Evidence is of the same concept; basis cannot exceed evidence |
+| 14 | `question_bank_adaptation_specifications` | Content-addressed; `family_version_id`, `system_profile_version_id`, `component_profile_version_id`, `discipline_policy_id`, `learning_approach_version_id` (NULL = STANDARD), `academic_programme_id` (curriculum reference, NULL), `applicability_id`, `content` | Insert-only. Only `EVIDENCE_BEARING` specifications are persisted (ingestion of dev-test content is deferred). Insert guard: family version CERTIFIED and reviewed; both profile versions CERTIFIED; approach version CERTIFIED or NULL (D3); applicability established; entitlement derivable when a curriculum is named |
+| 15 | `question_bank_item_task_family_lineage` | One optional row per `approved_items` version: `family_version_id`, `lineage_kind` (`GENERATED` / `AUTHORED`), `specification_id`, `learning_approach_version_id`, `parameterization_hash`, `variant_family_key` | Kind agrees with provenance; authored rows carry no generation field; individual participation only; legacy items have no row |
+| view | `assessment_profile_rules_in_force` | Component version → inherited system rule or its own override, with origin | — |
 
-**Not a table: curriculum entitlement.** It is derived from rows that already exist — published `objective_concept_mappings` under the curriculum's structure version, and `institution_curriculum_concepts` (`status = 'ACTIVE'`) for an institution's own selection. A new table would duplicate them.
+**The typed authority binding (D1)** is columns of `assessment_profile_versions`, not a table: `binding_target_type` (`EXAM_VERSION` / `SYLLABUS_VERSION` / `FRAMEWORK_VERSION` / `INSTITUTION_POLICY_VERSION`), `binding_target_identity`, `binding_version`, `binding_component_key`, `binding_recorded_in`, and two optional precise references — `binding_exam_version_id → exam_versions`, `binding_structure_version_id → structure_versions` — plus `binding_institution_id → institutions` for an institution's policy version. The typed text triple is authoritative and always present for a bound version; a foreign key is added where the row exists (an exam version for PAA / IB / Icfes; the syllabus's structure version for Cambridge 9709). Nothing forces an `exam_versions` row to exist for a syllabus. Source provenance of the binding is the rule-source rows of the version's OFFICIAL rules (table 4).
 
-**Removed from the draft:** its migration 7's two dev-test branches (`question_bank_quality_guard`, `question_bank_pool_membership_guard`). With ingestion deferred there is no dev-test row for them to refuse. The attribution branch of `question_bank_item_concept_guard` (PRIMARY concept must be one of the family's) stays.
+**Not a table: curriculum entitlement** — derived from published `objective_concept_mappings` under the curriculum's structure version and from `institution_curriculum_concepts`. **Not a table: the applicability threshold policy** — a versioned StudyUs constant; a specification's content records the policy id and version it was resolved under.
 
-**Gating evidence-bearing content** (insert of a specification, by guard): family version `CERTIFIED` + reviewed; system and component profile versions `CERTIFIED`; applicability established; entitlement derivable when a curriculum is named; approach version (if any) — see open question 3.
+### Merges made and rejected
 
-**Evidence facets (learning approach)** are a B3 concern: the lineage row carries the approach version so that B3 can read it later; nothing is scored or stored for evidence now.
+| Structure | Decision | Reason |
+|---|---|---|
+| System profiles + component profiles → `assessment_profiles` | **Merged** (2 → 1) | Same columns but the parent. Lost as declarative constraints, kept by guard: "a component's parent is a system row". Gained: a single FK target for applicability, specifications and rules |
+| System versions + component versions → `assessment_profile_versions` | **Merged** (2 → 1) | Same lifecycle, same immutability, same publish checks. Rules then need one FK instead of two nullable ones with an exclusive-or check |
+| Per-kind binding columns / a separate bindings table → typed binding columns on the version | **Merged into the version** (no table) | The binding is 1 : 1 with a profile version and immutable with it; a separate table would add a join and a way for them to drift |
+| `learning_approach_profiles` + `…_versions` + `learning_approach_competencies` → `learning_approach_versions` + shared references | **Merged** (3 → 1) | Two StudyUs-managed approaches, no institution authoring (D4): an identity table would hold two rows. `STANDARD` needs no row. Lost: an identity row to hang assignments on — assignments name `approach_key` and may pin a version |
+| Family competencies + approach competencies → `assessment_competency_references` | **Merged** (2 → 1) | One meaning ("this version references this competency"), one FK target. Two typed nullable owner FKs with an exactly-one check keep full FK precision |
+| `institution_learning_approaches` → `learning_approach_assignments` | **Replaced** (1 → 1, four scopes) | D2. One row shape for institution, programme, class and subject; a partial unique index makes ambiguity unrepresentable |
+| `assessment_applicability_threshold_policies` | **Removed** (1 → 0) | A StudyUs constant with one row; recorded by id and version inside each specification |
+| Scope as one polymorphic `scope_id` | **Rejected** | It would lose the foreign keys to `academic_programmes`, `classes` and `canonical_subjects`; typed nullable columns in the same single table keep them |
+| Rules as `jsonb` on the version | **Rejected** | Loses "one rule per dimension" as an index, the per-rule authority check and the FK from rule sources |
+| Rule sources as a `text[]` on the rule | **Rejected** | Loses the FK to `assessment_sources`: an OFFICIAL rule could cite a source that does not exist |
+| Family identity + family versions | **Rejected** | Many families; the identity carries the subject FK once, retirement, and the stable key items trace to across versions |
+| Family concepts into the shared reference table | **Rejected** | Different FK target (`canonical_concepts`) and a subject-consistency guard that competencies do not have |
+| Applicability evidence as `jsonb` | **Rejected** | The FKs to `structure_nodes` / `objective_concept_mappings` are the point: evidence must be a real mapping row |
+| Specifications into lineage | **Rejected** | One specification serves many items; it is content-addressed and insert-only on its own |
+| Institution-authoring structures; an AICE profile | **Not created** | D4, D5 |
 
-### Proposed migration split (placeholders; none created)
+### Counts and delta
+
+| | Rejected draft | First EA-1A revision | This revision |
+|---|---|---|---|
+| Tables | 15 | 20 | **15** |
+| Views | 1 | 1 | **1** |
+| Placeholder migrations | 7 | 9 | **8** |
+
+Against the 20-table version (delta −5 tables, 0 views, −1 placeholder migration):
+
+- −2: system and component profiles and their versions, 4 tables → 2;
+- −2: approach identity, approach versions and approach competencies, 3 tables → 1 (`learning_approach_versions`); the approach's competency references move into the shared reference table, which takes the place of the family-competency table (1 → 1);
+- −1: the applicability threshold-policy table is removed;
+- 0: `institution_learning_approaches` is replaced one for one by `learning_approach_assignments`.
+
+20 − 2 − 2 − 1 = 15. It is the same count as the rejected draft with a larger scope (learning approaches, scoped assignments, institution authority, typed bindings). One placeholder fewer because the approach tables and the assignment carrier ship together.
+
+### Placeholder migrations (none created)
 
 | # | Placeholder | Contents |
 |---|---|---|
-| 1 | `<date>_1000_assessment_system_component_profiles.sql` | tables 5–10 and the view; publish checks; version binding; institution authority |
-| 2 | `<date>_1100_assessment_discipline_policies.sql` | table 11 |
-| 3 | `<date>_1200_learning_approach_profiles.sql` | tables 15–17 |
-| 4 | `<date>_1300_qb_task_families.sql` | tables 1–4 |
-| 5 | `<date>_1400_assessment_applicability.sql` | tables 12–14 |
-| 6 | `<date>_1500_institution_learning_approaches.sql` | table 18 |
-| 7 | `<date>_1600_qb_adaptation_specifications.sql` | table 19 and its evidence-bearing guard |
-| 8 | `<date>_1700_qb_item_task_family_lineage.sql` | table 20 and its guard |
-| 9 | `<date>_1800_qb_primary_attribution_matches_task_family.sql` | one `CREATE OR REPLACE` of `question_bank_item_concept_guard()` |
+| 1 | `<date>_1000_assessment_profiles.sql` | tables 1–4 and the view |
+| 2 | `<date>_1100_assessment_discipline_policies.sql` | table 5 |
+| 3 | `<date>_1200_learning_approaches.sql` | tables 6–7 |
+| 4 | `<date>_1300_qb_task_families.sql` | tables 8–11 (the shared references need 3 and this) |
+| 5 | `<date>_1400_assessment_applicability.sql` | tables 12–13 |
+| 6 | `<date>_1500_qb_adaptation_specifications.sql` | table 14 and its evidence-bearing guard |
+| 7 | `<date>_1600_qb_item_task_family_lineage.sql` | table 15 and its guard |
+| 8 | `<date>_1700_qb_primary_attribution_matches_task_family.sql` | one `CREATE OR REPLACE` of `question_bank_item_concept_guard()` |
 
-All additive; 1–8 create tables nothing reads; 9 alone touches an existing function and affects only versions that have a lineage row. No content is seeded by a migration.
-
-### Persistence open questions
-
-1. **Version binding for syllabus records.** Cambridge 9709 is recorded as a generated syllabus record, not as an `exam_versions` row. Is the binding always an `exam_versions` / `assessment_components` FK (which requires such rows to exist first), or may it be the recorded text keys? The design allows both; one should be chosen.
-2. **Granularity of the institution's approach.** Institution-wide with an optional per-curriculum override (the design), or also per class / grade / subject?
-3. **May a PROVISIONAL learning approach feed evidence-bearing content?** The rulings gate assessment profiles; the approach is not gated in code.
-4. **Institution-authored approaches.** The contract fixes `authority: STUDYUS_POLICY`; an institution's own approach would need an owner and its own authority value.
-5. **Competency creation.** Five STEM+ competencies must be created by the Curriculum before any approach version can be certified; whether transversal competencies also attach to concepts (`canonical_concept_competencies`) is the Curriculum's call.
-6. **Applicability of a concept to an institution's own assessment**: from `institution_curriculum_concepts`? Not modelled.
-7. Carried from the draft: the link-evidence threshold; how the certified PAA Topic → concept relation is materialised; who reviews a task family; services and routes.
+All additive; 1–7 create tables nothing reads; 8 touches one existing function and only for versions with a lineage row. No content is seeded by a migration. No guard is added for dev-test content: its ingestion is deferred.
 
 ## 12. Limitations
 
 1. Nothing is reviewed or certified. STEM+ content, the school profile and the families are in-session drafts.
-2. Five of six STEM+ competencies do not exist in the catalogue.
-3. Curriculum entitlement cannot be established for MCCEMS or MEN: their structures are not in the repository. Both POCs are dev-test only.
+2. STEM+ catalogue readiness is PARTIAL: five of six competencies are not in the catalogue.
+3. Evidence-bearing curriculum readiness is NO for Mexico and Colombia: structures are not in the repository.
 4. Mathematics only. No science family, no science discipline policy.
-5. With draft families and provisional profiles, no evidence-bearing specification can be produced from anything the repository holds.
-6. No question was generated; whether a generated instance honours an approach's emphasis is untested.
+5. With draft families, provisional profiles and a provisional approach, no evidence-bearing specification can be produced from anything the repository holds; that path is exercised with test doubles only.
+6. No question was generated.
 7. The competency count (eight) is from the repository's catalogue file, not from a database.
-8. The component-level specification ids of the EA-1 matrix artifact changed (version binding).
+8. Specification ids of the artifacts changed again with the typed binding (§9).
 9. The persistence design was not exercised against a database.
 
-## 13. Unresolved architecture issues
+## 13. Open questions, classified
 
-Strictly: the target `EA-1A = PASS` and `READY_FOR_ADAPTATION_SCHEMA_IMPLEMENTATION = YES` holds only if none remains. These remain.
+### U1–U10 of the first cut, re-dispositioned
 
-| # | Issue | Why it is architectural | Blocks schema? |
+| # | Was | Disposition |
+|---|---|---|
+| U1 | Conflict rule for non-official rules was this phase's policy | **RESOLVED by D6.** Certified StudyUs / institution rules override a preference; provisional rules govern dev-test content only; every override records authority and certification status |
+| U2 | Version-binding target for syllabus-record systems | **RESOLVED by D1.** Typed binding; Cambridge 9709 binds to `SYLLABUS_VERSION 9709 / 2026-2027`; PISA to `FRAMEWORK_VERSION pisa-math / 2022` |
+| U3 | Granularity of the institution's approach | **RESOLVED by D2.** One scoped assignment carrier, four scopes, most specific wins, ambiguity refused |
+| U4 | PROVISIONAL approach and evidence-bearing content | **RESOLVED by D3.** Refused by name |
+| U5 | Institution-authored approaches | **DEFERRED BY DECISION (D4).** Not in the contract, not in the persistence design |
+| U6 | Individual component of a collaborative task | **DEFERRED BY DECISION** (B3 is not implemented in this phase). Collaborative activity is never evidence-bearing and never ingested |
+| U7 | "An exam system is sat individually" is engine policy | **IMPLEMENTATION DETAIL.** A StudyUs policy constant in the engine; no table depends on it |
+| U8 | Benchmark / calibration / pilot certification refuse dev-test content | **IMPLEMENTATION DETAIL.** A conservative policy constant, flagged `CONSERVATIVE_READING`; no table depends on it |
+| U9 | AICE vs Cambridge | **RESOLVED by D5.** AICE resolves to the CAMBRIDGE system as qualification context |
+| U10 | Applicability of a concept to an institution's own assessment | See A1 below |
+
+### Everything still open
+
+| # | Question | Class | Why |
 |---|---|---|---|
-| U1 | The conflict rule for non-official profile rules (StudyUs / institution policy vs an approach preference) is this phase's policy, not the user's decision | It decides what STEM+ can change against every exam profile | No (code only), but needs confirmation |
-| U2 | Version binding target for systems recorded as syllabus records (9709) | Shape of table 8 | **Yes** |
-| U3 | Granularity of the institution's approach | Shape of table 18 | **Yes** |
-| U4 | Whether a PROVISIONAL approach may feed evidence-bearing content | Gate on table 19 | **Yes** |
-| U5 | Institution-authored approaches (authority, ownership) | Contract and tables 15–16 | Yes, if wanted in the first schema |
-| U6 | How an individual component of a collaborative task becomes individual evidence | B3; the lineage CHECK assumes "collaborative is never ingested" | No, while B3 is not started |
-| U7 | "An exam system is sat individually" is engine policy; profiles have no participation dimension | Where the rule should live | No |
-| U8 | `BENCHMARK` / `CALIBRATION` / `PILOT_CERTIFICATION` refusing dev-test content is a conservative reading | Instance policy | No |
-| U9 | AICE has no profile; 9709 sits under the AICE catalogue with a `CAMBRIDGE` profile (from EA-1) | Exam-family identity of a profile | Yes, for Cambridge / AICE profiles |
-| U10 | Applicability of a concept to an institution's own assessment | No source is defined | No, for exam systems |
+| A1 | What establishes applicability of a concept for an **institution's own assessment** (`SCHOOL_STEM_PERFORMANCE`)? Today: nothing, so it is `NONE` | **ARCHITECTURE DECISION — but outside the first schema** (see note) | A third applicability basis (the institution's own curriculum selection) would be a new value and one nullable FK on tables 12–13 |
+| I1 | PROGRAMME scope target: `academic_programmes` (proposed) or `institution_curricula` | IMPLEMENTATION DETAIL | The pure carrier holds an opaque scope id; either FK fits table 7 |
+| I2 | SUBJECT scope target: `canonical_subjects` (proposed, as `institution_curricula` uses) or `academic_subjects` | IMPLEMENTATION DETAIL | Same |
+| I3 | Which bindings also carry a precise FK (`exam_versions`, `structure_versions`) | IMPLEMENTATION DETAIL | The typed text triple is authoritative; the FK is optional by design |
+| I4 | `version: null` in an assignment — "current" means latest certified, or latest | IMPLEMENTATION DETAIL | Resolver rule |
+| I5 | Threshold for catalogue-link evidence once mapping reviewers are persisted | IMPLEMENTATION DETAIL | A policy constant |
+| I6 | Which qualification certifies a task family | IMPLEMENTATION DETAIL (a guard rule; to be set before the first family is certified, not before the schema) | Table 9 already holds reviewer and review columns |
+| I7 | U7, U8 above | IMPLEMENTATION DETAIL | Policy constants |
+| I8 | Services and routes that write these tables | IMPLEMENTATION DETAIL | Not designed here |
+| R1 | Five STEM+ competencies missing from the catalogue | DATA / CATALOGUE READINESS | Curriculum work (§2) |
+| R2 | MCCEMS and MEN structures and concept mappings | DATA / CATALOGUE READINESS | Curriculum import |
+| R3 | How the certified PAA Topic → concept relation is materialised as rows | DATA / CATALOGUE READINESS | Needed by official-structure evidence, not by table shape |
+| R4 | No reviewed family, no certified profile, no certified approach | DATA / CATALOGUE READINESS | Review work |
+| X1 | Institution-authored approaches | DEFERRED BY DECISION | D4 |
+| X2 | DEV_TEST_CONTENT ingestion | DEFERRED BY DECISION | §10 |
+| X3 | Independence, the individual component of group work, relating AssessmentTaskFamily and TransferTaskFamily | DEFERRED BY DECISION | B3 |
+
+**Note on A1, stated plainly.** It is the one question that is architectural rather than a detail, and no decision covers it. It does **not** shape any of the 15 tables: applicability for exam systems is complete without it, the school profile is an uncertified design that can produce dev-test content only, and adding a basis later is additive (one enum value, one nullable FK). So it cannot honestly be called a blocker of the first schema — but it also cannot be settled as an implementation detail, because it decides *what counts as evidence that an institution may assess a concept*. The proposed readiness value below assumes the Orchestrator classifies A1 as deferred with the institution-assessment profile; if instead it must be in the first schema, readiness is NO until it is decided.
 
 ## 14. Proposed output fields
 
 | Field | Proposed value | Basis |
 |---|---|---|
-| `LEARNING_APPROACH_PROFILE` | PASS | Contract, STANDARD by absence, engine integration, tests |
-| `STEM_PLUS_PROFILE` | PARTIAL | Contract implemented; content PROVISIONAL and uncertified; 5 of 6 competencies not in the catalogue |
+| `EA-1A STATUS` | **PASS** (architecture), subject to the A1 classification | D1–D6 applied and tested; no blocking architecture decision remains for the first schema |
+| `LEARNING_APPROACH_PROFILE` | PASS | Contract, STANDARD by absence, engine integration, certification gate (D3), StudyUs-managed (D4) |
+| `STEM_PLUS_PROFILE_CONTRACT` | PASS | Written against the contract; valid; composes with every assessment target. Content `PROVISIONAL`, uncertified |
+| `STEM_PLUS_CATALOGUE_READINESS` | **PARTIAL** | 1 of 6 competencies in the catalogue; 5 are future Curriculum work |
 | `CURRICULUM_SEPARATION` | PASS | No STEM curriculum; approach and profile hold no knowledge; one concept id across curricula |
-| `ASSESSMENT_PROFILE_SEPARATION` | PASS | Profiles hold no approach; official constraints win; preferences recorded |
-| `TASK_FAMILY_INTEGRATION` | PASS | Seven STEM types declared; `approachSupport` additive; EA-1 families unchanged. Science not implemented, by instruction |
-| `INSTITUTION_CONFIGURATION` | PASS (code) — granularity open (U3) | Pure contract and resolution, STANDARD default |
+| `ASSESSMENT_PROFILE_SEPARATION` | PASS | Profiles hold no approach; precedence D6; every override recorded with authority and certification |
+| `TASK_FAMILY_INTEGRATION` | PASS | Seven STEM types declared; `approachSupport` additive; EA-1 families unchanged |
+| `INSTITUTION_CONFIGURATION` | PASS | Scoped assignment carrier and resolver (D2), STANDARD fallback, ambiguity refused |
 | `MULTIDIMENSIONAL_EVIDENCE_DESIGN` | PASS | Types and names only; no B3 scoring |
-| `MEXICO_POC` | PARTIAL | Architecture demonstrated; entitlement NOT_ESTABLISHED; mathematics only |
-| `COLOMBIA_POC` | PARTIAL | Same |
-| `PERSISTENCE_DESIGN` | PARTIAL | Revised, 20 tables; U2–U5 open; not exercised |
-| `EA-1A STATUS` | **PARTIAL** | Unresolved architecture issues remain (§13) |
-| `READY_FOR_ADAPTATION_SCHEMA_IMPLEMENTATION` | **NO** | U2, U3, U4 (and U5, U9 where applicable) change table shapes or gates |
+| `MEXICO_ARCHITECTURE_POC` | PASS | 8 of 8 composition checks |
+| `MEXICO_EVIDENCE_READINESS` | **NO** | Structure not imported; entitlement 0 of 12; nothing reviewed or certified |
+| `COLOMBIA_ARCHITECTURE_POC` | PASS | 8 of 8 composition checks |
+| `COLOMBIA_EVIDENCE_READINESS` | **NO** | Same |
+| `PERSISTENCE_DESIGN` | PASS as a design | 15 tables, 1 view, 8 placeholder migrations; merges justified. Not exercised against a database, by instruction |
+| `DEV_TEST_CONTENT_INGESTION` | **DEFERRED** | None of the five guarantees is provable today (§10) |
+| `READY_FOR_ADAPTATION_SCHEMA_IMPLEMENTATION` | **YES, if A1 is classified as deferred; otherwise NO** | A1 is the only architecture question left; it touches none of the 15 tables |
 
 ## 15. Verification
 
-See the phase report for the TypeScript, unit-suite and build results. Suites: `tests/unit/ea1a-learning-approach.test.ts` (new) and `tests/unit/ea1-assessment-adaptation.test.ts` (updated only where a locked ruling changed behaviour).
+See the phase report for the TypeScript, unit-suite and build results. Suites: `tests/unit/ea1a-learning-approach.test.ts` and `tests/unit/ea1-assessment-adaptation.test.ts`.

@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { adapt, type AdaptationResult } from '@/lib/assessment-adaptation/adapt';
 import { AdaptationSpecificationSchema, LearningApproachResolutionSchema, PROVENANCE_ORIGINS, specificationIntegrityIssues, type AdaptationRequest, type AdaptationSpecification } from '@/lib/assessment-adaptation/adaptation-specification';
-import { AssessmentComponentProfileSchema, AssessmentSystemProfileSchema, authorityBreakdown, PROFILE_RULE_DIMENSIONS, REASONING_DEPTHS, RULE_AUTHORITIES, RuleAuthoritySchema, SPECIFICATION_BASES, STIMULUS_MODES, type AssessmentComponentProfile, type AssessmentSystemProfile } from '@/lib/assessment-adaptation/assessment-system-profile';
+import { assessmentSystemOfExamFamily, AUTHORITY_BINDING_TARGET_TYPES, AuthorityVersionBindingSchema, QUALIFICATION_CONTEXT_OF_EXAM_FAMILY, AssessmentComponentProfileSchema, AssessmentSystemProfileSchema, authorityBreakdown, PROFILE_RULE_DIMENSIONS, REASONING_DEPTHS, RULE_AUTHORITIES, RuleAuthoritySchema, SPECIFICATION_BASES, STIMULUS_MODES, type AssessmentComponentProfile, type AssessmentSystemProfile } from '@/lib/assessment-adaptation/assessment-system-profile';
 import { canonicalJson } from '@/lib/assessment-adaptation/canonical-hash';
 import { MATHEMATICS_ADAPTATION_POLICY } from '@/lib/assessment-adaptation/discipline-policy';
 import { ADAPTATION_EVIDENCE_FACETS, AdaptationLineageSchema, instancePolicyFor, PROTECTED_MOCK_POOLS } from '@/lib/assessment-adaptation/instance-lineage';
@@ -19,14 +19,14 @@ import { buildLearningApproachPoc, LEARNING_APPROACH_POC_ARTIFACT, LEARNING_APPR
 import { MATH_POC_APPLICABILITY } from '@/lib/assessment-adaptation/math-poc-applicability';
 import { buildMathAdaptationMatrix, buildMathPocSpecifications, COMPARED_DIMENSIONS, differingDimensions, MATH_POC_LANGUAGE, MATH_POC_MATRIX_ARTIFACT, serializeMathAdaptationMatrix } from '@/lib/assessment-adaptation/math-poc-matrix';
 import { ILLUSTRATIVE_INSTITUTION_KEY, SCHOOL_STEM_PERFORMANCE_PROFILE } from '@/lib/assessment-adaptation/school-stem-performance';
-import { componentProfileOf, EA1_COMPONENT_PROFILES, EA1_SYSTEM_PROFILES, PAA_MATEMATICAS_COMPONENT, PAA_SYSTEM_PROFILE, PISA_MATHEMATICS_COMPONENT, PISA_SYSTEM_PROFILE, systemProfileOf } from '@/lib/assessment-adaptation/system-profiles';
+import { CAMBRIDGE_SYSTEM_PROFILE, systemProfileOfExamFamily, componentProfileOf, EA1_COMPONENT_PROFILES, EA1_SYSTEM_PROFILES, PAA_MATEMATICAS_COMPONENT, PAA_SYSTEM_PROFILE, PISA_MATHEMATICS_COMPONENT, PISA_SYSTEM_PROFILE, systemProfileOf } from '@/lib/assessment-adaptation/system-profiles';
 import { DEV_COMPETENCIES } from '@/lib/exam-core/catalog/dev-learning-catalog';
 import { DEFAULT_TASK_FAMILY_REGISTRY, FAMILY_TYPE_ALIASES, canonicalFamilyType, KNOWN_FAMILY_TYPES, knownFamilyType, MATH_POC_FAMILIES, MATH_POC_FAMILIES_EA1A, mathPocFamilyEa1aOf, mathPocFamilyOf, PARTICIPATION_MODES, TaskFamilyCommonSchema, TRANSVERSAL, type MathTaskFamily } from '@/lib/exam-core/question-bank/task-families';
 import { CALCULATOR_POLICIES, CONTEXT_KINDS, ELICITATION_FORMATS } from '@/lib/exam-core/question-bank/task-families/task-family';
 import { PAA_CONCEPT_IDENTITIES } from '@/lib/exam-core/question-bank/production/paa-concept-identity';
 import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
-import { CO_MEN_CURRICULUM, CurriculumProfileSchema, EA1A_CURRICULUM_ENTITLEMENT, EA1A_CURRICULUM_PROFILES, EA1A_EXAMPLE_CONFIGURATIONS, MX_MCCEMS_CURRICULUM, resolveEffectiveApproach, resolveEntitlement } from '@/lib/learning-approach/institution-configuration';
-import { APPROACH_DIMENSION_VALUES, APPROACH_PARTICIPATION_MODES, competencyCodeOf, evidenceYieldOf, LEARNING_APPROACHES, learningApproachOf, LearningApproachProfileSchema, STANDARD_APPROACH, STEM_PLUS_APPROACH, validateLearningApproachProfile, type LearningApproachProfile } from '@/lib/learning-approach/learning-approach-profile';
+import { ASSIGNMENT_SCOPE_TYPES, CO_MEN_CURRICULUM, CurriculumProfileSchema, EA1A_CURRICULUM_ENTITLEMENT, EA1A_CURRICULUM_PROFILES, EA1A_EXAMPLE_CONFIGURATIONS, LearningApproachAssignmentSchema, MX_MCCEMS_CURRICULUM, resolveEffectiveApproach, resolveEntitlement, resolveLearningApproach, type LearningApproachAssignment } from '@/lib/learning-approach/institution-configuration';
+import { APPROACH_DIMENSION_VALUES, APPROACH_PARTICIPATION_MODES, catalogueReadinessOf, competencyCodeOf, evidenceYieldOf, LEARNING_APPROACHES, learningApproachOf, LearningApproachProfileSchema, STANDARD_APPROACH, STEM_PLUS_APPROACH, validateLearningApproachProfile, type LearningApproachProfile } from '@/lib/learning-approach/learning-approach-profile';
 
 const ROOT = join(__dirname, '..', '..');
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
@@ -51,7 +51,8 @@ const refusal = (r: AdaptationResult): string => (r.ok ? 'NOT_REFUSED' : r.refus
 const STEM = { approach: STEM_PLUS_APPROACH };
 const certified = <T extends { status: string; certification: unknown }>(p: T): T => ({ ...clone(p), status: 'CERTIFIED', certification: { certifiedBy: 'test-double', certifiedAt: '2026-10-11T00:00:00Z' } });
 const reviewed = <T extends { lifecycle: string; reviewStatus: string }>(f: T): T => ({ ...clone(f), lifecycle: 'CERTIFIED', reviewStatus: 'REVIEWED' });
-const POC = buildLearningApproachPoc();
+const CATALOGUE_CODES = DEV_COMPETENCIES.map((c) => c.code);
+const POC = buildLearningApproachPoc(CATALOGUE_CODES);
 
 describe('three independent layers: curriculum, learning approach, assessment profile', () => {
   it('an approach carries no curriculum knowledge and no exam rule: no concept, topic or objective, no exam family, no profile dimension', () => {
@@ -166,15 +167,17 @@ describe('STANDARD is the emphasis-neutral default, recorded by absence', () => 
     // anchors recorded from the accepted EA-1 artifact (commit af0d763): the engine, the system profiles and the
     // families are unchanged, so these ids are unchanged
     const id = (familyId: string, targetId: string) => matrix.cells.find((c) => c.familyId === familyId && c.targetId === targetId && c.level === 'SYSTEM')!.specificationId!.slice(0, 8);
-    expect([id('tf.math.proportion.missing-value', 'PAA'), id('tf.math.proportion.rate-comparison-model', 'PISA'), id('tf.math.linear.constant-rate-model', 'IB'), id('tf.math.quadratic.solve-by-factorising', 'CAMBRIDGE'), id('tf.math.data.judge-claim-against-display', 'ICFES')]).toEqual(['7e8a5102', 'e03f9797', 'dfc246b9', '15545c47', 'f82420da']);
+    expect([id('tf.math.proportion.missing-value', 'PAA'), id('tf.math.proportion.rate-comparison-model', 'PISA'), id('tf.math.linear.constant-rate-model', 'IB'), id('tf.math.data.judge-claim-against-display', 'ICFES')]).toEqual(['7e8a5102', 'e03f9797', 'dfc246b9', 'f82420da']);
+    // the Cambridge system profile is the one system profile that changed (its OFFICIAL rule gained its syllabus binding): its ids are no longer EA-1's
+    expect(id('tf.math.quadratic.solve-by-factorising', 'CAMBRIDGE')).not.toBe('15545c47');
     // numbers, refusals and applicability are exactly EA-1's
     expect(matrix.summary.componentLevel).toMatchObject({ attempts: 60, specifications: 51, refusals: 9 });
     expect(matrix.summary.systemLevel).toMatchObject({ attempts: 50, specifications: 36, refusals: 14 });
     expect(matrix.summary.applicabilityOfComponentSpecifications.byStatus).toEqual({ ESTABLISHED: 15, NOT_ESTABLISHED: 36 });
     // what DID change, and why: the component profiles gained their version binding (a locked ruling), so their
     // content hash -- which every component-level specification embeds -- changed, and with it those ids
-    for (const c of matrix.componentProfiles) expect(c.version).toBe('0.3.0-illustrative');
-    for (const p of matrix.systemProfiles) expect(p.version).toBe('0.2.0-illustrative');
+    for (const c of matrix.componentProfiles) expect(c.version).toBe('0.4.0-illustrative');
+    expect(matrix.systemProfiles.map((p) => [p.profileId, p.version])).toEqual([['PAA', '0.2.0-illustrative'], ['IB', '0.2.0-illustrative'], ['CAMBRIDGE', '0.3.0-illustrative'], ['PISA', '0.2.0-illustrative'], ['ICFES', '0.2.0-illustrative']]);
   });
 
   it('a specification never carries STANDARD: the default has one representation', () => {
@@ -233,7 +236,7 @@ describe('STEM_PLUS: emphasis, preferences and the conflict rule', () => {
     expect(s.variable.responseFormat.format).toBe('SELECTED_RESPONSE');
     expect(s.variable.toolPolicy.calculator).toBe('NONE');
     const unmet = s.learningApproach!.unmetPreferences;
-    expect(unmet.find((u) => u.preferenceId === 'stem-plus.response.constructed')).toEqual({ preferenceId: 'stem-plus.response.constructed', dimension: 'responseFormat', strength: 'PREFERRED', wanted: ['EXTENDED_RESPONSE', 'SHORT_RESPONSE'], decided: 'SELECTED_RESPONSE', overriddenBy: { origin: 'COMPONENT_PROFILE_RULE', ref: 'paa.matematicas.response-formats', authority: 'OFFICIAL' } });
+    expect(unmet.find((u) => u.preferenceId === 'stem-plus.response.constructed')).toEqual({ preferenceId: 'stem-plus.response.constructed', dimension: 'responseFormat', strength: 'PREFERRED', wanted: ['EXTENDED_RESPONSE', 'SHORT_RESPONSE'], decided: 'SELECTED_RESPONSE', overriddenBy: { origin: 'COMPONENT_PROFILE_RULE', ref: 'paa.matematicas.response-formats', authority: 'OFFICIAL' }, overridingRuleCertification: 'PROVISIONAL_ILLUSTRATIVE' });
     expect(unmet.find((u) => u.preferenceId === 'stem-plus.tools.available')!.overriddenBy).toEqual({ origin: 'COMPONENT_PROFILE_RULE', ref: 'paa.matematicas.calculator', authority: 'OFFICIAL' });
     // the same specification as STANDARD's in everything the official rules fix
     const standard = spec(run(RATE, PAA_SYSTEM_PROFILE, PAA_MATEMATICAS_COMPONENT));
@@ -291,7 +294,7 @@ describe('individual evidence vs collaborative activity', () => {
     expect(group.learningApproach!.participation).toEqual({ mode: 'COLLABORATIVE', evidenceYield: 'GROUP_ARTEFACT_ONLY' });
     expect(group.contentUseClass).toBe('DEV_TEST_CONTENT');
     // it can never be evidence-bearing content -- even from a reviewed family under a certified profile
-    expect(refusal(run(reviewed(RATE), certified(SCHOOL), null, { ...STEM, request: { participationMode: 'COLLABORATIVE', contentUseClass: 'EVIDENCE_BEARING' } }))).toBe('COLLABORATIVE_ACTIVITY_IS_NOT_INDIVIDUAL_EVIDENCE');
+    expect(refusal(run(reviewed(RATE), certified(SCHOOL), null, { approach: certified(STEM_PLUS_APPROACH), request: { participationMode: 'COLLABORATIVE', contentUseClass: 'EVIDENCE_BEARING' } }))).toBe('COLLABORATIVE_ACTIVITY_IS_NOT_INDIVIDUAL_EVIDENCE');
     // the individual version of the same task is another specification, with the same invariants
     const alone = spec(run(RATE, SCHOOL, null, STEM));
     expect([alone.learningApproach!.participation.mode, alone.invariantHash === group.invariantHash, alone.specificationId === group.specificationId]).toEqual(['INDIVIDUAL', true, false]);
@@ -479,11 +482,11 @@ describe('locked rulings', () => {
   });
 
   it('a component profile binds to a concrete exam / component version; an OFFICIAL rule without the binding is refused', () => {
-    for (const c of EA1_COMPONENT_PROFILES) expect(c.versionBinding, c.componentId).toMatchObject({ configKey: expect.any(String), versionLabel: expect.any(String), componentKey: expect.any(String) });
+    for (const c of EA1_COMPONENT_PROFILES) expect(c.versionBinding, c.componentId).toMatchObject({ targetType: expect.any(String), targetIdentity: expect.any(String), version: expect.any(String), provenance: { kind: 'AUTHORITATIVE_SOURCE' } });
     expect(AssessmentComponentProfileSchema.safeParse({ ...clone(PISA_MATHEMATICS_COMPONENT), versionBinding: null }).error?.issues.map((i) => i.message)).toContain('OFFICIAL_RULE_NEEDS_A_VERSION_BINDING');
     // the stable semantic key is for continuity only: with it and without a binding the component is still refused
     expect(AssessmentComponentProfileSchema.safeParse({ ...clone(PISA_MATHEMATICS_COMPONENT), versionBinding: null, semanticComponentKey: 'pisa.mathematics' }).success).toBe(false);
-    expect(spec(run(RATE, PISA_SYSTEM_PROFILE, PISA_MATHEMATICS_COMPONENT)).componentProfile!.versionBinding).toEqual({ source: 'EXAM_VERTICAL_CONFIGURATION', configKey: 'v2.pisa.math', versionLabel: 'V2 PISA 2022', componentKey: 'math' });
+    expect(spec(run(RATE, PISA_SYSTEM_PROFILE, PISA_MATHEMATICS_COMPONENT)).componentProfile!.versionBinding).toMatchObject({ targetType: 'FRAMEWORK_VERSION', targetIdentity: 'pisa-math', version: '2022', componentKey: 'math' });
   });
 
   it('no stable key was added to canonical_concepts, no migration or SQL file was created, and nothing ingests dev-test content', () => {
@@ -507,7 +510,7 @@ describe('locked rulings', () => {
 describe('Mexico and Colombia proofs of concept', () => {
   it('the stored artifact is exactly what the function produces', () => {
     expect(serializeLearningApproachPoc(POC)).toBe(read(LEARNING_APPROACH_POC_ARTIFACT));
-    expect(serializeLearningApproachPoc(buildLearningApproachPoc())).toBe(serializeLearningApproachPoc(POC));
+    expect(serializeLearningApproachPoc(buildLearningApproachPoc(CATALOGUE_CODES))).toBe(serializeLearningApproachPoc(POC));
   });
 
   it('24 cells, 24 dev-test specifications: 2 countries x 2 approaches x 3 assessment targets x 2 families', () => {
@@ -579,6 +582,184 @@ describe('Mexico and Colombia proofs of concept', () => {
     expect(POC.specialCases[0].detail).toEqual({ mode: 'COLLABORATIVE', evidenceYield: 'GROUP_ARTEFACT_ONLY' });
     // the artifact holds no question
     expect(read(LEARNING_APPROACH_POC_ARTIFACT)).not.toMatch(/"stem"|"options"|"answerKey"|[?¿]/);
+  });
+});
+
+describe('Orchestrator decisions of 2026-10-11 (D1-D6, readiness splits)', () => {
+  it('D1: a version binding is typed -- target type, identity, version, provenance -- and never fakes one kind of version as another', () => {
+    expect([...AUTHORITY_BINDING_TARGET_TYPES]).toEqual(['EXAM_VERSION', 'SYLLABUS_VERSION', 'FRAMEWORK_VERSION', 'INSTITUTION_POLICY_VERSION']);
+    expect(EA1_COMPONENT_PROFILES.map((c) => [c.componentId, c.versionBinding!.targetType, c.versionBinding!.targetIdentity, c.versionBinding!.version])).toEqual([
+      ['PAA.MATEMATICAS', 'EXAM_VERSION', 'v2.paa', 'V2.1 PAA revisada (guía 2021)'],
+      ['IB.MATH_AA_HL.P1', 'EXAM_VERSION', 'v2.ib.math-aa-hl', 'V2 2021-2028'],
+      ['IB.MATH_AA_HL.P2', 'EXAM_VERSION', 'v2.ib.math-aa-hl', 'V2 2021-2028'],
+      // Cambridge binds to its syllabus version; no exam-version record is invented for it
+      ['CAMBRIDGE.9709.P1', 'SYLLABUS_VERSION', '9709', '2026-2027'],
+      ['PISA.MATHEMATICS', 'FRAMEWORK_VERSION', 'pisa-math', '2022'],
+      ['ICFES.SABER11_MATEMATICAS', 'EXAM_VERSION', 'v2.saber11.math', 'V2.1 Saber 11 2026 · 50 posiciones'],
+    ]);
+    const b = PAA_MATEMATICAS_COMPONENT.versionBinding!;
+    for (const missing of ['targetType', 'targetIdentity', 'version', 'provenance'] as const) { const x = clone(b) as Record<string, unknown>; delete x[missing]; expect(AuthorityVersionBindingSchema.safeParse(x).success, missing).toBe(false); }
+    expect(AuthorityVersionBindingSchema.safeParse({ ...clone(b), provenance: { kind: 'AUTHORITATIVE_SOURCE', sourceKeys: [], recordedIn: 'x y z' } }).success).toBe(false);
+    // an institution's policy version is a valid binding of an institution's profile, and names the institution; it can never carry an OFFICIAL rule
+    const institution = { targetType: 'INSTITUTION_POLICY_VERSION', targetIdentity: 'institution.x.stem-assessment', version: '2026', componentKey: null, provenance: { kind: 'INSTITUTION', institutionKey: 'institution.x', recordedIn: 'the institution\'s own decision' } };
+    expect(AuthorityVersionBindingSchema.safeParse(institution).success).toBe(true);
+    expect(AssessmentSystemProfileSchema.safeParse({ ...clone(SCHOOL), versionBinding: institution }).success).toBe(true);
+    expect(AssessmentComponentProfileSchema.safeParse({ ...clone(PISA_MATHEMATICS_COMPONENT), versionBinding: institution }).error?.issues.map((i) => i.message)).toContain('OFFICIAL_RULE_NEEDS_AN_AUTHORITATIVE_BINDING');
+    expect(AssessmentComponentProfileSchema.safeParse({ ...clone(PISA_MATHEMATICS_COMPONENT), versionBinding: null }).error?.issues.map((i) => i.message)).toContain('OFFICIAL_RULE_NEEDS_A_VERSION_BINDING');
+  });
+
+  it('D2: one scoped assignment carrier -- institution < programme < class < subject; the most specific applicable assignment wins; none means STANDARD', () => {
+    expect([...ASSIGNMENT_SCOPE_TYPES]).toEqual(['INSTITUTION', 'PROGRAMME', 'CLASS', 'SUBJECT']);
+    const a = (assignmentId: string, type: LearningApproachAssignment['scope']['type'], id: string, approachId: string, institutionKey = 'inst-1'): LearningApproachAssignment => ({ assignmentId, institutionKey, scope: { type, id }, approach: { approachId, version: null } });
+    const INSTITUTION = a('a1', 'INSTITUTION', 'inst-1', 'STEM_PLUS');
+    const PROGRAMME = a('a2', 'PROGRAMME', 'prog-mccems', 'STANDARD');
+    const CLASS = a('a3', 'CLASS', 'class-5b', 'STEM_PLUS');
+    const SUBJECT = a('a4', 'SUBJECT', 'subject-math', 'STANDARD');
+    const ctx = { institutionKey: 'inst-1', programmeId: 'prog-mccems', classId: 'class-5b', subjectId: 'subject-math' };
+    const res = (context: Parameters<typeof resolveLearningApproach>[0], assignments: unknown[]) => { const r = resolveLearningApproach(context, assignments, LEARNING_APPROACHES); return r.ok ? `${r.approach.approachId}|${r.source}|${r.decidedBy?.scopeType ?? '-'}|${r.overridden.map((o) => o.scopeType).join('>')}` : `ERROR ${r.issue}`; };
+    // fallbacks
+    expect(res(null, [INSTITUTION])).toBe('STANDARD|DEFAULT_NO_INSTITUTION|-|');
+    expect(res({ institutionKey: null }, [INSTITUTION])).toBe('STANDARD|DEFAULT_NO_INSTITUTION|-|');
+    expect(res(ctx, [])).toBe('STANDARD|DEFAULT_NO_ASSIGNMENT|-|');
+    expect(res(ctx, [a('other', 'INSTITUTION', 'inst-2', 'STEM_PLUS', 'inst-2')])).toBe('STANDARD|DEFAULT_NO_ASSIGNMENT|-|');
+    // precedence, one level at a time
+    expect(res(ctx, [INSTITUTION])).toBe('STEM_PLUS|ASSIGNMENT|INSTITUTION|');
+    expect(res(ctx, [INSTITUTION, PROGRAMME])).toBe('STANDARD|ASSIGNMENT|PROGRAMME|INSTITUTION');
+    expect(res(ctx, [INSTITUTION, PROGRAMME, CLASS])).toBe('STEM_PLUS|ASSIGNMENT|CLASS|INSTITUTION>PROGRAMME');
+    expect(res(ctx, [INSTITUTION, PROGRAMME, CLASS, SUBJECT])).toBe('STANDARD|ASSIGNMENT|SUBJECT|INSTITUTION>PROGRAMME>CLASS');
+    // class vs subject, both applicable: SUBJECT wins, whatever the order they are given in
+    expect(res(ctx, [CLASS, SUBJECT])).toBe('STANDARD|ASSIGNMENT|SUBJECT|CLASS');
+    expect(res(ctx, [SUBJECT, CLASS])).toBe('STANDARD|ASSIGNMENT|SUBJECT|CLASS');
+    expect(res(ctx, [SUBJECT, CLASS, PROGRAMME, INSTITUTION])).toBe(res(ctx, [INSTITUTION, PROGRAMME, CLASS, SUBJECT]));
+    // an assignment applies only to its own scope id; a scope the context does not name cannot match
+    expect(res({ ...ctx, classId: 'class-6a' }, [INSTITUTION, CLASS])).toBe('STEM_PLUS|ASSIGNMENT|INSTITUTION|');
+    expect(res({ institutionKey: 'inst-1' }, [INSTITUTION, PROGRAMME, CLASS, SUBJECT])).toBe('STEM_PLUS|ASSIGNMENT|INSTITUTION|');
+    // a more specific STANDARD is an explicit opt-out
+    expect(res({ institutionKey: 'inst-1', programmeId: 'prog-mccems' }, [INSTITUTION, PROGRAMME])).toBe('STANDARD|ASSIGNMENT|PROGRAMME|INSTITUTION');
+    // AMBIGUITY is refused by name, never guessed: two assignments for one scope, even when they agree
+    expect(res(ctx, [CLASS, a('a5', 'CLASS', 'class-5b', 'STANDARD')])).toBe('ERROR AMBIGUOUS_LEARNING_APPROACH_ASSIGNMENT');
+    expect(res(ctx, [INSTITUTION, a('a6', 'INSTITUTION', 'inst-1', 'STEM_PLUS')])).toBe('ERROR AMBIGUOUS_LEARNING_APPROACH_ASSIGNMENT');
+    const ambiguous = resolveLearningApproach(ctx, [CLASS, a('a5', 'CLASS', 'class-5b', 'STANDARD')], LEARNING_APPROACHES);
+    expect(!ambiguous.ok && ambiguous.detail).toBe('CLASS class-5b: a3, a5');
+    // ... but an ambiguity at a scope that does not apply to this context does not block it
+    expect(res({ ...ctx, classId: 'class-6a' }, [INSTITUTION, CLASS, a('a5', 'CLASS', 'class-5b', 'STANDARD')])).toBe('STEM_PLUS|ASSIGNMENT|INSTITUTION|');
+    // an assigned approach that does not exist is an error, not STANDARD; an invalid assignment is refused
+    expect(res(ctx, [a('a7', 'SUBJECT', 'subject-math', 'MONTESSORI')])).toBe('ERROR UNKNOWN_LEARNING_APPROACH');
+    expect(res(ctx, [{ ...INSTITUTION, approach: { approachId: 'STEM_PLUS', version: '9' } }])).toBe('ERROR LEARNING_APPROACH_VERSION_NOT_FOUND');
+    expect(res(ctx, [{ ...INSTITUTION, scope: { type: 'INSTITUTION', id: 'inst-2' } }])).toBe('ERROR ASSIGNMENT_INVALID');
+    expect(res(ctx, [{ ...CLASS, scope: { type: 'DEPARTMENT', id: 'x' } }])).toBe('ERROR ASSIGNMENT_INVALID');
+    // one carrier for every scope: the same shape, no table or type per scope
+    expect(Object.keys(LearningApproachAssignmentSchema.shape).sort()).toEqual(['approach', 'assignmentId', 'institutionKey', 'scope']);
+    // the institution-only resolution is the scoped one with an INSTITUTION assignment: the four example compositions agree
+    for (const c of EA1A_EXAMPLE_CONFIGURATIONS) {
+      const viaConfiguration = resolveEffectiveApproach(c, LEARNING_APPROACHES);
+      const viaAssignments = resolveLearningApproach({ institutionKey: c.institutionKey }, c.learningApproach ? [{ assignmentId: 'x', institutionKey: c.institutionKey, scope: { type: 'INSTITUTION', id: c.institutionKey }, approach: c.learningApproach }] : [], LEARNING_APPROACHES);
+      expect(viaConfiguration.ok && viaAssignments.ok && viaConfiguration.approach.approachId).toBe(viaAssignments.ok && viaAssignments.approach.approachId);
+    }
+  });
+
+  it('D3: a PROVISIONAL learning approach generates DEV_TEST_CONTENT only; evidence-bearing content needs a CERTIFIED approach or the implicit STANDARD', () => {
+    const evidence = { request: { contentUseClass: 'EVIDENCE_BEARING' as const } };
+    const target: [unknown, AssessmentSystemProfile, AssessmentComponentProfile] = [reviewed(RATE), certified(PISA_SYSTEM_PROFILE), certified(PISA_MATHEMATICS_COMPONENT)];
+    expect(STEM_PLUS_APPROACH.status).toBe('PROVISIONAL');
+    const r = run(...target, { ...evidence, approach: STEM_PLUS_APPROACH });
+    expect(r).toMatchObject({ ok: false, refusal: { code: 'LEARNING_APPROACH_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT' } });
+    expect(!r.ok && r.refusal.detail).toMatch(/STEM_PLUS@0\.1\.0-provisional is PROVISIONAL/);
+    // the implicit STANDARD -- no approach, or STANDARD itself, which is provisional too but is no approach at all -- is accepted
+    expect(run(...target, evidence).ok).toBe(true);
+    expect(run(...target, { ...evidence, approach: STANDARD_APPROACH }).ok).toBe(true);
+    expect(canonicalJson(run(...target, { ...evidence, approach: STANDARD_APPROACH }))).toBe(canonicalJson(run(...target, evidence)));
+    // a certified approach (a test double: none is certified) is accepted
+    expect(spec(run(...target, { ...evidence, approach: certified(STEM_PLUS_APPROACH) })).learningApproach).toMatchObject({ approachId: 'STEM_PLUS', status: 'CERTIFIED' });
+    // the provisional approach still generates dev-test content
+    expect(spec(run(RATE, PISA_SYSTEM_PROFILE, PISA_MATHEMATICS_COMPONENT, STEM))).toMatchObject({ contentUseClass: 'DEV_TEST_CONTENT', learningApproach: { status: 'PROVISIONAL' } });
+  });
+
+  it('D4: no institution-authored approach is accepted -- approaches are StudyUs-managed; an institution selects and assigns them', () => {
+    expect(LEARNING_APPROACHES.map((x) => [x.approachId, x.authority])).toEqual([['STANDARD', 'STUDYUS_POLICY'], ['STEM_PLUS', 'STUDYUS_POLICY']]);
+    for (const authored of [{ authority: 'INSTITUTION_POLICY' }, { ownerInstitutionKey: 'inst-1' }, { institutionKey: 'inst-1' }, { authoredBy: 'inst-1' }]) expect(LearningApproachProfileSchema.safeParse({ ...clone(STEM_PLUS_APPROACH), approachId: 'INST_OWN', ...authored }).success, JSON.stringify(authored)).toBe(false);
+    expect(refusal(run(RATE, SCHOOL, null, { approach: { ...clone(STEM_PLUS_APPROACH), approachId: 'INST_OWN', authority: 'INSTITUTION_POLICY' } }))).toBe('LEARNING_APPROACH_INVALID');
+    // an institution's part is the assignment: it names an approach, it does not define one
+    expect(Object.keys(LearningApproachAssignmentSchema.shape.approach.shape).sort()).toEqual(['approachId', 'version']);
+    expect(resolveLearningApproach({ institutionKey: 'inst-1' }, [{ assignmentId: 'a', institutionKey: 'inst-1', scope: { type: 'INSTITUTION', id: 'inst-1' }, approach: { approachId: 'INST_OWN', version: null } }], LEARNING_APPROACHES)).toMatchObject({ ok: false, issue: 'UNKNOWN_LEARNING_APPROACH' });
+  });
+
+  it('D5: the assessment system is CAMBRIDGE; AICE is a qualification context of it, with no profile of its own', () => {
+    expect(QUALIFICATION_CONTEXT_OF_EXAM_FAMILY).toEqual({ AICE: 'CAMBRIDGE' });
+    expect(assessmentSystemOfExamFamily('AICE')).toEqual({ systemExamFamily: 'CAMBRIDGE', qualificationContext: 'AICE' });
+    for (const f of EXAM_FAMILIES) if (f !== 'AICE') expect(assessmentSystemOfExamFamily(f)).toEqual({ systemExamFamily: f, qualificationContext: null });
+    expect(EA1_SYSTEM_PROFILES.map((p) => p.profileId)).not.toContain('AICE');
+    expect(EA1_SYSTEM_PROFILES.filter((p) => p.examFamilyCode === 'AICE')).toEqual([]);
+    expect(EA1_COMPONENT_PROFILES.filter((c) => /AICE/.test(c.componentId))).toEqual([]);
+    expect(systemProfileOfExamFamily('AICE')).toBe(CAMBRIDGE_SYSTEM_PROFILE);
+    expect(systemProfileOfExamFamily('CAMBRIDGE')).toBe(CAMBRIDGE_SYSTEM_PROFILE);
+    // the 9709 component sits below the Cambridge system, bound to the syllabus
+    expect(componentProfileOf('CAMBRIDGE.9709.P1')!.systemProfileId).toBe('CAMBRIDGE');
+    // one task generation for Cambridge: a specification for AICE content IS the Cambridge specification
+    const s = spec(run(FACTORISING, systemProfileOfExamFamily('AICE')!, componentProfileOf('CAMBRIDGE.9709.P1')!));
+    expect([s.systemProfile.profileId, s.systemProfile.examFamilyCode, s.specificationId]).toEqual(['CAMBRIDGE', 'CAMBRIDGE', spec(run(FACTORISING, CAMBRIDGE_SYSTEM_PROFILE, componentProfileOf('CAMBRIDGE.9709.P1')!)).specificationId]);
+  });
+
+  it('D6: OFFICIAL rule > CERTIFIED StudyUs / institution rule > approach preference; every override records the rule\'s authority AND its certification status', () => {
+    // dev-test content: provisional rules still shape the specification, and each override says so
+    const dev = spec(run(RATE, PAA_SYSTEM_PROFILE, PAA_MATEMATICAS_COMPONENT, STEM));
+    expect(dev.learningApproach!.unmetPreferences.map((u) => [u.preferenceId, u.overriddenBy.origin, u.overriddenBy.authority, u.overridingRuleCertification])).toEqual([
+      ['stem-plus.response.constructed', 'COMPONENT_PROFILE_RULE', 'OFFICIAL', 'PROVISIONAL_ILLUSTRATIVE'],
+      ['stem-plus.tools.available', 'COMPONENT_PROFILE_RULE', 'OFFICIAL', 'PROVISIONAL_ILLUSTRATIVE'],
+      ['stem-plus.stimulus.data', 'FAMILY', null, null],
+      ['stem-plus.reasoning.justified', 'SYSTEM_PROFILE_RULE', 'STUDYUS_POLICY', 'PROVISIONAL_ILLUSTRATIVE'],
+    ]);
+    // evidence-bearing content: a CERTIFIED StudyUs-policy rule overrides the preference (2 > 3), and so does an OFFICIAL one (1 > 3)
+    const evidence = spec(run(reviewed(RATE), certified(PAA_SYSTEM_PROFILE), certified(PAA_MATEMATICAS_COMPONENT), { approach: certified(STEM_PLUS_APPROACH), request: { contentUseClass: 'EVIDENCE_BEARING' } }));
+    const unmet = evidence.learningApproach!.unmetPreferences;
+    expect(unmet.find((u) => u.preferenceId === 'stem-plus.reasoning.justified')).toMatchObject({ overriddenBy: { authority: 'STUDYUS_POLICY' }, overridingRuleCertification: 'CERTIFIED' });
+    expect(unmet.find((u) => u.preferenceId === 'stem-plus.response.constructed')).toMatchObject({ overriddenBy: { authority: 'OFFICIAL' }, overridingRuleCertification: 'CERTIFIED' });
+    // a PROVISIONAL rule can never govern evidence-bearing content: on every evidence-bearing specification each overriding profile rule is CERTIFIED
+    for (const u of unmet) expect(u.overridingRuleCertification === null || u.overridingRuleCertification === 'CERTIFIED', u.preferenceId).toBe(true);
+    for (const [system, component] of [[PAA_SYSTEM_PROFILE, certified(PAA_MATEMATICAS_COMPONENT)], [certified(PAA_SYSTEM_PROFILE), PAA_MATEMATICAS_COMPONENT]] as const) expect(refusal(run(reviewed(RATE), system, component, { approach: certified(STEM_PLUS_APPROACH), request: { contentUseClass: 'EVIDENCE_BEARING' } }))).toBe('ASSESSMENT_PROFILE_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT');
+    // rule-level status cannot sneak past: a rule has no status of its own to claim -- only its profile's
+    expect(AssessmentSystemProfileSchema.safeParse({ ...clone(PAA_SYSTEM_PROFILE), rules: { ...clone(PAA_SYSTEM_PROFILE.rules), rubricStyle: { ...clone(PAA_SYSTEM_PROFILE.rules.rubricStyle), status: 'CERTIFIED' } } }).success).toBe(false);
+    // the lower level never wins: the approach never appears as the overrider of a profile rule
+    for (const c of POC.cells) for (const u of c.learningApproach?.unmet ?? []) expect(u.overriddenBy.origin).not.toBe('LEARNING_APPROACH_PREFERENCE');
+    expect(POC.summary.unmetByRuleCertification).toEqual({ NOT_A_PROFILE_RULE: 6, PROVISIONAL_ILLUSTRATIVE: 20 });
+  });
+
+  it('STEM+ catalogue readiness is DATA readiness, computed from the approach\'s references and kept apart from its contract', () => {
+    const r = catalogueReadinessOf(STEM_PLUS_APPROACH, CATALOGUE_CODES);
+    expect(r).toEqual({
+      approachId: 'STEM_PLUS', version: STEM_PLUS_APPROACH.version, status: 'PARTIAL',
+      inCatalogue: [{ key: 'SCIENTIFIC_INQUIRY', code: 'dev.comp.scientific-inquiry' }],
+      missing: [
+        { key: 'MATHEMATICAL_MODELLING', proposedCode: 'studyus.transversal.mathematical-modelling', owner: 'CURRICULUM' },
+        { key: 'ENGINEERING_DESIGN', proposedCode: 'studyus.transversal.engineering-design', owner: 'CURRICULUM' },
+        { key: 'DATA_AND_COMPUTATIONAL_REASONING', proposedCode: 'studyus.transversal.data-computational-reasoning', owner: 'CURRICULUM' },
+        { key: 'PROBLEM_SOLVING_AND_TRANSFER', proposedCode: 'studyus.transversal.problem-solving-transfer', owner: 'CURRICULUM' },
+        { key: 'SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION', proposedCode: 'studyus.transversal.scientific-communication-argumentation', owner: 'CURRICULUM' },
+      ],
+      inconsistencies: [],
+    });
+    // the contract is valid whatever the catalogue holds; readiness moves only with the catalogue
+    expect(validateLearningApproachProfile(STEM_PLUS_APPROACH).ok).toBe(true);
+    expect(catalogueReadinessOf(STEM_PLUS_APPROACH, []).status).toBe('NOT_READY');
+    expect(catalogueReadinessOf(STEM_PLUS_APPROACH, []).inconsistencies).toEqual([{ key: 'SCIENTIFIC_INQUIRY', code: 'dev.comp.scientific-inquiry', issue: 'DECLARED_IN_CATALOGUE_BUT_ABSENT' }]);
+    // once the Curriculum creates a competency, a reference still marked NOT_YET is reported, not silently promoted
+    const grown = [...CATALOGUE_CODES, 'studyus.transversal.mathematical-modelling'];
+    expect(catalogueReadinessOf(STEM_PLUS_APPROACH, grown).inconsistencies).toEqual([{ key: 'MATHEMATICAL_MODELLING', code: 'studyus.transversal.mathematical-modelling', issue: 'DECLARED_MISSING_BUT_PRESENT' }]);
+    expect(catalogueReadinessOf(STANDARD_APPROACH, CATALOGUE_CODES)).toMatchObject({ status: 'READY', missing: [] });
+    expect(POC.stemPlusCatalogueReadiness).toEqual(r);
+  });
+
+  it('the POCs separate ARCHITECTURE COMPOSITION from EVIDENCE-BEARING CURRICULUM READINESS: the first passes, the second is NO, and nothing is fabricated', () => {
+    expect(POC.readiness.map((x) => [x.country, x.curriculumId, x.architectureCompositionPoc.status, x.evidenceBearingCurriculumReadiness.status])).toEqual([['MX', 'MX.SEP.MCCEMS', 'PASS', 'NO'], ['CO', 'CO.MEN.EBC_DBA', 'PASS', 'NO']]);
+    for (const x of POC.readiness) {
+      expect(Object.keys(x.architectureCompositionPoc.checks)).toEqual(['everyCellProducedASpecification', 'oneConceptIdPerFamily', 'oneInvariantHashPerFamily', 'approachChangesNeitherConceptNorInvariants', 'approachMovesOnlyApproachControlledDimensions', 'everyPreferenceHonouredOrRecordedUnmet', 'anOfficialConstraintOverrodeAPreferenceAndWasRecorded', 'standardIsRecordedByAbsence']);
+      expect(Object.values(x.architectureCompositionPoc.checks).every(Boolean)).toBe(true);
+      expect(x.evidenceBearingCurriculumReadiness.blockers.map((b) => b.split(':')[0])).toEqual(['CURRICULUM_STRUCTURE_NOT_IMPORTED', 'CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED', 'ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED', 'TASK_FAMILIES_NOT_REVIEWED', 'ASSESSMENT_PROFILES_NOT_CERTIFIED', 'LEARNING_APPROACH_NOT_CERTIFIED', 'STEM_PLUS_CATALOGUE_READINESS_PARTIAL']);
+    }
+    expect(POC.readiness.map((x) => x.evidenceBearingCurriculumReadiness.blockers[1])).toEqual(['CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED: 12 of 12 specifications', 'CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED: 12 of 12 specifications']);
+    // the entitlement register is still empty: readiness was not bought with an invented mapping
+    expect(EA1A_CURRICULUM_ENTITLEMENT).toEqual([]);
+    expect(POC.summary.curriculumEntitlement).toEqual({ NOT_ESTABLISHED: 24 });
   });
 });
 

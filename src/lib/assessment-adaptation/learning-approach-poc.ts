@@ -22,7 +22,7 @@ import { MATH_POC_FAMILIES } from '@/lib/exam-core/question-bank/task-families/m
 import { MATH_POC_FAMILIES_EA1A } from '@/lib/exam-core/question-bank/task-families/math-poc-families-ea1a';
 import { MATH_PROBLEM_SPECIALIZATION, type MathTaskFamily } from '@/lib/exam-core/question-bank/task-families/math-problem';
 import { CO_MEN_CURRICULUM, EA1A_CURRICULUM_ENTITLEMENT, EA1A_EXAMPLE_CONFIGURATIONS, MX_MCCEMS_CURRICULUM, resolveEffectiveApproach, type CurriculumProfile } from '@/lib/learning-approach/institution-configuration';
-import { LEARNING_APPROACHES, type LearningApproachProfile } from '@/lib/learning-approach/learning-approach-profile';
+import { catalogueReadinessOf, LEARNING_APPROACHES, type CatalogueReadiness, type LearningApproachProfile } from '@/lib/learning-approach/learning-approach-profile';
 import { adapt, invariantsOfFamily, type AdaptInput } from './adapt';
 import { invariantHashOf, type AdaptationRequest, type AdaptationSpecification } from './adaptation-specification';
 import type { AssessmentComponentProfile, AssessmentSystemProfile } from './assessment-system-profile';
@@ -32,7 +32,7 @@ import { COMPARED_DIMENSIONS, differingDimensions, type ComparedDimension } from
 import { SCHOOL_STEM_PERFORMANCE_PROFILE } from './school-stem-performance';
 import { componentProfileOf, systemProfileOf } from './system-profiles';
 
-export const LEARNING_APPROACH_POC_VERSION = 1 as const;
+export const LEARNING_APPROACH_POC_VERSION = 2 as const;
 export const LEARNING_APPROACH_POC_ARTIFACT = 'docs/exams/assessment-adaptation/EA1A_learning_approach_poc.json' as const;
 export const LEARNING_APPROACH_POC_REQUEST = { purpose: 'PRACTICE', difficultyBand: 'STANDARD', contentUseClass: 'DEV_TEST_CONTENT', language: 'es' } as const satisfies AdaptationRequest;
 export const LEARNING_APPROACH_POC_FAMILY_IDS = ['tf.math.proportion.rate-comparison-model', 'tf.math.data.judge-claim-against-display'] as const;
@@ -53,10 +53,10 @@ export interface PocCell {
   applicability: { status: string; basis: string } | null;
   curriculumEntitlement: { status: string; basis: string; structureStatus: string } | null;
   /** Present only under a non-STANDARD approach: STANDARD is recorded by absence. */
-  learningApproach: null | { approachId: string; version: string; participation: { mode: string; evidenceYield: string }; competenciesServedByFamily: string[]; competenciesNotServedByFamily: string[]; honoured: Array<{ preferenceId: string; decided: string }>; unmet: Array<{ preferenceId: string; wanted: string[]; decided: string; overriddenBy: { origin: string; ref: string; authority: string | null } }> };
+  learningApproach: null | { approachId: string; version: string; participation: { mode: string; evidenceYield: string }; competenciesServedByFamily: string[]; competenciesNotServedByFamily: string[]; honoured: Array<{ preferenceId: string; decided: string }>; unmet: Array<{ preferenceId: string; wanted: string[]; decided: string; overriddenBy: { origin: string; ref: string; authority: string | null }; overridingRuleCertification: string | null }> };
   variable: Record<ComparedDimension, unknown> | null;
 }
-export interface ApproachComparison { country: string; targetId: string; familyId: string; invariantHashEqual: boolean; conceptEqual: boolean; changedByApproach: ComparedDimension[]; honoured: string[]; unmet: Array<{ preferenceId: string; overriddenBy: string; authority: string | null }> }
+export interface ApproachComparison { country: string; targetId: string; familyId: string; invariantHashEqual: boolean; conceptEqual: boolean; changedByApproach: ComparedDimension[]; honoured: string[]; unmet: Array<{ preferenceId: string; overriddenBy: string; authority: string | null; certification: string | null }> }
 
 export interface LearningApproachPoc {
   kind: 'EA1A_LEARNING_APPROACH_POC';
@@ -70,6 +70,16 @@ export interface LearningApproachPoc {
   cells: PocCell[];
   comparisons: ApproachComparison[];
   specialCases: Array<{ case: string; outcome: string; detail: unknown }>;
+  /**
+   * TWO SEPARATE NOTIONS per country, never merged:
+   *   architectureCompositionPoc           do the three layers compose as designed? (a property of the architecture)
+   *   evidenceBearingCurriculumReadiness   could evidence-bearing content be produced for this curriculum today? (a
+   *                                        property of the DATA: curriculum structure, reviews, certifications, catalogue)
+   * The first can PASS while the second is NO. Nothing is fabricated to move the second.
+   */
+  readiness: Array<{ country: string; curriculumId: string; architectureCompositionPoc: { status: 'PASS' | 'FAIL'; checks: Record<string, boolean> }; evidenceBearingCurriculumReadiness: { status: 'YES' | 'NO'; blockers: string[] } }>;
+  /** DATA readiness of the STEM+ approach against the competency catalogue, apart from its contract. */
+  stemPlusCatalogueReadiness: CatalogueReadiness;
   summary: {
     cells: number; specifications: number; refusals: number;
     conceptIdsPerFamily: Record<string, string[]>;
@@ -80,6 +90,8 @@ export interface LearningApproachPoc {
     contentUseClasses: Record<string, number>;
     officialOverrides: Array<{ country: string; targetId: string; familyId: string; preferenceId: string; overriddenByRule: string }>;
     unmetByAuthority: Record<string, number>;
+    /** D6: of the unmet preferences, the certification status of the profile whose rule overrode each (dev-test content only: every profile here is provisional). */
+    unmetByRuleCertification: Record<string, number>;
     approachChangedSomethingIn: number;
   };
 }
@@ -102,13 +114,17 @@ function cellOf(c: PocCountry, configurationKey: string, t: PocTarget, family: M
       ...head, outcome: 'SPECIFICATION', specificationId: s.specificationId, invariantHash: s.invariantHash, refusal: null, contentUseClass: s.contentUseClass,
       applicability: { status: s.assessmentApplicability.status, basis: s.assessmentApplicability.basis },
       curriculumEntitlement: s.curriculumContext ? { status: s.curriculumContext.entitlement.status, basis: s.curriculumContext.entitlement.basis, structureStatus: s.curriculumContext.structureStatus } : null,
-      learningApproach: la ? { approachId: la.approachId, version: la.version, participation: la.participation, competenciesServedByFamily: la.transversalCompetencies.filter((x) => x.servedByFamily).map((x) => x.key), competenciesNotServedByFamily: la.transversalCompetencies.filter((x) => !x.servedByFamily).map((x) => x.key), honoured: la.honouredPreferences.map((h) => ({ preferenceId: h.preferenceId, decided: h.decided })), unmet: la.unmetPreferences.map((u) => ({ preferenceId: u.preferenceId, wanted: u.wanted, decided: u.decided, overriddenBy: u.overriddenBy })) } : null,
+      learningApproach: la ? { approachId: la.approachId, version: la.version, participation: la.participation, competenciesServedByFamily: la.transversalCompetencies.filter((x) => x.servedByFamily).map((x) => x.key), competenciesNotServedByFamily: la.transversalCompetencies.filter((x) => !x.servedByFamily).map((x) => x.key), honoured: la.honouredPreferences.map((h) => ({ preferenceId: h.preferenceId, decided: h.decided })), unmet: la.unmetPreferences.map((u) => ({ preferenceId: u.preferenceId, wanted: u.wanted, decided: u.decided, overriddenBy: u.overriddenBy, overridingRuleCertification: u.overridingRuleCertification })) } : null,
       variable: Object.fromEntries(COMPARED_DIMENSIONS.map((d) => [d, s.variable[d]])) as Record<ComparedDimension, unknown>,
     },
   };
 }
 
-export function buildLearningApproachPoc(): LearningApproachPoc {
+/** Dimensions a learning approach may move: the five it has preferences over, and the two that follow from them (distractors from the format, the numeric profile from the tool policy). */
+const APPROACH_CONTROLLED: readonly ComparedDimension[] = ['context', 'responseFormat', 'reasoningDepth', 'stimulus', 'toolPolicy', 'numericProfile', 'distractors'];
+
+/** `catalogueCompetencyCodes`: the codes the competency catalogue holds (passed in: this directory reads no catalogue). */
+export function buildLearningApproachPoc(catalogueCompetencyCodes: readonly string[]): LearningApproachPoc {
   const cells: PocCell[] = [];
   const comparisons: ApproachComparison[] = [];
   let standardEqualsNoApproach = true;
@@ -126,7 +142,7 @@ export function buildLearningApproachPoc(): LearningApproachPoc {
         conceptEqual: JSON.stringify(standard.specification.primaryConcept) === JSON.stringify(stem.specification.primaryConcept),
         changedByApproach: differingDimensions(standard.specification, stem.specification),
         honoured: stem.specification.learningApproach!.honouredPreferences.map((h) => h.preferenceId),
-        unmet: stem.specification.learningApproach!.unmetPreferences.map((u) => ({ preferenceId: u.preferenceId, overriddenBy: `${u.overriddenBy.origin}:${u.overriddenBy.ref}`, authority: u.overriddenBy.authority })),
+        unmet: stem.specification.learningApproach!.unmetPreferences.map((u) => ({ preferenceId: u.preferenceId, overriddenBy: `${u.overriddenBy.origin}:${u.overriddenBy.ref}`, authority: u.overriddenBy.authority, certification: u.overridingRuleCertification })),
       });
     }
   }
@@ -154,6 +170,33 @@ export function buildLearningApproachPoc(): LearningApproachPoc {
     const hash = (x: MathTaskFamily) => invariantHashOf(JSON.parse(JSON.stringify(invariantsOfFamily(x, MATH_PROBLEM_SPECIALIZATION as never))));
     return { familyId: id, version: f.version, conceptStableId: f.primaryConcepts[0].stableId, canonicalSubject: f.canonicalSubject, invariantHash: hash(f), invariantHashOfTheEa1Version: hash(ea1), approachSupport: f.approachSupport ?? null };
   });
+  const stemPlusCatalogueReadiness = catalogueReadinessOf(stemPlus, catalogueCompetencyCodes);
+  const readiness: LearningApproachPoc['readiness'] = LEARNING_APPROACH_POC_COUNTRIES.map((c) => {
+    const own = cells.filter((x) => x.country === c.country);
+    const ownProduced = own.filter((x) => x.outcome === 'SPECIFICATION');
+    const ownComparisons = comparisons.filter((x) => x.country === c.country);
+    const checks = {
+      everyCellProducedASpecification: own.length > 0 && ownProduced.length === own.length,
+      oneConceptIdPerFamily: LEARNING_APPROACH_POC_FAMILY_IDS.every((id) => new Set(own.filter((x) => x.familyId === id).map((x) => `${x.conceptStableId}|${x.canonicalSubject}`)).size === 1),
+      oneInvariantHashPerFamily: LEARNING_APPROACH_POC_FAMILY_IDS.every((id) => new Set(ownProduced.filter((x) => x.familyId === id).map((x) => x.invariantHash)).size === 1),
+      approachChangesNeitherConceptNorInvariants: ownComparisons.every((x) => x.invariantHashEqual && x.conceptEqual),
+      approachMovesOnlyApproachControlledDimensions: ownComparisons.every((x) => x.changedByApproach.every((d) => APPROACH_CONTROLLED.includes(d))),
+      everyPreferenceHonouredOrRecordedUnmet: own.filter((x) => x.learningApproach).every((x) => x.learningApproach!.honoured.length + x.learningApproach!.unmet.length === stemPlus.preferences.length),
+      anOfficialConstraintOverrodeAPreferenceAndWasRecorded: ownComparisons.some((x) => x.unmet.some((u) => u.authority === 'OFFICIAL')),
+      standardIsRecordedByAbsence: own.every((x) => (x.approachId === 'STANDARD') === (x.learningApproach === null)),
+    };
+    const blockers: string[] = [];
+    if (c.curriculum.structureStatus !== 'STRUCTURE_IMPORTED') blockers.push(`CURRICULUM_STRUCTURE_NOT_IMPORTED: ${c.curriculum.curriculumId}`);
+    const notEntitled = ownProduced.filter((x) => x.curriculumEntitlement?.status !== 'ESTABLISHED').length;
+    if (notEntitled > 0) blockers.push(`CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED: ${notEntitled} of ${ownProduced.length} specifications`);
+    const notApplicable = ownProduced.filter((x) => x.applicability?.status !== 'ESTABLISHED').length;
+    if (notApplicable > 0) blockers.push(`ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED: ${notApplicable} of ${ownProduced.length} specifications`);
+    if (LEARNING_APPROACH_POC_FAMILY_IDS.some((id) => familyOf(id).reviewStatus !== 'REVIEWED' || familyOf(id).lifecycle !== 'CERTIFIED')) blockers.push('TASK_FAMILIES_NOT_REVIEWED');
+    if (c.targets.some((t) => t.system.status !== 'CERTIFIED' || (t.component !== null && t.component.status !== 'CERTIFIED'))) blockers.push('ASSESSMENT_PROFILES_NOT_CERTIFIED');
+    if (stemPlus.status !== 'CERTIFIED') blockers.push('LEARNING_APPROACH_NOT_CERTIFIED: STEM_PLUS');
+    if (stemPlusCatalogueReadiness.status !== 'READY') blockers.push(`STEM_PLUS_CATALOGUE_READINESS_${stemPlusCatalogueReadiness.status}: ${stemPlusCatalogueReadiness.missing.length} competencies not in the catalogue`);
+    return { country: c.country, curriculumId: c.curriculum.curriculumId, architectureCompositionPoc: { status: Object.values(checks).every(Boolean) ? 'PASS' : 'FAIL', checks }, evidenceBearingCurriculumReadiness: { status: blockers.length === 0 ? 'YES' : 'NO', blockers } };
+  });
   const allUnmet = comparisons.flatMap((x) => x.unmet.map((u) => ({ ...u, country: x.country, targetId: x.targetId, familyId: x.familyId })));
   const targets = [...new Map(LEARNING_APPROACH_POC_COUNTRIES.flatMap((c) => c.targets).map((t) => [t.targetId, t])).values()];
   return {
@@ -163,7 +206,7 @@ export function buildLearningApproachPoc(): LearningApproachPoc {
     curricula: LEARNING_APPROACH_POC_COUNTRIES.map((c) => ({ curriculumId: c.curriculum.curriculumId, country: c.curriculum.country, authorityName: c.curriculum.authorityName, programmeName: c.curriculum.programmeName, programmeVersion: c.curriculum.programmeVersion, structureStatus: c.curriculum.structureStatus, recordedIn: c.curriculum.recordedIn })),
     approaches: LEARNING_APPROACHES.map((a) => ({ approachId: a.approachId, version: a.version, status: a.status, transversalCompetencies: a.transversalCompetencies.map((x) => ({ key: x.key, code: x.reference.catalogueStatus === 'IN_CATALOGUE' ? x.reference.code : x.reference.proposedCode, catalogueStatus: x.reference.catalogueStatus })), preferences: a.preferences.map((p) => ({ preferenceId: p.preferenceId, dimension: p.dimension, strength: p.strength })), participationModes: [...a.participationModes] })),
     assessmentTargets: targets.map((t) => ({ targetId: t.targetId, systemProfileId: t.system.profileId, componentId: t.component?.componentId ?? null, basis: t.system.specification.basis, examFamilyCode: t.system.examFamilyCode, status: (t.component ?? t.system).status, versionBinding: t.component?.versionBinding ?? null })),
-    families, cells, comparisons, specialCases,
+    families, cells, comparisons, specialCases, readiness, stemPlusCatalogueReadiness,
     summary: {
       cells: cells.length, specifications: produced.length, refusals: cells.length - produced.length,
       conceptIdsPerFamily: Object.fromEntries(LEARNING_APPROACH_POC_FAMILY_IDS.map((id) => [id, [...new Set(cells.filter((x) => x.familyId === id).map((x) => `${x.conceptStableId} (${x.canonicalSubject})`))]])),
@@ -174,6 +217,7 @@ export function buildLearningApproachPoc(): LearningApproachPoc {
       contentUseClasses: counts(produced.map((x) => x.contentUseClass!)),
       officialOverrides: allUnmet.filter((u) => u.authority === 'OFFICIAL').map((u) => ({ country: u.country, targetId: u.targetId, familyId: u.familyId, preferenceId: u.preferenceId, overriddenByRule: u.overriddenBy })),
       unmetByAuthority: counts(allUnmet.map((u) => u.authority ?? 'FAMILY_OR_REQUEST')),
+      unmetByRuleCertification: counts(allUnmet.map((u) => u.certification ?? 'NOT_A_PROFILE_RULE')),
       approachChangedSomethingIn: comparisons.filter((x) => x.changedByApproach.length > 0).length,
     },
   };

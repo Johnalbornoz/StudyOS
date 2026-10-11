@@ -350,7 +350,9 @@ describe('profile hierarchy (D2, D3): system profile -> component profile, mixed
       expect(resolveProfile(systemProfileOf(c.systemProfileId), c).ok).toBe(true);
     }
     expect(systemProfileOf('SEP')).toBeNull();
-    expect(systemProfileOfExamFamily('AICE')).toBeNull();
+    // EA-1A D5: AICE has no profile of its own; as a qualification context it is assessed by the CAMBRIDGE system
+    expect(systemProfileOf('AICE')).toBeNull();
+    expect(systemProfileOfExamFamily('AICE')).toBe(CAMBRIDGE_SYSTEM_PROFILE);
     // every modelled component is one the repository records
     expect(PAA_V2.sections.map((x) => x.key)).toContain('matematicas');
     expect(IB_MATH_AA_HL_V2.sections.map((x) => x.key)).toEqual(expect.arrayContaining(['p1', 'p2']));
@@ -502,7 +504,7 @@ describe('profile hierarchy (D2, D3): system profile -> component profile, mixed
       expect(keys.filter((k) => /concept|definition|masteryStatement|curriculum|topic|learningObjective|canonical/i.test(k))).toEqual([]);
       expect(keys.filter((k) => /numeric|parameter|misconception|toolInteraction|formatPreference/i.test(k))).toEqual([]);
     }
-    expect(Object.keys(AssessmentSystemProfileSchema.shape).sort()).toEqual(['certification', 'componentDependentDimensions', 'displayName', 'examFamilyCode', 'profileId', 'rules', 'specification', 'status', 'v', 'version']);
+    expect(Object.keys(AssessmentSystemProfileSchema.shape).sort()).toEqual(['certification', 'componentDependentDimensions', 'displayName', 'examFamilyCode', 'profileId', 'rules', 'specification', 'status', 'v', 'version', 'versionBinding']);
     expect(Object.keys(AssessmentComponentProfileSchema.shape).sort()).toEqual(['certification', 'componentId', 'displayName', 'localSubject', 'overrides', 'semanticComponentKey', 'specification', 'status', 'systemProfileId', 'v', 'version', 'versionBinding']);
     expect([...PROFILE_RULE_DIMENSIONS].sort()).toEqual(['authenticityRequirements', 'blueprintConstraints', 'calculatorPolicy', 'commandTerms', 'competencyElicitation', 'competencyEmphasis', 'contextExpectations', 'markStructure', 'reasoningDepth', 'responseFormats', 'responseLength', 'rubricStyle', 'stimulusExpectations', 'timePressure', 'transferExpectations']);
     expect(AssessmentSystemProfileSchema.safeParse({ ...clone(PAA_SYSTEM_PROFILE), concepts: ['math.alg.quadratics'] }).success).toBe(false);
@@ -519,7 +521,7 @@ describe('profile hierarchy (D2, D3): system profile -> component profile, mixed
 
   it('a specification targets the concrete component, and each profile-derived dimension says SYSTEM or COMPONENT', () => {
     const s = spec(run(RATE_MODEL, IB_SYSTEM_PROFILE, REQUEST, POLICY, IB_MATH_AA_HL_P2_COMPONENT));
-    expect([s.systemProfile, s.componentProfile]).toEqual([{ profileId: 'IB', version: IB_SYSTEM_PROFILE.version, status: 'PROVISIONAL_ILLUSTRATIVE', examFamilyCode: 'IB' }, { componentId: 'IB.MATH_AA_HL.P2', version: IB_MATH_AA_HL_P2_COMPONENT.version, status: 'PROVISIONAL_ILLUSTRATIVE', localSubject: 'Mathematics: analysis and approaches', versionBinding: { source: 'EXAM_VERTICAL_CONFIGURATION', configKey: 'v2.ib.math-aa-hl', versionLabel: 'V2 2021-2028', componentKey: 'p2' } }]);
+    expect([s.systemProfile, s.componentProfile]).toEqual([{ profileId: 'IB', version: IB_SYSTEM_PROFILE.version, status: 'PROVISIONAL_ILLUSTRATIVE', examFamilyCode: 'IB' }, { componentId: 'IB.MATH_AA_HL.P2', version: IB_MATH_AA_HL_P2_COMPONENT.version, status: 'PROVISIONAL_ILLUSTRATIVE', localSubject: 'Mathematics: analysis and approaches', versionBinding: IB_MATH_AA_HL_P2_COMPONENT.versionBinding }]);
     expect(s.provenance.toolPolicy[0]).toEqual({ origin: 'COMPONENT_PROFILE_RULE', ref: 'ib.math-aa-hl.p2.calculator', authority: 'OFFICIAL' });
     expect(s.provenance.rubricStyle).toEqual([{ origin: 'SYSTEM_PROFILE_RULE', ref: 'ib.rubric', authority: 'STUDYUS_POLICY' }]);
     expect(s.provenance.timeBudget).toEqual([{ origin: 'COMPONENT_PROFILE_RULE', ref: 'ib.math-aa-hl.p2.time', authority: 'OFFICIAL' }]);
@@ -995,27 +997,53 @@ describe('content use class, instance class and task-family maturity', () => {
     expect(spec(run(RATE_MODEL, PAA_SYSTEM_PROFILE))).toMatchObject({ contentUseClass: 'DEV_TEST_CONTENT', systemProfile: { status: 'PROVISIONAL_ILLUSTRATIVE' }, componentProfile: { status: 'PROVISIONAL_ILLUSTRATIVE' } });
   });
 
-  it('LOCKED: a component profile is version-aware -- an OFFICIAL rule needs the exam / component version it belongs to', () => {
-    const def = (cfg: { key: string; version: { label: string }; sections: Array<{ key: string }> }, key: string) => ({ source: 'EXAM_VERTICAL_CONFIGURATION', configKey: cfg.key, versionLabel: cfg.version.label, componentKey: cfg.sections.find((x) => x.key === key)!.key });
-    // every binding is what the repository records for that configuration and section
-    expect(PAA_MATEMATICAS_COMPONENT.versionBinding).toEqual(def(PAA_V2 as never, 'matematicas'));
-    expect(IB_MATH_AA_HL_P1_COMPONENT.versionBinding).toEqual(def(IB_MATH_AA_HL_V2 as never, 'p1'));
-    expect(IB_MATH_AA_HL_P2_COMPONENT.versionBinding).toEqual(def(IB_MATH_AA_HL_V2 as never, 'p2'));
-    expect(PISA_MATHEMATICS_COMPONENT.versionBinding).toEqual(def(PISA_MATH_V2 as never, 'math'));
-    expect(ICFES_COMPONENT.versionBinding).toEqual(def(SABER11_MATH_V2 as never, 'math'));
+  it('LOCKED: a profile is version-aware -- an OFFICIAL rule needs a typed, authoritative version binding (EXAM / SYLLABUS / FRAMEWORK version)', () => {
+    const exam = (cfg: { key: string; version: { label: string }; sections: Array<{ key: string }> }, key: string) => ({ targetType: 'EXAM_VERSION', targetIdentity: cfg.key, version: cfg.version.label, componentKey: cfg.sections.find((x) => x.key === key)!.key });
+    // every binding is what the repository records, and of the kind the system really has
+    expect(PAA_MATEMATICAS_COMPONENT.versionBinding).toMatchObject(exam(PAA_V2 as never, 'matematicas'));
+    expect(IB_MATH_AA_HL_P1_COMPONENT.versionBinding).toMatchObject(exam(IB_MATH_AA_HL_V2 as never, 'p1'));
+    expect(IB_MATH_AA_HL_P2_COMPONENT.versionBinding).toMatchObject(exam(IB_MATH_AA_HL_V2 as never, 'p2'));
+    expect(ICFES_COMPONENT.versionBinding).toMatchObject(exam(SABER11_MATH_V2 as never, 'math'));
+    // PISA binds to its FRAMEWORK version
+    const framework = (PISA_MATH_V2 as unknown as { framework: { frameworkKey: string; frameworkVersion: string } }).framework;
+    expect(PISA_MATHEMATICS_COMPONENT.versionBinding).toMatchObject({ targetType: 'FRAMEWORK_VERSION', targetIdentity: framework.frameworkKey, version: framework.frameworkVersion, componentKey: 'math' });
+    // Cambridge binds to its real carrier, the 9709 SYLLABUS version: no exam-version record is invented for it
     const s9709 = AICE_SYLLABI.find((x) => x.code === '9709')!;
-    expect(CAMBRIDGE_COMPONENT.versionBinding).toEqual({ source: 'SYLLABUS_RECORD', configKey: s9709.code, versionLabel: s9709.versionKey, componentKey: s9709.components.find((c) => c.key === 'p1')!.key });
+    expect(CAMBRIDGE_COMPONENT.versionBinding).toEqual({ targetType: 'SYLLABUS_VERSION', targetIdentity: s9709.code, version: s9709.versionKey, componentKey: s9709.components.find((c) => c.key === 'p1')!.key, provenance: { kind: 'AUTHORITATIVE_SOURCE', sourceKeys: [s9709.sourceKey], recordedIn: 'AICE_SYLLABI[code 9709].code / versionKey / components[p1]' } });
+    expect(CAMBRIDGE_SYSTEM_PROFILE.versionBinding).toMatchObject({ targetType: 'SYLLABUS_VERSION', targetIdentity: '9709', version: '2026-2027', componentKey: null });
+    for (const f of walk(ADAPTATION_DIR)) expect(code(f), f).not.toMatch(/targetIdentity: 'v2\.(cambridge|aice)|'v2\.aice\.9709/);
+    // a binding preserves target type, identity, version and provenance, and its sources are registered ones
+    const registry = new Set(ASSESSMENT_SOURCES.map((x) => x.key));
+    for (const c of EA1_COMPONENT_PROFILES) {
+      expect(Object.keys(c.versionBinding!).sort(), c.componentId).toEqual(['componentKey', 'provenance', 'targetIdentity', 'targetType', 'version']);
+      const p = c.versionBinding!.provenance;
+      expect(p.kind).toBe('AUTHORITATIVE_SOURCE');
+      if (p.kind === 'AUTHORITATIVE_SOURCE') for (const k of p.sourceKeys) expect(registry.has(k), `${c.componentId}: ${k}`).toBe(true);
+    }
     // an OFFICIAL override without a binding is refused; the stable semantic key does not replace it
     const unbound = { ...clone(PAA_MATEMATICAS_COMPONENT), versionBinding: null };
     expect(unbound.semanticComponentKey).toBe('paa.matematicas');
     expect(AssessmentComponentProfileSchema.safeParse(unbound).error?.issues.map((i) => i.message)).toContain('OFFICIAL_RULE_NEEDS_A_VERSION_BINDING');
     expect(refusal(run(RATE_MODEL, PAA_SYSTEM_PROFILE, REQUEST, POLICY, unbound))).toBe('COMPONENT_PROFILE_INVALID');
+    // ... so is one bound to an institution's policy version, and one whose binding does not carry the rule's source
+    const institutionBound = { ...clone(PAA_MATEMATICAS_COMPONENT), versionBinding: { targetType: 'INSTITUTION_POLICY_VERSION', targetIdentity: 'institution.x.policy', version: '1', componentKey: null, provenance: { kind: 'INSTITUTION', institutionKey: 'institution.x', recordedIn: 'nowhere in the repository' } } };
+    expect(AssessmentComponentProfileSchema.safeParse(institutionBound).error?.issues.map((i) => i.message)).toContain('OFFICIAL_RULE_NEEDS_AN_AUTHORITATIVE_BINDING');
+    const otherSource = clone(PAA_MATEMATICAS_COMPONENT) as AssessmentComponentProfile;
+    (otherSource.versionBinding!.provenance as { sourceKeys: string[] }).sourceKeys = ['cb-paa-guia-2021'];
+    expect(AssessmentComponentProfileSchema.safeParse(otherSource).error?.issues.map((i) => i.message)).toContain('OFFICIAL_SOURCE_IS_NOT_OF_THE_BOUND_VERSION');
+    expect(AssessmentComponentProfileSchema.safeParse({ ...clone(PAA_MATEMATICAS_COMPONENT), versionBinding: { ...PAA_MATEMATICAS_COMPONENT.versionBinding, provenance: { kind: 'INSTITUTION', institutionKey: 'x', recordedIn: 'a b c' } } }).error?.issues.map((i) => i.message)).toContain('BINDING_PROVENANCE_DOES_NOT_MATCH_TARGET_TYPE');
+    // the same holds at system level: a system profile with an OFFICIAL rule and no binding is refused
+    const { versionBinding: _b, ...cambridgeUnbound } = clone(CAMBRIDGE_SYSTEM_PROFILE);
+    expect(AssessmentSystemProfileSchema.safeParse(cambridgeUnbound).error?.issues.map((i) => i.message)).toContain('OFFICIAL_RULE_NEEDS_A_VERSION_BINDING');
+    for (const p of EA1_SYSTEM_PROFILES) expect(p.versionBinding !== undefined, p.profileId).toBe(authorityBreakdown(p).official.length > 0);
     // a component that states no official fact may be unbound, and the semantic key is optional
     const policyOnly = clone(unbound) as AssessmentComponentProfile;
     for (const d of PROFILE_RULE_DIMENSIONS) if (policyOnly.overrides[d]) (policyOnly.overrides[d] as { authority: unknown }).authority = { kind: 'STUDYUS_POLICY', provisional: true, assumption: 'A working assumption, bound to no version.' };
     expect(AssessmentComponentProfileSchema.safeParse({ ...policyOnly, semanticComponentKey: null }).success).toBe(true);
-    // the specification carries the binding of the component it targets
+    // the specification carries the binding of what it targets
     expect(spec(run(RATE_MODEL, PAA_SYSTEM_PROFILE)).componentProfile!.versionBinding).toEqual(PAA_MATEMATICAS_COMPONENT.versionBinding);
+    expect(spec(run(RATE_MODEL, PAA_SYSTEM_PROFILE)).systemProfile).not.toHaveProperty('versionBinding');
+    expect(spec(run(RATE_MODEL, CAMBRIDGE_SYSTEM_PROFILE)).systemProfile.versionBinding).toEqual(CAMBRIDGE_SYSTEM_PROFILE.versionBinding);
     for (const c of EA1_COMPONENT_PROFILES) expect(c.versionBinding, c.componentId).not.toBeNull();
   });
 
@@ -1118,7 +1146,10 @@ describe('Production OS integration: additive, and content without a task family
     expect(selectTaskFamilies(CELLS.find((c) => c.primaryConcept.stableId === 'math.stat.data-representation' && c.stimulus.class === 'STANDALONE') ?? { ...CELL, primaryConcept: { stableId: 'math.stat.data-representation', canonicalSubject: 'Matemáticas', canonicalName: 'x' } }, MATH_POC_FAMILIES).candidates).toEqual([]);
     // named refusals of the bridge
     expect(adaptForCell({ cell: { ...CELL, examFamily: 'SEP' }, family: REVIEWED_MISSING_VALUE, ...BRIDGE })).toMatchObject({ ok: false, refusal: { code: 'NO_PROFILE_FOR_EXAM_FAMILY' } });
-    expect(adaptForCell({ cell: { ...CELL, examFamily: 'AICE' }, family: REVIEWED_MISSING_VALUE, ...BRIDGE })).toMatchObject({ ok: false, refusal: { code: 'NO_PROFILE_FOR_EXAM_FAMILY' } });
+    // EA-1A D5: an AICE cell is assessed by the CAMBRIDGE system (AICE is a qualification context, with no profile of its own)
+    const aiceQuadratic = { ...CELL, intendedPool: 'PRACTICE', examFamily: 'AICE', responseFormat: 'STUDENT_PRODUCED', primaryConcept: FACTORISING.primaryConcepts[0] };
+    expect(adaptForCell({ cell: aiceQuadratic, family: FACTORISING, profiles: EA1_SYSTEM_PROFILES, component: CAMBRIDGE_COMPONENT, applicability: MATH_POC_APPLICABILITY, contentUseClass: 'DEV_TEST_CONTENT', disciplinePolicy: POLICY, language: 'en' })).toMatchObject({ ok: false, refusal: { code: 'RESPONSE_FORMAT_NOT_ALLOWED' } });
+    expect(adaptForCell({ cell: { ...CELL, examFamily: 'AICE' }, family: REVIEWED_MISSING_VALUE, ...BRIDGE })).toMatchObject({ ok: false, refusal: { code: 'COMPONENT_NOT_OF_THE_SYSTEM' } });
     expect(adaptForCell({ cell: CELL, family: reviewed(FACTORISING), ...BRIDGE })).toMatchObject({ ok: false, refusal: { code: 'FAMILY_DOES_NOT_TARGET_THE_CELLS_CONCEPT' } });
     // a cell is content of a component: without one the bridge is refused (a mock pool is never generic practice)
     expect(adaptForCell({ cell: CELL, family: REVIEWED_MISSING_VALUE, ...BRIDGE, component: null })).toMatchObject({ ok: false, refusal: { code: 'COMPONENT_REQUIRED' } });

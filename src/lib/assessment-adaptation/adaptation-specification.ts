@@ -22,7 +22,7 @@ import { z } from 'zod';
 import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
 import { CALCULATOR_POLICIES, ConceptReferenceSchema, CONTEXT_KINDS, ELICITATION_FORMATS, EVIDENCE_ACTIONS, EvidenceTargetSchema, FAMILY_LIFECYCLES, FAMILY_REVIEW_STATUSES, TASK_DIFFICULTY_BANDS } from '@/lib/exam-core/question-bank/task-families/task-family';
 import { APPLICABILITY_BASES, APPLICABILITY_STATUSES, ApplicabilityEvidenceSchema } from './assessment-applicability';
-import { AUTHENTICITY_REQUIREMENTS, MARK_STRUCTURES, PROFILE_STATUSES, REASONING_DEPTHS, RUBRIC_STYLES, RULE_AUTHORITIES, STIMULUS_MODES, TRANSFER_EXPECTATIONS } from './assessment-system-profile';
+import { AuthorityVersionBindingSchema, AUTHENTICITY_REQUIREMENTS, MARK_STRUCTURES, PROFILE_STATUSES, REASONING_DEPTHS, RUBRIC_STYLES, RULE_AUTHORITIES, STIMULUS_MODES, TRANSFER_EXPECTATIONS } from './assessment-system-profile';
 import { sha256OfCanonicalJson } from './canonical-hash';
 import { NUMERIC_PROFILES, VARIABLE_DIMENSIONS } from './discipline-policy';
 import { ADAPTATION_POOLS, CONTENT_USE_CLASSES, INSTANCE_CLASSES, INSTANCE_PURPOSES } from './instance-lineage';
@@ -76,7 +76,7 @@ export const ADAPTATION_REFUSAL_CODES = [
   'COMMAND_TERM_NOT_IN_PROFILE_VOCABULARY', 'PROFILE_COMPETENCY_NOT_ELICITED',
   // EA-1A: locked rulings, the learning approach and the curriculum
   'ASSESSMENT_PROFILE_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT', 'DEV_TEST_CONTENT_NOT_ALLOWED_FOR_PURPOSE',
-  'LEARNING_APPROACH_INVALID', 'LEARNING_APPROACH_REQUIREMENT_UNMET', 'PARTICIPATION_MODE_NOT_ALLOWED', 'COLLABORATIVE_ACTIVITY_IS_NOT_INDIVIDUAL_EVIDENCE',
+  'LEARNING_APPROACH_INVALID', 'LEARNING_APPROACH_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT', 'LEARNING_APPROACH_REQUIREMENT_UNMET', 'PARTICIPATION_MODE_NOT_ALLOWED', 'COLLABORATIVE_ACTIVITY_IS_NOT_INDIVIDUAL_EVIDENCE',
   'CURRICULUM_PROFILE_INVALID', 'CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED',
 ] as const;
 export type AdaptationRefusalCode = (typeof ADAPTATION_REFUSAL_CODES)[number];
@@ -113,6 +113,12 @@ export const UnmetPreferenceSchema = z.strictObject({
   wanted: z.array(ID).min(1), decided: ID,
   /** The rule, field or request that decided otherwise, with its authority: OFFICIAL when an official assessment constraint won. */
   overriddenBy: FieldProvenanceSchema,
+  /**
+   * D6: the certification status of the profile (system or component) that owns the overriding rule; null when the
+   * overrider is a family field or the request. A PROVISIONAL rule can only ever be recorded on dev-test content:
+   * evidence-bearing content is refused unless every profile is CERTIFIED.
+   */
+  overridingRuleCertification: z.enum(PROFILE_STATUSES).nullable(),
 });
 export const LearningApproachResolutionSchema = z
   .strictObject({
@@ -133,9 +139,10 @@ export const AdaptationSpecificationSchema = z.strictObject({
   v: z.literal(ADAPTATION_SPECIFICATION_VERSION),
   specificationId: SHA256,
   taskFamily: z.strictObject({ familyId: ID, version: ID, familyType: ID, lifecycle: z.enum(FAMILY_LIFECYCLES), reviewStatus: z.enum(FAMILY_REVIEW_STATUSES) }),
-  systemProfile: z.strictObject({ profileId: ID, version: ID, status: z.enum(PROFILE_STATUSES), examFamilyCode: z.enum(EXAM_FAMILIES).nullable() }),
+  /** `versionBinding` is present only when the system profile holds an OFFICIAL rule of its own (D1). */
+  systemProfile: z.strictObject({ profileId: ID, version: ID, status: z.enum(PROFILE_STATUSES), examFamilyCode: z.enum(EXAM_FAMILIES).nullable(), versionBinding: AuthorityVersionBindingSchema.optional() }),
   /** The concrete component the specification targets. null = the system profile only: generic practice that needed no component-specific behaviour. */
-  componentProfile: z.strictObject({ componentId: ID, version: ID, status: z.enum(PROFILE_STATUSES), localSubject: ID.nullable(), versionBinding: z.strictObject({ source: z.enum(['EXAM_VERTICAL_CONFIGURATION', 'SYLLABUS_RECORD']), configKey: ID, versionLabel: ID, componentKey: ID }).nullable() }).nullable(),
+  componentProfile: z.strictObject({ componentId: ID, version: ID, status: z.enum(PROFILE_STATUSES), localSubject: ID.nullable(), versionBinding: AuthorityVersionBindingSchema.nullable() }).nullable(),
   disciplinePolicy: z.strictObject({ policyId: ID, version: ID, discipline: ID }),
   /** The ONE concept an instance of this specification is direct evidence of. */
   primaryConcept: ConceptReferenceSchema,

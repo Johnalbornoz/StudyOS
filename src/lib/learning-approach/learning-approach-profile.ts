@@ -98,7 +98,11 @@ export const LearningApproachProfileSchema = z
     approachId: z.string().regex(/^[A-Z][A-Z0-9_]{1,39}$/, 'APPROACH_ID_FORMAT'),
     version: ID,
     displayName: ID,
-    /** An approach is StudyUs's (or, later, an institution's) pedagogical policy. Never official. */
+    /**
+     * An approach is StudyUs's pedagogical policy. Never official. D4: in this release approaches are StudyUs-managed
+     * (STANDARD, STEM_PLUS); an institution SELECTS and ASSIGNS them and cannot author one, so no other authority and
+     * no owner field exists.
+     */
     authority: z.literal('STUDYUS_POLICY'),
     status: z.enum(APPROACH_STATUSES),
     certification: z.strictObject({ certifiedBy: ID, certifiedAt: z.string().datetime({ offset: true }) }).nullable(),
@@ -123,6 +127,40 @@ export const LearningApproachProfileSchema = z
     if ((a.approachId === STANDARD_APPROACH_ID) !== neutral) ctx.addIssue({ code: 'custom', path: ['approachId'], message: a.approachId === STANDARD_APPROACH_ID ? 'STANDARD_IS_EMPHASIS_NEUTRAL' : 'ONLY_STANDARD_IS_EMPHASIS_NEUTRAL' });
   });
 export type LearningApproachProfile = z.infer<typeof LearningApproachProfileSchema>;
+
+/**
+ * CATALOGUE READINESS of an approach: are the competencies it references in the competency catalogue? Computed from
+ * the approach's own references and the catalogue's codes (passed in: this module reads no catalogue).
+ *   READY       every reference is IN_CATALOGUE and the catalogue holds its code
+ *   PARTIAL     some are; the others are future canonical-catalogue work, owned by the Curriculum
+ *   NOT_READY   none is
+ * This is DATA readiness, kept apart from the approach CONTRACT: the contract can be sound while the catalogue is
+ * not ready. A reference that disagrees with the catalogue (IN_CATALOGUE but absent, or NOT_YET but present) is an
+ * inconsistency and is listed, never silently corrected. Nothing here creates a competency.
+ */
+export interface CatalogueReadiness {
+  approachId: string; version: string;
+  status: 'READY' | 'PARTIAL' | 'NOT_READY';
+  inCatalogue: Array<{ key: string; code: string }>;
+  /** Future canonical-catalogue work: the competencies to be created, with the code proposed for each. */
+  missing: Array<{ key: string; proposedCode: string; owner: 'CURRICULUM' }>;
+  inconsistencies: Array<{ key: string; code: string; issue: 'DECLARED_IN_CATALOGUE_BUT_ABSENT' | 'DECLARED_MISSING_BUT_PRESENT' }>;
+}
+export function catalogueReadinessOf(approach: Pick<LearningApproachProfile, 'approachId' | 'version' | 'transversalCompetencies'>, catalogueCodes: readonly string[]): CatalogueReadiness {
+  const catalogue = new Set(catalogueCodes);
+  const out: CatalogueReadiness = { approachId: approach.approachId, version: approach.version, status: 'READY', inCatalogue: [], missing: [], inconsistencies: [] };
+  for (const c of approach.transversalCompetencies) {
+    const code = competencyCodeOf(c.reference);
+    if (c.reference.catalogueStatus === 'IN_CATALOGUE') {
+      if (catalogue.has(code)) out.inCatalogue.push({ key: c.key, code });
+      else out.inconsistencies.push({ key: c.key, code, issue: 'DECLARED_IN_CATALOGUE_BUT_ABSENT' });
+    } else if (catalogue.has(code)) out.inconsistencies.push({ key: c.key, code, issue: 'DECLARED_MISSING_BUT_PRESENT' });
+    else out.missing.push({ key: c.key, proposedCode: code, owner: 'CURRICULUM' });
+  }
+  const total = approach.transversalCompetencies.length;
+  out.status = out.inCatalogue.length === total ? 'READY' : out.inCatalogue.length === 0 ? 'NOT_READY' : 'PARTIAL';
+  return out;
+}
 
 export function validateLearningApproachProfile(input: unknown): { ok: true; approach: LearningApproachProfile } | { ok: false; issues: string[] } {
   const parsed = LearningApproachProfileSchema.safeParse(input);

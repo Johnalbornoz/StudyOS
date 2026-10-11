@@ -25,9 +25,9 @@
  * a recorded OECD-sourced fact are OFFICIAL with that exact source, and the rest are policy.
  *
  * SEP is not created: it has no exam family in the taxonomy and no source in the registry. AICE has no profile of
- * its own and is not resolved to CAMBRIDGE.
+ * its own: it is a qualification context of the CAMBRIDGE system (D5).
  */
-import { ASSESSMENT_COMPONENT_PROFILE_CONTRACT_VERSION, ASSESSMENT_SYSTEM_PROFILE_CONTRACT_VERSION, type AssessmentComponentProfile, type AssessmentSystemProfile, type ProfileRule, type ProfileRules } from './assessment-system-profile';
+import { ASSESSMENT_COMPONENT_PROFILE_CONTRACT_VERSION, ASSESSMENT_SYSTEM_PROFILE_CONTRACT_VERSION, assessmentSystemOfExamFamily, type AssessmentComponentProfile, type AssessmentSystemProfile, type AuthorityVersionBinding, type ProfileRule, type ProfileRules } from './assessment-system-profile';
 
 export const EA1_PROFILE_VERSION = '0.2.0-illustrative' as const;
 
@@ -38,10 +38,13 @@ const NOT_RECORDED = 'The repository records nothing about this for the system. 
 const FALLBACK = 'System-level fallback of a component-dependent dimension, used by generic practice only. The recorded fact is on the component profile.';
 const NO_COMMON_TIME = { officialMinutes: null, officialItems: null, officialMarks: null };
 const system = (p: Omit<AssessmentSystemProfile, 'v' | 'version' | 'status' | 'certification'>): AssessmentSystemProfile => ({ v: ASSESSMENT_SYSTEM_PROFILE_CONTRACT_VERSION, version: EA1_PROFILE_VERSION, status: 'PROVISIONAL_ILLUSTRATIVE', certification: null, ...p });
+/** EA-1A (D1): a system profile that holds an OFFICIAL rule gained its authority binding; only Cambridge does, so only its version changed. */
+export const EA1A_SYSTEM_PROFILE_VERSION_WITH_BINDING = '0.3.0-illustrative' as const;
 /** EA-1A: the component profiles gained their version binding, so their content changed and so did their version. The system profiles did not change. */
-export const EA1A_COMPONENT_PROFILE_VERSION = '0.3.0-illustrative' as const;
+export const EA1A_COMPONENT_PROFILE_VERSION = '0.4.0-illustrative' as const;
 const component = (c: Omit<AssessmentComponentProfile, 'v' | 'version' | 'status' | 'certification'>): AssessmentComponentProfile => ({ v: ASSESSMENT_COMPONENT_PROFILE_CONTRACT_VERSION, version: EA1A_COMPONENT_PROFILE_VERSION, status: 'PROVISIONAL_ILLUSTRATIVE', certification: null, ...c });
-const configuration = (configKey: string, versionLabel: string, componentKey: string) => ({ source: 'EXAM_VERTICAL_CONFIGURATION' as const, configKey, versionLabel, componentKey });
+/** A typed authority binding: target type, identity, version, component, and the registered source(s) with where the repository records the version. */
+const bound = (targetType: AuthorityVersionBinding['targetType'], targetIdentity: string, version: string, componentKey: string | null, sourceKeys: readonly string[], recordedIn: string): AuthorityVersionBinding => ({ targetType, targetIdentity, version, componentKey, provenance: { kind: 'AUTHORITATIVE_SOURCE', sourceKeys: [...sourceKeys], recordedIn } });
 const mixed = (recordedIn: string, componentName: string, sourceKeys: readonly string[], note: string) => ({ basis: 'MIXED_AUTHORITY' as const, records: [{ recordedIn, component: componentName, sourceKeys: [...sourceKeys] }], note });
 
 // ------------------------------------------------------------------------------------------------ PAA
@@ -71,7 +74,7 @@ export const PAA_SYSTEM_PROFILE = system({
 });
 export const PAA_MATEMATICAS_COMPONENT = component({
   componentId: 'PAA.MATEMATICAS', systemProfileId: 'PAA', displayName: 'PAA — Matemáticas', localSubject: 'Matemáticas',
-  versionBinding: configuration('v2.paa', 'V2.1 PAA revisada (guía 2021)', 'matematicas'), semanticComponentKey: 'paa.matematicas',
+  versionBinding: bound('EXAM_VERSION', 'v2.paa', 'V2.1 PAA revisada (guía 2021)', 'matematicas', PAA_SRC, 'PAA_V2.key / version.label / sections[matematicas]'), semanticComponentKey: 'paa.matematicas',
   specification: mixed('src/lib/exam-core/verticals/v2/paa.ts (PAA_V2)', 'sections[matematicas].definition', PAA_SRC, 'Overrides restate the component definition of the Matemáticas section.'),
   overrides: {
     responseFormats: official('paa.matematicas.response-formats', ['SELECTED_RESPONSE', 'NUMERIC_ENTRY'], `${PAA_DEF}.responseFormats`, ...PAA_SRC),
@@ -111,7 +114,7 @@ const ibPaper = (key: 'p1' | 'p2', name: string, calculator: 'NONE' | 'GDC_REQUI
   const id = `ib.math-aa-hl.${key}`;
   return component({
     componentId: `IB.MATH_AA_HL.${key.toUpperCase()}`, systemProfileId: 'IB', displayName: `IB DP Mathematics: analysis and approaches HL — ${name}`, localSubject: 'Mathematics: analysis and approaches',
-    versionBinding: configuration('v2.ib.math-aa-hl', 'V2 2021-2028', key), semanticComponentKey: `ib.math-aa-hl.${key}`,
+    versionBinding: bound('EXAM_VERSION', 'v2.ib.math-aa-hl', 'V2 2021-2028', key, IB_SRC, `IB_MATH_AA_HL_V2.key / version.label / sections[${key}]`), semanticComponentKey: `ib.math-aa-hl.${key}`,
     specification: mixed('src/lib/exam-core/verticals/v2/ib-math-aa-hl.ts (IB_MATH_AA_HL_V2)', `sections[${key}].definition`, IB_SRC, `Overrides restate the component definition of ${name}.`),
     overrides: {
       responseFormats: official(`${id}.response-formats`, IB_FORMATS, `${def}.responseFormats`, ...IB_SRC),
@@ -127,8 +130,11 @@ export const IB_MATH_AA_HL_P2_COMPONENT = ibPaper('p2', 'Paper 2', 'GDC_REQUIRED
 // ------------------------------------------------------------------------------------------------ CAMBRIDGE
 const CIE_SRC = ['cie-9709-syllabus-2026-2027'] as const;
 const CIE_P1 = 'AICE_SYLLABI[code 9709] > components[p1]';
-export const CAMBRIDGE_SYSTEM_PROFILE = system({
+export const CAMBRIDGE_SYSTEM_PROFILE: AssessmentSystemProfile = { ...system({
   profileId: 'CAMBRIDGE', displayName: 'Cambridge International AS & A Level', examFamilyCode: 'CAMBRIDGE',
+  // its one OFFICIAL system-level rule (the assessment objectives) is a fact of the 9709 syllabus version: bound to the
+  // syllabus record itself. No exam-version record is invented for Cambridge.
+  versionBinding: bound('SYLLABUS_VERSION', '9709', '2026-2027', null, CIE_SRC, 'AICE_SYLLABI[code 9709].code / versionKey'),
   specification: mixed('src/lib/exam-core/aice/aice-syllabi.generated.ts (AICE_SYLLABI, code 9709)', 'Syllabus 9709 as a whole: assessment objectives', CIE_SRC, 'The assessment objectives are recorded for the syllabus; totals and tools are recorded per component. The repository also configures IGCSE 0580 (v2.cambridge.0580-extended); it was not read.'),
   componentDependentDimensions: ['timePressure', 'calculatorPolicy'],
   rules: {
@@ -148,10 +154,10 @@ export const CAMBRIDGE_SYSTEM_PROFILE = system({
     authenticityRequirements: policy('cambridge.authenticity', 'NONE', NOT_RECORDED),
     blueprintConstraints: policy('cambridge.blueprint', { fullFormSpecification: 'UNKNOWN', notes: ['The syllabus record holds component totals and routes, not a full-form distribution.'] }, 'States what the repository holds about one full form, not a fact about the exam.'),
   },
-});
+}), version: EA1A_SYSTEM_PROFILE_VERSION_WITH_BINDING };
 export const CAMBRIDGE_9709_P1_COMPONENT = component({
   componentId: 'CAMBRIDGE.9709.P1', systemProfileId: 'CAMBRIDGE', displayName: 'Cambridge 9709 — Pure Mathematics 1', localSubject: 'Mathematics (9709)',
-  versionBinding: { source: 'SYLLABUS_RECORD', configKey: '9709', versionLabel: '2026-2027', componentKey: 'p1' }, semanticComponentKey: 'cambridge.9709.p1',
+  versionBinding: bound('SYLLABUS_VERSION', '9709', '2026-2027', 'p1', CIE_SRC, 'AICE_SYLLABI[code 9709].code / versionKey / components[p1]'), semanticComponentKey: 'cambridge.9709.p1',
   specification: mixed('src/lib/exam-core/aice/aice-syllabi.generated.ts (AICE_SYLLABI, code 9709)', 'components[p1]', CIE_SRC, 'Overrides restate the generated syllabus record of component 1.'),
   overrides: {
     timePressure: official('cambridge.9709.p1.time', { officialMinutes: 110, officialItems: null, officialMarks: 75 }, `${CIE_P1}.minutes / marks`, ...CIE_SRC),
@@ -186,7 +192,7 @@ export const PISA_SYSTEM_PROFILE = system({
 });
 export const PISA_MATHEMATICS_COMPONENT = component({
   componentId: 'PISA.MATHEMATICS', systemProfileId: 'PISA', displayName: 'PISA 2022 — Mathematics (computer-based)', localSubject: 'Matemáticas',
-  versionBinding: configuration('v2.pisa.math', 'V2 PISA 2022', 'math'), semanticComponentKey: 'pisa.mathematics',
+  versionBinding: bound('FRAMEWORK_VERSION', 'pisa-math', '2022', 'math', PISA_SRC, 'PISA_MATH_V2.framework.frameworkKey / frameworkVersion / sections[math]'), semanticComponentKey: 'pisa.mathematics',
   specification: mixed('src/lib/exam-core/verticals/v2/pisa-math.ts (PISA_MATH_V2)', 'sections[math].definition', PISA_SRC, 'Overrides restate the component definition of the mathematics test. The elicitation map is StudyUs policy.'),
   overrides: {
     responseFormats: official('pisa.mathematics.response-formats', ['SELECTED_RESPONSE', 'MULTI_SELECT', 'NUMERIC_ENTRY', 'MATH_EXPRESSION'], `${PISA_DEF}.responseFormats`, ...PISA_SRC),
@@ -225,7 +231,7 @@ export const ICFES_SYSTEM_PROFILE = system({
 });
 export const ICFES_SABER11_MATEMATICAS_COMPONENT = component({
   componentId: 'ICFES.SABER11_MATEMATICAS', systemProfileId: 'ICFES', displayName: 'Icfes Saber 11.° — Prueba de Matemáticas', localSubject: 'Matemáticas',
-  versionBinding: configuration('v2.saber11.math', 'V2.1 Saber 11 2026 · 50 posiciones', 'math'), semanticComponentKey: 'icfes.saber11.matematicas',
+  versionBinding: bound('EXAM_VERSION', 'v2.saber11.math', 'V2.1 Saber 11 2026 · 50 posiciones', 'math', ICFES_SRC, 'SABER11_MATH_V2.key / version.label / sections[math]'), semanticComponentKey: 'icfes.saber11.matematicas',
   specification: mixed('src/lib/exam-core/verticals/v2/saber11-math.ts (SABER11_MATH_V2)', 'sections[math].definition', ICFES_SRC, 'Overrides restate the component definition of the Prueba de Matemáticas. The elicitation map and the blueprint note are StudyUs policy.'),
   overrides: {
     responseFormats: official('icfes.saber11-matematicas.response-formats', ['SELECTED_RESPONSE'], `${ICFES_DEF}.responseFormats`, ...ICFES_SRC),
@@ -242,5 +248,8 @@ export const EA1_COMPONENT_PROFILES: readonly AssessmentComponentProfile[] = [PA
 export const systemProfileOf = (profileId: string): AssessmentSystemProfile | null => EA1_SYSTEM_PROFILES.find((p) => p.profileId === profileId) ?? null;
 export const componentProfileOf = (componentId: string): AssessmentComponentProfile | null => EA1_COMPONENT_PROFILES.find((c) => c.componentId === componentId) ?? null;
 export const componentProfilesOf = (systemProfileId: string): AssessmentComponentProfile[] => EA1_COMPONENT_PROFILES.filter((c) => c.systemProfileId === systemProfileId);
-/** The profile of an exam family of the taxonomy, when one exists. AICE has none of its own: it is not resolved to CAMBRIDGE here. */
-export const systemProfileOfExamFamily = (examFamilyCode: string): AssessmentSystemProfile | null => EA1_SYSTEM_PROFILES.find((p) => p.examFamilyCode === examFamilyCode) ?? null;
+/**
+ * The system profile an exam family of the taxonomy is assessed by. AICE has no profile of its own (D5): it is a
+ * qualification context of the CAMBRIDGE system and resolves to the Cambridge profile.
+ */
+export const systemProfileOfExamFamily = (examFamilyCode: string): AssessmentSystemProfile | null => EA1_SYSTEM_PROFILES.find((p) => p.examFamilyCode === assessmentSystemOfExamFamily(examFamilyCode).systemExamFamily) ?? null;

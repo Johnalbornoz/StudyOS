@@ -89,3 +89,88 @@ Do not merge yet. Keep on the lane branch until U2–U5 and U9 are decided; then
 
 ## NEXT SAFE ACTION
 Orchestrator rules on U2, U3, U4, U5, U9 (and confirms U1); the lane then updates the persistence design in place.
+
+---
+
+# L2 — ASSESSMENT ENGINE / QUESTION BANK — EA-1A closure (2026-10-11, second run)
+
+(This file was `reports/L1_ASSESSMENT.md`; the Orchestrator renamed the lane. The section above is the first EA-1A run.)
+
+## LANE
+L2 — ASSESSMENT ENGINE / QUESTION BANK — worktree `/Users/jalbornoz/PROYECTOS/studyos-qb-r1a`, branch `feat/ea1a-learning-approach`.
+
+## STATUS
+READY_FOR_ORCHESTRATOR_REVIEW
+
+## BASE SHA
+c810e70
+
+## FINAL SHA
+See the commit that carries this section (`git log -1` on the lane branch).
+
+## FILES CHANGED
+-  M docs/exams/assessment-adaptation/EA1A_LEARNING_APPROACH_PROFILES_AND_STEM_PLUS.md
+-  M docs/exams/assessment-adaptation/EA1A_learning_approach_poc.json
+-  M docs/exams/assessment-adaptation/EA1_math_adaptation_matrix.json
+-  M scripts/operations/ea1-adaptation-matrix.ts
+-  M src/lib/assessment-adaptation/adapt.ts
+-  M src/lib/assessment-adaptation/adaptation-specification.ts
+-  M src/lib/assessment-adaptation/assessment-system-profile.ts
+-  M src/lib/assessment-adaptation/cell-bridge.ts
+-  M src/lib/assessment-adaptation/learning-approach-poc.ts
+-  M src/lib/assessment-adaptation/system-profiles.ts
+-  M src/lib/exam-core/question-bank/production/generator/generate-candidates.ts
+-  M src/lib/learning-approach/institution-configuration.ts
+-  M src/lib/learning-approach/learning-approach-profile.ts
+-  M tests/unit/ea1-assessment-adaptation.test.ts
+-  M tests/unit/ea1a-learning-approach.test.ts
+- docs/orchestration/status/L2_STATUS.md (renamed from L1_STATUS.md)
+- docs/orchestration/reports/L2_ASSESSMENT_ENGINE_QUESTION_BANK.md (renamed from L1_ASSESSMENT.md)
+
+## LOCKS USED
+`ASSESSMENT_ADAPTATION`. One line changed in `production/generator/generate-candidates.ts` (QUESTION_BANK_CORE adaptation contract): the exam-family fit check resolves AICE to the CAMBRIDGE system (D5). No guard weakened. No schema, migration, database, deployment, merge or push.
+
+## TESTS
+- `npx tsc --noEmit -p tsconfig.json` — exit 0
+- `npx vitest run` — 517 files / 9,298 tests, 0 failures (baseline 517 / 9,290)
+- `npx next build` — exit 0
+- Ephemeral database certifications (temporary local Postgres): reviewer governance, CURR-PAA, B2-B1, B2-B2, platform chain — all DONE, exit 0
+- 82 migration files, none added
+
+## FINDINGS
+| Output field | Value |
+|---|---|
+| EA-1A STATUS | PASS (architecture) |
+| LEARNING_APPROACH_PROFILE | PASS |
+| STEM_PLUS_PROFILE_CONTRACT | PASS (content PROVISIONAL, uncertified) |
+| STEM_PLUS_CATALOGUE_READINESS | PARTIAL (1 of 6 competencies in the catalogue; five recorded as future Curriculum catalogue work) |
+| CURRICULUM_SEPARATION | PASS |
+| ASSESSMENT_PROFILE_SEPARATION | PASS |
+| TASK_FAMILY_INTEGRATION | PASS |
+| INSTITUTION_CONFIGURATION | PASS (scoped assignment: institution < programme < class < subject; none = STANDARD; same-scope conflict refused by name) |
+| MULTIDIMENSIONAL_EVIDENCE_DESIGN | PASS (types only; no B3 scoring) |
+| MEXICO_ARCHITECTURE_POC | PASS (8 of 8 composition checks) |
+| MEXICO_EVIDENCE_READINESS | NO |
+| COLOMBIA_ARCHITECTURE_POC | PASS (8 of 8) |
+| COLOMBIA_EVIDENCE_READINESS | NO |
+| PERSISTENCE_DESIGN | PASS as a design (15 tables, 1 view, 8 placeholder migrations; not exercised against a database) |
+| DEV_TEST_CONTENT_INGESTION | DEFERRED |
+| READY_FOR_ADAPTATION_SCHEMA_IMPLEMENTATION | YES (A1 classified as deferred by the lane; Orchestrator to confirm) |
+
+- Evidence readiness is NO for both countries: curriculum structures not imported, entitlement 0 of 12, nothing reviewed or certified, STEM+ catalogue partial. No entitlement was fabricated.
+- Specification ids: the version-binding decision changed the 51 component-level EA-1 ids and the 9 Cambridge system-level ids again; 27 system-level ids and all counts are unchanged. 18 of 24 EA-1A POC ids changed.
+- With real repository content no evidence-bearing specification can be produced (draft families, provisional profiles and approach). That path is exercised only with test doubles.
+- A1 (the one item the lane had to classify): what establishes applicability of a concept for an institution's own assessment (`SCHOOL_STEM_PERFORMANCE`). It shapes none of the 15 tables and is additive later; the brief calls that profile "future". Classified DEFERRED with it.
+- PRE_CONTROL_PLANE_MERGE_EXCEPTION: EA-1 local merges 59f518a and 3031e03 into `integration/q1-paa-bank-readiness` are kept by Orchestrator decision. No self-merges since.
+
+## BLOCKERS
+NONE. Confirmation requested on A1.
+
+## CHANGE_REQUESTS
+NONE
+
+## MERGE RECOMMENDATION
+Mergeable by the Orchestrator when the schema phase is authorized. The lane does not merge.
+
+## NEXT SAFE ACTION
+Orchestrator review of EA-1A and confirmation of A1; then authorization of the adaptation schema implementation.

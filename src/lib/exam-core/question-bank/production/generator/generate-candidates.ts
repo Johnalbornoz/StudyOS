@@ -22,6 +22,7 @@
  * originality are checked by the independent validators, which this directory must not import.
  */
 import { AdaptationSpecificationSchema, specificationIntegrityIssues, type AdaptationSpecification } from '@/lib/assessment-adaptation/adaptation-specification';
+import { assessmentSystemOfExamFamily } from '@/lib/assessment-adaptation/assessment-system-profile';
 import { generationReadyPackIssues, REFERENCE_PACK_V2_VERSION, type ConceptProfile, type ReferenceIntelligencePackV2 } from '../concept-profile';
 import { GENERATION_CONTRACT_VERSION, GenerationBatchSchema, GenerationPolicySchema, type CandidateStimulus, type GenerationBatch, type QuestionCandidate } from '../generation-contract';
 import { isBound, type RequirementCell } from '../requirement-cell';
@@ -108,7 +109,7 @@ function adaptationOf(input: GenerateCandidatesInput, unit: GenerationUnit, cell
     const spec = AdaptationSpecificationSchema.parse(given[key]);
     const cell = cells[i];
     const misfit =
-      spec.systemProfile.examFamilyCode !== cell.examFamily ? 'EXAM_FAMILY'
+      spec.systemProfile.examFamilyCode !== assessmentSystemOfExamFamily(cell.examFamily).systemExamFamily ? 'EXAM_FAMILY'
       : spec.primaryConcept.stableId !== cell.primaryConcept.stableId || spec.primaryConcept.canonicalSubject !== cell.primaryConcept.canonicalSubject ? 'PRIMARY_CONCEPT'
       : spec.variable.responseFormat.productionFormat !== cell.responseFormat ? 'RESPONSE_FORMAT'
       : spec.variable.difficulty.band !== cell.difficultyBand ? 'DIFFICULTY_BAND'

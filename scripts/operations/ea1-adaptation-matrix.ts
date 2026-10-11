@@ -15,18 +15,19 @@ import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { buildMathAdaptationMatrix, MATH_POC_MATRIX_ARTIFACT, serializeMathAdaptationMatrix } from '@/lib/assessment-adaptation/math-poc-matrix';
 import { buildLearningApproachPoc, LEARNING_APPROACH_POC_ARTIFACT, serializeLearningApproachPoc } from '@/lib/assessment-adaptation/learning-approach-poc';
+import { DEV_COMPETENCIES } from '@/lib/exam-core/catalog/dev-learning-catalog';
 import { buildPaaEvidenceDemand, PAA_EVIDENCE_DEMAND_ARTIFACT, serializePaaEvidenceDemand } from './ea1-paa-evidence-demand';
 
 function main() {
   const matrix = buildMathAdaptationMatrix();
   const demand = buildPaaEvidenceDemand();
-  const approachPoc = buildLearningApproachPoc();
+  const approachPoc = buildLearningApproachPoc(DEV_COMPETENCIES.map((c) => c.code));
   if (process.argv.includes('--write')) {
     writeFileSync(join(process.cwd(), MATH_POC_MATRIX_ARTIFACT), serializeMathAdaptationMatrix(matrix));
     writeFileSync(join(process.cwd(), PAA_EVIDENCE_DEMAND_ARTIFACT), serializePaaEvidenceDemand(demand));
     writeFileSync(join(process.cwd(), LEARNING_APPROACH_POC_ARTIFACT), serializeLearningApproachPoc(approachPoc));
   }
-  if (process.argv.includes('--approach-poc')) console.log(JSON.stringify({ summary: approachPoc.summary, comparisons: approachPoc.comparisons, specialCases: approachPoc.specialCases }, null, 2));
+  if (process.argv.includes('--approach-poc')) console.log(JSON.stringify({ summary: approachPoc.summary, readiness: approachPoc.readiness, stemPlusCatalogueReadiness: approachPoc.stemPlusCatalogueReadiness, comparisons: approachPoc.comparisons, specialCases: approachPoc.specialCases }, null, 2));
   else if (process.argv.includes('--matrix')) console.log(JSON.stringify(matrix, null, 2));
   else if (process.argv.includes('--demand')) console.log(JSON.stringify(demand, null, 2));
   else {

@@ -1,6 +1,6 @@
 {
   "kind": "EA1A_LEARNING_APPROACH_POC",
-  "v": 1,
+  "v": 2,
   "about": "EA-1A proofs of concept (Mexico: MCCEMS; Colombia: MEN). Curriculum x learning approach x assessment profile, composed for the same canonical concepts and the same DRAFT task families. DEV_TEST_CONTENT specifications only; no question generated. Curriculum entitlement is NOT ESTABLISHED anywhere: the repository holds no MCCEMS or MEN structure or concept mapping, and none was invented. Profiles and the STEM+ approach are provisional StudyUs policy. Nothing is reviewed, certified or approved.",
   "request": {
     "purpose": "PRACTICE",
@@ -117,10 +117,19 @@
       "examFamilyCode": "PAA",
       "status": "PROVISIONAL_ILLUSTRATIVE",
       "versionBinding": {
-        "source": "EXAM_VERTICAL_CONFIGURATION",
-        "configKey": "v2.paa",
-        "versionLabel": "V2.1 PAA revisada (guía 2021)",
-        "componentKey": "matematicas"
+        "targetType": "EXAM_VERSION",
+        "targetIdentity": "v2.paa",
+        "version": "V2.1 PAA revisada (guía 2021)",
+        "componentKey": "matematicas",
+        "provenance": {
+          "kind": "AUTHORITATIVE_SOURCE",
+          "sourceKeys": [
+            "cb-paa-guia-2021",
+            "cb-paa-preguntas-respuestas-2017",
+            "cb-paa-practice-test-2018"
+          ],
+          "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+        }
       }
     },
     {
@@ -131,10 +140,19 @@
       "examFamilyCode": "PISA",
       "status": "PROVISIONAL_ILLUSTRATIVE",
       "versionBinding": {
-        "source": "EXAM_VERTICAL_CONFIGURATION",
-        "configKey": "v2.pisa.math",
-        "versionLabel": "V2 PISA 2022",
-        "componentKey": "math"
+        "targetType": "FRAMEWORK_VERSION",
+        "targetIdentity": "pisa-math",
+        "version": "2022",
+        "componentKey": "math",
+        "provenance": {
+          "kind": "AUTHORITATIVE_SOURCE",
+          "sourceKeys": [
+            "oecd-pisa-2022-framework",
+            "oecd-pisa-2022-math-site",
+            "nces-pisa-2022-technical-notes"
+          ],
+          "recordedIn": "PISA_MATH_V2.framework.frameworkKey / frameworkVersion / sections[math]"
+        }
       }
     },
     {
@@ -154,10 +172,19 @@
       "examFamilyCode": "ICFES",
       "status": "PROVISIONAL_ILLUSTRATIVE",
       "versionBinding": {
-        "source": "EXAM_VERTICAL_CONFIGURATION",
-        "configKey": "v2.saber11.math",
-        "versionLabel": "V2.1 Saber 11 2026 · 50 posiciones",
-        "componentKey": "math"
+        "targetType": "EXAM_VERSION",
+        "targetIdentity": "v2.saber11.math",
+        "version": "V2.1 Saber 11 2026 · 50 posiciones",
+        "componentKey": "math",
+        "provenance": {
+          "kind": "AUTHORITATIVE_SOURCE",
+          "sourceKeys": [
+            "icfes-marco-matematicas-saber11",
+            "icfes-guia-saber11-2026",
+            "icfes-resolucion-268-2020"
+          ],
+          "recordedIn": "SABER11_MATH_V2.key / version.label / sections[math]"
+        }
       }
     }
   ],
@@ -211,7 +238,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "eca2735f75614068bccf3ce2ec233701385b9c74d32d78317349226e48e53c61",
+      "specificationId": "5b9f7fcb8fdd6be2c07a6b49bb89b234b0bb59622baf140e72b014d4cda8c4cb",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -278,7 +305,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "82d5d5c319f2751712b0c562206f0487bf95358123150085f75be47d4368dcd8",
+      "specificationId": "384996608beda78cd25efebd889b2a5c78dac3bdc5083f9f7cd792106f851e19",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -326,7 +353,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "paa.matematicas.response-formats",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.tools.available",
@@ -340,7 +368,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "paa.matematicas.calculator",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.stimulus.data",
@@ -353,7 +382,8 @@
               "origin": "FAMILY",
               "ref": "responseConstraints.stimulusNeed",
               "authority": null
-            }
+            },
+            "overridingRuleCertification": null
           },
           {
             "preferenceId": "stem-plus.reasoning.justified",
@@ -366,7 +396,8 @@
               "origin": "SYSTEM_PROFILE_RULE",
               "ref": "paa.reasoning",
               "authority": "STUDYUS_POLICY"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           }
         ]
       },
@@ -423,7 +454,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "f1329bf5a003a08eab6cacd99295a2460f7ea939edde0f5ac00afbf8fc54f35f",
+      "specificationId": "5713688aa676fff3cc951654e4c491ec3595ae62be9ec71358d4b149b3bedfab",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -493,7 +524,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "1f56de488917628b15a07220814b4baff5aa5b2a5f4b6966fc9c926b7393bf1a",
+      "specificationId": "243344e868838b41abd209e78e596dfae86bd4596d2a8eeef179558679fe916e",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -545,7 +576,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "paa.matematicas.response-formats",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.tools.available",
@@ -559,7 +591,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "paa.matematicas.calculator",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.reasoning.justified",
@@ -572,7 +605,8 @@
               "origin": "SYSTEM_PROFILE_RULE",
               "ref": "paa.reasoning",
               "authority": "STUDYUS_POLICY"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           }
         ]
       },
@@ -632,7 +666,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "0937ea583f6c4b065c8559ce6b8717e1d89348321533049f7c2ee92efd0a57a9",
+      "specificationId": "1a95e411fc48e21d7ef549a2d4a7b136a2bd00e53dcb9d352f4b089758fd0900",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -703,7 +737,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "b50c2647150829ebeb7418091699c0f4a722be51bb5757a8c204d6999ee9afb5",
+      "specificationId": "af9b08b90180306164fc4744a2f53beb11f04dfd0ad6d853a716a86afc4f2475",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -755,7 +789,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "pisa.mathematics.response-formats",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.stimulus.data",
@@ -768,7 +803,8 @@
               "origin": "FAMILY",
               "ref": "responseConstraints.stimulusNeed",
               "authority": null
-            }
+            },
+            "overridingRuleCertification": null
           },
           {
             "preferenceId": "stem-plus.reasoning.justified",
@@ -781,7 +817,8 @@
               "origin": "SYSTEM_PROFILE_RULE",
               "ref": "pisa.reasoning",
               "authority": "STUDYUS_POLICY"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           }
         ]
       },
@@ -842,7 +879,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "3d120cd03eaa3ac07cac16a8297e1a2f8cc1ad54774da4d60bfc6f45e5032d04",
+      "specificationId": "6547174d9cebd178611667cdae6ff7d2203690514078f5cffc0ffde72c183625",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -915,7 +952,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "92453786d2177644e3f8cf6e8fa612e3249e5909decba839630cd72fd0722f83",
+      "specificationId": "b4a13a128e97f35286fa4063c4f4917c627853755f0257329a07ac089579b054",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -971,7 +1008,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "pisa.mathematics.response-formats",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.reasoning.justified",
@@ -984,7 +1022,8 @@
               "origin": "SYSTEM_PROFILE_RULE",
               "ref": "pisa.reasoning",
               "authority": "STUDYUS_POLICY"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           }
         ]
       },
@@ -1114,7 +1153,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "c228b7b2c9dc123e29414663b1d187927d6e918d2b1621dec3b2612a010e9227",
+      "specificationId": "1b88debfcbf1ef9aa04bf7f374786ac55b8537f8e5c9b93b87ade4c4feb58ce3",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1174,7 +1213,8 @@
               "origin": "FAMILY",
               "ref": "responseConstraints.stimulusNeed",
               "authority": null
-            }
+            },
+            "overridingRuleCertification": null
           }
         ]
       },
@@ -1397,7 +1437,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "2f5b90f58c72ef79fb1e6b03578544cc242360790a6e0b777d72767387351469",
+      "specificationId": "9eab869a3fc43983909dc4211941d890903ea375e6b57f88dc5c35177d1c1201",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1467,7 +1507,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "1dd3be199eba1d26f828a312ef5c75d573c9a0ddd0f14ac456cc72dc53ea6135",
+      "specificationId": "68689af8b3eea83ccfff4b7821efaec924e58f086940e7a10c2047a5f0a5e7cd",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1515,7 +1555,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "icfes.saber11-matematicas.response-formats",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.tools.available",
@@ -1529,7 +1570,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "icfes.saber11-matematicas.calculator",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.stimulus.data",
@@ -1542,7 +1584,8 @@
               "origin": "FAMILY",
               "ref": "responseConstraints.stimulusNeed",
               "authority": null
-            }
+            },
+            "overridingRuleCertification": null
           },
           {
             "preferenceId": "stem-plus.reasoning.justified",
@@ -1555,7 +1598,8 @@
               "origin": "SYSTEM_PROFILE_RULE",
               "ref": "icfes.reasoning",
               "authority": "STUDYUS_POLICY"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           }
         ]
       },
@@ -1615,7 +1659,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "4a49bab4a3dab8735823da19eb080433d71aad1885694e648d038da330aa2962",
+      "specificationId": "a21f1ad208354763cd8729dd27510ac4d23a773142abf497dbfe1295046fb089",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1688,7 +1732,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "0da3c06e669f0cf0c71b432823f47fee7d1e10f4d3bb5f66b5baec4e05cb1a34",
+      "specificationId": "68a0b341753a35bd88b75c36cbb8eb4727a72fb1e2a2426167e9533fee404ac5",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1740,7 +1784,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "icfes.saber11-matematicas.response-formats",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.tools.available",
@@ -1754,7 +1799,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "icfes.saber11-matematicas.calculator",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.reasoning.justified",
@@ -1767,7 +1813,8 @@
               "origin": "SYSTEM_PROFILE_RULE",
               "ref": "icfes.reasoning",
               "authority": "STUDYUS_POLICY"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           }
         ]
       },
@@ -1830,7 +1877,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "b74737a67e41e2fe0d5f977c4f5de7a29856338503446c26435a1d064204f699",
+      "specificationId": "23ced062b0984636e99fffdbe987999af8d35b28c7e678b0ed6c9dbc87987e67",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1901,7 +1948,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "c61951515a741ec2c8d3ceba13018deddc3925757240170729bfe2f2a714bd2b",
+      "specificationId": "30c2c85653c83ddc7afceda1a1abbd03fcdd3c20c3eeaffc4ebcd80512dd3e76",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -1953,7 +2000,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "pisa.mathematics.response-formats",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.stimulus.data",
@@ -1966,7 +2014,8 @@
               "origin": "FAMILY",
               "ref": "responseConstraints.stimulusNeed",
               "authority": null
-            }
+            },
+            "overridingRuleCertification": null
           },
           {
             "preferenceId": "stem-plus.reasoning.justified",
@@ -1979,7 +2028,8 @@
               "origin": "SYSTEM_PROFILE_RULE",
               "ref": "pisa.reasoning",
               "authority": "STUDYUS_POLICY"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           }
         ]
       },
@@ -2040,7 +2090,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "1934ec34b3c14d8bc2c17194beb59a63b35739227424379eda4b3fa8d5bd9e82",
+      "specificationId": "7ff65283c4ca840f3c9560d86187d0bca0b107fafa0e20bbf60eeabf31fc41f8",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -2113,7 +2163,7 @@
       "conceptStableId": "math.stat.data-representation",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "be1fbd6318b022b4b47333a4bacfcb57a83b672cbb03e6c8799662b233826e42",
+      "specificationId": "dbc1933f4b5dbc631eb8becf77c4f006aedb1cf31e666004658e5234711a087f",
       "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -2169,7 +2219,8 @@
               "origin": "COMPONENT_PROFILE_RULE",
               "ref": "pisa.mathematics.response-formats",
               "authority": "OFFICIAL"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           },
           {
             "preferenceId": "stem-plus.reasoning.justified",
@@ -2182,7 +2233,8 @@
               "origin": "SYSTEM_PROFILE_RULE",
               "ref": "pisa.reasoning",
               "authority": "STUDYUS_POLICY"
-            }
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
           }
         ]
       },
@@ -2312,7 +2364,7 @@
       "conceptStableId": "math.num.ratio-proportion",
       "canonicalSubject": "Matemáticas",
       "outcome": "SPECIFICATION",
-      "specificationId": "af4a1fe37d3d53210a34a8d6e52648f84404d8ea8be974d7c4c6d4a6774bd689",
+      "specificationId": "81c275bae3f3dbd6550168d96465aec0d9b588f4e1755c37667632849d853ae1",
       "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
       "refusal": null,
       "contentUseClass": "DEV_TEST_CONTENT",
@@ -2372,7 +2424,8 @@
               "origin": "FAMILY",
               "ref": "responseConstraints.stimulusNeed",
               "authority": null
-            }
+            },
+            "overridingRuleCertification": null
           }
         ]
       },
@@ -2601,22 +2654,26 @@
         {
           "preferenceId": "stem-plus.response.constructed",
           "overriddenBy": "COMPONENT_PROFILE_RULE:paa.matematicas.response-formats",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.tools.available",
           "overriddenBy": "COMPONENT_PROFILE_RULE:paa.matematicas.calculator",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.stimulus.data",
           "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
-          "authority": null
+          "authority": null,
+          "certification": null
         },
         {
           "preferenceId": "stem-plus.reasoning.justified",
           "overriddenBy": "SYSTEM_PROFILE_RULE:paa.reasoning",
-          "authority": "STUDYUS_POLICY"
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         }
       ]
     },
@@ -2637,17 +2694,20 @@
         {
           "preferenceId": "stem-plus.response.constructed",
           "overriddenBy": "COMPONENT_PROFILE_RULE:paa.matematicas.response-formats",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.tools.available",
           "overriddenBy": "COMPONENT_PROFILE_RULE:paa.matematicas.calculator",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.reasoning.justified",
           "overriddenBy": "SYSTEM_PROFILE_RULE:paa.reasoning",
-          "authority": "STUDYUS_POLICY"
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         }
       ]
     },
@@ -2668,17 +2728,20 @@
         {
           "preferenceId": "stem-plus.response.constructed",
           "overriddenBy": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.stimulus.data",
           "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
-          "authority": null
+          "authority": null,
+          "certification": null
         },
         {
           "preferenceId": "stem-plus.reasoning.justified",
           "overriddenBy": "SYSTEM_PROFILE_RULE:pisa.reasoning",
-          "authority": "STUDYUS_POLICY"
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         }
       ]
     },
@@ -2700,12 +2763,14 @@
         {
           "preferenceId": "stem-plus.response.constructed",
           "overriddenBy": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.reasoning.justified",
           "overriddenBy": "SYSTEM_PROFILE_RULE:pisa.reasoning",
-          "authority": "STUDYUS_POLICY"
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         }
       ]
     },
@@ -2730,7 +2795,8 @@
         {
           "preferenceId": "stem-plus.stimulus.data",
           "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
-          "authority": null
+          "authority": null,
+          "certification": null
         }
       ]
     },
@@ -2770,22 +2836,26 @@
         {
           "preferenceId": "stem-plus.response.constructed",
           "overriddenBy": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.response-formats",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.tools.available",
           "overriddenBy": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.calculator",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.stimulus.data",
           "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
-          "authority": null
+          "authority": null,
+          "certification": null
         },
         {
           "preferenceId": "stem-plus.reasoning.justified",
           "overriddenBy": "SYSTEM_PROFILE_RULE:icfes.reasoning",
-          "authority": "STUDYUS_POLICY"
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         }
       ]
     },
@@ -2806,17 +2876,20 @@
         {
           "preferenceId": "stem-plus.response.constructed",
           "overriddenBy": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.response-formats",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.tools.available",
           "overriddenBy": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.calculator",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.reasoning.justified",
           "overriddenBy": "SYSTEM_PROFILE_RULE:icfes.reasoning",
-          "authority": "STUDYUS_POLICY"
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         }
       ]
     },
@@ -2837,17 +2910,20 @@
         {
           "preferenceId": "stem-plus.response.constructed",
           "overriddenBy": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.stimulus.data",
           "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
-          "authority": null
+          "authority": null,
+          "certification": null
         },
         {
           "preferenceId": "stem-plus.reasoning.justified",
           "overriddenBy": "SYSTEM_PROFILE_RULE:pisa.reasoning",
-          "authority": "STUDYUS_POLICY"
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         }
       ]
     },
@@ -2869,12 +2945,14 @@
         {
           "preferenceId": "stem-plus.response.constructed",
           "overriddenBy": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats",
-          "authority": "OFFICIAL"
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         },
         {
           "preferenceId": "stem-plus.reasoning.justified",
           "overriddenBy": "SYSTEM_PROFILE_RULE:pisa.reasoning",
-          "authority": "STUDYUS_POLICY"
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
         }
       ]
     },
@@ -2899,7 +2977,8 @@
         {
           "preferenceId": "stem-plus.stimulus.data",
           "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
-          "authority": null
+          "authority": null,
+          "certification": null
         }
       ]
     },
@@ -2975,6 +3054,105 @@
       "detail": "a protected mock pool takes frozen certified content only"
     }
   ],
+  "readiness": [
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "architectureCompositionPoc": {
+        "status": "PASS",
+        "checks": {
+          "everyCellProducedASpecification": true,
+          "oneConceptIdPerFamily": true,
+          "oneInvariantHashPerFamily": true,
+          "approachChangesNeitherConceptNorInvariants": true,
+          "approachMovesOnlyApproachControlledDimensions": true,
+          "everyPreferenceHonouredOrRecordedUnmet": true,
+          "anOfficialConstraintOverrodeAPreferenceAndWasRecorded": true,
+          "standardIsRecordedByAbsence": true
+        }
+      },
+      "evidenceBearingCurriculumReadiness": {
+        "status": "NO",
+        "blockers": [
+          "CURRICULUM_STRUCTURE_NOT_IMPORTED: MX.SEP.MCCEMS",
+          "CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED: 12 of 12 specifications",
+          "ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED: 6 of 12 specifications",
+          "TASK_FAMILIES_NOT_REVIEWED",
+          "ASSESSMENT_PROFILES_NOT_CERTIFIED",
+          "LEARNING_APPROACH_NOT_CERTIFIED: STEM_PLUS",
+          "STEM_PLUS_CATALOGUE_READINESS_PARTIAL: 5 competencies not in the catalogue"
+        ]
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "architectureCompositionPoc": {
+        "status": "PASS",
+        "checks": {
+          "everyCellProducedASpecification": true,
+          "oneConceptIdPerFamily": true,
+          "oneInvariantHashPerFamily": true,
+          "approachChangesNeitherConceptNorInvariants": true,
+          "approachMovesOnlyApproachControlledDimensions": true,
+          "everyPreferenceHonouredOrRecordedUnmet": true,
+          "anOfficialConstraintOverrodeAPreferenceAndWasRecorded": true,
+          "standardIsRecordedByAbsence": true
+        }
+      },
+      "evidenceBearingCurriculumReadiness": {
+        "status": "NO",
+        "blockers": [
+          "CURRICULUM_STRUCTURE_NOT_IMPORTED: CO.MEN.EBC_DBA",
+          "CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED: 12 of 12 specifications",
+          "ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED: 10 of 12 specifications",
+          "TASK_FAMILIES_NOT_REVIEWED",
+          "ASSESSMENT_PROFILES_NOT_CERTIFIED",
+          "LEARNING_APPROACH_NOT_CERTIFIED: STEM_PLUS",
+          "STEM_PLUS_CATALOGUE_READINESS_PARTIAL: 5 competencies not in the catalogue"
+        ]
+      }
+    }
+  ],
+  "stemPlusCatalogueReadiness": {
+    "approachId": "STEM_PLUS",
+    "version": "0.1.0-provisional",
+    "status": "PARTIAL",
+    "inCatalogue": [
+      {
+        "key": "SCIENTIFIC_INQUIRY",
+        "code": "dev.comp.scientific-inquiry"
+      }
+    ],
+    "missing": [
+      {
+        "key": "MATHEMATICAL_MODELLING",
+        "proposedCode": "studyus.transversal.mathematical-modelling",
+        "owner": "CURRICULUM"
+      },
+      {
+        "key": "ENGINEERING_DESIGN",
+        "proposedCode": "studyus.transversal.engineering-design",
+        "owner": "CURRICULUM"
+      },
+      {
+        "key": "DATA_AND_COMPUTATIONAL_REASONING",
+        "proposedCode": "studyus.transversal.data-computational-reasoning",
+        "owner": "CURRICULUM"
+      },
+      {
+        "key": "PROBLEM_SOLVING_AND_TRANSFER",
+        "proposedCode": "studyus.transversal.problem-solving-transfer",
+        "owner": "CURRICULUM"
+      },
+      {
+        "key": "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION",
+        "proposedCode": "studyus.transversal.scientific-communication-argumentation",
+        "owner": "CURRICULUM"
+      }
+    ],
+    "inconsistencies": []
+  },
   "summary": {
     "cells": 24,
     "specifications": 24,
@@ -3093,6 +3271,10 @@
       "FAMILY_OR_REQUEST": 6,
       "OFFICIAL": 12,
       "STUDYUS_POLICY": 8
+    },
+    "unmetByRuleCertification": {
+      "NOT_A_PROFILE_RULE": 6,
+      "PROVISIONAL_ILLUSTRATIVE": 20
     },
     "approachChangedSomethingIn": 12
   }

@@ -30,7 +30,10 @@
  * and the specification says its component is null.
  *
  * LEARNING APPROACH (EA-1A). Precedence: curriculum (entitlement) > learning approach (emphasis) > assessment profile
- * (constraints) > task family (structure); the specification resolves them. In the engine that means: the profile,
+ * (constraints) > task family (structure); the specification resolves them. Among RULES the order is (D6): 1 an
+ * OFFICIAL assessment rule; 2 a CERTIFIED StudyUs or institution assessment-profile rule; 3 a learning-approach
+ * preference. A PROVISIONAL rule governs dev-test content only: evidence-bearing content is refused unless the
+ * system profile, the component profile and the approach are all certified, so no provisional rule reaches it. In the engine that means: the profile,
  * the family and the request fix the FEASIBLE SET of each dimension exactly as before, and the approach's
  * preference only chooses inside it. An official assessment constraint therefore always wins; so does a profile
  * rule of any other authority (StudyUs policy, flagged). A preference that could not be honoured is recorded as
@@ -160,6 +163,9 @@ function build(input: AdaptInput): AdaptationSpecification {
     const uncertified = [...(profileMayFeedEvidenceBearingContent(profile) ? [] : [`${profile.profileId}@${profile.version} (${profile.status})`]), ...(component && !profileMayFeedEvidenceBearingContent(component) ? [`${component.componentId}@${component.version} (${component.status})`] : [])];
     if (uncertified.length > 0) refuse('ASSESSMENT_PROFILE_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT', `${uncertified.join(', ')}: evidence-bearing content requires a CERTIFIED assessment profile`);
   }
+  // 2b' (D3) -- a PROVISIONAL learning approach generates DEV_TEST_CONTENT only. Evidence-bearing content needs a
+  // CERTIFIED approach, or the implicit STANDARD (which is no approach at all).
+  if (request.contentUseClass === 'EVIDENCE_BEARING' && approach && approach.status !== 'CERTIFIED') refuse('LEARNING_APPROACH_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT', `${approach.approachId}@${approach.version} is ${approach.status}; evidence-bearing content requires a CERTIFIED learning approach or STANDARD`);
   // 2c (locked) -- some purposes do not accept dev-test content at all: a protected mock pool takes frozen certified content only
   const instancePolicy = instancePolicyFor(request.purpose, request.contentUseClass);
   if (!instancePolicy.permitted) refuse('DEV_TEST_CONTENT_NOT_ALLOWED_FOR_PURPOSE', `${request.purpose}: ${instancePolicy.reason}`);
@@ -219,7 +225,10 @@ function build(input: AdaptInput): AdaptationSpecification {
   const settle = (p: ApproachPreference | null, decided: string, overriddenBy: () => FieldProvenance): boolean => {
     if (!p) return false;
     if (p.prefer.includes(decided)) { honoured.push({ preferenceId: p.preferenceId, dimension: p.dimension, decided }); return true; }
-    unmet.push({ preferenceId: p.preferenceId, dimension: p.dimension, strength: p.strength, wanted: [...p.prefer], decided, overriddenBy: overriddenBy() });
+    const by = overriddenBy();
+    // D6: an override states the authority of the rule AND the certification status of the profile that owns it
+    const overridingRuleCertification = by.origin === 'SYSTEM_PROFILE_RULE' ? profile.status : by.origin === 'COMPONENT_PROFILE_RULE' ? component!.status : null;
+    unmet.push({ preferenceId: p.preferenceId, dimension: p.dimension, strength: p.strength, wanted: [...p.prefer], decided, overriddenBy: by, overridingRuleCertification });
     return false;
   };
   const approachProvenance = (p: ApproachPreference): FieldProvenance => ({ origin: 'LEARNING_APPROACH_PREFERENCE', ref: p.preferenceId, authority: 'STUDYUS_POLICY' });
