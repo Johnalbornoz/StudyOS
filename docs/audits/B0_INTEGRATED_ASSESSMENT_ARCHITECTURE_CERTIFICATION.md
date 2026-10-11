@@ -1225,3 +1225,34 @@ Not conditions for B1, but known facts B1 must plan around: 0 student-eligible e
 As listed under "MUST WAIT" above.
 
 STOP. B1 has not been started.
+
+---
+
+# B0-U Addendum — Universal Curriculum & Assessment Delta (2026-10-10)
+
+Everything above is the original B0 / B0-C certification and is kept unchanged as historical evidence.
+This addendum extends it; it removes nothing.
+
+```text
+ORIGINAL CERTIFICATION (B0 + B0-C, anchor 73c303a)
++ ARCHITECTURAL DELTA (B0-U, base cbb6b39)
+= CURRENT CERTIFIED ARCHITECTURE
+```
+
+Full report: `docs/audits/B0_UNIVERSAL_CURRICULUM_ASSESSMENT_DELTA.md`.
+
+| Topic | B0 said | B0-U adds |
+|---|---|---|
+| Curriculum Authority | owns versions, hierarchy, objectives, mappings, canonical concepts | the same model serves any framework (IB, Cambridge, SEP Secundaria, SEP EMS, MEN proven on fixtures); framework vocabulary is configuration (`FrameworkProfile`), never a core type |
+| Official vs teaching structure | not addressed | both use the same structure; ownership (`academic_organizations.source_type`) says which is official |
+| Section E gap "no crosswalk table" | listed as a gap | clarified: no curriculum-to-curriculum mapping is wanted; curricula align through shared canonical concepts |
+| Mastery | owned by the Learner State Authority | restated as a rule: mastery of a node, topic, unit, subject or curriculum is derived on read, never stored |
+| Student state | longitudinal | proven invariant to a change of curriculum for canonically linked concepts |
+| Assessment objective | not named | an assessment-framework dimension (component definition, item tag, slot dimension); not an expectation, concept or skill |
+
+No original decision is contradicted. Schema: no change. B1: `B1_STILL_VALID`. B2: `B2_GO_REMAINS_VALID`.
+
+```text
+B0_UNIVERSAL_CURRICULUM_DELTA_PASS
+NO_SCHEMA_CHANGE
+```

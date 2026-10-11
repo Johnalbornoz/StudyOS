@@ -932,3 +932,12 @@ Nothing was pushed.
 2. Confirm the hosted value of `CANONICAL_ENGINE_V1_ENABLED` before any runtime cutover decision in B2.
 
 Neither prevents B2 development. For awareness, not a condition: `remediation/t1-micro-delta` has moved past `091e91d` again since B1-D; that later work is not in this branch.
+
+---
+
+## B0-U Note (2026-10-10)
+
+The Universal Curriculum & Assessment delta (`docs/audits/B0_UNIVERSAL_CURRICULUM_ASSESSMENT_DELTA.md`) re-examined
+every B1 contract against five curriculum systems and found `B1_STILL_VALID`. No B1 source file, contract,
+migration or attempt semantic was changed. Two pure modules were added beside `curriculum-scope.ts`
+(`curriculum-framework.ts`, `cross-curriculum.ts`); they only read `CurriculumScope`. `FOUNDATION_PASS` stands.
