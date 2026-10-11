@@ -9,6 +9,9 @@
  *   Students     institution roster; add by email (an institution student is enrolled directly,
  *                anyone else is invited and must accept), enroll in another class, move, remove.
  *                A Student is never created here; learner history is never touched.
+ *   Bulk         the same two single adds (teacher invitation, student add) over a list of emails;
+ *                a relation that was declined, ended, rejected, revoked or suspended is never
+ *                re-opened in bulk (it is reported, and stays a deliberate single action).
  *   Coordinators reactivate a removed coordinator (the last-coordinator rule stays in removal)
  *   Setup        progress of the first-time setup (grades, curriculum, classes, teachers, students)
  *
@@ -23,6 +26,7 @@ import { notifyUser } from '@/lib/notifications/role-notifications.service';
 import { assignClassCurriculum, compatibleCurriculaForClass } from './curriculum-management.service';
 import { endClassEnrollment, getInstitutionById, inviteInstitutionAdmin, isActiveCanonicalSubject } from '@/services/institution.service';
 import { inviteToClassAndNotify } from './class-invitations';
+import { normalizeEmailList } from './email-list';
 
 export class InstitutionOpsError extends Error {
   constructor(
@@ -391,19 +395,27 @@ async function teacherMembership(institutionId: string, membershipId: string) {
   return m;
 }
 
+/** The ACTIVE account holding an ACTIVE TEACHER role for this email (the only accounts an invitation can reach). */
+async function teacherAccountByEmail(email: string): Promise<{ id: string } | undefined> {
+  return (await db.query(
+    `SELECT u.id FROM users u JOIN user_roles r ON r.user_id = u.id AND r.role = 'TEACHER' AND r.status = 'ACTIVE'
+      WHERE lower(u.email) = lower($1) AND u.status = 'ACTIVE' LIMIT 1`,
+    [email.trim()]
+  )).rows[0];
+}
+async function teacherRelation(institutionId: string, userId: string): Promise<{ id: string; status: TeacherStatus } | undefined> {
+  return (await db.query(`SELECT id, status FROM institution_memberships WHERE institution_id = $1 AND user_id = $2 AND membership_role = 'TEACHER'`, [institutionId, userId])).rows[0];
+}
+
 /**
  * Invite an EXISTING teacher account (by email) to the institution: INVITED until the teacher
  * accepts (-> APPROVED). A pending self-request from that teacher is simply approved. Nobody is
  * created here: an email without a teacher account is NO_TEACHER_ACCOUNT (the person signs up first).
  */
 export async function inviteTeacher(institutionId: string, email: string, actorUserId: string): Promise<{ membershipId: string; status: TeacherStatus }> {
-  const user = (await db.query(
-    `SELECT u.id FROM users u JOIN user_roles r ON r.user_id = u.id AND r.role = 'TEACHER' AND r.status = 'ACTIVE'
-      WHERE lower(u.email) = lower($1) AND u.status = 'ACTIVE' LIMIT 1`,
-    [email.trim()]
-  )).rows[0];
+  const user = await teacherAccountByEmail(email);
   if (!user) throw new InstitutionOpsError('NO_TEACHER_ACCOUNT');
-  const existing = (await db.query(`SELECT id, status FROM institution_memberships WHERE institution_id = $1 AND user_id = $2 AND membership_role = 'TEACHER'`, [institutionId, user.id])).rows[0];
+  const existing = await teacherRelation(institutionId, user.id);
   if (existing?.status === 'APPROVED') throw new InstitutionOpsError('ALREADY_MEMBER');
   if (existing?.status === 'INVITED') return { membershipId: existing.id, status: 'INVITED' };
   let membershipId: string;
@@ -459,6 +471,48 @@ export async function listMyTeacherInvitations(userId: string) {
     [userId]
   );
   return r.rows.map((x: any) => ({ membershipId: x.id, institutionId: x.institution_id, institutionName: x.institution_name, invitedAt: iso(x.invited_at) }));
+}
+
+export type BulkTeacherOutcome = 'INVITED' | 'ALREADY_INVITED' | 'ALREADY_MEMBER' | 'PENDING_REQUEST' | 'NEEDS_REVIEW' | 'NO_TEACHER_ACCOUNT' | 'INVALID_EMAIL' | 'FAILED';
+export interface BulkResult<O extends string> {
+  results: Array<{ email: string; outcome: O }>;
+  summary: Partial<Record<O, number>>;
+}
+function bulkResult<O extends string>(results: Array<{ email: string; outcome: O }>): BulkResult<O> {
+  const summary: Partial<Record<O, number>> = {};
+  for (const r of results) summary[r.outcome] = (summary[r.outcome] ?? 0) + 1;
+  return { results, summary };
+}
+
+/**
+ * Invite a LIST of existing teacher accounts: `inviteTeacher`, once per address, and only for an
+ * account with NO relation to this institution yet. Any existing relation is reported and left
+ * exactly as it is -- a pending request is decided in Requests; a rejected, revoked or suspended
+ * one is never re-opened by a list. One address failing never stops the others.
+ */
+export async function bulkInviteTeachers(institutionId: string, entries: readonly string[], actorUserId: string): Promise<BulkResult<BulkTeacherOutcome>> {
+  const { emails, invalid } = normalizeEmailList(entries);
+  const results: Array<{ email: string; outcome: BulkTeacherOutcome }> = invalid.map((email) => ({ email, outcome: 'INVALID_EMAIL' }));
+  for (const email of emails) {
+    let outcome: BulkTeacherOutcome;
+    try {
+      const user = await teacherAccountByEmail(email);
+      const existing = user ? await teacherRelation(institutionId, user.id) : undefined;
+      if (!user) outcome = 'NO_TEACHER_ACCOUNT';
+      else if (existing) outcome = existing.status === 'APPROVED' ? 'ALREADY_MEMBER' : existing.status === 'INVITED' ? 'ALREADY_INVITED' : existing.status === 'PENDING' ? 'PENDING_REQUEST' : 'NEEDS_REVIEW';
+      else outcome = (await inviteTeacher(institutionId, email, actorUserId)).status === 'INVITED' ? 'INVITED' : 'ALREADY_MEMBER';
+    } catch (error) {
+      if (error instanceof InstitutionOpsError && (error.code === 'NO_TEACHER_ACCOUNT' || error.code === 'ALREADY_MEMBER')) outcome = error.code;
+      else {
+        console.error('[institution] bulk teacher invite failed for one address', (error as Error)?.message);
+        outcome = 'FAILED';
+      }
+    }
+    results.push({ email, outcome });
+  }
+  const out = bulkResult(results);
+  await audit(institutionId, actorUserId, 'INSTITUTION', institutionId, 'TEACHERS_BULK_INVITED', {}, { submitted: results.length, ...out.summary });
+  return out;
 }
 
 /** Pause the institutional relation: no class access while SUSPENDED; assignments are KEPT for reactivation. */
@@ -532,6 +586,16 @@ async function enrollActive(classId: string, studentId: string, actorUserId: str
   return r.rows[0].id as string;
 }
 
+async function studentByEmail(email: string): Promise<{ id: string } | undefined> {
+  return (await db.query(
+    `SELECT s.id FROM students s JOIN users u ON u.id = s.user_id WHERE (lower(u.email) = lower($1) OR lower(s.email) = lower($1)) AND u.status = 'ACTIVE' ORDER BY s.created_at LIMIT 1`,
+    [email.trim()]
+  )).rows[0];
+}
+async function enrollmentOf(classId: string, studentId: string): Promise<{ status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'ENDED' } | undefined> {
+  return (await db.query(`SELECT status FROM class_enrollments WHERE class_id = $1 AND student_id = $2`, [classId, studentId])).rows[0];
+}
+
 /**
  * "Añadir estudiante" by email to a class. Never creates a Student:
  *   - a student of THIS institution already -> enrolled ACTIVE directly in the class;
@@ -540,12 +604,9 @@ async function enrollActive(classId: string, studentId: string, actorUserId: str
  */
 export async function addStudentToClass(institutionId: string, classId: string, email: string, actorUserId: string): Promise<{ outcome: 'ENROLLED' | 'INVITED'; studentId: string | null }> {
   const klass = await activeClassOf(institutionId, classId);
-  const student = (await db.query(
-    `SELECT s.id FROM students s JOIN users u ON u.id = s.user_id WHERE (lower(u.email) = lower($1) OR lower(s.email) = lower($1)) AND u.status = 'ACTIVE' ORDER BY s.created_at LIMIT 1`,
-    [email.trim()]
-  )).rows[0];
+  const student = await studentByEmail(email);
   if (!student) throw new InstitutionOpsError('NO_STUDENT_ACCOUNT');
-  const existing = (await db.query(`SELECT status FROM class_enrollments WHERE class_id = $1 AND student_id = $2`, [classId, student.id])).rows[0];
+  const existing = await enrollmentOf(classId, student.id);
   if (existing?.status === 'ACTIVE' || existing?.status === 'PENDING') throw new InstitutionOpsError('ALREADY_ENROLLED');
   if (await isInstitutionStudent(institutionId, student.id)) {
     const enrollmentId = await enrollActive(classId, student.id, actorUserId);
@@ -557,6 +618,45 @@ export async function addStudentToClass(institutionId: string, classId: string, 
   if (invited.outcome !== 'INVITED') throw new InstitutionOpsError('ALREADY_ENROLLED');
   await audit(institutionId, actorUserId, 'ENROLLMENT', invited.enrollmentId, 'STUDENT_INVITED', {}, { classId, studentId: student.id });
   return { outcome: 'INVITED', studentId: student.id };
+}
+
+export type BulkStudentOutcome = 'ENROLLED' | 'INVITED' | 'ALREADY_ENROLLED' | 'PREVIOUSLY_DECLINED' | 'PREVIOUSLY_ENDED' | 'NO_STUDENT_ACCOUNT' | 'INVALID_EMAIL' | 'FAILED';
+
+/**
+ * "Añadir estudiantes" from a LIST of emails to ONE class of this institution: `addStudentToClass`,
+ * once per address, so every rule of the single add holds (existing accounts only, an institution
+ * student is enrolled, anyone else is invited and must accept, each one audited).
+ *
+ * One rule is stricter than the single add: a student whose enrollment in THIS class was DECLINED
+ * (they said no) or ENDED (they left, or were removed) is reported and left untouched. A list never
+ * re-opens a relation that somebody closed. One address failing never stops the others.
+ */
+export async function bulkAddStudentsToClass(institutionId: string, classId: string, entries: readonly string[], actorUserId: string): Promise<BulkResult<BulkStudentOutcome>> {
+  await activeClassOf(institutionId, classId); // another institution's class is NOT_FOUND for the whole request
+  const { emails, invalid } = normalizeEmailList(entries);
+  const results: Array<{ email: string; outcome: BulkStudentOutcome }> = invalid.map((email) => ({ email, outcome: 'INVALID_EMAIL' }));
+  for (const email of emails) {
+    let outcome: BulkStudentOutcome;
+    try {
+      const student = await studentByEmail(email);
+      const existing = student ? await enrollmentOf(classId, student.id) : undefined;
+      if (!student) outcome = 'NO_STUDENT_ACCOUNT';
+      else if (existing?.status === 'DECLINED') outcome = 'PREVIOUSLY_DECLINED';
+      else if (existing?.status === 'ENDED') outcome = 'PREVIOUSLY_ENDED';
+      else if (existing) outcome = 'ALREADY_ENROLLED';
+      else outcome = (await addStudentToClass(institutionId, classId, email, actorUserId)).outcome;
+    } catch (error) {
+      if (error instanceof InstitutionOpsError && (error.code === 'NO_STUDENT_ACCOUNT' || error.code === 'ALREADY_ENROLLED')) outcome = error.code;
+      else {
+        console.error('[institution] bulk student add failed for one address', (error as Error)?.message);
+        outcome = 'FAILED';
+      }
+    }
+    results.push({ email, outcome });
+  }
+  const out = bulkResult(results);
+  await audit(institutionId, actorUserId, 'CLASS', classId, 'STUDENTS_BULK_ADDED', {}, { submitted: results.length, ...out.summary });
+  return out;
 }
 
 /** Enroll an institution student (ACTIVE elsewhere in this institution) in one more class. */

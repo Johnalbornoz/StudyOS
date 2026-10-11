@@ -6,6 +6,8 @@ import { listInstitutionStudents } from '@/lib/institution/institution-operation
 import { listInstitutionClassesWithStaff } from '@/services/institution.service';
 import { InstitutionSubNav } from '../InstitutionSubNav';
 import { AddStudentForm, RowMenu, type MenuItem } from '../OpsActions';
+import { BulkAddStudentsForm } from '../BulkAddForms';
+import { rosterMessages } from '@/lib/i18n/institution-roster-messages';
 
 /**
  * Track A -- Students: the institution roster (enrolled or invited in a class of THIS
@@ -15,7 +17,7 @@ import { AddStudentForm, RowMenu, type MenuItem } from '../OpsActions';
  */
 export default async function InstitutionStudentsPage({ params }: { params: Promise<{ institutionId: string }> }) {
   const { institutionId } = await params;
-  const { t, tr, overview } = await institutionPageContext(institutionId);
+  const { t, tr, overview, locale } = await institutionPageContext(institutionId);
   const [students, classes] = await Promise.all([listInstitutionStudents(institutionId), listInstitutionClassesWithStaff(institutionId)]);
   const l = opsLabels(tr);
   const base = `/dashboard/institution/${institutionId}`;
@@ -31,6 +33,11 @@ export default async function InstitutionStudentsPage({ params }: { params: Prom
       <section className="card ta-card">
         <AddStudentForm institutionId={institutionId} classes={classOptions} l={l} />
       </section>
+      {classOptions.length > 0 && (
+        <section className="card ta-card">
+          <BulkAddStudentsForm institutionId={institutionId} classes={classOptions} l={rosterMessages(locale)} />
+        </section>
+      )}
       <p className="ta-msg">{l['iops.students.historyNote']}</p>
 
       {students.length === 0 ? (

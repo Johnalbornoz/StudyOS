@@ -8,6 +8,7 @@
  * overwritten by the Student's own declaration).
  */
 import type { InstitutionalAcademicContext, ContextConflict } from '@/lib/exam-journey/institutional-context';
+import { StudentClassMemberships } from './StudentClassMemberships';
 
 type L = Record<string, string>;
 const fill = (s: string | undefined, vars: Record<string, string | number>) => Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), s ?? '');
@@ -59,6 +60,8 @@ export function InstitutionalContextCard({ context, labels: l }: { context: Inst
         );
       })}
       {incomplete ? <p className="ex-status-body jx-notice" role="note">{l['jx.inst.incomplete']}</p> : null}
+      {/* L9 IN-3: the Student's own classes, each with "leave" (self-loading; nothing until loaded). */}
+      <StudentClassMemberships />
       {context.conflicts.length > 0 ? (
         <div className="jx-conflict" role="note">
           <p className="ex-status-body"><strong>{l['jx.inst.conflict.title']}</strong></p>
