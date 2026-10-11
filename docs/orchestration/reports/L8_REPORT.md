@@ -397,3 +397,107 @@ Converge L10 first, then this branch. Before Stage certification, run on a writa
 ## NEXT SAFE ACTION
 
 Orchestrator reviews the two new commits.
+
+---
+
+# L8 FINAL FAIL-CLOSED PATCH — 2026-10-11 (appended run)
+
+Follows the Orchestrator instruction "L8 final fail-closed patch" on `a93b809`.
+
+## LANE
+
+`L8_TEACHER` — worktree `/Users/jalbornoz/PROYECTOS/studyos-l8-teacher`, branch `feat/l8-teacher-te1-te2` (local only).
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+| Gate | Result |
+|---|---|
+| SKILL_SUBJECT_SCOPE | PASS |
+| COMPETENCY_SUBJECT_SCOPE | PASS |
+| L8_SIDE_CR_L8_01 | CLOSED on the L8 side; CR-L8-01 itself OPEN until L2's patch |
+| L8_READY_FOR_FINAL_CONVERGENCE | YES |
+
+Unit level only. The lane's results for review, not a certification.
+
+## BASE SHA
+
+`a93b809`.
+
+## FINAL SHA
+
+The commit on `feat/l8-teacher-te1-te2` whose parent is `a93b809`. Run `git rev-parse feat/l8-teacher-te1-te2`.
+
+## FILES CHANGED
+
+- `src/app/api/teacher/interventions/route.ts` — SKILL / COMPETENCY targets refused
+- `src/lib/teacher/concept-assignment-scope.ts` — `checkUnscopedTargetAssignment`; the authorization half shared with the concept check
+- `tests/unit/l8r1-teacher-exam-practice.test.ts` — 11 new tests
+- `docs/orchestration/status/L8_STATUS.md`, `docs/orchestration/reports/L8_REPORT.md`
+
+No schema, mapping, shared guard or UI change.
+
+## LOCKS USED
+
+NONE.
+
+## TESTS
+
+| Command | Result |
+|---|---|
+| `vitest run tests/unit/l8r1-teacher-exam-practice.test.ts` | 46 passed |
+| Same file with the route restored to `a93b809` | 3 failed: unscoped SKILL accepted, unscoped COMPETENCY accepted, and the route source guard. Route restored |
+| `vitest run tests/unit/f11b-teacher-intervention-api-routes-security.test.ts` | passed, unedited in this run |
+| Full suite (no database) | 530 files, 9,556 tests passed |
+| `npx tsc --noEmit -p .` | exit 0 |
+| `npx next build` | exit 0 |
+| Browser, real database, HTTP E2E | NOT_RUN |
+
+| Required regression | Result |
+|---|---|
+| authorized Teacher + unscoped SKILL | 400 `TARGET_NOT_SUBJECT_SCOPED`, no insert |
+| authorized Teacher + unscoped COMPETENCY | 400 `TARGET_NOT_SUBJECT_SCOPED`, no insert |
+| existing valid Concept target | 200, row inserted |
+| valid Exam Practice target | 200, row inserted, unchanged |
+| learner outside class (SKILL and COMPETENCY) | 403, no insert |
+| Coordinator (SKILL and COMPETENCY) | 403, no insert |
+
+Also: a teacher of another class gets 403, and no skill, competency or concept-link table is read while deciding.
+
+## FINDINGS
+
+### 1. No governed subject relation exists for skills or competencies
+
+`skills` and `competencies` have no subject column (`database/migrations/20260922_1000_f4_learning_architecture_2.sql`). The only relations are `skill_competencies` and `canonical_concept_competencies`, both many-to-many; the second reaches a subject only through whichever concepts happen to be linked, which is the "nearby concept" inference the rule forbids. So there is no deterministic mapping, and no target of either kind can be proven in scope.
+
+### 2. Behaviour
+
+`POST /api/teacher/interventions` with a SKILL or COMPETENCY target:
+
+- actor does not teach the class, or the learner is not ACTIVE in it → `403 FORBIDDEN`;
+- otherwise → `400 TARGET_NOT_SUBJECT_SCOPED`. Nothing is persisted and the target id is never looked up.
+
+In effect every skill and competency assignment over this endpoint is now refused. No UI sent them. When a governed link is added, `checkUnscopedTargetAssignment` is the one place to consult it.
+
+As with the concept and exam rules, the check is at the endpoint. `assignTeacherIntervention` is unchanged, so the F11 certification scripts that call it directly with skill and competency targets (`scripts/operations/f11-integrated-cert-runner.ts`) still succeed. The Student-side execution of already-assigned skill or competency tasks is untouched.
+
+### 3. The fourth target type
+
+`LEARNING_OBJECTIVE` was already refused by the service (`INVALID_TARGET`, it has no execution path). So after this patch the endpoint persists only subject-proven concept targets and in-scope exam-practice targets.
+
+## BLOCKERS
+
+NONE.
+
+## CHANGE_REQUESTS
+
+No new request. CR-L8-01 unchanged: OPEN with L2; L8 side closed.
+
+## MERGE RECOMMENDATION
+
+Converge L10 first, then this branch (L10 `79b7f50` is already an ancestor).
+
+## NEXT SAFE ACTION
+
+Orchestrator reviews the commit.

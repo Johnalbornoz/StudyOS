@@ -370,6 +370,63 @@ describe('POST /api/teacher/interventions -- concept reinforcement, class-subjec
   });
 });
 
+describe('POST /api/teacher/interventions -- skill and competency targets fail closed', () => {
+  const SKILL = '5a5a5a5a-5a5a-4a5a-8a5a-5a5a5a5a5a5a';
+  const COMPETENCY = '6b6b6b6b-6b6b-4b6b-8b6b-6b6b6b6b6b6b';
+  const skill = (classId: string, studentId: string) => ({ classId, studentId, interventionType: 'SKILL_PRACTICE', target: { targetType: 'SKILL', skillId: SKILL } });
+  const competency = (classId: string, studentId: string) => ({ classId, studentId, interventionType: 'COMPETENCY_PRACTICE', target: { targetType: 'COMPETENCY', competencyId: COMPETENCY } });
+
+  it.each([['SKILL', skill], ['COMPETENCY', competency]] as const)('authorized Teacher + unscoped %s => 400 TARGET_NOT_SUBJECT_SCOPED, no insert', async (_kind, body) => {
+    const res = await post(body(CLASS_MATH, ANA));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'TARGET_NOT_SUBJECT_SCOPED' });
+    expect(inserts).toHaveLength(0);
+  });
+
+  it.each([['SKILL', skill], ['COMPETENCY', competency]] as const)('%s: a learner outside the class => 403, no insert', async (_kind, body) => {
+    const res = await post(body(CLASS_MATH, OUTSIDER));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'FORBIDDEN' });
+    expect(inserts).toHaveLength(0);
+  });
+
+  it.each([['SKILL', skill], ['COMPETENCY', competency]] as const)('%s: a Coordinator => 403, no insert', async (_kind, body) => {
+    as(COORDINATOR);
+    const res = await post(body(CLASS_MATH, ANA));
+    expect(res.status).toBe(403);
+    expect(inserts).toHaveLength(0);
+  });
+
+  it('a Teacher of another class => 403 (authorization is decided before the subject rule)', async () => {
+    as(READ_TEACHER);
+    expect((await post(skill(CLASS_MATH, ANA))).status).toBe(403);
+    expect((await post(competency(CLASS_MATH, ANA))).status).toBe(403);
+    expect(inserts).toHaveLength(0);
+  });
+
+  it('nothing is looked up to guess a subject: no skill, competency or concept-link table is read', async () => {
+    await post(skill(CLASS_MATH, ANA));
+    await post(competency(CLASS_MATH, ANA));
+    const sqls = query.mock.calls.map(([sql]) => String(sql)).join('\n');
+    expect(sqls).not.toMatch(/\b(skills|competencies|skill_competencies|canonical_concept_competencies)\b/);
+  });
+
+  it('the other targets are unchanged: a valid concept and a valid exam practice still succeed', async () => {
+    expect((await post({ classId: CLASS_MATH, studentId: ANA, interventionType: 'CONCEPT_REINFORCEMENT', target: { targetType: 'CONCEPT', conceptId: CONCEPT_ANA } })).status).toBe(200);
+    expect((await post(exam(CLASS_MATH, ANA, topicMath))).status).toBe(200);
+    expect(inserts.map((r) => [r[4], r[12]])).toEqual([['CONCEPT', 'CONCEPT_REINFORCEMENT'], ['EXAM', 'EXAM_PRACTICE']]);
+  });
+
+  it('the rule is enforced in the route before the assignment, and consults no mapping', () => {
+    const route = strip(read('src/app/api/teacher/interventions/route.ts'));
+    expect(route.indexOf('checkUnscopedTargetAssignment(')).toBeGreaterThan(-1);
+    expect(route.indexOf('checkUnscopedTargetAssignment(')).toBeLessThan(route.indexOf('assignTeacherIntervention(actor.id'));
+    expect(route).toMatch(/targetType === 'SKILL' \|\| validated\.target\.targetType === 'COMPETENCY'/);
+    const scope = strip(read('src/lib/teacher/concept-assignment-scope.ts'));
+    expect(scope).not.toMatch(/FROM\s+(skills|competencies|skill_competencies|canonical_concept_competencies)/);
+  });
+});
+
 describe('wiring and ownership boundaries', () => {
   it('the exam-practice form is mounted on the class-scoped learner page, fed by the teacher-only read', () => {
     const page = strip(read('src/app/dashboard/teacher/classes/[classId]/students/[studentId]/page.tsx'));

@@ -1,10 +1,10 @@
 LANE: L8_TEACHER
 STATE: READY_FOR_ORCHESTRATOR_REVIEW
-LAST_UPDATE: 2026-10-11T19:31Z
-BASE_SHA: 4fb45b0 (L8); 4ada891 (L8-R1); fb5fe70 (final micro-remediation)
-CURRENT_SHA: the commit on feat/l8-teacher-te1-te2 whose first parent is 26eef17 (merge of L10 79b7f50 into fb5fe70); git rev-parse --short feat/l8-teacher-te1-te2
+LAST_UPDATE: 2026-10-11T19:46Z
+BASE_SHA: 4fb45b0 (L8); 4ada891 (L8-R1); fb5fe70 (final micro-remediation); a93b809 (fail-closed patch)
+CURRENT_SHA: the commit on feat/l8-teacher-te1-te2 whose parent is a93b809 (git rev-parse --short feat/l8-teacher-te1-te2)
 
-CURRENT_PHASE: STOP (final micro-remediation)
+CURRENT_PHASE: STOP (fail-closed patch)
 
 NOW_DOING: NONE -- lane stopped
 
@@ -20,7 +20,7 @@ CURRENT_FINDINGS:
 - The lane branch now contains L10 (merge 26eef17 of 79b7f50): required to compile and test against getTeacherClassExamGaps. Brings L10's files, including its three unapplied migration files; none edited by L8
 - Exam insights read only through getTeacherClassExamGaps; the view no longer shows area / objective totals, exam goals, AICE entries or the family filter (withheld by the entry point)
 - POST /api/teacher/interventions: a concept must belong to the subject of the class it is assigned through (400 CONCEPT_NOT_IN_CLASS_SUBJECT); fails closed for unmapped concepts and subject-less classes
-- SKILL / COMPETENCY targets on the same endpoint have no subject bound; unchanged, no UI sends them
+- SKILL / COMPETENCY targets have no governed subject relation (no subject column; only many-to-many links through concepts): the endpoint now refuses them, 400 TARGET_NOT_SUBJECT_SCOPED for an authorized teacher/class/learner, 403 otherwise
 - CR-L8-01: L8 side closed; overall OPEN until L2's subject-aware aggregate patch
 
 FILES_READ: control plane docs; L3R1 and L4R1 reports; src/app/dashboard/teacher/**; src/app/api/teacher/{exam-insights,interventions}; src/lib/teacher/**; src/lib/authorization/index.ts; src/lib/exam-core/{exam-gaps.service,route-auth}.ts; src/lib/i18n/*; related tests
@@ -46,10 +46,9 @@ FILES_MODIFIED:
 - docs/orchestration/status/L8_STATUS.md, docs/orchestration/reports/L8_REPORT.md
 
 TESTS:
-- vitest tests/unit/l8r1-teacher-exam-practice.test.ts: 36 passed; with the interventions route restored to fb5fe70, 3 failed (the subject-scope cases)
+- vitest tests/unit/l8r1-teacher-exam-practice.test.ts: 46 passed; with the interventions route restored to a93b809, 3 failed (unscoped SKILL and COMPETENCY accepted; source guard)
 - vitest tests/unit/l8-teacher-te1-te2.test.ts: 23 passed
-- L10 guards on the merged branch (l10-cr-l8-01, l10-r2-teacher-whole-learner-scope, aice-pisa-security): passed, unedited
-- vitest full suite (no database): 530 files, 9,546 tests passed
+- vitest full suite (no database): 530 files, 9,556 tests passed
 - tsc --noEmit: exit 0
 - next build: exit 0
 - Browser / real database / HTTP E2E: NOT_RUN
@@ -67,6 +66,6 @@ NEXT: Orchestrator review of the merge commit and the remediation commit
 
 PROGRESS:
 - L8_SHARED_ENTRY_POINT: implemented, tests pass
-- TEACHER_INTERVENTION_SUBJECT_SCOPE: implemented for concept and exam targets, tests pass
+- TEACHER_INTERVENTION_SUBJECT_SCOPE: concept and exam targets scoped; skill and competency targets refused (fail closed); tests pass
 - L8_SIDE_CR_L8_01: closed on the L8 side; CR-L8-01 OPEN (L2)
 - 0 pushed, 0 merged into any integration branch

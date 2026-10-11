@@ -18,7 +18,7 @@ import {
   TeacherInterventionInvalidTargetError,
   TeacherInterventionExamProfileMismatchError,
 } from '@/lib/teacher/intervention.service';
-import { checkConceptAssignmentScope } from '@/lib/teacher/concept-assignment-scope';
+import { checkConceptAssignmentScope, checkUnscopedTargetAssignment } from '@/lib/teacher/concept-assignment-scope';
 import { findTeacherExamPracticeOption, TeacherExamPracticeAccessDeniedError } from '@/lib/teacher/exam-practice-options.service';
 import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getTeacherL8Messages } from '@/lib/i18n/teacher-l8-messages';
@@ -85,6 +85,18 @@ async function handlePOST(request: NextRequest) {
       return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
     }
     if (scope !== 'IN_SCOPE') return NextResponse.json({ error: 'CONCEPT_NOT_IN_CLASS_SUBJECT' }, { status: 400 });
+  }
+
+  // L8 (fail-closed patch): every Teacher academic assignment must be provably scoped to the class subject.
+  // A SKILL or COMPETENCY target has no governed relation to a canonical subject, so it is refused for an
+  // otherwise authorized teacher / class / learner (400); an unauthorized actor still gets 403.
+  if (validated.target.targetType === 'SKILL' || validated.target.targetType === 'COMPETENCY') {
+    const decision = await checkUnscopedTargetAssignment(actor.id, validated.classId, validated.studentId);
+    if (decision === 'NOT_TEACHER_OF_LEARNER_IN_CLASS') {
+      logPilotEvent('authorization_denied', { route: '/api/teacher/interventions', actorUserId: actor.id });
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+    return NextResponse.json({ error: 'TARGET_NOT_SUBJECT_SCOPED' }, { status: 400 });
   }
 
   // L8-R1: an EXAM target must be one of the exam-practice options of THIS learner in THIS class (the learner's
