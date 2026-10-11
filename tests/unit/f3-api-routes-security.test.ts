@@ -12,6 +12,9 @@ vi.mock('@/lib/auth', () => ({ verifyAuth: () => verifyAuthMock() }));
 const getOrCreateCanonicalUserMock = vi.fn();
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
 
+// L4-R1: the reactivate route now also reads the suspension / payment history (self-reactivation.ts).
+vi.mock('@/lib/db', () => ({ db: { query: vi.fn().mockResolvedValue({ rows: [] }) } }));
+
 const canAccessLearnerMock = vi.fn();
 vi.mock('@/lib/authorization', () => ({ canAccessLearner: (...a: any[]) => canAccessLearnerMock(...a) }));
 
@@ -109,7 +112,7 @@ describe('SUSPENDED LEARNER TRIES PAID EXECUTION', () => {
 describe('CLIENT CLAIMS ACTIVE STATUS / UNSUPPORTED TRANSITION', () => {
   it('reactivate ignores any client-supplied status claim -- only studentId is accepted by the schema', async () => {
     canUseCapabilityMock.mockResolvedValue(true);
-    getSubscriptionMock.mockResolvedValue({ id: 'sub-1', studentId: '11111111-1111-4111-8111-111111111111', status: 'suspended', plan: 'MONTHLY', payerUserId: 'actor-1', currentPeriodEnd: null, manuallySetByAdmin: false });
+    getSubscriptionMock.mockResolvedValue({ id: 'sub-1', studentId: '11111111-1111-4111-8111-111111111111', status: 'suspended', plan: 'MONTHLY', payerUserId: 'actor-1', currentPeriodEnd: '2099-01-01T00:00:00.000Z', manuallySetByAdmin: false });
     await reactivatePOST(jsonReq({ studentId: '11111111-1111-4111-8111-111111111111', status: 'active', subscriptionStatus: 'ACTIVE' } as any));
     // only ever transitions to the state-machine-derived next status, never a client-supplied one
     expect(transitionSubscriptionStatusMock).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111', 'reactivated');
@@ -125,7 +128,7 @@ describe('CLIENT CLAIMS ACTIVE STATUS / UNSUPPORTED TRANSITION', () => {
 
   it('an invalid transition rejected by the state machine surfaces as a controlled 409, never a 500', async () => {
     canUseCapabilityMock.mockResolvedValue(true);
-    getSubscriptionMock.mockResolvedValue({ id: 'sub-1', studentId: '11111111-1111-4111-8111-111111111111', status: 'suspended', plan: 'MONTHLY', payerUserId: 'actor-1', currentPeriodEnd: null, manuallySetByAdmin: false });
+    getSubscriptionMock.mockResolvedValue({ id: 'sub-1', studentId: '11111111-1111-4111-8111-111111111111', status: 'suspended', plan: 'MONTHLY', payerUserId: 'actor-1', currentPeriodEnd: '2099-01-01T00:00:00.000Z', manuallySetByAdmin: false });
     transitionSubscriptionStatusMock.mockRejectedValue(new FakeInvalidTransitionError('bad transition'));
     const res: any = await reactivatePOST(jsonReq({ studentId: '11111111-1111-4111-8111-111111111111' }));
     expect(res.status).toBe(409);

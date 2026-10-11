@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { verifyAuth, verifyStudentAccess, verifySubjectAccess } from '@/lib/auth';
 import { getNextOccurrence, getUpcomingForStudent } from '@/services/assessment.service';
 
 export async function GET(request: NextRequest) {
@@ -23,6 +23,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (subjectId) {
+      // L4-R1: the subject must belong to THIS student. A foreign or nonexistent id is the
+      // same 404, decided before getNextOccurrence (which reads AND may roll a recurring
+      // occurrence forward for whatever subject id it is given).
+      if (!(await verifySubjectAccess(studentId, subjectId))) {
+        return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+      }
       const occurrence = await getNextOccurrence(subjectId);
       return NextResponse.json({ success: true, data: { occurrence } });
     }

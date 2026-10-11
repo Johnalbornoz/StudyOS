@@ -5,7 +5,7 @@
  */
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminEmail } from '@/services/admin.service';
+import { isAllowlistedAdminUser } from '@/lib/admin/admin-identity';
 import { getCompetencyState, explainCompetencyState } from '@/lib/learner-state/competency-state.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -13,8 +13,7 @@ async function handleGET(request: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const user = await currentUser();
-  const email = user?.emailAddresses?.[0]?.emailAddress ?? null;
-  if (!isAdminEmail(email)) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  if (!isAllowlistedAdminUser(user)) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
   const studentId = searchParams.get('studentId');

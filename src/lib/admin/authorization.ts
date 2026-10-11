@@ -23,12 +23,14 @@
 import { currentUser } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { isAdminEmail } from '@/services/admin.service';
+import { resolveVerifiedPrimaryEmail } from './admin-identity';
 import { recordAdminAction } from './audit';
 import { getOrCreateCanonicalUser, hasRole, type CanonicalUser } from '@/lib/identity';
 
 /**
  * Grants STUDYUS_ADMIN to an allowlisted account that does not hold it
- * yet (no-op for everyone else). Exported so the dashboard layout can
+ * yet (no-op for everyone else). `email` MUST be the caller's verified
+ * primary email (`resolveVerifiedPrimaryEmail`), never another address. Exported so the dashboard layout can
  * resolve the Admin workspace before choosing a context -- otherwise an
  * admin-only account would be sent to role selection and forced to
  * become a Student first (A01-UX-02).
@@ -78,7 +80,8 @@ export interface StudyUSAdminContext {
 export async function requireStudyUSAdmin(clerkUserId: string | null | undefined): Promise<StudyUSAdminContext | null> {
   if (!clerkUserId) return null;
   const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress ?? null;
+  // L4-R1: only the VERIFIED PRIMARY email may authorize (never emailAddresses[0], never a secondary).
+  const email = resolveVerifiedPrimaryEmail(user);
 
   const actor = await getOrCreateCanonicalUser(clerkUserId, email);
   if (actor.status !== 'ACTIVE') return null;

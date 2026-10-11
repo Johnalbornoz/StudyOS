@@ -8,7 +8,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { isAdminEmail } from '@/services/admin.service';
+import { isAllowlistedAdminUser, resolveVerifiedPrimaryEmail } from '@/lib/admin/admin-identity';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { decideConceptProposal, listConceptProposals } from '@/lib/exam-core/learning-bridge.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -17,8 +17,8 @@ async function requireAdmin() {
   const { userId } = await auth();
   if (!userId) return { ok: false as const, status: 401, error: 'UNAUTHORIZED' };
   const user = await currentUser();
-  const email = user?.emailAddresses?.[0]?.emailAddress ?? null;
-  if (!isAdminEmail(email)) return { ok: false as const, status: 403, error: 'FORBIDDEN' };
+  const email = resolveVerifiedPrimaryEmail(user);
+  if (!isAllowlistedAdminUser(user)) return { ok: false as const, status: 403, error: 'FORBIDDEN' };
   const actor = await getOrCreateCanonicalUser(userId, email);
   return { ok: true as const, actorId: actor.id };
 }

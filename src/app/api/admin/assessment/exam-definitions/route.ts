@@ -7,7 +7,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { isAdminEmail } from '@/services/admin.service';
+import { isAllowlistedAdminUser } from '@/lib/admin/admin-identity';
 import { createExamDefinition } from '@/lib/assessment/exam-definition.service';
 import { db } from '@/lib/db';
 import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
@@ -16,8 +16,7 @@ async function requireAdmin() {
   const { userId } = await auth();
   if (!userId) return { ok: false as const, status: 401, error: 'UNAUTHORIZED' };
   const user = await currentUser();
-  const email = user?.emailAddresses?.[0]?.emailAddress ?? null;
-  if (!isAdminEmail(email)) return { ok: false as const, status: 403, error: 'FORBIDDEN' };
+  if (!isAllowlistedAdminUser(user)) return { ok: false as const, status: 403, error: 'FORBIDDEN' };
   return { ok: true as const };
 }
 

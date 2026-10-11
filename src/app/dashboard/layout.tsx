@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { currentUser } from '@clerk/nextjs/server';
 import { auth } from '@clerk/nextjs/server';
-import { isAdminEmail } from '@/services/admin.service';
+import { isAllowlistedAdminUser, resolveVerifiedPrimaryEmail } from '@/lib/admin/admin-identity';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getLearningDaysThisWeek } from '@/services/gamification.service';
 import { getOrCreateStudentId } from '@/lib/auth';
@@ -101,7 +101,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     // workspaces are resolved, so an admin-only account reaches the
     // console directly instead of being sent to role selection (and
     // having to become a Student first). No-op for every other account.
-    await bootstrapStudyUSAdminIfEligible(canonicalUser, email);
+    await bootstrapStudyUSAdminIfEligible(canonicalUser, resolveVerifiedPrimaryEmail(user));
 
     const [available, storedActive] = await Promise.all([
       resolveAvailableWorkspaces(canonicalUser.id),
@@ -196,8 +196,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const t = getMessages(locale);
   const displayName = user?.firstName || (activeWorkspace === 'ADMIN' ? t['workspace.admin'] : 'Student');
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
-  const isAdmin = isAdminEmail(email);
+  const isAdmin = isAllowlistedAdminUser(user);
 
   const rawGroups =
     activeWorkspace === 'PARENT' ? buildParentNav({ notifCount })
