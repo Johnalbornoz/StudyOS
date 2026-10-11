@@ -37,7 +37,7 @@ import { parseExamVerticalConfig } from '@/lib/exam-core/vertical-config';
 import { BOOTSTRAP_ASSESSMENT_NODE_TYPE, ensureAcademicSubject, ensureAssessmentSectionNode, ensureLearningObjective, ensureStructureVersion } from '@/lib/curriculum/bootstrap.service';
 
 const inserts = (table: string) => calls.filter((c) => new RegExp(`^\\s*INSERT INTO ${table}\\b`).test(c.sql));
-const lookups = (table: string) => calls.filter((c) => new RegExp(`^\\s*SELECT (id|1) FROM ${table}\\b`).test(c.sql));
+const lookups = (table: string) => calls.filter((c) => new RegExp(`^\\s*SELECT ((lo\\.)?id|1) FROM ${table}\\b`).test(c.sql));
 
 beforeEach(() => {
   calls = [];
@@ -108,7 +108,8 @@ describe('B1 curriculum bootstrap -- real vertical configurations still material
       [/SELECT id FROM academic_subjects WHERE programme_id = \$1/, () => [{ id: 'subj-existing' }]],
       [/SELECT id FROM structure_versions WHERE academic_subject_id = \$1 AND version_label = \$2/, () => [{ id: 'sv-existing' }]],
       [/SELECT id FROM structure_nodes WHERE structure_version_id = \$1 AND code = \$2/, () => [{ id: 'node-existing' }]],
-      [/SELECT id FROM learning_objectives WHERE structure_node_id = \$1 AND code = \$2/, (p) => [{ id: `lo-existing-${p[1]}` }]],
+      // CURR-PAA: an objective is identified by its code within the structure version (it may have been moved under a Domain node).
+      [/SELECT lo\.id FROM learning_objectives lo JOIN structure_nodes n ON n\.id = lo\.structure_node_id\s+WHERE lo\.code = \$2 AND n\.structure_version_id = \(SELECT structure_version_id FROM structure_nodes WHERE id = \$1\)/, (p) => [{ id: `lo-existing-${p[1]}` }]],
     ];
     const result = await applyExamVerticalConfig(SABER11_MATH_V2, { write: false });
     for (const table of ['academic_organizations', 'academic_programmes', 'academic_qualifications', 'academic_subjects', 'structure_versions', 'structure_nodes', 'learning_objectives']) expect(inserts(table), table).toHaveLength(0);
