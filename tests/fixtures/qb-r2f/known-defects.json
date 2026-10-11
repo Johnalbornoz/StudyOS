@@ -1,0 +1,2192 @@
+{
+ "about": "QB-R2F regression fixtures: COPIES of provider responses and candidates recorded in QB-R2D and QB-R2E, taken read-only from the stored artifacts. Each entry says which run and unit it comes from. Nothing here was edited. They are fixtures, not evidence: the runs they come from stand as scored.",
+ "source": {
+  "qbR2e": {
+   "file": "docs/exams/question-bank/pilots/qb-r2e/recorded-live-responses.json",
+   "runId": "qb-r2e-20261011190328",
+   "freezeCommitSha": "9fe68d01d8649548f453873acec633f4a3dead5e",
+   "shape": "provider wire response, generator version 2/3 schema"
+  },
+  "qbR2d": {
+   "file": "docs/exams/question-bank/pilots/qb-r2d/generated-batch.json",
+   "runId": "qb-r2d-20261011180507",
+   "shape": "candidate as assembled by generator version 1, with its stimulus"
+  }
+ },
+ "qbR2eRawResponses": {
+  "01.rate-comparison.paa#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Una tienda ofrece dos paquetes de café. El paquete 1 cuesta 24 euros y contiene 84 porciones. El paquete 2 cuesta 35 euros y contiene 105 porciones. ¿Qué opción presenta correctamente la comparación del número de porciones por euro y cuál conviene más?\",\"contextKind\":\"PERSONAL\",\"contextDescription\":\"Una persona compara dos ofertas de café antes de comprar.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":24},{\"symbol\":\"q1\",\"value\":84},{\"symbol\":\"p2\",\"value\":35},{\"symbol\":\"q2\",\"value\":105}],\"responseKind\":\"SELECTED\",\"options\":[{\"id\":\"A\",\"text\":\"Paquete 1: 3,5 porciones por euro; conviene el paquete 1 por 0,5 porciones por euro.\"},{\"id\":\"B\",\"text\":\"Paquete 2: 3 porciones por euro; conviene el paquete 2 por 0,5 porciones por euro.\"},{\"id\":\"C\",\"text\":\"Paquete 2: 0,29 porciones por euro; conviene el paquete 2 por 0,21 porciones por euro.\"},{\"id\":\"D\",\"text\":\"Paquete 1: 21 porciones más; conviene el paquete 1 por 0,5 porciones por euro.\"}],\"answerKey\":\"A\",\"distractors\":[{\"optionId\":\"B\",\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Compara principalmente la cantidad total de porciones y elige el paquete con más porciones, sin usar adecuadamente una tasa común.\"},{\"optionId\":\"C\",\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Divide el precio entre las porciones en vez de comparar las porciones obtenidas por cada euro.\"},{\"optionId\":\"D\",\"misconceptionModelId\":\"difference\",\"rationale\":\"Usa la diferencia entre las cantidades totales como si fuera la medida pertinente para decidir qué oferta conviene.\"}],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[],\"finalAnswer\":\"A\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"VERDICT\",\"targetCode\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"verdictValue\":\"OPTION_1\",\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null}],\"workingOutline\":[\"Calcular las porciones por euro de cada paquete: 84/24 = 3,5 y 105/35 = 3.\",\"Comparar las dos tasas unitarias: 3,5 es mayor que 3.\",\"Determinar que conviene el paquete 1 y que la diferencia entre las tasas es 0,5 porciones por euro.\"],\"creditLevels\":[],\"rationale\":\"La comparación pertinente es la tasa unitaria de porciones por euro. Para el paquete 1, 84/24 = 3,5; para el paquete 2, 105/35 = 3. Por tanto, el paquete 1 tiene la tasa mayor, y la diferencia es 3,5 - 3 = 0,5 porciones por euro.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]}}",
+  "01.rate-comparison.paa#a2": "{\"stimulus\":null,\"item\":{\"stem\":\"Una tienda ofrece dos promociones para una merienda. En la promoción 1 pagas 6 euros y recibes 15 unidades. En la promoción 2 pagas 8 euros y recibes 18 unidades. ¿Cuál opción presenta la decisión correcta sobre qué promoción ofrece más unidades por euro y la diferencia entre ambas?\",\"contextKind\":\"PERSONAL\",\"contextDescription\":\"Una persona compara dos promociones de una tienda según la cantidad que recibe por cada euro pagado.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":6},{\"symbol\":\"q1\",\"value\":15},{\"symbol\":\"p2\",\"value\":8},{\"symbol\":\"q2\",\"value\":18}],\"responseKind\":\"SELECTED\",\"options\":[{\"id\":\"A\",\"text\":\"Promoción 1: 2.5 unidades por euro; promoción 2: 2.25 unidades por euro; diferencia: 0.25 unidades por euro.\"},{\"id\":\"B\",\"text\":\"Promoción 2: 2.5 unidades por euro; promoción 1: 2.25 unidades por euro; diferencia: 0.25 unidades por euro.\"},{\"id\":\"C\",\"text\":\"Promoción 2: 0.4 unidades por euro; promoción 1: 0.444 unidades por euro; diferencia: 0.044 unidades por euro.\"},{\"id\":\"D\",\"text\":\"Promoción 2: 9 unidades por euro; promoción 1: 10 unidades por euro; diferencia: 1 unidad por euro.\"}],\"answerKey\":\"A\",\"distractors\":[{\"optionId\":\"B\",\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Se escoge la promoción con mayor cantidad recibida y se asignan incorrectamente las tasas, sin comparar de forma consistente lo recibido por cada euro.\"},{\"optionId\":\"C\",\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Se calculan razones invertidas, euros por unidad, y se presentan como si fueran unidades por euro.\"},{\"optionId\":\"D\",\"misconceptionModelId\":\"difference\",\"rationale\":\"Se comparan las diferencias directas entre las cantidades recibidas, 18 - 15, y entre los pagos, 8 - 6, en lugar de formar tasas unitarias.\"}],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Selecciona la alternativa que compara correctamente las dos cantidades recibidas por cada euro y determina cuál promoción favorece la comparación.\"}],\"finalAnswer\":\"Promoción 1: 2.5 unidades por euro; promoción 2: 2.25 unidades por euro; diferencia: 0.25 unidades por euro.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"La respuesta combina dos tasas unitarias, su diferencia y la promoción favorecida.\",\"arithmeticExpression\":null}],\"workingOutline\":[\"Calcular 15 / 6 = 2.5 unidades por euro para la promoción 1.\",\"Calcular 18 / 8 = 2.25 unidades por euro para la promoción 2.\",\"Restar 2.5 - 2.25 = 0.25 unidades por euro.\",\"Concluir que la promoción 1 ofrece la tasa unitaria mayor.\"],\"creditLevels\":[],\"rationale\":\"La comparación pertinente es la cantidad recibida por cada euro pagado. La promoción 1 ofrece 15 / 6 = 2.5 unidades por euro y la promoción 2 ofrece 18 / 8 = 2.25 unidades por euro. La diferencia es 2.5 - 2.25 = 0.25 unidades por euro, por lo que favorece a la promoción 1. Las demás alternativas representan elegir por una sola cantidad, invertir las razones o comparar diferencias directas.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]}}",
+  "02.rate-comparison.ib-p1#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"A company is choosing between two suppliers for packaging materials. Supplier 1 charges 24 dollars for 72 boxes. Supplier 2 charges 30 dollars for 84 boxes.\",\"contextKind\":\"OCCUPATIONAL\",\"contextDescription\":\"A workplace purchasing decision compares the number of boxes supplied for each dollar paid.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":24},{\"symbol\":\"q1\",\"value\":72},{\"symbol\":\"p2\",\"value\":30},{\"symbol\":\"q2\",\"value\":84}],\"responseKind\":\"CONSTRUCTED\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"a\",\"prompt\":\"Find the number of boxes supplied per dollar by each supplier.\",\"commandTerm\":\"find\",\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Divides the number of boxes by the corresponding price for each supplier.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains 3 boxes per dollar for Supplier 1 and 2.8 boxes per dollar for Supplier 2.\"}],\"finalAnswer\":\"Supplier 1: 3 boxes per dollar; Supplier 2: 2.8 boxes per dollar.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"QUANTITY\",\"targetCode\":\"UNIT_RATE_1\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"72 / 24\"},{\"label\":\"a\",\"prompt\":null,\"commandTerm\":null,\"marks\":0,\"markPoints\":[],\"finalAnswer\":\"Supplier 2: 2.8 boxes per dollar.\",\"numericValue\":\"2.8\",\"decimalPlaces\":1,\"targetKind\":\"QUANTITY\",\"targetCode\":\"UNIT_RATE_2\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"84 / 30\"},{\"label\":\"b\",\"prompt\":\"Calculate the difference between the two unit rates.\",\"commandTerm\":\"calculate\",\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Subtracts the lower unit rate from the higher unit rate.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains a difference of 0.2 boxes per dollar.\"}],\"finalAnswer\":\"0.2 boxes per dollar\",\"numericValue\":\"0.2\",\"decimalPlaces\":1,\"targetKind\":\"QUANTITY\",\"targetCode\":\"UNIT_RATE_DIFFERENCE\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"3 - 2.8\"},{\"label\":\"c\",\"prompt\":\"Write down which supplier offers the higher return per dollar.\",\"commandTerm\":\"write down\",\"marks\":2,\"markPoints\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Compares the two calculated unit rates.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Identifies Supplier 1 as offering the higher return per dollar.\"}],\"finalAnswer\":\"Supplier 1 offers the higher return per dollar.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"VERDICT\",\"targetCode\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"verdictValue\":\"OPTION_1\",\"comparisonLeft\":\"3\",\"comparisonOperator\":\">\",\"comparisonRight\":\"2.8\",\"comparisonHolds\":true,\"notCheckableReason\":null,\"arithmeticExpression\":null}],\"workingOutline\":[\"For each supplier, divide the number of boxes by the price paid to obtain boxes per dollar.\",\"Compute the two unit rates: 72 / 24 = 3 and 84 / 30 = 2.8.\",\"Subtract the smaller unit rate from the larger: 3 - 2.8 = 0.2 boxes per dollar.\",\"Compare the unit rates and identify Supplier 1 as the supplier with the higher return per dollar.\"],\"creditLevels\":[],\"rationale\":\"The item requires proportional reasoning by forming and comparing two unit rates. The given prices and quantities make the rates terminating decimals, and Supplier 2 has the larger total quantity but the lower unit rate, so the better option cannot be selected from one quantity alone.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]} }",
+  "02.rate-comparison.ib-p1#a2": "{\"stimulus\":null,\"item\":{\"stem\":\"At work, a packaging team is choosing between two suppliers for protective film. Supplier 1 charges $24 for film that covers 18 standard packages. Supplier 2 charges $32 for film that covers 20 standard packages. The team wants to compare how much coverage is obtained for each dollar spent.\\n\\na. Find the coverage per dollar for each supplier.\\n\\nb. Calculate the difference between the two coverage-per-dollar rates.\\n\\nc. Write down which supplier the comparison favours.\",\"contextKind\":\"OCCUPATIONAL\",\"contextDescription\":\"A packaging team compares two workplace suppliers using price and coverage information.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":24},{\"symbol\":\"q1\",\"value\":18},{\"symbol\":\"p2\",\"value\":32},{\"symbol\":\"q2\",\"value\":20}],\"responseKind\":\"CONSTRUCTED\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"a\",\"prompt\":\"Find the coverage per dollar for each supplier.\",\"commandTerm\":\"find\",\"marks\":3,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":2,\"criterion\":\"Divides the coverage by the corresponding price for each supplier.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains both correct unit rates: 0.75 and 0.625 coverage units per dollar.\"}],\"finalAnswer\":\"Supplier 1: 0.75 coverage units per dollar; Supplier 2: 0.625 coverage units per dollar.\",\"numericValue\":null,\"decimalPlaces\":3,\"targetKind\":\"QUANTITY\",\"targetCode\":\"UNIT_RATE_1\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null},{\"label\":\"a\",\"prompt\":null,\"commandTerm\":null,\"marks\":0,\"markPoints\":[],\"finalAnswer\":\"Supplier 2: 0.625 coverage units per dollar.\",\"numericValue\":null,\"decimalPlaces\":3,\"targetKind\":\"QUANTITY\",\"targetCode\":\"UNIT_RATE_2\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null},{\"label\":\"b\",\"prompt\":\"Calculate the difference between the two coverage-per-dollar rates.\",\"commandTerm\":\"calculate\",\"marks\":3,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":2,\"criterion\":\"Subtracts the lower unit rate from the higher unit rate.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains a difference of 0.125 coverage units per dollar.\"}],\"finalAnswer\":\"0.125 coverage units per dollar\",\"numericValue\":\"0.125\",\"decimalPlaces\":3,\"targetKind\":\"QUANTITY\",\"targetCode\":\"UNIT_RATE_DIFFERENCE\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"0.75-0.625\"},{\"label\":\"c\",\"prompt\":\"Write down which supplier the comparison favours.\",\"commandTerm\":\"write down\",\"marks\":2,\"markPoints\":[{\"kind\":\"REASONING\",\"marks\":2,\"criterion\":\"Identifies the supplier with the higher coverage per dollar by comparing the two unit rates.\"}],\"finalAnswer\":\"Supplier 1\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"VERDICT\",\"targetCode\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"verdictValue\":\"OPTION_1\",\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null}],\"workingOutline\":[\"For each supplier, divide coverage by price to form a common coverage-per-dollar rate: 18/24 = 0.75 and 20/32 = 0.625.\",\"Subtract the smaller rate from the larger rate: 0.75 - 0.625 = 0.125.\",\"Compare the rates and identify Supplier 1 as favoured because 0.75 is greater than 0.625.\"],\"creditLevels\":[],\"rationale\":\"The item assesses UNIT_RATE_COMPARISON_OF_TWO_OPTIONS through proportional reasoning. Its parameter values are p1 = 24, q1 = 18, p2 = 32, and q2 = 20; the derived rates are r1 = 0.75, r2 = 0.625, and d = 0.125. The three parts require forming both unit rates, calculating their difference, and interpreting which option has the higher unit rate. The amounts and returns are chosen so the larger amount does not identify the better supplier.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]}}",
+  "04.rate-comparison.pisa#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Dos compañías ofrecen planes de datos móviles para un viaje. La opción 1 cuesta 48 euros y proporciona 9.6 GB. La opción 2 cuesta 75 euros y proporciona 13.125 GB. ¿Qué opción ofrece más datos por euro y cuál es la diferencia entre sus cantidades de datos por euro?\",\"contextKind\":\"PERSONAL\",\"contextDescription\":\"Una persona compara dos ofertas de datos móviles para elegir la más conveniente para un viaje.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":48},{\"symbol\":\"q1\",\"value\":9.6},{\"symbol\":\"p2\",\"value\":75},{\"symbol\":\"q2\",\"value\":13.125}],\"responseKind\":\"SELECTED\",\"options\":[{\"id\":\"A\",\"text\":\"La opción 1; 0.025 GB por euro más que la opción 2\"},{\"id\":\"B\",\"text\":\"La opción 2; 0.025 GB por euro más que la opción 1\"},{\"id\":\"C\",\"text\":\"La opción 1; 0.025 euros por GB más que la opción 2\"},{\"id\":\"D\",\"text\":\"La opción 2; 0.025 euros por GB más que la opción 1\"}],\"answerKey\":\"A\",\"distractors\":[{\"optionId\":\"B\",\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Elige la opción con mayor cantidad total de datos sin comparar cuánto se obtiene por cada euro.\"},{\"optionId\":\"C\",\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Invierte la razón y expresa el resultado en euros por GB en lugar de GB por euro.\"},{\"optionId\":\"D\",\"misconceptionModelId\":\"difference\",\"rationale\":\"Combina la inversión de la razón con la elección basada en la mayor cantidad total de datos.\"}],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[],\"finalAnswer\":\"La opción 1 ofrece 0.2 GB por euro, frente a 0.175 GB por euro de la opción 2; la diferencia es 0.025 GB por euro.\",\"numericValue\":null,\"decimalPlaces\":3,\"targetKind\":\"VERDICT\",\"targetCode\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"verdictValue\":\"OPTION_1\",\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null}],\"workingOutline\":[\"Calcular los datos obtenidos por cada euro: 9.6 / 48 = 0.2 y 13.125 / 75 = 0.175.\",\"Comparar las dos tasas unitarias para identificar la opción con mayor rendimiento.\",\"Restar 0.175 de 0.2 para obtener una diferencia de 0.025 GB por euro.\"],\"creditLevels\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Selecciona la opción 1, que tiene la mayor cantidad de datos por euro, y comunica correctamente la diferencia de 0.025 GB por euro.\"},{\"code\":\"NO_CREDIT\",\"description\":\"Selecciona cualquier otra opción.\"}],\"rationale\":\"La comparación adecuada es la cantidad de datos por euro. Para la opción 1, 9.6 / 48 = 0.2 GB por euro. Para la opción 2, 13.125 / 75 = 0.175 GB por euro. Como 0.2 es mayor que 0.175, la opción 1 es mejor. La diferencia es 0.2 - 0.175 = 0.025 GB por euro. Las cantidades totales no bastan para decidir: aunque la opción 2 proporciona más GB, requiere un pago mayor.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]}}",
+  "05.rate-comparison.icfes#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Una persona compara dos planes de recompensas para decidir cuál le conviene más. El plan 1 cuesta 18 dólares y entrega 72 puntos. El plan 2 cuesta 25 dólares y entrega 75 puntos. ¿Cuál opción presenta correctamente el plan que ofrece más puntos por dólar y la diferencia entre los dos planes?\",\"contextKind\":\"PERSONAL\",\"contextDescription\":\"Una persona elige entre dos planes de recompensas con precios y cantidades de puntos diferentes.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":18},{\"symbol\":\"q1\",\"value\":72},{\"symbol\":\"p2\",\"value\":25},{\"symbol\":\"q2\",\"value\":75}],\"responseKind\":\"SELECTED\",\"options\":[{\"id\":\"A\",\"text\":\"El plan 1 ofrece 4 puntos por dólar y supera al plan 2 por 1 punto por dólar.\"},{\"id\":\"B\",\"text\":\"El plan 2 ofrece 3 puntos por dólar y supera al plan 1 por 1 punto por dólar.\"},{\"id\":\"C\",\"text\":\"El plan 2 ofrece 75 puntos por dólar y supera al plan 1 por 3 puntos por dólar.\"},{\"id\":\"D\",\"text\":\"El plan 1 ofrece 0,25 puntos por dólar y supera al plan 2 por 0,08 puntos por dólar.\"}],\"answerKey\":\"A\",\"distractors\":[{\"optionId\":\"B\",\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Compara principalmente las cantidades totales de puntos y elige el plan 2 porque entrega más puntos, sin convertir las ofertas a una cantidad común.\"},{\"optionId\":\"C\",\"misconceptionModelId\":\"difference\",\"rationale\":\"Usa las cantidades entregadas como si fueran tasas por dólar y toma su diferencia directa, sin relacionarlas con los precios.\"},{\"optionId\":\"D\",\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Invierte la relación entre puntos y precio, calculando dólares por punto en lugar de puntos por dólar.\"}],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[],\"finalAnswer\":\"El plan 1 ofrece 4 puntos por dólar y supera al plan 2 por 1 punto por dólar.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"La respuesta correcta combina la opción favorecida con la diferencia entre ambas tasas unitarias.\",\"arithmeticExpression\":null}],\"workingOutline\":[\"Para el plan 1, dividir 72 puntos entre 18 dólares da 4 puntos por dólar.\",\"Para el plan 2, dividir 75 puntos entre 25 dólares da 3 puntos por dólar.\",\"Comparar las dos tasas muestra que el plan 1 es mejor.\",\"Restar 3 de 4 da una diferencia de 1 punto por dólar.\"],\"creditLevels\":[],\"rationale\":\"La comparación adecuada usa la cantidad de puntos obtenida por cada dólar pagado. El plan 1 tiene 72/18 = 4 puntos por dólar, mientras que el plan 2 tiene 75/25 = 3 puntos por dólar. Por tanto, favorece al plan 1 y la diferencia es 4 - 3 = 1 punto por dólar. La opción B se fija en que el plan 2 entrega más puntos en total; la opción C confunde cantidades totales con tasas; la opción D invierte la relación y expresa dólares por punto.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]}}",
+  "06.approach.school.standard#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Una ciudad compara dos programas de recogida de residuos para decidir cuál ofrece un mejor rendimiento. El programa 1 recoge 84 toneladas de residuos utilizando 24 rutas de recogida. El programa 2 recoge 105 toneladas utilizando 35 rutas de recogida. Se quiere comparar la cantidad recogida por ruta.\",\"contextKind\":\"SOCIETAL\",\"contextDescription\":\"Comparación de dos programas públicos de recogida de residuos mediante la cantidad recogida por ruta.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":24},{\"symbol\":\"q1\",\"value\":84},{\"symbol\":\"p2\",\"value\":35},{\"symbol\":\"q2\",\"value\":105}],\"responseKind\":\"CONSTRUCTED\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"a\",\"prompt\":\"Calcula la cantidad recogida por cada ruta en cada programa.\",\"commandTerm\":null,\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Divide la cantidad recogida por el número de rutas correspondiente en cada programa.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtiene 3.5 toneladas por ruta para el programa 1 y 3 toneladas por ruta para el programa 2.\"}],\"finalAnswer\":\"Programa 1: 84/24 = 3.5 toneladas por ruta; programa 2: 105/35 = 3 toneladas por ruta.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"La respuesta contiene dos tasas unitarias relacionadas, no una única cantidad.\",\"arithmeticExpression\":null},{\"label\":\"b\",\"prompt\":\"Calcula la diferencia entre las dos cantidades recogidas por ruta.\",\"commandTerm\":null,\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Resta una tasa unitaria de la otra.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtiene una diferencia de 0.5 toneladas por ruta.\"}],\"finalAnswer\":\"3.5 - 3 = 0.5 toneladas por ruta.\",\"numericValue\":\"0.5\",\"decimalPlaces\":1,\"targetKind\":\"QUANTITY\",\"targetCode\":\"UNIT_RATE_DIFFERENCE\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"3.5 - 3\"},{\"label\":\"c\",\"prompt\":\"Interpreta la comparación y justifica qué programa ofrece el mejor rendimiento.\",\"commandTerm\":null,\"marks\":2,\"markPoints\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Relaciona el mayor valor por ruta con un mejor rendimiento.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Identifica correctamente el programa 1 y explica que recoge 0.5 toneladas más por ruta.\"}],\"finalAnswer\":\"El programa 1 ofrece el mejor rendimiento porque recoge 3.5 toneladas por ruta, frente a 3 toneladas por ruta del programa 2; la diferencia es de 0.5 toneladas por ruta.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"La respuesta exige interpretar las tasas y justificar verbalmente qué programa tiene el rendimiento superior.\",\"arithmeticExpression\":null}],\"workingOutline\":[\"Para el programa 1, dividir 84 toneladas entre 24 rutas para obtener 3.5 toneladas por ruta.\",\"Para el programa 2, dividir 105 toneladas entre 35 rutas para obtener 3 toneladas por ruta.\",\"Restar 3 a 3.5 para hallar una diferencia de 0.5 toneladas por ruta.\",\"Comparar las tasas y concluir que el programa 1 tiene el mejor rendimiento porque su tasa unitaria es mayor.\"],\"creditLevels\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Realiza correctamente las dos divisiones, calcula la diferencia y justifica que el programa 1 tiene la tasa unitaria mayor.\"},{\"code\":\"PARTIAL_CREDIT\",\"description\":\"Muestra un método adecuado y obtiene parte de los valores correctos, pero comete un error de cálculo o interpreta incompletamente la comparación.\"},{\"code\":\"NO_CREDIT\",\"description\":\"No establece correctamente las tasas unitarias ni identifica de forma justificada el programa con mejor rendimiento.\"}],\"rationale\":\"La situación requiere comparar dos opciones mediante una tasa común: cantidad recogida por ruta. El alumnado debe formular las dos tasas unitarias, resolver su diferencia e interpretar cuál programa es superior y por cuánto.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]}}",
+  "06.approach.school.standard#a2": "{\"stimulus\":null,\"item\":{\"stem\":\"Un ayuntamiento ofrece dos abonos mensuales de transporte público. El abono 1 cuesta 24 euros y permite realizar 84 viajes. El abono 2 cuesta 35 euros y permite realizar 105 viajes. Se quiere comparar cuántos viajes se obtienen por cada euro pagado.\",\"contextKind\":\"SOCIETAL\",\"contextDescription\":\"Comparación de dos abonos reales de transporte público mediante los viajes obtenidos por euro.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":24},{\"symbol\":\"q1\",\"value\":84},{\"symbol\":\"p2\",\"value\":35},{\"symbol\":\"q2\",\"value\":105}],\"responseKind\":\"CONSTRUCTED\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"a\",\"prompt\":\"Calcula los viajes por euro de cada abono.\",\"commandTerm\":null,\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Divide los viajes de cada abono entre su precio correspondiente.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtiene 3.5 viajes por euro para el abono 1 y 3 viajes por euro para el abono 2.\"}],\"finalAnswer\":\"Abono 1: 84/24 = 3.5 viajes por euro; abono 2: 105/35 = 3 viajes por euro.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"La respuesta contiene dos tasas unitarias que deben asociarse correctamente con los dos abonos.\",\"arithmeticExpression\":null},{\"label\":\"b\",\"prompt\":\"Calcula la diferencia entre las dos tasas unitarias.\",\"commandTerm\":null,\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Resta una tasa unitaria de la otra.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtiene una diferencia de 0.5 viajes por euro.\"}],\"finalAnswer\":\"3.5 - 3 = 0.5 viajes por euro.\",\"numericValue\":\"0.5\",\"decimalPlaces\":1,\"targetKind\":\"QUANTITY\",\"targetCode\":\"UNIT_RATE_DIFFERENCE\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"3.5 - 3\"},{\"label\":\"c\",\"prompt\":\"Justifica qué abono ofrece más viajes por euro.\",\"commandTerm\":null,\"marks\":2,\"markPoints\":[{\"kind\":\"REASONING\",\"marks\":2,\"criterion\":\"Relaciona la mayor tasa unitaria, 3.5 frente a 3, con la elección del abono 1 y concluye que este ofrece más viajes por euro.\"}],\"finalAnswer\":\"El abono 1, porque su tasa es mayor: ofrece 3.5 viajes por euro frente a 3 viajes por euro del abono 2.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"VERDICT\",\"targetCode\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"verdictValue\":\"OPTION_1\",\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null}],\"workingOutline\":[\"Para cada abono, dividir el número de viajes entre el precio en euros.\",\"Comparar 84/24 = 3.5 con 105/35 = 3.\",\"Calcular la diferencia 3.5 - 3 = 0.5 viajes por euro.\",\"Elegir el abono 1 porque tiene la tasa unitaria mayor y justificar la elección con ambas tasas.\"],\"creditLevels\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Realiza correctamente las dos tasas unitarias, calcula la diferencia y justifica que el abono 1 es superior mediante la comparación de las tasas.\"},{\"code\":\"PARTIAL_CREDIT\",\"description\":\"Muestra un procedimiento adecuado o identifica correctamente el abono superior, pero contiene un error de cálculo, omite una tasa o da una justificación incompleta.\"},{\"code\":\"NO_CREDIT\",\"description\":\"No establece tasas unitarias pertinentes ni identifica correctamente el abono con mayor número de viajes por euro.\"}],\"rationale\":\"La situación exige formular y comparar tasas unitarias antes de decidir qué abono ofrece más viajes por euro. Las cantidades elegidas producen tasas decimales terminantes, la opción con más viajes no es automáticamente la mejor y ambas cantidades son necesarias para la comparación.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]} }",
+  "07.approach.school.stem-plus#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Un ayuntamiento está comparando dos abonos mensuales de transporte para decidir cuál ofrece mejor valor a las personas usuarias. El abono 1 cuesta 24 euros y permite realizar 84 viajes al mes. El abono 2 cuesta 30 euros y permite realizar 96 viajes al mes.\",\"contextKind\":\"SOCIETAL\",\"contextDescription\":\"Comparación de dos abonos de transporte público mediante el número de viajes que ofrecen por cada euro pagado.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":24},{\"symbol\":\"q1\",\"value\":84},{\"symbol\":\"p2\",\"value\":30},{\"symbol\":\"q2\",\"value\":96}],\"responseKind\":\"CONSTRUCTED\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"a\",\"prompt\":\"Escribe la tasa unitaria de cada abono, expresada en viajes por euro.\",\"commandTerm\":null,\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Divide el número de viajes de cada abono entre su precio.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtiene correctamente 3,5 viajes por euro para el abono 1 y 3,2 viajes por euro para el abono 2.\"}],\"finalAnswer\":\"Abono 1: 84/24 = 3,5 viajes por euro; abono 2: 96/30 = 3,2 viajes por euro.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"La respuesta requiere presentar e identificar dos tasas unitarias, no un único valor numérico.\",\"arithmeticExpression\":null},{\"label\":\"b\",\"prompt\":\"Calcula la diferencia entre las dos tasas unitarias, en viajes por euro.\",\"commandTerm\":null,\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Resta una tasa unitaria de la otra.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Calcula correctamente una diferencia de 0,3 viajes por euro.\"}],\"finalAnswer\":\"3,5 - 3,2 = 0,3 viajes por euro.\",\"numericValue\":\"0.3\",\"decimalPlaces\":1,\"targetKind\":\"QUANTITY\",\"targetCode\":\"UNIT_RATE_DIFFERENCE\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"3.5-3.2\"},{\"label\":\"c\",\"prompt\":\"Indica qué abono ofrece mejor valor y justifica tu respuesta usando las tasas unitarias.\",\"commandTerm\":null,\"marks\":2,\"markPoints\":[{\"kind\":\"REASONING\",\"marks\":2,\"criterion\":\"Concluye que el abono 1 ofrece mejor valor porque proporciona 3,5 viajes por euro, frente a 3,2 viajes por euro del abono 2, y relaciona la diferencia de 0,3 viajes por euro con la elección.\"}],\"finalAnswer\":\"El abono 1 ofrece mejor valor: proporciona 3,5 viajes por euro, mientras que el abono 2 proporciona 3,2. Por tanto, el abono 1 ofrece 0,3 viajes más por euro.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"VERDICT\",\"targetCode\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"verdictValue\":\"OPTION_1\",\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null}],\"workingOutline\":[\"Dividir 84 entre 24 para obtener la tasa del abono 1: 3,5 viajes por euro.\",\"Dividir 96 entre 30 para obtener la tasa del abono 2: 3,2 viajes por euro.\",\"Restar 3,2 de 3,5 para hallar una diferencia de 0,3 viajes por euro.\",\"Comparar las tasas y concluir que el abono 1 ofrece mejor valor porque su tasa unitaria es mayor.\"],\"creditLevels\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Obtiene las dos tasas unitarias, calcula correctamente su diferencia y justifica que el abono 1 ofrece mejor valor mediante la comparación de las tasas.\"},{\"code\":\"PARTIAL_CREDIT\",\"description\":\"Muestra un procedimiento adecuado o realiza correctamente parte de los cálculos, pero contiene un error numérico o una conclusión incompleta.\"},{\"code\":\"NO_CREDIT\",\"description\":\"No establece tasas unitarias pertinentes ni proporciona una comparación válida entre los abonos.\"}],\"rationale\":\"La situación exige modelar cada abono mediante una tasa unitaria común, calcular la diferencia entre las tasas e interpretar cuál opción favorece la comparación. La opción con mayor precio no es la mejor, de modo que la elección no puede hacerse usando una sola cantidad. Los valores producen tasas decimales terminantes y permiten una justificación clara.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]}}",
+  "08.approach.paa.stem-plus#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Una campaña de salud pública compara dos centros de atención. El centro 1 atiende a 90 personas por cada 24 jornadas de trabajo, mientras que el centro 2 atiende a 140 personas por cada 40 jornadas. ¿Qué opción indica correctamente cuál centro atiende a más personas por jornada y cuál es la diferencia entre sus tasas?\",\"contextKind\":\"SOCIETAL\",\"contextDescription\":\"Comparación de dos centros de atención de una campaña de salud pública mediante personas atendidas por jornada.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":24},{\"symbol\":\"q1\",\"value\":90},{\"symbol\":\"p2\",\"value\":40},{\"symbol\":\"q2\",\"value\":140}],\"responseKind\":\"SELECTED\",\"options\":[{\"id\":\"A\",\"text\":\"El centro 1; 3.75 frente a 3.50 personas por jornada, una diferencia de 0.25.\"},{\"id\":\"B\",\"text\":\"El centro 2; 3.50 frente a 3.75 personas por jornada, una diferencia de 0.25.\"},{\"id\":\"C\",\"text\":\"El centro 2; 0.27 frente a 0.29 jornadas por persona, una diferencia de 0.02.\"},{\"id\":\"D\",\"text\":\"El centro 1; 90 frente a 140 personas, una diferencia de 50 personas.\"}],\"answerKey\":\"A\",\"distractors\":[{\"optionId\":\"B\",\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Compara principalmente la cantidad de jornadas o selecciona la opción con el valor total mayor, sin poner los resultados en una tasa común.\"},{\"optionId\":\"C\",\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Calcula jornadas por persona en lugar de personas por jornada y usa esa tasa invertida para decidir.\"},{\"optionId\":\"D\",\"misconceptionModelId\":\"difference\",\"rationale\":\"Compara directamente las cantidades totales de personas y no calcula la diferencia entre las dos tasas unitarias.\"}],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[],\"finalAnswer\":\"El centro 1; 3.75 frente a 3.50 personas por jornada, una diferencia de 0.25.\",\"numericValue\":\"0.25\",\"decimalPlaces\":2,\"targetKind\":\"VERDICT\",\"targetCode\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"verdictValue\":\"OPTION_1\",\"comparisonLeft\":\"90 / 24\",\"comparisonOperator\":\">\",\"comparisonRight\":\"140 / 40\",\"comparisonHolds\":true,\"notCheckableReason\":null,\"arithmeticExpression\":\"90 / 24 - 140 / 40\"}],\"workingOutline\":[\"Calcular la tasa de personas atendidas por jornada para cada centro.\",\"Comparar las dos tasas unitarias.\",\"Identificar el centro con la tasa mayor y hallar la diferencia entre las tasas.\"],\"creditLevels\":[],\"rationale\":\"La tasa del centro 1 es 90 / 24 = 3.75 personas por jornada. La tasa del centro 2 es 140 / 40 = 3.50 personas por jornada. Por tanto, favorece al centro 1 y la diferencia es 3.75 - 3.50 = 0.25 personas por jornada. La opción B elige el centro con mayor cantidad de jornadas; la C invierte las tasas; y la D compara totales en vez de tasas unitarias.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]}}",
+  "09.approach.pisa.stem-plus#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Una municipalidad quiere elegir entre dos programas de préstamo de libros para una biblioteca comunitaria. El programa 1 entrega 18 libros por cada 40 euros aportados. El programa 2 entrega 20 libros por cada 50 euros aportados. ¿Qué opción ofrece más libros por euro y por cuánto supera a la otra?\",\"contextKind\":\"SOCIETAL\",\"contextDescription\":\"Comparación de dos programas públicos de préstamo de libros según la cantidad de libros obtenidos por cada euro aportado.\",\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":[{\"symbol\":\"p1\",\"value\":40},{\"symbol\":\"q1\",\"value\":18},{\"symbol\":\"p2\",\"value\":50},{\"symbol\":\"q2\",\"value\":20}],\"responseKind\":\"SELECTED\",\"options\":[{\"id\":\"A\",\"text\":\"El programa 1; 0,05 libros por euro\"},{\"id\":\"B\",\"text\":\"El programa 2; 0,05 libros por euro\"},{\"id\":\"C\",\"text\":\"El programa 1; 2 libros\"},{\"id\":\"D\",\"text\":\"El programa 2; 0,28 euros por libro\"}],\"answerKey\":\"A\",\"distractors\":[{\"optionId\":\"B\",\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Elige el programa con la mayor cantidad total de libros, sin comparar la cantidad obtenida por euro.\"},{\"optionId\":\"C\",\"misconceptionModelId\":\"difference\",\"rationale\":\"Compara directamente las cantidades totales de libros y usa su diferencia, sin calcular tasas unitarias.\"},{\"optionId\":\"D\",\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Usa el coste por libro en lugar de los libros obtenidos por euro y además selecciona la opción favorecida por esa tasa invertida.\"}],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[],\"finalAnswer\":\"A\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"VERDICT\",\"targetCode\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"verdictValue\":\"OPTION_1\",\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null}],\"workingOutline\":[\"Calcular la tasa del programa 1: 18 / 40 = 0,45 libros por euro.\",\"Calcular la tasa del programa 2: 20 / 50 = 0,40 libros por euro.\",\"Comparar las tasas: 0,45 - 0,40 = 0,05 libros por euro.\",\"Concluir que el programa 1 ofrece la tasa mayor y supera al programa 2 en 0,05 libros por euro.\"],\"creditLevels\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Selecciona la única opción que identifica el programa con la mayor cantidad de libros por euro y la diferencia correcta entre las tasas unitarias.\"},{\"code\":\"NO_CREDIT\",\"description\":\"Selecciona cualquier otra opción.\"}],\"rationale\":\"La comparación pertinente es entre los libros obtenidos por cada euro. El programa 1 tiene una tasa de 18 / 40 = 0,45 libros por euro, mientras que el programa 2 tiene una tasa de 20 / 50 = 0,40 libros por euro. La diferencia es 0,45 - 0,40 = 0,05 libros por euro; por tanto, la opción correcta es A.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.num.ratio-proportion\"]} }",
+  "10.line-two-points.paa#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Los puntos P(-4, 7) y Q(2, -5) pertenecen a una misma recta. ¿Cuál es la ecuación de esa recta?\",\"contextKind\":\"ABSTRACT\",\"contextDescription\":\"Se dan directamente las coordenadas de dos puntos del plano, sin una situación contextual.\",\"construct\":\"LINE_THROUGH_TWO_POINTS\",\"parameters\":[{\"symbol\":\"x1\",\"value\":-4},{\"symbol\":\"y1\",\"value\":7},{\"symbol\":\"x2\",\"value\":2},{\"symbol\":\"y2\",\"value\":-5}],\"responseKind\":\"SELECTED\",\"options\":[{\"id\":\"A\",\"text\":\"y = -2x - 1\"},{\"id\":\"B\",\"text\":\"y = -1/2x + 5\"},{\"id\":\"C\",\"text\":\"y = 2x + 15\"},{\"id\":\"D\",\"text\":\"y = -2x + 7\"}],\"answerKey\":\"A\",\"distractors\":[{\"optionId\":\"B\",\"misconceptionModelId\":\"run-over-rise\",\"rationale\":\"Invierte el cociente de las diferencias y obtiene una pendiente de -1/2; después ajusta una ecuación que pasa por uno de los puntos.\"},{\"optionId\":\"C\",\"misconceptionModelId\":\"mixed-order\",\"rationale\":\"Combina el orden de las diferencias de las coordenadas y obtiene una pendiente positiva de 2, lo que produce también un intercepto incorrecto.\"},{\"optionId\":\"D\",\"misconceptionModelId\":\"point-as-intercept\",\"rationale\":\"Calcula correctamente la pendiente, pero usa la coordenada y del primer punto como si fuera el intercepto.\"}],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[],\"finalAnswer\":\"y = -2x - 1\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"La respuesta correcta es una ecuación, no un valor numérico aislado.\",\"arithmeticExpression\":null}],\"workingOutline\":[\"La pendiente es (-5 - 7) / (2 - (-4)) = -2.\",\"Al sustituir el punto (-4, 7) en y = -2x + b, se obtiene b = -1.\",\"La ecuación de la recta es y = -2x - 1.\"],\"creditLevels\":[],\"rationale\":\"La pendiente de la recta que pasa por los dos puntos es m = (-5 - 7) / (2 - (-4)) = -12/6 = -2. Usando P(-4, 7), 7 = -2(-4) + b, por lo que b = -1. Por tanto, la ecuación es y = -2x - 1, opción A.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.fun.linear-functions-lines\"]}}",
+  "12.linear-model.pisa#a1": "{\"stimulus\":{\"text\":\"La tabla muestra cómo aumenta el saldo de ahorro de Elena, que al comenzar ya tenía 75 euros y añade 6 euros cada semana. La gráfica representa los mismos datos.\",\"tables\":[{\"tableKey\":\"ahorro\",\"title\":\"Saldo de ahorro de Elena\",\"columns\":[{\"key\":\"semana\",\"label\":\"Semanas\",\"type\":\"NUMBER\",\"unit\":\"semanas\"},{\"key\":\"saldo\",\"label\":\"Saldo\",\"type\":\"NUMBER\",\"unit\":\"euros\"}],\"rows\":[[0,75],[1,81],[2,87],[3,93],[4,99],[5,105],[6,111],[7,117],[8,123]]}],\"dataSets\":[],\"charts\":[{\"chartKey\":\"graficaAhorro\",\"chartType\":\"LINE\",\"title\":\"Saldo según el número de semanas\",\"xLabel\":\"Semanas\",\"yLabel\":\"Saldo (euros)\",\"sourceKind\":\"TABLE\",\"sourceKey\":\"ahorro\",\"xKey\":\"semana\",\"valueKeys\":[\"saldo\"]}]},\"item\":{\"stem\":\"Después de 8 semanas, ¿qué opción describe correctamente el saldo de Elena y el significado de los dos números de su relación lineal?\",\"contextKind\":\"PERSONAL\",\"contextDescription\":\"Una persona controla un ahorro que comienza con un saldo fijo y aumenta en la misma cantidad cada semana.\",\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":[{\"symbol\":\"b\",\"value\":75},{\"symbol\":\"m\",\"value\":6},{\"symbol\":\"x\",\"value\":8}],\"responseKind\":\"SELECTED\",\"options\":[{\"id\":\"A\",\"text\":\"La relación es y = 6x + 75; 6 indica el aumento semanal, 75 el saldo inicial y el saldo es 123 euros.\"},{\"id\":\"B\",\"text\":\"La relación es y = 75x + 6; 75 indica el aumento semanal, 6 el saldo inicial y el saldo es 606 euros.\"},{\"id\":\"C\",\"text\":\"La relación es y = 6x; 6 indica el aumento semanal, no hay saldo inicial y el saldo es 48 euros.\"},{\"id\":\"D\",\"text\":\"La relación es y = 75 + 6; 75 indica el saldo total de ocho semanas, 6 el aumento semanal y el saldo es 81 euros.\"}],\"answerKey\":\"A\",\"distractors\":[{\"optionId\":\"B\",\"misconceptionModelId\":\"swapped-parameters\",\"rationale\":\"Intercambia el saldo inicial y el aumento semanal en la relación y en su interpretación.\"},{\"optionId\":\"C\",\"misconceptionModelId\":\"no-start\",\"rationale\":\"Omite el saldo que Elena ya tenía al comenzar.\"},{\"optionId\":\"D\",\"misconceptionModelId\":\"slope-as-total\",\"rationale\":\"No multiplica el aumento semanal por el número de semanas y trata los datos como una suma fija.\"}],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[],\"finalAnswer\":\"A\",\"numericValue\":\"123\",\"decimalPlaces\":0,\"targetKind\":\"QUANTITY\",\"targetCode\":\"VALUE_AT_X\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"6 * 8 + 75\"}],\"workingOutline\":[\"El saldo inicial es 75 euros, por lo que corresponde al término constante.\",\"El aumento de 6 euros por semana corresponde al coeficiente de x.\",\"La relación es y = 6x + 75.\",\"Para 8 semanas, el saldo es 6 * 8 + 75 = 123 euros.\"],\"creditLevels\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Selecciona A: reconoce la relación lineal, interpreta correctamente el aumento semanal y el saldo inicial, y obtiene un saldo de 123 euros.\"},{\"code\":\"NO_CREDIT\",\"description\":\"Selecciona cualquier otra opción.\"}],\"rationale\":\"El saldo comienza en 75 euros y aumenta 6 euros por cada semana. Por tanto, el modelo es y = 6x + 75. Al sustituir x = 8 se obtiene y = 6 * 8 + 75 = 123. La opción A es la única que formula la relación, interpreta sus dos componentes y da el valor correcto. Las demás representan, respectivamente, un intercambio de los papeles de los números, la omisión del saldo inicial y la confusión entre la tasa semanal y el total.\",\"usesStimulusValues\":[0,75,1,81,2,87,3,93,4,99,5,105,6,111,7,117,8,123],\"supportingConceptStableIds\":[\"math.fun.linear-functions-lines\"]}}",
+  "13.quadratic-factorising.cambridge-p1#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Consider the equation 3x^2 - 6x = 33.\",\"contextKind\":\"ABSTRACT\",\"contextDescription\":\"An algebraic equation is given directly, with no applied situation.\",\"construct\":\"QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING\",\"parameters\":[{\"symbol\":\"a\",\"value\":3},{\"symbol\":\"r1\",\"value\":-2.5},{\"symbol\":\"r2\",\"value\":4.5}],\"responseKind\":\"CONSTRUCTED\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"a\",\"prompt\":\"Work out the equation in standard form.\",\"commandTerm\":\"work out\",\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Rearranges the equation so that all terms are on one side and the equation is equal to zero.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Gives 3x^2 - 6x - 33 = 0.\"}],\"finalAnswer\":\"3x^2 - 6x - 33 = 0\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"The response is an algebraic standard-form equation rather than a single machine-checkable quantity.\",\"arithmeticExpression\":null},{\"label\":\"b\",\"prompt\":\"Work out the factorised form of the equation from part (a).\",\"commandTerm\":\"work out\",\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Identifies factors whose product gives the standard-form quadratic, including the factor 3.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Gives 3(x + 2.5)(x - 4.5) = 0.\"}],\"finalAnswer\":\"3(x + 2.5)(x - 4.5) = 0\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"The response is a factorised algebraic expression containing the unknown x.\",\"arithmeticExpression\":null},{\"label\":\"c\",\"prompt\":\"Work out both roots of the equation.\",\"commandTerm\":\"work out\",\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Sets each linear factor equal to zero.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Gives x = -2.5 and x = 4.5.\"}],\"finalAnswer\":\"x = -2.5 or x = 4.5\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"The response contains two roots and an algebraic variable rather than one machine-checkable quantity.\",\"arithmeticExpression\":null}],\"workingOutline\":[\"Rearrange 3x^2 - 6x = 33 to obtain 3x^2 - 6x - 33 = 0.\",\"Factorise the quadratic as 3(x + 2.5)(x - 4.5) = 0.\",\"Set x + 2.5 = 0 and x - 4.5 = 0, giving x = -2.5 and x = 4.5.\"],\"creditLevels\":[],\"rationale\":\"This item requires the learner to rearrange a quadratic into standard form, factorise it, and read both rational roots from the factors. The selected coefficient and roots are within the permitted ranges, produce integer derived coefficients, and do not match any avoided parameter set.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.alg.quadratics\"]}}",
+  "13.quadratic-factorising.cambridge-p1#a2": "{\"stimulus\":null,\"item\":{\"stem\":\"Consider the quadratic equation\\n\\n2x^2 + 2x - 12 = 0.\\n\\nUse algebraic working in each part.\",\"contextKind\":\"ABSTRACT\",\"contextDescription\":\"An algebraic quadratic equation is given directly with no applied situation.\",\"construct\":\"QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING\",\"parameters\":[{\"symbol\":\"a\",\"value\":2},{\"symbol\":\"r1\",\"value\":-3},{\"symbol\":\"r2\",\"value\":2}],\"responseKind\":\"CONSTRUCTED\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"a\",\"prompt\":\"Work out the factorised form of the equation.\",\"commandTerm\":\"work out\",\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Rearranges or groups the terms correctly to obtain a factorised quadratic expression.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Gives the correct factorised equation, 2(x + 3)(x - 2) = 0.\"}],\"finalAnswer\":\"2(x + 3)(x - 2) = 0\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"A factorised algebraic expression must be assessed symbolically rather than as one numeric value.\",\"arithmeticExpression\":null},{\"label\":\"b\",\"prompt\":\"Work out the lesser root of the equation.\",\"commandTerm\":\"work out\",\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the factorised equation to set the appropriate factor equal to zero.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains the lesser root x = -3.\"}],\"finalAnswer\":\"x = -3\",\"numericValue\":\"-3\",\"decimalPlaces\":0,\"targetKind\":\"QUANTITY\",\"targetCode\":\"LESSER_ROOT\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null},{\"label\":\"c\",\"prompt\":\"Calculate the greater root of the equation.\",\"commandTerm\":\"calculate\",\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the remaining factor in the factorised equation and sets it equal to zero.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains the greater root x = 2.\"}],\"finalAnswer\":\"x = 2\",\"numericValue\":\"2\",\"decimalPlaces\":0,\"targetKind\":\"QUANTITY\",\"targetCode\":\"GREATER_ROOT\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null}],\"workingOutline\":[\"Rewrite 2x^2 + 2x - 12 as 2(x^2 + x - 6).\",\"Factorise x^2 + x - 6 as (x + 3)(x - 2), giving 2(x + 3)(x - 2) = 0.\",\"Set x + 3 = 0 to obtain the lesser root x = -3.\",\"Set x - 2 = 0 to obtain the greater root x = 2.\"],\"creditLevels\":[],\"rationale\":\"The item requires the learner to factorise a quadratic equation and then read both rational roots from the factors. The three parts preserve the solve sequence while separately eliciting the factorised equation, the lesser root and the greater root. The values a = 2, r1 = -3 and r2 = 2 produce integer coefficients and are not among the excluded parameter sets.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.alg.quadratics\"]}}",
+  "14.quadratic-factorising.paa#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Resuelve la ecuación 4x² - 8x - 21 = 0 factorizándola. Escribe únicamente la raíz mayor como número.\",\"contextKind\":\"ABSTRACT\",\"contextDescription\":\"Se presenta directamente una ecuación cuadrática sin contexto adicional.\",\"construct\":\"QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING\",\"parameters\":[{\"symbol\":\"a\",\"value\":4},{\"symbol\":\"r1\",\"value\":-1.5},{\"symbol\":\"r2\",\"value\":3.5}],\"responseKind\":\"NUMERIC\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[],\"finalAnswer\":\"3.5\",\"numericValue\":\"3.5\",\"decimalPlaces\":null,\"targetKind\":\"QUANTITY\",\"targetCode\":\"GREATER_ROOT\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"(-(-8)+sqrt((-8)^2-4*4*(-21)))/(2*4)\"}],\"workingOutline\":[\"Reescribir la ecuación como un producto de dos factores lineales igualado a cero.\",\"Igualar cada factor a cero para obtener las dos raíces.\",\"Seleccionar la raíz mayor y escribirla como número.\"],\"creditLevels\":[],\"rationale\":\"La ecuación se factoriza como (2x-7)(2x+3)=0, por lo que sus raíces son 3.5 y -1.5. La respuesta solicitada es la raíz mayor: 3.5.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.alg.quadratics\"]}}",
+  "15.quadratic-optimum.ib-p1#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"In a laboratory experiment, a researcher varies the concentration x of a solution, measured in millimoles per litre. A sensor records a response Q, measured in response units. For the range of concentrations being studied, the response is modelled by the product of two linear effects: one effect starts at 35 response units and increases by 5 response units for each millimole per litre, while the other starts at 150 response units and decreases by 3 response units for each millimole per litre.\",\"contextKind\":\"SCIENTIFIC\",\"contextDescription\":\"A laboratory researcher models a measured sensor response that rises and then falls as concentration changes.\",\"construct\":\"QUADRATIC_MODEL_VERTEX_OPTIMUM\",\"parameters\":[{\"symbol\":\"p\",\"value\":35},{\"symbol\":\"q\",\"value\":5},{\"symbol\":\"r\",\"value\":150},{\"symbol\":\"s\",\"value\":3}],\"responseKind\":\"CONSTRUCTED\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"a\",\"prompt\":\"Find an expression for Q in terms of x, first as a product of the two linear effects and then in expanded quadratic form.\",\"commandTerm\":\"find\",\"marks\":3,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":2,\"criterion\":\"Forms the product (35 + 5x)(150 - 3x) and expands it correctly.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains Q = -15x^2 + 645x + 5250.\"}],\"finalAnswer\":\"Q=(35+5x)(150-3x)=-15x^2+645x+5250\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"The response must include both the factored model and its expanded quadratic form.\",\"arithmeticExpression\":null},{\"label\":\"b\",\"prompt\":\"Solve for the concentration x at which the sensor response is greatest.\",\"commandTerm\":\"solve\",\"marks\":2,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the vertex formula for the quadratic, or an equivalent method, to determine the x-coordinate of the maximum.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains x = 21.5 millimoles per litre.\"}],\"finalAnswer\":\"x=21.5 millimoles per litre\",\"numericValue\":\"21.5\",\"decimalPlaces\":1,\"targetKind\":\"QUANTITY\",\"targetCode\":\"MEASURE_AT_OPTIMUM\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"(5*150-35*3)/(2*5*3)\"},{\"label\":\"c\",\"prompt\":\"Write down what the maximum response means for this experiment, including the concentration used and the corresponding response.\",\"commandTerm\":\"write down\",\"marks\":1,\"markPoints\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"States that the response is maximized at a concentration of 21.5 millimoles per litre and that the maximum response is 12183.75 response units.\"}],\"finalAnswer\":\"The greatest response is 12183.75 response units, achieved when x=21.5 millimoles per litre.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"The answer must interpret the vertex by relating both coordinates to the concentration and sensor response.\",\"arithmeticExpression\":null}],\"workingOutline\":[\"Represent the two effects by 35+5x and 150-3x, so Q=(35+5x)(150-3x).\",\"Expand to obtain Q=-15x^2+645x+5250.\",\"Use the vertex x-coordinate formula to calculate x=-(645)/(2(-15))=21.5.\",\"Substitute x=21.5 into the factored model to obtain Q=(142.5)(85.5)=12183.75.\",\"Interpret the vertex in the laboratory context as the concentration giving the greatest sensor response and the corresponding maximum response.\"],\"creditLevels\":[],\"rationale\":\"The item requires the learner to formulate the product of two linear expressions, expand it into a quadratic, solve for the vertex, and interpret both coordinates in the stated scientific situation. The chosen values satisfy the required ranges, give an interior optimum x=21.5, and keep both factors positive there.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.alg.quadratics\"]}}",
+  "16.quadratic-optimum.pisa#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Para financiar un viaje escolar, una estudiante diseña una campaña de ventas. Si dedica x horas a una de las tareas, el número estimado de artículos vendidos es 30 + 5x y la ganancia por artículo, en euros, es 180 - 3x. El plan permite valores de x entre 0 y 60 horas. La ganancia total se obtiene multiplicando esas dos cantidades. ¿Cuál es la ganancia máxima posible, en euros? Escribe tu respuesta como un número.\",\"contextKind\":\"PERSONAL\",\"contextDescription\":\"Una estudiante organiza una campaña de ventas para financiar un viaje escolar y debe distribuir su tiempo entre dos tareas relacionadas con la campaña.\",\"construct\":\"QUADRATIC_MODEL_VERTEX_OPTIMUM\",\"parameters\":[{\"symbol\":\"p\",\"value\":30},{\"symbol\":\"q\",\"value\":5},{\"symbol\":\"r\",\"value\":180},{\"symbol\":\"s\",\"value\":3}],\"responseKind\":\"NUMERIC\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Determina el vértice de la función cuadrática que modela la ganancia y obtiene correctamente la ganancia máxima en el contexto.\"}],\"finalAnswer\":\"16335\",\"numericValue\":\"16335\",\"decimalPlaces\":null,\"targetKind\":\"QUANTITY\",\"targetCode\":\"OPTIMAL_VALUE\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"(30+5*((5*180-30*3)/(2*5*3)))*(180-3*((5*180-30*3)/(2*5*3))\"}],\"workingOutline\":[\"Modelar la ganancia como (30 + 5x)(180 - 3x).\",\"Expandir la expresión para obtener una función cuadrática y localizar su vértice mediante xv = (5*180 - 30*3)/(2*5*3).\",\"Comprobar que x = 27 está dentro del intervalo permitido y calcular la ganancia máxima: (30 + 5*27)(180 - 3*27) = 16335.\"],\"creditLevels\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Escribe 16335.\"},{\"code\":\"NO_CREDIT\",\"description\":\"Escribe otro número o no proporciona una respuesta válida.\"}],\"rationale\":\"La ganancia está modelada por Q=(30+5x)(180-3x). El vértice se alcanza en x=(5*180-30*3)/(2*5*3)=27, que pertenece al intervalo permitido. Los dos factores son positivos allí y la ganancia máxima es (30+5*27)(180-3*27)=16335 euros.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.alg.quadratics\"]}}",
+  "16.quadratic-optimum.pisa#a2": "{\"stimulus\":null,\"item\":{\"stem\":\"Una estudiante organiza una campaña de venta de cuadernos durante una semana. Si decide añadir x horas diarias de promoción, donde x puede variar continuamente, el número de posibles compradores por hora aumenta desde 30 en 5 por cada hora añadida, mientras que el número medio de cuadernos que cada comprador adquiriría disminuye desde 140 en 4 por cada hora añadida. La cantidad total de cuadernos vendidos se obtiene multiplicando esas dos cantidades. ¿Cuál es la mayor cantidad posible de cuadernos vendidos? Escribe tu respuesta como un número.\",\"contextKind\":\"PERSONAL\",\"contextDescription\":\"Una estudiante planifica una campaña realista de venta de cuadernos y ajusta las horas diarias de promoción para maximizar las ventas.\",\"construct\":\"QUADRATIC_MODEL_VERTEX_OPTIMUM\",\"parameters\":[{\"symbol\":\"p\",\"value\":30},{\"symbol\":\"q\",\"value\":5},{\"symbol\":\"r\",\"value\":140},{\"symbol\":\"s\",\"value\":4}],\"responseKind\":\"NUMERIC\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Determina el máximo de la cantidad de cuadernos mediante el vértice de la función cuadrática que modela la situación.\"}],\"finalAnswer\":\"8405\",\"numericValue\":\"8405\",\"decimalPlaces\":null,\"targetKind\":\"QUANTITY\",\"targetCode\":\"OPTIMAL_VALUE\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"(30+5*(140-30*4/5)/(2*5*4))*(140-4*(140-30*4/5)/(2*5*4))\"}],\"workingOutline\":[\"Modelar las ventas como el producto de las dos cantidades lineales: (30+5x)(140-4x).\",\"Encontrar la medida que maximiza el producto: x=(5*140-30*4)/(2*5*4)=14.5.\",\"Evaluar las dos cantidades en x=14.5: 102.5 y 82; su producto es 8405.\"],\"creditLevels\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Escribe 8405.\"},{\"code\":\"NO_CREDIT\",\"description\":\"Escribe cualquier otro número o no responde.\"}],\"rationale\":\"La situación requiere modelar un producto de dos expresiones lineales, reconocer la función cuadrática resultante, hallar su vértice y evaluar allí la cantidad máxima. Los parámetros están dentro de los rangos indicados, el valor óptimo x=14.5 es un decimal terminante de una cifra y ambos factores son positivos en ese punto.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.alg.quadratics\"]}  \n}",
+  "17.probability-single-event.ib-p1#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"A box contains 20 sealed envelopes. Exactly 7 of the envelopes contain a gift card, and one envelope is selected at random. All envelopes are equally likely to be selected.\",\"contextKind\":\"ABSTRACT\",\"contextDescription\":\"The numbers of favourable and possible outcomes are given directly, with no additional situation required.\",\"construct\":\"CLASSICAL_PROBABILITY_SINGLE_DRAW\",\"parameters\":[{\"symbol\":\"n\",\"value\":20},{\"symbol\":\"k\",\"value\":7}],\"responseKind\":\"CONSTRUCTED\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"a\",\"prompt\":\"Calculate the probability that the selected envelope contains a gift card, giving your answer as a fraction.\",\"commandTerm\":\"calculate\",\"marks\":1,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Forms the ratio of the 7 favourable outcomes to the 20 possible outcomes.\"}],\"finalAnswer\":\"7/20\",\"numericValue\":\"0.35\",\"decimalPlaces\":null,\"targetKind\":\"QUANTITY\",\"targetCode\":\"PROBABILITY\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"7/20\"},{\"label\":\"b\",\"prompt\":\"Calculate the probability in part (a) as a decimal.\",\"commandTerm\":\"calculate\",\"marks\":1,\"markPoints\":[{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Converts 7/20 to the correct decimal, 0.35.\"}],\"finalAnswer\":\"0.35\",\"numericValue\":\"0.35\",\"decimalPlaces\":2,\"targetKind\":\"QUANTITY\",\"targetCode\":\"PROBABILITY\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"7/20\"},{\"label\":\"c\",\"prompt\":\"Calculate the probability that the selected envelope does not contain a gift card.\",\"commandTerm\":\"calculate\",\"marks\":1,\"markPoints\":[{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Calculates the complementary probability as 13/20.\"}],\"finalAnswer\":\"13/20\",\"numericValue\":\"0.65\",\"decimalPlaces\":null,\"targetKind\":\"QUANTITY\",\"targetCode\":\"COMPLEMENT_PROBABILITY\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"1-7/20\"}],\"workingOutline\":[\"For part (a), identify 7 favourable outcomes and 20 equally likely possible outcomes, then form 7/20.\",\"For part (b), divide 7 by 20 to obtain 0.35.\",\"For part (c), subtract the probability of selecting a gift-card envelope from 1: 1 - 7/20 = 13/20.\"],\"creditLevels\":[],\"rationale\":\"The item assesses classical probability for one draw from a finite set of equally likely outcomes. It requires the learner to count favourable and possible outcomes and give their ratio, while also applying the same probability and its complement in exact and decimal forms. The chosen values satisfy 0 < 7 < 20 and do not use the prohibited parameter set.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.prob.probability\"]} }",
+  "18.probability-compare.icfes#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Laura puede escoger uno de dos juegos. En el juego 1, una ficha se extrae de una bolsa que contiene 12 fichas, de las cuales 5 son rojas. En el juego 2, una ficha se extrae de otra bolsa que contiene 20 fichas, de las cuales 7 son rojas. Laura afirma: «Tengo más posibilidades de sacar una ficha roja si elijo el juego 2». ¿Cuál opción presenta la decisión correcta sobre esta afirmación?\",\"contextKind\":\"PERSONAL\",\"contextDescription\":\"Una persona elige entre dos juegos de azar con bolsas que contienen fichas rojas y fichas de otros colores.\",\"construct\":\"COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES\",\"parameters\":[{\"symbol\":\"n1\",\"value\":12},{\"symbol\":\"k1\",\"value\":5},{\"symbol\":\"n2\",\"value\":20},{\"symbol\":\"k2\",\"value\":7}],\"responseKind\":\"SELECTED\",\"options\":[{\"id\":\"A\",\"text\":\"El juego 1 ofrece la mayor posibilidad; la afirmación es falsa.\"},{\"id\":\"B\",\"text\":\"El juego 2 ofrece la mayor posibilidad; la afirmación es verdadera.\"},{\"id\":\"C\",\"text\":\"El juego 1 ofrece la mayor posibilidad; la afirmación es verdadera.\"},{\"id\":\"D\",\"text\":\"El juego 2 ofrece la mayor posibilidad; la afirmación es falsa.\"}],\"answerKey\":\"A\",\"distractors\":[{\"optionId\":\"B\",\"misconceptionModelId\":\"count-comparison\",\"rationale\":\"Compara solamente la cantidad de fichas rojas y elige el juego 2 porque 7 es mayor que 5, sin considerar el total de fichas de cada bolsa.\"},{\"optionId\":\"C\",\"misconceptionModelId\":\"total-comparison\",\"rationale\":\"Elige el juego 1 por considerar que una bolsa con menos fichas ofrece mayor posibilidad, pero juzga incorrectamente la afirmación al no comparar las proporciones favorables.\"},{\"optionId\":\"D\",\"misconceptionModelId\":\"pooled-space\",\"rationale\":\"Confunde la comparación de las dos proporciones con una comparación basada en un espacio de resultados común y concluye que el juego 2 es mejor aunque la afirmación sea falsa.\"}],\"answers\":[{\"label\":\"item\",\"prompt\":null,\"commandTerm\":null,\"marks\":1,\"markPoints\":[],\"finalAnswer\":\"El juego 1 ofrece la mayor posibilidad; la afirmación es falsa.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"VERDICT\",\"targetCode\":\"OPTION_WITH_HIGHER_PROBABILITY\",\"verdictValue\":\"OPTION_1\",\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":null}],\"workingOutline\":[\"Para el juego 1, la posibilidad de sacar una ficha roja es 5/12, aproximadamente 0.4167.\",\"Para el juego 2, la posibilidad de sacar una ficha roja es 7/20, equivalente a 0.35.\",\"Como 5/12 es mayor que 7/20, el juego 1 ofrece la mayor posibilidad.\",\"Por tanto, la afirmación de Laura es falsa.\"],\"creditLevels\":[],\"rationale\":\"Cada juego tiene como espacio de resultados todas las fichas de su propia bolsa y como resultados favorables las fichas rojas. Las posibilidades son 5/12 y 7/20. Al comparar mediante productos cruzados, 5 × 20 = 100 y 7 × 12 = 84, por lo que 5/12 es mayor que 7/20. Así, el juego 1 ofrece la mayor posibilidad y la afirmación sobre el juego 2 es falsa.\",\"usesStimulusValues\":[],\"supportingConceptStableIds\":[\"math.prob.probability\"]}}",
+  "20.data-relative-change.cambridge-p1#a1": "{\"stimulus\":{\"text\":\"A laboratory records the number of microorganisms per millilitre in water samples collected from five sites on the same day. The results are shown below.\",\"tables\":[{\"tableKey\":\"microorganisms\",\"title\":\"Microorganisms measured in water samples\",\"columns\":[{\"key\":\"site\",\"label\":\"Sampling site\",\"type\":\"TEXT\",\"unit\":null},{\"key\":\"count\",\"label\":\"Microorganisms per millilitre\",\"type\":\"NUMBER\",\"unit\":\"microorganisms/mL\"}],\"rows\":[[\"A\",12500],[\"B\",14280],[\"C\",18750],[\"D\",16100],[\"E\",20900]]}],\"dataSets\":[],\"charts\":[]},\"item\":{\"stem\":\"Give your answers to part (b) correct to 1 decimal place.\",\"contextKind\":\"SCIENTIFIC\",\"contextDescription\":\"Measurements of microorganism counts in water samples collected from several sites.\",\"construct\":\"RELATIVE_CHANGE_OR_SHARE_FROM_TABULATED_VALUES\",\"parameters\":[{\"symbol\":\"vi\",\"value\":12500},{\"symbol\":\"vj\",\"value\":18750}],\"responseKind\":\"CONSTRUCTED\",\"options\":[],\"answerKey\":null,\"distractors\":[],\"answers\":[{\"label\":\"a\",\"prompt\":\"Write down the microorganism counts for sites A and C.\",\"commandTerm\":\"write down\",\"marks\":1,\"markPoints\":[{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Identifies 12500 for site A and 18750 for site C.\"}],\"finalAnswer\":\"12500 microorganisms/mL and 18750 microorganisms/mL, respectively.\",\"numericValue\":null,\"decimalPlaces\":null,\"targetKind\":\"NOT_MACHINE_CHECKABLE\",\"targetCode\":null,\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":\"The response requires locating and reporting two table entries together.\",\"arithmeticExpression\":null},{\"label\":\"b\",\"prompt\":\"Calculate the percentage increase in the microorganism count from site A to site C.\",\"commandTerm\":\"calculate\",\"marks\":3,\"markPoints\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the relative-change calculation (18750 - 12500) / 12500 × 100.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Substitutes the two correct table values into the calculation.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Gives the percentage increase as 50.0% to 1 decimal place.\"}],\"finalAnswer\":\"50.0%\",\"numericValue\":\"50.0\",\"decimalPlaces\":1,\"targetKind\":\"QUANTITY\",\"targetCode\":\"RELATIVE_CHANGE_PERCENT\",\"verdictValue\":null,\"comparisonLeft\":null,\"comparisonOperator\":null,\"comparisonRight\":null,\"comparisonHolds\":null,\"notCheckableReason\":null,\"arithmeticExpression\":\"(18750-12500)/12500*100\"}],\"workingOutline\":[\"Read the values for sites A and C from the table: 12500 and 18750 microorganisms/mL.\",\"Find the absolute increase: 18750 - 12500 = 6250.\",\"Divide the increase by the original site A value and multiply by 100: 6250 / 12500 × 100 = 50.0%.\",\"State the result as a percentage increase to 1 decimal place.\"],\"creditLevels\":[],\"rationale\":\"The learner first interprets the tabulated representation by locating the two required measurements, then computes a relative change that is not directly displayed. The values are multi-digit, lie within the required ranges, are unequal, and produce a unique rounded result among the table pairs. The two parts use suitable allowed command terms, with the lead term used for the interpretation step.\",\"usesStimulusValues\":[12500,14280,18750,16100,20900],\"supportingConceptStableIds\":[\"math.stat.data-representation\"]}}"
+ },
+ "qbR2dCandidates": {
+  "05.linear-model.pisa#a1": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|05.linear-model.pisa#a1",
+    "unitKey": "05.linear-model.pisa#a1",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "271c14ec7ce2b9c8f1e7b41176288ac69d3c657f0174ad44bb517363a27238f2",
+    "primaryConceptStableId": "math.fun.linear-functions-lines",
+    "language": "es",
+    "responseFormat": "SELECTED_RESPONSE",
+    "difficultyBand": "STANDARD",
+    "marks": 1,
+    "instruction": "Selecciona la única opción correcta.",
+    "stimulusKey": "stim|05.linear-model.pisa#a1",
+    "content": {
+     "stem": "La tabla muestra el precio de un viaje según la distancia recorrida. ¿Qué opción formula correctamente la relación entre la distancia x y el precio y, e interpreta el coeficiente de x y el término independiente?",
+     "context": {
+      "kind": "PERSONAL",
+      "description": "Planificar y comprobar el precio de un viaje en una aplicación de transporte."
+     },
+     "declaredModel": {
+      "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+      "parameters": {
+       "b": 4.5,
+       "m": 1.8,
+       "x": 5
+      }
+     },
+     "selected": {
+      "options": [
+       {
+        "id": "A",
+        "text": "y = 4.5x + 1.8; 4.5 es el precio por cada kilómetro y 1.8 es la tarifa inicial."
+       },
+       {
+        "id": "B",
+        "text": "y = 1.8x + 4.5; 1.8 es el precio por cada kilómetro y 4.5 es la tarifa inicial."
+       },
+       {
+        "id": "C",
+        "text": "y = 1.8x; 1.8 es el precio total inicial y no hay una tarifa fija de inicio."
+       },
+       {
+        "id": "D",
+        "text": "y = 13.5x + 4.5; 13.5 es el precio por cada kilómetro y 4.5 es la tarifa inicial."
+       }
+      ],
+      "answerKey": "B",
+      "distractors": {
+       "A": {
+        "misconceptionModelId": "swapped-parameters",
+        "rationale": "Intercambia la tarifa inicial y el precio por kilómetro."
+       },
+       "C": {
+        "misconceptionModelId": "no-start",
+        "rationale": "Omite la tarifa fija que se paga al comenzar el viaje."
+       },
+       "D": {
+        "misconceptionModelId": "slope-as-total",
+        "rationale": "Usa el precio total de 5 kilómetros como si fuera la tarifa constante."
+       }
+      },
+      "target": {
+       "kind": "NOT_MACHINE_CHECKABLE",
+       "reason": "La respuesta correcta formula la relación y da significado contextual a la pendiente y al intercepto."
+      },
+      "answerCheck": {
+       "kind": "NOT_COMPUTABLE",
+       "reason": "La respuesta exige seleccionar una formulación e interpretación verbal."
+      }
+     },
+     "numeric": null,
+     "constructed": null,
+     "credit": [
+      {
+       "code": "FULL_CREDIT",
+       "description": "Selecciona la opción que formula correctamente el modelo lineal e interpreta sus dos parámetros."
+      },
+      {
+       "code": "NO_CREDIT",
+       "description": "Selecciona una opción que intercambia, omite o interpreta incorrectamente los parámetros del modelo."
+      }
+     ],
+     "rationale": "La tarifa inicial es 4.5, por lo que corresponde al intercepto b. El precio aumenta 1.8 por cada kilómetro, por lo que corresponde a la pendiente m. Así, el modelo es y = 1.8x + 4.5; para x = 5 produce 13.5, como muestra la tabla.",
+     "usesStimulusValues": [
+      0,
+      4.5,
+      5,
+      13.5,
+      8,
+      18.9
+     ],
+     "proposedSupportingConceptStableIds": []
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.fun.linear-functions-lines",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Rectas y funciones lineales"
+     },
+     "taskFamily": {
+      "id": "tf.math.linear.constant-rate-model",
+      "version": "0.1.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "STANDARD_BY_ABSENCE"
+     },
+     "systemProfile": {
+      "id": "PISA",
+      "version": "0.2.0-illustrative"
+     },
+     "componentProfile": {
+      "id": "PISA.MATHEMATICS",
+      "version": "0.4.0-illustrative",
+      "versionBinding": {
+       "targetType": "FRAMEWORK_VERSION",
+       "targetIdentity": "pisa-math",
+       "version": "2022",
+       "componentKey": "math",
+       "provenance": {
+        "kind": "AUTHORITATIVE_SOURCE",
+        "sourceKeys": [
+         "oecd-pisa-2022-framework",
+         "oecd-pisa-2022-math-site",
+         "nces-pisa-2022-technical-notes"
+        ],
+        "recordedIn": "PISA_MATH_V2.framework.frameworkKey / frameworkVersion / sections[math]"
+       }
+      }
+     },
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "271c14ec7ce2b9c8f1e7b41176288ac69d3c657f0174ad44bb517363a27238f2",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "572d0c3a71f00dc7f6c65866b00ef37eceecb3dd4cac059547776b5fefedb084",
+      "template": {
+       "id": "spec-selected-response",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "05.linear-model.pisa#a1",
+      "attempt": 1,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:06:29.509Z"
+     }
+    }
+   },
+   "stimulus": {
+    "stimulusKey": "stim|05.linear-model.pisa#a1",
+    "kind": "TABLE",
+    "language": "es",
+    "parts": [
+     {
+      "label": "a",
+      "partKind": "TEXT",
+      "text": "Una aplicación de transporte cobra una tarifa fija al iniciar el viaje y una cantidad constante por cada kilómetro recorrido."
+     },
+     {
+      "label": "tabla_tarifa",
+      "partKind": "TABLE",
+      "text": "Distancia y precio del viaje\nDistancia recorrida (km) | Precio total (€)\n0 | 4,5\n5 | 13,5\n8 | 18,9"
+     }
+    ],
+    "provenance": "STUDYUS_GENERATED",
+    "stimulusPlanId": null,
+    "generationUnitKey": "05.linear-model.pisa#a1",
+    "structured": {
+     "v": 1,
+     "tables": [
+      {
+       "tableKey": "tabla_tarifa",
+       "title": "Distancia y precio del viaje",
+       "columns": [
+        {
+         "key": "distancia",
+         "label": "Distancia recorrida",
+         "type": "NUMBER",
+         "unit": "km"
+        },
+        {
+         "key": "precio",
+         "label": "Precio total",
+         "type": "NUMBER",
+         "unit": "€"
+        }
+       ],
+       "rows": [
+        [
+         0,
+         4.5
+        ],
+        [
+         5,
+         13.5
+        ],
+        [
+         8,
+         18.9
+        ]
+       ]
+      }
+     ],
+     "dataSets": [],
+     "charts": [],
+     "figures": []
+    },
+    "renderedAssets": []
+   }
+  },
+  "07.proportion-missing-value.paa#a1": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|07.proportion-missing-value.paa#a1",
+    "unitKey": "07.proportion-missing-value.paa#a1",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "fe72768dc737b03a58f64c195377cfd49674cdc99c87e122cfdd37f2f7cfe04a",
+    "primaryConceptStableId": "math.num.ratio-proportion",
+    "language": "es",
+    "responseFormat": "SELECTED_RESPONSE",
+    "difficultyBand": "STANDARD",
+    "marks": 1,
+    "instruction": "Selecciona la única opción correcta.",
+    "stimulusKey": null,
+    "content": {
+     "stem": "En la proporción directa 12 / 84 = 18 / x, ¿cuál es el valor de x?",
+     "context": {
+      "kind": "ABSTRACT",
+      "description": "Relación numérica abstracta entre dos cantidades directamente proporcionales."
+     },
+     "declaredModel": {
+      "construct": "DIRECT_PROPORTION_MISSING_VALUE",
+      "parameters": {
+       "a": 12,
+       "b": 84,
+       "c": 18
+      }
+     },
+     "selected": {
+      "options": [
+       {
+        "id": "A",
+        "text": "126"
+       },
+       {
+        "id": "B",
+        "text": "102"
+       },
+       {
+        "id": "C",
+        "text": "2.57"
+       },
+       {
+        "id": "D",
+        "text": "56"
+       }
+      ],
+      "answerKey": "A",
+      "distractors": {
+       "B": {
+        "misconceptionModelId": "additive",
+        "rationale": "Suma 84 y 18 en lugar de conservar la razón constante entre las cantidades."
+       },
+       "C": {
+        "misconceptionModelId": "inverted",
+        "rationale": "Invierte la relación y calcula 12 × 18 / 84, que no corresponde a x = 84 × 18 / 12."
+       },
+       "D": {
+        "misconceptionModelId": "wrong-pair",
+        "rationale": "Forma la combinación incorrecta 12 × 84 / 18 y no despeja el cuarto valor de la proporción."
+       }
+      },
+      "target": {
+       "kind": "QUANTITY",
+       "quantity": "MISSING_VALUE"
+      },
+      "answerCheck": {
+       "kind": "ARITHMETIC_EXPRESSION",
+       "expression": "84*18/12"
+      }
+     },
+     "numeric": null,
+     "constructed": null,
+     "credit": null,
+     "rationale": "Para mantener constante la razón, se despeja x: x = 84 × 18 / 12 = 126.",
+     "usesStimulusValues": null,
+     "proposedSupportingConceptStableIds": []
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Proporcionalidad"
+     },
+     "taskFamily": {
+      "id": "tf.math.proportion.missing-value",
+      "version": "0.1.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "STANDARD_BY_ABSENCE"
+     },
+     "systemProfile": {
+      "id": "PAA",
+      "version": "0.2.0-illustrative"
+     },
+     "componentProfile": {
+      "id": "PAA.MATEMATICAS",
+      "version": "0.4.0-illustrative",
+      "versionBinding": {
+       "targetType": "EXAM_VERSION",
+       "targetIdentity": "v2.paa",
+       "version": "V2.1 PAA revisada (guía 2021)",
+       "componentKey": "matematicas",
+       "provenance": {
+        "kind": "AUTHORITATIVE_SOURCE",
+        "sourceKeys": [
+         "cb-paa-guia-2021",
+         "cb-paa-preguntas-respuestas-2017",
+         "cb-paa-practice-test-2018"
+        ],
+        "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+       }
+      }
+     },
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "fe72768dc737b03a58f64c195377cfd49674cdc99c87e122cfdd37f2f7cfe04a",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "a5201a473ed0b6b85494ac5edda97b836602810690e06bed1e687f1140619190",
+      "template": {
+       "id": "spec-selected-response",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "07.proportion-missing-value.paa#a1",
+      "attempt": 1,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:06:51.489Z"
+     }
+    }
+   },
+   "stimulus": null
+  },
+  "09.quadratic-factorising.paa#a1": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|09.quadratic-factorising.paa#a1",
+    "unitKey": "09.quadratic-factorising.paa#a1",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "f918a5113ddb1836345b7c63e614df81dc8aa0251d806a19287663a617bb2aa3",
+    "primaryConceptStableId": "math.alg.quadratics",
+    "language": "es",
+    "responseFormat": "NUMERIC_ENTRY",
+    "difficultyBand": "STANDARD",
+    "marks": 1,
+    "instruction": "Escribe tu respuesta como un número.",
+    "stimulusKey": null,
+    "content": {
+     "stem": "Resuelve la ecuación 2(x+3.5)(x-4)=0 y escribe el mayor de sus dos valores de x.",
+     "context": {
+      "kind": "ABSTRACT",
+      "description": "Ecuación cuadrática sin contexto aplicado."
+     },
+     "declaredModel": {
+      "construct": "QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING",
+      "parameters": {
+       "a": 2,
+       "r1": -3.5,
+       "r2": 4
+      }
+     },
+     "selected": null,
+     "numeric": {
+      "numericKey": {
+       "kind": "NUMERIC",
+       "value": "4",
+       "equivalentFormsAllowed": true
+      },
+      "target": {
+       "kind": "QUANTITY",
+       "quantity": "GREATER_ROOT"
+      },
+      "answerCheck": {
+       "kind": "ARITHMETIC_EXPRESSION",
+       "expression": "4"
+      }
+     },
+     "constructed": null,
+     "credit": null,
+     "rationale": "Al igualar cada factor a cero, se obtienen x=-3.5 y x=4; por tanto, el mayor valor es 4.",
+     "usesStimulusValues": null,
+     "proposedSupportingConceptStableIds": []
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.alg.quadratics",
+      "canonicalSubject": "Mathematics",
+      "canonicalName": "Quadratic functions and inequalities"
+     },
+     "taskFamily": {
+      "id": "tf.math.quadratic.solve-by-factorising",
+      "version": "0.1.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "STANDARD_BY_ABSENCE"
+     },
+     "systemProfile": {
+      "id": "PAA",
+      "version": "0.2.0-illustrative"
+     },
+     "componentProfile": {
+      "id": "PAA.MATEMATICAS",
+      "version": "0.4.0-illustrative",
+      "versionBinding": {
+       "targetType": "EXAM_VERSION",
+       "targetIdentity": "v2.paa",
+       "version": "V2.1 PAA revisada (guía 2021)",
+       "componentKey": "matematicas",
+       "provenance": {
+        "kind": "AUTHORITATIVE_SOURCE",
+        "sourceKeys": [
+         "cb-paa-guia-2021",
+         "cb-paa-preguntas-respuestas-2017",
+         "cb-paa-practice-test-2018"
+        ],
+        "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+       }
+      }
+     },
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "f918a5113ddb1836345b7c63e614df81dc8aa0251d806a19287663a617bb2aa3",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "4677d8951c6a75ecd88ae62d88e5aadf3bf0c0b75fc605d73f04b8299cbc7a79",
+      "template": {
+       "id": "spec-numeric-entry",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "09.quadratic-factorising.paa#a1",
+      "attempt": 1,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:07:08.715Z"
+     }
+    }
+   },
+   "stimulus": null
+  },
+  "09.quadratic-factorising.paa#a2": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|09.quadratic-factorising.paa#a2",
+    "unitKey": "09.quadratic-factorising.paa#a2",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "f918a5113ddb1836345b7c63e614df81dc8aa0251d806a19287663a617bb2aa3",
+    "primaryConceptStableId": "math.alg.quadratics",
+    "language": "es",
+    "responseFormat": "NUMERIC_ENTRY",
+    "difficultyBand": "STANDARD",
+    "marks": 1,
+    "instruction": "Escribe tu respuesta como un número.",
+    "stimulusKey": null,
+    "content": {
+     "stem": "Resuelve mediante factorización la ecuación 4x^2 + 4x - 15 = 0. Escribe como respuesta únicamente la raíz mayor.",
+     "context": {
+      "kind": "ABSTRACT",
+      "description": "Ecuación cuadrática sin contexto aplicado."
+     },
+     "declaredModel": {
+      "construct": "QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING",
+      "parameters": {
+       "a": 4,
+       "r1": -2.5,
+       "r2": 1.5
+      }
+     },
+     "selected": null,
+     "numeric": {
+      "numericKey": {
+       "kind": "NUMERIC",
+       "value": "1.5",
+       "equivalentFormsAllowed": true
+      },
+      "target": {
+       "kind": "QUANTITY",
+       "quantity": "GREATER_ROOT"
+      },
+      "answerCheck": {
+       "kind": "ARITHMETIC_EXPRESSION",
+       "expression": "(-4+sqrt(4^2-4*4*(-15)))/(2*4)"
+      }
+     },
+     "constructed": null,
+     "credit": null,
+     "rationale": "La factorización es (2x-3)(2x+5)=0; las raíces son 1.5 y -2.5, por lo que la raíz mayor es 1.5.",
+     "usesStimulusValues": null,
+     "proposedSupportingConceptStableIds": [
+      "math.alg.quadratics"
+     ]
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.alg.quadratics",
+      "canonicalSubject": "Mathematics",
+      "canonicalName": "Quadratic functions and inequalities"
+     },
+     "taskFamily": {
+      "id": "tf.math.quadratic.solve-by-factorising",
+      "version": "0.1.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "STANDARD_BY_ABSENCE"
+     },
+     "systemProfile": {
+      "id": "PAA",
+      "version": "0.2.0-illustrative"
+     },
+     "componentProfile": {
+      "id": "PAA.MATEMATICAS",
+      "version": "0.4.0-illustrative",
+      "versionBinding": {
+       "targetType": "EXAM_VERSION",
+       "targetIdentity": "v2.paa",
+       "version": "V2.1 PAA revisada (guía 2021)",
+       "componentKey": "matematicas",
+       "provenance": {
+        "kind": "AUTHORITATIVE_SOURCE",
+        "sourceKeys": [
+         "cb-paa-guia-2021",
+         "cb-paa-preguntas-respuestas-2017",
+         "cb-paa-practice-test-2018"
+        ],
+        "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+       }
+      }
+     },
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "f918a5113ddb1836345b7c63e614df81dc8aa0251d806a19287663a617bb2aa3",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "85675a01426d618b2dba5fe96c380db649ca86346eceafb6923a4ca78d5804a4",
+      "template": {
+       "id": "spec-numeric-entry",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "09.quadratic-factorising.paa#a2",
+      "attempt": 2,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:16:28.429Z"
+     }
+    }
+   },
+   "stimulus": null
+  },
+  "12.probability-single-event.icfes#a1": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|12.probability-single-event.icfes#a1",
+    "unitKey": "12.probability-single-event.icfes#a1",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "c8633d32d2c64f424240c7ae154f615a4f32460b9a4a690444acec48bf897f7b",
+    "primaryConceptStableId": "math.prob.probability",
+    "language": "es",
+    "responseFormat": "SELECTED_RESPONSE",
+    "difficultyBand": "STANDARD",
+    "marks": 1,
+    "instruction": "Selecciona la única opción correcta.",
+    "stimulusKey": null,
+    "content": {
+     "stem": "En una caja hay 12 fichas, de las cuales 3 son verdes. Se extrae una ficha al azar y todas las fichas tienen la misma probabilidad de ser extraídas. ¿Cuál es la probabilidad de extraer una ficha verde?",
+     "context": {
+      "kind": "PERSONAL",
+      "description": "Una persona selecciona una ficha de una caja para identificar el color obtenido."
+     },
+     "declaredModel": {
+      "construct": "CLASSICAL_PROBABILITY_SINGLE_DRAW",
+      "parameters": {
+       "n": 12,
+       "k": 3
+      }
+     },
+     "selected": {
+      "options": [
+       {
+        "id": "A",
+        "text": "1/3"
+       },
+       {
+        "id": "B",
+        "text": "1/4"
+       },
+       {
+        "id": "C",
+        "text": "3/4"
+       },
+       {
+        "id": "D",
+        "text": "3/9"
+       }
+      ],
+      "answerKey": "B",
+      "distractors": {
+       "A": {
+        "misconceptionModelId": "categories",
+        "rationale": "Usa una cantidad de categorías o grupos en lugar de contar todas las fichas posibles."
+       },
+       "C": {
+        "misconceptionModelId": "complement",
+        "rationale": "Calcula la probabilidad de no obtener una ficha verde, que es el evento complementario."
+       },
+       "D": {
+        "misconceptionModelId": "odds",
+        "rationale": "Expresa las fichas favorables frente a las desfavorables, no frente al total de resultados posibles."
+       }
+      },
+      "target": {
+       "kind": "QUANTITY",
+       "quantity": "PROBABILITY"
+      },
+      "answerCheck": {
+       "kind": "ARITHMETIC_EXPRESSION",
+       "expression": "3/12"
+      }
+     },
+     "numeric": null,
+     "constructed": null,
+     "credit": null,
+     "rationale": "La probabilidad clásica se obtiene dividiendo los 3 resultados favorables entre los 12 resultados posibles: 3/12, que equivale a 1/4.",
+     "usesStimulusValues": null,
+     "proposedSupportingConceptStableIds": []
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.prob.probability",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Probabilidad"
+     },
+     "taskFamily": {
+      "id": "tf.math.probability.single-event-equally-likely",
+      "version": "0.1.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "STANDARD_BY_ABSENCE"
+     },
+     "systemProfile": {
+      "id": "ICFES",
+      "version": "0.2.0-illustrative"
+     },
+     "componentProfile": {
+      "id": "ICFES.SABER11_MATEMATICAS",
+      "version": "0.4.0-illustrative",
+      "versionBinding": {
+       "targetType": "EXAM_VERSION",
+       "targetIdentity": "v2.saber11.math",
+       "version": "V2.1 Saber 11 2026 · 50 posiciones",
+       "componentKey": "math",
+       "provenance": {
+        "kind": "AUTHORITATIVE_SOURCE",
+        "sourceKeys": [
+         "icfes-marco-matematicas-saber11",
+         "icfes-guia-saber11-2026",
+         "icfes-resolucion-268-2020"
+        ],
+        "recordedIn": "SABER11_MATH_V2.key / version.label / sections[math]"
+       }
+      }
+     },
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "c8633d32d2c64f424240c7ae154f615a4f32460b9a4a690444acec48bf897f7b",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "92e53ce770201a514dc2dd73e8d03f9344259109cf013c8d7719517683f74706",
+      "template": {
+       "id": "spec-selected-response",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "12.probability-single-event.icfes#a1",
+      "attempt": 1,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:05:08.253Z"
+     }
+    }
+   },
+   "stimulus": null
+  },
+  "12.probability-single-event.icfes#a2": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|12.probability-single-event.icfes#a2",
+    "unitKey": "12.probability-single-event.icfes#a2",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "c8633d32d2c64f424240c7ae154f615a4f32460b9a4a690444acec48bf897f7b",
+    "primaryConceptStableId": "math.prob.probability",
+    "language": "es",
+    "responseFormat": "SELECTED_RESPONSE",
+    "difficultyBand": "STANDARD",
+    "marks": 1,
+    "instruction": "Selecciona la única opción correcta.",
+    "stimulusKey": null,
+    "content": {
+     "stem": "Una bolsa contiene 12 fichas, de las cuales 3 son verdes. Si se extrae una ficha al azar y todas las fichas tienen la misma probabilidad de ser extraídas, ¿cuál es la probabilidad de extraer una ficha verde?",
+     "context": {
+      "kind": "PERSONAL",
+      "description": "Una persona extrae una ficha de una bolsa para conocer la probabilidad de obtener una ficha verde."
+     },
+     "declaredModel": {
+      "construct": "CLASSICAL_PROBABILITY_SINGLE_DRAW",
+      "parameters": {
+       "n": 12,
+       "k": 3
+      }
+     },
+     "selected": {
+      "options": [
+       {
+        "id": "A",
+        "text": "1/4"
+       },
+       {
+        "id": "B",
+        "text": "1/3"
+       },
+       {
+        "id": "C",
+        "text": "3/4"
+       },
+       {
+        "id": "D",
+        "text": "1/12"
+       }
+      ],
+      "answerKey": "A",
+      "distractors": {
+       "B": {
+        "misconceptionModelId": "odds",
+        "rationale": "Usa las fichas no verdes como denominador y calcula 3/(12-3), que corresponde a las probabilidades relativas, no a la probabilidad clásica del evento."
+       },
+       "C": {
+        "misconceptionModelId": "complement",
+        "rationale": "Calcula la probabilidad del complemento, es decir, de no obtener una ficha verde: 1-3/12=3/4."
+       },
+       "D": {
+        "misconceptionModelId": "categories",
+        "rationale": "Toma una sola ficha favorable como si fuera el evento completo y divide 1 entre el total, ignorando que hay 3 fichas verdes."
+       }
+      },
+      "target": {
+       "kind": "QUANTITY",
+       "quantity": "PROBABILITY"
+      },
+      "answerCheck": {
+       "kind": "ARITHMETIC_EXPRESSION",
+       "expression": "3/12"
+      }
+     },
+     "numeric": null,
+     "constructed": null,
+     "credit": null,
+     "rationale": "La probabilidad clásica se obtiene dividiendo el número de resultados favorables entre el número total de resultados igualmente probables: P=3/12=1/4.",
+     "usesStimulusValues": null,
+     "proposedSupportingConceptStableIds": []
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.prob.probability",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Probabilidad"
+     },
+     "taskFamily": {
+      "id": "tf.math.probability.single-event-equally-likely",
+      "version": "0.1.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "STANDARD_BY_ABSENCE"
+     },
+     "systemProfile": {
+      "id": "ICFES",
+      "version": "0.2.0-illustrative"
+     },
+     "componentProfile": {
+      "id": "ICFES.SABER11_MATEMATICAS",
+      "version": "0.4.0-illustrative",
+      "versionBinding": {
+       "targetType": "EXAM_VERSION",
+       "targetIdentity": "v2.saber11.math",
+       "version": "V2.1 Saber 11 2026 · 50 posiciones",
+       "componentKey": "math",
+       "provenance": {
+        "kind": "AUTHORITATIVE_SOURCE",
+        "sourceKeys": [
+         "icfes-marco-matematicas-saber11",
+         "icfes-guia-saber11-2026",
+         "icfes-resolucion-268-2020"
+        ],
+        "recordedIn": "SABER11_MATH_V2.key / version.label / sections[math]"
+       }
+      }
+     },
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "c8633d32d2c64f424240c7ae154f615a4f32460b9a4a690444acec48bf897f7b",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "485ebe27fda8ab988ee3e45533e03df69c52d9a31fb7fd1dce3c5e66bf7dd0cb",
+      "template": {
+       "id": "spec-selected-response",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "12.probability-single-event.icfes#a2",
+      "attempt": 2,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:17:02.346Z"
+     }
+    }
+   },
+   "stimulus": null
+  },
+  "15.data-relative-change.ib-p2#a1": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|15.data-relative-change.ib-p2#a1",
+    "unitKey": "15.data-relative-change.ib-p2#a1",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "ff017a9a1c09d4abd0dea2a9522949d58cf1f5b1d430a9277353bd1101f07b8d",
+    "primaryConceptStableId": "math.stat.data-representation",
+    "language": "en",
+    "responseFormat": "SHORT_RESPONSE",
+    "difficultyBand": "STANDARD",
+    "marks": 3,
+    "instruction": "Show your working.",
+    "stimulusKey": "stim|15.data-relative-change.ib-p2#a1",
+    "content": {
+     "stem": "Using the table, write down the relative percentage change in the number of birds from North Marsh to East Lagoon. Give your answer correct to 1 decimal place.",
+     "context": {
+      "kind": "SCIENTIFIC",
+      "description": "Bird counts from four wetlands are compared using a tabulated data set."
+     },
+     "declaredModel": {
+      "construct": "RELATIVE_CHANGE_OR_SHARE_FROM_TABULATED_VALUES",
+      "parameters": {
+       "vi": 248,
+       "vj": 317
+      }
+     },
+     "selected": null,
+     "numeric": null,
+     "constructed": {
+      "parts": [
+       {
+        "label": "a",
+        "prompt": "Write down the values used for vi and vj, then calculate the relative percentage change from North Marsh to East Lagoon.",
+        "marks": 3,
+        "markScheme": [
+         {
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Identifies vi = 248 and vj = 317 from the table and uses the relative-change structure 100 × (vj − vi) / vi."
+         },
+         {
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "Substitutes 248 and 317 correctly and obtains an unrounded result of approximately 27.8226."
+         },
+         {
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "Rounds the result correctly to 27.8%."
+         }
+        ],
+        "finalAnswer": "27.8%",
+        "numericKey": {
+         "kind": "NUMERIC",
+         "value": "27.8",
+         "equivalentFormsAllowed": true,
+         "decimalPlaces": 1
+        },
+        "target": {
+         "kind": "QUANTITY",
+         "quantity": "RELATIVE_CHANGE_PERCENT"
+        },
+        "answerCheck": {
+         "kind": "ARITHMETIC_EXPRESSION",
+         "expression": "100*(317-248)/248"
+        }
+       }
+      ],
+      "totalMarks": 3,
+      "workingOutline": [
+       "Locate the North Marsh and East Lagoon values in the table: vi = 248 and vj = 317.",
+       "Use the relative-change calculation 100*(vj-vi)/vi.",
+       "Evaluate 100*(317-248)/248 and round the result to 1 decimal place."
+      ]
+     },
+     "credit": null,
+     "rationale": "The response must interpret the table to locate the two relevant values and compute a relative change that is not explicitly shown.",
+     "usesStimulusValues": [
+      248,
+      317
+     ],
+     "proposedSupportingConceptStableIds": [
+      "math.stat.data-representation"
+     ]
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Representación e interpretación de datos"
+     },
+     "taskFamily": {
+      "id": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "version": "0.1.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "STANDARD_BY_ABSENCE"
+     },
+     "systemProfile": {
+      "id": "IB",
+      "version": "0.2.0-illustrative"
+     },
+     "componentProfile": {
+      "id": "IB.MATH_AA_HL.P2",
+      "version": "0.4.0-illustrative",
+      "versionBinding": {
+       "targetType": "EXAM_VERSION",
+       "targetIdentity": "v2.ib.math-aa-hl",
+       "version": "V2 2021-2028",
+       "componentKey": "p2",
+       "provenance": {
+        "kind": "AUTHORITATIVE_SOURCE",
+        "sourceKeys": [
+         "ibo-math-aa-guide-2021",
+         "ibo-math-aa-brief-2021",
+         "ibo-math-dp-page"
+        ],
+        "recordedIn": "IB_MATH_AA_HL_V2.key / version.label / sections[p2]"
+       }
+      }
+     },
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "ff017a9a1c09d4abd0dea2a9522949d58cf1f5b1d430a9277353bd1101f07b8d",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "6aff589624d03331dbf7a9c4e6ae058ff179e27f4bab5de78cdff6560eed2d9e",
+      "template": {
+       "id": "spec-constructed-response",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "15.data-relative-change.ib-p2#a1",
+      "attempt": 1,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:08:21.056Z"
+     }
+    }
+   },
+   "stimulus": {
+    "stimulusKey": "stim|15.data-relative-change.ib-p2#a1",
+    "kind": "TABLE",
+    "language": "en",
+    "parts": [
+     {
+      "label": "regional_bird_counts",
+      "partKind": "TABLE",
+      "text": "Bird counts recorded in four wetlands\nWetland | Number of birds (birds)\nNorth Marsh | 248\nEast Lagoon | 317\nSouth Pool | 405\nWest Fen | 196"
+     }
+    ],
+    "provenance": "STUDYUS_GENERATED",
+    "stimulusPlanId": null,
+    "generationUnitKey": "15.data-relative-change.ib-p2#a1",
+    "structured": {
+     "v": 1,
+     "tables": [
+      {
+       "tableKey": "regional_bird_counts",
+       "title": "Bird counts recorded in four wetlands",
+       "columns": [
+        {
+         "key": "wetland",
+         "label": "Wetland",
+         "type": "TEXT",
+         "unit": null
+        },
+        {
+         "key": "count",
+         "label": "Number of birds",
+         "type": "NUMBER",
+         "unit": "birds"
+        }
+       ],
+       "rows": [
+        [
+         "North Marsh",
+         248
+        ],
+        [
+         "East Lagoon",
+         317
+        ],
+        [
+         "South Pool",
+         405
+        ],
+        [
+         "West Fen",
+         196
+        ]
+       ]
+      }
+     ],
+     "dataSets": [],
+     "charts": [],
+     "figures": []
+    },
+    "renderedAssets": []
+   }
+  },
+  "16.approach.school.standard#a1": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|16.approach.school.standard#a1",
+    "unitKey": "16.approach.school.standard#a1",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "26e01f25bf8eeb55deb4ec97fc8b18d2c5106eb05fb2dad2f0f171c88e3a6d4a",
+    "primaryConceptStableId": "math.num.ratio-proportion",
+    "language": "es",
+    "responseFormat": "SELECTED_RESPONSE",
+    "difficultyBand": "STANDARD",
+    "marks": 1,
+    "instruction": "Selecciona la única opción correcta.",
+    "stimulusKey": null,
+    "content": {
+     "stem": "Una cooperativa compara dos opciones para distribuir alimentos. La opción 1 entrega 20 cajas por cada 8 horas de trabajo, mientras que la opción 2 entrega 33 cajas por cada 15 horas. ¿Cuál opción ofrece la mayor cantidad de cajas por hora y por cuánto supera a la otra?",
+     "context": {
+      "kind": "SOCIETAL",
+      "description": "Comparación de la productividad de dos opciones de distribución de alimentos."
+     },
+     "declaredModel": {
+      "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+      "parameters": {
+       "p1": 8,
+       "q1": 20,
+       "p2": 15,
+       "q2": 33
+      }
+     },
+     "selected": {
+      "options": [
+       {
+        "id": "A",
+        "text": "La opción 1: 20/8 = 2.5 cajas por hora y 33/15 = 2.2 cajas por hora; la opción 1 supera a la opción 2 por 0.3 cajas por hora."
+       },
+       {
+        "id": "B",
+        "text": "La opción 2, porque entrega 33 cajas y la opción 1 solo entrega 20 cajas."
+       },
+       {
+        "id": "C",
+        "text": "La opción 2: al calcular horas por caja, 15/33 es mayor que 8/20, por lo que la opción 2 tiene la mejor tasa."
+       },
+       {
+        "id": "D",
+        "text": "La opción 2, porque la diferencia entre las cantidades entregadas es 33 - 20 = 13 cajas."
+       }
+      ],
+      "answerKey": "A",
+      "distractors": {
+       "B": {
+        "misconceptionModelId": "one-quantity",
+        "rationale": "Compara únicamente las cantidades entregadas e ignora las horas necesarias en cada opción."
+       },
+       "C": {
+        "misconceptionModelId": "inverted-rate",
+        "rationale": "Invierte la tasa solicitada y compara horas por caja en lugar de cajas por hora."
+       },
+       "D": {
+        "misconceptionModelId": "difference",
+        "rationale": "Usa la diferencia entre las cantidades totales, que no permite comparar rendimientos con tiempos distintos."
+       }
+      },
+      "target": {
+       "kind": "COMPARISON",
+       "left": "20/8",
+       "operator": ">",
+       "right": "33/15",
+       "holds": true,
+       "verdict": "OPTION_1 ofrece 0.3 cajas por hora más que OPTION_2"
+      },
+      "answerCheck": {
+       "kind": "ARITHMETIC_EXPRESSION",
+       "expression": "20/8-33/15"
+      }
+     },
+     "numeric": null,
+     "constructed": null,
+     "credit": [
+      {
+       "code": "FULL_CREDIT",
+       "description": "Selecciona la opción que forma ambas tasas unitarias, identifica correctamente la opción superior y calcula la diferencia de 0.3 cajas por hora."
+      },
+      {
+       "code": "PARTIAL_CREDIT",
+       "description": "No aplicable a una respuesta seleccionada única."
+      },
+      {
+       "code": "NO_CREDIT",
+       "description": "Selecciona una opción basada en una cantidad aislada, una tasa invertida o una diferencia sin ajustar por el tiempo."
+      }
+     ],
+     "rationale": "La comparación adecuada es la cantidad entregada por cada hora: 20/8 = 2.5 y 33/15 = 2.2. Por tanto, la opción 1 es mejor y la diferencia entre las tasas es 0.3 cajas por hora.",
+     "usesStimulusValues": null,
+     "proposedSupportingConceptStableIds": []
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Proporcionalidad"
+     },
+     "taskFamily": {
+      "id": "tf.math.proportion.rate-comparison-model",
+      "version": "0.2.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "STANDARD_BY_ABSENCE"
+     },
+     "systemProfile": {
+      "id": "SCHOOL_STEM_PERFORMANCE",
+      "version": "0.1.0-design"
+     },
+     "componentProfile": null,
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "26e01f25bf8eeb55deb4ec97fc8b18d2c5106eb05fb2dad2f0f171c88e3a6d4a",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "ee7e8866fdf89fd6633c8c61c709533ee1ad7e7c5ecda2208bd90db8f5108e51",
+      "template": {
+       "id": "spec-selected-response",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "16.approach.school.standard#a1",
+      "attempt": 1,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:08:32.224Z"
+     }
+    }
+   },
+   "stimulus": null
+  },
+  "19.approach.paa.stem-plus#a1": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|19.approach.paa.stem-plus#a1",
+    "unitKey": "19.approach.paa.stem-plus#a1",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "eec87ecc86fa9aaac5cfec600407ce51a13c6570ab31c14c7a193e91840a3202",
+    "primaryConceptStableId": "math.num.ratio-proportion",
+    "language": "es",
+    "responseFormat": "SELECTED_RESPONSE",
+    "difficultyBand": "STANDARD",
+    "marks": 1,
+    "instruction": "Selecciona la única opción correcta.",
+    "stimulusKey": null,
+    "content": {
+     "stem": "Una cooperativa compara dos opciones de inversión. La opción 1 requiere 8 unidades monetarias y devuelve 20 unidades de beneficio. La opción 2 requiere 15 unidades monetarias y devuelve 33 unidades de beneficio. ¿Qué opción ofrece la mayor tasa de beneficio por unidad monetaria y por cuánto supera a la otra?",
+     "context": {
+      "kind": "SOCIETAL",
+      "description": "Comparación de dos opciones de inversión de una cooperativa."
+     },
+     "declaredModel": {
+      "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+      "parameters": {
+       "p1": 8,
+       "q1": 20,
+       "p2": 15,
+       "q2": 33
+      }
+     },
+     "selected": {
+      "options": [
+       {
+        "id": "A",
+        "text": "La opción 1, porque 20/8 = 2.5 y 33/15 = 2.2; la supera por 0.3 unidades de beneficio por unidad monetaria."
+       },
+       {
+        "id": "B",
+        "text": "La opción 2, porque devuelve 33 unidades de beneficio, mientras que la opción 1 devuelve 20; la supera por 13 unidades."
+       },
+       {
+        "id": "C",
+        "text": "La opción 2, porque su tasa invertida es 15/33, menor que 8/20; la supera por aproximadamente 0.05."
+       },
+       {
+        "id": "D",
+        "text": "La opción 2, porque la diferencia entre beneficio y costo es 18, frente a 12 para la opción 1; la supera por 6 unidades."
+       }
+      ],
+      "answerKey": "A",
+      "distractors": {
+       "B": {
+        "misconceptionModelId": "one-quantity",
+        "rationale": "Compara solo las cantidades devueltas y no las ajusta por la inversión requerida."
+       },
+       "C": {
+        "misconceptionModelId": "inverted-rate",
+        "rationale": "Invierte la tasa y compara costo por unidad de beneficio en lugar de beneficio por unidad monetaria."
+       },
+       "D": {
+        "misconceptionModelId": "difference",
+        "rationale": "Usa una resta entre beneficio y costo, que no representa una tasa común de comparación."
+       }
+      },
+      "target": {
+       "kind": "VERDICT",
+       "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+       "value": "OPTION_1"
+      },
+      "answerCheck": {
+       "kind": "ARITHMETIC_EXPRESSION",
+       "expression": "20/8-33/15"
+      }
+     },
+     "numeric": null,
+     "constructed": null,
+     "credit": null,
+     "rationale": "La tasa de la opción 1 es 20/8 = 2.5, y la de la opción 2 es 33/15 = 2.2. Por tanto, la opción 1 tiene la tasa mayor y la diferencia entre ambas tasas es 2.5 - 2.2 = 0.3.",
+     "usesStimulusValues": null,
+     "proposedSupportingConceptStableIds": []
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Proporcionalidad"
+     },
+     "taskFamily": {
+      "id": "tf.math.proportion.rate-comparison-model",
+      "version": "0.2.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "EXPLICIT",
+      "id": "STEM_PLUS",
+      "version": "0.1.0-provisional"
+     },
+     "systemProfile": {
+      "id": "PAA",
+      "version": "0.2.0-illustrative"
+     },
+     "componentProfile": {
+      "id": "PAA.MATEMATICAS",
+      "version": "0.4.0-illustrative",
+      "versionBinding": {
+       "targetType": "EXAM_VERSION",
+       "targetIdentity": "v2.paa",
+       "version": "V2.1 PAA revisada (guía 2021)",
+       "componentKey": "matematicas",
+       "provenance": {
+        "kind": "AUTHORITATIVE_SOURCE",
+        "sourceKeys": [
+         "cb-paa-guia-2021",
+         "cb-paa-preguntas-respuestas-2017",
+         "cb-paa-practice-test-2018"
+        ],
+        "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+       }
+      }
+     },
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "eec87ecc86fa9aaac5cfec600407ce51a13c6570ab31c14c7a193e91840a3202",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "ce3d173e7c7d5b21dd7f78da5b973a17be9d81fc05138835bd9732f5461d01b0",
+      "template": {
+       "id": "spec-selected-response",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "19.approach.paa.stem-plus#a1",
+      "attempt": 1,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:09:06.643Z"
+     }
+    }
+   },
+   "stimulus": null
+  },
+  "10.quadratic-factorising.ib-p1#a2": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|10.quadratic-factorising.ib-p1#a2",
+    "unitKey": "10.quadratic-factorising.ib-p1#a2",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "39292031d19e5844386003250916b14f7c6139037e5260716239ff01a7ef9159",
+    "primaryConceptStableId": "math.alg.quadratics",
+    "language": "en",
+    "responseFormat": "SHORT_RESPONSE",
+    "difficultyBand": "STANDARD",
+    "marks": 4,
+    "instruction": "Show your working.",
+    "stimulusKey": null,
+    "content": {
+     "stem": "Consider the quadratic equation generated with parameters a = 2, r1 = 3 and r2 = -1: 2x^2 - 4x - 6 = 0. Solve the equation by factorising.",
+     "context": {
+      "kind": "ABSTRACT",
+      "description": "An algebraic quadratic equation with rational roots; no calculator is permitted."
+     },
+     "declaredModel": {
+      "construct": "QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING",
+      "parameters": {
+       "a": 2,
+       "r1": 3,
+       "r2": -1
+      }
+     },
+     "selected": null,
+     "numeric": null,
+     "constructed": {
+      "parts": [
+       {
+        "label": "a",
+        "prompt": "Bring the equation to standard form if necessary and factorise it completely.",
+        "marks": 2,
+        "markScheme": [
+         {
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Obtains a correct common factorisation of the quadratic expression."
+         },
+         {
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "Writes the equation correctly as 2(x - 3)(x + 1) = 0."
+         }
+        ],
+        "finalAnswer": "2(x - 3)(x + 1) = 0",
+        "numericKey": null,
+        "target": {
+         "kind": "NOT_MACHINE_CHECKABLE",
+         "reason": "The keyed response is a factorised algebraic equation rather than a quantity named in the construct vocabulary."
+        },
+        "answerCheck": {
+         "kind": "NOT_COMPUTABLE",
+         "reason": "Checking a factorised equation requires symbolic algebra rather than a single arithmetic expression."
+        }
+       },
+       {
+        "label": "b",
+        "prompt": "Solve the factorised equation and give both values of x.",
+        "marks": 2,
+        "markScheme": [
+         {
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Sets each linear factor equal to zero."
+         },
+         {
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "Obtains both roots x = 3 and x = -1."
+         }
+        ],
+        "finalAnswer": "x = 3 or x = -1",
+        "numericKey": null,
+        "target": {
+         "kind": "NOT_MACHINE_CHECKABLE",
+         "reason": "The response contains two roots, so it is not one numeric keyed answer."
+        },
+        "answerCheck": {
+         "kind": "NOT_COMPUTABLE",
+         "reason": "Checking two symbolic root statements is not represented by one arithmetic expression."
+        }
+       }
+      ],
+      "totalMarks": 4,
+      "workingOutline": [
+       "Rewrite the quadratic equation in standard form if needed.",
+       "Factorise the quadratic as 2(x - 3)(x + 1) = 0.",
+       "Set x - 3 = 0 and x + 1 = 0.",
+       "Read the two solutions as x = 3 and x = -1."
+      ]
+     },
+     "credit": null,
+     "rationale": "The item requires algebraic reasoning to factorise a quadratic equation and then read both rational roots from its linear factors.",
+     "usesStimulusValues": null,
+     "proposedSupportingConceptStableIds": []
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.alg.quadratics",
+      "canonicalSubject": "Mathematics",
+      "canonicalName": "Quadratic functions and inequalities"
+     },
+     "taskFamily": {
+      "id": "tf.math.quadratic.solve-by-factorising",
+      "version": "0.1.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "STANDARD_BY_ABSENCE"
+     },
+     "systemProfile": {
+      "id": "IB",
+      "version": "0.2.0-illustrative"
+     },
+     "componentProfile": {
+      "id": "IB.MATH_AA_HL.P1",
+      "version": "0.4.0-illustrative",
+      "versionBinding": {
+       "targetType": "EXAM_VERSION",
+       "targetIdentity": "v2.ib.math-aa-hl",
+       "version": "V2 2021-2028",
+       "componentKey": "p1",
+       "provenance": {
+        "kind": "AUTHORITATIVE_SOURCE",
+        "sourceKeys": [
+         "ibo-math-aa-guide-2021",
+         "ibo-math-aa-brief-2021",
+         "ibo-math-dp-page"
+        ],
+        "recordedIn": "IB_MATH_AA_HL_V2.key / version.label / sections[p1]"
+       }
+      }
+     },
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "39292031d19e5844386003250916b14f7c6139037e5260716239ff01a7ef9159",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "e27a98dde2f8b02616bdfe903c3c44921619bfcbe7ed04cce7c0b2d0ae58c750",
+      "template": {
+       "id": "spec-constructed-response",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "10.quadratic-factorising.ib-p1#a2",
+      "attempt": 2,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:16:37.240Z"
+     }
+    }
+   },
+   "stimulus": null
+  },
+  "11.quadratic-optimum.ib-p2#a2": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|11.quadratic-optimum.ib-p2#a2",
+    "unitKey": "11.quadratic-optimum.ib-p2#a2",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "287e6d2e21f8747923c538198880a1749f2b26e23009546d8a8eff4151dd4b76",
+    "primaryConceptStableId": "math.alg.quadratics",
+    "language": "en",
+    "responseFormat": "SHORT_RESPONSE",
+    "difficultyBand": "STANDARD",
+    "marks": 7,
+    "instruction": "Show your working.",
+    "stimulusKey": null,
+    "content": {
+     "stem": "In a scientific model, a quantity Q depends on a free measure x, where 0 ≤ x ≤ 50. The model is the product of two linear factors: one factor starts at 20 and increases by 4 for each unit of x, while the other starts at 100 and decreases by 2 for each unit of x. Find the quadratic model and the value of x that makes Q as large as possible. State the maximum value of Q in the terms of the model.",
+     "context": {
+      "kind": "SCIENTIFIC",
+      "description": "A modelled quantity is the product of two positive linear factors depending on a free measure x."
+     },
+     "declaredModel": {
+      "construct": "QUADRATIC_MODEL_VERTEX_OPTIMUM",
+      "parameters": {
+       "p": 20,
+       "q": 4,
+       "r": 100,
+       "s": 2
+      }
+     },
+     "selected": null,
+     "numeric": null,
+     "constructed": {
+      "parts": [
+       {
+        "label": "a",
+        "prompt": "Find Q as a quadratic function of x.",
+        "marks": 2,
+        "markScheme": [
+         {
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Forms the product Q = (20 + 4x)(100 - 2x)."
+         },
+         {
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "Expands correctly to Q = -8x^2 + 360x + 2000."
+         }
+        ],
+        "finalAnswer": "Q = -8x^2 + 360x + 2000",
+        "numericKey": null,
+        "target": {
+         "kind": "NOT_MACHINE_CHECKABLE",
+         "reason": "The target is the correctly formulated quadratic model rather than a single construct-vocabulary quantity."
+        },
+        "answerCheck": {
+         "kind": "NOT_COMPUTABLE",
+         "reason": "An algebraic model is required, not one numerical expression."
+        }
+       },
+       {
+        "label": "b",
+        "prompt": "Find the value of x at which Q is largest.",
+        "marks": 3,
+        "markScheme": [
+         {
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Uses the vertex coordinate for the quadratic, or equivalently calculates xv = (4 × 100 − 20 × 2) / (2 × 4 × 2)."
+         },
+         {
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "Calculates the vertex measure as x = 22.5."
+         },
+         {
+          "kind": "REASONING",
+          "marks": 1,
+          "criterion": "Recognises that the quadratic has a negative leading coefficient, so its vertex gives the maximum within 0 ≤ x ≤ 50."
+         }
+        ],
+        "finalAnswer": "x = 22.5",
+        "numericKey": {
+         "kind": "NUMERIC",
+         "value": "22.5",
+         "equivalentFormsAllowed": true,
+         "decimalPlaces": 1
+        },
+        "target": {
+         "kind": "QUANTITY",
+         "quantity": "MEASURE_AT_OPTIMUM"
+        },
+        "answerCheck": {
+         "kind": "ARITHMETIC_EXPRESSION",
+         "expression": "(4*100-20*2)/(2*4*2)"
+        }
+       },
+       {
+        "label": "c",
+        "prompt": "Find the maximum value of Q and interpret both optimal results in the situation.",
+        "marks": 2,
+        "markScheme": [
+         {
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Substitutes x = 22.5 into Q = (20 + 4x)(100 − 2x), giving (20 + 4 × 22.5)(100 − 2 × 22.5)."
+         },
+         {
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "Finds Q = 6050 and states that the quantity is largest when x = 22.5."
+         }
+        ],
+        "finalAnswer": "The maximum value is Q = 6050, achieved when x = 22.5.",
+        "numericKey": {
+         "kind": "NUMERIC",
+         "value": "6050",
+         "equivalentFormsAllowed": true
+        },
+        "target": {
+         "kind": "QUANTITY",
+         "quantity": "OPTIMAL_VALUE"
+        },
+        "answerCheck": {
+         "kind": "ARITHMETIC_EXPRESSION",
+         "expression": "(20+4*22.5)*(100-2*22.5)"
+        }
+       }
+      ],
+      "totalMarks": 7,
+      "workingOutline": [
+       "Write the model as Q = (20 + 4x)(100 − 2x).",
+       "Expand to obtain Q = −8x^2 + 360x + 2000.",
+       "Use the vertex formula to calculate x = 22.5.",
+       "Because the coefficient of x^2 is negative and 22.5 lies in the allowed interval, this vertex gives the maximum.",
+       "Substitute x = 22.5 into the product model to obtain Q = 6050.",
+       "Interpret x = 22.5 as the optimal free measure and Q = 6050 as the maximum modelled quantity."
+      ]
+     },
+     "credit": null,
+     "rationale": "The item requires formulation of the product as a quadratic, solution by the vertex, and interpretation of both the optimal measure and optimal value.",
+     "usesStimulusValues": null,
+     "proposedSupportingConceptStableIds": [
+      "math.alg.quadratics"
+     ]
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.alg.quadratics",
+      "canonicalSubject": "Mathematics",
+      "canonicalName": "Quadratic functions and inequalities"
+     },
+     "taskFamily": {
+      "id": "tf.math.quadratic.optimum-of-a-model",
+      "version": "0.1.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "STANDARD_BY_ABSENCE"
+     },
+     "systemProfile": {
+      "id": "IB",
+      "version": "0.2.0-illustrative"
+     },
+     "componentProfile": {
+      "id": "IB.MATH_AA_HL.P2",
+      "version": "0.4.0-illustrative",
+      "versionBinding": {
+       "targetType": "EXAM_VERSION",
+       "targetIdentity": "v2.ib.math-aa-hl",
+       "version": "V2 2021-2028",
+       "componentKey": "p2",
+       "provenance": {
+        "kind": "AUTHORITATIVE_SOURCE",
+        "sourceKeys": [
+         "ibo-math-aa-guide-2021",
+         "ibo-math-aa-brief-2021",
+         "ibo-math-dp-page"
+        ],
+        "recordedIn": "IB_MATH_AA_HL_V2.key / version.label / sections[p2]"
+       }
+      }
+     },
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "287e6d2e21f8747923c538198880a1749f2b26e23009546d8a8eff4151dd4b76",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "65167cb7ba045fa4c40b77ba65ffff0d07deecb8a436fa0cd67ee172ca59737f",
+      "template": {
+       "id": "spec-constructed-response",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "11.quadratic-optimum.ib-p2#a2",
+      "attempt": 2,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:16:48.169Z"
+     }
+    }
+   },
+   "stimulus": null
+  },
+  "17.approach.school.stem-plus#a1": {
+   "candidate": {
+    "v": 1,
+    "candidateKey": "cand|17.approach.school.stem-plus#a1",
+    "unitKey": "17.approach.school.stem-plus#a1",
+    "batchKey": "qb-r2d-live-multi-profile",
+    "specificationId": "995b4c29713381c5be0ca629c4e0df15b66da82b152a1b8491c22a8d0fde46c7",
+    "primaryConceptStableId": "math.num.ratio-proportion",
+    "language": "es",
+    "responseFormat": "EXTENDED_RESPONSE",
+    "difficultyBand": "STANDARD",
+    "marks": 7,
+    "instruction": "Muestra tu procedimiento.",
+    "stimulusKey": null,
+    "content": {
+     "stem": "Una cooperativa vecinal compara dos planes de transporte para sus entregas. El plan 1 cuesta 12 euros y permite realizar 30 entregas. El plan 2 cuesta 20 euros y permite realizar 44 entregas. Compara los planes mediante la cantidad de entregas por euro, muestra tu procedimiento y justifica cuál ofrece mejor rendimiento y por cuánto.",
+     "context": {
+      "kind": "SOCIETAL",
+      "description": "Una cooperativa vecinal debe elegir entre dos planes de transporte con distintos costes y cantidades de entregas."
+     },
+     "declaredModel": {
+      "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+      "parameters": {
+       "p1": 12,
+       "q1": 30,
+       "p2": 20,
+       "q2": 44
+      }
+     },
+     "selected": null,
+     "numeric": null,
+     "constructed": {
+      "parts": [
+       {
+        "label": "a",
+        "prompt": "FORMULA las dos tasas unitarias que deben compararse, indicando qué representa cada una.",
+        "marks": 2,
+        "markScheme": [
+         {
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Formula r1 = q1 / p1 y r2 = q2 / p2."
+         },
+         {
+          "kind": "REASONING",
+          "marks": 1,
+          "criterion": "Indica que cada tasa representa el número de entregas por euro para el plan correspondiente."
+         }
+        ],
+        "finalAnswer": "r1 = 30/12 y r2 = 44/20; ambas expresan entregas por euro.",
+        "numericKey": null,
+        "target": {
+         "kind": "NOT_MACHINE_CHECKABLE",
+         "reason": "La respuesta exige formular las dos tasas y explicar el significado de la cantidad comparada."
+        },
+        "answerCheck": {
+         "kind": "NOT_COMPUTABLE",
+         "reason": "La respuesta combina expresiones y una explicación de sus unidades."
+        }
+       },
+       {
+        "label": "b",
+        "prompt": "SOLVE las dos tasas unitarias y calcula la diferencia entre ellas.",
+        "marks": 3,
+        "markScheme": [
+         {
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Calcula correctamente r1 = 30/12 y r2 = 44/20."
+         },
+         {
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "Obtiene r1 = 2.5 y r2 = 2.2, ambas en entregas por euro."
+         },
+         {
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "Calcula correctamente la diferencia 2.5 - 2.2 = 0.3."
+         }
+        ],
+        "finalAnswer": "r1 = 2.5 entregas por euro, r2 = 2.2 entregas por euro y d = 0.3 entregas por euro.",
+        "numericKey": null,
+        "target": {
+         "kind": "QUANTITY",
+         "quantity": "UNIT_RATE_DIFFERENCE"
+        },
+        "answerCheck": {
+         "kind": "ARITHMETIC_EXPRESSION",
+         "expression": "30/12-44/20"
+        }
+       },
+       {
+        "label": "c",
+        "prompt": "INTERPRET el resultado: indica qué plan favorece la comparación y por cuánto supera su tasa unitaria a la del otro plan. Justifica tu decisión con las tasas calculadas.",
+        "marks": 2,
+        "markScheme": [
+         {
+          "kind": "REASONING",
+          "marks": 1,
+          "criterion": "Concluye que el plan 1 es mejor porque su tasa unitaria es mayor que la del plan 2."
+         },
+         {
+          "kind": "REASONING",
+          "marks": 1,
+          "criterion": "Comunica que el plan 1 supera al plan 2 en 0.3 entregas por euro y relaciona la conclusión con las dos tasas."
+         }
+        ],
+        "finalAnswer": "Favorece al plan 1, porque 2.5 > 2.2; su tasa supera a la del plan 2 en 0.3 entregas por euro.",
+        "numericKey": null,
+        "target": {
+         "kind": "COMPARISON",
+         "left": "30/12",
+         "operator": ">",
+         "right": "44/20",
+         "holds": true,
+         "verdict": "OPTION_WITH_HIGHER_UNIT_RATE: OPTION_1"
+        },
+        "answerCheck": {
+         "kind": "ARITHMETIC_EXPRESSION",
+         "expression": "30/12-44/20"
+        }
+       }
+      ],
+      "totalMarks": 7,
+      "workingOutline": [
+       "Identificar el coste como la cantidad de entrada y las entregas como el retorno de cada plan.",
+       "Formar las tasas unitarias dividiendo entregas entre euros: r1 = 30/12 y r2 = 44/20.",
+       "Calcular r1 = 2.5 y r2 = 2.2 entregas por euro.",
+       "Restar las tasas para obtener d = 0.3 entregas por euro.",
+       "Comparar las tasas, elegir el plan 1 y justificar que su rendimiento es mayor por 0.3 entregas por euro."
+      ]
+     },
+     "credit": [
+      {
+       "code": "FULL_CREDIT",
+       "description": "Formula ambas tasas unitarias, calcula correctamente las dos tasas y su diferencia, e interpreta justificadamente que el plan 1 ofrece el mayor rendimiento por 0.3 entregas por euro."
+      },
+      {
+       "code": "PARTIAL_CREDIT",
+       "description": "Muestra un método proporcional pertinente y obtiene parte de las tasas o de la comparación, pero contiene un error de cálculo, unidades incompletas o una interpretación insuficientemente justificada."
+      },
+      {
+       "code": "NO_CREDIT",
+       "description": "No forma tasas unitarias comparables o no proporciona un procedimiento y una conclusión relacionados con el rendimiento por euro."
+      }
+     ],
+     "rationale": "La situación requiere comparar dos opciones con costes y retornos distintos mediante tasas unitarias. El plan con mayor cantidad total no es automáticamente mejor, por lo que la decisión exige formular, calcular e interpretar la proporcionalidad.",
+     "usesStimulusValues": null,
+     "proposedSupportingConceptStableIds": []
+    },
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "provenance": "STUDYUS_GENERATED",
+    "lineage": {
+     "kind": "MODEL",
+     "primaryConcept": {
+      "stableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Proporcionalidad"
+     },
+     "taskFamily": {
+      "id": "tf.math.proportion.rate-comparison-model",
+      "version": "0.2.0-draft"
+     },
+     "learningApproach": {
+      "recordedAs": "EXPLICIT",
+      "id": "STEM_PLUS",
+      "version": "0.1.0-provisional"
+     },
+     "systemProfile": {
+      "id": "SCHOOL_STEM_PERFORMANCE",
+      "version": "0.1.0-design"
+     },
+     "componentProfile": null,
+     "systemVersionBinding": null,
+     "disciplinePolicy": {
+      "id": "studyus.adaptation.mathematics",
+      "version": "0.1.0-provisional"
+     },
+     "adaptationSpecification": {
+      "id": "995b4c29713381c5be0ca629c4e0df15b66da82b152a1b8491c22a8d0fde46c7",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+     },
+     "contentUseClass": "DEV_TEST_CONTENT",
+     "generationRequest": {
+      "promptHash": "ba49ecf4152ffaf7d0acfe372ed4ac6dd7613d7e7e327eea13d81e9f7bf0edbc",
+      "template": {
+       "id": "spec-constructed-response",
+       "version": "1"
+      },
+      "policy": {
+       "id": "qb-r2d-live-generation",
+       "version": "1"
+      },
+      "harness": {
+       "id": "studyus-specification-generation-harness",
+       "version": "1"
+      },
+      "responseSchema": {
+       "id": "studyus-specification-generation-response",
+       "version": "1"
+      },
+      "unitKey": "17.approach.school.stem-plus#a1",
+      "attempt": 1,
+      "requestedBy": "qb-r2d-lane"
+     },
+     "generationRun": {
+      "runId": "qb-r2d-20261011180507",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generatedAt": "2026-10-11T18:08:43.854Z"
+     }
+    }
+   },
+   "stimulus": null
+  }
+ },
+ "qbR2dRawResponsesWithTheFixedInstruction": {
+  "10.quadratic-factorising.ib-p1#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"Solve the equation 2x^2 - 5x - 3 = 0 by bringing it to standard form and factorising it. Show your working.\",\"context\":{\"kind\":\"ABSTRACT\",\"description\":\"An algebraic quadratic equation with rational roots.\"},\"declaredModel\":{\"construct\":\"QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING\",\"parameters\":{\"a\":2,\"r1\":3,\"r2\":-0.5}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Write the equation in standard form and factorise the quadratic expression.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Writes the equation in standard form as 2x^2 - 5x - 3 = 0.\"},{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Factorises the left-hand side correctly as (2x + 1)(x - 3).\"}],\"finalAnswer\":\"(2x + 1)(x - 3) = 0\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response requires the correct factorised equation.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The factorised expression must be checked symbolically.\"}},{\"label\":\"b\",\"prompt\":\"Solve the factorised equation to find both values of x.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the zero-product property to set each factor equal to zero.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains both solutions x = 3 and x = -0.5.\"}],\"finalAnswer\":\"x = 3 or x = -0.5\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response contains two roots rather than one keyed quantity.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"Two algebraic solutions must be checked together.\"}}],\"totalMarks\":4,\"workingOutline\":[\"Rewrite the equation in standard form if necessary.\",\"Find a factorisation of 2x^2 - 5x - 3.\",\"Set each factor equal to zero using the zero-product property.\",\"Solve the two resulting linear equations and state both roots.\"]},\"credit\":null,\"rationale\":\"The equation is built with a=2, r1=3, and r2=-0.5, giving b=-5 and c=-3. Factorising produces (2x + 1)(x - 3), so both rational roots can be read from the factors.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}",
+  "13.probability-compare.cambridge-p1#a1": "{\"stimulus\":null,\"item\":{\"stem\":\"A game offers two options for winning a prize. In option 1, 14 of 40 equally likely outcomes are wins. In option 2, 30 of 75 equally likely outcomes are wins. A player claims that option 2 gives the better chance of winning. Show your working.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"Comparing winning chances in two options with equally likely outcomes.\"},\"declaredModel\":{\"construct\":\"COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES\",\"parameters\":{\"n1\":40,\"k1\":14,\"n2\":75,\"k2\":30}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Work out the event being considered and the sample space for each option, then express the probability of winning for each option as a fraction.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Identifies winning outcomes as the event and identifies the total outcomes as the sample space for both options.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"States the probabilities as P1 = 14/40 and P2 = 30/75.\"}],\"finalAnswer\":\"Event: winning the prize. Sample spaces: 40 outcomes for option 1 and 75 outcomes for option 2; P1 = 14/40 and P2 = 30/75.\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response identifies events and sample spaces and formulates two probability expressions.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"Event and sample-space descriptions require language evaluation.\"}},{\"label\":\"b\",\"prompt\":\"Work out the probability of winning for each option as a decimal.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Divides the favourable-outcome count by the total-outcome count for each option.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains P1 = 0.35 and P2 = 0.4.\"}],\"finalAnswer\":\"P1 = 0.35 and P2 = 0.4.\",\"numericKey\":null,\"target\":{\"kind\":\"COMPARISON\",\"left\":\"14/40\",\"operator\":\"<\",\"right\":\"30/75\",\"holds\":true,\"verdict\":\"option 2 has the higher probability\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"14/40\"}},{\"label\":\"c\",\"prompt\":\"Work out whether the player's claim is true or false. State which option gives the better chance of winning.\",\"marks\":1,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Compares 0.35 with 0.4 and concludes that the claim is true because option 2 has the higher probability.\"}],\"finalAnswer\":\"The claim is true. Option 2 gives the better chance of winning.\",\"numericKey\":null,\"target\":{\"kind\":\"VERDICT\",\"verdict\":\"OPTION_WITH_HIGHER_PROBABILITY\",\"value\":\"OPTION_2\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The answer requires a categorical judgement based on the comparison.\"}}],\"totalMarks\":5,\"workingOutline\":[\"Identify winning outcomes as the event and total outcomes as the sample space for each option.\",\"Form the probabilities 14/40 and 30/75.\",\"Calculate the probabilities as 0.35 and 0.4.\",\"Compare the two values and conclude that option 2 gives the better chance, so the claim is true.\"]},\"credit\":null,\"rationale\":\"The item requires the response to formulate the two classical probability models, compute both probabilities, and evaluate the claim by comparing them. The counts differ in both options, so the counts alone do not determine the answer, and the probability difference is 0.05.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[\"math.prob.probability\"]}}"
+ }
+}

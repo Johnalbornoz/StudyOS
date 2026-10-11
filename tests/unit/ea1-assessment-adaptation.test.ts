@@ -1329,7 +1329,7 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
   const familyFiles = walk(FAMILIES_DIR);
 
   it('the two directories hold exactly these modules', () => {
-    expect(adaptationFiles.map((f) => f.replace(`${ADAPTATION_DIR}/`, '')).sort()).toEqual(['adapt.ts', 'adaptation-specification.ts', 'assessment-applicability.ts', 'assessment-system-profile.ts', 'canonical-hash.ts', 'cell-bridge.ts', 'discipline-policy.ts', 'index.ts', 'instance-lineage.ts', 'learning-approach-poc.ts', 'math-poc-applicability.ts', 'math-poc-matrix.ts', 'school-stem-performance.ts', 'system-profiles.ts']);
+    expect(adaptationFiles.map((f) => f.replace(`${ADAPTATION_DIR}/`, '')).sort()).toEqual(['adapt.ts', 'adaptation-specification.ts', 'assessment-applicability.ts', 'assessment-system-profile.ts', 'canonical-hash.ts', 'cell-bridge.ts', 'discipline-policy.ts', 'index.ts', 'instance-lineage.ts', 'item-demand-policy.ts', 'learning-approach-poc.ts', 'math-poc-applicability.ts', 'math-poc-matrix.ts', 'school-stem-performance.ts', 'system-profiles.ts']);
     expect(familyFiles.map((f) => f.replace(`${FAMILIES_DIR}/`, '')).sort()).toEqual(['family-demand.ts', 'index.ts', 'math-poc-families-ea1a.ts', 'math-poc-families.ts', 'math-problem.ts', 'task-family.ts']);
   });
 
@@ -1359,8 +1359,9 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     // QB-R2D adds three Production OS modules of the specification-driven path. Same direction (production -> adaptation), still pure, still no route, service or table.
     expect(importers).toEqual([
       'src/lib/exam-core/question-bank/production/generation-contract.ts', 'src/lib/exam-core/question-bank/production/generator/generate-candidates.ts',
-      'src/lib/exam-core/question-bank/production/generator/specification-generation-v2.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation.ts', 'src/lib/exam-core/question-bank/production/specification-candidate.ts',
-      'src/lib/exam-core/question-bank/production/specification-validators-r3.ts', 'src/lib/exam-core/question-bank/production/specification-validators.ts',
+      'src/lib/exam-core/question-bank/production/generator/specification-generation-v2.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation-v3.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation.ts', 'src/lib/exam-core/question-bank/production/specification-candidate.ts',
+      // QB-R2F adds generator version 3 and validators revision 4 (both read the item demand policy); same direction, still pure
+      'src/lib/exam-core/question-bank/production/specification-validators-r3.ts', 'src/lib/exam-core/question-bank/production/specification-validators-r4.ts', 'src/lib/exam-core/question-bank/production/specification-validators.ts',
     ]);
     expect(walk('src/app').filter((f) => /assessment-adaptation|task-families|AdaptationSpecification/.test(read(f)))).toEqual([]);
     expect(walk('src/services').filter((f) => /assessment-adaptation|task-families|AdaptationSpecification/.test(read(f)))).toEqual([]);

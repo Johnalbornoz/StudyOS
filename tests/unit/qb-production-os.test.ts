@@ -52,12 +52,12 @@ describe('one authoring contract', () => {
     // answer normalisation with its evaluator, the calibration contract, the independent validators and the generator directory.
     expect(files).toEqual([
       'answer-normalization.ts', 'concept-profile.ts', 'difficulty-calibration.ts', 'expression-evaluator.ts', 'generation-contract.ts', 'independent-validators.ts', 'math-construct-registry.ts', 'originality-gate.ts', 'paa-backlog-data.ts', 'paa-backlog.ts', 'paa-cells.ts',
-      'paa-concept-identity.ts', 'paa-concept-profiles.ts', 'paa-generation-plan.ts', 'pilot-projection.ts', 'pool-assignment.ts', 'reference-pack.ts', 'requirement-cell.ts', 'review-package.ts', 'rights-gate.ts', 'specification-candidate.ts', 'specification-validators-r3.ts', 'specification-validators.ts',
+      'paa-concept-identity.ts', 'paa-concept-profiles.ts', 'paa-generation-plan.ts', 'pilot-projection.ts', 'pool-assignment.ts', 'reference-pack.ts', 'requirement-cell.ts', 'review-package.ts', 'rights-gate.ts', 'specification-candidate.ts', 'specification-validators-r3.ts', 'specification-validators-r4.ts', 'specification-validators.ts',
       'stimulus-plan.ts', 'stimulus-spec.ts', 'structural-validation.ts', 'validated-candidate.ts',
     ]);
     expect(readdirSync(join(ROOT, PROD), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)).toEqual(['generator']);
     // QB-R2D adds, additively, the specification-driven path: its contract, its construct vocabulary, its validators and one generator file.
-    expect(readdirSync(join(ROOT, PROD, 'generator')).sort()).toEqual(['generate-candidates.ts', 'provider.ts', 'response-schema.ts', 'specification-generation-v2.ts', 'specification-generation.ts', 'templates.ts']);
+    expect(readdirSync(join(ROOT, PROD, 'generator')).sort()).toEqual(['generate-candidates.ts', 'provider.ts', 'response-schema.ts', 'specification-generation-v2.ts', 'specification-generation-v3.ts', 'specification-generation.ts', 'templates.ts']);
     expect(existsSync(join(ROOT, PROD, 'draft-package.ts'))).toBe(false);
     const all = files.map((f) => read(`${PROD}/${f}`)).join('\n');
     expect(all).not.toMatch(/ProductionDraftPackage|validateDraftPackage|GeneratedCandidate\b/);
@@ -68,7 +68,7 @@ describe('one authoring contract', () => {
     const walk = (d: string): string[] => readdirSync(join(ROOT, d), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${d}/${e.name}`) : e.name.endsWith('.ts') || e.name.endsWith('.tsx') ? [`${d}/${e.name}`] : []));
     // every production module, the generator directory included: no database, no query, no environment, no network, no file system
     const production = walk(PROD);
-    expect(production.length).toBe(33); // QB-R2D: +3 modules and +1 generator file; QB-R2E: +1 module (validators revision 3) and +1 generator file (version 2); all pure
+    expect(production.length).toBe(35); // QB-R2D: +3 modules and +1 generator file; QB-R2E: +1 module (validators revision 3) and +1 generator file (version 2); QB-R2F: +1 module (validators revision 4) and +1 generator file (version 3); all pure
     for (const f of production) {
       const src = read(f).replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '');
       expect(src, f).not.toMatch(/from '@\/lib\/db'|\bquery\(|INSERT INTO|UPDATE \w+ SET|DELETE FROM|process\.env|fetch\(|from '(node:)?fs'|from 'pg'|@\/lib\/ai\/|\bDate\.now\(|new Date\(\)|Math\.random\(/);

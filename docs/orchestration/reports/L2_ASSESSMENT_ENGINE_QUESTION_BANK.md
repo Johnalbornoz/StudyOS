@@ -345,3 +345,60 @@ Keep on the lane branch. The lane does not merge.
 
 ## NEXT SAFE ACTION
 Orchestrator rules on budget and on whether to run QB-R2F: fix V1, V2, the numeric-entry trap and duplicate part labels; widen the meta-stem heuristic; new freeze SHA; completely fresh batch. No provider call until then.
+
+---
+
+# L2 — CR-L8-01 ASSESSMENT SIDE + QB-R2F OFFLINE REMEDIATION (2026-10-11)
+
+## LANE
+L2 — ASSESSMENT ENGINE / QUESTION BANK — worktree `/Users/jalbornoz/PROYECTOS/studyos-qb-r1a`. Two branches: `feat/l2-cr-l8-01-subject-aggregates` (release dependency, base `4fb45b0`) and `feat/qb-r2f-offline-remediation` (generator track, base `4b24816`).
+
+## STATUS
+READY_FOR_ORCHESTRATOR_REVIEW
+
+| Field | Value |
+|---|---|
+| CR_L8_01_ASSESSMENT_SIDE | PASS |
+| SUBJECT_AWARE_AGGREGATES | PASS |
+| L2_RELEASE_DEPENDENCY | CLOSED |
+| GENERATOR_REMEDIATION_OFFLINE | PASS |
+| R2F_READY_FOR_LIVE_RUN | YES — offline; the run cannot start under the current cap |
+| MINIMUM_REQUIRED_CAP | USD 7.25 cumulative (assumed-high-price basis) |
+| CURRENT_ASSUMED_CUMULATIVE_SPEND_USD | 3.005135 (no call made in this phase) |
+
+## BASE SHA
+4fb45b0 (CR-L8-01) and 4b24816 (QB-R2F).
+
+## FINAL SHA
+CR-L8-01: f54cc14 on `feat/l2-cr-l8-01-subject-aggregates`. QB-R2F: the freeze commit that carries this section on `feat/qb-r2f-offline-remediation` (`git log -1`).
+
+## FILES CHANGED
+CR-L8-01 (f54cc14): `src/lib/exam-core/exam-gaps.service.ts`, `tests/unit/l2-cr-l8-01-subject-aware-gaps.test.ts`, `scripts/operations/l2-cr-l8-01-subject-gaps-cert.sh`, `scripts/operations/l2-cr-l8-01/subject-gaps-cert.ts`, `docs/orchestration/reports/L2_CR_L8_01_ASSESSMENT_SIDE.md` (the contract for L8 / L10 is in that report).
+QB-R2F: new `src/lib/assessment-adaptation/item-demand-policy.ts`, `production/specification-validators-r4.ts`, `production/generator/specification-generation-v3.ts`, `scripts/operations/qb-r2f/`, `tests/fixtures/qb-r2f/known-defects.json`, `tests/unit/qb-r2f-offline-remediation.test.ts`, `docs/exams/question-bank/pilots/qb-r2f/validator-freeze.json`, `docs/exams/question-bank/QB_R2F_OFFLINE_REMEDIATION.md`; three file-list guard tests updated; this report and the status file.
+
+## LOCKS USED
+Exam core and `ASSESSMENT_ADAPTATION` (L2's own). No `SHARED_FOUNDATION`, no `SCHEMA_AND_MIGRATIONS`, no Stage, no shared database, no provider call, no ingestion, no merge, no push.
+
+## TESTS
+- CR-L8-01 branch: 7 unit tests; ephemeral-database certification of the real query, 18 checks PASS; tsc exit 0; 520 files / 9,297 tests; build exit 0.
+- QB-R2F branch: tsc exit 0; 522 files / 9,445 tests (49 new); build exit 0; five ephemeral DB certifications exit 0; QB-R2D and QB-R2E replays byte-identical; the QB-R2E frozen files are identical to 9fe68d0.
+
+## FINDINGS
+- CR-L8-01: `examGapsFor(studentIds, { families?, includePerStudent, canonicalSubjectIds? })`. Absent = unscoped as before; given = every aggregate built only from gap objectives with a published concept of those canonical subjects; objective with no mapping omitted; empty / malformed / unknown scope returns nothing. No authorization change. Callers (L10 `getTeacherClassExamGaps`, L8) still have to pass the option.
+- QB-R2F: the nine findings are fixed in new versioned files (validators revision 4, generator version 3, a StudyUs item-demand policy); nothing frozen for QB-R2E was edited. Every known QB-R2D / QB-R2E defect has a deterministic fixture built from the actual recorded response and a passing test, or is listed as not deterministically catchable (context plausibility, paper-level difficulty, register, whether a worded verdict is the right choice, give-away stems and near-duplicate scenarios in general).
+- Validator change log r3 → r4: one relaxation (the demonstrated option-numeral false positive); the equation defect is a tightening; added stricter checks (stated-equation, model-in-stimulus, item demand, batch diversity, wider item-writing flags). A test asserts no gate improves except through that fix or named evidence.
+- Diagnostic over the stored QB-R2D and QB-R2E candidates (not certification evidence, not a rescore): 17 of 48 outcomes change; the wrong key of QB-R2E 13 a1 is now FAILED; the sound item 18 a1 now passes; three items newly fail on the item-demand policy, which is new strictness.
+- New freeze prepared and committed with the cap still at 5.00: manifest hash fe76a301…3fdffa. The cap constant is part of the frozen run parameters, so raising the cap requires a re-freeze commit (validators unchanged) before the run.
+- Cost: worst case for 20 first calls + 20 regenerations is 4.23 → cumulative 7.24; expected from QB-R2E usage about 1.2–2.3. The plan-level guard refuses to start.
+
+## BLOCKERS
+Orchestrator authorization of the cap (MINIMUM_REQUIRED_CAP = 7.25) before any QB-R2F live call.
+
+## CHANGE_REQUESTS
+To L10: pass `canonicalSubjectIds` from `getTeacherClassExamGaps` (see `L2_CR_L8_01_ASSESSMENT_SIDE.md` on the CR branch).
+
+## MERGE RECOMMENDATION
+CR-L8-01 (f54cc14): merge into the convergence line. QB-R2F: keep on the lane branch.
+
+## NEXT SAFE ACTION
+Orchestrator rules on the cap. With authorization: set the cap, re-write and re-commit the freeze, verify, run the fresh batch.
