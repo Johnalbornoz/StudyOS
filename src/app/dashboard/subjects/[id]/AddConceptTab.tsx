@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 import { ConceptExplanationPanel, ConceptExplanationData } from './ConceptExplanationPanel';
+import { AccessRequiredNotice } from '@/components/ui/AccessRequiredNotice';
+import { isEntitlementRequired } from '@/lib/lx/access-required';
 
 export default function AddConceptTab({
   subjectId,
@@ -22,6 +24,8 @@ export default function AddConceptTab({
   const [creating, setCreating] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // L6 / CR-L11-02: the concept was added but its explanation is behind the licence gate.
+  const [accessRequired, setAccessRequired] = useState(false);
   const [result, setResult] = useState<{ label: string; explanation: ConceptExplanationData; conceptId: string } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -56,6 +60,7 @@ export default function AddConceptTab({
 
     setShowSuggestions(false);
     setError(null);
+    setAccessRequired(false);
     setResult(null);
     setCreating(true);
 
@@ -74,6 +79,12 @@ export default function AddConceptTab({
 
       const explainRes = await fetch(`/api/concepts/${conceptId}/explanation?studentId=${studentId}&language=${locale}`);
       const explainBody = await explainRes.json();
+      if (isEntitlementRequired(explainRes.status, explainBody)) {
+        setAccessRequired(true);
+        setLabel('');
+        router.refresh();
+        return;
+      }
       if (!explainRes.ok) throw new Error(explainBody.error || t['common.error']);
 
       setResult({ label: createBody.data.label, explanation: explainBody.data.explanation, conceptId });
@@ -148,6 +159,11 @@ export default function AddConceptTab({
       </form>
 
       {error && <p style={{ marginTop: 'var(--space-3)', fontSize: 13.5, color: 'var(--error)' }}>{error}</p>}
+      {accessRequired && (
+        <div style={{ marginTop: 'var(--space-3)' }}>
+          <AccessRequiredNotice locale={locale} />
+        </div>
+      )}
 
       {result && (
         <div style={{ marginTop: 'var(--space-4)' }}>

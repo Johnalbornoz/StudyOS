@@ -23,10 +23,15 @@ import MathText from '@/components/MathText';
 import type { TeachingExperienceView, TeachingExperienceMode } from '@/lib/lx/teaching-experience';
 import InteractiveFormulaWidget from '@/app/dashboard/subjects/[id]/InteractiveFormulaWidget';
 import { useInteractiveFormula } from '@/lib/hooks/useInteractiveFormula';
+import { AccessRequiredNotice } from '@/components/ui/AccessRequiredNotice';
+import { responseIsEntitlementRequired } from '@/lib/lx/access-required';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import TutorEntryLink from '@/app/dashboard/tutor/TutorEntryLink';
 import { activityKindForMode, kindLabelKey, teachingSkipTarget, teachingStepKey } from '@/lib/experience/learning-session';
+
+/** L6 / CR-L11-02: marks a guided-practice response refused by the licence gate. */
+const GUIDE_ACCESS_REQUIRED = Symbol('GUIDE_ACCESS_REQUIRED');
 
 interface Explanation {
   summary: string;
@@ -124,7 +129,9 @@ export default function TeachingIntro({
   // separate from Practice question-generation state (genState, on the
   // quiz page). 'error' is a distinct, TERMINAL-until-retried state --
   // it is never collapsed into "no GUIDE" (see effectivePlan below).
-  const [guideState, setGuideState] = useState<'idle' | 'loading' | 'ready' | 'error'>(needsGuided ? 'loading' : 'idle');
+  // L6 / CR-L11-02: 'access' is the licence gate (403 ENTITLEMENT_REQUIRED) -- an
+  // access state with no retry loop, distinct from 'error'.
+  const [guideState, setGuideState] = useState<'idle' | 'loading' | 'ready' | 'error' | 'access'>(needsGuided ? 'loading' : 'idle');
   const [guideAttempt, setGuideAttempt] = useState(0);
   const [exampleStep, setExampleStep] = useState(1);
 
@@ -196,12 +203,17 @@ export default function TeachingIntro({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ studentId, conceptId, mode: quizMode, language: locale }),
     })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((b) => b?.data?.guidedPractice ?? null)
+      .then(async (r) => (r.ok ? r.json() : (await responseIsEntitlementRequired(r)) ? GUIDE_ACCESS_REQUIRED : null))
+      .then((b) => (b === GUIDE_ACCESS_REQUIRED ? GUIDE_ACCESS_REQUIRED : b?.data?.guidedPractice ?? null))
       .catch(() => null)
       .then((gp) => {
         if (cancelled) return;
         guideRetryInFlightRef.current = false;
+        if (gp === GUIDE_ACCESS_REQUIRED) {
+          setGuided(null);
+          setGuideState('access');
+          return;
+        }
         // LX-4P-PERF-R1E-R1 R1: a canonically REQUIRED GUIDE that comes
         // back empty is a FAILURE, never silently treated as "not
         // required" -- see effectivePlan below, which never drops GUIDE
@@ -392,6 +404,16 @@ export default function TeachingIntro({
         )}
         {stage === 'GUIDE' && guideState === 'ready' && guided && (
           <GuidedPractice guided={guided} locale={locale} onComplete={advance} />
+        )}
+        {stage === 'GUIDE' && guideState === 'access' && (
+          <AccessRequiredNotice
+            locale={locale}
+            actions={
+              <a href={exitHref} className="btn btn-ghost">
+                {t['guided.exit']}
+              </a>
+            }
+          />
         )}
         {stage === 'GUIDE' && guideState === 'error' && (
           <InlineAlert

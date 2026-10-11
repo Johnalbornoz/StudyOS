@@ -81,6 +81,7 @@ export default async function AssignmentsPage() {
                 <StartAssignmentButton
                   interventionId={i.id}
                   targetType={i.targetType}
+                  locale={locale}
                   labels={{
                     start: i.effectiveStatus === 'IN_PROGRESS' ? t['assignments.continue'] : t['assignments.start'],
                     starting: t['assignments.starting'],

@@ -10,6 +10,10 @@
  *   5. POST /api/quizzes/generate-and-take (submit)   -- diagnosisId / remediationStepId not bound
  *   6. POST /api/learning/record-evidence    -- conceptId / subjectId not bound
  * Each is now bound; this file proves B gets 403 on A's ids and A still works.
+ *
+ * L6 ST-3: routes 2 and 6 are retired. They still refuse a foreign studentId
+ * with 403, and answer the owner 404 without reaching the service (the full
+ * cases are in l6-st3-retired-self-asserted-routes.test.ts).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
@@ -126,20 +130,22 @@ describe('#2/#3 learning-debt', () => {
     expect(h.services.getActiveDebts).not.toHaveBeenCalled();
     expect(h.services.checkAndResolve).not.toHaveBeenCalled();
   });
-  it('A reads / checks own debts', async () => {
+  it('A reads own debts; check-and-resolve is retired for the owner too (404, resolver not called)', async () => {
     as('A');
     expect((await getActive(new NextRequest(`https://dev.test/x?studentId=${A.student}`))).status).toBe(200);
-    expect((await checkAndResolve(post({ studentId: A.student, conceptId: A.concept, currentMastery: 90, daysSinceLastSuccess: 1, forgettingRisk: 10 }))).status).toBe(200);
+    expect((await checkAndResolve(post({ studentId: A.student, conceptId: A.concept, currentMastery: 90, daysSinceLastSuccess: 1, forgettingRisk: 10 }))).status).toBe(404);
+    expect(h.services.checkAndResolve).not.toHaveBeenCalled();
   });
 });
 
 describe('#6 learning/record-evidence', () => {
   const ev = (studentId: string, conceptId: string, subjectId: string) =>
     post({ studentId, conceptId, subjectId, result: 'correct', difficulty: 2, sourceType: 'PRACTICE_QUIZ', idempotencyKey: 'e2e-authz-probe-1' });
-  it('B cannot record evidence against A concept/subject, even under B own studentId', async () => {
+  it('B cannot record evidence against A (403), and nobody can record it against their own ids either (404)', async () => {
     as('B');
-    expect((await recordEvidence(ev(B.student, A.concept, A.subject))).status).toBe(403);
-    expect((await recordEvidence(ev(B.student, B.concept, A.subject))).status).toBe(403);
+    expect((await recordEvidence(ev(A.student, A.concept, A.subject))).status).toBe(403);
+    expect((await recordEvidence(ev(B.student, A.concept, A.subject))).status).toBe(404);
+    expect((await recordEvidence(ev(B.student, B.concept, B.subject))).status).toBe(404);
     expect(h.services.updateMastery).not.toHaveBeenCalled();
   });
 });

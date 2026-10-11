@@ -5,6 +5,7 @@ import { Locale, getMessages } from '@/lib/i18n/messages';
 import InteractiveFormulaWidget from './InteractiveFormulaWidget';
 import { InteractiveFormula } from '@/services/interactive-formula.service';
 import { useInteractiveFormula } from '@/lib/hooks/useInteractiveFormula';
+import { AccessRequiredNotice } from '@/components/ui/AccessRequiredNotice';
 
 export interface ConceptExplanationData {
   summary: string;
@@ -17,6 +18,7 @@ export function ConceptExplanationPanel({
   locale,
   loading,
   error,
+  accessRequired = false,
   data,
   headerLabel,
   conceptId,
@@ -25,6 +27,8 @@ export function ConceptExplanationPanel({
   locale: Locale;
   loading: boolean;
   error: boolean;
+  /** L6 / CR-L11-02: the server refused with the licence gate -- show the access state, not the error line. */
+  accessRequired?: boolean;
   data?: ConceptExplanationData;
   headerLabel?: string;
   /**
@@ -88,6 +92,8 @@ export function ConceptExplanationPanel({
           <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-muted)', fontStyle: 'italic' }}>
             {t['subjectDetail.learnMoreLoading']}
           </p>
+        ) : accessRequired ? (
+          <AccessRequiredNotice locale={locale} />
         ) : error || !data ? (
           <p style={{ margin: 0, fontSize: 13.5, color: 'var(--error)' }}>{t['subjectDetail.learnMoreError']}</p>
         ) : (

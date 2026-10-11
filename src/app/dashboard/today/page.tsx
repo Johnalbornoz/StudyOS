@@ -427,7 +427,7 @@ export default async function TodayPage() {
           competes with the primary action, never its own decision
           authority (read-only over the existing 8B plan horizon). */}
       {caminoItems.length > 0 && (
-        <Section id="xp-camino" title={t['plan8.pathTitle']} action={<Link href="/dashboard/study-plan" className="ui-link">{t['plan8.viewFull']}</Link>}>
+        <Section id="xp-camino" title={t['plan8.pathTitle']} action={<Link href="/dashboard/plan?tab=schedule" className="ui-link">{t['plan8.viewFull']}</Link>}>
           <ul className="xp-list">
             {caminoItems.map((it) => {
               const info = it.conceptId ? caminoLabels.get(it.conceptId) : null;
