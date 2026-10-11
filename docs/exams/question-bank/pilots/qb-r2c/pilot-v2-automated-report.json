@@ -1,0 +1,3040 @@
+{
+ "about": "QB-R2C Pilot Generation v2. Every provider response was authored in-session by the model working on the phase and is REPLAYED from recorded-responses.json through the harness. No live provider was called: this file is evidence that the harness is repeatable and that the contracts hold, not that a live provider works. Every result below is an AUTOMATED_VALIDATION; none is a review.",
+ "kind": "AUTOMATED_VALIDATION",
+ "batchKey": "qb-r2c-pilot-v2",
+ "runId": "qb-r2c-pilot-v2-run-1",
+ "generatedAt": "2026-10-11T12:00:00Z",
+ "provider": {
+  "id": "recorded:in-session-authoring",
+  "model": "claude-opus-5-5"
+ },
+ "replayedFromRecording": true,
+ "liveProviderExercised": false,
+ "ingested": false,
+ "units": 15,
+ "stimuli": 10,
+ "priorDraftsCompared": 24,
+ "metrics": {
+  "generated": 34,
+  "structurallyValid": 34,
+  "answerKey": {
+   "machineVerified": 9,
+   "notMachineVerifiable": 25,
+   "failed": 0
+  },
+  "conceptFidelityHeuristic": {
+   "pass": 34,
+   "weak": 0,
+   "fail": 0
+  },
+  "responseFormatPass": 34,
+  "stimulusBased": 29,
+  "stimulusIntegrityPass": 34,
+  "stimulusIntegrityPassAmongStimulusBased": 29,
+  "originality": {
+   "lowSimilarity": 34,
+   "review": 0,
+   "reject": 0
+  },
+  "regenerationRequired": 0,
+  "reviewReady": 34,
+  "poolIntegrity": {
+   "outcome": "PASS",
+   "stimuliChecked": 10,
+   "stimulusPoolViolations": 0
+  },
+  "PILOT_STIMULUS_POOL_VIOLATIONS": 0,
+  "answerNormalizationRoundTrip": {
+   "NOT_APPLICABLE": 31,
+   "PASS": 3
+  },
+  "lineageComplete": 34,
+  "automatedStatus": {
+   "READY_FOR_HUMAN_REVIEW": 34
+  },
+  "rights": {
+   "NOT_ESTABLISHABLE": 34
+  },
+  "rightsBlockers": {
+   "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING": 34
+  },
+  "reviewStatus": {
+   "BLOCKED_NO_QUALIFIED_REVIEWER": 34
+  },
+  "maxSiblingSimilarity": 0.12
+ },
+ "bySection": {
+  "paa.sec.lectura": {
+   "generated": 8,
+   "structurallyValid": 8,
+   "answerKey": {
+    "machineVerified": 1,
+    "notMachineVerifiable": 7,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 8,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 8,
+   "stimulusBased": 8,
+   "stimulusIntegrityPass": 8,
+   "stimulusIntegrityPassAmongStimulusBased": 8,
+   "originality": {
+    "lowSimilarity": 8,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 8
+  },
+  "paa.sec.redaccion": {
+   "generated": 10,
+   "structurallyValid": 10,
+   "answerKey": {
+    "machineVerified": 0,
+    "notMachineVerifiable": 10,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 10,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 10,
+   "stimulusBased": 10,
+   "stimulusIntegrityPass": 10,
+   "stimulusIntegrityPassAmongStimulusBased": 10,
+   "originality": {
+    "lowSimilarity": 10,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 10
+  },
+  "paa.sec.matematicas": {
+   "generated": 8,
+   "structurallyValid": 8,
+   "answerKey": {
+    "machineVerified": 8,
+    "notMachineVerifiable": 0,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 8,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 8,
+   "stimulusBased": 5,
+   "stimulusIntegrityPass": 8,
+   "stimulusIntegrityPassAmongStimulusBased": 5,
+   "originality": {
+    "lowSimilarity": 8,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 8
+  },
+  "paa.sec.ingles": {
+   "generated": 8,
+   "structurallyValid": 8,
+   "answerKey": {
+    "machineVerified": 0,
+    "notMachineVerifiable": 8,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 8,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 8,
+   "stimulusBased": 6,
+   "stimulusIntegrityPass": 8,
+   "stimulusIntegrityPassAmongStimulusBased": 6,
+   "originality": {
+    "lowSimilarity": 8,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 8
+  }
+ },
+ "byTemplate": {
+  "text-passage-set@1": {
+   "generated": 9,
+   "structurallyValid": 9,
+   "answerKey": {
+    "machineVerified": 0,
+    "notMachineVerifiable": 9,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 9,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 9,
+   "stimulusBased": 9,
+   "stimulusIntegrityPass": 9,
+   "stimulusIntegrityPassAmongStimulusBased": 9,
+   "originality": {
+    "lowSimilarity": 9,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 9
+  },
+  "data-interpretation-set@1": {
+   "generated": 5,
+   "structurallyValid": 5,
+   "answerKey": {
+    "machineVerified": 3,
+    "notMachineVerifiable": 2,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 5,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 5,
+   "stimulusBased": 5,
+   "stimulusIntegrityPass": 5,
+   "stimulusIntegrityPassAmongStimulusBased": 5,
+   "originality": {
+    "lowSimilarity": 5,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 5
+  },
+  "editing-writing-set@1": {
+   "generated": 12,
+   "structurallyValid": 12,
+   "answerKey": {
+    "machineVerified": 0,
+    "notMachineVerifiable": 12,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 12,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 12,
+   "stimulusBased": 12,
+   "stimulusIntegrityPass": 12,
+   "stimulusIntegrityPassAmongStimulusBased": 12,
+   "originality": {
+    "lowSimilarity": 12,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 12
+  },
+  "mcq-standalone@1": {
+   "generated": 3,
+   "structurallyValid": 3,
+   "answerKey": {
+    "machineVerified": 1,
+    "notMachineVerifiable": 2,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 3,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 3,
+   "stimulusBased": 0,
+   "stimulusIntegrityPass": 3,
+   "stimulusIntegrityPassAmongStimulusBased": 0,
+   "originality": {
+    "lowSimilarity": 3,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 3
+  },
+  "mcq-own-stimulus@1": {
+   "generated": 1,
+   "structurallyValid": 1,
+   "answerKey": {
+    "machineVerified": 1,
+    "notMachineVerifiable": 0,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 1,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 1,
+   "stimulusBased": 1,
+   "stimulusIntegrityPass": 1,
+   "stimulusIntegrityPassAmongStimulusBased": 1,
+   "originality": {
+    "lowSimilarity": 1,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 1
+  },
+  "spr-math@1": {
+   "generated": 2,
+   "structurallyValid": 2,
+   "answerKey": {
+    "machineVerified": 2,
+    "notMachineVerifiable": 0,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 2,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 2,
+   "stimulusBased": 0,
+   "stimulusIntegrityPass": 2,
+   "stimulusIntegrityPassAmongStimulusBased": 0,
+   "originality": {
+    "lowSimilarity": 2,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 2
+  },
+  "figure-geometry@1": {
+   "generated": 2,
+   "structurallyValid": 2,
+   "answerKey": {
+    "machineVerified": 2,
+    "notMachineVerifiable": 0,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 2,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 2,
+   "stimulusBased": 2,
+   "stimulusIntegrityPass": 2,
+   "stimulusIntegrityPassAmongStimulusBased": 2,
+   "originality": {
+    "lowSimilarity": 2,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 2
+  }
+ },
+ "byPool": {
+  "PRACTICE": 15,
+  "REDUCED_MOCK": 5,
+  "DIAGNOSTIC": 9,
+  "FULL_MOCK_1": 3,
+  "FULL_MOCK_2": 1,
+  "VERIFICATION": 1
+ },
+ "byBand": {
+  "STANDARD": 15,
+  "CHALLENGE": 7,
+  "FOUNDATIONAL": 12
+ },
+ "byFormat": {
+  "MULTIPLE_CHOICE": 31,
+  "STUDENT_PRODUCED": 3
+ },
+ "byDefinitionConfidence": {
+  "ESTABLISHED": {
+   "generated": 24,
+   "structurallyValid": 24,
+   "answerKey": {
+    "machineVerified": 9,
+    "notMachineVerifiable": 15,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 24,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 24,
+   "stimulusBased": 19,
+   "stimulusIntegrityPass": 24,
+   "stimulusIntegrityPassAmongStimulusBased": 19,
+   "originality": {
+    "lowSimilarity": 24,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 24
+  },
+  "WORKING_DEFINITION": {
+   "generated": 10,
+   "structurallyValid": 10,
+   "answerKey": {
+    "machineVerified": 0,
+    "notMachineVerifiable": 10,
+    "failed": 0
+   },
+   "conceptFidelityHeuristic": {
+    "pass": 10,
+    "weak": 0,
+    "fail": 0
+   },
+   "responseFormatPass": 10,
+   "stimulusBased": 10,
+   "stimulusIntegrityPass": 10,
+   "stimulusIntegrityPassAmongStimulusBased": 10,
+   "originality": {
+    "lowSimilarity": 10,
+    "review": 0,
+    "reject": 0
+   },
+   "regenerationRequired": 0,
+   "reviewReady": 10
+  }
+ },
+ "stimulusPools": [
+  {
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02",
+   "planPool": "PRACTICE",
+   "candidatePools": [
+    "PRACTICE"
+   ],
+   "candidates": 5,
+   "ok": true
+  },
+  {
+   "stimulusKey": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "stimulusPlanId": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "planPool": "PRACTICE",
+   "candidatePools": [
+    "PRACTICE"
+   ],
+   "candidates": 3,
+   "ok": true
+  },
+  {
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "planPool": "REDUCED_MOCK",
+   "candidatePools": [
+    "REDUCED_MOCK"
+   ],
+   "candidates": 5,
+   "ok": true
+  },
+  {
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "planPool": "DIAGNOSTIC",
+   "candidatePools": [
+    "DIAGNOSTIC"
+   ],
+   "candidates": 5,
+   "ok": true
+  },
+  {
+   "stimulusKey": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": null,
+   "planPool": null,
+   "candidatePools": [
+    "PRACTICE"
+   ],
+   "candidates": 1,
+   "ok": true
+  },
+  {
+   "stimulusKey": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "stimulusPlanId": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "planPool": "FULL_MOCK_1",
+   "candidatePools": [
+    "FULL_MOCK_1"
+   ],
+   "candidates": 2,
+   "ok": true
+  },
+  {
+   "stimulusKey": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "stimulusPlanId": "SP|PRACTICE|matematicas|FIGURE|07",
+   "planPool": "PRACTICE",
+   "candidatePools": [
+    "PRACTICE"
+   ],
+   "candidates": 1,
+   "ok": true
+  },
+  {
+   "stimulusKey": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "stimulusPlanId": "SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "planPool": "DIAGNOSTIC",
+   "candidatePools": [
+    "DIAGNOSTIC"
+   ],
+   "candidates": 1,
+   "ok": true
+  },
+  {
+   "stimulusKey": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusPlanId": "SP|PRACTICE|ingles|PASSAGE|01",
+   "planPool": "PRACTICE",
+   "candidatePools": [
+    "PRACTICE"
+   ],
+   "candidates": 4,
+   "ok": true
+  },
+  {
+   "stimulusKey": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "stimulusPlanId": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "planPool": "DIAGNOSTIC",
+   "candidatePools": [
+    "DIAGNOSTIC"
+   ],
+   "candidates": 2,
+   "ok": true
+  }
+ ],
+ "stimulusSimilarity": [
+  {
+   "a": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "b": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "b": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "b": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "b": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "b": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "b": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "b": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "b": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "b": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "b": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "b": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "b": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "b": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "similarity": 0.006
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "b": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "b": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "b": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "b": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "b": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "b": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "b": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "b": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "b": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "b": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "b": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "b": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "b": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "b": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "b": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "b": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "b": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "b": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "b": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "b": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "b": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "b": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "b": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "b": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "b": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "b": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "b": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "b": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "b": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "b": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "b": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "similarity": 0
+  },
+  {
+   "a": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "b": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "similarity": 0
+  }
+ ],
+ "conceptProfileCoverage": {
+  "authored": 23,
+  "total": 61,
+  "workingDefinitions": [
+   "write.concision-elision",
+   "write.stylistic-addition",
+   "write.generalization",
+   "write.global-synthesis",
+   "write.indirect-expression"
+  ]
+ },
+ "authoring": {
+  "authoredInSession": true,
+  "regenerationsAfterFirstRecording": [
+   {
+    "unitKey": "SP|PRACTICE|lectura|PASSAGE|02",
+    "slotKey": "PRACTICE|005|read.central-idea|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+    "reason": "Self-reading after the first replay, not a validator failure: the key called the character 'joven', which the text never states. The key was rewritten without it. No validator caught this.",
+    "trigger": "SELF_READING"
+   }
+  ],
+  "regenerationsTriggeredByAValidator": 0,
+  "draftingRevisionsBeforeFirstRecording": [
+   "lectura PASSAGE 02 / read.textual-evidence: the first draft asked for the evidence that Inés decided to make the piece herself, which gave away the central-idea question of the same text; the claim was changed.",
+   "redaccion NUMBERED_TEXT 01 / write.generalization (CHALLENGE): the first draft generalised a list of vegetables into one word, which the profile calls STANDARD; a sentence enumerating three tasks was written instead.",
+   "redaccion NUMBERED_TEXT 01 / write.indirect-expression (FOUNDATIONAL): one distractor was a second concrete example, which the profile calls STANDARD; it was replaced by a general statement."
+  ]
+ },
+ "remainingFailures": [],
+ "flagged": [
+  {
+   "candidateKey": "cand|PRACTICE|004|read.explicit-information|MULTIPLE_CHOICE|STANDARD#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|009|read.textual-evidence|MULTIPLE_CHOICE|CHALLENGE#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|018|lit.narrative-elements|MULTIPLE_CHOICE|CHALLENGE#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|001|read.vocabulary-in-context|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|005|read.central-idea|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|CHALLENGE#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|REDUCED_MOCK|021|write.concision-elision|MULTIPLE_CHOICE|CHALLENGE#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|REDUCED_MOCK|022|write.stylistic-addition|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|REDUCED_MOCK|023|write.generalization|MULTIPLE_CHOICE|CHALLENGE#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|REDUCED_MOCK|024|write.global-synthesis|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|REDUCED_MOCK|025|write.indirect-expression|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|025|write.indirect-expression|MULTIPLE_CHOICE|STANDARD#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|075|efl.reading.literal|MULTIPLE_CHOICE|CHALLENGE#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|076|efl.reading.literal|MULTIPLE_CHOICE|STANDARD#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|078|efl.reading.interpretive|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|079|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|STANDARD#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  },
+  {
+   "candidateKey": "cand|VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD#1",
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ]
+  }
+ ],
+ "rows": [
+  {
+   "candidateKey": "cand|PRACTICE|004|read.explicit-information|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "PRACTICE|004|read.explicit-information|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "PRACTICE|004|read.explicit-information|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "primaryConcept": "read.explicit-information",
+   "template": "text-passage-set@1",
+   "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusKind": "PASSAGE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "segun el texto",
+    "el texto dice",
+    "de manera directa",
+    "dato"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.024,
+   "closest": "GENERATION_BATCH_SIBLING:qb-r2b:r2b-L2",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|009|read.textual-evidence|MULTIPLE_CHOICE|CHALLENGE#1",
+   "slotKey": "PRACTICE|009|read.textual-evidence|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "PRACTICE|009|read.textual-evidence|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "primaryConcept": "read.textual-evidence",
+   "template": "text-passage-set@1",
+   "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+   "format": "MULTIPLE_CHOICE",
+   "band": "CHALLENGE",
+   "unit": "SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusKind": "PASSAGE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "evidencia",
+    "respalda",
+    "fragmento"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.013,
+   "closest": "GENERATION_BATCH_SIBLING:qb-r2b:r2b-L5",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|018|lit.narrative-elements|MULTIPLE_CHOICE|CHALLENGE#1",
+   "slotKey": "PRACTICE|018|lit.narrative-elements|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "PRACTICE|018|lit.narrative-elements|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "primaryConcept": "lit.narrative-elements",
+   "template": "text-passage-set@1",
+   "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+   "format": "MULTIPLE_CHOICE",
+   "band": "CHALLENGE",
+   "unit": "SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusKind": "PASSAGE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "narrador",
+    "narra",
+    "personaje",
+    "relato",
+    "tercera persona",
+    "protagonista"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|001|read.vocabulary-in-context|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "PRACTICE|001|read.vocabulary-in-context|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|001|read.vocabulary-in-context|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "primaryConcept": "read.vocabulary-in-context",
+   "template": "text-passage-set@1",
+   "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusKind": "PASSAGE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "significa",
+    "sentido",
+    "contexto",
+    "palabra"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|005|read.central-idea|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "PRACTICE|005|read.central-idea|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|005|read.central-idea|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "primaryConcept": "read.central-idea",
+   "template": "text-passage-set@1",
+   "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "stimulusKind": "PASSAGE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "idea central",
+    "en conjunto",
+    "todo el texto"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.041,
+   "closest": "GENERATION_BATCH_SIBLING:qb-r2b:r2b-L4",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|CHALLENGE#1",
+   "slotKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "primaryConcept": "read.tables-and-graphics",
+   "template": "data-interpretation-set@1",
+   "promptHash": "ff8f2b576081a7c3bfc5baf8a9625b72390c7a6dab8af815c3746d36e503cacc",
+   "format": "MULTIPLE_CHOICE",
+   "band": "CHALLENGE",
+   "unit": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "stimulusPlanId": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "stimulusKind": "COMPOSITE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "tabla",
+    "datos",
+    "fila",
+    "columna",
+    "valor",
+    "segun la tabla"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.017,
+   "closest": "GENERATION_BATCH_SIBLING:cand|REDUCED_MOCK|025|write.indirect-expression|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "primaryConcept": "read.tables-and-graphics",
+   "template": "data-interpretation-set@1",
+   "promptHash": "ff8f2b576081a7c3bfc5baf8a9625b72390c7a6dab8af815c3746d36e503cacc",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "stimulusPlanId": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "stimulusKind": "COMPOSITE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "tabla",
+    "fila",
+    "columna",
+    "valor",
+    "segun la tabla"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.12,
+   "closest": "GENERATION_BATCH_SIBLING:cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "primaryConcept": "read.tables-and-graphics",
+   "template": "data-interpretation-set@1",
+   "promptHash": "ff8f2b576081a7c3bfc5baf8a9625b72390c7a6dab8af815c3746d36e503cacc",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "stimulusPlanId": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "stimulusKind": "COMPOSITE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "MACHINE_VERIFIED",
+   "answerIssues": [],
+   "computed": 60,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "tabla",
+    "datos",
+    "fila",
+    "columna",
+    "valor",
+    "segun la tabla"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.12,
+   "closest": "GENERATION_BATCH_SIBLING:cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|REDUCED_MOCK|021|write.concision-elision|MULTIPLE_CHOICE|CHALLENGE#1",
+   "slotKey": "REDUCED_MOCK|021|write.concision-elision|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "REDUCED_MOCK|021|write.concision-elision|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.redaccion",
+   "pool": "REDUCED_MOCK",
+   "primaryConcept": "write.concision-elision",
+   "template": "editing-writing-set@1",
+   "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+   "format": "MULTIPLE_CHOICE",
+   "band": "CHALLENGE",
+   "unit": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusKind": "NUMBERED_TEXT",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "repite",
+    "repeticion",
+    "innecesari",
+    "elimina",
+    "breve"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "WORKING_DEFINITION",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.117,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 2,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|REDUCED_MOCK|022|write.stylistic-addition|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "REDUCED_MOCK|022|write.stylistic-addition|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "REDUCED_MOCK|022|write.stylistic-addition|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.redaccion",
+   "pool": "REDUCED_MOCK",
+   "primaryConcept": "write.stylistic-addition",
+   "template": "editing-writing-set@1",
+   "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusKind": "NUMBERED_TEXT",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "añad",
+    "amplia",
+    "enriquec",
+    "lenguaje figurado"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "WORKING_DEFINITION",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.065,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 2,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|REDUCED_MOCK|023|write.generalization|MULTIPLE_CHOICE|CHALLENGE#1",
+   "slotKey": "REDUCED_MOCK|023|write.generalization|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "REDUCED_MOCK|023|write.generalization|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.redaccion",
+   "pool": "REDUCED_MOCK",
+   "primaryConcept": "write.generalization",
+   "template": "editing-writing-set@1",
+   "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+   "format": "MULTIPLE_CHOICE",
+   "band": "CHALLENGE",
+   "unit": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusKind": "NUMBERED_TEXT",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "general",
+    "abarca",
+    "categoria",
+    "enumera",
+    "particular"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "WORKING_DEFINITION",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.027,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 2,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|REDUCED_MOCK|024|write.global-synthesis|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "REDUCED_MOCK|024|write.global-synthesis|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "REDUCED_MOCK|024|write.global-synthesis|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.redaccion",
+   "pool": "REDUCED_MOCK",
+   "primaryConcept": "write.global-synthesis",
+   "template": "editing-writing-set@1",
+   "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusKind": "NUMBERED_TEXT",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "titulo",
+    "todo el texto",
+    "en conjunto",
+    "integra",
+    "el texto completo"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "WORKING_DEFINITION",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.033,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 2,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|REDUCED_MOCK|025|write.indirect-expression|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "REDUCED_MOCK|025|write.indirect-expression|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "REDUCED_MOCK|025|write.indirect-expression|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.redaccion",
+   "pool": "REDUCED_MOCK",
+   "primaryConcept": "write.indirect-expression",
+   "template": "editing-writing-set@1",
+   "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "stimulusKind": "NUMBERED_TEXT",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "particular",
+    "concret",
+    "ejemplo",
+    "caso",
+    "muestra"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "WORKING_DEFINITION",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.108,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|025|write.indirect-expression|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 2,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.redaccion",
+   "pool": "DIAGNOSTIC",
+   "primaryConcept": "write.concision-elision",
+   "template": "editing-writing-set@1",
+   "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusKind": "NUMBERED_TEXT",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "redundan",
+    "suprim"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "WORKING_DEFINITION",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.117,
+   "closest": "GENERATION_BATCH_SIBLING:cand|REDUCED_MOCK|021|write.concision-elision|MULTIPLE_CHOICE|CHALLENGE#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "DIAGNOSTIC|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.redaccion",
+   "pool": "DIAGNOSTIC",
+   "primaryConcept": "write.stylistic-addition",
+   "template": "editing-writing-set@1",
+   "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusKind": "NUMBERED_TEXT",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "añad",
+    "amplia",
+    "enriquec",
+    "comparacion",
+    "expresiv"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "WORKING_DEFINITION",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.065,
+   "closest": "GENERATION_BATCH_SIBLING:cand|REDUCED_MOCK|022|write.stylistic-addition|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.redaccion",
+   "pool": "DIAGNOSTIC",
+   "primaryConcept": "write.generalization",
+   "template": "editing-writing-set@1",
+   "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusKind": "NUMBERED_TEXT",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "general",
+    "abarca",
+    "categoria",
+    "enumera",
+    "particular",
+    "incluye a tod"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "WORKING_DEFINITION",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.027,
+   "closest": "GENERATION_BATCH_SIBLING:cand|REDUCED_MOCK|023|write.generalization|MULTIPLE_CHOICE|CHALLENGE#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "DIAGNOSTIC|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.redaccion",
+   "pool": "DIAGNOSTIC",
+   "primaryConcept": "write.global-synthesis",
+   "template": "editing-writing-set@1",
+   "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusKind": "NUMBERED_TEXT",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "resumen",
+    "todo el texto",
+    "en conjunto",
+    "integra",
+    "el texto completo"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "WORKING_DEFINITION",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.05,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|025|write.indirect-expression|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "DIAGNOSTIC|025|write.indirect-expression|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|025|write.indirect-expression|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.redaccion",
+   "pool": "DIAGNOSTIC",
+   "primaryConcept": "write.indirect-expression",
+   "template": "editing-writing-set@1",
+   "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "stimulusKind": "NUMBERED_TEXT",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "particular",
+    "concret",
+    "caso",
+    "ilustra",
+    "muestra"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "WORKING_DEFINITION",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.108,
+   "closest": "GENERATION_BATCH_SIBLING:cand|REDUCED_MOCK|025|write.indirect-expression|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|029|math.num.percent|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "DIAGNOSTIC|029|math.num.percent|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|029|math.num.percent|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.matematicas",
+   "pool": "DIAGNOSTIC",
+   "primaryConcept": "math.num.percent",
+   "template": "mcq-standalone@1",
+   "promptHash": "5cb3bb6a3aeb9c06dfd0443b1514d13337ff85b02c69dbfce233d783c0256eeb",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SU|DIAGNOSTIC|029|math.num.percent|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": null,
+   "stimulusKey": null,
+   "stimulusKind": null,
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "MACHINE_VERIFIED",
+   "answerIssues": [],
+   "computed": 68,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "porcentaje",
+    "por ciento",
+    "descuento"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 6
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.matematicas",
+   "pool": "PRACTICE",
+   "primaryConcept": "math.stat.central-tendency",
+   "template": "mcq-own-stimulus@1",
+   "promptHash": "44c5f72912af68cc29ac428f8bab9e480aba93552419e6d91bbac79749aca323",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": null,
+   "stimulusKey": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusKind": "DATA_SET",
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "MACHINE_VERIFIED",
+   "answerIssues": [],
+   "computed": 7,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "media"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.017,
+   "closest": "GENERATION_BATCH_SIBLING:cand|FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 7
+   }
+  },
+  {
+   "candidateKey": "cand|FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD#1",
+   "slotKey": "FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD#1",
+   "cellKey": "FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD",
+   "section": "paa.sec.matematicas",
+   "pool": "FULL_MOCK_1",
+   "primaryConcept": "math.num.ratio-proportion",
+   "template": "spr-math@1",
+   "promptHash": "fe0a004261eeb0b55d9fdd734621eb5b8813a5fb92c17d4b0ab264025742be93",
+   "format": "STUDENT_PRODUCED",
+   "band": "STANDARD",
+   "unit": "SU|FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD#1",
+   "stimulusPlanId": null,
+   "stimulusKey": null,
+   "stimulusKind": null,
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "MACHINE_VERIFIED",
+   "answerIssues": [],
+   "computed": 15,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "razon",
+    "proporcion",
+    "constante"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "PASS",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 3,
+    "NOT_YET_APPLICABLE": 6
+   }
+  },
+  {
+   "candidateKey": "cand|FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL#1",
+   "slotKey": "FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL#1",
+   "cellKey": "FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL",
+   "section": "paa.sec.matematicas",
+   "pool": "FULL_MOCK_2",
+   "primaryConcept": "math.prob.probability",
+   "template": "spr-math@1",
+   "promptHash": "04e57cd3f4b49a18b2946a4a1ae4704c963cc08106d276bccff0ab3c3eda06ea",
+   "format": "STUDENT_PRODUCED",
+   "band": "FOUNDATIONAL",
+   "unit": "SU|FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL#1",
+   "stimulusPlanId": null,
+   "stimulusKey": null,
+   "stimulusKind": null,
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "MACHINE_VERIFIED",
+   "answerIssues": [],
+   "computed": 0.5,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "probabilidad",
+    "favorable",
+    "posibles",
+    "al azar"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.017,
+   "closest": "GENERATION_BATCH_SIBLING:cand|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "roundTrip": "PASS",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 3,
+    "NOT_YET_APPLICABLE": 6
+   }
+  },
+  {
+   "candidateKey": "cand|FULL_MOCK_1|065|math.stat.data-representation|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "FULL_MOCK_1|065|math.stat.data-representation|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "FULL_MOCK_1|065|math.stat.data-representation|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.matematicas",
+   "pool": "FULL_MOCK_1",
+   "primaryConcept": "math.stat.data-representation",
+   "template": "data-interpretation-set@1",
+   "promptHash": "68c6666be0b345c86e6d4ab1c968ac8a9164206d4ba787d27cc837885455fbbc",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "stimulusPlanId": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "stimulusKey": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "stimulusKind": "TABLE",
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "MACHINE_VERIFIED",
+   "answerIssues": [],
+   "computed": 60,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "tabla",
+    "datos",
+    "segun la tabla",
+    "fila"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.065,
+   "closest": "GENERATION_BATCH_SIBLING:cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 2,
+    "UNSATISFIED": 0,
+    "BLOCKED": 3,
+    "NOT_YET_APPLICABLE": 7
+   }
+  },
+  {
+   "candidateKey": "cand|FULL_MOCK_1|065|math.stat.data-representation|STUDENT_PRODUCED|STANDARD#1",
+   "slotKey": "FULL_MOCK_1|065|math.stat.data-representation|STUDENT_PRODUCED|STANDARD#1",
+   "cellKey": "FULL_MOCK_1|065|math.stat.data-representation|STUDENT_PRODUCED|STANDARD",
+   "section": "paa.sec.matematicas",
+   "pool": "FULL_MOCK_1",
+   "primaryConcept": "math.stat.data-representation",
+   "template": "data-interpretation-set@1",
+   "promptHash": "68c6666be0b345c86e6d4ab1c968ac8a9164206d4ba787d27cc837885455fbbc",
+   "format": "STUDENT_PRODUCED",
+   "band": "STANDARD",
+   "unit": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "stimulusPlanId": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "stimulusKey": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "stimulusKind": "TABLE",
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "MACHINE_VERIFIED",
+   "answerIssues": [],
+   "computed": 27,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "tabla",
+    "datos",
+    "segun la tabla",
+    "columna"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.042,
+   "closest": "GENERATION_BATCH_SIBLING:cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "roundTrip": "PASS",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 2,
+    "UNSATISFIED": 0,
+    "BLOCKED": 3,
+    "NOT_YET_APPLICABLE": 7
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|058|math.geo.pythagorean-theorem|MULTIPLE_CHOICE|CHALLENGE#1",
+   "slotKey": "PRACTICE|058|math.geo.pythagorean-theorem|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "PRACTICE|058|math.geo.pythagorean-theorem|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.matematicas",
+   "pool": "PRACTICE",
+   "primaryConcept": "math.geo.pythagorean-theorem",
+   "template": "figure-geometry@1",
+   "promptHash": "bd6bd5218c67549475a7ceba0a16c1403f294397d27ca8e03c532cc58f798bdc",
+   "format": "MULTIPLE_CHOICE",
+   "band": "CHALLENGE",
+   "unit": "SP|PRACTICE|matematicas|FIGURE|07",
+   "stimulusPlanId": "SP|PRACTICE|matematicas|FIGURE|07",
+   "stimulusKey": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "stimulusKind": "FIGURE",
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "MACHINE_VERIFIED",
+   "answerIssues": [],
+   "computed": 56,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "hipotenusa",
+    "cateto",
+    "pitagoras",
+    "triangulo rectangulo"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.022,
+   "closest": "GENERATION_BATCH_SIBLING:qb-r2b:r2b-L6",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 7
+   }
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|059|math.geo.plane-figures-area-perimeter|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "DIAGNOSTIC|059|math.geo.plane-figures-area-perimeter|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "DIAGNOSTIC|059|math.geo.plane-figures-area-perimeter|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.matematicas",
+   "pool": "DIAGNOSTIC",
+   "primaryConcept": "math.geo.plane-figures-area-perimeter",
+   "template": "figure-geometry@1",
+   "promptHash": "3e662595834cfe2759a38bcf31fdbdc5aadfb81cbae2c2c2bcba09f3299c1c32",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "stimulusPlanId": "SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "stimulusKind": "FIGURE",
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "MACHINE_VERIFIED",
+   "answerIssues": [],
+   "computed": 38,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "perimetro",
+    "contorno",
+    "base",
+    "rectangulo"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 7
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|075|efl.reading.literal|MULTIPLE_CHOICE|CHALLENGE#1",
+   "slotKey": "PRACTICE|075|efl.reading.literal|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "PRACTICE|075|efl.reading.literal|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.ingles",
+   "pool": "PRACTICE",
+   "primaryConcept": "efl.reading.literal",
+   "template": "text-passage-set@1",
+   "promptHash": "70c4fa6ac2a4bb78026e58526094fa6e04b2afbe072906a8cc4056836745520d",
+   "format": "MULTIPLE_CHOICE",
+   "band": "CHALLENGE",
+   "unit": "SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusPlanId": "SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusKey": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusKind": "PASSAGE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "states",
+    "stated",
+    "according to",
+    "detail"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.042,
+   "closest": "GENERATION_BATCH_SIBLING:cand|PRACTICE|076|efl.reading.literal|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|076|efl.reading.literal|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "PRACTICE|076|efl.reading.literal|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "PRACTICE|076|efl.reading.literal|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.ingles",
+   "pool": "PRACTICE",
+   "primaryConcept": "efl.reading.literal",
+   "template": "text-passage-set@1",
+   "promptHash": "70c4fa6ac2a4bb78026e58526094fa6e04b2afbe072906a8cc4056836745520d",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusPlanId": "SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusKey": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusKind": "PASSAGE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "states",
+    "stated",
+    "according to"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.053,
+   "closest": "GENERATION_BATCH_SIBLING:qb-r2b:r2b-E4",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|078|efl.reading.interpretive|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "PRACTICE|078|efl.reading.interpretive|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|078|efl.reading.interpretive|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.ingles",
+   "pool": "PRACTICE",
+   "primaryConcept": "efl.reading.interpretive",
+   "template": "text-passage-set@1",
+   "promptHash": "70c4fa6ac2a4bb78026e58526094fa6e04b2afbe072906a8cc4056836745520d",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusPlanId": "SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusKey": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusKind": "PASSAGE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "infer",
+    "suggests",
+    "conclude",
+    "conclusion",
+    "not stated",
+    "supports"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.04,
+   "closest": "GENERATION_BATCH_SIBLING:cand|PRACTICE|079|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|079|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "PRACTICE|079|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "PRACTICE|079|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.ingles",
+   "pool": "PRACTICE",
+   "primaryConcept": "efl.reading.interpretive",
+   "template": "text-passage-set@1",
+   "promptHash": "70c4fa6ac2a4bb78026e58526094fa6e04b2afbe072906a8cc4056836745520d",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusPlanId": "SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusKey": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "stimulusKind": "PASSAGE",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "opinion"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.04,
+   "closest": "GENERATION_BATCH_SIBLING:cand|PRACTICE|078|efl.reading.interpretive|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.ingles",
+   "pool": "DIAGNOSTIC",
+   "primaryConcept": "efl.writing.paragraph-organization",
+   "template": "editing-writing-set@1",
+   "promptHash": "29cced080e844ca4853233b481818b505343078ae3244bc4bcd2c45552881bae",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "stimulusPlanId": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "stimulusKind": "DRAFT_PARAGRAPH",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "paragraph",
+    "topic sentence",
+    "off topic",
+    "does not belong",
+    "draft"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.ingles",
+   "pool": "DIAGNOSTIC",
+   "primaryConcept": "efl.writing.paragraph-organization",
+   "template": "editing-writing-set@1",
+   "promptHash": "29cced080e844ca4853233b481818b505343078ae3244bc4bcd2c45552881bae",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "stimulusPlanId": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "stimulusKind": "DRAFT_PARAGRAPH",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "transition",
+    "linking",
+    "contrast",
+    "draft"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "cand|PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "slotKey": "PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.ingles",
+   "pool": "PRACTICE",
+   "primaryConcept": "efl.vocabulary",
+   "template": "mcq-standalone@1",
+   "promptHash": "3fb960539fb38db9635388de198e51df4d9e9a4811202806f09d80e65fc2a0de",
+   "format": "MULTIPLE_CHOICE",
+   "band": "FOUNDATIONAL",
+   "unit": "SU|PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": null,
+   "stimulusKey": null,
+   "stimulusKind": null,
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "meaning",
+    "word",
+    "fits"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 7
+   }
+  },
+  {
+   "candidateKey": "cand|VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD#1",
+   "slotKey": "VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.ingles",
+   "pool": "VERIFICATION",
+   "primaryConcept": "efl.grammar.verb-forms",
+   "template": "mcq-standalone@1",
+   "promptHash": "8ee2aa34c9cfdb2e2af50dbee0beab4f1d9150716d6bd7542998f30cec67ac1e",
+   "format": "MULTIPLE_CHOICE",
+   "band": "STANDARD",
+   "unit": "SU|VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": null,
+   "stimulusKey": null,
+   "stimulusKind": null,
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "answerCorrectness": "NOT_MACHINE_VERIFIABLE",
+   "answerIssues": [
+    "NO_ARITHMETIC_DECIDES_THE_ANSWER"
+   ],
+   "computed": null,
+   "conceptFidelity": "PASS",
+   "evidenceHits": [
+    "tense",
+    "verb",
+    "past",
+    "present",
+    "perfect",
+    "auxiliary",
+    "time expression"
+   ],
+   "foreignHits": [],
+   "definitionConfidence": "ESTABLISHED",
+   "responseFormat": "PASS",
+   "responseFormatIssues": [],
+   "stimulusIntegrity": "PASS",
+   "stimulusIntegrityIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "GENERATION_BATCH_SIBLING:cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "roundTrip": "NOT_APPLICABLE",
+   "lineage": "PASS",
+   "regenerationRequired": false,
+   "failures": [],
+   "flags": [
+    "ANSWER_CORRECTNESS:NOT_MACHINE_VERIFIABLE"
+   ],
+   "reviewReady": true,
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "MODEL_OUTPUT_RIGHTS_EVIDENCE_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 7
+   }
+  }
+ ]
+}
