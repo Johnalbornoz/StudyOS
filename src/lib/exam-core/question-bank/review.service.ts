@@ -10,6 +10,7 @@
  * Request correction -> REVIEW_REQUIRED; Reject -> REJECTED (excluded from every use).
  * Every decision is an append-only `question_bank_reviews` row + a lifecycle audit event.
  */
+import { requireReviewerQualification, reviewerGovernanceActive } from './reviewer-qualification.service';
 import type { PoolClient } from 'pg';
 import { db } from '@/lib/db';
 import { createNextVersion, transitionVersion } from './bank.service';
@@ -65,6 +66,10 @@ export async function reviewVersion(p: { versionId: string; reviewerUserId: stri
       p.reviewerUserId
     );
     const decision = p.input.decision;
+    // Reviewer governance (20261110_1500): an approval needs a qualified person. Checked here so the refusal is
+    // a named one before anything is written; the database enforces the same rule on the insert below. There is
+    // no alternative path -- not for an administrator, not for a system account, not for an old item.
+    if (decision === 'APPROVED' && (await reviewerGovernanceActive(c))) await requireReviewerQualification(c, { approvedItemId: p.versionId, reviewerUserId: p.reviewerUserId });
     const assessment = pilot ? PilotReviewAssessmentSchema.parse(p.input.assessment) : null;
     // Pilot: the validated difficulty IS the reviewer's StudyUs difficulty (never a pre-filled default).
     const validatedDifficulty = assessment ? difficultyInternal(assessment.reviewedDifficulty) : p.input.validatedDifficulty;

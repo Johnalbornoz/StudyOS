@@ -288,8 +288,13 @@ describe('B2-B1 blueprint variants and frozen forms', () => {
     // the two read-only loaders, and the contract file that names the tables in its documentation.
     // B2-B2 adds the B2 persistence adapter (the only writer, of B2-owned tables), its refusal names, and the frozen-form contract's note on `form_hash`.
     expect(users.sort()).toEqual([
-      'src/lib/assessment-blueprint/assessment-blueprint.service.ts', 'src/lib/assessment-blueprint/protected/blueprint-persistence.service.ts', 'src/lib/assessment-blueprint/protected/frozen-form.ts',
-      'src/lib/assessment-blueprint/protected/persistence-errors.ts', 'src/lib/assessment-foundation/question-coverage.service.ts', 'src/lib/assessment-foundation/question-coverage.ts',
+      'src/lib/assessment-blueprint/assessment-blueprint.service.ts',
+      'src/lib/assessment-blueprint/protected/blueprint-persistence.service.ts',
+      'src/lib/assessment-blueprint/protected/frozen-form.ts',
+      'src/lib/assessment-blueprint/protected/persistence-errors.ts',
+      'src/lib/assessment-foundation/question-coverage.service.ts',
+      'src/lib/assessment-foundation/question-coverage.ts',
+      'src/lib/exam-core/question-bank/reviewer-qualification.service.ts',
     ]);
     // still no route and no start path: nothing under src/app touches the schema, and nothing outside the B2 module imports the adapter
     expect(users.some((f) => f.startsWith('src/app/'))).toBe(false);

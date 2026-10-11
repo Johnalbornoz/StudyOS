@@ -85,8 +85,21 @@ const cfg: FactoryConfig = { ...factoryConfig({ QUESTION_BANK_FACTORY_ENABLED: '
 async function main() {
   guard();
   process.env.AI_MAX_CALLS_PER_DAY = '5000';
-  const [editor, reviewer] = (await db.query(`SELECT id FROM users WHERE is_system ORDER BY created_at, id LIMIT 2`)).rows.map((r: any) => r.id);
   const paa = (await listBankVersions()).find((v) => v.configKey === 'v2.paa')!;
+  // Reviewer governance (20261110_1500): approvals in this certification are made by two PEOPLE the harness names
+  // explicitly, each holding a qualification that was granted through the operator procedure
+  // (qb-reviewer-qualification.ts grant) for the PAA cell reviewed here. Nothing is looked up, nobody is
+  // qualified by this script, and a system account is never used: without them the certification stops.
+  const named = (process.env.QB_CERT_REVIEWER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  if (named.length !== 2 || named[0] === named[1]) throw new Error('NO_QUALIFIED_REVIEWER: set QB_CERT_REVIEWER_IDS to the two human reviewer user ids that hold a PAA qualification for this cell (grant them with qb-reviewer-qualification.ts)');
+  const people = (await db.query(`SELECT u.id, u.is_system, (SELECT count(*)::int FROM question_bank_reviewer_qualifications q WHERE q.user_id = u.id AND q.exam_family = 'PAA' AND q.revoked_at IS NULL AND q.valid_from <= now() AND (q.valid_to IS NULL OR q.valid_to > now())) AS qualifications FROM users u WHERE u.id = ANY($1::uuid[])`, [named])).rows as Array<{ id: string; is_system: boolean; qualifications: number }>;
+  for (const id of named) {
+    const p = people.find((x) => x.id === id);
+    if (!p) throw new Error(`NO_QUALIFIED_REVIEWER: user ${id} does not exist`);
+    if (p.is_system) throw new Error(`NO_QUALIFIED_REVIEWER: user ${id} is a system account; a system account is never a qualified reviewer`);
+    if (p.qualifications === 0) throw new Error(`NO_QUALIFIED_REVIEWER: user ${id} holds no valid PAA qualification; grant one explicitly, this script creates none`);
+  }
+  const [editor, reviewer] = named;
 
   // ---------------- backfill of quality metadata ----------------
   check('BACKFILL.fixture-versions-full-usage-mock-ready', (await n(`SELECT count(*) n FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.provenance = 'FIXTURE' AND NOT (ai.usage_eligibility @> ARRAY['PRACTICE','REDUCED_MOCK','FULL_MOCK']::text[] AND ai.exam_alignment = 'MOCK_READY')`)) === 0);
