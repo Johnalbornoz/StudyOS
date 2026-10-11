@@ -46,12 +46,14 @@ export type AdminAuditAction =
   | 'COORDINATOR_INVITATION_REVOKED'
   | 'COORDINATOR_REMOVED'
   // Platform runtime configuration (platform_settings), e.g. Question Bank Factory controls.
-  | 'PLATFORM_SETTING_UPDATED';
+  | 'PLATFORM_SETTING_UPDATED'
+  // Question Bank -- a reviewer's concept attribution of an item version (reviewed content).
+  | 'QUESTION_BANK_ITEM_ATTRIBUTION_SET';
 
 export interface RecordAdminActionInput {
   actorUserId: string;
   action: AdminAuditAction;
-  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING';
+  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING' | 'QUESTION_BANK_ITEM_VERSION';
   targetId?: string | null;
   previousState?: unknown;
   newState?: unknown;

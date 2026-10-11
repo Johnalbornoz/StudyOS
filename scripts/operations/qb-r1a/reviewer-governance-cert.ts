@@ -4,6 +4,7 @@
  * it grants nothing outside this transaction and approves no real candidate.
  */
 import { Client } from 'pg';
+import { ItemAttributionError, loadItemAttribution, setItemAttribution } from '@/lib/exam-core/question-bank/item-attribution.service';
 import { grantRefusals, grantReviewerQualification, listReviewerQualifications, requireReviewerQualification, resolveReviewScope, revokeReviewerQualification, ReviewerQualificationError } from '@/lib/exam-core/question-bank/reviewer-qualification.service';
 
 const checks: string[] = [];
@@ -11,7 +12,7 @@ function check(label: string, ok: boolean, detail?: unknown) {
   if (!ok) throw new Error(`QB-R1A FAIL [${label}] ${detail === undefined ? '' : JSON.stringify(detail)}`);
   checks.push(label);
 }
-const refusal = async (fn: () => Promise<unknown>): Promise<string> => fn().then(() => 'ACCEPTED', (e) => (e instanceof ReviewerQualificationError ? e.code : `OTHER:${e.message}`));
+const refusal = async (fn: () => Promise<unknown>): Promise<string> => fn().then(() => 'ACCEPTED', (e) => (e instanceof ReviewerQualificationError || e instanceof ItemAttributionError ? e.code : `OTHER:${e.message}`));
 
 async function main() {
   const url = new URL(process.env.DATABASE_URL ?? '');
@@ -28,7 +29,7 @@ async function main() {
 
     // The PAA candidates' shape: a generated item on a mapped PAA objective, authored by a system account.
     const ctx = await one(
-      `SELECT qi.exam_version_id, lo.id AS objective, cc.canonical_subject_id AS subject, ed.exam_family
+      `SELECT qi.exam_version_id, lo.id AS objective, cc.canonical_subject_id AS subject, cc.id AS concept, ed.exam_family
          FROM learning_objectives lo JOIN objective_concept_mappings m ON m.learning_objective_id = lo.id AND m.status = 'PUBLISHED' JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id
          JOIN question_bank_items qi ON qi.learning_objective_id = lo.id JOIN exam_versions ev ON ev.id = qi.exam_version_id JOIN exam_definitions ed ON ed.id = ev.exam_definition_id
         WHERE lo.code = 'paa.lect.evidencia' AND ed.config_key = 'v2.paa' LIMIT 1`
@@ -53,8 +54,15 @@ async function main() {
       const sc = await resolveReviewScope(x, s.version);
       check('a Saber item has an exam family and no canonical subject', sc?.examFamily === 'ICFES' && sc.canonicalSubjectIds.length === 0 && sc.basis === 'NONE', sc);
       await grantReviewerQualification(x, grant({ reviewerUserId: other, examFamily: 'ICFES' }));
-      check('it cannot be approved by anyone, whatever they hold: REVIEW_SCOPE_UNDETERMINED', (await refusal(() => requireReviewerQualification(x, { approvedItemId: s.version, reviewerUserId: other }))) === 'REVIEW_SCOPE_UNDETERMINED');
+      check('it cannot be approved by anyone, whatever they hold: PRIMARY_ATTRIBUTION_REQUIRED', (await refusal(() => requireReviewerQualification(x, { approvedItemId: s.version, reviewerUserId: other }))) === 'PRIMARY_ATTRIBUTION_REQUIRED');
+      check('its objective maps to a competency only; the scope stays without a subject', (await one(`SELECT (SELECT count(*) FROM objective_concept_mappings WHERE learning_objective_id = $1)::int AS concepts, (SELECT count(*) FROM objective_competency_mappings WHERE learning_objective_id = $1 AND status = 'PUBLISHED')::int AS competencies`, [saber.objective])).concepts === 0);
     }
+
+    /* ---- attribution before approval ---- */
+    check('an unattributed item is not approvable, even though its objective has a published subject', (await refusal(() => requireReviewerQualification(x, { approvedItemId: paa.version, reviewerUserId: reviewer }))) === 'PRIMARY_ATTRIBUTION_REQUIRED');
+    // For the qualification checks below the fixture item gets its PRIMARY concept directly (a fixture row; the governed writer is certified further down).
+    await c.query(`INSERT INTO question_bank_item_concepts (approved_item_id, canonical_concept_id, role, attributed_by) VALUES ($1, $2, 'PRIMARY', $3)`, [paa.version, ctx.concept, other]);
+    check('once attributed, the scope is the PRIMARY concept\'s subject', (await resolveReviewScope(x, paa.version))?.basis === 'PRIMARY_CONCEPT');
 
     /* ---- locked by default ---- */
     check('with no grant, a person cannot approve', (await refusal(() => requireReviewerQualification(x, { approvedItemId: paa.version, reviewerUserId: reviewer }))) === 'REVIEWER_NOT_QUALIFIED');
@@ -97,7 +105,37 @@ async function main() {
     const approved = await one(`INSERT INTO question_bank_reviews (approved_item_id, bank_item_id, decision, reviewed_by) VALUES ($1, $2, 'APPROVED', $3) RETURNING reviewer_qualification_id`, [paa.version, paa.id, reviewer]);
     check('the database accepts the approval and stamps that qualification', approved.reviewer_qualification_id === qualificationId);
     const own = await item('r1a.own', ctx.objective, ctx.exam_version_id, reviewer);
+    await c.query(`INSERT INTO question_bank_item_concepts (approved_item_id, canonical_concept_id, role, attributed_by) VALUES ($1, $2, 'PRIMARY', $3)`, [own.version, ctx.concept, other]);
     check('a qualified reviewer still cannot approve their own item', (await sp('b', () => c.query(`INSERT INTO question_bank_reviews (approved_item_id, bank_item_id, decision, reviewed_by) VALUES ($1, $2, 'APPROVED', $3)`, [own.version, own.id, reviewer]))).includes('QUESTION_BANK_REVIEW_AUTHOR_CANNOT_APPROVE'));
+
+    /* ---- the governed attribution writer (the reviewer still holds the qualification here) ---- */
+    const target = await item('r1a.attr', ctx.objective, ctx.exam_version_id, system);
+    const concept2 = (await one(`SELECT id FROM canonical_concepts WHERE canonical_subject_id = $1 AND id <> $2 AND status = 'ACTIVE' ORDER BY name LIMIT 1`, [ctx.subject, ctx.concept])).id as string;
+    // a subject the reviewer holds no qualification in (they were granted `otherSubject` above)
+    const foreign = (await one(`SELECT cc.id FROM canonical_concepts cc WHERE cc.canonical_subject_id NOT IN ($1, $2) AND cc.status = 'ACTIVE' ORDER BY cc.name LIMIT 1`, [ctx.subject, otherSubject])).id as string;
+    const competency = (await one(`SELECT id FROM competencies ORDER BY code LIMIT 1`)).id as string;
+    const attr = (over: Record<string, unknown> = {}) => ({ approvedItemId: target.version, reviewerUserId: reviewer, primaryConceptId: ctx.concept as string, supportingConceptIds: [] as string[], reason: 'cert: reviewer attribution', ...over });
+    check('attribution: a system account never attributes', (await refusal(() => setItemAttribution(x, attr({ reviewerUserId: system })))) === 'REVIEWER_IS_SYSTEM_ACCOUNT');
+    check('attribution: an unqualified person does not attribute', (await refusal(() => setItemAttribution(x, attr({ reviewerUserId: plainAdmin })))) === 'REVIEWER_NOT_QUALIFIED');
+    check('attribution: the author does not attribute their own item', (await refusal(() => setItemAttribution(x, attr({ approvedItemId: own.version })))) === 'REVIEWER_IS_AUTHOR');
+    check('attribution: one concept cannot be PRIMARY and SUPPORTING, and there is one PRIMARY', (await refusal(() => setItemAttribution(x, attr({ supportingConceptIds: [ctx.concept] })))) === 'CONCEPT_LISTED_TWICE');
+    check('attribution: a competency is not a concept', (await refusal(() => setItemAttribution(x, attr({ primaryConceptId: competency })))) === 'CONCEPT_NOT_FOUND');
+    check('attribution: a PRIMARY concept of a subject the reviewer is not qualified in is refused', (await refusal(() => setItemAttribution(x, attr({ primaryConceptId: foreign })))) === 'REVIEWER_NOT_QUALIFIED');
+    check('attribution: a reason is recorded', (await refusal(() => setItemAttribution(x, attr({ reason: '' })))) === 'REASON_REQUIRED');
+    check('attribution: nothing was written by the refusals', (await loadItemAttribution(x, target.version)).primaryConceptId === null);
+    const set1 = await setItemAttribution(x, attr({ supportingConceptIds: [concept2] }));
+    check('attribution: one PRIMARY and one SUPPORTING are set, with the reviewer recorded', set1.primaryConceptId === ctx.concept && set1.supportingConceptIds.join() === concept2 && set1.attributedBy === reviewer);
+    const set2 = await setItemAttribution(x, attr({ primaryConceptId: concept2, reason: 'cert: corrected on second reading' }));
+    check('attribution: it can be replaced while the version is under review, and there is still one PRIMARY', set2.primaryConceptId === concept2 && set2.supportingConceptIds.length === 0 && (await one(`SELECT count(*)::int AS n FROM question_bank_item_concepts WHERE approved_item_id = $1 AND role = 'PRIMARY'`, [target.version])).n === 1);
+    const audit = (await c.query(`SELECT actor_user_id, previous_state, new_state, reason FROM admin_audit_log WHERE action = 'QUESTION_BANK_ITEM_ATTRIBUTION_SET' AND target_id = $1 ORDER BY occurred_at, id`, [target.version])).rows;
+    check('attribution: every change is audited with who, before, after and why', audit.length === 2 && audit.every((a: any) => a.actor_user_id === reviewer) && audit[1].previous_state.primaryConceptId === ctx.concept && audit[1].new_state.primaryConceptId === concept2 && audit[1].new_state.reviewerQualificationId === qualificationId && /second reading/.test(audit[1].reason), audit);
+    check('attribution: an attributed item is approvable by that qualified reviewer', (await requireReviewerQualification(x, { approvedItemId: target.version, reviewerUserId: reviewer })).qualificationId === qualificationId);
+    await c.query(`INSERT INTO question_bank_reviews (approved_item_id, bank_item_id, decision, reviewed_by) VALUES ($1, $2, 'APPROVED', $3)`, [target.version, target.id, reviewer]);
+    await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'ACTIVE' WHERE id = $1`, [target.version]);
+    await c.query('SAVEPOINT frozen');
+    const frozen = await refusal(() => setItemAttribution(x, attr({ reason: 'cert: after activation' })));
+    await c.query('ROLLBACK TO SAVEPOINT frozen');
+    check('attribution: fixed once the version is active', frozen === 'ATTRIBUTION_FROZEN', frozen);
 
     /* ---- revoke ---- */
     check('a revocation needs a reason', (await refusal(() => revokeReviewerQualification(x, { qualificationId, revokedByUserId: grantor, reason: '' }))) === 'REVOKE_REASON_REQUIRED');

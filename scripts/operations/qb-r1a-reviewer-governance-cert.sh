@@ -43,7 +43,8 @@ TRACK_B_ALLOW_EPHEMERAL="$FP" "${TSX[@]}" scripts/operations/track-b-v2-apply.ts
 TRACK_B_ALLOW_EPHEMERAL="$FP" "${TSX[@]}" scripts/operations/track-b-v2-learning-catalog.ts --write >/dev/null 2>&1
 Q1() { "${PSQL[@]}" -tAc "$1" "$DB"; }
 echo "qualifications_after_seeds=$(Q1 "SELECT count(*) FROM question_bank_reviewer_qualifications")"
-echo "--- [2] grant contract and approval path (one transaction, rolled back)"
+echo "saber_competencies=$(Q1 "SELECT count(*) FROM competencies WHERE code LIKE 'icfes.saber11.mat.%'") saber_competency_mappings=$(Q1 "SELECT count(*) FROM objective_competency_mappings m JOIN learning_objectives lo ON lo.id = m.learning_objective_id WHERE lo.code LIKE 'saber.%' AND m.status = 'PUBLISHED'") saber_concept_mappings=$(Q1 "SELECT count(*) FROM objective_concept_mappings m JOIN learning_objectives lo ON lo.id = m.learning_objective_id WHERE lo.code LIKE 'saber.%'")"
+echo "--- [2] grant contract, attribution writer and approval path (one transaction, rolled back)"
 "${TSX[@]}" scripts/operations/qb-r1a/reviewer-governance-cert.ts
 echo "qualifications_after_contract_cert=$(Q1 "SELECT count(*) FROM question_bank_reviewer_qualifications")"
 echo "--- [3] operator script"
@@ -64,7 +65,7 @@ echo "qualifications_after_dry_run_and_refusals=$(Q1 "SELECT count(*) FROM quest
 echo "write: $("${OP[@]}" grant --reviewer "$REV" --subject "$SUBJ" --exam-family PAA --granted-by "$GR" --valid-from 2026-10-10T00:00:00Z --notes 'ephemeral certification' --write | mode)"
 QID=$(Q1 "SELECT id FROM question_bank_reviewer_qualifications")
 echo "qualifications_after_write=$(Q1 "SELECT count(*) FROM question_bank_reviewer_qualifications")"
-echo "--- [4] the review service: named refusals, then a governed approval"
+echo "--- [4] the review service: named refusals, attribution first, then a governed approval"
 "${TSX[@]}" scripts/operations/qb-r1a/review-service-cert.ts "$REV" "$GR" "$SYS"
 echo "revoke: $("${OP[@]}" revoke --qualification "$QID" --revoked-by "$GR" --reason 'end of the ephemeral certification' --write | mode)"
 echo "in_force_after_revoke=$(Q1 "SELECT count(*) FROM question_bank_reviewer_qualifications WHERE revoked_at IS NULL")"
