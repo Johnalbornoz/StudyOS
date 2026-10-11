@@ -50,7 +50,7 @@ export async function reviewVersion(p: { versionId: string; reviewerUserId: stri
       `SELECT ai.id, ai.bank_item_id, ai.bank_lifecycle_status, ai.created_by, ai.validation_report, ai.learning_objective_id, ai.content, qi.provenance, qi.item_key,
               (SELECT gr.generation_params->'pilot'->'reviewChecklist' FROM question_bank_generation_requests gr WHERE gr.id = qi.generation_request_id) AS required_checklist,
               (SELECT gr.generation_params->'pilot'->>'batch' FROM question_bank_generation_requests gr WHERE gr.id = qi.generation_request_id) AS pilot_batch,
-              EXISTS (SELECT 1 FROM blueprint_objective_targets t WHERE t.learning_objective_id = ai.learning_objective_id) AS in_cell
+              EXISTS (SELECT 1 FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id AND b.purpose IS NULL WHERE t.learning_objective_id = ai.learning_objective_id) AS in_cell
          FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE ai.id = $1 FOR UPDATE OF ai`,
       [p.versionId]
     );

@@ -289,7 +289,7 @@ async function main() {
   const pisa = await profileFor(A, 'pisa.2022.math');
   // QB D3: PISA is a competency benchmark -- a fixed-form MOCK is refused even as a technical demo.
   check('PISA.mock-refused-competency-benchmark', await rejects(() => createExamInstance({ contentAudience: 'TECHNICAL_DEMO', studentId: A.studentId, examProfileId: pisa.profileId, examVersionId: pisa.lvl.examVersionId, componentIds: [pisa.lvl.components[0].componentId], mode: 'MOCK' }), ExamInstanceError, 'MODE_NOT_AVAILABLE'));
-  const objCodes = (await db.query(`SELECT lo.code FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id JOIN assessment_blueprints b ON b.id = t.blueprint_id WHERE b.exam_version_id = $1 AND t.assessment_component_id = $2`, [pisa.lvl.examVersionId, pisa.lvl.components[0].componentId])).rows.map((r: any) => r.code as string);
+  const objCodes = (await db.query(`SELECT lo.code FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id JOIN assessment_blueprints b ON b.id = t.blueprint_id AND b.purpose IS NULL WHERE b.exam_version_id = $1 AND t.assessment_component_id = $2`, [pisa.lvl.examVersionId, pisa.lvl.components[0].componentId])).rows.map((r: any) => r.code as string);
   const perProcess = ['formular', 'emplear', 'interpretar', 'razonar'].map((p) => objCodes.filter((c) => c.endsWith(`.${p}`)).length);
   check('PISA.blueprint-25pct-per-process', perProcess.every((n) => n === 2), perProcess.join('/'));
   const sab = await profileFor(A, 'saber11.math');

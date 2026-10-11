@@ -69,11 +69,13 @@ export async function applyObjectiveLearningLinks(options: { write: boolean }): 
     await client.query('BEGIN');
     const [creator, reviewer] = await systemActors(client);
     for (const [code, link] of Object.entries(allLearningLinks())) {
+      // B2-B2: the LEGACY blueprint only (purpose NULL) -- a variant's targets never reach this reader. Written as to_jsonb(b) ->> 'purpose' rather than b.purpose
+      // because this catalogue writer is also run by the B2-B1 certification against the pre-20261110 schema, where the column does not exist yet.
       const objectives = (
         await client.query(
           `SELECT DISTINCT lo.id FROM learning_objectives lo
              JOIN blueprint_objective_targets t ON t.learning_objective_id = lo.id
-             JOIN assessment_blueprints b ON b.id = t.blueprint_id
+             JOIN assessment_blueprints b ON b.id = t.blueprint_id AND to_jsonb(b) ->> 'purpose' IS NULL
              JOIN exam_versions v ON v.id = b.exam_version_id AND v.status = 'PUBLISHED'
             WHERE lo.code = $1`,
           [code]

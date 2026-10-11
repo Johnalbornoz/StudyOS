@@ -12,7 +12,8 @@
 import { targetKey, type TargetKind } from '../solver/candidate';
 import type { TargetPlan, TargetRequirement } from '../solver/plan';
 
-export const Q1_DIAGNOSTIC_FULL_SEMANTICS = 'DEFERRED_TO_B3_AND_QB' as const;
+/** The Question Bank now records attribution and stimulus identity (B2-B1); the independence rule is still the evidence layer's (B3). */
+export const Q1_DIAGNOSTIC_FULL_SEMANTICS = 'DEFERRED_TO_B3' as const;
 
 /** The depth a Diagnostic blueprint asks for. A StudyUs policy value, supplied by the caller; never a constant here. */
 export interface DiagnosticDepthRequirement {

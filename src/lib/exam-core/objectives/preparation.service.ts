@@ -79,7 +79,7 @@ async function bridgeMappingsByConfig(configKeys: string[]): Promise<Map<string,
   const r = await db.query(
     `SELECT d.config_key, count(DISTINCT m.id)::int AS n
        FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED'
-       JOIN assessment_blueprints b ON b.exam_version_id = v.id
+       JOIN assessment_blueprints b ON b.exam_version_id = v.id AND b.purpose IS NULL
        JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
        JOIN objective_concept_mappings m ON m.learning_objective_id = t.learning_objective_id AND m.status = 'PUBLISHED'
       WHERE d.config_key = ANY($1::text[]) AND d.status IN ('ACTIVE', 'DRAFT')
@@ -289,7 +289,7 @@ async function objectiveRequirements(configKeys: string[]): Promise<RequirementR
   const r = await db.query(
     `SELECT lo.id, lo.code, lo.description, min(ac.name) AS area, COALESCE(sum(t.target_item_count), 0)::int AS items
        FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED'
-       JOIN assessment_blueprints b ON b.exam_version_id = v.id
+       JOIN assessment_blueprints b ON b.exam_version_id = v.id AND b.purpose IS NULL
        JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
        JOIN learning_objectives lo ON lo.id = t.learning_objective_id
        JOIN assessment_components ac ON ac.id = t.assessment_component_id
@@ -405,7 +405,7 @@ async function otherPreparationsByConcept(studentId: string, excludeProfileId: s
     if (!o || !o.configKeys.length) continue;
     const r = await db.query(
       `SELECT DISTINCT m.canonical_concept_id FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED'
-         JOIN assessment_blueprints b ON b.exam_version_id = v.id JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
+         JOIN assessment_blueprints b ON b.exam_version_id = v.id AND b.purpose IS NULL JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
          JOIN objective_concept_mappings m ON m.learning_objective_id = t.learning_objective_id AND m.status = 'PUBLISHED'
         WHERE d.config_key = ANY($1::text[]) AND m.canonical_concept_id = ANY($2::uuid[])`,
       [o.configKeys, canonicalIds]
@@ -569,7 +569,7 @@ export async function addConceptFromPreparation(studentId: string, profileId: st
   const { profile, objective } = await activeOwnedProfile(studentId, profileId);
   const ok = await db.query(
     `SELECT 1 FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED'
-       JOIN assessment_blueprints b ON b.exam_version_id = v.id JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
+       JOIN assessment_blueprints b ON b.exam_version_id = v.id AND b.purpose IS NULL JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
        JOIN objective_concept_mappings m ON m.learning_objective_id = t.learning_objective_id AND m.status = 'PUBLISHED'
       WHERE d.config_key = ANY($1::text[]) AND t.learning_objective_id = $2::uuid AND m.canonical_concept_id = $3::uuid LIMIT 1`,
     [objective.configKeys, p.learningObjectiveId, p.canonicalConceptId]

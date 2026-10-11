@@ -31,13 +31,14 @@ function toTarget(r: any): BlueprintObjectiveTarget {
   };
 }
 
+/** Creates the LEGACY blueprint of a version (purpose NULL; one per version). Variants are created by the B2 persistence adapter only. */
 export async function createBlueprint(examVersionId: string): Promise<AssessmentBlueprint> {
   const result = await db.query(`INSERT INTO assessment_blueprints (exam_version_id) VALUES ($1) RETURNING *`, [examVersionId]);
   return toBlueprint(result.rows[0]);
 }
 
 export async function publishBlueprint(blueprintId: string): Promise<AssessmentBlueprint> {
-  const result = await db.query(`UPDATE assessment_blueprints SET status = 'PUBLISHED' WHERE id = $1 AND status = 'DRAFT' RETURNING *`, [blueprintId]);
+  const result = await db.query(`UPDATE assessment_blueprints SET status = 'PUBLISHED' WHERE id = $1 AND status = 'DRAFT' AND purpose IS NULL RETURNING *`, [blueprintId]);
   if (result.rows.length === 0) throw new Error(`blueprint ${blueprintId} could not be published from its current status`);
   return toBlueprint(result.rows[0]);
 }
@@ -83,8 +84,9 @@ export async function addObjectiveTarget(params: {
   return toTarget(result.rows[0]);
 }
 
+/** The LEGACY blueprint of a version. A version may also carry variants (purpose FULL / REDUCED / DIAGNOSTIC, migration 20261110_1600): no existing flow may bind to one. */
 export async function getBlueprintForVersion(examVersionId: string): Promise<AssessmentBlueprint | null> {
-  const result = await db.query(`SELECT * FROM assessment_blueprints WHERE exam_version_id = $1`, [examVersionId]);
+  const result = await db.query(`SELECT * FROM assessment_blueprints WHERE exam_version_id = $1 AND purpose IS NULL`, [examVersionId]);
   return result.rows.length === 0 ? null : toBlueprint(result.rows[0]);
 }
 

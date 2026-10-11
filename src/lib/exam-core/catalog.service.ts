@@ -125,7 +125,7 @@ export async function listVersionAreas(examVersionId: string): Promise<Array<{ c
   const rows = await db.query(
     `SELECT c.id AS component_id, c.name, c.academic_subject_id, c.sequence_order, c.created_at, lo.id AS lo_id, lo.code, lo.description
        FROM assessment_components c
-       LEFT JOIN assessment_blueprints b ON b.exam_version_id = c.exam_version_id
+       LEFT JOIN assessment_blueprints b ON b.exam_version_id = c.exam_version_id AND b.purpose IS NULL
        LEFT JOIN blueprint_objective_targets t ON t.blueprint_id = b.id AND t.assessment_component_id = c.id
        LEFT JOIN learning_objectives lo ON lo.id = t.learning_objective_id
       WHERE c.exam_version_id = $1

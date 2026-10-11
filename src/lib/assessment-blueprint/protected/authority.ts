@@ -28,6 +28,8 @@ export const REQUIREMENT_KINDS = [
   'DIAGNOSTIC_EVIDENCE_DEPTH',
   'POOL_POLICY',
   'EXPOSURE_POLICY',
+  /** Stimulus sets a form must hold (B2-B2): value `{ kind, sets, minItems, maxItems }`, about one section when `subject` names it. */
+  'STIMULUS_SET',
 ] as const;
 export type RequirementKind = (typeof REQUIREMENT_KINDS)[number];
 
@@ -48,6 +50,8 @@ export interface AuthorityTaggedRequirement {
   sourceRefs: string[];
   /** The StudyUs policy that decides it. Required for STUDYUS_POLICY. */
   policyRef: { id: string; version: string } | null;
+  /** Where in each cited source the requirement is stated (page, section), by source key. Optional. */
+  sourceLocators?: Record<string, string>;
 }
 
 export interface BlueprintSpecification {
@@ -63,7 +67,9 @@ export type SpecificationViolation =
   | { code: 'POLICY_KIND_TAGGED_OFFICIAL'; key: string }
   | { code: 'SECTION_COUNTS_DO_NOT_SUM'; total: number; sum: number }
   | { code: 'REDUCED_WITHOUT_SIZE_POLICY'; blueprint: string }
-  | { code: 'FULL_WITH_REDUCED_SIZE'; blueprint: string };
+  | { code: 'FULL_WITH_REDUCED_SIZE'; blueprint: string }
+  /** A STIMULUS_SET value that is not `{ kind, sets >= 1, 1 <= minItems <= maxItems }`. */
+  | { code: 'STIMULUS_SET_INVALID'; key: string };
 
 export function specificationViolations(spec: BlueprintSpecification): SpecificationViolation[] {
   const out: SpecificationViolation[] = [];
@@ -79,6 +85,7 @@ export function specificationViolations(spec: BlueprintSpecification): Specifica
       if (POLICY_ONLY_KINDS.has(r.kind)) out.push({ code: 'POLICY_KIND_TAGGED_OFFICIAL', key: r.key });
       if (r.sourceRefs.length === 0) out.push({ code: 'OFFICIAL_WITHOUT_SOURCE', key: r.key });
     } else if (!r.policyRef) out.push({ code: 'POLICY_WITHOUT_POLICY_REF', key: r.key });
+    if (r.kind === 'STIMULUS_SET' && !stimulusSetValue(r.value)) out.push({ code: 'STIMULUS_SET_INVALID', key: r.key });
   }
   const total = spec.requirements.find((r) => r.kind === 'TOTAL_ITEM_COUNT');
   const sections = spec.requirements.filter((r) => r.kind === 'SECTION_ITEM_COUNT');
@@ -90,6 +97,32 @@ export function specificationViolations(spec: BlueprintSpecification): Specifica
   if (spec.identity.purpose === 'REDUCED' && !hasReducedSize) out.push({ code: 'REDUCED_WITHOUT_SIZE_POLICY', blueprint: blueprintKey(spec.identity) });
   if (spec.identity.purpose === 'FULL' && hasReducedSize) out.push({ code: 'FULL_WITH_REDUCED_SIZE', blueprint: blueprintKey(spec.identity) });
   return out;
+}
+
+/** What a STIMULUS_SET requirement asks for. `kind` is the Question Bank's set kind; null = any kind. */
+export interface StimulusSetValue {
+  kind: string | null;
+  sets: number;
+  minItems: number;
+  maxItems: number;
+}
+
+const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 1;
+
+/** The value of a STIMULUS_SET requirement, or null when it is not a well-formed one. Nothing is defaulted. */
+export function stimulusSetValue(value: RequirementValue): StimulusSetValue | null {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
+  const { kind, sets, minItems, maxItems } = value;
+  if (!(kind === null || (typeof kind === 'string' && kind.length > 0)) || !isCount(sets) || !isCount(minItems) || !isCount(maxItems) || minItems > maxItems) return null;
+  return { kind, sets, minItems, maxItems };
+}
+
+/** The stimulus sets a specification requires, in requirement-key order. Malformed ones are violations, not requirements. */
+export function stimulusSetRequirements(spec: BlueprintSpecification): Array<StimulusSetValue & { key: string; subject: string | null; authority: RequirementAuthority }> {
+  return spec.requirements
+    .filter((r) => r.kind === 'STIMULUS_SET')
+    .flatMap((r) => { const v = stimulusSetValue(r.value); return v ? [{ ...v, key: r.key, subject: r.subject, authority: r.authority }] : []; })
+    .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }
 
 export const requirementsByAuthority = (spec: BlueprintSpecification, authority: RequirementAuthority): AuthorityTaggedRequirement[] => spec.requirements.filter((r) => r.authority === authority);

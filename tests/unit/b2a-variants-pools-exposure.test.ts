@@ -260,7 +260,7 @@ describe('B2-A protected selection: pool isolation, hard exposure, fidelity, fro
   it('frozen forms keep items, order, blueprint revision, purpose, pool and fidelity; any change is detected', () => {
     const r = solveProtectedForm(base(id('FULL', 1)));
     const form = r.form!;
-    expect(form).toMatchObject({ v: 1, blueprintKey: 'ev-1:FULL:F1:R1', pool: 'FULL_MOCK_1', fidelity: 'FULL', attemptType: 'FULL_MOCK', identity: { purpose: 'FULL', form: 1, revision: 1 } });
+    expect(form).toMatchObject({ v: 2, blueprintKey: 'ev-1:FULL:F1:R1', pool: 'FULL_MOCK_1', fidelity: 'FULL', attemptType: 'FULL_MOCK', identity: { purpose: 'FULL', form: 1, revision: 1 } });
     expect(form.positions.map((p) => p.slotIndex)).toEqual([0, 1, 2]);
     expect(frozenFormIntact(form)).toBe(true);
     expect(frozenFormIntact({ ...form, positions: [form.positions[1], form.positions[0], form.positions[2]] })).toBe(false);
@@ -321,13 +321,18 @@ describe('B2-A selection-unit contract (interface only)', () => {
     expect(selectionUnitViolations({ ...group, memberKeys: [K('a'), K('a'), K('b')] })).toEqual(['DUPLICATE_MEMBER']);
   });
 
-  it('runtime selection of groups is DEFERRED: a blueprint that needs one gets no form, never loose items', () => {
-    expect(STIMULUS_GROUP_RUNTIME_SELECTION).toBe('DEFERRED_TO_QB_SCHEMA');
+  it('a blueprint that needs a group the bank does not hold gets no form, never loose items (B2-B2: groups are selected as units)', () => {
+    expect(STIMULUS_GROUP_RUNTIME_SELECTION).toBe('UNITS_FROM_QB_COVERAGE');
     const need = [{ type: 'STIMULUS_GROUP' as const, setKind: 'PAIRED_PASSAGE', units: 1, minItems: 3, maxItems: 13 }, { type: 'ITEM' as const, setKind: null, units: 2, minItems: 1, maxItems: 1 }];
-    expect(unservableUnitRequirements(need)).toHaveLength(1);
+    // well-formed requirements are servable; a malformed one is refused before anything is selected
+    expect(unservableUnitRequirements(need)).toHaveLength(0);
+    expect(unservableUnitRequirements([{ ...need[0], minItems: 5, maxItems: 3 }, { ...need[0], units: 0 }, { ...need[1], maxItems: 2 }])).toHaveLength(3);
+    expect(solveProtectedForm({ ...base(id('FULL', 1)), unitRequirements: [{ ...need[0], units: 0 }] })).toMatchObject({ status: 'NOT_AVAILABLE', causes: ['UNIT_REQUIREMENT_INVALID'], solution: null, form: null });
+    // BANK holds standalone questions only: the paired passage cannot be served, and the 12 loose items are not offered instead
     const r = solveProtectedForm({ ...base(id('FULL', 1)), unitRequirements: need });
-    expect(r).toMatchObject({ status: 'NOT_AVAILABLE', causes: ['STIMULUS_GROUP_FACTS_MISSING'], solution: null, form: null });
-    expect(evaluateProtectedFeasibility({ ...base(id('FULL', 1)), unitRequirements: need }).causes).toEqual(['STIMULUS_GROUP_FACTS_MISSING']);
+    expect(r).toMatchObject({ status: 'NOT_AVAILABLE', causes: ['INSUFFICIENT_ELIGIBLE_ITEMS'], form: null, units: { groupUnits: 0, placed: [], shortfalls: [{ placed: 0 }] } });
+    expect(r.outcome?.selected).toEqual([]);
+    expect(evaluateProtectedFeasibility({ ...base(id('FULL', 1)), unitRequirements: need }).causes).toEqual(['INSUFFICIENT_ELIGIBLE_ITEMS']);
     // B2 holds no stimulus or asset content: only the facts above
     for (const f of readdirSync(DIR)) expect(strip(readFileSync(join(DIR, f), 'utf8')), f).not.toMatch(/CREATE TABLE|passageText|stimulusText|assetUrl|imageUrl|\bcontent\s*:/);
   });
@@ -352,7 +357,7 @@ describe('B2-A Diagnostic purpose (selection hook; full Q1 semantics deferred)',
   });
 
   it('does not claim Q1 Diagnostic readiness', () => {
-    expect(Q1_DIAGNOSTIC_FULL_SEMANTICS).toBe('DEFERRED_TO_B3_AND_QB');
+    expect(Q1_DIAGNOSTIC_FULL_SEMANTICS).toBe('DEFERRED_TO_B3');
     expect(strip(readFileSync(join(DIR, 'diagnostic.ts'), 'utf8'))).not.toMatch(/independentEvidenceEligible|updateMastery|stimulus/i);
   });
 });
@@ -372,7 +377,11 @@ describe('B2-A item-level exposure from the existing delivery ledger (read-only)
 });
 
 describe('B2-A architecture', () => {
-  const files = readdirSync(DIR).map((f) => join(DIR, f));
+  // B2-B2 added ONE file with IO to this directory, the persistence adapter; its own rules are asserted in b2-readiness-architecture.
+  const files = readdirSync(DIR).filter((f) => f !== 'blueprint-persistence.service.ts').map((f) => join(DIR, f));
+  it('the persistence adapter is the only file here that is not pure', () => {
+    expect(readdirSync(DIR).filter((f) => /@\/lib\/db|\.service'/.test(strip(readFileSync(join(DIR, f), 'utf8'))))).toEqual(['blueprint-persistence.service.ts']);
+  });
   it('the new files are pure: no IO, no SQL, no flag, no mastery threshold, and they do not re-implement B1', () => {
     for (const f of files) {
       const code = strip(readFileSync(f, 'utf8'));

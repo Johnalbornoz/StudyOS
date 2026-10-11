@@ -202,7 +202,7 @@ export async function getClassProgress(actorUserId: string, classId: string, fil
         `SELECT DISTINCT b.exam_version_id FROM assessment_blueprints b JOIN blueprint_objective_targets bot ON bot.blueprint_id = b.id
            JOIN objective_concept_mappings ocm ON ocm.learning_objective_id = bot.learning_objective_id AND ocm.status = 'PUBLISHED'
            JOIN canonical_concepts cc ON cc.id = ocm.canonical_concept_id AND cc.canonical_subject_id = $2
-          WHERE b.exam_version_id = ANY($1::uuid[])`, [datedVersionIds, klass.subjectId])).rows.map((r: any) => r.exam_version_id))
+          WHERE b.exam_version_id = ANY($1::uuid[]) AND b.purpose IS NULL`, [datedVersionIds, klass.subjectId])).rows.map((r: any) => r.exam_version_id))
     : new Set<string>();
   const examDates = {
     rows: datedProfiles

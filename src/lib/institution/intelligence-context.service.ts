@@ -85,7 +85,7 @@ export async function getIntelligenceContext(
     db.query(
       `SELECT DISTINCT ev.id, ed.name, ev.version_label
        FROM exam_versions ev JOIN exam_definitions ed ON ed.id = ev.exam_definition_id
-       JOIN assessment_blueprints b ON b.exam_version_id = ev.id
+       JOIN assessment_blueprints b ON b.exam_version_id = ev.id AND b.purpose IS NULL
        JOIN blueprint_objective_targets bot ON bot.blueprint_id = b.id
        JOIN learning_objectives lo ON lo.id = bot.learning_objective_id
        JOIN structure_nodes sn ON sn.id = lo.structure_node_id
