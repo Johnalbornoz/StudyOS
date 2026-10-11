@@ -2,6 +2,9 @@
 
 Date: 2026-10-10 · Worktree: `studyos-assessment-b5` · Branch: `integration/assessment-b5-runtime-certification`
 
+> **B5-E update (2026-10-10).** Sections **AM–AQ** at the end record the hydrated browser gate, the question-supply
+> investigation and the Stage entry decision, and supersede AL.
+>
 > **B5-D update (2026-10-10).** Sections **AE–AL** at the end record the DEV deployment and the hosted end-to-end
 > run, and supersede AB, AC and AD.
 >
@@ -772,4 +775,201 @@ Remaining conditions:
 7. Exam content: review, item-level attribution, durations and provenance before any exam attempt can
    produce learning evidence or a mock can be offered.
 8. An automated accessibility scan once tooling exists; the `lang` attribute.
+
+---
+
+# B5-E — Final DEV Visual Gate & Stage Readiness
+
+Certified code: **`a2e041e`** (two fixes found by this gate, on top of `3288d6f`), deployed to hosted DEV as
+`dpl_GN5fp6XvaY4UKvgQgibXv1RPP82v` — `https://study-1lyr5nala-study-so.vercel.app`; `/api/version` confirmed
+before each journey. Stage and Production were not touched. Nothing was pushed.
+
+## AM. Hydrated Authenticated Browser Certification
+
+**How the session was authenticated — a deviation from the brief.** I did not redeem the sign-in ticket in a
+browser: I do not sign a browser in through a hosted identity provider. Instead a loopback-only proxy
+(temporary, untracked, deleted afterwards) forwarded a local browser to the hosted DEV deployment and added the
+fixture Student's backend-issued session token (`student-a`, the same mechanism as the HTTP E2E) to each
+request. The browser therefore ran the **real hosted build, fully hydrated, as the fixture Student**. What this
+does not exercise: the identity provider's own sign-in screen and its client-side session (cookie) handling.
+
+| Journey | Deployment | Viewport | Session | Result |
+|---|---|---|---|---|
+| Desktop | `3288d6f` | pane width ≈ 800 px | `quiz-b5-55e7defadaa4-a5bf5aa7` | PASS |
+| Mobile | `a2e041e` | 375 × 812, touch emulation | `quiz-b5-27ee9d177eb3-71c7db7f` | PASS |
+
+Both: Today → "Comprobar" → canonical setup → preview → Start → answer → leave → come back → answer restored →
+submit → result → "Ir a Hoy" → Today.
+
+| Check | Desktop | Mobile |
+|---|---|---|
+| Canonical route used from Today | `/dashboard/assessment?intent=MASTERY_CHECK&origin=TODAY&lc=…` | same |
+| Setup count = B2 output | "1 pregunta" on setup and preview; 1 frozen item | same |
+| Active page loads, hydrated | 1 question, 4 options, math typeset | 1 free-text question |
+| Answer persists | "Respuestas guardadas" after selecting; full reload restored the option | after typing; left to Today, came back **through Today → setup → Start** |
+| Same session after resume | same URL / id | same id (`resumed`), not a new session |
+| Same snapshot after resume | `55e7defadaa46087…` | `27ee9d177eb3bdc8…` |
+| Completion | submitted with the keyboard (Tab, Enter) | submitted by tap |
+| Result | "Tu resultado", 100 %, evidence registered for Linear Equations | same |
+| Continuation | "Ir a Hoy" → Today | same |
+| Database after | completed; 1 evidence row; 1 response row | same |
+| Console errors on canonical pages | none | none |
+
+Three practice depths, hydrated (`a2e041e`): QUICK 1 · BALANCED 1 · DEEP 2 questions, as the HTTP run reports.
+HTTP E2E on `a2e041e`: 43 / 43.
+
+Found by this gate and fixed in `a2e041e`:
+
+1. Today's card said "10 preguntas" (the engine contract's count) while the Blueprint Core selects 1. The card
+   now shows no count when the launch enters the canonical setup; the setup shows the real one.
+2. After submitting, the result replaced the form without moving focus. Focus now goes to the result heading.
+
+Observed, not caused by this work and not fixed:
+
+- One React hydration warning (#418) on the **first** full load of Today in a fresh tab; not reproduced on a
+  second full load, and never on a canonical page. Today is unchanged by this line.
+- Once, on mobile, the tab was back on Today before I submitted, with no action of mine in between. The
+  session page then stayed put for 30 s under observation and the journey completed. I could not attribute it
+  (app or test pane) and did not reproduce it.
+
+Hydrated accessibility — `ACCESSIBILITY_MANUAL_PASS_TOOLING_GAP`, **now checked on the hydrated, authenticated
+pages** (no automated tooling exists in the project):
+
+| Check | Result |
+|---|---|
+| Keyboard order | setup: depth group → Start; active: answer control → Submit; arrow keys move within the option group |
+| Visible focus | 2 px outline on the option, the text field and the buttons (`:focus-visible` true) |
+| Question / option labels | each question is a `fieldset` + `legend` "Pregunta n de N"; options are labelled radios; the text field is named "Pregunta 1 de 1" |
+| Accessible names | no unnamed control on setup, preview, active or result |
+| Headings | one `h1` per page; result: `h1` "Tu resultado", `h2`, `h2` |
+| Live / error | draft status announced politely ("Respuestas guardadas"); errors are `role="alert"` |
+| Submit semantics | a `submit` button in a labelled form; Enter submits; `aria-busy` while sending |
+| Result heading | receives focus after completion |
+| Continuation CTA | a link, "Ir a Hoy", reachable by keyboard |
+| Keyboard trap | none |
+| Mobile | no horizontal overflow on Today, setup, active, resumed, result; no target under 44 px; text input 16 px; zoom not disabled |
+
+## AN. Learning Question Supply
+
+```text
+QUESTION_SUPPLY_HEALTHY   (with the conditions below)
+```
+
+A producer independent of the legacy quiz exists and was observed running on DEV against the canonical
+deployment. The legacy generator was **not** the only normal producer.
+
+**Writers.** `question_bank_candidates` has one row creator, `addValidatedCandidates`
+(`src/services/question-bank.service.ts`). Rows are VALIDATED by column default: the generators' own quality
+gate is the validation; there is no later status transition. It is called from:
+
+| Caller | Triggered by | Survives the cutover? |
+|---|---|---|
+| Background worker (`activity-delivery-worker.service.ts`: `PREPARE_INVENTORY` → `BANK_REPLENISH`) | `scheduleDeliveryReplenishment`, queued when **Today renders** (for its one recommended concept) and when a **Concept Mission page renders**; also on a legacy launch and a legacy submit | **yes** for Today and Concept Mission; the two legacy triggers disappear |
+| Legacy emergency generation (`completeEmergencyDelivery`) | the legacy quiz route, inline, when nothing is ready | no |
+| Bench / certification scripts | operator | n/a |
+
+The worker is executed by `POST /api/internal/generation-worker`, which the deployment calls on itself. That
+needs `CRON_SECRET` and `VERCEL_URL`; without them jobs stay pending. No cron is defined in the repository.
+
+**Lifecycle.** A concept is the Student's next action → Today (or its mission page) queues a job → the worker
+resolves the canonical next activity and sizes the pool for it → generators produce questions, stored validated
+→ the canonical start selects from the Student's validated rows and records each delivery in the same ledger
+(`question_bank_deliveries`, `usage_count`) → the next Today view measures depth again; for prove, retain and
+transfer delivered rows no longer count, so exposure causes generation.
+
+**Exhaustion in the canonical path** (Blueprint Core, unchanged):
+
+| Intent | All cached questions already seen |
+|---|---|
+| Practice, mastery check, diagnostic | **reused**, ranked after unseen ones and reported as a soft shortfall; the assessment still starts |
+| Retention check | questions used in the last 14 days are excluded; if all are recent → nothing selected → "not available yet" |
+| Any | nothing in the canonical start or completion generates or queues generation; there is no inline fallback |
+
+**Measured on DEV (read-only).** Jobs: 2,322 `PREPARE_INVENTORY` and 809 `BANK_REPLENISH` succeeded; the latest
+ran at 02:50 UTC, during this gate, for activity PROVE with `bankShort: false`. The fixture Student has 48
+validated questions (40 prove, 8 of them seen); none was added during the gate because the pool was judged deep
+enough.
+
+Conditions:
+
+1. **Cold start.** A concept whose cache is empty when the Student presses Start gets "not available yet";
+   the legacy path would have generated inline. Today pre-warms only its one recommended concept; My Path does
+   not pre-warm.
+2. **No trigger in the canonical flow itself.** Recommended, small: queue the same replenishment when the
+   canonical setup is opened and after completion. Not done here (no policy change in this pass).
+3. **Stage must be able to drain the queue**: `CRON_SECRET` set and the deployment able to call itself.
+4. The worker sizes the pool for the engine's contract and prepares ready-made sets the canonical start never
+   uses. Harmless, but wasted work.
+5. A cached question whose concept has no canonical link cannot be selected (B1 rule), however many exist.
+
+## AO. Remaining Legacy Entry Points
+
+Every `/dashboard/quiz` reference in `src/` was audited (27 lines, 17 files).
+
+| Surface | Current | Target | Action |
+|---|---|---|---|
+| Subject page, concept row "Comprobación individual" (`subjects/[id]/ConceptList.tsx:139`) | hand-built `…/quiz?conceptId&mode=quick_check`, shown for every concept | `SHOULD_USE_CANONICAL` | Re-point (or remove) under the flag. It is a client link and `quick_check` has no mapped intent, so it needs the server to supply the target. **Open — the one ordinary-practice entry that competes** |
+| Subject page "Evaluación acumulativa" / "Simulación de examen" (`subjects/[id]/page.tsx:226,229`) | hand-built, subject-wide, no concept | `OUT_OF_SCOPE_SPECIALIZED_FLOW` (borderline) | Product decision: `MIXED_CUMULATIVE` exists in B2 but nothing maps to it. Leave |
+| Remediation steps (`remediation.service.ts:493–497`) | `…&mode=topic_practice|quick_check|cumulative_assessment&remediationStepId=` | `OUT_OF_SCOPE_SPECIALIZED_FLOW` | Leave. Note: must never be routed through the entry cutover (it would drop the step id) |
+| Explain & Defend, Transfer pages | no quiz URL of their own; continuation comes from the server | `OUT_OF_SCOPE_SPECIALIZED_FLOW` | None |
+| Concept page, learning-debt list | already link to the Concept Mission, not the quiz | `INTENTIONALLY_LEGACY` (no launch) | None — the B5-D report overstated these |
+| Continuation panel, Start buttons, study plan | navigate to the server's launch target | covered by the cutover | None |
+| Teacher class assignments | own route, legacy submit | `OUT_OF_SCOPE_SPECIALIZED_FLOW` | None |
+| Learner shell focus-mode list | route detection for `/dashboard/quiz` only | `INTENTIONALLY_LEGACY` | Optional: add `/dashboard/assessment` if focus chrome is wanted there |
+
+One more, inside the legacy session engine: it launches `review`, `quick_check` and `retention_check` modes that
+the cutover does not map. Irrelevant where the canonical engine is the authority (DEV behaves so); relevant in
+any environment where it is not.
+
+## AP. Final DEV Certification
+
+```text
+DEV_INTEGRATED_ASSESSMENT_PASS
+```
+
+| Gate | Result |
+|---|---|
+| Desktop browser journey, hydrated, authenticated | PASS (`3288d6f`) |
+| Mobile browser journey, hydrated, authenticated | PASS (`a2e041e`) |
+| Hydrated accessibility, manual | PASS |
+| Runtime green on the certified SHA | PASS — HTTP E2E 43 / 43 on `a2e041e` |
+| Tests / typecheck / build | 508 files / 9,097 tests, 0 failed; `tsc --noEmit` clean; `next build` OK |
+
+Caveat that stays attached to this PASS: authentication was by proxy-injected fixture token (section AM).
+
+Fixture data. `student-a` now carries 8 canonical sessions and 8 evidence rows from B5-D / B5-E (Knowledge
+State for Linear Equations: evidence 43, independent 39). The fixture tooling keeps Sofía's learning history
+on purpose (`teacher-reset`: "her own learning history is kept — produced only through the governed engine
+path"); the only tool that removes it is the full `cleanup` + `provision`, which also resets every other Track
+A identity. Nothing was deleted. It is fixture data, not learner data.
+
+Retry cost — `PERFORMANCE/COST OPTIMIZATION`, not a blocker. A retried completion grades again before the
+database refuses the duplicate. Recommended later: check, before grading, whether the session is already
+completed and its evidence keys exist, and return the stored outcome; this needs the result to be reproducible
+without re-grading, which the current contract does not store.
+
+Exam content — `EXAM_CONTENT_NOT_RELEASE_READY` (release blocker, not an engine blocker): 509 approved items,
+0 human review decisions, 0 item-level concept attributions, 0 durations, no licensed source. Unchanged.
+
+## AQ. Stage Entry Decision
+
+```text
+STAGE_GO_WITH_CONDITIONS
+```
+
+1. Promote exactly `a2e041e`.
+2. Reconcile the Stage ledger with the 82-entry chain of this branch.
+3. Apply pending migrations before the code is activated.
+4. Keep `ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED` off until the Stage deployment and migrations are confirmed.
+5. Enable the flag in Stage only.
+6. Run a reduced signed-in Stage smoke. An operator signing in through the real sign-in screen would also
+   close the one thing this gate did not exercise.
+7. Confirm the question queue drains in Stage (`CRON_SECRET`, self-dispatch) and that the smoke Student has
+   cached questions on a canonically linked concept.
+8. Confirm which learning-decision engine Stage runs (`CANONICAL_ENGINE_V1_ENABLED`): with it off, the legacy
+   engine's `review` / `quick_check` / `retention_check` launches are not re-pointed.
+9. Production stays untouched.
+
+Open product items, not Stage blockers: the subject-page "Comprobación individual" link; a replenishment
+trigger in the canonical flow; the retry cost; exam content.
 
