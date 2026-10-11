@@ -261,3 +261,87 @@ Keep on the lane branch. The lane does not merge.
 
 ## NEXT SAFE ACTION
 Orchestrator review. Suggested next: QB-R2E — fix the five generator/specification findings, then re-run a fresh 20-item live batch with frozen validators (well inside the remaining budget).
+
+---
+
+# L2 — QB-R2E FROZEN-VALIDATOR LIVE BATCH (2026-10-11)
+
+## LANE
+L2 — ASSESSMENT ENGINE / QUESTION BANK — worktree `/Users/jalbornoz/PROYECTOS/studyos-qb-r1a`, branch `feat/qb-r2e-frozen-validators`.
+
+## STATUS
+READY_FOR_ORCHESTRATOR_REVIEW
+
+`QB_R2E_STATUS = FAIL` — run exactly as pre-registered; the frozen evaluator returns GENERATOR_READY_FOR_DEV_SCALE = NO (9 of 14 criteria failed). In addition two genuine validator defects were found after the batch, so under the Orchestrator's rule the batch is INVALIDATED as certification evidence. The NO does not depend on either defect.
+
+## BASE SHA
+6ebab9a (QB-R2D)
+
+## FINAL SHA
+Freeze commit 9fe68d01d8649548f453873acec633f4a3dead5e; results in the following commit (`git log -1` on the lane branch).
+
+## FILES CHANGED
+Freeze commit: generator v2, validators revision 3, adaptation-specification marks and command terms, QB-R2E scripts, pre-registration, freeze manifest, tests (see `git show --stat 9fe68d0`).
+Results commit:
+- docs/exams/question-bank/pilots/qb-r2e/ (recording, ledger, selection, specifications, batch, validation report, gate evaluation, two proofs, rights record)
+- docs/exams/question-bank/QB_R2E_FROZEN_VALIDATORS_AND_PRE_REGISTRATION.md (results appended below the pre-run text)
+- tests/unit/qb-r2e-live-replay.test.ts
+- docs/orchestration/status/L2_STATUS.md, docs/orchestration/reports/L2_ASSESSMENT_ENGINE_QUESTION_BANK.md
+
+## LOCKS USED
+`ASSESSMENT_ADAPTATION` and the Question Bank production contracts. 26 live provider calls from a lane script outside `src/` (application AI gateway bypassed: it writes to a database). No schema, migration, database, ingestion, pool, approval, rights record, deployment, merge or push. No frozen file changed after 9fe68d0 (`git diff --quiet` clean; `--verify-freeze` ok).
+
+## TESTS
+- `npx tsc --noEmit -p tsconfig.json` — exit 0
+- `npx vitest run` — 521 files / 9,396 tests, 0 failures; includes offline byte-for-byte replays of the QB-R2D and QB-R2E recordings
+- `npx next build` — exit 0
+- Ephemeral database certifications: reviewer governance, CURR-PAA, B2-B1, B2-B2, platform chain — all exit 0
+- 82 migration files, none added; no provider key in any artifact
+
+## FINDINGS
+| Field | Value |
+|---|---|
+| QB_R2E_STATUS | FAIL (batch also INVALIDATED as certification evidence: validator defects V1, V2) |
+| VALIDATOR_FREEZE_SHA | 9fe68d01d8649548f453873acec633f4a3dead5e (manifest dc7549e5…3b18c5) |
+| LIVE_PROVIDER | PASS — OpenAI `gpt-5.6-luna`, strict JSON schema accepted; 0 malformed answers in 26 calls |
+| FRESH_ITEMS | 22 candidates (18 first attempts + 4 regenerations) over 20 new adaptations; 2 adaptations ended with no candidate |
+| FIRST_ATTEMPT_STRICT_PASS | 11/20 (required ≥ 16) — FAIL |
+| AFTER_ONE_REGEN_STRICT_PASS | 12/20 |
+| STRUCTURAL_COMPLIANCE | 18/20 — FAIL |
+| PROFILE_COMPLIANCE | 17/20 — FAIL |
+| CONSTRUCT_PRESERVATION | pass 13, weak 5, fail 2 — FAIL (fail = 0 and weak ≤ 2 both missed) |
+| ANSWER_VALIDATION | failures 2 — FAIL; final items: machine verified 2, deterministic rule 5, human review required 11, no candidate 2 |
+| MACHINE_RECOMPUTATION | 10/10 applicable |
+| STIMULUS_INTEGRITY | 3/3 — PASS |
+| ORIGINALITY | material failures 2 — FAIL (the two no-candidate adaptations; all 18 final candidates pass) |
+| LINEAGE_COMPLETENESS | 18/20 — FAIL |
+| MULTI_PROFILE_SAME_FAMILY_PROOF | PASS on the letter: 3 clean systems of 5 (Cambridge, ICFES, PISA) |
+| STANDARD_VS_STEM_PLUS_PROOF | FAIL (PAA pair: the regenerated baseline fails profile compliance; school and PISA pairs pass) |
+| LEARNER_TEXT_SPECIFICATION_LEAKAGE | 0 — PASS |
+| ASSUMED_CUMULATIVE_SPEND_USD | 3.005135 of 5.00 (R2D 1.550575 + R2E 1.454560; 26 calls). Assumed high price basis, not an invoice |
+| GENERATOR_READY_FOR_DEV_SCALE | NO |
+| GENERATOR_READY_FOR_PILOT_CONTENT | NO |
+| READY_FOR_BANK_INGESTION | NO |
+| QUESTION_BANK_READY | FAIL |
+
+- The two adaptations with no candidate (IB Paper 1 rate comparison; PISA optimum) fail every per-item criterion by the pre-registered definition and account for the whole shortfall in structural, lineage, answer, construct-fail and originality. Among the 18 final candidates the validators found no structural failure, no contradicted key, no construct contradiction and no lineage gap.
+- V1, validator false positive (revision 2): two opposite true/false options were read as "the same number" because the only numeral was a label; it failed a sound first attempt. Without it first-attempt strict pass would be 12/20.
+- V2, validator false negative (revision 2): an equation not written as "… = 0" was not parsed, and a WRONG key (first attempt of the Cambridge factorising item) was classed deterministic-rule-verified. The item failed on another gate and was regenerated, so no final item carries the error.
+- Lane defect: the fixed-instruction trap was removed from the constructed-response template only; the numeric-entry template still has it and caused both refusals of the PISA optimum adaptation.
+- Provider contract failure: the IB Paper 1 item twice returned two answers with the same part label.
+- Reading findings not caught by validators: meta-stems phrased differently from the pattern; a stimulus text that hands over the model; near-duplicate scenarios in the school pair; reused numbers across one family; IB and Cambridge items still elementary; some implausible contexts.
+- Pre-registered readings chosen by the lane before the run: strict pass may carry answer HUMAN_REVIEW_REQUIRED (reported separately); "WEAK/HUMAN_REVIEW ≤ 2/20" read as the construct gate; no transport retries; a heuristic flag or construct WEAK blocks a strict pass.
+- B5_CANONICAL_RUNTIME_DEPENDENCY = RESOLVED_EXTERNALLY_BY_L13 (Orchestrator ruling). The lane did not touch Stage in this phase.
+- Details: `docs/exams/question-bank/QB_R2E_FROZEN_VALIDATORS_AND_PRE_REGISTRATION.md` (sections R1–R9).
+
+## BLOCKERS
+- A further fresh batch (required by the invalidation rule) does not fit the remaining assumed-price budget on a worst-case basis: 1.99 left under the 5.00 cap, 3.39 worst case for 40 calls (the last batch actually used 1.45). Orchestrator decision needed on the cap.
+
+## CHANGE_REQUESTS
+NONE
+
+## MERGE RECOMMENDATION
+Keep on the lane branch. The lane does not merge.
+
+## NEXT SAFE ACTION
+Orchestrator rules on budget and on whether to run QB-R2F: fix V1, V2, the numeric-entry trap and duplicate part labels; widen the meta-stem heuristic; new freeze SHA; completely fresh batch. No provider call until then.

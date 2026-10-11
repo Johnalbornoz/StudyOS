@@ -1,0 +1,188 @@
+{
+  "kind": "QB_R2E_RIGHTS_RECORD",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- AUTOMATED VALIDATION ONLY, NO HUMAN REVIEW",
+  "freeze": {
+    "freezeCommitSha": "9fe68d01d8649548f453873acec633f4a3dead5e",
+    "manifestHash": "dc7549e579d8d971df9193ef4fd2bf9bb8b3c133e6c8fb2970a56826fe3b18c5"
+  },
+  "run": {
+    "runId": "qb-r2e-20261011190328",
+    "provider": "live:openai:chat-completions",
+    "requestedModel": "gpt-5.6-luna",
+    "servedModels": [
+      "gpt-5.6-luna"
+    ],
+    "firstResponseAt": "2026-10-11T19:03:28.446Z",
+    "lastResponseAt": "2026-10-11T19:09:37.639Z",
+    "gateway": "BYPASSED_NO_GOVERNANCE_ROW_WRITTEN"
+  },
+  "providerTermsEvidenceInTheRepository": "NONE on file (unchanged since QB-R2D). No web page was read and no legal question was decided.",
+  "modelOutputRightsEvidence": {
+    "provider": "live:openai:chat-completions",
+    "model": "gpt-5.6-luna",
+    "termsReference": null,
+    "accountContext": null,
+    "termsVersionOrDate": null,
+    "commercialUse": {
+      "permitted": null,
+      "note": null
+    },
+    "restrictions": null,
+    "verification": {
+      "verifiedByPerson": false,
+      "verifiedBy": null,
+      "verifiedAt": null
+    }
+  },
+  "modelOutputRightsGate": {
+    "blockers": [
+      "MODEL_OUTPUT_RIGHTS_EVIDENCE_INCOMPLETE",
+      "MODEL_OUTPUT_RIGHTS_NOT_VERIFIED_BY_A_PERSON"
+    ],
+    "missingFields": [
+      "termsReference",
+      "accountContext",
+      "termsVersionOrDate",
+      "commercialUse.permitted",
+      "commercialUse.note",
+      "restrictions",
+      "verification.verifiedBy",
+      "verification.verifiedAt"
+    ]
+  },
+  "candidates": [
+    {
+      "candidateKey": "cand|01.rate-comparison.paa#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|03.rate-comparison.cambridge-p1#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|04.rate-comparison.pisa#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|05.rate-comparison.icfes#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|06.approach.school.standard#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|07.approach.school.stem-plus#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|08.approach.paa.stem-plus#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|09.approach.pisa.stem-plus#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|10.line-two-points.paa#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|11.linear-model.ib-p2#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|12.linear-model.pisa#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|13.quadratic-factorising.cambridge-p1#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|14.quadratic-factorising.paa#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|15.quadratic-optimum.ib-p1#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|17.probability-single-event.ib-p1#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|18.probability-compare.icfes#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|19.data-judge-claim.icfes#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|20.data-relative-change.cambridge-p1#a1",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|01.rate-comparison.paa#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|06.approach.school.standard#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|13.quadratic-factorising.cambridge-p1#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    },
+    {
+      "candidateKey": "cand|18.probability-compare.icfes#a2",
+      "rightsStatus": "RIGHTS_NOT_ESTABLISHED",
+      "supportedReuseRights": "UNKNOWN",
+      "deliverable": false
+    }
+  ],
+  "statement": "Every generated candidate is RIGHTS_NOT_ESTABLISHED. Nothing here is claimed as STUDYUS_OWNED."
+}

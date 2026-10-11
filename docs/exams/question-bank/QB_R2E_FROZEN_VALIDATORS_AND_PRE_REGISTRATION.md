@@ -268,3 +268,156 @@ Why every id changed: engine version 3, discipline policy 0.2.0, and the two new
 1. Verify that the provider accepts the strict schema (no call in this phase).
 2. Check plausibility of magnitudes or authenticity of a context by rule. The template asks for them; no validator claims them.
 3. Make the item-writing gate more than a heuristic.
+
+---
+
+# PHASE 3 — RESULTS OF THE PRE-REGISTERED RUN
+
+Everything above this line was written before the run and is unchanged. Everything below was written after it.
+
+Run `qb-r2e-20261011190328`, started 2026-10-11T19:03:28.445Z. Freeze commit `9fe68d01d8649548f453873acec633f4a3dead5e`, manifest hash `dc7549e579d8d971df9193ef4fd2bf9bb8b3c133e6c8fb2970a56826fe3b18c5`, stamped into every artifact. No frozen file was changed during or after the run. No item was repaired; no score was changed. All candidates are DEV_TEST_CONTENT, RIGHTS_NOT_ESTABLISHED, unreviewed.
+
+## R1. Verdict of the frozen evaluator
+
+**GENERATOR_READY_FOR_DEV_SCALE = NO.** Nine of fourteen criteria fail.
+
+| Criterion | Required | Observed | |
+|---|---|---|---|
+| FIRST_ATTEMPT_STRICT_PASS | ≥ 16/20 | **11/20** | FAIL |
+| STRUCTURAL_COMPLIANCE | 20/20 | 18/20 | FAIL |
+| PROFILE_COMPLIANCE | 20/20 | 17/20 | FAIL |
+| ANSWER_VALIDATION_FAILURES | 0 | 2 | FAIL |
+| CONSTRUCT_PRESERVATION_FAIL | 0 | 2 | FAIL |
+| CONSTRUCT_PRESERVATION_WEAK | ≤ 2/20 | 5/20 | FAIL |
+| LINEAGE_COMPLETENESS | 20/20 | 18/20 | FAIL |
+| STIMULUS_INTEGRITY | all applicable | 3/3 | PASS |
+| ORIGINALITY_MATERIAL_FAILURES | 0 | 2 | FAIL |
+| MULTI_PROFILE_SAME_FAMILY_PROOF | PASS | PASS (3 clean systems of 5: Cambridge, Icfes, PISA) | PASS |
+| STANDARD_VS_STEM_PLUS_PROOF | PASS | FAIL | FAIL |
+| LEARNER_TEXT_SPECIFICATION_LEAKAGE | 0 | 0 | PASS |
+| MAX_REGENERATIONS_PER_ADAPTATION | ≤ 1 | 1 | PASS |
+| NO_MANUAL_CONTENT_REPAIR | TRUE | TRUE | PASS |
+
+How to read the "2"s. Two adaptations (02 and 16) produced **no candidate on either attempt**. By the pre-registered definition a final attempt with no candidate fails every per-item criterion, so those two account for the whole shortfall in structural (18), lineage (18), the 2 answer failures, the 2 construct failures and the 2 originality failures. Among the 18 final candidates there is no structural failure, no contradicted key found by the validators, no construct contradiction, no originality failure and no lineage gap. The failures that are about content are: profile compliance (one final item), construct WEAK (five), first-attempt strict pass (11) and the approach proof.
+
+## R2. The run
+
+| | |
+|---|---|
+| LIVE_PROVIDER | PASS. `gpt-5.6-luna`, strict JSON schema **accepted on the first call**; served as requested on all calls |
+| Calls | 26: 20 first attempts + 6 regenerations (exactly those the rule made due). No retry, no transport error, no rejected request |
+| Malformed answers | **0 of 26** (QB-R2D: 5 of 35). Strict schema mode did what it was for |
+| Fresh items | 22 candidates (18 first attempts + 4 regenerations); 4 harness refusals |
+| Tokens | 86,894 in · 34,003 out |
+| Spend, assumed guard basis | QB-R2E **1.454560** · QB-R2D 1.550575 · **cumulative 3.005135** of 5.00 |
+| Spend, repo-configured basis | QB-R2E 0.058182 |
+
+## R3. Per adaptation
+
+| # | Attempt 1 | Regenerated? | Final | Failing or weak gates of the final attempt |
+|---|---|---|---|---|
+| 01 rate, PAA | candidate; originality: same parameter set as 06 | yes | candidate (a2) | **profile FAIL** (a distractor states 0.444 and 0.044 on a no-calculator item); construct WEAK; answer human review |
+| 02 rate, IB P1 | **refused**: quantity target without a numeric value | yes | **no candidate** (refused again, same code) | every per-item criterion |
+| 03 rate, Cambridge | strict pass | – | candidate | answer human review (one part) |
+| 04 rate, PISA | strict pass | – | candidate | – |
+| 05 rate, Icfes | candidate | – (WEAK is not regenerable) | candidate | construct WEAK; answer human review |
+| 06 school STANDARD | candidate; originality: same parameter set as 01 | yes | candidate (a2) | construct WEAK; answer human review |
+| 07 school STEM_PLUS | strict pass | – | candidate | answer human review (one part) |
+| 08 PAA STEM_PLUS | strict pass | – | candidate | – |
+| 09 PISA STEM_PLUS | strict pass | – | candidate | – |
+| 10 line, PAA | candidate | – | candidate | construct WEAK; answer human review |
+| 11 linear, IB P2 | strict pass | – | candidate | answer human review (two parts) |
+| 12 linear, PISA | strict pass | – | candidate | answer human review |
+| 13 factorising, Cambridge | candidate; **profile FAIL** (coefficients not integers) | yes | candidate (a2) | – |
+| 14 factorising, PAA | strict pass | – | candidate | – |
+| 15 optimum, IB P1 | strict pass | – | candidate | answer human review (two parts) |
+| 16 optimum, PISA | **refused**: repeats the fixed instruction | yes | **no candidate** (refused again, same code) | every per-item criterion |
+| 17 single event, IB P1 | strict pass | – | candidate | – |
+| 18 compare, Icfes | candidate; **structural FAIL** (options "state the same number") | yes | candidate (a2) | item-writing FLAGGED (options not parallel) |
+| 19 claim, Icfes | strict pass | – | candidate | answer human review |
+| 20 relative change, Cambridge | candidate | – | candidate | construct WEAK; answer human review |
+
+Strict pass: 11/20 on first attempts; 12/20 on final attempts (reported; not a criterion).
+
+Final attempts by gate (18 candidates + 2 with none): construct PASS 13 · WEAK 5 · none 2. Answer class by item: MACHINE_VERIFIED 2 · DETERMINISTIC_RULE_VERIFIED 5 · **HUMAN_REVIEW_REQUIRED 11** · FAILED 0 · none 2. By keyed answer (34): 12 / 9 / 13 / 0. Machine recomputation 10/10 applicable. Originality: all 18 pass; maximum textual similarity over all candidates 0.204.
+
+### The proofs
+
+**Same family — PASS** on the pre-registered criterion (at least three clean systems): Cambridge, Icfes and PISA are clean; PAA's final item fails profile compliance; IB has no candidate. One invariant hash, one concept, every cross-system pair of specifications differs. Three of five is the letter of the criterion and not more.
+
+**STANDARD against STEM_PLUS — FAIL.** The school pair (06, 07) and the PISA pair (04, 09) pass every pair check. The PAA pair (01, 08) fails `bothClean`: the regenerated baseline 01 fails profile compliance. Official constraints did win on PAA and are recorded; the school pair differs in response format; no pair shares a parameter set.
+
+## R4. What the two fixes that worked did, and the one that was incomplete
+
+- **Strict schema (fix 2):** 0 malformed answers in 26 calls.
+- **No forbidden sentence for constructed responses (fix 1):** no constructed response was refused for it.
+- **Fix 1 was not applied to numeric entry, and that cost an adaptation.** The numeric-entry template still shows the provider the fixed instruction ("Escribe tu respuesta como un número.") and the harness still refuses an item that contains it. Adaptation 16 ended its stem with exactly that sentence on both attempts and was refused twice. This is the same trap as in QB-R2D, left in place by me in one of the three templates. It is in a frozen file and was not touched.
+- **Per-part command terms (fix 4):** every constructed item used allowed terms at the head of each part; none was refused or failed for it.
+- **Marks (fix 5):** every item was inside the specification's ranges.
+- **Leakage hardening:** 0 by the gate, and I found none in learner text by reading.
+- **Parallel options / result-asking stems:** partly. Options are now parallel in form in every selected item. But five stems still ask "which option presents / indicates / describes correctly" (01 a1, 01 a2, 05, 08, 12): the heuristic did not flag them (see R6).
+
+## R5. Generator-side reading (not a review)
+
+I read all 26 responses. Nothing was edited.
+
+**Wrong key: one.** 13 a1 states `3x² − 6x = 33` and keys the roots −2.5 and 4.5. Those are not the roots of that equation (with a = 3 they would need a constant of −33.75). The item was regenerated — but because of a parameter constraint, not because the validators saw the wrong key (R6, defect V2).
+
+Every other key is mathematically right.
+
+| Unit | Validators | My reading |
+|---|---|---|
+| 01 a1 | regenerable: same parameters as 06 | Key right. Stem asks "which option presents the comparison correctly". Two options conclude "package 1" |
+| 01 a2 | profile FAIL, WEAK | Key right. Same meta stem. The failing numbers are in a distractor |
+| 02 a1, a2 | refused | Mathematics right. The provider wrote two answers labelled `a` to carry two rates in one part; a2 also pasted the parts into the stem. A real contract failure, twice |
+| 03 | strict | Right. Almost the same item as 02: suppliers, rates 3 and 2.8, difference 0.2 |
+| 04 | strict | Right. A plan of 13.125 GB for 75 euros is not a realistic offer |
+| 05 | WEAK | Right. Meta stem. A distractor says "75 points per dollar" |
+| 06 a1, a2 | regenerable / WEAK | Right. a2 reuses 24, 84, 35, 105 again (now only against the superseded 01 a1) |
+| 07 | strict | Right. **Nearly the same item as 06 a2**: municipal transport passes, 24 euros for 84 trips. The STANDARD and STEM_PLUS items differ in little but the word "justifica" |
+| 08 | strict | Right. Meta stem ("which option correctly indicates"). Decimal points in Spanish |
+| 09 | strict | Right. "Delivers 18 books for every 40 euros contributed" to a lending programme is odd |
+| 10 | WEAK, human review | Right, and a good item. The validators cannot read an equation option for this construct, so they neither verify it nor credit the computation |
+| 11 | strict | Right and clean. Far below the level of the paper |
+| 12 | strict | Right. **The stimulus text states the start and the rate in words** ("ya tenía 75 euros y añade 6 euros cada semana"), so the table has nothing left to be read for. Meta stem; only one option is coherent |
+| 13 a1 | profile FAIL | **Wrong key** (above) |
+| 13 a2 | strict | Right and clean |
+| 14 | strict | Right and clean |
+| 15 | strict | Right (21.5; 12183.75). "The product of two linear effects" measured in "response units" is the abstraction relabelled, not a laboratory situation |
+| 16 a1, a2 | refused | Mathematics right both times. a1 writes both factors out (it would have failed the hand-over check had it not been refused). a2's situation — 140 notebooks per buyer — is not plausible |
+| 17 | strict | Right. Part (b) only converts the answer of part (a) |
+| 18 a1 | structural FAIL | Right, and I see no structural defect: a validator false positive (R6, defect V1) |
+| 18 a2 | flagged | Right and clean. The flag is fair: one option is five times the length of the key |
+| 19 | strict | Right. Very easy: the claim compares two bars |
+| 20 | WEAK | Right (50.0 %). "Percentage increase from site A to site C": a change between two places again. A round answer on a calculator paper |
+
+Patterns: (1) the provider reuses numbers and scenarios across adaptations of one family — 24 and 84 appear in five items; (2) meta stems persist in five of nine selected items; (3) the items for IB and Cambridge are still elementary; (4) contexts are plausible more often than in QB-R2D, with exceptions (04, 09, 15, 16 a2).
+
+## R6. Where my reading disagrees with the frozen validators — two validator defects
+
+No score was changed and no frozen file was touched. Both defects are reported so that the batch can be judged with them in view.
+
+**V1 — false positive (revision 2, structural, `OPTIONS_STATE_THE_SAME_NUMBER`).** The check reads "the one number an option states". In 18 a1 the options are "El juego 1 … la afirmación es falsa" and "El juego 1 … la afirmación es verdadera": the only numeral is the label of the game, so two options that say opposite things were read as stating the same number. That failed a first attempt I judge sound and forced a regeneration. Effect on the gates: without it, first-attempt strict pass would be 12/20 instead of 11/20. Nothing else changes; its regeneration is a candidate and passes every FAIL gate.
+
+**V2 — false negative (revision 2, answer class).** In 13 a1 the stem's equation is not in the form `… = 0`, so it was not read; the keyed roots were then compared only with the *declared* roots and classed DETERMINISTIC_RULE_VERIFIED. They are not roots of the stated equation. A key that is wrong was given a "rule-verified" class. The item still failed (profile compliance) and was regenerated, so no final item carries the error; but the answer gate did not count it, so ANSWER_VALIDATION_FAILURES is understated by one first-attempt failure.
+
+**Heuristic misses (not bugs, limits):** `STEM_ASKS_WHICH_OPTION_IS_CORRECTLY_FORMED` did not match "presenta / indica / describe correctamente" (01 a1, 01 a2, 05, 08, 12). Counted as flags they would lower first-attempt strict pass further. Nothing checks that a stimulus text hands over the model (12), that two items of a pair are near-duplicates in scenario (06 / 07), or plausibility.
+
+**Does either defect change the verdict?** No. Correcting V1 alone gives at best 12/20 first-attempt strict passes; V2 and the heuristic misses only add failures. Every other failed criterion fails without them: two adaptations produced no candidate in two attempts, five final items are construct-WEAK, one final item fails profile compliance, and the approach proof fails on that item.
+
+**Under the Orchestrator's rule** a genuine validator bug found after the batch started means the batch is reported as INVALIDATED, without rescoring, and the Orchestrator decides. V1 and V2 are genuine. I report them under that rule. My own view, for what it is worth: as a *certification* the batch cannot stand as scored; as *evidence* its conclusion (NO) is robust to both defects.
+
+## R7. What would have required touching a frozen file (none was touched)
+
+1. Removing the fixed-instruction trap from the numeric-entry template (`specification-generation-v2.ts`) — adaptation 16.
+2. V1: making `OPTIONS_STATE_THE_SAME_NUMBER` ignore a numeral that is a label (`specification-validators.ts`).
+3. V2: not classing a keyed answer as rule-verified when the declared parameters are not readable in the item (`specification-validators.ts`).
+4. Widening the meta-stem pattern (`specification-validators-r3.ts`).
+
+## R8. Artifacts
+
+`docs/exams/question-bank/pilots/qb-r2e/`: `validator-freeze.json`, `recorded-live-responses.json`, `spend-ledger.json` (with the cumulative total), and — by replay only — `selection.json`, `specifications.json`, `generated-batch.json`, `automated-validation-report.json` (first-attempt and final-attempt views per adaptation), `gate-evaluation.json`, `multi-system-same-family-proof.json`, `standard-vs-stem-plus-proof.json`, `rights-record.json`. `tests/unit/qb-r2e-live-replay.test.ts` replays the recording offline and compares every replay-produced file byte for byte.
+
+## R9. Rights
+
+Unchanged from QB-R2D: no provider terms or licence evidence is on file in the repository; every candidate is `RIGHTS_NOT_ESTABLISHED`; nothing is claimed as StudyUs-owned.

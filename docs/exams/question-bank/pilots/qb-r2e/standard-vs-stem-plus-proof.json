@@ -1,0 +1,1230 @@
+{
+  "kind": "QB_R2E_STANDARD_VS_STEM_PLUS_PROOF",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- AUTOMATED VALIDATION ONLY, NO HUMAN REVIEW",
+  "freeze": {
+    "freezeCommitSha": "9fe68d01d8649548f453873acec633f4a3dead5e",
+    "manifestHash": "dc7549e579d8d971df9193ef4fd2bf9bb8b3c133e6c8fb2970a56826fe3b18c5"
+  },
+  "criterion": "The three pairs (06,07) (01,08) (04,09). PASS when in EVERY pair: both items are CLEAN; concept id, invariant hash and declared construct are identical; the two items do NOT share a parameter set; STANDARD is recorded by absence and STEM_PLUS explicitly; every unmet preference carries its overriding rule, and a rule authority exactly when it carries a certification status. AND the school pair differs in response format in specification and items; AND the PAA pair has at least one preference overridden by an OFFICIAL rule while both items keep the same response format.",
+  "familyId": "tf.math.proportion.rate-comparison-model",
+  "pairs": [
+    {
+      "why": "A target with no official constraint: the approach moves the response format.",
+      "baseline": {
+        "selectionKey": "06.approach.school.standard",
+        "targetId": "SCHOOL_STEM_PERFORMANCE",
+        "approach": "STANDARD",
+        "systemProfileId": "SCHOOL_STEM_PERFORMANCE",
+        "specificationId": "aeadb00606e82f63e33c94fd50723d59f797f500f88dede09010e5058d4d3b11",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "SOCIETAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED",
+            "situation": "A comparison of two public services, places or groups by a rate."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "JUSTIFIED_ARGUMENT",
+            "workingShown": true,
+            "justificationRequired": true
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "marks": {
+          "scoredAs": "MARKED_PARTS",
+          "total": {
+            "min": 2,
+            "max": 8
+          },
+          "parts": {
+            "min": 1,
+            "max": 4
+          },
+          "markPointKinds": [
+            "METHOD",
+            "ACCURACY",
+            "REASONING"
+          ],
+          "creditLevels": true,
+          "provenance": [
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "school-stem.marks",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "POLICY_RULE",
+              "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "school-stem.rubric",
+              "authority": "INSTITUTION_POLICY"
+            }
+          ]
+        },
+        "commandTerms": null,
+        "language": "es",
+        "finalAttempt": 2,
+        "finalStatus": "CANDIDATE",
+        "unitKey": "06.approach.school.standard#a2",
+        "item": {
+          "stem": "Un ayuntamiento ofrece dos abonos mensuales de transporte público. El abono 1 cuesta 24 euros y permite realizar 84 viajes. El abono 2 cuesta 35 euros y permite realizar 105 viajes. Se quiere comparar cuántos viajes se obtienen por cada euro pagado.",
+          "instruction": null,
+          "declaredContext": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos abonos reales de transporte público mediante los viajes obtenidos por euro."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 24,
+              "q1": 84,
+              "p2": 35,
+              "q2": 105
+            }
+          },
+          "marks": 6,
+          "responseFormat": "SHORT_RESPONSE",
+          "stimulus": null,
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "totalMarks": 6,
+            "parts": [
+              {
+                "label": "a",
+                "commandTerm": null,
+                "prompt": "Calcula los viajes por euro de cada abono.",
+                "marks": 2,
+                "markPoints": [
+                  "METHOD1",
+                  "ACCURACY1"
+                ],
+                "finalAnswer": "Abono 1: 84/24 = 3.5 viajes por euro; abono 2: 105/35 = 3 viajes por euro.",
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "La respuesta contiene dos tasas unitarias que deben asociarse correctamente con los dos abonos."
+                }
+              },
+              {
+                "label": "b",
+                "commandTerm": null,
+                "prompt": "Calcula la diferencia entre las dos tasas unitarias.",
+                "marks": 2,
+                "markPoints": [
+                  "METHOD1",
+                  "ACCURACY1"
+                ],
+                "finalAnswer": "3.5 - 3 = 0.5 viajes por euro.",
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "UNIT_RATE_DIFFERENCE"
+                }
+              },
+              {
+                "label": "c",
+                "commandTerm": null,
+                "prompt": "Justifica qué abono ofrece más viajes por euro.",
+                "marks": 2,
+                "markPoints": [
+                  "REASONING2"
+                ],
+                "finalAnswer": "El abono 1, porque su tasa es mayor: ofrece 3.5 viajes por euro frente a 3 viajes por euro del abono 2.",
+                "target": {
+                  "kind": "VERDICT",
+                  "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+                  "value": "OPTION_1"
+                }
+              }
+            ]
+          },
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Realiza correctamente las dos tasas unitarias, calcula la diferencia y justifica que el abono 1 es superior mediante la comparación de las tasas."
+            },
+            {
+              "code": "PARTIAL_CREDIT",
+              "description": "Muestra un procedimiento adecuado o identifica correctamente el abono superior, pero contiene un error de cálculo, omite una tasa o da una justificación incompleta."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "No establece tasas unitarias pertinentes ni identifica correctamente el abono con mayor número de viajes por euro."
+            }
+          ]
+        },
+        "gates": {
+          "structural": "PASS",
+          "profileCompliance": "PASS",
+          "constructPreservation": "WEAK",
+          "answerKey": "HUMAN_REVIEW_REQUIRED",
+          "machineRecomputation": "PASS",
+          "stimulusIntegrity": "NOT_APPLICABLE",
+          "originality": "PASS_LOW_SIMILARITY",
+          "lineage": "PASS",
+          "learnerTextLeakage": "PASS",
+          "itemWriting": "PASS"
+        },
+        "clean": true
+      },
+      "stemPlus": {
+        "selectionKey": "07.approach.school.stem-plus",
+        "targetId": "SCHOOL_STEM_PERFORMANCE",
+        "approach": "STEM_PLUS",
+        "systemProfileId": "SCHOOL_STEM_PERFORMANCE",
+        "specificationId": "c0705b8f595cb1048e79ed1a710c5425fdfd29a378d4ce6371b53a99e7df2755",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "SOCIETAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED",
+            "situation": "A comparison of two public services, places or groups by a rate."
+          },
+          "responseFormat": {
+            "format": "EXTENDED_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "JUSTIFIED_ARGUMENT",
+            "workingShown": true,
+            "justificationRequired": true
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "marks": {
+          "scoredAs": "MARKED_PARTS",
+          "total": {
+            "min": 2,
+            "max": 8
+          },
+          "parts": {
+            "min": 1,
+            "max": 4
+          },
+          "markPointKinds": [
+            "METHOD",
+            "ACCURACY",
+            "REASONING"
+          ],
+          "creditLevels": true,
+          "provenance": [
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "school-stem.marks",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "POLICY_RULE",
+              "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "school-stem.rubric",
+              "authority": "INSTITUTION_POLICY"
+            }
+          ]
+        },
+        "commandTerms": null,
+        "language": "es",
+        "finalAttempt": 1,
+        "finalStatus": "CANDIDATE",
+        "unitKey": "07.approach.school.stem-plus#a1",
+        "item": {
+          "stem": "Un ayuntamiento está comparando dos abonos mensuales de transporte para decidir cuál ofrece mejor valor a las personas usuarias. El abono 1 cuesta 24 euros y permite realizar 84 viajes al mes. El abono 2 cuesta 30 euros y permite realizar 96 viajes al mes.",
+          "instruction": null,
+          "declaredContext": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos abonos de transporte público mediante el número de viajes que ofrecen por cada euro pagado."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 24,
+              "q1": 84,
+              "p2": 30,
+              "q2": 96
+            }
+          },
+          "marks": 6,
+          "responseFormat": "EXTENDED_RESPONSE",
+          "stimulus": null,
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "totalMarks": 6,
+            "parts": [
+              {
+                "label": "a",
+                "commandTerm": null,
+                "prompt": "Escribe la tasa unitaria de cada abono, expresada en viajes por euro.",
+                "marks": 2,
+                "markPoints": [
+                  "METHOD1",
+                  "ACCURACY1"
+                ],
+                "finalAnswer": "Abono 1: 84/24 = 3,5 viajes por euro; abono 2: 96/30 = 3,2 viajes por euro.",
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "La respuesta requiere presentar e identificar dos tasas unitarias, no un único valor numérico."
+                }
+              },
+              {
+                "label": "b",
+                "commandTerm": null,
+                "prompt": "Calcula la diferencia entre las dos tasas unitarias, en viajes por euro.",
+                "marks": 2,
+                "markPoints": [
+                  "METHOD1",
+                  "ACCURACY1"
+                ],
+                "finalAnswer": "3,5 - 3,2 = 0,3 viajes por euro.",
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "UNIT_RATE_DIFFERENCE"
+                }
+              },
+              {
+                "label": "c",
+                "commandTerm": null,
+                "prompt": "Indica qué abono ofrece mejor valor y justifica tu respuesta usando las tasas unitarias.",
+                "marks": 2,
+                "markPoints": [
+                  "REASONING2"
+                ],
+                "finalAnswer": "El abono 1 ofrece mejor valor: proporciona 3,5 viajes por euro, mientras que el abono 2 proporciona 3,2. Por tanto, el abono 1 ofrece 0,3 viajes más por euro.",
+                "target": {
+                  "kind": "VERDICT",
+                  "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+                  "value": "OPTION_1"
+                }
+              }
+            ]
+          },
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Obtiene las dos tasas unitarias, calcula correctamente su diferencia y justifica que el abono 1 ofrece mejor valor mediante la comparación de las tasas."
+            },
+            {
+              "code": "PARTIAL_CREDIT",
+              "description": "Muestra un procedimiento adecuado o realiza correctamente parte de los cálculos, pero contiene un error numérico o una conclusión incompleta."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "No establece tasas unitarias pertinentes ni proporciona una comparación válida entre los abonos."
+            }
+          ]
+        },
+        "gates": {
+          "structural": "PASS",
+          "profileCompliance": "PASS",
+          "constructPreservation": "PASS",
+          "answerKey": "HUMAN_REVIEW_REQUIRED",
+          "machineRecomputation": "PASS",
+          "stimulusIntegrity": "NOT_APPLICABLE",
+          "originality": "PASS_LOW_SIMILARITY",
+          "lineage": "PASS",
+          "learnerTextLeakage": "PASS",
+          "itemWriting": "PASS"
+        },
+        "clean": true
+      },
+      "specificationDimensionsChangedByTheApproach": [
+        "responseFormat"
+      ],
+      "honouredPreferences": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "dimension": "responseFormat",
+          "decided": "EXTENDED_RESPONSE"
+        },
+        {
+          "preferenceId": "stem-plus.context.situated",
+          "dimension": "context",
+          "decided": "SOCIETAL"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "dimension": "toolPolicy",
+          "decided": "ALLOWED"
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "dimension": "reasoningDepth",
+          "decided": "JUSTIFIED_ARGUMENT"
+        }
+      ],
+      "unmetPreferences": [
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "dimension": "stimulus",
+          "wanted": [
+            "OWN_STIMULUS",
+            "SHARED_STIMULUS"
+          ],
+          "decided": "NONE",
+          "overriddenBy": {
+            "origin": "FAMILY",
+            "ref": "responseConstraints.stimulusNeed",
+            "authority": null
+          },
+          "overridingRuleCertification": null
+        }
+      ],
+      "officialConstraintWon": false,
+      "responseFormatInItems": {
+        "baseline": "SHORT_RESPONSE",
+        "stemPlus": "EXTENDED_RESPONSE"
+      },
+      "checks": {
+        "bothClean": true,
+        "sameConceptInvariantAndConstruct": true,
+        "doNotShareAParameterSet": true,
+        "standardByAbsenceAndStemPlusExplicit": true,
+        "unmetPreferencesCarryTheirOverrider": true
+      },
+      "pairPasses": true
+    },
+    {
+      "why": "A target with OFFICIAL constraints: they win, and the unmet preferences are recorded.",
+      "baseline": {
+        "selectionKey": "01.rate-comparison.paa",
+        "targetId": "PAA.MATEMATICAS",
+        "approach": null,
+        "systemProfileId": "PAA",
+        "specificationId": "f58949d46019205c2fbd6c337e4ee61dcb589488f21c853e08356abb6fc146a5",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice an individual makes between two offers."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "marks": {
+          "scoredAs": "SINGLE_KEYED_UNIT",
+          "total": {
+            "min": 1,
+            "max": 1
+          },
+          "parts": null,
+          "markPointKinds": [],
+          "creditLevels": false,
+          "provenance": [
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "paa.marks",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "POLICY_RULE",
+              "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.ONE_MARK_PER_ITEM",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "paa.rubric",
+              "authority": "STUDYUS_POLICY"
+            }
+          ]
+        },
+        "commandTerms": null,
+        "language": "es",
+        "finalAttempt": 2,
+        "finalStatus": "CANDIDATE",
+        "unitKey": "01.rate-comparison.paa#a2",
+        "item": {
+          "stem": "Una tienda ofrece dos promociones para una merienda. En la promoción 1 pagas 6 euros y recibes 15 unidades. En la promoción 2 pagas 8 euros y recibes 18 unidades. ¿Cuál opción presenta la decisión correcta sobre qué promoción ofrece más unidades por euro y la diferencia entre ambas?",
+          "instruction": "Selecciona la única opción correcta.",
+          "declaredContext": {
+            "kind": "PERSONAL",
+            "description": "Una persona compara dos promociones de una tienda según la cantidad que recibe por cada euro pagado."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 6,
+              "q1": 15,
+              "p2": 8,
+              "q2": 18
+            }
+          },
+          "marks": 1,
+          "responseFormat": "SELECTED_RESPONSE",
+          "stimulus": null,
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "Promoción 1: 2.5 unidades por euro; promoción 2: 2.25 unidades por euro; diferencia: 0.25 unidades por euro."
+              },
+              {
+                "id": "B",
+                "text": "Promoción 2: 2.5 unidades por euro; promoción 1: 2.25 unidades por euro; diferencia: 0.25 unidades por euro."
+              },
+              {
+                "id": "C",
+                "text": "Promoción 2: 0.4 unidades por euro; promoción 1: 0.444 unidades por euro; diferencia: 0.044 unidades por euro."
+              },
+              {
+                "id": "D",
+                "text": "Promoción 2: 9 unidades por euro; promoción 1: 10 unidades por euro; diferencia: 1 unidad por euro."
+              }
+            ],
+            "answerKey": "A",
+            "target": {
+              "kind": "NOT_MACHINE_CHECKABLE",
+              "reason": "La respuesta combina dos tasas unitarias, su diferencia y la promoción favorecida."
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null
+        },
+        "gates": {
+          "structural": "PASS",
+          "profileCompliance": "FAIL",
+          "constructPreservation": "WEAK",
+          "answerKey": "HUMAN_REVIEW_REQUIRED",
+          "machineRecomputation": "NOT_APPLICABLE",
+          "stimulusIntegrity": "NOT_APPLICABLE",
+          "originality": "PASS_LOW_SIMILARITY",
+          "lineage": "PASS",
+          "learnerTextLeakage": "PASS",
+          "itemWriting": "PASS"
+        },
+        "clean": false
+      },
+      "stemPlus": {
+        "selectionKey": "08.approach.paa.stem-plus",
+        "targetId": "PAA.MATEMATICAS",
+        "approach": "STEM_PLUS",
+        "systemProfileId": "PAA",
+        "specificationId": "eba283b06456e0d182d557ff605e69b4dd164bc45e05df03556e12a9540c6b7e",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "SOCIETAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A comparison of two public services, places or groups by a rate."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "marks": {
+          "scoredAs": "SINGLE_KEYED_UNIT",
+          "total": {
+            "min": 1,
+            "max": 1
+          },
+          "parts": null,
+          "markPointKinds": [],
+          "creditLevels": false,
+          "provenance": [
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "paa.marks",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "POLICY_RULE",
+              "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.ONE_MARK_PER_ITEM",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "paa.rubric",
+              "authority": "STUDYUS_POLICY"
+            }
+          ]
+        },
+        "commandTerms": null,
+        "language": "es",
+        "finalAttempt": 1,
+        "finalStatus": "CANDIDATE",
+        "unitKey": "08.approach.paa.stem-plus#a1",
+        "item": {
+          "stem": "Una campaña de salud pública compara dos centros de atención. El centro 1 atiende a 90 personas por cada 24 jornadas de trabajo, mientras que el centro 2 atiende a 140 personas por cada 40 jornadas. ¿Qué opción indica correctamente cuál centro atiende a más personas por jornada y cuál es la diferencia entre sus tasas?",
+          "instruction": "Selecciona la única opción correcta.",
+          "declaredContext": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos centros de atención de una campaña de salud pública mediante personas atendidas por jornada."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 24,
+              "q1": 90,
+              "p2": 40,
+              "q2": 140
+            }
+          },
+          "marks": 1,
+          "responseFormat": "SELECTED_RESPONSE",
+          "stimulus": null,
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "El centro 1; 3.75 frente a 3.50 personas por jornada, una diferencia de 0.25."
+              },
+              {
+                "id": "B",
+                "text": "El centro 2; 3.50 frente a 3.75 personas por jornada, una diferencia de 0.25."
+              },
+              {
+                "id": "C",
+                "text": "El centro 2; 0.27 frente a 0.29 jornadas por persona, una diferencia de 0.02."
+              },
+              {
+                "id": "D",
+                "text": "El centro 1; 90 frente a 140 personas, una diferencia de 50 personas."
+              }
+            ],
+            "answerKey": "A",
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+              "value": "OPTION_1"
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null
+        },
+        "gates": {
+          "structural": "PASS",
+          "profileCompliance": "PASS",
+          "constructPreservation": "PASS",
+          "answerKey": "DETERMINISTIC_RULE_VERIFIED",
+          "machineRecomputation": "NOT_APPLICABLE",
+          "stimulusIntegrity": "NOT_APPLICABLE",
+          "originality": "PASS_LOW_SIMILARITY",
+          "lineage": "PASS",
+          "learnerTextLeakage": "PASS",
+          "itemWriting": "PASS"
+        },
+        "clean": true
+      },
+      "specificationDimensionsChangedByTheApproach": [
+        "context"
+      ],
+      "honouredPreferences": [
+        {
+          "preferenceId": "stem-plus.context.situated",
+          "dimension": "context",
+          "decided": "SOCIETAL"
+        }
+      ],
+      "unmetPreferences": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "dimension": "responseFormat",
+          "wanted": [
+            "EXTENDED_RESPONSE",
+            "SHORT_RESPONSE"
+          ],
+          "decided": "SELECTED_RESPONSE",
+          "overriddenBy": {
+            "origin": "COMPONENT_PROFILE_RULE",
+            "ref": "paa.matematicas.response-formats",
+            "authority": "OFFICIAL"
+          },
+          "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "dimension": "toolPolicy",
+          "wanted": [
+            "ALLOWED",
+            "SCIENTIFIC_REQUIRED",
+            "GDC_REQUIRED"
+          ],
+          "decided": "NONE",
+          "overriddenBy": {
+            "origin": "COMPONENT_PROFILE_RULE",
+            "ref": "paa.matematicas.calculator",
+            "authority": "OFFICIAL"
+          },
+          "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "dimension": "stimulus",
+          "wanted": [
+            "OWN_STIMULUS",
+            "SHARED_STIMULUS"
+          ],
+          "decided": "NONE",
+          "overriddenBy": {
+            "origin": "FAMILY",
+            "ref": "responseConstraints.stimulusNeed",
+            "authority": null
+          },
+          "overridingRuleCertification": null
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "dimension": "reasoningDepth",
+          "wanted": [
+            "JUSTIFIED_ARGUMENT",
+            "METHOD_SHOWN"
+          ],
+          "decided": "ANSWER_ONLY",
+          "overriddenBy": {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "paa.reasoning",
+            "authority": "STUDYUS_POLICY"
+          },
+          "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ],
+      "officialConstraintWon": true,
+      "responseFormatInItems": {
+        "baseline": "SELECTED_RESPONSE",
+        "stemPlus": "SELECTED_RESPONSE"
+      },
+      "checks": {
+        "bothClean": false,
+        "sameConceptInvariantAndConstruct": true,
+        "doNotShareAParameterSet": true,
+        "standardByAbsenceAndStemPlusExplicit": true,
+        "unmetPreferencesCarryTheirOverrider": true
+      },
+      "pairPasses": false
+    },
+    {
+      "why": "PISA: the context and the tools move; the format is the official rule's.",
+      "baseline": {
+        "selectionKey": "04.rate-comparison.pisa",
+        "targetId": "PISA.MATHEMATICS",
+        "approach": null,
+        "systemProfileId": "PISA",
+        "specificationId": "1b915272a1de46e25ea4bbcb2decbba709b51a7e658ed5724c735b28d18c99f0",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED",
+            "situation": "A choice an individual makes between two offers."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULATE",
+            "EMPLOY",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "marks": {
+          "scoredAs": "SINGLE_CODED_UNIT",
+          "total": {
+            "min": 1,
+            "max": 1
+          },
+          "parts": null,
+          "markPointKinds": [],
+          "creditLevels": true,
+          "provenance": [
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "pisa.marks",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "POLICY_RULE",
+              "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.CODED_CREDIT",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "pisa.rubric",
+              "authority": "STUDYUS_POLICY"
+            }
+          ]
+        },
+        "commandTerms": null,
+        "language": "es",
+        "finalAttempt": 1,
+        "finalStatus": "CANDIDATE",
+        "unitKey": "04.rate-comparison.pisa#a1",
+        "item": {
+          "stem": "Dos compañías ofrecen planes de datos móviles para un viaje. La opción 1 cuesta 48 euros y proporciona 9.6 GB. La opción 2 cuesta 75 euros y proporciona 13.125 GB. ¿Qué opción ofrece más datos por euro y cuál es la diferencia entre sus cantidades de datos por euro?",
+          "instruction": "Selecciona la única opción correcta.",
+          "declaredContext": {
+            "kind": "PERSONAL",
+            "description": "Una persona compara dos ofertas de datos móviles para elegir la más conveniente para un viaje."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 48,
+              "q1": 9.6,
+              "p2": 75,
+              "q2": 13.125
+            }
+          },
+          "marks": 1,
+          "responseFormat": "SELECTED_RESPONSE",
+          "stimulus": null,
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "La opción 1; 0.025 GB por euro más que la opción 2"
+              },
+              {
+                "id": "B",
+                "text": "La opción 2; 0.025 GB por euro más que la opción 1"
+              },
+              {
+                "id": "C",
+                "text": "La opción 1; 0.025 euros por GB más que la opción 2"
+              },
+              {
+                "id": "D",
+                "text": "La opción 2; 0.025 euros por GB más que la opción 1"
+              }
+            ],
+            "answerKey": "A",
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+              "value": "OPTION_1"
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Selecciona la opción 1, que tiene la mayor cantidad de datos por euro, y comunica correctamente la diferencia de 0.025 GB por euro."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "Selecciona cualquier otra opción."
+            }
+          ]
+        },
+        "gates": {
+          "structural": "PASS",
+          "profileCompliance": "PASS",
+          "constructPreservation": "PASS",
+          "answerKey": "DETERMINISTIC_RULE_VERIFIED",
+          "machineRecomputation": "NOT_APPLICABLE",
+          "stimulusIntegrity": "NOT_APPLICABLE",
+          "originality": "PASS_LOW_SIMILARITY",
+          "lineage": "PASS",
+          "learnerTextLeakage": "PASS",
+          "itemWriting": "PASS"
+        },
+        "clean": true
+      },
+      "stemPlus": {
+        "selectionKey": "09.approach.pisa.stem-plus",
+        "targetId": "PISA.MATHEMATICS",
+        "approach": "STEM_PLUS",
+        "systemProfileId": "PISA",
+        "specificationId": "c98474ab45c30e4ebe91aeeaf831db68ad2497a95b4a55842dd70e8b3bd6153e",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "SOCIETAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED",
+            "situation": "A comparison of two public services, places or groups by a rate."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULATE",
+            "EMPLOY",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "marks": {
+          "scoredAs": "SINGLE_CODED_UNIT",
+          "total": {
+            "min": 1,
+            "max": 1
+          },
+          "parts": null,
+          "markPointKinds": [],
+          "creditLevels": true,
+          "provenance": [
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "pisa.marks",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "POLICY_RULE",
+              "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.CODED_CREDIT",
+              "authority": "STUDYUS_POLICY"
+            },
+            {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "pisa.rubric",
+              "authority": "STUDYUS_POLICY"
+            }
+          ]
+        },
+        "commandTerms": null,
+        "language": "es",
+        "finalAttempt": 1,
+        "finalStatus": "CANDIDATE",
+        "unitKey": "09.approach.pisa.stem-plus#a1",
+        "item": {
+          "stem": "Una municipalidad quiere elegir entre dos programas de préstamo de libros para una biblioteca comunitaria. El programa 1 entrega 18 libros por cada 40 euros aportados. El programa 2 entrega 20 libros por cada 50 euros aportados. ¿Qué opción ofrece más libros por euro y por cuánto supera a la otra?",
+          "instruction": "Selecciona la única opción correcta.",
+          "declaredContext": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos programas públicos de préstamo de libros según la cantidad de libros obtenidos por cada euro aportado."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 40,
+              "q1": 18,
+              "p2": 50,
+              "q2": 20
+            }
+          },
+          "marks": 1,
+          "responseFormat": "SELECTED_RESPONSE",
+          "stimulus": null,
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "El programa 1; 0,05 libros por euro"
+              },
+              {
+                "id": "B",
+                "text": "El programa 2; 0,05 libros por euro"
+              },
+              {
+                "id": "C",
+                "text": "El programa 1; 2 libros"
+              },
+              {
+                "id": "D",
+                "text": "El programa 2; 0,28 euros por libro"
+              }
+            ],
+            "answerKey": "A",
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+              "value": "OPTION_1"
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Selecciona la única opción que identifica el programa con la mayor cantidad de libros por euro y la diferencia correcta entre las tasas unitarias."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "Selecciona cualquier otra opción."
+            }
+          ]
+        },
+        "gates": {
+          "structural": "PASS",
+          "profileCompliance": "PASS",
+          "constructPreservation": "PASS",
+          "answerKey": "DETERMINISTIC_RULE_VERIFIED",
+          "machineRecomputation": "NOT_APPLICABLE",
+          "stimulusIntegrity": "NOT_APPLICABLE",
+          "originality": "PASS_LOW_SIMILARITY",
+          "lineage": "PASS",
+          "learnerTextLeakage": "PASS",
+          "itemWriting": "PASS"
+        },
+        "clean": true
+      },
+      "specificationDimensionsChangedByTheApproach": [
+        "context"
+      ],
+      "honouredPreferences": [
+        {
+          "preferenceId": "stem-plus.context.situated",
+          "dimension": "context",
+          "decided": "SOCIETAL"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "dimension": "toolPolicy",
+          "decided": "ALLOWED"
+        }
+      ],
+      "unmetPreferences": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "dimension": "responseFormat",
+          "wanted": [
+            "EXTENDED_RESPONSE",
+            "SHORT_RESPONSE"
+          ],
+          "decided": "SELECTED_RESPONSE",
+          "overriddenBy": {
+            "origin": "COMPONENT_PROFILE_RULE",
+            "ref": "pisa.mathematics.response-formats",
+            "authority": "OFFICIAL"
+          },
+          "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "dimension": "stimulus",
+          "wanted": [
+            "OWN_STIMULUS",
+            "SHARED_STIMULUS"
+          ],
+          "decided": "NONE",
+          "overriddenBy": {
+            "origin": "FAMILY",
+            "ref": "responseConstraints.stimulusNeed",
+            "authority": null
+          },
+          "overridingRuleCertification": null
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "dimension": "reasoningDepth",
+          "wanted": [
+            "JUSTIFIED_ARGUMENT",
+            "METHOD_SHOWN"
+          ],
+          "decided": "ANSWER_ONLY",
+          "overriddenBy": {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "pisa.reasoning",
+            "authority": "STUDYUS_POLICY"
+          },
+          "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ],
+      "officialConstraintWon": true,
+      "responseFormatInItems": {
+        "baseline": "SELECTED_RESPONSE",
+        "stemPlus": "SELECTED_RESPONSE"
+      },
+      "checks": {
+        "bothClean": true,
+        "sameConceptInvariantAndConstruct": true,
+        "doNotShareAParameterSet": true,
+        "standardByAbsenceAndStemPlusExplicit": true,
+        "unmetPreferencesCarryTheirOverrider": true
+      },
+      "pairPasses": true
+    }
+  ],
+  "checks": {
+    "everyPairPasses": false,
+    "schoolPairDiffersInResponseFormat": true,
+    "officialConstraintsWonOnPaa": true
+  },
+  "STANDARD_VS_STEM_PLUS_PROOF": "FAIL"
+}

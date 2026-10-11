@@ -1,0 +1,117 @@
+{
+  "kind": "QB_R2E_GATE_EVALUATION",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- AUTOMATED VALIDATION ONLY, NO HUMAN REVIEW",
+  "freeze": {
+    "freezeCommitSha": "9fe68d01d8649548f453873acec633f4a3dead5e",
+    "manifestHash": "dc7549e579d8d971df9193ef4fd2bf9bb8b3c133e6c8fb2970a56826fe3b18c5"
+  },
+  "evaluation": {
+    "preRegistration": {
+      "id": "qb-r2e-pre-registration",
+      "version": "1"
+    },
+    "runVoid": false,
+    "criteria": [
+      {
+        "criterion": "FIRST_ATTEMPT_STRICT_PASS",
+        "required": ">= 16/20",
+        "observed": "11/20",
+        "pass": false
+      },
+      {
+        "criterion": "STRUCTURAL_COMPLIANCE",
+        "required": "20/20",
+        "observed": "18/20",
+        "pass": false
+      },
+      {
+        "criterion": "PROFILE_COMPLIANCE",
+        "required": "20/20",
+        "observed": "17/20",
+        "pass": false
+      },
+      {
+        "criterion": "ANSWER_VALIDATION_FAILURES",
+        "required": "0",
+        "observed": "2",
+        "pass": false
+      },
+      {
+        "criterion": "CONSTRUCT_PRESERVATION_FAIL",
+        "required": "0",
+        "observed": "2",
+        "pass": false
+      },
+      {
+        "criterion": "CONSTRUCT_PRESERVATION_WEAK",
+        "required": "<= 2/20",
+        "observed": "5/20",
+        "pass": false
+      },
+      {
+        "criterion": "LINEAGE_COMPLETENESS",
+        "required": "20/20",
+        "observed": "18/20",
+        "pass": false
+      },
+      {
+        "criterion": "STIMULUS_INTEGRITY",
+        "required": "all applicable",
+        "observed": "3/3",
+        "pass": true
+      },
+      {
+        "criterion": "ORIGINALITY_MATERIAL_FAILURES",
+        "required": "0",
+        "observed": "2",
+        "pass": false
+      },
+      {
+        "criterion": "MULTI_PROFILE_SAME_FAMILY_PROOF",
+        "required": "PASS",
+        "observed": "PASS",
+        "pass": true
+      },
+      {
+        "criterion": "STANDARD_VS_STEM_PLUS_PROOF",
+        "required": "PASS",
+        "observed": "FAIL",
+        "pass": false
+      },
+      {
+        "criterion": "LEARNER_TEXT_SPECIFICATION_LEAKAGE",
+        "required": "0",
+        "observed": "0",
+        "pass": true
+      },
+      {
+        "criterion": "MAX_REGENERATIONS_PER_ADAPTATION",
+        "required": "<= 1 (at most two attempts)",
+        "observed": "1",
+        "pass": true
+      },
+      {
+        "criterion": "NO_MANUAL_CONTENT_REPAIR",
+        "required": "TRUE",
+        "observed": "TRUE",
+        "pass": true
+      }
+    ],
+    "firstAttemptForInformation": {
+      "candidates": "18/20",
+      "structural": "17/20",
+      "profileCompliance": "17/20",
+      "constructFail": "2",
+      "constructWeak": "5",
+      "lineage": "18/20",
+      "itemWritingFlagged": "0",
+      "answerHumanReviewRequired": "11",
+      "regenerable": "6"
+    },
+    "allHardCriteriaPass": false,
+    "GENERATOR_READY_FOR_DEV_SCALE": "NO",
+    "GENERATOR_READY_FOR_PILOT_CONTENT": "NO",
+    "READY_FOR_BANK_INGESTION": "NO",
+    "QUESTION_BANK_READY": "FAIL"
+  }
+}

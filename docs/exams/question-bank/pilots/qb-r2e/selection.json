@@ -1,0 +1,1186 @@
+{
+  "kind": "QB_R2E_SELECTION",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- AUTOMATED VALIDATION ONLY, NO HUMAN REVIEW",
+  "freeze": {
+    "freezeCommitSha": "9fe68d01d8649548f453873acec633f4a3dead5e",
+    "manifestHash": "dc7549e579d8d971df9193ef4fd2bf9bb8b3c133e6c8fb2970a56826fe3b18c5"
+  },
+  "adaptations": [
+    {
+      "selectionKey": "01.rate-comparison.paa",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "f58949d46019205c2fbd6c337e4ee61dcb589488f21c853e08356abb6fc146a5",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_KEYED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "paa.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.ONE_MARK_PER_ITEM",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "paa.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "PERSONAL",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "A choice an individual makes between two offers."
+      },
+      "language": "es",
+      "tests": "Modelling as a selected response without a calculator; baseline of the PAA approach pair."
+    },
+    {
+      "selectionKey": "02.rate-comparison.ib-p1",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "approach": null,
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "0c02b938fd987b43dcd03500b93fa59cc34a9043d169fc337180c72a7b3d1c8f",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "NONE",
+      "commandTerms": [
+        "find",
+        "solve",
+        "show that",
+        "hence",
+        "write down",
+        "calculate"
+      ],
+      "marks": {
+        "scoredAs": "MARKED_PARTS",
+        "total": {
+          "min": 2,
+          "max": 8
+        },
+        "parts": {
+          "min": 1,
+          "max": 4
+        },
+        "markPointKinds": [
+          "METHOD",
+          "ACCURACY",
+          "REASONING"
+        ],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "ib.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "ib.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "OCCUPATIONAL",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "A choice between two suppliers, tools or processes at work."
+      },
+      "language": "en",
+      "tests": "The same family as a constructed response with marked parts and one command term per part, no calculator."
+    },
+    {
+      "selectionKey": "03.rate-comparison.cambridge-p1",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "approach": null,
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "56c6fc238c21e004b8be3bdf773102834a4a0f777c7693ad37fe291e57464121",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "SCIENTIFIC_REQUIRED",
+      "commandTerms": [
+        "work out",
+        "calculate",
+        "show that",
+        "write down"
+      ],
+      "marks": {
+        "scoredAs": "MARKED_PARTS",
+        "total": {
+          "min": 2,
+          "max": 8
+        },
+        "parts": {
+          "min": 1,
+          "max": 4
+        },
+        "markPointKinds": [
+          "METHOD",
+          "ACCURACY",
+          "REASONING"
+        ],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "cambridge.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "cambridge.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "OCCUPATIONAL",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "A choice between two suppliers, tools or processes at work."
+      },
+      "language": "en",
+      "tests": "Constructed response under another vocabulary and a scientific calculator; syllabus-version binding."
+    },
+    {
+      "selectionKey": "04.rate-comparison.pisa",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": null,
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "1b915272a1de46e25ea4bbcb2decbba709b51a7e658ed5724c735b28d18c99f0",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "ALLOWED",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_CODED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": true,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "pisa.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.CODED_CREDIT",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "pisa.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "PERSONAL",
+        "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+        "transfer": "REQUIRED",
+        "situation": "A choice an individual makes between two offers."
+      },
+      "language": "es",
+      "tests": "Authentic context required, coded credit, calculator allowed; baseline of the PISA approach pair."
+    },
+    {
+      "selectionKey": "05.rate-comparison.icfes",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "e6a02748367f26da1d37f670a73380aa5524f2e9c426feeba5cacba0841b348d",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_KEYED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "icfes.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.ONE_MARK_PER_ITEM",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "icfes.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "PERSONAL",
+        "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+        "transfer": "EXPECTED",
+        "situation": "A choice an individual makes between two offers."
+      },
+      "language": "es",
+      "tests": "Selected response without a calculator under the Icfes competency model."
+    },
+    {
+      "selectionKey": "06.approach.school.standard",
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "approach": "STANDARD",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "aeadb00606e82f63e33c94fd50723d59f797f500f88dede09010e5058d4d3b11",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "ALLOWED",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "MARKED_PARTS",
+        "total": {
+          "min": 2,
+          "max": 8
+        },
+        "parts": {
+          "min": 1,
+          "max": 4
+        },
+        "markPointKinds": [
+          "METHOD",
+          "ACCURACY",
+          "REASONING"
+        ],
+        "creditLevels": true,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "school-stem.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "school-stem.rubric",
+            "authority": "INSTITUTION_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "SOCIETAL",
+        "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+        "transfer": "EXPECTED",
+        "situation": "A comparison of two public services, places or groups by a rate."
+      },
+      "language": "es",
+      "tests": "The repaired school specification: marked parts now come with a constructed response (SHORT), not with options."
+    },
+    {
+      "selectionKey": "07.approach.school.stem-plus",
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "approach": "STEM_PLUS",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "c0705b8f595cb1048e79ed1a710c5425fdfd29a378d4ce6371b53a99e7df2755",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "EXTENDED_RESPONSE",
+      "calculator": "ALLOWED",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "MARKED_PARTS",
+        "total": {
+          "min": 2,
+          "max": 8
+        },
+        "parts": {
+          "min": 1,
+          "max": 4
+        },
+        "markPointKinds": [
+          "METHOD",
+          "ACCURACY",
+          "REASONING"
+        ],
+        "creditLevels": true,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "school-stem.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "school-stem.rubric",
+            "authority": "INSTITUTION_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "SOCIETAL",
+        "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+        "transfer": "EXPECTED",
+        "situation": "A comparison of two public services, places or groups by a rate."
+      },
+      "language": "es",
+      "tests": "STEM_PLUS where no official rule constrains it: the approach moves the response format (EXTENDED)."
+    },
+    {
+      "selectionKey": "08.approach.paa.stem-plus",
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": "STEM_PLUS",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "eba283b06456e0d182d557ff605e69b4dd164bc45e05df03556e12a9540c6b7e",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_KEYED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "paa.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.ONE_MARK_PER_ITEM",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "paa.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "SOCIETAL",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "A comparison of two public services, places or groups by a rate."
+      },
+      "language": "es",
+      "tests": "STEM_PLUS where OFFICIAL constraints win: preferences recorded as unmet; only the context moves. Paired with 01."
+    },
+    {
+      "selectionKey": "09.approach.pisa.stem-plus",
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": "STEM_PLUS",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "c98474ab45c30e4ebe91aeeaf831db68ad2497a95b4a55842dd70e8b3bd6153e",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "ALLOWED",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_CODED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": true,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "pisa.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.CODED_CREDIT",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "pisa.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "SOCIETAL",
+        "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+        "transfer": "REQUIRED",
+        "situation": "A comparison of two public services, places or groups by a rate."
+      },
+      "language": "es",
+      "tests": "STEM_PLUS on PISA: tools honoured, format overridden by an official rule. Paired with 04."
+    },
+    {
+      "selectionKey": "10.line-two-points.paa",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "specificationId": "81b7863c0e5979f865488cb34227645d4a191e674de4c5f9a1ba884ba42c2ef1",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_KEYED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "paa.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.ONE_MARK_PER_ITEM",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "paa.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "ABSTRACT",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "The quantities or the expression are given directly, with no situation."
+      },
+      "language": "es",
+      "tests": "Procedural and ABSTRACT (COMPUTE + REPRESENT), selected response with numeric options."
+    },
+    {
+      "selectionKey": "11.linear-model.ib-p2",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "specificationId": "ed4eff5a34c82416f5cfcf1d49d6f80884ae5d9ccdc803a2f2338e8258e6e214",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "GDC_REQUIRED",
+      "commandTerms": [
+        "find",
+        "solve",
+        "show that",
+        "hence",
+        "write down",
+        "calculate"
+      ],
+      "marks": {
+        "scoredAs": "MARKED_PARTS",
+        "total": {
+          "min": 2,
+          "max": 8
+        },
+        "parts": {
+          "min": 1,
+          "max": 4
+        },
+        "markPointKinds": [
+          "METHOD",
+          "ACCURACY",
+          "REASONING"
+        ],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "ib.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "ib.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "SCIENTIFIC",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "A measured quantity that changes at a constant rate."
+      },
+      "language": "en",
+      "tests": "FORMULATE + INTERPRET on the calculator paper: parts that need different command terms."
+    },
+    {
+      "selectionKey": "12.linear-model.pisa",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": null,
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "specificationId": "03b9473dcceefe21138eac38f191433e21f757d80eba02181182fe9d600a3ec9",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "ALLOWED",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_CODED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": true,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "pisa.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.CODED_CREDIT",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "pisa.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "OWN_STIMULUS",
+        "kinds": [
+          "TABLE",
+          "GRAPH"
+        ]
+      },
+      "context": {
+        "kind": "PERSONAL",
+        "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+        "transfer": "REQUIRED",
+        "situation": "A cost, a saving or a distance that grows steadily for one person."
+      },
+      "language": "es",
+      "tests": "A stimulus of its own (table / graph) the rate has to be read from; coded credit."
+    },
+    {
+      "selectionKey": "13.quadratic-factorising.cambridge-p1",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "approach": null,
+      "primaryConceptStableId": "math.alg.quadratics",
+      "specificationId": "673c8a4773fb6a9809ce76e328d11d0c2872f6f01ad58a03884013732058bf13",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "SCIENTIFIC_REQUIRED",
+      "commandTerms": [
+        "work out",
+        "calculate",
+        "show that",
+        "write down"
+      ],
+      "marks": {
+        "scoredAs": "MARKED_PARTS",
+        "total": {
+          "min": 2,
+          "max": 8
+        },
+        "parts": {
+          "min": 1,
+          "max": 4
+        },
+        "markPointKinds": [
+          "METHOD",
+          "ACCURACY",
+          "REASONING"
+        ],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "cambridge.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "cambridge.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "ABSTRACT",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "The quantities or the expression are given directly, with no situation."
+      },
+      "language": "en",
+      "tests": "A SOLVE family as a constructed response: nothing may be handed over (no factorised form, no root)."
+    },
+    {
+      "selectionKey": "14.quadratic-factorising.paa",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.alg.quadratics",
+      "specificationId": "ae1b954dc2b47781be99eb24bb15414af9a743b195bb3f0ec6039346a4397adf",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "responseFormat": "NUMERIC_ENTRY",
+      "calculator": "NONE",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_KEYED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "paa.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.ONE_MARK_PER_ITEM",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "paa.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "ABSTRACT",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "The quantities or the expression are given directly, with no situation."
+      },
+      "language": "es",
+      "tests": "NUMERIC ENTRY without a calculator: a keyed root recomputed from the stem's own equation."
+    },
+    {
+      "selectionKey": "15.quadratic-optimum.ib-p1",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "approach": null,
+      "primaryConceptStableId": "math.alg.quadratics",
+      "specificationId": "6ebec5925a89411afb55fb2ca31967cc0807ab7878aa06da16ace8cda2d54ef5",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "NONE",
+      "commandTerms": [
+        "find",
+        "solve",
+        "show that",
+        "hence",
+        "write down",
+        "calculate"
+      ],
+      "marks": {
+        "scoredAs": "MARKED_PARTS",
+        "total": {
+          "min": 2,
+          "max": 8
+        },
+        "parts": {
+          "min": 1,
+          "max": 4
+        },
+        "markPointKinds": [
+          "METHOD",
+          "ACCURACY",
+          "REASONING"
+        ],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "ib.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "ib.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "SCIENTIFIC",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "A measured quantity that rises and then falls."
+      },
+      "language": "en",
+      "tests": "Modelling with an optimum WITHOUT a calculator: the factors must come from the situation, in words."
+    },
+    {
+      "selectionKey": "16.quadratic-optimum.pisa",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": null,
+      "primaryConceptStableId": "math.alg.quadratics",
+      "specificationId": "568614ee8c5bc2935df2339fb9440fec4aee454479794942bd44695f7ff5069d",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "responseFormat": "NUMERIC_ENTRY",
+      "calculator": "ALLOWED",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_CODED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": true,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "pisa.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.CODED_CREDIT",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "pisa.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "PERSONAL",
+        "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+        "transfer": "REQUIRED",
+        "situation": "A plan with a fixed total to share between two uses."
+      },
+      "language": "es",
+      "tests": "The same modelling family as a numeric entry in an authentic context."
+    },
+    {
+      "selectionKey": "17.probability-single-event.ib-p1",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "approach": null,
+      "primaryConceptStableId": "math.prob.probability",
+      "specificationId": "5ac48a459384897110a14e3414f967405f16c59e64996eae8a3894e24c44b8f2",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "NONE",
+      "commandTerms": [
+        "find",
+        "solve",
+        "show that",
+        "hence",
+        "write down",
+        "calculate"
+      ],
+      "marks": {
+        "scoredAs": "MARKED_PARTS",
+        "total": {
+          "min": 2,
+          "max": 8
+        },
+        "parts": {
+          "min": 1,
+          "max": 4
+        },
+        "markPointKinds": [
+          "METHOD",
+          "ACCURACY",
+          "REASONING"
+        ],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "ib.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "ib.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "ABSTRACT",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "The quantities or the expression are given directly, with no situation."
+      },
+      "language": "en",
+      "tests": "A COMPUTE family as a short constructed response with an exact (fraction) answer."
+    },
+    {
+      "selectionKey": "18.probability-compare.icfes",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.prob.probability",
+      "specificationId": "ef378592e7bb493245f24edc006fea2ea82103097ae28c47198c875eaee29b0e",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_KEYED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "icfes.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.ONE_MARK_PER_ITEM",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "icfes.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": {
+        "kind": "PERSONAL",
+        "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+        "transfer": "EXPECTED",
+        "situation": "A choice between two games, routes or offers."
+      },
+      "language": "es",
+      "tests": "Reasoning to a decision (FORMULATE + COMPUTE + EVALUATE) as a selected response with parallel options."
+    },
+    {
+      "selectionKey": "19.data-judge-claim.icfes",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.stat.data-representation",
+      "specificationId": "fb4b7c2b24957a959fce917b717e42f9b09e0039cd6dc4b1dc2a503b5b351f34",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerms": null,
+      "marks": {
+        "scoredAs": "SINGLE_KEYED_UNIT",
+        "total": {
+          "min": 1,
+          "max": 1
+        },
+        "parts": null,
+        "markPointKinds": [],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "icfes.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.ONE_MARK_PER_ITEM",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "icfes.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "OWN_STIMULUS",
+        "kinds": [
+          "TABLE",
+          "GRAPH"
+        ]
+      },
+      "context": {
+        "kind": "PERSONAL",
+        "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+        "transfer": "EXPECTED",
+        "situation": "A statement about a class, a team or a household."
+      },
+      "language": "es",
+      "tests": "A stimulus the family requires; a judgement about a claim, whole numbers, no calculator."
+    },
+    {
+      "selectionKey": "20.data-relative-change.cambridge-p1",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "approach": null,
+      "primaryConceptStableId": "math.stat.data-representation",
+      "specificationId": "236d61357d1295262f75ce1c3227ed9a6ace37ced818bfa90bd898f081a69d01",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "SCIENTIFIC_REQUIRED",
+      "commandTerms": [
+        "work out",
+        "calculate",
+        "show that",
+        "write down"
+      ],
+      "marks": {
+        "scoredAs": "MARKED_PARTS",
+        "total": {
+          "min": 2,
+          "max": 8
+        },
+        "parts": {
+          "min": 1,
+          "max": 4
+        },
+        "markPointKinds": [
+          "METHOD",
+          "ACCURACY",
+          "REASONING"
+        ],
+        "creditLevels": false,
+        "provenance": [
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "cambridge.marks",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "POLICY_RULE",
+            "ref": "studyus.adaptation.mathematics@0.2.0-provisional#marks.MULTI_MARK_PARTS",
+            "authority": "STUDYUS_POLICY"
+          },
+          {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "cambridge.rubric",
+            "authority": "STUDYUS_POLICY"
+          }
+        ]
+      },
+      "stimulus": {
+        "mode": "OWN_STIMULUS",
+        "kinds": [
+          "TABLE",
+          "GRAPH",
+          "DATA_SET"
+        ]
+      },
+      "context": {
+        "kind": "SCIENTIFIC",
+        "authenticity": "NONE",
+        "transfer": "NOT_REQUIRED",
+        "situation": "Measurements by sample or by period."
+      },
+      "language": "en",
+      "tests": "A realistic data set as stimulus and a calculator-dependent result with stated rounding."
+    }
+  ]
+}
