@@ -48,6 +48,7 @@ export default async function AssignmentPracticePage({ searchParams }: { searchP
           score: t['assignments.practice.score'],
           alreadyCompleted: t['assignments.practice.alreadyCompleted'],
           backToAssignments: t['assignments.title'],
+          nextChallenge: t['ex.continueToday'],
         }}
       />
     </div>

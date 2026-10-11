@@ -2581,3 +2581,32 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
   .qbr-decision { position: static; }
   .qbr-decision-actions, .qbr-decision-actions .btn { width: 100%; }
 }
+
+/* ---- B4: unified assessment experience (setup, options, run header, result). Layout only; tokens above. ---- */
+.ax-setup { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); }
+.ax-scope { margin: var(--space-1) 0 0; color: var(--text-secondary); }
+.ax-facts { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin-top: var(--space-1); font-size: var(--fs-xs); color: var(--text-secondary); }
+.ax-single { margin: 0; }
+.ax-list { margin: var(--space-1) 0 0; padding-left: var(--space-5); }
+.ax-options { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.ax-option { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--border-default); }
+.ax-option:first-child { border-top: 0; }
+.ax-option[data-available="false"] strong { color: var(--text-secondary); }
+.ax-option .ui-hint, .ax-unavailable { margin: var(--space-1) 0 0; }
+.ax-unavailable { font-size: 12.5px; color: var(--text-muted); }
+.ui-choice[data-availability="UNAVAILABLE"] { opacity: 0.6; }
+.ax-run { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5); }
+.ax-run-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ax-run-title { margin: 0; font-size: var(--fs-md); font-weight: 650; color: var(--text-primary); }
+.ax-result { display: flex; flex-direction: column; gap: var(--space-4); }
+.ax-score { margin: 0; font-size: var(--fs-xl); font-weight: 700; color: var(--text-primary); }
+.ax-rows { list-style: none; margin: 0; padding: 0; }
+.ax-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--border-default); }
+.ax-row:first-child { border-top: 0; }
+.ax-row-status { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
+@media (max-width: 640px) {
+  .ax-setup { padding: var(--space-4); }
+  .ax-option { flex-direction: column; align-items: stretch; }
+  .ax-option .btn { width: 100%; }
+  .ax-row { flex-direction: column; align-items: flex-start; }
+}

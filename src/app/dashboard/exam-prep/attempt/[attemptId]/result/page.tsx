@@ -1,3 +1,7 @@
+import { getLearningOSSnapshot } from '@/services/learning-os-snapshot.service';
+import { presentSnapshotNextChallenge } from '@/lib/experience/next-challenge.server';
+import { continuationViewOf } from '@/lib/assessment-experience/continuation';
+import { AssessmentContinuation } from '@/components/assessment/AssessmentExperience';
 import { attemptKindLabelKey } from '@/lib/experience/exam-prep';
 import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
@@ -53,7 +57,16 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
   const strengths = view.objectives.filter((o) => o.classification === 'STRENGTH');
   const gaps = view.objectives.filter((o) => o.classification === 'GAP' || o.classification === 'DEVELOPING');
   const linkedConcepts = view.objectives.flatMap((o) => o.concepts.filter((c) => c.studentConceptId && c.subjectId).map((c) => ({ ...c, classification: o.classification })));
-  const firstGapConcept = linkedConcepts.find((c) => c.classification === 'GAP') ?? linkedConcepts.find((c) => c.classification === 'DEVELOPING') ?? null;
+  // B4: the step after a result is the Learning Decision authority's own next challenge -- the same one Today
+  // shows. This page does not pick a concept from the exam's gaps; the gaps are listed above with their own
+  // actions and stay secondary. A failed read falls back to Today, where the decision is shown.
+  const nextChallenge = await getLearningOSSnapshot(studentId, { preferredLanguage: locale })
+    .then((snapshot) => {
+      const view = presentSnapshotNextChallenge(snapshot);
+      return view ? { view, label: snapshot.conceptLabels.get(view.conceptId)?.label ?? null } : null;
+    })
+    .catch(() => null);
+  const continuation = continuationViewOf({ nextChallenge: nextChallenge?.view ?? null, secondary: [{ kind: 'BACK_TO_EXAM_PREP', href: `/dashboard/exam-prep/${view.examProfileId}` }] });
   const sitting = [view.exam.examYear, view.exam.examSession].filter(Boolean).join(' · ');
   // Exam V2: the instance (mode), the Exam -> Learning bridge and the retest loop.
   const instance = await findInstanceByAttempt(attempt.id).catch(() => null);
@@ -235,7 +248,7 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
                     {b.action.kind === 'REINFORCE' ? (
                       <>
                         <span className="ui-hint">{tr['exv2.bridge.alreadyWorking']}</span>
-                        <a className="btn btn-primary" href={b.action.href}>{tr['exv2.bridge.continue']}</a>
+                        <a className="btn btn-secondary" href={b.action.href}>{tr['exv2.bridge.continue']}</a>
                       </>
                     ) : b.action.kind === 'ADD_AND_REINFORCE' ? (
                       <>
@@ -254,21 +267,9 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
             </section>
           )}
 
-          <section className="card xr-result" aria-labelledby="xr-next-title">
-            <h2 id="xr-next-title" className="xr-section-name">{t['examPrep.result.nextStep']}</h2>
-            <p className="ui-hint">{t['examPrep.result.nextStepBody']}</p>
-            <div className="xr-next-actions">
-              {firstGapConcept ? (
-                <Link className="btn btn-primary" href={`/dashboard/subjects/${firstGapConcept.subjectId}/concepts/${firstGapConcept.studentConceptId}`}>
-                  {t['examPrep.result.studyConcept']}: {firstGapConcept.name}
-                </Link>
-              ) : (
-                <Link className="btn btn-primary" href="/dashboard/today">{t['ex.continueToday']}</Link>
-              )}
-              {instance && <RetakeButton instanceId={instance.id} labels={v2} />}
-              <Link className="btn" href={`/dashboard/exam-prep/${view.examProfileId}`}>{t['examPrep.result.backToPrep']}</Link>
-            </div>
-          </section>
+          <AssessmentContinuation view={continuation} t={t} conceptLabel={nextChallenge?.label ?? null}>
+            {instance && <RetakeButton instanceId={instance.id} labels={v2} />}
+          </AssessmentContinuation>
 
           <section className="card xr-result" aria-labelledby="xr-review-title">
             <h2 id="xr-review-title" className="xr-section-name">{t['examPrep.result.review']}</h2>

@@ -152,7 +152,11 @@ describe('B3 persistence is one additive migration on existing records', () => {
 describe('B3 is not cut over', () => {
   it('nothing in the delivered runtime imports the execution module', () => {
     const importers = walk('src').filter((f) => !f.startsWith('src/lib/assessment-execution/') && /from '[^']*assessment-execution[^']*'|import\('[^']*assessment-execution/.test(read(f)));
-    expect(importers).toEqual([]);
+    // B4: the experience layer and its shared components read B3's result TYPES to present them (asserted
+    // type-only below). No page, route or service under src/app imports the execution module.
+    const presentation = (f: string) => f.startsWith('src/lib/assessment-experience/') || f.startsWith('src/components/assessment/');
+    expect(importers.filter((f) => !presentation(f))).toEqual([]);
+    for (const f of importers.filter(presentation)) expect((read(f).match(/^import [^;]*assessment-execution[^;]*;/gm) ?? []).every((line) => line.startsWith('import type ')), f).toBe(true);
   });
 
   it('the existing write sites are still the ones the runtime uses, and historical records read as before', () => {

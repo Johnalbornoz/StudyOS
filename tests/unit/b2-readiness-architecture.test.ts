@@ -230,7 +230,9 @@ describe('B2 architecture', () => {
     const importers = walk(join(ROOT, 'src')).filter((f) => !f.startsWith(B2_DIR) && /from '[^']*assessment-blueprint[^']*'|import\('[^']*assessment-blueprint/.test(readFileSync(f, 'utf8')));
     // B3 (assessment-execution) freezes a BlueprintSolution: the one consumer, and itself not wired to any route
     // (asserted in b3-architecture).
-    expect(importers.filter((f) => !f.includes('/src/lib/assessment-execution/'))).toEqual([]);
+    // B4 (assessment-experience + its shared components) presents Blueprint Core results and asks it for a
+    // read-only setup preview; it starts nothing (asserted in b4-unified-experience).
+    expect(importers.filter((f) => !f.includes('/src/lib/assessment-execution/') && !f.includes('/src/lib/assessment-experience/') && !f.includes('/src/components/assessment/'))).toEqual([]);
   });
 
   it('reads no feature flag and no environment', () => {

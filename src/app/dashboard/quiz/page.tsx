@@ -2394,6 +2394,12 @@ function QuizPageContent() {
             gap simply means the canonical re-read keeps the same
             purpose (no local "if sufficient => RETAIN"). */}
         {!canonicalNextShown && continuation(false)}
+        {/* B4: a result with no single concept (cumulative, diagnostic) still has a next step: the learning engine's own, on Today. */}
+        {!canonicalNextShown && continuation(false) === null && (
+          <section className="card ls-panel ls-next" data-testid="results-next-step-fallback">
+            <Link href="/dashboard/today" className="btn btn-primary">{at['ex.continueToday']}</Link>
+          </section>
+        )}
 
         <div className="ls-secondary">
           <button className="btn btn-secondary" onClick={() => setReviewing(true)}>{at['xs.review']}</button>
