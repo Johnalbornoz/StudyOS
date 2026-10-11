@@ -15,7 +15,7 @@ const U = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}
 const [REVIEWER, GRANTOR, SYSTEM, NO_ROLE, SUBJECT] = [U(1), U(2), U(3), U(4), U(9)];
 type Row = Record<string, unknown>;
 /** A recorded executor: answers by the table a statement reads, and records every statement. */
-function fake(over: { qualifications?: Row[]; held?: boolean; scope?: { family: string | null; subjects: string[] } } = {}) {
+function fake(over: { qualifications?: Row[]; held?: boolean; scope?: { family: string | null; subjects: string[] }; primarySubjects?: string[] } = {}) {
   const calls: string[] = [];
   const users: Record<string, Row> = { [REVIEWER]: { is_system: false, status: 'ACTIVE' }, [GRANTOR]: { is_system: false, status: 'ACTIVE' }, [SYSTEM]: { is_system: true, status: 'ACTIVE' }, [NO_ROLE]: { is_system: false, status: 'ACTIVE' } };
   const query = async (sql: string, params: unknown[] = []) => {
@@ -25,7 +25,7 @@ function fake(over: { qualifications?: Row[]; held?: boolean; scope?: { family: 
     if (/FROM canonical_subjects/.test(sql)) return { rows: params[0] === SUBJECT ? [{ ok: 1 }] : [] };
     if (/FROM exam_definitions WHERE exam_family/.test(sql)) return { rows: ['PAA', 'ICFES', 'IB'].includes(params[0] as string) ? [{ ok: 1 }] : [] };
     if (/FROM approved_items ai/.test(sql)) return { rows: [{ created_by: U(7), learning_objective_id: U(8), exam_family: over.scope ? over.scope.family : 'PAA' }] };
-    if (/FROM question_bank_item_concepts/.test(sql)) return { rows: [] };
+    if (/FROM question_bank_item_concepts/.test(sql)) return { rows: (over.primarySubjects ?? []).map((id) => ({ id })) };
     if (/FROM objective_concept_mappings/.test(sql)) return { rows: (over.scope ? over.scope.subjects : [SUBJECT]).map((id) => ({ id })) };
     if (/FROM question_bank_reviewer_qualifications/.test(sql)) return { rows: /SELECT 1/.test(sql) ? (over.held ? [{ ok: 1 }] : []) : over.qualifications ?? [] };
     return { rows: [] };
@@ -73,15 +73,24 @@ describe('QB-R1A grant contract -- explicit, narrow, never inferred', () => {
 
 describe('QB-R1A approval -- a qualified person or nobody', () => {
   const q = { approvedItemId: U(50), reviewerUserId: REVIEWER };
-  it('no qualification: refused. A system account: refused first. No subject: refused whatever the reviewer holds', async () => {
-    expect(await refusal(requireReviewerQualification(fake().client, q))).toBe('REVIEWER_NOT_QUALIFIED');
-    expect(await refusal(requireReviewerQualification(fake({ qualifications: [{ id: U(60), canonical_subject_id: SUBJECT }] }).client, { ...q, reviewerUserId: SYSTEM }))).toBe('REVIEWER_IS_SYSTEM_ACCOUNT');
-    expect(await refusal(requireReviewerQualification(fake({ scope: { family: 'ICFES', subjects: [] }, qualifications: [{ id: U(60), canonical_subject_id: SUBJECT }] }).client, q))).toBe('REVIEW_SCOPE_UNDETERMINED');
-    expect(await refusal(requireReviewerQualification(fake({ scope: { family: null, subjects: [SUBJECT] }, qualifications: [{ id: U(60), canonical_subject_id: SUBJECT }] }).client, q))).toBe('REVIEW_SCOPE_UNDETERMINED');
+  const held = [{ id: U(60), canonical_subject_id: SUBJECT }];
+  it('no qualification: refused. A system account: refused first. No exam family: refused whatever the reviewer holds', async () => {
+    expect(await refusal(requireReviewerQualification(fake({ primarySubjects: [SUBJECT] }).client, q))).toBe('REVIEWER_NOT_QUALIFIED');
+    expect(await refusal(requireReviewerQualification(fake({ primarySubjects: [SUBJECT], qualifications: held }).client, { ...q, reviewerUserId: SYSTEM }))).toBe('REVIEWER_IS_SYSTEM_ACCOUNT');
+    expect(await refusal(requireReviewerQualification(fake({ primarySubjects: [SUBJECT], scope: { family: null, subjects: [] }, qualifications: held }).client, q))).toBe('REVIEW_SCOPE_UNDETERMINED');
+  });
+
+  it('PRIMARY_ATTRIBUTION_BEFORE_APPROVAL: an unattributed item is not approvable, even when its objective has a subject and the reviewer is qualified in it', async () => {
+    // objective mapped to the subject, reviewer qualified in it, no PRIMARY concept on the version
+    expect(await refusal(requireReviewerQualification(fake({ qualifications: held }).client, q))).toBe('PRIMARY_ATTRIBUTION_REQUIRED');
+    // a Saber-like item: exam family known, objective mapped to a competency only
+    expect(await refusal(requireReviewerQualification(fake({ scope: { family: 'ICFES', subjects: [] }, qualifications: held }).client, q))).toBe('PRIMARY_ATTRIBUTION_REQUIRED');
+    const gov = code('src/lib/exam-core/question-bank/reviewer-qualification.service.ts');
+    expect(gov).toMatch(/if \(scope && scope\.basis !== 'PRIMARY_CONCEPT'\) \{\s+throw new ReviewerQualificationError\('PRIMARY_ATTRIBUTION_REQUIRED'/);
   });
 
   it('a valid qualification for the subject and family is returned, and looking for one never creates one', async () => {
-    const f = fake({ qualifications: [{ id: U(60), canonical_subject_id: SUBJECT }] });
+    const f = fake({ primarySubjects: [SUBJECT], qualifications: [{ id: U(60), canonical_subject_id: SUBJECT }] });
     expect(await requireReviewerQualification(f.client, q)).toEqual({ qualificationId: U(60), canonicalSubjectId: SUBJECT, examFamily: 'PAA' });
     expect(f.calls.every((sql) => /^\s*SELECT/.test(sql))).toBe(true);
     const lookup = f.calls.find((sql) => /FROM question_bank_reviewer_qualifications/.test(sql))!;

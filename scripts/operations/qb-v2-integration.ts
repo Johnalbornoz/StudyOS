@@ -17,6 +17,7 @@ import { listBankVersions, loadVersionHealthInputs } from '@/lib/exam-core/quest
 import { enqueueManual } from '@/lib/exam-core/question-bank/queue.service';
 import { runFactory } from '@/lib/exam-core/question-bank/factory.service';
 import { factoryConfig, type FactoryConfig } from '@/lib/exam-core/question-bank/policy';
+import { setItemAttribution } from '@/lib/exam-core/question-bank/item-attribution.service';
 import { reviewVersion, correctVersion } from '@/lib/exam-core/question-bank/review.service';
 import { reviewQueue, questionDetail, exposureMetrics } from '@/lib/exam-core/question-bank/review-admin.service';
 import { versionDemand } from '@/lib/exam-core/question-bank/demand.service';
@@ -100,6 +101,23 @@ async function main() {
     if (p.qualifications === 0) throw new Error(`NO_QUALIFIED_REVIEWER: user ${id} holds no valid PAA qualification; grant one explicitly, this script creates none`);
   }
   const [editor, reviewer] = named;
+  // PRIMARY_ATTRIBUTION_BEFORE_APPROVAL: a reviewer establishes what a version is about before anybody approves it.
+  // The certification's fake items are all linear-equation stems, so that is the concept the reviewer names.
+  const linear = (await db.query(`SELECT cc.id FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id WHERE cs.name = 'Matemáticas' AND cc.name = 'Ecuaciones lineales' AND cc.status = 'ACTIVE'`)).rows[0]?.id as string | undefined;
+  if (!linear) throw new Error('NO_QUALIFIED_REVIEWER: the canonical concept the certification attributes is missing; apply the learning catalogue first');
+  const attribute = async (approvedItemId: string, reviewerUserId: string) => {
+    const tx = await db.connect();
+    try {
+      await tx.query('BEGIN');
+      await setItemAttribution(tx, { approvedItemId, reviewerUserId, primaryConceptId: linear, reason: 'certification: linear equation stem' });
+      await tx.query('COMMIT');
+    } catch (e) {
+      await tx.query('ROLLBACK');
+      throw e;
+    } finally {
+      tx.release();
+    }
+  };
 
   // ---------------- backfill of quality metadata ----------------
   check('BACKFILL.fixture-versions-full-usage-mock-ready', (await n(`SELECT count(*) n FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.provenance = 'FIXTURE' AND NOT (ai.usage_eligibility @> ARRAY['PRACTICE','REDUCED_MOCK','FULL_MOCK']::text[] AND ai.exam_alignment = 'MOCK_READY')`)) === 0);
@@ -141,8 +159,10 @@ async function main() {
   check('GATE.self-review-refused', await refused(() => reviewVersion({ versionId: g1, reviewerUserId: gen[0].created_by, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 3, usage: ['PRACTICE'], alignment: 'EXAM_STYLE' } }), /SELF_REVIEW/));
   check('OFFICIAL.reviewer-refused', await refused(() => reviewVersion({ versionId: g1, reviewerUserId: reviewer, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 3, usage: ['PRACTICE'], alignment: 'OFFICIAL' } }), /OFFICIAL_NOT_ALLOWED/));
   check('OFFICIAL.db-refused', await refused(() => db.query(`UPDATE approved_items SET exam_alignment = 'OFFICIAL' WHERE id = $1`, [g1]), /OFFICIAL_NEEDS_OFFICIAL_PROVENANCE/));
+  await attribute(g1, reviewer);
   const approvedMock = await reviewVersion({ versionId: g1, reviewerUserId: reviewer, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 4, usage: ['PRACTICE', 'QUIZ', 'REDUCED_MOCK'], alignment: 'MOCK_READY' } });
   check('GATE.approved-active-with-reviewer-metadata', approvedMock.lifecycle === 'ACTIVE' && (await n(`SELECT count(*) n FROM approved_items WHERE id = $1 AND bank_lifecycle_status = 'ACTIVE' AND validated_difficulty = 4 AND exam_alignment = 'MOCK_READY' AND 'REDUCED_MOCK' = ANY(usage_eligibility)`, [g1])) === 1);
+  await attribute(g2, reviewer);
   await reviewVersion({ versionId: g2, reviewerUserId: reviewer, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 2, usage: ['PRACTICE'], alignment: 'EXAM_STYLE' } });
   const rejected = await reviewVersion({ versionId: g3, reviewerUserId: reviewer, input: { decision: 'REJECTED', notes: 'El distractor C también puede defenderse.', validatedDifficulty: null, usage: null, alignment: null } });
   check('GATE.rejected', rejected.lifecycle === 'REJECTED');
@@ -151,6 +171,7 @@ async function main() {
   const fixed = await correctVersion({ versionId: g4, editorUserId: reviewer, patch: { question: 'Si g(t) = 3t - 5 con t real, ¿para qué valor de t se cumple que g(t) = 13?' }, notes: 'Se aclara el dominio de t.' });
   check('CORRECTION.new-version-validated-pilot', fixed.versionNumber === 2 && fixed.lifecycle === 'PILOT' && (await n(`SELECT count(*) n FROM approved_items WHERE id = $1 AND bank_lifecycle_status = 'SUPERSEDED'`, [g4])) === 1, fixed);
   check('CORRECTION.editor-cannot-certify-own-correction', await refused(() => reviewVersion({ versionId: fixed.versionId, reviewerUserId: reviewer, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 3, usage: ['PRACTICE'], alignment: 'EXAM_STYLE' } }), /SELF_REVIEW/));
+  await attribute(fixed.versionId, editor);
   const otherApproval = await reviewVersion({ versionId: fixed.versionId, reviewerUserId: editor, input: { decision: 'APPROVED', notes: null, validatedDifficulty: 3, usage: ['PRACTICE'], alignment: 'EXAM_STYLE' } });
   check('CORRECTION.other-reviewer-approves', otherApproval.lifecycle === 'ACTIVE');
   check('AUDIT.reviews-and-events', (await n(`SELECT count(*) n FROM question_bank_reviews WHERE approved_item_id = ANY($1::uuid[])`, [[g1, g2, g3, g4, fixed.versionId]])) === 5 && (await n(`SELECT count(*) n FROM question_bank_lifecycle_events WHERE reason LIKE 'REVIEW:%' AND approved_item_id = ANY($1::uuid[])`, [[g1, g2, g3, g4, fixed.versionId]])) >= 5);

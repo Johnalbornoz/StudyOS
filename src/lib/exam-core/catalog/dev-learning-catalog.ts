@@ -71,4 +71,10 @@ export const DEV_COMPETENCIES: Array<{ code: string; name: string }> = [
   { code: 'dev.comp.writing', name: 'Producción y revisión escrita' },
   { code: 'dev.comp.english', name: 'Inglés como lengua extranjera' },
   { code: 'dev.comp.scientific-inquiry', name: 'Scientific inquiry' },
+  // Saber 11 Matemáticas (ICFES): the three competencies the exam assesses. They are competencies, not concepts:
+  // each applies across every content category of the exam, so none is mapped to, or stands for, a canonical concept.
+  // No existing competency is their equivalent ("Razonamiento matemático" is the whole discipline's reasoning).
+  { code: 'icfes.saber11.mat.interpretacion', name: 'Interpretación y representación' },
+  { code: 'icfes.saber11.mat.formulacion', name: 'Formulación y ejecución' },
+  { code: 'icfes.saber11.mat.argumentacion', name: 'Argumentación' },
 ];

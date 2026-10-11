@@ -294,6 +294,7 @@ describe('B2-B1 blueprint variants and frozen forms', () => {
       'src/lib/assessment-blueprint/protected/persistence-errors.ts',
       'src/lib/assessment-foundation/question-coverage.service.ts',
       'src/lib/assessment-foundation/question-coverage.ts',
+      'src/lib/exam-core/question-bank/item-attribution.service.ts',
       'src/lib/exam-core/question-bank/reviewer-qualification.service.ts',
     ]);
     // still no route and no start path: nothing under src/app touches the schema, and nothing outside the B2 module imports the adapter

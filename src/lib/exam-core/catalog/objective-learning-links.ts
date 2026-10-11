@@ -20,6 +20,13 @@ export interface LearningLink {
 const c = (subject: string, ...names: string[]) => names.map((name) => ({ subject, name }));
 
 export const OBJECTIVE_LEARNING_LINKS: Record<string, LearningLink> = {
+  // ---- Saber 11 Matemáticas ----
+  // The three objectives ARE the exam's competencies. Each is linked to its canonical competency and to nothing
+  // else: a competency is not a concept, so there is no objective -> concept link here, and none may be added to
+  // make an item approvable. What a Saber item is about is decided per item, by a reviewer (PRIMARY concept).
+  'saber.interpretacion': { competencies: ['icfes.saber11.mat.interpretacion'] },
+  'saber.formulacion': { competencies: ['icfes.saber11.mat.formulacion'] },
+  'saber.argumentacion': { competencies: ['icfes.saber11.mat.argumentacion'] },
   // ---- PAA ----
   // Q1-C.1 certified concept catalogue (F-DATA). Links stay at the granularity of the published objectives;
   // the 17 official Domains and the Topics arrive with F-ARCH. `paa.red.cohesion` keeps its link until that

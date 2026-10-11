@@ -23,6 +23,7 @@ export type QualificationRefusal =
   | 'REVIEWER_IS_SYSTEM_ACCOUNT'
   | 'REVIEWER_NOT_ACTIVE'
   | 'REVIEW_SCOPE_UNDETERMINED'
+  | 'PRIMARY_ATTRIBUTION_REQUIRED'
   | 'REVIEWER_NOT_QUALIFIED'
   | 'GRANTOR_NOT_FOUND'
   | 'GRANTOR_IS_SYSTEM_ACCOUNT'
@@ -108,18 +109,29 @@ export async function requireReviewerQualification(client: DbExecutor, p: { appr
   if (reviewer.isSystem) throw new ReviewerQualificationError('REVIEWER_IS_SYSTEM_ACCOUNT', 'a system account is never a qualified reviewer');
   if (reviewer.status !== 'ACTIVE') throw new ReviewerQualificationError('REVIEWER_NOT_ACTIVE', reviewer.status);
   const scope = await resolveReviewScope(client, p.approvedItemId);
+  // PRIMARY_ATTRIBUTION_BEFORE_APPROVAL: an item is approved for what a reviewer established it is about. Knowing the
+  // subject of its objective is not enough -- an unattributed item is not approvable, whoever reviews it.
+  if (scope && scope.basis !== 'PRIMARY_CONCEPT') {
+    throw new ReviewerQualificationError('PRIMARY_ATTRIBUTION_REQUIRED', 'the item version has no reviewed PRIMARY concept; attribution comes before approval');
+  }
   if (!scope || !scope.examFamily || scope.canonicalSubjectIds.length === 0) {
     throw new ReviewerQualificationError('REVIEW_SCOPE_UNDETERMINED', 'the item has no exam family or no canonical subject (no PRIMARY concept and no published objective mapping); it cannot be approved until that is repaired');
   }
+  const held = await validQualification(client, { reviewerUserId: p.reviewerUserId, examFamily: scope.examFamily, canonicalSubjectIds: scope.canonicalSubjectIds });
+  if (!held) throw new ReviewerQualificationError('REVIEWER_NOT_QUALIFIED', `no valid qualification for exam family ${scope.examFamily} and the item's canonical subject`);
+  return { qualificationId: held.qualificationId, canonicalSubjectId: held.canonicalSubjectId, examFamily: scope.examFamily };
+}
+
+/** A qualification of this person, in force now, for the exam family and one of the subjects. Looks; never creates. */
+export async function validQualification(client: DbExecutor, p: { reviewerUserId: string; examFamily: string; canonicalSubjectIds: readonly string[] }): Promise<{ qualificationId: string; canonicalSubjectId: string } | null> {
   const q = await client.query(
     `SELECT id, canonical_subject_id FROM question_bank_reviewer_qualifications
       WHERE user_id = $1 AND exam_family = $2 AND canonical_subject_id = ANY($3::uuid[])
         AND valid_from <= now() AND (valid_to IS NULL OR valid_to > now()) AND revoked_at IS NULL
       ORDER BY valid_from, id LIMIT 1`,
-    [p.reviewerUserId, scope.examFamily, scope.canonicalSubjectIds]
+    [p.reviewerUserId, p.examFamily, [...p.canonicalSubjectIds]]
   );
-  if (!q.rows[0]) throw new ReviewerQualificationError('REVIEWER_NOT_QUALIFIED', `no valid qualification for exam family ${scope.examFamily} and the item's canonical subject`);
-  return { qualificationId: q.rows[0].id, canonicalSubjectId: q.rows[0].canonical_subject_id, examFamily: scope.examFamily };
+  return q.rows[0] ? { qualificationId: q.rows[0].id, canonicalSubjectId: q.rows[0].canonical_subject_id } : null;
 }
 
 export interface QualificationGrantInput {
