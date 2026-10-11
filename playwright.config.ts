@@ -38,15 +38,11 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: [
-    { name: 'setup', testMatch: /auth\.setup\.ts/ },
-    ...(Object.keys(VIEWPORTS) as ViewportName[]).map((name) => ({
-      name,
-      testMatch: /\.spec\.ts/,
-      dependencies: ['setup'],
-      use: { ...devices['Desktop Chrome'], viewport: VIEWPORTS[name], hasTouch: name !== 'desktop' },
-    })),
-  ],
+  projects: (Object.keys(VIEWPORTS) as ViewportName[]).map((name) => ({
+    name,
+    testMatch: /\.spec\.ts/,
+    use: { ...devices['Desktop Chrome'], viewport: VIEWPORTS[name], hasTouch: name !== 'desktop' },
+  })),
   webServer: managedServer
     ? {
         // A production build: no dev overlay, the markup users actually get.

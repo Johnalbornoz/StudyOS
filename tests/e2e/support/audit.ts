@@ -6,7 +6,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page } from '@playwright/test';
 import { test } from '@playwright/test';
-import { axeFailImpacts, primaryLanguage } from './target';
+import { axeFailImpacts, primaryLanguage, type Surface } from './target';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -28,8 +28,12 @@ function axe(page: Page): AxeBuilder {
   return new AxeBuilder({ page }).exclude('nextjs-portal');
 }
 
-/** Zero violations at the failing impact levels (default: critical). The full result is attached to the report. */
-export async function expectNoAccessibilityViolations(page: Page): Promise<void> {
+/**
+ * Zero violations at the impact levels the release policy fails for this
+ * surface. Everything axe found is attached to the report, and violations
+ * below the failing level are annotated so they stay visible in a green run.
+ */
+export async function expectNoAccessibilityViolations(page: Page, surface: Surface): Promise<void> {
   const results = await axe(page).withTags(WCAG_TAGS).analyze();
   const summary = results.violations.map((v) => ({
     id: v.id,
@@ -39,8 +43,11 @@ export async function expectNoAccessibilityViolations(page: Page): Promise<void>
     targets: v.nodes.slice(0, 5).map((n) => n.target.join(' ')),
   }));
   await test.info().attach('axe-violations.json', { body: JSON.stringify(summary, null, 2), contentType: 'application/json' });
-  const failOn = axeFailImpacts(process.env);
+  const failOn = axeFailImpacts(surface, process.env);
   const failing = summary.filter((v) => failOn.includes(v.impact ?? ''));
+  for (const v of summary.filter((v) => !failOn.includes(v.impact ?? ''))) {
+    test.info().annotations.push({ type: `axe-${v.impact}`, description: `${v.id} x${v.nodes}` });
+  }
   expect(failing, `axe violations at impact ${failOn.join('/')}`).toEqual([]);
 }
 

@@ -12,6 +12,7 @@ const PUBLIC_PAGES: Array<{ path: string; lang?: string }> = [
   { path: '/es/how-it-works', lang: 'es' },
   { path: '/en', lang: 'en' },
   { path: '/en/how-it-works', lang: 'en' },
+  { path: '/de', lang: 'de' },
   { path: '/sign-in' },
   { path: '/sign-up' },
 ];
@@ -23,7 +24,7 @@ for (const { path, lang } of PUBLIC_PAGES) {
     });
 
     test('has no critical accessibility violations', async ({ page }) => {
-      await expectNoAccessibilityViolations(page);
+      await expectNoAccessibilityViolations(page, 'public');
     });
 
     test('does not overflow horizontally', async ({ page }) => {
@@ -37,8 +38,15 @@ for (const { path, lang } of PUBLIC_PAGES) {
 
     if (lang) {
       test(`declares its language on <html> (${lang})`, async ({ page }) => {
-        coversKnownFinding('KF-L12-01', lang !== 'en');
+        coversKnownFinding('KF-L12-01');
         await expectDocumentLanguage(page, lang);
+      });
+
+      // What a crawler or a reader without JavaScript receives.
+      test(`serves <html lang="${lang}"> in the initial HTML`, async ({ request }) => {
+        coversKnownFinding('KF-L12-01');
+        const html = await (await request.get(path)).text();
+        expect(html.match(/<html[^>]*\slang="([^"]*)"/)?.[1]).toBe(lang);
       });
     } else {
       test('declares a language on <html>', async ({ page }) => {

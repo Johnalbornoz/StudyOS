@@ -8,14 +8,15 @@
  *   E2E_BASE_URL        target origin. Unset: the harness builds and serves
  *                       this checkout on http://127.0.0.1:3100 (playwright.config.ts).
  *   E2E_ENV_FILE        optional env file loaded before anything else (Clerk keys, DB).
- *   E2E_ROLE_AUTH       unset | clerk-ticket | storage-state. Unset: the four
- *                       role suites are skipped, never silently passed.
- *   E2E_STORAGE_STATE_DIR  storage-state mode: a directory holding student.json,
- *                       parent.json, teacher.json, institution.json.
- *   E2E_<ROLE>_EMAIL    clerk-ticket mode: the account to sign in as.
+ *   E2E_STORAGE_STATE_DIR  a directory holding student.json, parent.json,
+ *                       teacher.json and institution.json: Playwright storage
+ *                       states captured by the Human Operator. Unset: the four
+ *                       role suites are skipped, never silently passed. The
+ *                       harness never signs in by itself.
  *   E2E_<ROLE>_PATHS    extra comma-separated paths to audit for a role.
  *   E2E_KNOWN_FINDINGS  expected (default) | strict. See known-findings.ts.
- *   E2E_AXE_FAIL_ON     comma-separated axe impacts that fail a page (default: critical).
+ *   E2E_AXE_FAIL_ON     extra axe impacts that fail a page, on top of the release
+ *                       policy (see AXE_POLICY). It can tighten, never loosen.
  */
 
 export type Env = Record<string, string | undefined>;
@@ -39,48 +40,39 @@ export const COMPACT_NAV_MAX_WIDTH = 1023;
 export const ROLES = ['student', 'parent', 'teacher', 'institution'] as const;
 export type Role = (typeof ROLES)[number];
 
-/** Workspace home per role (src/lib/identity/workspace-entry.ts) and the Track A fixture identity that holds it. */
-export const ROLE_DEFAULTS: Record<Role, { home: string; fixtureEmail: string }> = {
-  student: { home: '/dashboard/today', fixtureEmail: 'studyus-ta-student-a+clerk_test@example.com' },
-  parent: { home: '/dashboard/parent', fixtureEmail: 'studyus-ta-parent-a+clerk_test@example.com' },
-  teacher: { home: '/dashboard/teacher', fixtureEmail: 'studyus-ta-teacher-a+clerk_test@example.com' },
-  institution: { home: '/dashboard/institution', fixtureEmail: 'studyus-ta-inst-b+clerk_test@example.com' },
+/** Workspace home per role (src/lib/identity/workspace-entry.ts). */
+export const ROLE_DEFAULTS: Record<Role, { home: string }> = {
+  student: { home: '/dashboard/today' },
+  parent: { home: '/dashboard/parent' },
+  teacher: { home: '/dashboard/teacher' },
+  institution: { home: '/dashboard/institution' },
 };
 
-export type RoleAuthMode = 'none' | 'clerk-ticket' | 'storage-state';
+/**
+ * Accessibility release policy (Orchestrator ruling, 2026-10-11): the axe
+ * impacts that fail a page. Authenticated product pages: critical and
+ * serious. Public marketing pages for the initial pilot: critical; their
+ * serious findings are reported, not excused.
+ */
+export type Surface = 'public' | 'authenticated';
+export const AXE_POLICY: Record<Surface, readonly string[]> = {
+  public: ['critical'],
+  authenticated: ['critical', 'serious'],
+};
+
+export const isProductionHost = (hostname: string) => {
+  const host = hostname.toLowerCase().replace(/^\./, '');
+  return PRODUCTION_HOSTS.some((p) => host === p || host.endsWith(`.${p}`));
+};
 
 export function resolveBaseUrl(env: Env): { baseUrl: string; managedServer: boolean } {
   const raw = env.E2E_BASE_URL?.trim();
   if (!raw) return { baseUrl: LOCAL_BASE_URL, managedServer: true };
   const url = new URL(raw);
-  if ((PRODUCTION_HOSTS as readonly string[]).includes(url.hostname.toLowerCase())) {
+  if (isProductionHost(url.hostname)) {
     throw new Error(`E2E_BASE_URL points at Production (${url.hostname}). The browser harness never runs against Production.`);
   }
   return { baseUrl: url.origin, managedServer: false };
-}
-
-export function resolveRoleAuthMode(env: Env): RoleAuthMode {
-  const raw = env.E2E_ROLE_AUTH?.trim();
-  if (!raw) return 'none';
-  if (raw === 'clerk-ticket' || raw === 'storage-state') return raw;
-  throw new Error(`E2E_ROLE_AUTH must be clerk-ticket or storage-state (got "${raw}").`);
-}
-
-/**
- * Why programmatic sign-in cannot be used, or null when it can. Ticket
- * sign-in is a Clerk test-instance feature: a live key is refused here, so
- * the harness can never mint a session on the Production Clerk instance.
- */
-export function clerkTicketBlocker(env: Env): string | null {
-  const secret = env.CLERK_SECRET_KEY ?? '';
-  const publishable = env.CLERK_PUBLISHABLE_KEY ?? env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
-  if (!secret || !publishable) return 'CLERK_SECRET_KEY and a Clerk publishable key are required for clerk-ticket sign-in';
-  if (!secret.startsWith('sk_test_') || !publishable.startsWith('pk_test_')) return 'clerk-ticket sign-in only runs with Clerk test-instance keys (sk_test_ / pk_test_)';
-  return null;
-}
-
-export function roleEmail(role: Role, env: Env): string {
-  return env[`E2E_${role.toUpperCase()}_EMAIL`]?.trim() || ROLE_DEFAULTS[role].fixtureEmail;
 }
 
 /** The role's home first, then any extra paths from E2E_<ROLE>_PATHS. Only same-origin absolute paths are accepted. */
@@ -92,10 +84,10 @@ export function rolePaths(role: Role, env: Env): string[] {
   return [...new Set([ROLE_DEFAULTS[role].home, ...extra])];
 }
 
-export function axeFailImpacts(env: Env): string[] {
+export function axeFailImpacts(surface: Surface, env: Env): string[] {
   const allowed = ['minor', 'moderate', 'serious', 'critical'];
-  const picked = (env.E2E_AXE_FAIL_ON ?? 'critical').split(',').map((s) => s.trim()).filter((s) => allowed.includes(s));
-  return picked.length > 0 ? picked : ['critical'];
+  const extra = (env.E2E_AXE_FAIL_ON ?? '').split(',').map((s) => s.trim()).filter((s) => allowed.includes(s));
+  return [...new Set([...AXE_POLICY[surface], ...extra])];
 }
 
 /** Primary language subtag, lower-cased: "es-CO" -> "es". Empty when absent. */

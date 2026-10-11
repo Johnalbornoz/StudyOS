@@ -1,8 +1,8 @@
 /**
  * L12 / UX-1 -- one smoke path per profile (Student, Parent, Teacher,
  * Institution): the workspace home, plus any E2E_<ROLE>_PATHS, at every
- * viewport. Needs a session per role (auth.setup.ts); without one the
- * suite reports NOT_RUN, it does not pass.
+ * viewport. Needs an operator-captured session per role (support/session.ts);
+ * without one the suite reports NOT_RUN, it does not pass.
  */
 import { expect, test, type Page } from '@playwright/test';
 import {
@@ -21,7 +21,6 @@ const isCompact = (page: Page) => (page.viewportSize()?.width ?? 0) <= COMPACT_N
 
 for (const role of ROLES) {
   test.describe(`${role} workspace`, () => {
-    // Resolved lazily in the worker: the session file is written by the setup project.
     test.use({
       storageState: async ({}, use) => {
         const session = roleSession(role);
@@ -47,8 +46,8 @@ for (const role of ROLES) {
           await openPage(page, path);
         });
 
-        test('has no critical accessibility violations', async ({ page }) => {
-          await expectNoAccessibilityViolations(page);
+        test('has no critical or serious accessibility violations', async ({ page }) => {
+          await expectNoAccessibilityViolations(page, 'authenticated');
         });
 
         test('does not overflow horizontally', async ({ page }) => {
@@ -57,7 +56,7 @@ for (const role of ROLES) {
 
         test('declares the workspace language on <html>', async ({ page }) => {
           const lang = await shellLanguage(page);
-          coversKnownFinding('KF-L12-01', primaryLanguage(lang) !== 'en');
+          coversKnownFinding('KF-L12-03', primaryLanguage(lang) !== 'en');
           await expectDocumentLanguage(page, lang);
         });
 

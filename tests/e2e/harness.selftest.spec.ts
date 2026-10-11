@@ -4,7 +4,7 @@
  * test passes only if the assertion fails) and must accept the repaired page.
  * Without this, a green run could mean the checks see nothing.
  */
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { expectDocumentLanguage, expectNavigationControlsNamed, expectNoAccessibilityViolations, expectNoHorizontalOverflow } from './support/audit';
 
 const ICON = '<svg width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="8"/></svg>';
@@ -53,6 +53,20 @@ test.describe('harness self-test', () => {
   test('rejects a critical accessibility violation', async ({ page }) => {
     test.fail(true, 'planted defect: image with no text alternative (axe image-alt, critical)');
     await page.setContent(doc('es', '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" width="10" height="10">'));
-    await expectNoAccessibilityViolations(page);
+    await expectNoAccessibilityViolations(page, 'public');
+  });
+
+  const LOW_CONTRAST = '<p style="color:#999;background:#fff">Texto con poco contraste</p>';
+
+  test('rejects a serious violation on an authenticated page', async ({ page }) => {
+    test.fail(true, 'planted defect: low-contrast text (axe color-contrast, serious)');
+    await page.setContent(doc('es', LOW_CONTRAST));
+    await expectNoAccessibilityViolations(page, 'authenticated');
+  });
+
+  test('reports, without failing, the same serious violation on a public page', async ({ page }) => {
+    await page.setContent(doc('es', LOW_CONTRAST));
+    await expectNoAccessibilityViolations(page, 'public');
+    expect(test.info().annotations.filter((a) => a.type === 'axe-serious').map((a) => a.description)).toEqual(['color-contrast x1']);
   });
 });

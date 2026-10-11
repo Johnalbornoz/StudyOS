@@ -21,14 +21,19 @@ export interface KnownFinding {
 
 export const KNOWN_FINDINGS = {
   'KF-L12-01': {
-    title: 'A Spanish page renders with <html lang="en">',
-    evidence: 'Stage finding. src/app/layout.tsx hard-codes <html lang="en">; the locale is only set on an inner wrapper (.lp-shell / .lx-shell).',
-    expectedToFail: true,
+    title: 'A localized public page renders with <html lang="en">',
+    evidence: 'Stage finding, confirmed at 4fb45b0. Fixed by CR-L12-01: the root layout derives <html lang> from the route locale.',
+    expectedToFail: false,
   },
   'KF-L12-02': {
     title: 'Collapsed navigation icon links have no accessible name',
-    evidence: 'Stage finding. Asserted on every navigation control at every viewport, and inside the compact drawer.',
+    evidence: 'Stage finding, OPEN. Public navigation is not evidence either way; settled only by the authenticated role suites (L12-R1).',
     expectedToFail: false,
+  },
+  'KF-L12-03': {
+    title: 'An authenticated workspace in a non-English interface language renders with <html lang="en">',
+    evidence: 'Read from source, not yet observed: /dashboard carries no route locale, so <html lang> stays at the fallback while LearnerShell sets the user language on an inner element.',
+    expectedToFail: true,
   },
 } satisfies Record<string, KnownFinding>;
 
