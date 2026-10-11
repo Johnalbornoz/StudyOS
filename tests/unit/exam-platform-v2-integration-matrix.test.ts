@@ -151,7 +151,9 @@ describe('E12: one deterministic migration chain', () => {
       // + B5 line: assessment snapshot column (20261110_1800), additive; adopted byte-for-byte, already on DEV.
       '20261110_1800_assessment_snapshot.sql',
       // + CURR-PAA: item version -> curriculum node (20261111_1000), additive.
-      '20261111_1000_qb_item_curriculum_nodes.sql']);
+      '20261111_1000_qb_item_curriculum_nodes.sql',
+      // + QB-R1C: the approval trigger requires an explicit PRIMARY attribution (20261112_1000); one function replaced.
+      '20261112_1000_qb_review_requires_primary_attribution.sql']);
     expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);
   });
 });

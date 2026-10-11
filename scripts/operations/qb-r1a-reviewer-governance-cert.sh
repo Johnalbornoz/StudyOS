@@ -47,6 +47,9 @@ echo "saber_competencies=$(Q1 "SELECT count(*) FROM competencies WHERE code LIKE
 echo "--- [2] grant contract, attribution writer and approval path (one transaction, rolled back)"
 "${TSX[@]}" scripts/operations/qb-r1a/reviewer-governance-cert.ts
 echo "qualifications_after_contract_cert=$(Q1 "SELECT count(*) FROM question_bank_reviewer_qualifications")"
+echo "--- [2b] QB-R1C: the database rule alone (direct inserts; one transaction, rolled back)"
+"${TSX[@]}" scripts/operations/qb-r1a/db-attribution-cert.ts
+echo "rows_after_db_rule_cert: qualifications=$(Q1 "SELECT count(*) FROM question_bank_reviewer_qualifications") reviews=$(Q1 "SELECT count(*) FROM question_bank_reviews") attribution=$(Q1 "SELECT count(*) FROM question_bank_item_concepts")"
 echo "--- [3] operator script"
 Q1 "INSERT INTO users (clerk_id, is_system) VALUES ('r1a:op-reviewer', false), ('r1a:op-grantor', false)" >/dev/null
 Q1 "INSERT INTO user_roles (user_id, role, status, granted_via) SELECT id, 'STUDYUS_ADMIN', 'ACTIVE', 'INVITATION' FROM users WHERE clerk_id = 'r1a:op-grantor'" >/dev/null
@@ -69,4 +72,12 @@ echo "--- [4] the review service: named refusals, attribution first, then a gove
 "${TSX[@]}" scripts/operations/qb-r1a/review-service-cert.ts "$REV" "$GR" "$SYS"
 echo "revoke: $("${OP[@]}" revoke --qualification "$QID" --revoked-by "$GR" --reason 'end of the ephemeral certification' --write | mode)"
 echo "in_force_after_revoke=$(Q1 "SELECT count(*) FROM question_bank_reviewer_qualifications WHERE revoked_at IS NULL")"
+echo "--- [5] QB-R1C migration: documented rollback (the 20261110_1500 function), then re-apply through the governed runner"
+awk '/^CREATE FUNCTION public.question_bank_review_authority_guard\(\)/{p=1} p{print} p&&/^END \$\$;/{exit}' "$REPO_ROOT/database/migrations/20261110_1500_qb_review_authority_originality.sql" | sed '1s/^CREATE FUNCTION/CREATE OR REPLACE FUNCTION/' > "$WORKDIR/authority-guard-before.sql"
+"${PSQL[@]}" -f "$WORKDIR/authority-guard-before.sql" "$DB"
+"${PSQL[@]}" -c "DELETE FROM schema_migrations WHERE version = '20261112_1000'" "$DB"
+echo "after_rollback: objective_fallback_present=$(Q1 "SELECT (pg_get_functiondef(p.oid) LIKE '%objective_concept_mappings%')::text FROM pg_proc p WHERE proname = 'question_bank_review_authority_guard'")"
+"${TSX[@]}" scripts/db-migrate.ts 2>&1 | tail -1
+"${TSX[@]}" scripts/db-status.ts 2>&1 | tail -1
+echo "after_reapply: objective_fallback_present=$(Q1 "SELECT (pg_get_functiondef(p.oid) LIKE '%objective_concept_mappings%')::text FROM pg_proc p WHERE proname = 'question_bank_review_authority_guard'")"
 echo "QB_R1A_REVIEWER_GOVERNANCE_CERT = DONE"
