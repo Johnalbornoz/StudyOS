@@ -24,7 +24,8 @@ function main() {
   if (process.argv.includes('--matrix')) console.log(JSON.stringify(matrix, null, 2));
   else if (process.argv.includes('--demand')) console.log(JSON.stringify(demand, null, 2));
   else {
-    const grid = Object.fromEntries(matrix.families.map((f) => [f.familyId, Object.fromEntries(matrix.cells.filter((c) => c.familyId === f.familyId).map((c) => [c.profileId, c.outcome === 'SPECIFICATION' ? `${c.declaredSupport === 'SUPPORTED_WITH_CONSTRAINTS' ? 'C' : 'S'} ${c.specificationId!.slice(0, 8)}` : `REFUSED ${c.refusal!.code}`]))]));
+    const mark = (c: (typeof matrix.cells)[number]) => (c.outcome === 'SPECIFICATION' ? `${c.declaredSupport === 'SUPPORTED_WITH_CONSTRAINTS' ? 'C' : 'S'} ${c.specificationId!.slice(0, 8)} [${c.applicability.basis}]` : `REFUSED ${c.refusal!.code}`);
+    const grid = Object.fromEntries(matrix.families.map((f) => [f.familyId, Object.fromEntries(matrix.cells.filter((c) => c.familyId === f.familyId).map((c) => [`${c.level === 'SYSTEM' ? 'system:' : ''}${c.targetId}`, mark(c)]))]));
     console.log(JSON.stringify({ matrix: { summary: matrix.summary, grid }, demand: { kind: demand.kind, note: demand.note, scenarios: demand.scenarios.map((s) => ({ assumption: s.assumption, totals: s.totals, bySection: s.bySection })) } }, null, 2));
   }
 }

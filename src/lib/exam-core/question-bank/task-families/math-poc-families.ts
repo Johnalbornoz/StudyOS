@@ -11,20 +11,18 @@
  * one that needs the learner to build or judge (FORMULATE / INTERPRET / EVALUATE). That is what makes the support
  * matrix non-uniform: a procedural family cannot meet a system that requires transfer, and says so.
  *
- * CONCEPTS are certified PAA identities, by stable id, with THEIR OWN canonical subject. Four of the five live in
- * `Matemáticas`; `math.alg.quadratics` lives in `Mathematics`. The two subjects are never merged or equated here.
+ * CONCEPTS are certified canonical concepts, by stable id, with THEIR OWN canonical subject. Four of the five
+ * live in `Matemáticas`; `math.alg.quadratics` lives in `Mathematics`. A concept is exam-independent: it is never
+ * duplicated or re-keyed per exam, and the two subjects are never merged or equated by name here.
  *
  * `profileSupport` is StudyUs's draft judgement of ASSESSMENT-BEHAVIOUR fit, with a reason wherever it is not a
- * plain yes. `canonicalKnowledgeAvailability` is a FACT READ FROM THE REPOSITORY and nothing else:
- *   PAA        the concept is one of the 61 certified PAA identities
- *   others     a reviewed objective -> concept link of that exam family names this exact (subject, name), or not
- * A test recomputes every entry from the catalogue's link tables. Where it says NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY
- * the family may still fit the system's behaviour; whether its concept may be assessed there is not ours to infer.
+ * plain yes. It says nothing about whether the concept may be assessed by a system: that is assessment
+ * applicability, recorded apart from the families (`assessment-adaptation/math-poc-applicability.ts`).
  */
 import { MATH_PROBLEM_FAMILY_TYPE, type MathProblemSpecialization, type MathTaskFamily } from './math-problem';
-import { TASK_FAMILY_CONTRACT_VERSION, type ConceptReference, type KnowledgeAvailability, type ProfileSupport, type SupportConstraint } from './task-family';
+import { TASK_FAMILY_CONTRACT_VERSION, type ConceptReference, type ProfileSupport, type SupportConstraint } from './task-family';
 
-/** The assessment-system profile ids the proof of concept adapts into. Keys only: this directory imports no profile. */
+/** The assessment-SYSTEM profile ids the proof of concept adapts into. Keys only: this directory imports no profile. */
 export const MATH_POC_PROFILE_IDS = ['PAA', 'IB', 'CAMBRIDGE', 'PISA', 'ICFES'] as const;
 export type MathPocProfileId = (typeof MATH_POC_PROFILE_IDS)[number];
 export const MATH_POC_FAMILY_VERSION = '0.1.0-draft' as const;
@@ -35,27 +33,6 @@ const LINEAR: ConceptReference = { stableId: 'math.fun.linear-functions-lines', 
 const QUADRATICS: ConceptReference = { stableId: 'math.alg.quadratics', canonicalSubject: 'Mathematics', canonicalName: 'Quadratic functions and inequalities' };
 const PROBABILITY: ConceptReference = { stableId: 'math.prob.probability', canonicalSubject: 'Matemáticas', canonicalName: 'Probabilidad' };
 const DATA: ConceptReference = { stableId: 'math.stat.data-representation', canonicalSubject: 'Matemáticas', canonicalName: 'Representación e interpretación de datos' };
-
-const CERTIFIED: KnowledgeAvailability = { status: 'CERTIFIED_FOR_THIS_EXAM_FAMILY', basis: 'One of the 61 certified PAA concept identities (F-DATA).' };
-const NOT: KnowledgeAvailability = { status: 'NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY', basis: 'No certified identity and no reviewed objective link of this exam family names this concept.' };
-const linked = (...objectiveCodes: string[]): KnowledgeAvailability => ({ status: 'CATALOGUE_LINK_RECORDED', basis: `Reviewed objective link(s): ${objectiveCodes.join(', ')}.` });
-
-/**
- * The objective codes whose reviewed link names each concept, per profile. The single statement of the
- * availability facts; a test checks each code against `allLearningLinks()` and that no link was left out.
- */
-export const MATH_POC_KNOWLEDGE_LINKS: Readonly<Record<string, Partial<Record<MathPocProfileId, readonly string[]>>>> = {
-  [RATIO.stableId]: { PISA: ['pisa.cantidad.formular'] },
-  [LINEAR.stableId]: {},
-  [QUADRATICS.stableId]: { IB: ['aahl.p1.functions', 'aasl.p1.functions'], CAMBRIDGE: ['aice.9709.p1.quadratics'] },
-  [PROBABILITY.stableId]: { PISA: ['pisa.incertidumbre.interpretar', 'pisa.incertidumbre.razonar'] },
-  [DATA.stableId]: {},
-};
-const availabilityOf = (concept: ConceptReference): Record<MathPocProfileId, KnowledgeAvailability> => {
-  const links = MATH_POC_KNOWLEDGE_LINKS[concept.stableId];
-  const of = (p: MathPocProfileId): KnowledgeAvailability => (links[p]?.length ? linked(...links[p]!) : NOT);
-  return { PAA: CERTIFIED, IB: of('IB'), CAMBRIDGE: of('CAMBRIDGE'), PISA: of('PISA'), ICFES: of('ICFES') };
-};
 
 const S: ProfileSupport = { status: 'SUPPORTED' };
 const C = (...constraints: SupportConstraint[]): ProfileSupport => ({ status: 'SUPPORTED_WITH_CONSTRAINTS', constraints });
@@ -73,7 +50,7 @@ type Draft = Pick<MathTaskFamily, 'familyId' | 'primaryConcepts' | 'targetSkills
 const family = (d: Draft): MathTaskFamily => ({
   v: TASK_FAMILY_CONTRACT_VERSION, familyId: d.familyId, version: MATH_POC_FAMILY_VERSION, familyType: MATH_PROBLEM_FAMILY_TYPE, canonicalSubject: d.primaryConcepts[0].canonicalSubject, primaryConcepts: d.primaryConcepts,
   targetSkills: d.targetSkills, targetCompetencies: ['dev.comp.math-reasoning'], evidenceTarget: d.evidenceTarget, supportedContexts: d.supportedContexts, difficultyLevers: d.difficultyLevers, commonMisconceptions: d.commonMisconceptions,
-  responseConstraints: d.responseConstraints, profileSupport: d.support, canonicalKnowledgeAvailability: availabilityOf(d.primaryConcepts[0]),
+  responseConstraints: d.responseConstraints, profileSupport: d.support,
   provenance: { authoredBy: 'STUDYUS', authoringKind: 'STUDYUS_GENERATED', authoredAt: MATH_POC_AUTHORED_AT, referenceSourceKeys: ['studyus.q1.paa-certified-catalogue'], containsCopiedProtectedExpression: false, note: 'EA-1 proof of concept: drafted in-session by the model; unreviewed.' },
   lifecycle: 'DRAFT', reviewStatus: 'UNREVIEWED', specialization: d.specialization,
 });

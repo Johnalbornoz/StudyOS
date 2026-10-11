@@ -11,31 +11,40 @@
  * where it came from (`provenance`).
  *
  * IDENTITY. `specificationId` is the sha256 of the canonical JSON of the specification without its id and without
- * `adaptedAt`. The same family, profile, policy and request give the same id on any machine at any time; a
- * changed rule, lever or request gives another. `lineage` holds the content hashes of the three inputs, so a
- * family or a profile edited without a new version is detectable.
+ * `adaptedAt`. The same family, system profile, component profile, policy, applicability and request give the same
+ * id on any machine at any time; a changed rule, lever or request gives another. `lineage` holds the content
+ * hashes of the inputs, so a family or a profile edited without a new version is detectable.
+ *
+ * TARGET. A specification names the system profile and, whenever component-specific behaviour affects generation,
+ * the concrete component profile (D2). Every variable dimension that came from a profile says which level it came from.
  */
 import { z } from 'zod';
 import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
-import { CALCULATOR_POLICIES, ConceptReferenceSchema, CONTEXT_KINDS, ELICITATION_FORMATS, EVIDENCE_ACTIONS, EvidenceTargetSchema, FAMILY_LIFECYCLES, FAMILY_REVIEW_STATUSES, KnowledgeAvailabilitySchema, TASK_DIFFICULTY_BANDS } from '@/lib/exam-core/question-bank/task-families/task-family';
+import { CALCULATOR_POLICIES, ConceptReferenceSchema, CONTEXT_KINDS, ELICITATION_FORMATS, EVIDENCE_ACTIONS, EvidenceTargetSchema, FAMILY_LIFECYCLES, FAMILY_REVIEW_STATUSES, TASK_DIFFICULTY_BANDS } from '@/lib/exam-core/question-bank/task-families/task-family';
+import { APPLICABILITY_BASES, APPLICABILITY_STATUSES, ApplicabilityEvidenceSchema } from './assessment-applicability';
 import { AUTHENTICITY_REQUIREMENTS, MARK_STRUCTURES, PROFILE_STATUSES, REASONING_DEPTHS, RUBRIC_STYLES, RULE_AUTHORITIES, STIMULUS_MODES, TRANSFER_EXPECTATIONS } from './assessment-system-profile';
 import { sha256OfCanonicalJson } from './canonical-hash';
 import { NUMERIC_PROFILES, VARIABLE_DIMENSIONS } from './discipline-policy';
-import { ADAPTATION_POOLS, INSTANCE_CLASSES, INSTANCE_PURPOSES } from './instance-lineage';
+import { ADAPTATION_POOLS, CONTENT_USE_CLASSES, INSTANCE_CLASSES, INSTANCE_PURPOSES } from './instance-lineage';
 
-export const ADAPTATION_SPECIFICATION_VERSION = 1 as const;
-export const ADAPTATION_ENGINE = { id: 'studyus-adaptation-engine', version: '1' } as const;
+export const ADAPTATION_SPECIFICATION_VERSION = 2 as const;
+export const ADAPTATION_ENGINE = { id: 'studyus-adaptation-engine', version: '2' } as const;
 
 const ID = z.string().trim().min(1).max(200);
 const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
 
-/** Whether an adaptation needs the family's concept to be recorded for the profile's exam family, and how firmly. */
-export const KNOWLEDGE_REQUIREMENTS = ['NONE', 'CATALOGUE_LINK_OR_CERTIFIED', 'CERTIFIED'] as const;
-export type KnowledgeRequirement = (typeof KNOWLEDGE_REQUIREMENTS)[number];
+/**
+ * Whether an adaptation needs ASSESSMENT APPLICABILITY of the concept to be established for its target.
+ * EVIDENCE_BEARING content always needs it, whatever is asked here; this option lets dev-test content ask for it too.
+ */
+export const APPLICABILITY_REQUIREMENTS = ['NOT_REQUIRED', 'ESTABLISHED'] as const;
+export type ApplicabilityRequirement = (typeof APPLICABILITY_REQUIREMENTS)[number];
 
 /** What is asked of the engine. Everything optional is decided by profile, policy and family when it is left out. */
 export const AdaptationRequestSchema = z.strictObject({
   purpose: z.enum(INSTANCE_PURPOSES),
+  /** What the content is produced for. Stated, never defaulted: dev-test content and evidence-bearing content are different uses. */
+  contentUseClass: z.enum(CONTENT_USE_CLASSES),
   difficultyBand: z.enum(TASK_DIFFICULTY_BANDS),
   language: ID,
   /** Required when the family has several PRIMARY concepts. A concept the family does not have is a change of invariant. */
@@ -46,18 +55,18 @@ export const AdaptationRequestSchema = z.strictObject({
   commandTerm: z.string().trim().min(2).max(60).optional(),
   /** The requirement cell the instance is for, when there is one. */
   requirementCellKey: ID.nullable().optional(),
-  /** Default NONE: behaviour fit alone. Production for an exam family asks for more. */
-  knowledgeRequirement: z.enum(KNOWLEDGE_REQUIREMENTS).optional(),
+  /** Default NOT_REQUIRED for dev-test content; evidence-bearing content requires ESTABLISHED regardless. */
+  applicabilityRequirement: z.enum(APPLICABILITY_REQUIREMENTS).optional(),
   /** Exists so that asking is refused BY NAME: any member present is a request to change an invariant. */
   invariantOverrides: z.strictObject({ primaryConceptStableId: ID.optional(), construct: z.unknown().optional(), evidenceActions: z.array(z.enum(EVIDENCE_ACTIONS)).optional(), evidenceObject: z.string().optional() }).optional(),
 });
 export type AdaptationRequest = z.infer<typeof AdaptationRequestSchema>;
 
 export const ADAPTATION_REFUSAL_CODES = [
-  'FAMILY_INVALID', 'FAMILY_TYPE_NOT_REGISTERED', 'PROFILE_INVALID', 'DISCIPLINE_POLICY_INVALID', 'REQUEST_INVALID',
-  'FAMILY_RETIRED', 'DISCIPLINE_POLICY_NOT_FOR_FAMILY_TYPE', 'INVARIANT_CHANGE_REQUESTED',
+  'FAMILY_INVALID', 'FAMILY_TYPE_NOT_REGISTERED', 'PROFILE_INVALID', 'COMPONENT_PROFILE_INVALID', 'COMPONENT_NOT_OF_THE_SYSTEM', 'DISCIPLINE_POLICY_INVALID', 'REQUEST_INVALID', 'APPLICABILITY_REGISTER_INVALID',
+  'FAMILY_RETIRED', 'FAMILY_NOT_REVIEWED_FOR_EVIDENCE_BEARING_CONTENT', 'DISCIPLINE_POLICY_NOT_FOR_FAMILY_TYPE', 'INVARIANT_CHANGE_REQUESTED',
   'PROFILE_SUPPORT_NOT_DECLARED', 'PROFILE_UNSUPPORTED_BY_FAMILY', 'SUPPORT_CONSTRAINT_VIOLATED',
-  'CANONICAL_KNOWLEDGE_NOT_CERTIFIED_FOR_EXAM_FAMILY',
+  'COMPONENT_REQUIRED', 'ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED',
   'RESPONSE_FORMAT_NOT_ALLOWED', 'CONTEXT_NOT_ALLOWED', 'PROFILE_REQUIRES_CONTEXT_FAMILY_CANNOT_PROVIDE', 'PROFILE_REQUIRES_TRANSFER_FAMILY_CANNOT_PROVIDE',
   'TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE', 'TOOL_POLICY_NOT_ALLOWED_BY_PROFILE', 'STIMULUS_REQUIRED_BY_FAMILY_NOT_OFFERED_BY_PROFILE',
   'COMMAND_TERM_NOT_IN_PROFILE_VOCABULARY', 'PROFILE_COMPETENCY_NOT_ELICITED',
@@ -66,7 +75,8 @@ export type AdaptationRefusalCode = (typeof ADAPTATION_REFUSAL_CODES)[number];
 export interface AdaptationRefusal { code: AdaptationRefusalCode; detail: string }
 
 /** Where the value of a variable dimension came from. A dimension may have several contributors. */
-export const PROVENANCE_ORIGINS = ['REQUEST', 'PROFILE_RULE', 'POLICY_RULE', 'FAMILY'] as const;
+/** A profile rule says which level it came from: the system's common rule, or a component's override. */
+export const PROVENANCE_ORIGINS = ['REQUEST', 'SYSTEM_PROFILE_RULE', 'COMPONENT_PROFILE_RULE', 'POLICY_RULE', 'FAMILY'] as const;
 export const FieldProvenanceSchema = z.strictObject({
   origin: z.enum(PROVENANCE_ORIGINS),
   /** The profile rule id, the policy rule id, the family field or lever, or the request field. */
@@ -93,12 +103,24 @@ export const AdaptationSpecificationSchema = z.strictObject({
   v: z.literal(ADAPTATION_SPECIFICATION_VERSION),
   specificationId: SHA256,
   taskFamily: z.strictObject({ familyId: ID, version: ID, familyType: ID, lifecycle: z.enum(FAMILY_LIFECYCLES), reviewStatus: z.enum(FAMILY_REVIEW_STATUSES) }),
-  assessmentProfile: z.strictObject({ profileId: ID, version: ID, status: z.enum(PROFILE_STATUSES), examFamilyCode: z.enum(EXAM_FAMILIES).nullable() }),
+  systemProfile: z.strictObject({ profileId: ID, version: ID, status: z.enum(PROFILE_STATUSES), examFamilyCode: z.enum(EXAM_FAMILIES).nullable() }),
+  /** The concrete component the specification targets. null = the system profile only: generic practice that needed no component-specific behaviour. */
+  componentProfile: z.strictObject({ componentId: ID, version: ID, status: z.enum(PROFILE_STATUSES), localSubject: ID.nullable() }).nullable(),
   disciplinePolicy: z.strictObject({ policyId: ID, version: ID, discipline: ID }),
   /** The ONE concept an instance of this specification is direct evidence of. */
   primaryConcept: ConceptReferenceSchema,
-  /** Read from the family for this profile. Surfaced, never inferred: a behaviour fit says nothing about it. */
-  canonicalKnowledgeAvailability: KnowledgeAvailabilitySchema,
+  /**
+   * Whether the concept may be assessed by the target, as the applicability register records it: basis, the
+   * repository's evidence with its review state, and the threshold policy applied. A fact, never inferred from the
+   * behaviour fit, and never a certification of the concept.
+   */
+  assessmentApplicability: z.strictObject({
+    status: z.enum(APPLICABILITY_STATUSES), basis: z.enum(APPLICABILITY_BASES),
+    scope: z.strictObject({ systemProfileId: ID, subject: ID.nullable(), componentId: ID.nullable() }),
+    evidence: z.array(ApplicabilityEvidenceSchema), thresholdPolicy: z.strictObject({ policyId: ID, version: ID }),
+  }),
+  /** What the specification was produced for. DEV_TEST_CONTENT never bears evidence and never enters a certified pool. */
+  contentUseClass: z.enum(CONTENT_USE_CLASSES),
   targetSkills: z.array(ID),
   targetCompetencies: z.array(ID),
   /** The expected evidence: what an instance must show, and what it may not change. Not a worked answer. */
@@ -127,11 +149,11 @@ export const AdaptationSpecificationSchema = z.strictObject({
   }),
   /** What an instance may vary inside, verbatim from the family (for mathematics: the parameter ranges and the rules of a valid instance). */
   parameterization: z.unknown(),
-  purpose: z.strictObject({ purpose: z.enum(INSTANCE_PURPOSES), pool: z.enum(ADAPTATION_POOLS).nullable(), minimumInstanceClass: z.enum(INSTANCE_CLASSES) }),
+  purpose: z.strictObject({ purpose: z.enum(INSTANCE_PURPOSES), pool: z.enum(ADAPTATION_POOLS).nullable(), allowedInstanceClasses: z.array(z.enum(INSTANCE_CLASSES)).min(1), minimumInstanceClass: z.enum(INSTANCE_CLASSES) }),
   blueprintRequirement: z.strictObject({ requirementCellKey: ID }).nullable(),
   /** For every variable dimension: who decided it. */
   provenance: z.record(z.enum(VARIABLE_DIMENSIONS), z.array(FieldProvenanceSchema).min(1)),
-  lineage: z.strictObject({ engine: z.strictObject({ id: ID, version: ID }), familyContentHash: SHA256, profileContentHash: SHA256, policyContentHash: SHA256, requestHash: SHA256 }),
+  lineage: z.strictObject({ engine: z.strictObject({ id: ID, version: ID }), familyContentHash: SHA256, systemProfileContentHash: SHA256, componentProfileContentHash: SHA256.nullable(), policyContentHash: SHA256, requestHash: SHA256 }),
   /** When the adaptation was made. Passed in; not part of the identity. */
   adaptedAt: z.string().datetime({ offset: true }).nullable(),
 });

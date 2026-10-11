@@ -2,18 +2,21 @@
  * EA-1 -- what a question INSTANCE carries about where it came from, and the carriers later stages will need
  * (pure contracts; the two carriers for B2 and B3 are TYPES ONLY and implement no rule).
  *
- * 1. ADAPTATION LINEAGE. An instance generated from an adaptation specification records the family, the profile,
- *    the discipline policy, the specification and the run. LEGACY AND FIXED CONTENT HAS NONE: every item written
+ * 1. ADAPTATION LINEAGE. An instance generated from an adaptation specification records the family, the system
+ *    and component profile, the discipline policy, the specification, the use class and the run. A HUMAN-AUTHORED
+ *    instance may record its task family too, with no generation field. LEGACY AND FIXED CONTENT HAS NONE: every item written
  *    before task families, every item written without one, and every official or licensed item is valid with no
  *    adaptation lineage at all (the persisted equivalent is `task_family_id IS NULL`). Nothing may require it.
  *
- * 2. INSTANCE CLASS. A DYNAMIC instance is produced for one use and has not been through the promotion path; a
- *    CERTIFIED_FROZEN instance has, and is immutable. Which class a purpose needs is a contract here; it grants
- *    nothing. In particular it grants no reuse right, no review and no pool membership: those stay with the
+ * 2. USE CLASS AND INSTANCE CLASS. Content is produced either as DEV_TEST_CONTENT (non-certifying UX content) or
+ *    for EVIDENCE_BEARING use. A DYNAMIC instance is produced for one use and has not been through the promotion
+ *    path; a CERTIFIED_FROZEN instance has, and is immutable. Which class a purpose accepts for which use is a
+ *    contract here (`instancePolicyFor`); it grants nothing. In particular it grants no reuse right, no review and no pool membership: those stay with the
  *    rights gate, the human review and the pool assignment, unchanged, and `PROMOTION_PATH` only NAMES them.
  *
- * 3. INDEPENDENCE CARRIER (types only). Two instances of one family are not automatically two independent pieces
- *    of evidence. B2 (selection) and B3 (evidence) will need to see the relationship. This module defines what
+ * 3. INDEPENDENCE CARRIER (types only). Two instances of one ASSESSMENT task family are not automatically two
+ *    independent pieces of evidence. (The transfer engine has its own TransferTaskFamily -- a derived hash on a
+ *    learner's transfer task; the two are not merged here and their reconciliation is deferred to B3.) B2 (selection) and B3 (evidence) will need to see the relationship. This module defines what
  *    they will be able to see. It defines no rule about what the relationship means.
  *
  * 4. EVIDENCE FACETS (types only). The dimensions along which B3 could later describe what a response is evidence
@@ -27,18 +30,53 @@ const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
 const VERSIONED = z.strictObject({ id: ID, version: ID });
 
 // ------------------------------------------------------------------------------------------------ 1. lineage
-/** The adaptation lineage of an instance. Absent on legacy, fixed, official and licensed content. */
+/**
+ * What content is produced FOR.
+ *   DEV_TEST_CONTENT    non-certifying content for development and UX testing. It is never evidence, never enters a
+ *                       certified pool and certifies nothing. A DRAFT or UNREVIEWED task family may produce only this.
+ *   EVIDENCE_BEARING    content meant for real assessment use: its responses may become evidence, and for every
+ *                       purpose but practice it must be a frozen certified instance.
+ * The two are different USES, not two qualities of the same thing: dev-test content is not "weaker evidence".
+ */
+export const CONTENT_USE_CLASSES = ['DEV_TEST_CONTENT', 'EVIDENCE_BEARING'] as const;
+export type ContentUseClass = (typeof CONTENT_USE_CLASSES)[number];
+
+/**
+ * The adaptation lineage of a GENERATED instance. Absent on legacy, fixed, official and licensed content.
+ * `componentProfile` is null when the specification targeted the system profile only (generic practice).
+ */
 export const AdaptationLineageSchema = z.strictObject({
   taskFamily: VERSIONED,
-  assessmentProfile: VERSIONED,
+  systemProfile: VERSIONED,
+  componentProfile: VERSIONED.nullable(),
   disciplinePolicy: VERSIONED,
   adaptationSpecificationId: SHA256,
   /** The specification's invariant hash: equal for every instance of the family, whatever the system. */
   invariantHash: SHA256,
+  /** What the specification was produced for. Dev-test content says so on every instance. */
+  contentUseClass: z.enum(CONTENT_USE_CLASSES),
   /** The generation run that produced the instance. */
   generationRunId: ID,
 });
 export type AdaptationLineage = z.infer<typeof AdaptationLineageSchema>;
+
+/**
+ * The task-family lineage of a HUMAN-AUTHORED instance. Authorship (who wrote it) and task-family lineage (which
+ * way of asking it is an instance of) are separate dimensions: a person may write an instance of a family, with or
+ * without a specification to follow. It carries NO generation field -- no run, no prompt, no provider -- so the
+ * rule that authored content has no generation lineage is untouched. Optional, and never backfilled.
+ */
+export const AuthoredFamilyLineageSchema = z.strictObject({
+  taskFamily: VERSIONED,
+  /** The family's invariant hash the author wrote against. */
+  invariantHash: SHA256,
+  /** The specification followed, with its profiles, when there was one; all null when the author worked from the family alone. */
+  adaptationSpecificationId: SHA256.nullable(),
+  systemProfile: VERSIONED.nullable(),
+  componentProfile: VERSIONED.nullable(),
+  contentUseClass: z.enum(CONTENT_USE_CLASSES),
+});
+export type AuthoredFamilyLineage = z.infer<typeof AuthoredFamilyLineageSchema>;
 
 // ------------------------------------------------------------------------------------------------ 2. instance class
 export const INSTANCE_CLASSES = ['DYNAMIC', 'CERTIFIED_FROZEN'] as const;
@@ -55,33 +93,59 @@ export const NON_POOL_PURPOSES = ['LOW_STAKES_REINFORCEMENT', 'BENCHMARK', 'CALI
 export const INSTANCE_PURPOSES = [...ADAPTATION_POOLS, ...NON_POOL_PURPOSES] as const;
 export type InstancePurpose = (typeof INSTANCE_PURPOSES)[number];
 
-export interface InstanceClassRequirement {
+export interface InstancePolicy {
   purpose: InstancePurpose;
+  useClass: ContentUseClass;
+  /** The instance classes this purpose accepts for this use. */
+  allowedClasses: readonly InstanceClass[];
+  /** The least of them. */
   minimumClass: InstanceClass;
-  /** BRIEF: fixed by the EA-1 brief. CONSERVATIVE_DEFAULT: the brief is silent; the stricter class is taken until someone decides. */
-  basis: 'BRIEF' | 'CONSERVATIVE_DEFAULT';
+  /**
+   * USER_DECISION: locked by the user on 2026-10-11. BRIEF: fixed by the EA-1 brief and not revisited.
+   * READING_OF_DECISION: follows from the decision's wording and is flagged for confirmation.
+   */
+  basis: 'USER_DECISION' | 'BRIEF' | 'READING_OF_DECISION';
   reason: string;
 }
 
-const REQUIREMENTS: Record<InstancePurpose, Omit<InstanceClassRequirement, 'purpose'>> = {
-  PRACTICE: { minimumClass: 'DYNAMIC', basis: 'BRIEF', reason: 'Practice may use dynamic instances, subject to governance.' },
-  LOW_STAKES_REINFORCEMENT: { minimumClass: 'DYNAMIC', basis: 'BRIEF', reason: 'Low-stakes reinforcement may use dynamic instances, subject to governance.' },
-  DIAGNOSTIC: { minimumClass: 'CERTIFIED_FROZEN', basis: 'CONSERVATIVE_DEFAULT', reason: 'A protected pool whose content must reach a Student unseen; the brief does not name it, so the stricter class holds.' },
-  VERIFICATION: { minimumClass: 'CERTIFIED_FROZEN', basis: 'CONSERVATIVE_DEFAULT', reason: 'A protected pool whose content must reach a Student unseen; the brief does not name it, so the stricter class holds.' },
-  REDUCED_MOCK: { minimumClass: 'CERTIFIED_FROZEN', basis: 'BRIEF', reason: 'A Reduced Mock is a frozen form.' },
-  FULL_MOCK_1: { minimumClass: 'CERTIFIED_FROZEN', basis: 'BRIEF', reason: 'A Full Mock is a frozen form.' },
-  FULL_MOCK_2: { minimumClass: 'CERTIFIED_FROZEN', basis: 'BRIEF', reason: 'A Full Mock is a frozen form.' },
-  BENCHMARK: { minimumClass: 'CERTIFIED_FROZEN', basis: 'BRIEF', reason: 'A benchmark compares learners on the same content.' },
-  CALIBRATION: { minimumClass: 'CERTIFIED_FROZEN', basis: 'BRIEF', reason: 'Calibration measures one fixed item; a changing instance has no facility to measure.' },
-  PILOT_CERTIFICATION: { minimumClass: 'CERTIFIED_FROZEN', basis: 'BRIEF', reason: 'Pilot certification certifies specific content.' },
+const BOTH: readonly InstanceClass[] = ['DYNAMIC', 'CERTIFIED_FROZEN'];
+const FROZEN: readonly InstanceClass[] = ['CERTIFIED_FROZEN'];
+type Rule = Pick<InstancePolicy, 'allowedClasses' | 'basis' | 'reason'>;
+/** Evidence-bearing (real assessment) use, per purpose. */
+const EVIDENCE_BEARING_RULES: Record<InstancePurpose, Rule> = {
+  PRACTICE: { allowedClasses: BOTH, basis: 'USER_DECISION', reason: 'Practice: dynamic instances allowed, frozen certified instances allowed.' },
+  LOW_STAKES_REINFORCEMENT: { allowedClasses: BOTH, basis: 'BRIEF', reason: 'Low-stakes reinforcement may use dynamic instances, subject to governance.' },
+  DIAGNOSTIC: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'Evidence-bearing Stage / Production use of a Diagnostic requires frozen certified instances.' },
+  VERIFICATION: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'Evidence-bearing Stage / Production use of a Verification requires frozen certified instances.' },
+  REDUCED_MOCK: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'A Reduced Mock in real assessment use is frozen certified content only.' },
+  FULL_MOCK_1: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'A Full Mock in real assessment use is frozen certified content only.' },
+  FULL_MOCK_2: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'A Full Mock in real assessment use is frozen certified content only.' },
+  BENCHMARK: { allowedClasses: FROZEN, basis: 'BRIEF', reason: 'A benchmark compares learners on the same content.' },
+  CALIBRATION: { allowedClasses: FROZEN, basis: 'BRIEF', reason: 'Calibration measures one fixed item; a changing instance has no facility to measure.' },
+  PILOT_CERTIFICATION: { allowedClasses: FROZEN, basis: 'BRIEF', reason: 'Pilot certification certifies specific content.' },
 };
+/**
+ * Dev-test use. For DIAGNOSTIC and VERIFICATION the user's decision allows dynamic instances ONLY as dev-test
+ * content. For the other purposes the decision speaks of real assessment use; that dev-test content -- which is
+ * never evidence -- may be dynamic there too is this module's reading, and is marked as such.
+ */
+const devTestRule = (purpose: InstancePurpose): Rule => ({
+  allowedClasses: BOTH,
+  basis: purpose === 'DIAGNOSTIC' || purpose === 'VERIFICATION' || purpose === 'PRACTICE' ? 'USER_DECISION' : 'READING_OF_DECISION',
+  reason: 'DEV_TEST_CONTENT is non-certifying UX content: it may be dynamic, and it is never evidence whatever its purpose.',
+});
 
-/** The least an instance must be for a purpose. Pure, total over the known purposes; an unknown purpose is an error, never a default. */
-export function minimumInstanceClassFor(purpose: string): InstanceClassRequirement {
+/** What an instance may be for a purpose and a use. Pure and total over the known purposes and uses; anything unknown is an error, never a default. */
+export function instancePolicyFor(purpose: string, useClass: string): InstancePolicy {
   if (!(INSTANCE_PURPOSES as readonly string[]).includes(purpose)) throw new Error(`UNKNOWN_INSTANCE_PURPOSE: ${purpose}`);
-  return { purpose: purpose as InstancePurpose, ...REQUIREMENTS[purpose as InstancePurpose] };
+  if (!(CONTENT_USE_CLASSES as readonly string[]).includes(useClass)) throw new Error(`UNKNOWN_CONTENT_USE_CLASS: ${useClass}`);
+  const rule = useClass === 'DEV_TEST_CONTENT' ? devTestRule(purpose as InstancePurpose) : EVIDENCE_BEARING_RULES[purpose as InstancePurpose];
+  return { purpose: purpose as InstancePurpose, useClass: useClass as ContentUseClass, ...rule, minimumClass: rule.allowedClasses.includes('DYNAMIC') ? 'DYNAMIC' : 'CERTIFIED_FROZEN' };
 }
-export const instanceClassSatisfies = (actual: InstanceClass, purpose: string): boolean => actual === 'CERTIFIED_FROZEN' || minimumInstanceClassFor(purpose).minimumClass === 'DYNAMIC';
+/** May an instance of this class be used for this purpose and this use? */
+export const instanceClassSatisfies = (actual: InstanceClass, purpose: string, useClass: string): boolean => instancePolicyFor(purpose, useClass).allowedClasses.includes(actual);
+/** Can a response to content of this use class ever become evidence? Dev-test content never can. */
+export const mayBearEvidence = (useClass: ContentUseClass): boolean => useClass === 'EVIDENCE_BEARING';
 
 /**
  * How a generated instance becomes CERTIFIED_FROZEN. A DESCRIPTION of gates that already exist, in the order they
@@ -97,7 +161,7 @@ export const PROMOTION_PATH = [
   { step: 'POOL_ASSIGNMENT', gate: 'pool assignment after review, rights and originality', owner: 'Question Bank (pool membership)', establishes: 'what the content is reserved for' },
 ] as const;
 /** What neither a task family nor an adaptation specification establishes. Each stays with the gate that owns it. */
-export const NOT_ESTABLISHED_BY_ADAPTATION = ['REUSE_RIGHTS', 'ORIGINALITY', 'HUMAN_REVIEW', 'PRIMARY_ATTRIBUTION', 'POOL_MEMBERSHIP', 'INSTANCE_CERTIFICATION', 'EVIDENCE_INDEPENDENCE'] as const;
+export const NOT_ESTABLISHED_BY_ADAPTATION = ['REUSE_RIGHTS', 'ORIGINALITY', 'HUMAN_REVIEW', 'PRIMARY_ATTRIBUTION', 'POOL_MEMBERSHIP', 'INSTANCE_CERTIFICATION', 'EVIDENCE_INDEPENDENCE', 'REVIEWER_QUALIFICATION', 'CONCEPT_CERTIFICATION'] as const;
 
 // ------------------------------------------------------------------------------------------------ 3. independence carrier (TYPES ONLY)
 /** How two instances of content are related through their families. A description; no rule reads it yet. */
@@ -122,7 +186,7 @@ export type ExposureRelationship = 'SAME_INSTANCE' | 'SAME_PARAMETERIZATION' | '
  * identity is null for legacy content. THIS TYPE CARRIES FACTS; IT IMPLEMENTS NO INDEPENDENCE RULE.
  */
 export interface InstanceIndependenceCarrier {
-  /** The family the instance was generated from; null = legacy or fixed content. */
+  /** The ASSESSMENT task family the instance is of (generated or authored); null = legacy or fixed content. Not the transfer engine's family hash. */
   familyIdentity: { familyId: string; version: string } | null;
   /** Identity of the values the instance fixed inside the family's parameter ranges (a hash of them). */
   parameterizationIdentity: string | null;

@@ -11,11 +11,23 @@
  * an unsupported adaptation is never forced, a constraint is never relaxed, an invariant is never changed.
  *
  * ORDER OF DECISION (each step can only refuse or narrow; none widens):
- *   1 inputs valid          2 family not retired        3 policy is for the family's type
- *   4 no invariant change   5 family declares support   6 knowledge requirement
- *   7 response format       8 context, authenticity     9 transfer
- *   10 tool policy          11 stimulus                 12 command term
+ *   1 inputs valid; profile resolved (system + component)     2 family not retired; family maturity for the use class
+ *   3 policy is for the family's type                         4 no invariant change
+ *   5 family declares support; component required?            6 assessment applicability
+ *   7 response format       8 context, authenticity           9 transfer
+ *   10 tool policy          11 stimulus                       12 command term
  *   13 competencies         -> specification, provenance, hashes, freeze
+ *
+ * COMPONENT REQUIRED (D2), precisely. A system profile names its component-dependent dimensions. When it has any
+ * and no component is targeted, the adaptation is refused (`COMPONENT_REQUIRED`) if ANY of these holds:
+ *   a. the purpose is anything but PRACTICE or LOW_STAKES_REINFORCEMENT (content for a form is content of a component);
+ *   b. the content is EVIDENCE_BEARING (evidence is of a concrete component's behaviour);
+ *   c. the request fixes a value of a component-dependent dimension (format, calculator, command term, context);
+ *   d. the family's support for the system is constrained on a component-dependent dimension;
+ *   e. the family REQUIRES a tool and the tool policy is component-dependent.
+ *   f. the system-level fallback of a component-dependent dimension offers nothing the family can use.
+ * Otherwise -- generic dev-test practice that needs nothing component-specific -- the system's common rules apply
+ * and the specification says its component is null.
  *
  * WHAT IT DOES NOT DO. It writes no question, selects nothing (B2), records no evidence (B3), establishes no
  * right, no review and no pool membership, and certifies nothing. A specification of a DRAFT family under a
@@ -24,14 +36,23 @@
 import { DEFAULT_TASK_FAMILY_REGISTRY } from '@/lib/exam-core/question-bank/task-families';
 import type { CalculatorPolicy, ContextKind, ElicitationFormat, SupportConstraint, TaskFamily, TaskFamilyRegistry, TaskFamilySpecialization } from '@/lib/exam-core/question-bank/task-families/task-family';
 import { ADAPTATION_ENGINE, ADAPTATION_SPECIFICATION_VERSION, AdaptationRequestSchema, invariantHashOf, PRODUCTION_FORMAT_OF, specificationIdOf, type AdaptationInvariants, type AdaptationRefusal, type AdaptationRefusalCode, type AdaptationRequest, type AdaptationSpecification, type FieldProvenance } from './adaptation-specification';
-import { AssessmentSystemProfileSchema, type AssessmentSystemProfile, type ProfileRules, type StimulusMode } from './assessment-system-profile';
+import { EA1_APPLICABILITY_THRESHOLD, ApplicabilityThresholdPolicySchema, applicabilityRegisterIssues, resolveApplicability, type AssessmentApplicabilityRecord } from './assessment-applicability';
+import { resolveProfile, type ProfileRules, type RuleOrigin, type StimulusMode } from './assessment-system-profile';
 import { deepFreeze, sha256OfCanonicalJson } from './canonical-hash';
 import { DisciplineAdaptationPolicySchema, policyRuleId, type DisciplineAdaptationPolicy, type VariableDimension } from './discipline-policy';
-import { ADAPTATION_POOLS, minimumInstanceClassFor, type AdaptationPool } from './instance-lineage';
+import { ADAPTATION_POOLS, instancePolicyFor, type AdaptationPool } from './instance-lineage';
+import { familyMayFeedEvidenceBearingContent } from '@/lib/exam-core/question-bank/task-families/task-family';
 
 export interface AdaptInput {
   family: unknown;
+  /** The assessment-SYSTEM profile. */
   profile: unknown;
+  /** The component profile of that system the specification targets. Omit only for generic practice (see COMPONENT REQUIRED). */
+  component?: unknown;
+  /** The applicability register to read. Omitted or empty = nothing is recorded: every applicability is NONE. */
+  applicability?: readonly unknown[];
+  /** Defaults to the threshold EA-1 is decided under. */
+  applicabilityPolicy?: unknown;
   disciplinePolicy: unknown;
   request: unknown;
   /** The specialisations the family may be of. Defaults to what the repository implements (mathematics). */
@@ -60,7 +81,10 @@ export function invariantsOfFamily(family: TaskFamily, specialization: TaskFamil
   };
 }
 
-const ruleProvenance = (rules: ProfileRules, dimension: keyof ProfileRules): FieldProvenance => ({ origin: 'PROFILE_RULE', ref: rules[dimension].ruleId, authority: rules[dimension].authority.kind });
+/** The dimension of the profile each fixable request field and each support constraint settles. */
+const REQUEST_FIELD_DIMENSION = { responseFormat: 'responseFormats', calculatorPolicy: 'calculatorPolicy', commandTerm: 'commandTerms', context: 'contextExpectations' } as const satisfies Record<string, keyof ProfileRules>;
+const CONSTRAINT_DIMENSION: Record<SupportConstraint['kind'], keyof ProfileRules | null> = { RESPONSE_FORMAT_ONLY: 'responseFormats', CALCULATOR_ONLY: 'calculatorPolicy', CONTEXT_ONLY: 'contextExpectations', DIFFICULTY_ONLY: null };
+const GENERIC_PRACTICE_PURPOSES: ReadonlySet<string> = new Set(['PRACTICE', 'LOW_STAKES_REINFORCEMENT']);
 const policyProvenance = (policy: DisciplineAdaptationPolicy, rule: string): FieldProvenance => ({ origin: 'POLICY_RULE', ref: policyRuleId(policy, rule), authority: 'STUDYUS_POLICY' });
 const familyProvenance = (ref: string): FieldProvenance => ({ origin: 'FAMILY', ref, authority: null });
 const requestProvenance = (ref: string): FieldProvenance => ({ origin: 'REQUEST', ref, authority: null });
@@ -72,20 +96,27 @@ function build(input: AdaptInput): AdaptationSpecification {
   const validated = registry.validate(input.family);
   if (!validated.ok) return refuse(validated.issue === 'FAMILY_TYPE_NOT_REGISTERED' ? 'FAMILY_TYPE_NOT_REGISTERED' : 'FAMILY_INVALID', `${validated.issue}: ${validated.details.slice(0, 4).join('; ')}`);
   const { family, specialization } = validated;
-  const profileParsed = AssessmentSystemProfileSchema.safeParse(input.profile);
-  if (!profileParsed.success) return refuse('PROFILE_INVALID', profileParsed.error.issues.slice(0, 4).map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
-  const profile: AssessmentSystemProfile = profileParsed.data;
+  const resolution = resolveProfile(input.profile, input.component);
+  if (!resolution.ok) return refuse(resolution.issue === 'SYSTEM_PROFILE_INVALID' ? 'PROFILE_INVALID' : resolution.issue === 'COMPONENT_NOT_OF_THE_SYSTEM' ? 'COMPONENT_NOT_OF_THE_SYSTEM' : 'COMPONENT_PROFILE_INVALID', `${resolution.issue}: ${resolution.details.join('; ')}`);
+  const { resolved, system: profile, component } = resolution;
+  const ruleProvenance = (rules: ProfileRules, dimension: keyof ProfileRules): FieldProvenance => ({ origin: (resolved.ruleOrigin[dimension] as RuleOrigin) === 'COMPONENT' ? 'COMPONENT_PROFILE_RULE' : 'SYSTEM_PROFILE_RULE', ref: rules[dimension].ruleId, authority: rules[dimension].authority.kind });
+  const registerIssues = applicabilityRegisterIssues(input.applicability ?? []);
+  if (registerIssues.length > 0) return refuse('APPLICABILITY_REGISTER_INVALID', registerIssues.slice(0, 4).join('; '));
+  const thresholdParsed = ApplicabilityThresholdPolicySchema.safeParse(input.applicabilityPolicy ?? EA1_APPLICABILITY_THRESHOLD);
+  if (!thresholdParsed.success) return refuse('APPLICABILITY_REGISTER_INVALID', `threshold policy: ${thresholdParsed.error.issues.slice(0, 2).map((i) => i.message).join('; ')}`);
   const policyParsed = DisciplineAdaptationPolicySchema.safeParse(input.disciplinePolicy);
   if (!policyParsed.success) return refuse('DISCIPLINE_POLICY_INVALID', policyParsed.error.issues.slice(0, 4).map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
   const policy = policyParsed.data;
   const requestParsed = AdaptationRequestSchema.safeParse(input.request);
   if (!requestParsed.success) return refuse('REQUEST_INVALID', requestParsed.error.issues.slice(0, 4).map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
   const request: AdaptationRequest = requestParsed.data;
-  const rules = profile.rules;
+  const rules = resolved.rules;
   const facts = specialization.adaptationFacts(family.specialization);
 
   // 2 -- a retired family produces nothing
   if (family.lifecycle === 'RETIRED') refuse('FAMILY_RETIRED', family.familyId);
+  // a DRAFT or UNREVIEWED family version produces DEV_TEST_CONTENT only: it never feeds evidence-bearing content
+  if (request.contentUseClass === 'EVIDENCE_BEARING' && !familyMayFeedEvidenceBearingContent(family)) refuse('FAMILY_NOT_REVIEWED_FOR_EVIDENCE_BEARING_CONTENT', `${family.familyId}@${family.version} is ${family.lifecycle} / ${family.reviewStatus}; it may generate DEV_TEST_CONTENT only`);
   // 3 -- a policy translates for its own family types and discipline; never by analogy
   if (!policy.familyTypes.includes(family.familyType) || policy.discipline !== specialization.discipline) refuse('DISCIPLINE_POLICY_NOT_FOR_FAMILY_TYPE', `${policy.policyId} (${policy.discipline}: ${policy.familyTypes.join(', ')}) / ${family.familyType} (${specialization.discipline})`);
 
@@ -104,12 +135,27 @@ function build(input: AdaptInput): AdaptationSpecification {
   const constraintOf = <K extends SupportConstraint['kind']>(kind: K) => constraints.find((c): c is Extract<SupportConstraint, { kind: K }> => c.kind === kind) ?? null;
   const violated = (kind: SupportConstraint['kind'], value: string): never => refuse('SUPPORT_CONSTRAINT_VIOLATED', `${kind}: ${value} -- ${constraintOf(kind)!.reason}`);
 
-  // 6 -- canonical knowledge: a fact read from the family, never inferred from the behaviour fit above
-  const availability = family.canonicalKnowledgeAvailability[profile.profileId] ?? { status: 'NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY' as const, basis: 'The family records nothing for this system.' };
-  const need = request.knowledgeRequirement ?? 'NONE';
-  if ((need === 'CERTIFIED' && availability.status !== 'CERTIFIED_FOR_THIS_EXAM_FAMILY') || (need === 'CATALOGUE_LINK_OR_CERTIFIED' && availability.status === 'NOT_CERTIFIED_FOR_THIS_EXAM_FAMILY')) refuse('CANONICAL_KNOWLEDGE_NOT_CERTIFIED_FOR_EXAM_FAMILY', `${primaryConcept.stableId} (${primaryConcept.canonicalSubject}) / ${profile.profileId}: ${availability.status}`);
+  // 5b -- component: is anything component-specific needed that no component settles?
+  if (resolved.unsettledDimensions.length > 0) {
+    const unsettled = new Set<keyof ProfileRules>(resolved.unsettledDimensions);
+    const why: string[] = [];
+    if (!GENERIC_PRACTICE_PURPOSES.has(request.purpose)) why.push(`purpose ${request.purpose}`);
+    if (request.contentUseClass === 'EVIDENCE_BEARING') why.push('evidence-bearing content');
+    for (const [field, dimension] of Object.entries(REQUEST_FIELD_DIMENSION)) if (request[field as keyof typeof REQUEST_FIELD_DIMENSION] !== undefined && unsettled.has(dimension)) why.push(`request fixes ${field}`);
+    for (const c of constraints) { const d = CONSTRAINT_DIMENSION[c.kind]; if (d && unsettled.has(d)) why.push(`family constraint ${c.kind}`); }
+    if (facts.toolDependency === 'REQUIRED' && unsettled.has('calculatorPolicy')) why.push('the family requires a tool');
+    if (why.length > 0) refuse('COMPONENT_REQUIRED', `${profile.profileId} has component-dependent dimensions (${resolved.unsettledDimensions.join(', ')}) and no component is targeted: ${why.join('; ')}`);
+  }
+
+  // 6 -- assessment applicability: a fact read from the register, never inferred from the behaviour fit above,
+  // from another exam, or from the name of a subject. Evidence-bearing content requires it to be established.
+  const applicability = resolveApplicability((input.applicability ?? []) as AssessmentApplicabilityRecord[], primaryConcept, { systemProfileId: profile.profileId, componentId: component?.componentId ?? null }, thresholdParsed.data);
+  if ((request.contentUseClass === 'EVIDENCE_BEARING' || request.applicabilityRequirement === 'ESTABLISHED') && applicability.status !== 'ESTABLISHED') refuse('ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED', `${primaryConcept.stableId} (${primaryConcept.canonicalSubject}) / ${component?.componentId ?? profile.profileId}: basis ${applicability.basis}`);
 
   const provenance = {} as Record<VariableDimension, FieldProvenance[]>;
+  // A misfit on a dimension that only a component settles is not a verdict on the system: without a component the
+  // answer is COMPONENT_REQUIRED, and the dimension-specific refusal is given once a component is targeted.
+  const refuseOn = (dimension: keyof ProfileRules, code: AdaptationRefusalCode, detail: string): never => (resolved.unsettledDimensions.includes(dimension) ? refuse('COMPONENT_REQUIRED', `${dimension} is component-dependent and the system-level fallback does not fit (${code}: ${detail})`) : refuse(code, detail));
 
   // difficulty: asked for, inside the family's constraint
   const bands = constraintOf('DIFFICULTY_ONLY');
@@ -129,7 +175,7 @@ function build(input: AdaptInput): AdaptationSpecification {
     provenance.responseFormat = [requestProvenance('responseFormat'), ruleProvenance(rules, 'responseFormats'), familyProvenance('responseConstraints.allowedFormats')];
   } else {
     const both = familyFormats.filter((f) => profileFormats.includes(f));
-    if (both.length === 0) refuse('RESPONSE_FORMAT_NOT_ALLOWED', `no format is allowed by both: family ${familyFormats.join(', ')} / profile ${profileFormats.join(', ')}`);
+    if (both.length === 0) refuseOn('responseFormats', 'RESPONSE_FORMAT_NOT_ALLOWED', `no format is allowed by both: family ${familyFormats.join(', ')} / profile ${profileFormats.join(', ')}`);
     const open = both.filter((f) => !formatConstraint || formatConstraint.formats.includes(f));
     if (open.length === 0) violated('RESPONSE_FORMAT_ONLY', both.join(', '));
     // the discipline's preference decides among what is left; a format the policy does not rank comes last, in the profile's order
@@ -150,7 +196,7 @@ function build(input: AdaptInput): AdaptationSpecification {
     provenance.context = [requestProvenance('context'), ruleProvenance(rules, 'contextExpectations'), familyProvenance('supportedContexts')];
   } else {
     const both = profileContexts.filter((c) => familyContexts.includes(c));
-    if (both.length === 0) refuse('PROFILE_REQUIRES_CONTEXT_FAMILY_CANNOT_PROVIDE', `profile offers ${profileContexts.join(', ')}; family supports ${familyContexts.join(', ')}`);
+    if (both.length === 0) refuseOn('contextExpectations', 'PROFILE_REQUIRES_CONTEXT_FAMILY_CANNOT_PROVIDE', `profile offers ${profileContexts.join(', ')}; family supports ${familyContexts.join(', ')}`);
     const open = both.filter((c) => !contextConstraint || contextConstraint.contexts.includes(c));
     if (open.length === 0) violated('CONTEXT_ONLY', both.join(', '));
     context = open[0];
@@ -182,7 +228,7 @@ function build(input: AdaptInput): AdaptationSpecification {
     provenance.toolPolicy = [requestProvenance('calculatorPolicy'), ruleProvenance(rules, 'calculatorPolicy')];
   } else {
     const fit = allowedTools.filter(usable);
-    if (fit.length === 0) refuse('TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE', `the family requires a tool and the profile allows only ${allowedTools.join(', ')}`);
+    if (fit.length === 0) refuseOn('calculatorPolicy', 'TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE', `the family requires a tool and the profile allows only ${allowedTools.join(', ')}`);
     const open = fit.filter((c) => !toolConstraint || toolConstraint.policies.includes(c));
     if (open.length === 0) violated('CALCULATOR_ONLY', fit.join(', '));
     calculator = open[0];
@@ -251,15 +297,17 @@ function build(input: AdaptInput): AdaptationSpecification {
   provenance.language = [requestProvenance('language')];
 
   const invariants = invariantsOfFamily(family, specialization);
-  const requirement = minimumInstanceClassFor(request.purpose);
+  const instancePolicy = instancePolicyFor(request.purpose, request.contentUseClass);
   const pool = (ADAPTATION_POOLS as readonly string[]).includes(request.purpose) ? (request.purpose as AdaptationPool) : null;
   const content: Omit<AdaptationSpecification, 'specificationId' | 'adaptedAt'> = {
     v: ADAPTATION_SPECIFICATION_VERSION,
     taskFamily: { familyId: family.familyId, version: family.version, familyType: family.familyType, lifecycle: family.lifecycle, reviewStatus: family.reviewStatus },
-    assessmentProfile: { profileId: profile.profileId, version: profile.version, status: profile.status, examFamilyCode: profile.examFamilyCode },
+    systemProfile: { ...resolved.system },
+    componentProfile: resolved.component ? { ...resolved.component } : null,
     disciplinePolicy: { policyId: policy.policyId, version: policy.version, discipline: policy.discipline },
     primaryConcept: { ...primaryConcept },
-    canonicalKnowledgeAvailability: { ...availability },
+    assessmentApplicability: applicability,
+    contentUseClass: request.contentUseClass,
     targetSkills: [...family.targetSkills],
     targetCompetencies: [...family.targetCompetencies],
     invariants,
@@ -282,10 +330,10 @@ function build(input: AdaptInput): AdaptationSpecification {
       language: request.language,
     },
     parameterization: facts.parameterization,
-    purpose: { purpose: request.purpose, pool, minimumInstanceClass: requirement.minimumClass },
+    purpose: { purpose: request.purpose, pool, allowedInstanceClasses: [...instancePolicy.allowedClasses], minimumInstanceClass: instancePolicy.minimumClass },
     blueprintRequirement: request.requirementCellKey ? { requirementCellKey: request.requirementCellKey } : null,
     provenance,
-    lineage: { engine: { ...ADAPTATION_ENGINE }, familyContentHash: sha256OfCanonicalJson(family), profileContentHash: sha256OfCanonicalJson(profile), policyContentHash: sha256OfCanonicalJson(policy), requestHash: sha256OfCanonicalJson(request) },
+    lineage: { engine: { ...ADAPTATION_ENGINE }, familyContentHash: sha256OfCanonicalJson(family), systemProfileContentHash: sha256OfCanonicalJson(profile), componentProfileContentHash: component ? sha256OfCanonicalJson(component) : null, policyContentHash: sha256OfCanonicalJson(policy), requestHash: sha256OfCanonicalJson(request) },
   };
   // a specification is detached from its inputs (no shared reference) and then frozen
   const detached = JSON.parse(JSON.stringify(content)) as typeof content;
