@@ -267,8 +267,9 @@ describe('B5 integration guards', () => {
 
   it('B5 adds no migration; the snapshot column is renumbered after the B2-B1 set', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    expect(migrations).toHaveLength(80);
-    expect(migrations.at(-1)).toBe('20261110_1800_assessment_snapshot.sql');
+    const upToB5 = migrations.filter((f) => f < '20261111');
+    expect(upToB5).toHaveLength(80);
+    expect(upToB5.at(-1)).toBe('20261110_1800_assessment_snapshot.sql');
     // the eight B2-B1 migrations sit between B1's and the snapshot column, in the order DEV applied them
     expect(migrations.slice(71, 79).every((f) => /^20261110_1[0-7]00_/.test(f))).toBe(true);
   });

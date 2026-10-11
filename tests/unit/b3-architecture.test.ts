@@ -143,7 +143,7 @@ describe('B3 persistence is one additive migration on existing records', () => {
   it('is the only migration after B1, and the B1 migrations are untouched', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
     // B5-R: renumbered to follow the B2-B1 migrations already applied to DEV (same file, same content).
-    expect(migrations.at(-1)).toBe('20261110_1800_assessment_snapshot.sql');
+    expect(migrations.filter((f) => f < '20261111').at(-1)).toBe('20261110_1800_assessment_snapshot.sql');
     expect(migrations.filter((f) => /assessment_snapshot/.test(f))).toHaveLength(1);
     expect(read('database/migrations/20261109_1000_simulation_type_challenge_reduced_mock.sql')).toMatch(/'EXAM_CHALLENGE', 'REDUCED_MOCK'/);
   });

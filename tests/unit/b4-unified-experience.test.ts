@@ -476,7 +476,8 @@ describe('B4 authority guardrails', () => {
 
   it('B4 adds no migration', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
-    expect(migrations).toHaveLength(80);
-    expect(migrations.at(-1)).toBe('20261110_1800_assessment_snapshot.sql');
+    const upToB4 = migrations.filter((f) => f < '20261111');
+    expect(upToB4).toHaveLength(80);
+    expect(upToB4.at(-1)).toBe('20261110_1800_assessment_snapshot.sql');
   });
 });

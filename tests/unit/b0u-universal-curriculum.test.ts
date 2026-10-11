@@ -365,7 +365,7 @@ describe('B0-U architecture guards', () => {
     const migrations = readdirSync(join(ROOT_DIR, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
     // The delta itself added none: position 71 is still the B1-E migration. What follows belongs to later blocks (B3).
     expect(migrations[70]).toBe('20261109_1000_simulation_type_challenge_reduced_mock.sql');
-    expect(migrations.slice(71).every((f) => f.startsWith('20261110_'))).toBe(true);
+    expect(migrations.slice(71).every((f) => f > '20261110_')).toBe(true);
   });
 
   it('nothing in the delivered runtime depends on the new modules yet', () => {

@@ -150,7 +150,9 @@ describe('E12: one deterministic migration chain', () => {
       // + B2-B1: Question Bank content carriers and B2 persistence (20261110_1000..1700), additive.
       ...['20261110_1000_qb_provenance_rights_content_sources.sql', '20261110_1100_qb_asset_registry.sql', '20261110_1200_qb_stimuli.sql', '20261110_1300_qb_item_concept_attribution.sql', '20261110_1400_qb_pool_memberships.sql', '20261110_1500_qb_review_authority_originality.sql', '20261110_1600_assessment_blueprint_variants.sql', '20261110_1700_assessment_frozen_forms.sql'],
       // + B3: assessment snapshot column on quiz_sessions / exam_instances (20261110_1800, renumbered in B5-R), additive nullable JSONB.
-      '20261110_1800_assessment_snapshot.sql']);
+      '20261110_1800_assessment_snapshot.sql',
+      // + CURR-PAA: item version -> curriculum node (20261111_1000), additive.
+      '20261111_1000_qb_item_curriculum_nodes.sql']);
     expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);
   });
 });
