@@ -28,14 +28,15 @@ export default async function AssessmentRunPage({ params }: { params: Promise<{ 
   const locale = await getInterfaceLanguage(studentId).catch(() => 'es' as const);
   const t = getMessages(locale);
 
+  const title = loaded.canonicalConceptIds.map((id) => loaded.conceptLabels[id]).filter(Boolean).join(' · ') || t['ax.setup.title'];
   if (loaded.status !== 'ACTIVE') {
     return (
       <div className="xp-page">
+        <h1 className="ax-run-title">{title}</h1>
         <InlineAlert tone="info" title={t[loaded.status === 'EXPIRED' ? 'ax.run.expired' : 'ax.run.finished']} actions={<Link href={TODAY_HREF} className="btn btn-primary">{t['ax.cont.RETURN']}</Link>} />
       </div>
     );
   }
-  const title = loaded.canonicalConceptIds.map((id) => loaded.conceptLabels[id]).filter(Boolean).join(' · ') || t['ax.setup.title'];
   return (
     <div className="xp-page">
       <AssessmentRunner sessionId={sessionId} locale={locale} title={title} run={loaded.run} questions={loaded.questions} conceptLabels={loaded.conceptLabels} savedAnswers={loaded.savedAnswers} />

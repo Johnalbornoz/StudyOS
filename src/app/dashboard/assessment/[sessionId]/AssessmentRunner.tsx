@@ -139,7 +139,9 @@ export function AssessmentRunner({ sessionId, locale, title, run, questions, con
               <fieldset style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
                 <legend className="ui-label">{fillMessage(t['ax.run.question'], { n: i + 1, total: questions.length })}</legend>
                 <div style={{ margin: '8px 0 12px' }}><MathText text={q.question} /></div>
-                <QuestionAnswerFields question={q} staged={staged[q.itemKey]} onChange={(value) => change(q.itemKey, value)} textLabel={fillMessage(t['ax.run.question'], { n: i + 1, total: questions.length })} />
+                <div className="ax-answers">
+                  <QuestionAnswerFields question={q} staged={staged[q.itemKey]} onChange={(value) => change(q.itemKey, value)} textLabel={fillMessage(t['ax.run.question'], { n: i + 1, total: questions.length })} />
+                </div>
               </fieldset>
             </li>
           ))}

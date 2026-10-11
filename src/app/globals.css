@@ -2601,6 +2601,12 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .ax-result { display: flex; flex-direction: column; gap: var(--space-4); }
 .ax-score { margin: 0; font-size: var(--fs-xl); font-weight: 700; color: var(--text-primary); }
 .ax-rows { list-style: none; margin: 0; padding: 0; }
+/* B5-D: answer controls of the mounted runner -- touch-sized rows, full-width text, a visible focus ring */
+.ax-answers label { min-height: var(--touch-target); padding: var(--space-1) 0; cursor: pointer; }
+.ax-answers input[type='radio'], .ax-answers input[type='checkbox'] { width: 20px; height: 20px; flex: none; accent-color: var(--brand); }
+.ax-answers textarea, .ax-answers select { max-width: 100%; font-size: 16px; }
+.ax-answers textarea { width: 100%; padding: var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-base); color: var(--text-primary); }
+.ax-answers :is(input, textarea, select):focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .ax-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--border-default); }
 .ax-row:first-child { border-top: 0; }
 .ax-row-status { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
