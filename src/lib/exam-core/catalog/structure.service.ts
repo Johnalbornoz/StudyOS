@@ -320,7 +320,7 @@ export async function resolveExamLevel(nodeKey: string, language: string, intern
   let focusObjectiveIds: string[] = [];
   if (Array.isArray(bind.objectiveCodes) && bind.objectiveCodes.length) {
     const r = await db.query(
-      `SELECT DISTINCT lo.id FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id
+      `SELECT DISTINCT lo.id FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id AND b.purpose IS NULL
          JOIN learning_objectives lo ON lo.id = t.learning_objective_id WHERE b.exam_version_id = $1 AND lo.code = ANY($2::text[])`,
       [n.exam_version_id, bind.objectiveCodes]
     );

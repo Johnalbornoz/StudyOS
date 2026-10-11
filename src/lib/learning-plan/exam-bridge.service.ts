@@ -273,7 +273,7 @@ export async function getExamPreparationPlan(studentId: string, examProfileId: s
        LEFT JOIN assessment_components ac ON ac.id = bot.assessment_component_id
        LEFT JOIN objective_concept_mappings ocm ON ocm.learning_objective_id = bot.learning_objective_id AND ocm.status = 'PUBLISHED' AND ocm.relation_type IN ('FULL', 'PARTIAL')
        LEFT JOIN skills sk ON sk.id = bot.skill_id
-       WHERE b.exam_version_id = ANY($1::uuid[])
+       WHERE b.exam_version_id = ANY($1::uuid[]) AND b.purpose IS NULL
        ORDER BY ac.sequence_order NULLS LAST, ac.name`,
       [p.exam_version_ids]
     ),

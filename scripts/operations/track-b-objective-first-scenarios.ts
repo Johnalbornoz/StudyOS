@@ -226,7 +226,7 @@ async function main() {
   // Three single-concept PISA requirements: the Student already studies those concepts.
   const tmpPisa = (await db.query(
     `SELECT m.canonical_concept_id AS id, cc.name FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED'
-       JOIN assessment_blueprints b ON b.exam_version_id = v.id JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
+       JOIN assessment_blueprints b ON b.exam_version_id = v.id AND b.purpose IS NULL JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
        JOIN objective_concept_mappings m ON m.learning_objective_id = t.learning_objective_id AND m.status = 'PUBLISHED'
        JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id
       WHERE d.config_key = 'v2.pisa.2022'

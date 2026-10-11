@@ -56,7 +56,7 @@ const toMeta = (r: any): BankVersionMeta => ({
 });
 
 const META_SQL = `SELECT v.id AS version_id, d.id AS definition_id, d.name AS definition_name, d.exam_family, d.config_key, v.version_label, v.status AS version_status, v.navigation_rules, b.id AS blueprint_id
-                    FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id JOIN assessment_blueprints b ON b.exam_version_id = v.id`;
+                    FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id JOIN assessment_blueprints b ON b.exam_version_id = v.id AND b.purpose IS NULL`;
 
 /** Every PUBLISHED exam version with a blueprint (the bank-health universe). */
 export async function listBankVersions(): Promise<BankVersionMeta[]> {

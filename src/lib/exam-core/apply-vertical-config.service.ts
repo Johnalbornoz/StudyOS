@@ -138,6 +138,7 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
         [definitionId, cfg.version.label, scoringModelId, cfg.version.supportedModalities ?? null, JSON.stringify({ ...cfg.version.delivery, configFingerprint: fingerprint, contentStatus: cfg.contentStatus, ...(cfg.reporting ? { reporting: cfg.reporting } : {}), ...(cfg.structureOnly ? { structureOnly: true } : {}), ...(cfg.assessmentRoutes ? { assessmentRoutes: cfg.assessmentRoutes } : {}) }), cfg.version.examYear ?? null, cfg.version.examSession ?? null]
       )
     ).id;
+    // The LEGACY blueprint of the version (purpose NULL, one per version). Variants are written by the B2 persistence adapter only.
     const blueprintId = (await one(client, `INSERT INTO assessment_blueprints (exam_version_id) VALUES ($1) RETURNING id`, [versionId])).id;
 
     // --- V2: sources + mandatory versioning metadata ---
@@ -246,7 +247,7 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
     await ensureBankIdentities(client);
 
     // --- Publish (blueprint, then the version -- superseding any previous PUBLISHED one) ---
-    await client.query(`UPDATE assessment_blueprints SET status = 'PUBLISHED' WHERE id = $1`, [blueprintId]);
+    await client.query(`UPDATE assessment_blueprints SET status = 'PUBLISHED' WHERE id = $1`, [blueprintId] /* the legacy blueprint inserted above (purpose NULL), by id */);
     await client.query(`UPDATE exam_versions SET status = 'SUPERSEDED', updated_at = now() WHERE exam_definition_id = $1 AND status = 'PUBLISHED'`, [definitionId]);
     await client.query(`UPDATE exam_versions SET status = 'PUBLISHED', updated_at = now() WHERE id = $1`, [versionId]);
 
@@ -275,7 +276,9 @@ export async function applyExamVerticalConfig(input: unknown, options: { write: 
 
 async function collectExisting(client: PoolClient, cfg: ExamVerticalConfig, definitionId: string, versionId: string, fingerprint: string): Promise<Omit<ApplyVerticalResult, 'noop' | 'write'>> {
   const version = await one(client, `SELECT scoring_model_id FROM exam_versions WHERE id = $1`, [versionId]);
-  const blueprint = await one(client, `SELECT id FROM assessment_blueprints WHERE exam_version_id = $1`, [versionId]);
+  // B2-B2: the LEGACY blueprint only (purpose NULL) -- a variant's targets never reach this reader. Written as to_jsonb(b) ->> 'purpose' rather than b.purpose
+  // because the catalogue apply is also run by the B2-B1 certification against the pre-20261110 schema, where the column does not exist yet.
+  const blueprint = await one(client, `SELECT id FROM assessment_blueprints b WHERE exam_version_id = $1 AND to_jsonb(b) ->> 'purpose' IS NULL`, [versionId]);
   const components = await client.query(`SELECT id, section_key FROM assessment_components WHERE exam_version_id = $1`, [versionId]);
   const componentIdsBySection: Record<string, string> = {};
   for (const c of components.rows) if (c.section_key) componentIdsBySection[c.section_key] = c.id;

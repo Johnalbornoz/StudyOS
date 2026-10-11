@@ -196,7 +196,7 @@ async function examAttempt(studentId: string, failedObjectives: string[]): Promi
   const profile = await createStudentExamProfile({ studentId, examDefinitionId: exam.def, examVersionId: exam.version, purpose: LP_EXAM_PURPOSE });
   const attempt = await startExamAttempt({ studentExamProfileId: profile.id, examVersionId: exam.version });
   const targets = await qa(
-    `SELECT DISTINCT bot.learning_objective_id, bot.assessment_component_id FROM assessment_blueprints b JOIN blueprint_objective_targets bot ON bot.blueprint_id = b.id
+    `SELECT DISTINCT bot.learning_objective_id, bot.assessment_component_id FROM assessment_blueprints b JOIN blueprint_objective_targets bot ON bot.blueprint_id = b.id AND b.purpose IS NULL
      WHERE b.exam_version_id = $1 AND bot.assessment_component_id IS NOT NULL`,
     [exam.version]
   );
@@ -220,7 +220,7 @@ async function examObjectives(): Promise<Array<{ lo: string; concepts: string[] 
   const rows = await qa(
     `SELECT bot.learning_objective_id AS lo, array_agg(DISTINCT ocm.canonical_concept_id) AS concepts
      FROM exam_definitions ed JOIN exam_versions ev ON ev.exam_definition_id = ed.id AND ev.status = 'PUBLISHED'
-     JOIN assessment_blueprints b ON b.exam_version_id = ev.id JOIN blueprint_objective_targets bot ON bot.blueprint_id = b.id
+     JOIN assessment_blueprints b ON b.exam_version_id = ev.id AND b.purpose IS NULL JOIN blueprint_objective_targets bot ON bot.blueprint_id = b.id
      JOIN objective_concept_mappings ocm ON ocm.learning_objective_id = bot.learning_objective_id AND ocm.status = 'PUBLISHED' AND ocm.relation_type IN ('FULL', 'PARTIAL')
      WHERE ed.name = $1 AND bot.assessment_component_id IS NOT NULL GROUP BY 1 ORDER BY 1`,
     [EXAM_NAME]

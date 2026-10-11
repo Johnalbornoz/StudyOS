@@ -176,7 +176,8 @@ export async function GET() {
     const [activeDefs, publishedVersions, publishedBlueprints] = await Promise.all([
       db.query(`SELECT name FROM exam_definitions WHERE status = 'ACTIVE' ORDER BY name ASC`),
       db.query(`SELECT version_label FROM exam_versions WHERE status = 'PUBLISHED' ORDER BY version_label ASC`),
-      db.query(`SELECT COUNT(*)::int AS c FROM assessment_blueprints WHERE status = 'PUBLISHED'`),
+      // B2-B2: the legacy blueprint of each version (purpose IS NULL). Published VARIANTS of a version are a different thing and would inflate this count.
+      db.query(`SELECT COUNT(*)::int AS c FROM assessment_blueprints WHERE status = 'PUBLISHED' AND purpose IS NULL`),
     ]);
     activeDefinitionNames = activeDefs.rows.map((r: { name: string }) => r.name);
     activeExamDefinitionCount = activeDefinitionNames.length;

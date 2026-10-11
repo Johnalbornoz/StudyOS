@@ -379,7 +379,7 @@ async function main() {
   const pilot = (await db.query(
     `SELECT v.id AS version_id, d.id AS definition_id, t.learning_objective_id, ocm.canonical_concept_id
        FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED'
-       JOIN assessment_blueprints b ON b.exam_version_id = v.id JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
+       JOIN assessment_blueprints b ON b.exam_version_id = v.id AND b.purpose IS NULL JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
        JOIN objective_concept_mappings ocm ON ocm.learning_objective_id = t.learning_objective_id AND ocm.status = 'PUBLISHED'
       WHERE d.config_key IS NULL AND d.exam_family = 'PAA' LIMIT 1`
   )).rows[0];

@@ -85,6 +85,13 @@ export interface StimulusFact {
   humanApproved: boolean;
   isCurrentVersion: boolean;
   retired: boolean;
+  /** The kind of set, as the Question Bank names it (`question_bank_stimuli.kind`: PASSAGE, PAIRED_PASSAGE, TABLE ...). */
+  kind: string;
+  /**
+   * How many of the group's questions a form may take (`selection_min_items` / `selection_max_items` of the
+   * stimulus version). null = the group is taken whole. B1 reports the rule; B2 applies it.
+   */
+  selection: { minItems: number; maxItems: number } | null;
 }
 
 /** A figure / graph the item version depends on, directly or through its stimulus. */
@@ -266,7 +273,7 @@ export function coverageOfReviewedBankItem(row: ReviewedBankItemRow): QuestionCo
     provenance,
     licensing: row.sourceIds && row.sourceIds.length > 0 ? known({ statuses: [...new Set(row.sourceLicenses)], sourceIds: [...row.sourceIds] }) : UNKNOWN,
     rights,
-    stimulus: stimulus ? { stimulusId: stimulus.stimulusId, stimulusVersionId: stimulus.stimulusVersionId, position: stimulus.position, lifecycle: stimulus.lifecycle, humanApproved: stimulus.humanApproved, isCurrentVersion: stimulus.isCurrentVersion, retired: stimulus.retired } : null,
+    stimulus: stimulus ? { stimulusId: stimulus.stimulusId, stimulusVersionId: stimulus.stimulusVersionId, position: stimulus.position, lifecycle: stimulus.lifecycle, humanApproved: stimulus.humanApproved, isCurrentVersion: stimulus.isCurrentVersion, retired: stimulus.retired, kind: stimulus.kind, selection: stimulus.selection ? { ...stimulus.selection } : null } : null,
     assets: assets.map((a) => ({ assetId: a.assetId, lifecycle: a.lifecycle })),
     usage: known({ eligibility: row.usageEligibility, examAlignment: row.examAlignment }),
     review: { lifecycle: knownOrUnknown(row.bankLifecycleStatus), humanReviewed: known(row.humanReviewDecisions > 0) },

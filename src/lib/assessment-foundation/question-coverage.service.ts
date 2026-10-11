@@ -34,6 +34,7 @@ async function loadContentCarrierFacts(ids: readonly string[], client: DbExecuto
     client.query(`SELECT approved_item_id, canonical_concept_id, role FROM question_bank_item_concepts WHERE approved_item_id = ANY($1::uuid[]) ORDER BY approved_item_id, role, canonical_concept_id`, [ids]),
     client.query(
       `SELECT s.approved_item_id, s.position, v.id AS stimulus_version_id, v.stimulus_id, v.lifecycle_status, (st.current_version_id = v.id) AS is_current, (st.retired_at IS NOT NULL) AS retired,
+              st.kind, v.selection_min_items, v.selection_max_items,
               EXISTS (SELECT 1 FROM question_bank_stimulus_reviews r WHERE r.stimulus_version_id = v.id AND r.decision = 'APPROVED') AS approved
          FROM question_bank_item_stimulus s
          JOIN question_bank_stimulus_versions v ON v.id = s.stimulus_version_id
@@ -75,7 +76,10 @@ async function loadContentCarrierFacts(ids: readonly string[], client: DbExecuto
   for (const s of stimuli.rows as any[]) {
     factsOf(s.approved_item_id).stimulus = {
       stimulusId: s.stimulus_id, stimulusVersionId: s.stimulus_version_id, position: Number(s.position), lifecycle: s.lifecycle_status,
-      humanApproved: s.approved === true, isCurrentVersion: s.is_current === true, retired: s.retired === true, rights: rightsOf.get(`STIMULUS_VERSION:${s.stimulus_version_id}`) ?? null,
+      humanApproved: s.approved === true, isCurrentVersion: s.is_current === true, retired: s.retired === true,
+      // The group rule is the stimulus version's own: both NULL = whole (the schema allows no half-declared range).
+      kind: s.kind, selection: s.selection_min_items === null || s.selection_max_items === null ? null : { minItems: Number(s.selection_min_items), maxItems: Number(s.selection_max_items) },
+      rights: rightsOf.get(`STIMULUS_VERSION:${s.stimulus_version_id}`) ?? null,
     };
   }
   for (const a of assets.rows as any[]) factsOf(a.approved_item_id).assets!.push({ assetId: a.asset_id, lifecycle: a.lifecycle_status, rights: rightsOf.get(`ASSET:${a.asset_id}`) ?? null });

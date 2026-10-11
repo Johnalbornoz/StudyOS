@@ -319,7 +319,8 @@ function solveTargets(plan: TargetPlan, input: readonly SolverCandidate[]): Solv
 /* Slot plans (official exam)                                           */
 /* ------------------------------------------------------------------ */
 
-function fitsSlot(slot: SlotPlan['slots'][number], c: SolverCandidate): boolean {
+/** The one slot rule. Exported so a stimulus group is placed by the same rule its questions would be judged by alone (B2-B2). */
+export function fitsSlot(slot: SlotPlan['slots'][number], c: SolverCandidate): boolean {
   // Official content is reviewed-bank content: a cached / generated question can never fill an official position.
   if (c.store !== 'REVIEWED_EXAM_BANK') return false;
   if (!slot.learningObjectiveId || strengthOn(c, `OBJECTIVE:${slot.learningObjectiveId}`) !== 'DIRECT') return false;

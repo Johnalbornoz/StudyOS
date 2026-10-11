@@ -216,6 +216,10 @@ export async function recordValidationReport(versionId: string, report: Record<s
  * Registers bank identity for approved_items written by paths that predate
  * the factory (governed vertical apply, F7 item workflow): one item + version
  * 1 per row, PUBLISHED -> ACTIVE. Idempotent; never changes content.
+ *
+ * B2-B2: the exam version of origin is read from the LEGACY blueprint only (purpose NULL). Written as
+ * to_jsonb(b) ->> 'purpose' rather than b.purpose because the catalogue apply that calls this is also run by
+ * the B2-B1 certification against the pre-20261110 schema, where the column does not exist yet.
  */
 export async function ensureBankIdentities(outer?: PoolClient): Promise<number> {
   return withTx(async (c) => {
@@ -230,7 +234,7 @@ export async function ensureBankIdentities(outer?: PoolClient): Promise<number> 
         FROM approved_items ai
         LEFT JOIN LATERAL (
           SELECT b.exam_version_id, t.assessment_component_id FROM blueprint_objective_targets t
-            JOIN assessment_blueprints b ON b.id = t.blueprint_id JOIN exam_versions v ON v.id = b.exam_version_id
+            JOIN assessment_blueprints b ON b.id = t.blueprint_id AND to_jsonb(b) ->> 'purpose' IS NULL JOIN exam_versions v ON v.id = b.exam_version_id
            WHERE t.learning_objective_id = ai.learning_objective_id ORDER BY (v.status = 'PUBLISHED') DESC, v.created_at DESC LIMIT 1
         ) origin ON true
        WHERE ai.bank_item_id IS NULL

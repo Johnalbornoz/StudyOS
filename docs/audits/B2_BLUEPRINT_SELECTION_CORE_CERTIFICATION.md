@@ -490,3 +490,102 @@ Legacy preservation, compared by hash before and after: 168 canonical concepts (
 Rights rule evaluated read-only over the 496 current versions: 0 eligible for a Student, 0 with a rights record, all report `REUSE_RIGHTS_NOT_ESTABLISHED`.
 
 Open before the first variant row is inserted: the existing blueprint readers must filter `purpose IS NULL`.
+
+## X. B2-B2 — Persistence Adapters & Runtime Preparation
+
+Date: 2026-10-10 · Branch `feat/assessment-b2b2-persistence-adapters` (from `47ba817`). No migration, no route, no start path, no feature flag, no Student-facing flow. Every variant, form, stimulus and item used is a fixture inside a test or inside the ephemeral certification.
+
+### X.1 What was built
+
+| Marker | Where | Content |
+|---|---|---|
+| `BLUEPRINT_READERS_HARDENED` | 15 files under `src/` (X.3) | Every existing reader names the legacy blueprint (`purpose IS NULL`); a variant and its targets cannot reach an existing flow |
+| `QB_CARRIER_ADAPTERS` | `assessment-foundation/question-coverage(.service).ts` | B1 `StimulusFact` gained `kind` and `selection` (`{minItems, maxItems}` or null = whole), read in the existing stimulus statement. Read-only; no second reader |
+| `STIMULUS_GROUP_RUNTIME` | `protected/selection-unit.ts`, `protected/protected-selection.ts` | Units derived from coverage; groups selected whole (or a subset), adjacent and in order; `STIMULUS_GROUP_RUNTIME_SELECTION = 'UNITS_FROM_QB_COVERAGE'` |
+| `PROTECTED_POOL_RUNTIME`, `HARD_EXPOSURE_RUNTIME` | `assessment-blueprint.service.ts` (`loadProtectedSelectionInputs`, `loadReviewedBankStimulusExposure`), `protected/protected-runtime.ts` (`assembleProtectedForm`) | One read-only entry point for coverage, pools and exposure; a pure function from a stored variant and those facts to a form |
+| `B2_PERSISTENCE_ADAPTERS`, `FROZEN_FORM_RUNTIME` | `protected/blueprint-persistence.service.ts`, `protected/persistence-errors.ts` | Draft variant with requirements and sources, publish, load and check; draft frozen form with positions, publish with hash, load and verify; typed refusals |
+| Diagnostic | `protected/protected-runtime.ts` (`protectedDiagnosticSelection`) | The Diagnostic plan and its candidates from the DIAGNOSTIC pool with hard exposure. `Q1_DIAGNOSTIC_FULL_SEMANTICS = 'DEFERRED_TO_B3'` |
+
+`authority.ts` gained the requirement kind `STIMULUS_SET` (already in migration 7) with a strict value `{kind, sets, minItems, maxItems}`. `solver/solve.ts` exports `fitsSlot`; nothing else in the solver changed and `pipeline.ts` still calls `solveBlueprint(` three times.
+
+### X.2 Decisions
+
+- **Group membership.** A unit is the current item versions linked to the current version of one stimulus, in `question_bank_item_stimulus.position` order; its pool is the stimulus's. A question linked to a non-current stimulus version belongs to no unit.
+- **Stimulus-bound questions are never loose items.** They are selectable only through their group and only for a `STIMULUS_SET` requirement. A variant without such a requirement takes no group.
+- **WHOLE / SUBSET.** No range on the stimulus version = WHOLE: one unusable member makes the group unusable. A range = SUBSET: the unit holds the usable members in order and is usable while at least `minItems` remain; `maxItems` is capped at what remains.
+- **Subset rule.** The questions taken are always the first *n* usable members in position order (a prefix), with *n* the largest value allowed by the group rule, the requirement and the positions. An unusable member in the middle is skipped; the form records the true place of each question (`unitPosition`).
+- **Placement.** Deterministic and greedy, not exhaustive: requirements in key order, groups by unit id, the earliest run of adjacent free positions of one section whose slots the questions fit one by one (the solver's own slot rule). The shared solver then fills the remaining positions with standalone questions. If a requirement is not served the form is `NOT_AVAILABLE`; nothing smaller is substituted. A group that an exhaustive search could have placed may be reported as not placeable.
+- **Shortage causes** are found as before, by assembling again on wider sets (all eligible; pool only). The cause `STIMULUS_GROUP_FACTS_MISSING` was replaced by `UNIT_REQUIREMENT_INVALID` (a malformed requirement); a group the bank cannot provide is `INSUFFICIENT_ELIGIBLE_ITEMS` with the shortfall listed in `units`.
+- **Group exposure.** A group is exposed when any current member is, or when the delivery ledger shows the Student met the stimulus through any version of any question ever linked to any of its versions. Under a hard rule the whole group is excluded; a published fixed form holding it is not offered.
+- **Frozen form digest.** `FROZEN_FORM_VERSION` is 2: the digest covers slot, item, stimulus version and place in group. A form whose group is split or out of order is refused even with a matching digest.
+- **Hash mapping.** `assessment_frozen_forms.form_hash` stores the pure `formHash` verbatim (SHA-256, 64 lowercase hex). On publish the adapter recomputes the digest from the stored rows and refuses a different one; on load `frozenFormIntact` runs on the rebuilt form.
+- **Writers run inside the caller's transaction**, each under a savepoint: a refusal undoes that call only. Outside a transaction they refuse before writing (`TRANSACTION_REQUIRED`). The commit-time check "an OFFICIAL requirement cites a source" is asked inside `createDraftVariant`.
+- **Mapping of the pure contract.** `subject` ↔ `assessment_component_id` by `section_key` (or id); `sourceRefs` ↔ `assessment_sources.source_key`; an unknown key is refused and no source is created. Requirements load in key order (the table records no other).
+- **Pool of a variant.** The adapter refuses a pool other than the one `poolForBlueprint` gives the purpose and form; a stored variant whose pool disagrees is refused at selection.
+- **Rights.** No rights rule exists in B2. Candidates come only through `eligibleSolverCandidates` → B1 `evaluateQuestionEligibility`.
+- **Architecture test.** Mutation SQL is allowed in exactly one B2 file, the persistence adapter, and only against the five B2-owned tables; it reads and writes no `question_bank_*` table.
+
+### X.3 Hardened readers
+
+| File:line | Query | Change |
+|---|---|---|
+| `app/api/diagnostics/preview-db/route.ts:180` | count of published blueprints | `AND purpose IS NULL` (a published variant would inflate the count) |
+| `lib/assessment/blueprint.service.ts:89` | `getBlueprintForVersion` | `AND purpose IS NULL` |
+| `lib/assessment/blueprint.service.ts:41` | `publishBlueprint` (by id) | `AND purpose IS NULL`: cannot publish a variant |
+| `lib/assessment/blueprint.service.ts:36` | `createBlueprint` insert | unchanged: inserts a legacy row; documented |
+| `lib/exam-core/catalog.service.ts:128` | areas and objectives of a version | filter in the `LEFT JOIN` |
+| `lib/exam-core/exam-gaps.service.ts:56` | domain of a gap, through targets | filter in the join |
+| `lib/exam-core/catalog/structure.service.ts:323` | focus objectives of a node | filter in the join |
+| `lib/exam-core/question-bank/health.service.ts:59` | bank-health universe (`META_SQL`) | filter in the join |
+| `lib/exam-core/objectives/preparation.service.ts:82, 292, 408, 572` | bridge mappings, requirements, shared concepts, add-concept check | filter in the join |
+| `lib/learning-plan/exam-bridge.service.ts:276` | plan targets of exam versions | `AND b.purpose IS NULL` |
+| `lib/assessment-blueprint/assessment-blueprint.service.ts:119` | readiness targets | `AND b.purpose IS NULL` |
+| `lib/institution/intelligence-context.service.ts:88` | exams covering a subject | filter in the join |
+| `lib/teacher/class-progress.service.ts:205` | versions covering a class subject | `AND b.purpose IS NULL` |
+| `lib/exam-core/catalog/learning-links.service.ts:78` | objectives of published versions | `to_jsonb(b) ->> 'purpose' IS NULL` |
+| `lib/exam-core/question-bank/bank.service.ts:237` | exam version of origin for bank identity | `to_jsonb(b) ->> 'purpose' IS NULL` |
+| `lib/exam-core/apply-vertical-config.service.ts:281` | existing blueprint of a version | `to_jsonb(b) ->> 'purpose' IS NULL` |
+| `lib/exam-core/apply-vertical-config.service.ts:142, 250` | insert, publish by id | unchanged: the legacy row it just inserted; documented |
+| `lib/assessment/pilot-catalog-seed.service.ts` | via `getBlueprintForVersion` / `createBlueprint` | covered by those |
+
+The three `to_jsonb` sites are a deviation from "reference `purpose` directly": the catalogue apply and the learning-link writer are run by `b2b1-persistence-schema-cert.sh` (Phase B) on the schema before `20261110_*`, where the column does not exist. The expression is NULL for a legacy row and where the column is absent, so that certification still passes unchanged.
+
+Operator scripts changed (one line each): `track-b-objective-first-scenarios.ts:229`, `track-b-objective-first-manual-fixture.ts:52`, `track-b-exam-scenarios.ts:382`, `track-b-v2-scenarios.ts:292`, `track-a-learning-plan-e2e-http.ts:199, 223`.
+
+Not changed, to be decided by their owners: `qb-v2-integration.ts:164`, `f7-lifecycle-cert-runner.ts:65`, `qb-mock-certification.ts:81`, `exam-platform-v2-integration-cert.ts:42`, `g6-exam-evidence-isolation-cert.ts:77, 131, 204` (all invoked by migration-chain certification scripts; whether they run on a partially migrated schema was not verified) and the SQL inside `track-b-question-bank-migration-cert.sh`.
+
+Left unfiltered in `src/`, because they read `blueprint_objective_targets` without joining the blueprint: `simulation/post-exam-diagnosis.service.ts:43` (skill and command term of an objective in a component) and `question-bank/review.service.ts:53` (whether an objective is in any target). A variant with targets of its own would be visible to both. `blueprint.service.ts:95, 100` and `health.service.ts:80` read targets by a blueprint id they were given.
+
+`tests/unit/b2b2-legacy-blueprint-readers.test.ts` fails when a statement under `src/` reads `assessment_blueprints` without the filter, unless its file is on a list with a reason (the persistence adapter; the three schema-tolerant writers), and when the set of reader files changes.
+
+### X.4 Certification
+
+`scripts/operations/b2b2-persistence-adapters-cert.sh` (ephemeral Postgres 18 on 127.0.0.1: baseline, all 79 migrations, seeds; one transaction, rolled back): 49 checks pass; the database is identical before and after; the seeds re-run unchanged.
+
+It creates authored fixture items, a three-question passage, rights, reviews by a reviewer with a granted qualification and pool memberships; a variant DRAFT → PUBLISHED with five requirements; a second revision; a frozen form DRAFT → PUBLISHED, read back and verified. It calls `getBlueprintForVersion`, `listVersionAreas`, `listBankVersions` and `evaluateExamVersionReadiness` before and after the variant exists (the variant also carries a target on a foreign objective): results are identical, and a control query shows that without the filter three blueprints and one more objective would be seen. Database refusals reached and mapped: `VARIANT_IDENTITY_TAKEN`, `PUBLISHED_REVISION_EXISTS`, `ASSESSMENT_BLUEPRINT_REQUIREMENTS_FIXED`, `ASSESSMENT_FROZEN_FORM_IMMUTABLE`, `PUBLISHED_FORM_EXISTS` / `FORM_HASH_TAKEN`, `ASSESSMENT_FROZEN_FORM_STIMULUS_MISMATCH`, `ASSESSMENT_FROZEN_FORM_NEEDS_PUBLISHED_BLUEPRINT`. The item with a `PUBLICLY_ACCESSIBLE` source and reuse `UNKNOWN` is rejected by B1 and absent from every form, including when it is the only item that would complete one. One delivery of one group question excludes the three for that Student.
+
+| Run | Files | Tests | Failures |
+|---|---|---|---|
+| Before (`47ba817`) | 499 | 8,900 | 0 |
+| **After B2-B2** | **502** | **8,952** | **0** |
+
+New: `b2b2-selection-units-runtime` (26), `b2b2-persistence-adapters` (19), `b2b2-legacy-blueprint-readers` (5); two tests added to existing files. Updated: `b2-readiness-architecture`, `b2a-variants-pools-exposure` (deferral assertions, form version 2), `b2b1-persistence-schema` (stimulus fixture; list of files that name the new tables).
+
+`npx tsc --noEmit`: clean. `b2b1-persistence-schema-cert.sh`: passes unchanged (153 invariants per phase, loaders 4 / 15, rollback and re-apply). `npx next build`: exit 0.
+
+### X.5 Still deferred
+
+| Item | Status |
+|---|---|
+| Slot positions of a variant | Not persisted by the adapter and not read for a variant: `assembleProtectedForm` takes the positions from the caller. `blueprint_objective_targets` rows of a variant have no writer or reader |
+| Fidelity of a variant's form | Supplied by the caller (B1 `classifyExamFormFidelity`); nothing computes it for a variant |
+| Start path | No instance is created from a frozen form; `exam_instances.frozen_form_id` is not written |
+| Retiring a variant or a form | No adapter function |
+| Answer-reveal exposure | `DEFERRED` |
+| Q1 Diagnostic semantics | `DEFERRED_TO_B3`. The Diagnostic selection leaves stimulus-bound questions out |
+| Exhaustive group placement | Greedy only (X.2) |
+| Stale item–stimulus links | Units read current item versions; a superseded item version still linked to the current stimulus version is not seen |
+| Reviewer qualifications, real content, real variants | None exist; operator decisions |
+
+
+Added at review: `simulation/post-exam-diagnosis.service.ts` and `exam-core/question-bank/review.service.ts` read `blueprint_objective_targets` without the blueprint; both now join the legacy blueprint (`purpose IS NULL`), so a variant's targets cannot reach them. Deployment order: this code reads `assessment_blueprints.purpose`, so migration `20261110_1600` must be applied to an environment before the code is deployed there.

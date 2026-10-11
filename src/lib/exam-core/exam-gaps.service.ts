@@ -53,7 +53,7 @@ export async function examGapsFor(studentIds: string[], opts: { families?: strin
          -- that happens to share the objective.
          LEFT JOIN LATERAL (
            SELECT ac.name FROM blueprint_objective_targets t JOIN assessment_components ac ON ac.id = t.assessment_component_id
-             JOIN assessment_blueprints b ON b.id = t.blueprint_id
+             JOIN assessment_blueprints b ON b.id = t.blueprint_id AND b.purpose IS NULL
             WHERE t.learning_objective_id = lo.id AND b.exam_version_id = g.exam_version_id
             ORDER BY ac.sequence_order NULLS LAST, ac.name LIMIT 1
          ) ac ON true
