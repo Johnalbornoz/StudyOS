@@ -475,3 +475,83 @@ Keep on the lane branch. The lane does not merge.
 
 ## NEXT SAFE ACTION
 Orchestrator / Human Operator decides the human calibration sample size and reviewers. Offline, without spend: fix the validator defects found (declared-target key check, stem-based recomputation, equation options, scenario-less duplicates), and the reporting defect, for the next version.
+
+---
+
+# L2 — POST-CANARY REMEDIATION (2026-10-11, offline)
+
+## LANE
+L2 — ASSESSMENT ENGINE / QUESTION BANK — worktree `/Users/jalbornoz/PROYECTOS/studyos-qb-r1a`, branch `feat/qb-post-canary-v5`.
+
+## STATUS
+READY_FOR_ORCHESTRATOR_REVIEW
+
+| Field | Value |
+|---|---|
+| HUMAN_CALIBRATION_SAMPLE | 37 |
+| HUMAN_CALIBRATION_READY | YES |
+| VALIDATOR_V5 | PASS (built offline; in-sample, not certification) |
+| OFFLINE_REPLAY | FAIL as pre-written (5 of 6 criteria; the miss is a disclosed ninth false key failure, not a regression) |
+| ANSWER_KEY_RECOMPUTATION | PASS (55 of 221 independently verified; the rest unverified or stem-consistent, never verified from declarations) |
+| DUPLICATE_VALIDATOR | PASS (reclassified as instructed; not checked by a person) |
+| PROFILE_VALIDATOR | PASS |
+| HARNESS_LEAK_RULES | PASS (generator v4, for future runs; never run live) |
+| SPEND_ACCOUNTING | PASS (29.973085 authoritative; reconciliation statement) |
+| DIFFICULTY_PROFILE_V2 | PASS as a structure; every number provisional StudyUs policy |
+| IB_PAPER_FIDELITY_PROFILE | FAIL as a paper standard — structure ready, subject-expert confirmation pending |
+| CAMBRIDGE_PAPER_FIDELITY_PROFILE | FAIL as a paper standard — same |
+| TASK_FAMILY_ZERO_APPROVAL_ANALYSIS | PASS |
+| NEW_PROVIDER_SPEND_REQUESTED | NO |
+| NEW_PROVIDER_CALLS | 0 |
+
+## BASE SHA
+caed21c (Canary 250 results)
+
+## FINAL SHA
+The commit carrying this section (`git log -1` on the lane branch).
+
+## FILES CHANGED
+New: `scripts/operations/qb-post-canary/` (validators revision 5, demand profile v2, parameter policy v2, spend accounting v2, human review, calibration analytics, next-run gate, family analysis, replay), `src/lib/exam-core/question-bank/production/generator/specification-generation-v4.ts`, `tests/unit/qb-post-canary.test.ts`, `tests/fixtures/qb-v5/`, `docs/exams/question-bank/QB_POST_CANARY_REMEDIATION.md`, `pilots/qb-canary-250/{v5-offline-replay/, human-review/, spend-reconciliation.json}`. Five file-list guard tests updated. Frozen Canary / R2D / R2E / R2F evidence unchanged. An untracked `pilots/qb-canary-250.zip` appeared in the worktree during the phase; it is not the lane's and was neither committed nor touched.
+
+## LOCKS USED
+`ASSESSMENT_ADAPTATION` / Question Bank production contracts. No provider call, no key read, no database, no schema, no ingestion, no Stage, no merge, no push.
+
+## TESTS
+- `npx tsc --noEmit -p tsconfig.json` — exit 0
+- `npx vitest run` — 525 files / 9,534 tests, 0 failures
+- `npx next build` — exit 0
+- Canary freeze f445e7a still verifies; Canary, R2D, R2E, R2F replays pass
+
+## FINDINGS
+Old vs new on the 221 Canary candidates (same definitions; in-sample diagnostic):
+
+| | V4 | V5 |
+|---|---|---|
+| STRICT_PASS | 66 | 132 |
+| KEY_FAILURES | 13 | 5 |
+| MATERIAL_DUPLICATES | 93 | 0 (33 template-similarity and 12 structural-similarity signals) |
+| PROFILE_FAILURES | 55 | 19 |
+| REJECTED_BY_VALIDATOR | 16 | 7 |
+
+- The five V5 key failures are five of the six confirmed wrong keys. The sixth (slot 070) is no longer "verified" but cannot be caught by a rule. No key is verified from generator declarations any more: 55 independently verified, 61 stem-consistent, 100 unverified.
+- Offline replay criterion missed: "no validator rejection lost except the eight known false ones". Slot 241 is a ninth false key failure of the same kind; it had not been AI-reviewed (budget) so it was not on the list. Disclosed; the list was not edited after the fact.
+- MATERIAL_DUPLICATES = 0 is a reclassification, not a finding: nobody has looked at the 12 items with textual similarity in the review band.
+- Blind-packet audit: the 10 blind items expose no AI verdict, no validator verdict and nothing of the key file. The other 27 items in the frozen packet DO show the AI review and validator gates. A fully blind rendering of all 37 was produced as an additional file and is recommended for the first review.
+- Human review: ten-field response template for the 37 items, print-ready packets, instructions; SECOND_HUMAN_REVIEW_REQUIRED computed only after a first response; an AI identity is refused as reviewer. No human response exists in any artifact.
+- Demand diagnostic (provisional profile): of 36 constructed CHALLENGE candidates 28 are below demand; of 82 IB / Cambridge candidates 55 are below the provisional paper floor; 6 of the 7 AI-approved IB / Cambridge items are below it.
+- Zero-approval families, primary cause: rate comparison — generator prompt (21 of 26); line through two points — validator (9) and difficulty (8); factorising — generator prompt (10), difficulty (6), validator (6); optimum — generator prompt (20). Parameter policy caused 2 optimum cases, fewer than first reported.
+- Counterfactual only (not the Canary's result): the frozen decision policy with V5 inputs would give 40 approved / 150 needs human review / 20 rejected over the 210 reviewed items.
+- Next-live-run gate: CLOSED (HUMAN_CALIBRATION_COMPLETE = NO; offline replay FAIL as written). A 60-slot focused experiment is drafted as a proposal only (about USD 7 on the assumed basis; needs a new cap).
+- Still open: slot 128 fails structurally on a generator-only declaration; two parameter checks are still computed from declared parameters; generator v4 and parameter policy v2 have never generated an item; revision 5 lives under `scripts/`, not `src/`.
+
+## BLOCKERS
+Human calibration needs real reviewers (Human Operator). Paper-fidelity profiles need subject-expert confirmation.
+
+## CHANGE_REQUESTS
+NONE
+
+## MERGE RECOMMENDATION
+Keep on the lane branch.
+
+## NEXT SAFE ACTION
+Orchestrator rules on the offline-replay criterion (slot 241) and on which packet reviewers receive; Human Operator assigns reviewers.

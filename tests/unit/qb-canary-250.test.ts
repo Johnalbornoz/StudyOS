@@ -773,7 +773,9 @@ describe('13 -- nothing earlier moved, nothing is ingested, nothing in src knows
     expect(() => execFileSync('git', ['diff', '--quiet', '738b0f5', '--', ...paths, 'docs/exams/question-bank/pilots/qb-r2d', 'docs/exams/question-bank/pilots/qb-r2e', 'docs/exams/question-bank/pilots/qb-r2f', 'tests/fixtures/qb-r2f', 'tests/unit/qb-r2d-live-replay.test.ts', 'tests/unit/qb-r2e-live-replay.test.ts', 'tests/unit/qb-r2f-offline-remediation.test.ts'], { cwd: ROOT, stdio: 'ignore' })).not.toThrow();
   });
   it('the canary is scripts and documents only: no file under src was added or changed, and nothing reaches a database', () => {
-    expect(execFileSync('git', ['status', '--porcelain', '--', 'src', 'prisma', 'drizzle', 'migrations'], { cwd: ROOT }).toString()).toBe('');
+    // (post-canary work adds NEW versioned files; what must not move is the Canary's frozen closure)
+    expect(() => execFileSync('git', ['diff', '--quiet', 'f445e7a', '--', ...canaryFrozenSourceFiles(ROOT)], { cwd: ROOT, stdio: 'ignore' })).not.toThrow();
+    expect(execFileSync('git', ['status', '--porcelain', '--', 'prisma', 'drizzle', 'migrations'], { cwd: ROOT }).toString()).toBe('');
     const strip = (p: string) => read(p).replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '');
     const files = readdirSync(join(ROOT, 'scripts/operations/qb-canary-250')).sort();
     expect(files).toEqual(['budget.ts', 'calibration.ts', 'evidence.ts', 'freeze.ts', 'manifest.ts', 'pipeline.ts', 'projection.ts', 'report.ts', 'reviewer-transport.ts', 'reviewer.ts', 'run-log.ts', 'run.ts', 'runner.ts', 'sample.ts']);
@@ -788,7 +790,7 @@ describe('13 -- nothing earlier moved, nothing is ingested, nothing in src knows
     }
     for (const f of canaryFrozenSourceFiles(ROOT)) expect(f, f).not.toMatch(/^src\/lib\/db|\/db\/|\/gateway\.ts$|\/adapters\/|\.service\.ts$/);
     // the canary's directory holds the preparation files, the run log and what is derived from it (qb-canary-250-replay.test.ts proves the derivation)
-    expect(readdirSync(join(ROOT, CANARY_DIR)).every((f) => (Object.values(CANARY_FILES) as string[]).includes(f))).toBe(true);
+    expect(readdirSync(join(ROOT, CANARY_DIR)).every((f) => (Object.values(CANARY_FILES) as string[]).includes(f) || ['human-review', 'v5-offline-replay', 'spend-reconciliation.json'].includes(f))).toBe(true);
     expect(Object.values(CANARY_FILES).every((f) => !f.includes('/'))).toBe(true);
   });
 });

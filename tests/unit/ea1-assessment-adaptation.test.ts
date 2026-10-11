@@ -1359,7 +1359,7 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     // QB-R2D adds three Production OS modules of the specification-driven path. Same direction (production -> adaptation), still pure, still no route, service or table.
     expect(importers).toEqual([
       'src/lib/exam-core/question-bank/production/generation-contract.ts', 'src/lib/exam-core/question-bank/production/generator/generate-candidates.ts',
-      'src/lib/exam-core/question-bank/production/generator/specification-generation-v2.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation-v3.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation.ts', 'src/lib/exam-core/question-bank/production/specification-candidate.ts',
+      'src/lib/exam-core/question-bank/production/generator/specification-generation-v2.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation-v3.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation-v4.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation.ts', 'src/lib/exam-core/question-bank/production/specification-candidate.ts',
       // QB-R2F adds generator version 3 and validators revision 4 (both read the item demand policy); same direction, still pure
       'src/lib/exam-core/question-bank/production/specification-validators-r3.ts', 'src/lib/exam-core/question-bank/production/specification-validators-r4.ts', 'src/lib/exam-core/question-bank/production/specification-validators.ts',
     ]);

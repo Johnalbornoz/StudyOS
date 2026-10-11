@@ -1,0 +1,178 @@
+{
+  "kind": "QB_POST_CANARY_HARNESS_LEAK_DIAGNOSTIC",
+  "label": "OFFLINE DIAGNOSTIC -- validators revision 5 over the Canary's candidates -- IN-SAMPLE -- NOT certification evidence, NOT a rescore of the Canary -- DEV_TEST_CONTENT, RIGHTS_NOT_ESTABLISHED, NOT RELEASE CONTENT. The eight slots stay \"no candidate\" in the Canary. \"wouldHaveBeen\" is an APPENDIX: what the version-4 harness and revision 5 would say of the recorded answer; it adds nothing to the Canary's evidence.",
+  "refusals": 8,
+  "falseUnderVersion4": 6,
+  "stillRefusedAsALeak": 2,
+  "slots": [
+    {
+      "slotId": "c250-002",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "version3Refusal": "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY:result",
+      "falseUnderVersion4": true,
+      "version4": "ACCEPTED",
+      "wouldHaveBeen": {
+        "gates": {
+          "structural": "PASS",
+          "profileCompliance": "PASS",
+          "declarationQuality": "ISSUES",
+          "constructPreservation": "PASS",
+          "answerKey": "INDEPENDENTLY_VERIFIED",
+          "stimulusIntegrity": "PASS",
+          "originality": "PASS",
+          "originalitySignals": 0,
+          "lineage": "PASS",
+          "learnerTextLeakage": "FAIL",
+          "itemWriting": "PASS"
+        },
+        "strictPassV5": false,
+        "strictPassV4": false,
+        "keyUnits": [
+          "a:INDEPENDENTLY_VERIFIED",
+          "b:INDEPENDENTLY_VERIFIED"
+        ],
+        "constructIssues": []
+      }
+    },
+    {
+      "slotId": "c250-028",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "version3Refusal": "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY:r1,r2",
+      "falseUnderVersion4": false,
+      "version4": "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY:r1,r2",
+      "wouldHaveBeen": null
+    },
+    {
+      "slotId": "c250-081",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "version3Refusal": "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY:result",
+      "falseUnderVersion4": true,
+      "version4": "ACCEPTED",
+      "wouldHaveBeen": {
+        "gates": {
+          "structural": "PASS",
+          "profileCompliance": "PASS",
+          "declarationQuality": "CLEAN",
+          "constructPreservation": "PASS",
+          "answerKey": "STEM_CONSISTENT",
+          "stimulusIntegrity": "PASS",
+          "originality": "PASS",
+          "originalitySignals": 0,
+          "lineage": "PASS",
+          "learnerTextLeakage": "FAIL",
+          "itemWriting": "PASS"
+        },
+        "strictPassV5": false,
+        "strictPassV4": false,
+        "keyUnits": [
+          "a:INDEPENDENTLY_VERIFIED",
+          "b:STEM_CONSISTENT"
+        ],
+        "constructIssues": []
+      }
+    },
+    {
+      "slotId": "c250-083",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "version3Refusal": "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY:verdict",
+      "falseUnderVersion4": true,
+      "version4": "RESPONSE_STRUCTURED_STIMULUS_INVALID:TABLE_CELL_TYPE_MISMATCH",
+      "wouldHaveBeen": null
+    },
+    {
+      "slotId": "c250-123",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "version3Refusal": "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY:verdict",
+      "falseUnderVersion4": true,
+      "version4": "ACCEPTED",
+      "wouldHaveBeen": {
+        "gates": {
+          "structural": "PASS",
+          "profileCompliance": "PASS",
+          "declarationQuality": "CLEAN",
+          "constructPreservation": "PASS",
+          "answerKey": "UNVERIFIED",
+          "stimulusIntegrity": "PASS",
+          "originality": "PASS",
+          "originalitySignals": 0,
+          "lineage": "PASS",
+          "learnerTextLeakage": "FAIL",
+          "itemWriting": "PASS"
+        },
+        "strictPassV5": false,
+        "strictPassV4": false,
+        "keyUnits": [
+          "a:UNVERIFIED",
+          "b:UNVERIFIED"
+        ],
+        "constructIssues": []
+      }
+    },
+    {
+      "slotId": "c250-152",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "version3Refusal": "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY:categories",
+      "falseUnderVersion4": true,
+      "version4": "ACCEPTED",
+      "wouldHaveBeen": {
+        "gates": {
+          "structural": "FAIL",
+          "profileCompliance": "PASS",
+          "declarationQuality": "CLEAN",
+          "constructPreservation": "PASS",
+          "answerKey": "UNVERIFIED",
+          "stimulusIntegrity": "PASS",
+          "originality": "PASS",
+          "originalitySignals": 0,
+          "lineage": "PASS",
+          "learnerTextLeakage": "FAIL",
+          "itemWriting": "PASS"
+        },
+        "strictPassV5": false,
+        "strictPassV4": false,
+        "keyUnits": [
+          "a:UNVERIFIED",
+          "b:UNVERIFIED"
+        ],
+        "constructIssues": []
+      }
+    },
+    {
+      "slotId": "c250-192",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "version3Refusal": "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY:result",
+      "falseUnderVersion4": true,
+      "version4": "ACCEPTED",
+      "wouldHaveBeen": {
+        "gates": {
+          "structural": "PASS",
+          "profileCompliance": "PASS",
+          "declarationQuality": "CLEAN",
+          "constructPreservation": "PASS",
+          "answerKey": "INDEPENDENTLY_VERIFIED",
+          "stimulusIntegrity": "PASS",
+          "originality": "PASS",
+          "originalitySignals": 0,
+          "lineage": "PASS",
+          "learnerTextLeakage": "FAIL",
+          "itemWriting": "PASS"
+        },
+        "strictPassV5": false,
+        "strictPassV4": false,
+        "keyUnits": [
+          "a:INDEPENDENTLY_VERIFIED",
+          "b:INDEPENDENTLY_VERIFIED"
+        ],
+        "constructIssues": []
+      }
+    },
+    {
+      "slotId": "c250-202",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "version3Refusal": "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY:r1,r2",
+      "falseUnderVersion4": false,
+      "version4": "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY:r1,r2",
+      "wouldHaveBeen": null
+    }
+  ]
+}

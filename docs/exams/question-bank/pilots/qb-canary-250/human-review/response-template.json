@@ -1,0 +1,267 @@
+{
+  "kind": "STUDYUS_HUMAN_REVIEW_FORM",
+  "version": "2",
+  "about": "One slot per sampled item: a first human review and, when required, a second by another person. Ten independent judgements per review. Dev-test content; a human decision here is a calibration label, not a Question Bank approval.",
+  "noAi": "Both reviews are by people. Do not consult an AI system. A reviewer identity that is an AI or a model, or a review marked as AI-assisted, is refused. The second review is never the AI reviewer.",
+  "vocabularies": {
+    "academic_correctness": [
+      "CORRECT",
+      "INCORRECT",
+      "AMBIGUOUS",
+      "NOT_ASSESSABLE"
+    ],
+    "answer_key_correctness": [
+      "CORRECT",
+      "INCORRECT",
+      "AMBIGUOUS",
+      "NOT_ASSESSABLE"
+    ],
+    "construct_fit": [
+      "FITS",
+      "PARTIALLY_FITS",
+      "DOES_NOT_FIT",
+      "NOT_ASSESSABLE"
+    ],
+    "assessment_system_fidelity": [
+      "FAITHFUL",
+      "PARTIALLY_FAITHFUL",
+      "NOT_FAITHFUL",
+      "NOT_ASSESSABLE"
+    ],
+    "paper_level_fidelity": [
+      "AT_LEVEL",
+      "BELOW_LEVEL",
+      "ABOVE_LEVEL",
+      "NOT_APPLICABLE",
+      "NOT_ASSESSABLE"
+    ],
+    "difficulty_achieved": [
+      "MATCHES_STATED_BAND",
+      "EASIER_THAN_STATED_BAND",
+      "HARDER_THAN_STATED_BAND",
+      "NOT_ASSESSABLE"
+    ],
+    "originality_material_duplicate": [
+      "NO_CONCERN",
+      "RESEMBLES_A_PUBLISHED_ITEM",
+      "DUPLICATES_ANOTHER_ITEM_OF_THE_PACKET",
+      "NOT_ASSESSABLE"
+    ],
+    "wording_clarity": [
+      "CLEAR",
+      "MINOR_ISSUES",
+      "UNCLEAR"
+    ],
+    "final_human_decision": [
+      "APPROVED",
+      "NEEDS_REVISION",
+      "REJECTED"
+    ]
+  },
+  "fieldMeanings": {
+    "academic_correctness": "Is the mathematics of the item right (stem, stimulus, every statement in it)? Solve the item yourself first.",
+    "answer_key_correctness": "Is the key right -- the keyed option, the numeric key, every final answer and every mark point? AMBIGUOUS when more than one answer is defensible.",
+    "construct_fit": "Does answering it require the concept and the evidence actions stated for the item, with nothing given away and nothing else measured instead?",
+    "assessment_system_fidelity": "Does it look and behave like an item of the stated assessment system and component (format, tools, language, conventions)?",
+    "paper_level_fidelity": "Is its demand at the level of the stated paper? NOT_APPLICABLE when the target is not a specific paper (the school profile).",
+    "difficulty_achieved": "Compare the demand you see with the STATED band (FOUNDATIONAL / STANDARD / CHALLENGE).",
+    "originality_material_duplicate": "Do you recognise it as a published examination question, or as a duplicate of another item of this packet?",
+    "wording_clarity": "Is it clear, natural and unambiguous in its language?",
+    "final_human_decision": "APPROVED: usable as it stands. NEEDS_REVISION: sound idea, must be edited before use. REJECTED: must not be used.",
+    "reviewer_notes": "What you found, in your own words. Required unless every judgement is the first value of its list."
+  },
+  "source": {
+    "canary": "qb-canary-250",
+    "runId": "qb-canary-250-20261011205000",
+    "freezeCommitSha": "f445e7afa89cffd69865fd3f9dbf9d98bdddb1f9",
+    "packet": "human-calibration-packet.json",
+    "sampleSize": 37
+  },
+  "items": [
+    {
+      "ITEM_ID": "c250-079",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-048",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-076",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-214",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-032",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-023",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-099",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-211",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-033",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-205",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-082",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-194",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-007",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-013",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-087",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-226",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-187",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-138",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-001",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-005",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-011",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-077",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-090",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-016",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-003",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-107",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-186",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-037",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-147",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-010",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-128",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-233",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-154",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-014",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-111",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-132",
+      "first_review": null,
+      "second_review": null
+    },
+    {
+      "ITEM_ID": "c250-093",
+      "first_review": null,
+      "second_review": null
+    }
+  ]
+}

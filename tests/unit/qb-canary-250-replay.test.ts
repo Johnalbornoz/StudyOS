@@ -41,7 +41,8 @@ describe('the canary run, replayed from its log', () => {
       expect(readFileSync(stored, 'utf8') === serializeCanaryArtifact(value), name).toBe(true);
     }
     const expected = new Set<string>([CANARY_FILES.freeze, CANARY_FILES.manifest, CANARY_FILES.projection, CANARY_FILES.calibrationTemplate, CANARY_FILES.runLog, ...Object.entries(out.artifacts).filter(([, v]) => v !== null).map(([k]) => CANARY_FILES[k as keyof typeof out.artifacts])]);
-    expect(readdirSync(join(ROOT, CANARY_DIR)).sort()).toEqual([...expected].sort());
+    // the post-canary remediation added NEW files beside the Canary's (a reconciliation statement, the human review form, the revision-5 replay); the Canary's own files are the ones checked here
+    expect(readdirSync(join(ROOT, CANARY_DIR)).filter((f) => !['human-review', 'v5-offline-replay', 'spend-reconciliation.json'].includes(f)).sort()).toEqual([...expected].sort());
   }, 180_000);
   it('the accounting holds: every slot once, the cap never passed, no approval without a strict validator pass, AI review labelled as such', async () => {
     const { metrics: m, rows, artifacts } = await derived;
@@ -60,6 +61,6 @@ describe('the canary run, replayed from its log', () => {
     if (a.packet) for (const item of a.packet.items as Array<Record<string, unknown>>) if (item.presentation === 'BLIND') expect(JSON.stringify(item)).not.toMatch(/aiReview|validatorGates|classification|"rule"/);
   }, 180_000);
   it('no key is stored anywhere in the canary directory', () => {
-    for (const f of readdirSync(join(ROOT, CANARY_DIR))) expect(/sk-[A-Za-z0-9_-]{20,}/.test(readFileSync(file(f), 'utf8')), f).toBe(false);
+    for (const f of readdirSync(join(ROOT, CANARY_DIR), { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name)) expect(/sk-[A-Za-z0-9_-]{20,}/.test(readFileSync(file(f), 'utf8')), f).toBe(false);
   });
 });

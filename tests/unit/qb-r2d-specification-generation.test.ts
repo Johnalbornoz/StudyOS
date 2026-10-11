@@ -539,7 +539,7 @@ describe('architecture: additive, pure, independent of the generator, and the li
   it('the cell-driven harness is untouched: its registry, its response schema and its provider list are what they were', () => {
     expect(strip(`${PROD}/generator/templates.ts`)).not.toMatch(/spec-/);
     expect(strip(`${PROD}/generator/generate-candidates.ts`)).not.toMatch(/specification-generation|specification-candidate/);
-    expect(readdirSync(join(ROOT, PROD, 'generator')).sort()).toEqual(['generate-candidates.ts', 'provider.ts', 'response-schema.ts', 'specification-generation-v2.ts', 'specification-generation-v3.ts', 'specification-generation.ts', 'templates.ts']);
+    expect(readdirSync(join(ROOT, PROD, 'generator')).sort()).toEqual(['generate-candidates.ts', 'provider.ts', 'response-schema.ts', 'specification-generation-v2.ts', 'specification-generation-v3.ts', 'specification-generation-v4.ts', 'specification-generation.ts', 'templates.ts']);
   });
   it('the live transport is outside src, and nothing in src imports the lane\'s scripts', () => {
     expect(readdirSync(join(ROOT, 'scripts/operations/qb-r2d')).sort()).toEqual(['budget.ts', 'live-provider.ts', 'pipeline.ts', 'prior-corpus.ts', 'run.ts', 'selection.ts', 'stored-selection.ts']);
