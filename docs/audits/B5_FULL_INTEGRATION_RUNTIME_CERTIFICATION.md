@@ -2,6 +2,9 @@
 
 Date: 2026-10-10 · Worktree: `studyos-assessment-b5` · Branch: `integration/assessment-b5-runtime-certification`
 
+> **B5-D update (2026-10-10).** Sections **AE–AL** at the end record the DEV deployment and the hosted end-to-end
+> run, and supersede AB, AC and AD.
+>
 > **B5-R update (2026-10-10).** Sections 0 and A–V record B5 as it ended. Sections **W–AD** at the end record
 > the DEV runtime closure and supersede D, O, P, Q, S and V where they differ. The snapshot migration was
 > renamed `20261110_1800_assessment_snapshot` (the sibling line took `20261110_1000`–`1700`) and is applied to DEV.
@@ -552,4 +555,221 @@ Remaining conditions, in order:
 8. Exam families: item-level concept attribution and human review of bank items (section AB) before an exam
    attempt can produce learning evidence.
 9. An automated accessibility scan, once tooling exists.
+
+---
+
+# B5-D — DEV Deployment & End-to-End Certification
+
+Line: `2926c29` → `8bb681f` (merge of `3c2b1b8c`) → `6ec1a07` (cutover) → **`3288d6f`** (E2E script, runner
+accessibility) — deployed to hosted DEV. Stage and Production were not touched. Nothing was pushed.
+
+## AE. Curriculum Hierarchy Reconciliation
+
+`3c2b1b8c` (`feat/curr-paa-hierarchy`) was inspected against the frozen authorities and merged (`8bb681f`).
+
+| Authority | Effect of `3c2b1b8c` |
+|---|---|
+| Curriculum authority | uses it: PAA domains / topics are created through the existing `createStructureNode`; adds `reparentLearningObjective` (same structure version only; id, code and description unchanged) |
+| CurriculumScope | untouched |
+| Canonical concept identity | untouched |
+| B2 targets | untouched (objectives keep their ids; the bootstrap lookup now finds an objective by code within its structure version, so a moved objective is never duplicated) |
+| B3 evidence, assessment runtime, UI | untouched |
+| Schema | one additive migration, `20261111_1000_qb_item_curriculum_nodes` (new table + guards) |
+
+Two chain-guard tests conflicted (both lines appended to the same list) and were resolved by keeping both
+entries; five guards that counted files were made order-based. The branch chain now has 81 files, ending in
+`20261110_1800` and `20261111_1000`. DEV ledger against this branch: **82 applied, 0 pending, 0 drifted**.
+
+## AF. Entry-Point Cutover
+
+One cutover authority: `ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED`, read in one pure server module
+(`assessment-execution/execution-flag.ts`). The B4 constant `CANONICAL_EXECUTION_ENABLED` and
+`executionPathFor` are deleted; no client component reads any switch (guarded by test).
+
+| Entry | Flag OFF | Flag ON |
+|---|---|---|
+| Today, My Path, continuation after an activity | existing quiz flow | canonical setup — `/dashboard/assessment?intent=…&origin=…&lc=<concept>` |
+| Exam Prep (profile page) | unchanged | adds the canonical availability section; the Exam Core stays the start authority |
+
+How: those surfaces navigate to the launch target the server returns. The two server launch builders
+(`resolveCanonicalLaunch`, and `ready()` in the legacy session engine) re-point a launch into the quiz flow
+when its mode is an assessment of one concept — `topic_practice` → `CONCEPT_PRACTICE`, `canonical_prove` →
+`MASTERY_CHECK`, `canonical_retain` → `RETENTION_CHECK`. The link carries the concept and the intent only;
+the engine's item count and difficulty do not travel. The Learning Decision is not duplicated: it still
+chooses the concept and the activity.
+
+The setup resolves the Student's own concept to its canonical target through the Blueprint Core (B1 identity
+rule) and asks the start for the canonical targets, so a resume finds the same assessment.
+
+**Not re-pointed, by design:** teaching (`canonical_learn_check`), transfer, diagnosis of an open issue,
+pending verification and remediation keep their own flows — they are not assessment intents of B2.
+
+**Not re-pointed, and a gap:** secondary surfaces that link straight to `/dashboard/quiz` (subject concept
+list, concept page, learning-debt patterns, the cognitive pages). With the flag on they still start a legacy
+practice. Each attempt still has exactly one authority, but "never both" does not yet hold for those entries.
+
+## AG. Resume Answer Persistence
+
+Existing structures were audited first. `quiz_responses` already is "what the learner wrote, one row per
+session and question", with grades in a separate table that every reader joins. **No migration was needed.**
+
+- A draft is a `quiz_responses` row with no grade row. `saveDraftAnswers` upserts it while the session is
+  active, unexpired and canonical; an empty answer deletes it; a graded response is never overwritten.
+- `PUT /api/assessments/learning/[sessionId]/answers` (answers only).
+- The run page loads the drafts and the runner restores them into the answer controls
+  (`decodeClientAnswer`, the inverse of the existing encoder, round-trip tested for every answer format).
+- The runner saves 800 ms after a change, when the tab is hidden or the page is left, and before submitting.
+- A draft is not evidence: the service and route touch only `quiz_responses` (source guard), and the hosted
+  run shows evidence, mastery events and Knowledge State unchanged after a save.
+
+v1 runner behaviour, stated on the page: one submission, no hints, no per-question feedback.
+
+## AH. Hosted DEV Deployment
+
+Governed path: `git archive <sha>` into a scratch directory + the project link, `vercel deploy --target dev`.
+
+| | |
+|---|---|
+| Deployed SHA | `3288d6f` |
+| Deployment | `dpl_CQyiDYZZwJPAo91kDQV2gGMNMKET` — `https://study-hi42u0mnk-study-so.vercel.app` |
+| `/api/version` | `commitSha 3288d6f`, `deploymentTarget dev`, `environment development` |
+| Earlier deployment of this pass | `6ec1a07` — `dpl_ECwXpTsv3m89za9CxjaxoMMawuPX` (superseded) |
+| DEV ledger | 82 applied, 0 pending, 0 drifted; last `20261111_1000` |
+| Stable DEV alias | **not moved** (`study-os-env-dev-study-so.vercel.app` is shared with other sessions) |
+| Protection | Vercel Authentication (unchanged) |
+
+## AI. Hosted Flag State
+
+| Flag | DEV | Preview / Stage | Production |
+|---|---|---|---|
+| `ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED` | **`true`** — set by this pass, `dev` environment only; effective on the deployment (start route answers 401, not 404) | not changed; not read | not changed; not read |
+| `CANONICAL_ENGINE_V1_ENABLED` | present; value not read. Observed behaviour: the session-start API answers with authority `CANONICAL_ENGINE_V1` | not read | not read |
+| `STUDENT_JOURNEY_V2` | not set | not read | not read |
+| `EXAM_BLUEPRINT_V2` | not set | not read | not read |
+
+Reading values by pulling the environment, and listing Preview / Production, was denied by the session's
+permission system and not worked around. The DEV names above come from the DEV variable listing.
+
+## AJ. Authenticated DEV E2E
+
+Mechanism: the repository's Track A fixtures — a Clerk test-mode identity with no password
+(`student-a`), authenticated by a 10-minute backend-issued session token held in memory, over real HTTP
+through `vercel curl`. No real account was used. Script: `scripts/operations/b5d-dev-e2e-http.ts`
+(it performs no database write of its own; the database is read to verify each step).
+
+**This is HTTP as the fixture Student, not a browser session.** I do not sign a browser in through the
+hosted identity provider.
+
+| Run (deployment `3288d6f`) | Intent / depth | Session | Snapshot | Questions | Checks |
+|---|---|---|---|---|---|
+| 1 — the launch the Learning Decision returned | `MASTERY_CHECK` / QUICK | `quiz-b5-33b10f8f2d51-65c65d17` | `33b10f8f2d51c9d29980b4000b4fa558` | 1 | 42 / 42 |
+| 2 — practice opened directly | `CONCEPT_PRACTICE` / DEEP | `quiz-b5-12c9a6d487b6-29ec52af` | `12c9a6d487b61c005ec9b9769c51a1b6` | 2 | 43 / 43 |
+
+Three earlier runs on `6ec1a07` also passed (42, 43, 43).
+
+| Step | Hosted result |
+|---|---|
+| Entry | session-start and the continuation resolver return `/dashboard/assessment?intent=MASTERY_CHECK&origin=TODAY&lc=…`; Today and My Path render with no hard-coded legacy practice link |
+| Setup | 200; the form names the canonical concept, not the learner-local id |
+| Dynamic question count | setup shows QUICK 1 · BALANCED 1 · DEEP 2 (Blueprint Core). Started DEEP: snapshot items 2 = API 2 = setup 2 = preview 2. Started QUICK prove: 1 = 1 = preview 1 |
+| Start | `executionAuthority CANONICAL`; snapshot stored on the session; the session serves exactly the frozen items in the frozen order |
+| Active page | renders the frozen questions; no answer key in the response |
+| Resume | 2 answers saved → the same request returns the **same session and snapshot** (`resumed: true`), no new session, snapshot unchanged, the reloaded page carries both answers and says so |
+| Draft is not evidence | evidence, mastery events and Knowledge State unchanged after saving |
+| Legacy guard | the legacy submission answers 409 `ASSESSMENT_EXECUTION_AUTHORITY_CANONICAL` and writes nothing |
+| Completion | 200 with a `PostAssessmentState` naming the snapshot; session completed |
+| Evidence / Knowledge State, run 1 (prove) | evidence 38 → 39, mastery events 38 → 39, `evidence_count` 38 → 39, **`independent_evidence_count` 36 → 37**, `independenceEligible: true`; state LEARNING → LEARNING |
+| Evidence / Knowledge State, run 2 (practice) | evidence 39 → 40, events 39 → 40, `evidence_count` 39 → 40, **`independent_evidence_count` 37 → 37**, `independenceEligible: false` |
+| Exactly-once | retried completion: every application `DUPLICATE_IDEMPOTENT`; evidence, mastery, events and Knowledge State identical; one row for the operation key |
+| After completion | drafts refused (409 `NOT_ACTIVE`); the finished page links to Today; the Learning Decision returns the next launch (canonical setup again) |
+| Exam Prep | 200; canonical availability evaluated, 0 eligible questions, four attempts shown unavailable, none with a start link; no exam instance created |
+
+## AK. Responsive / Accessibility
+
+```text
+ACCESSIBILITY_MANUAL_PASS_TOOLING_GAP
+```
+
+No accessibility tooling exists in the project; no automated scan ran. What was inspected: the **actual
+mounted pages as hosted DEV served them to the fixture Student** (setup, preview, active, active after resume,
+finished, Exam Prep), saved with their own stylesheet and opened locally with scripts removed; and the result
+and continuation rendered by the real components from the `PostAssessmentState` hosted DEV returned.
+
+| Check | Result |
+|---|---|
+| Keyboard | Tab reaches the depth group, arrow keys change the depth, Tab reaches Start; in the active page Tab lands on the first answer field, then the next, then Submit. No positive `tabindex` |
+| Visible focus | 2 px brand outline on the depth option, the buttons and the answer fields |
+| Labels | 0 unnamed inputs; each question is a `fieldset` with a `legend`; free-text fields carry "Pregunta n de N"; 0 nameless buttons or links |
+| Headings | one `h1` per page; no skipped level (result: h1, h2, h2) |
+| Announcements | draft status is `role="status"` `aria-live="polite"`; errors use `role="alert"`; the progress bar exposes label, value and max |
+| Buttons | Start is `type="button"`, Submit is `type="submit"` inside a labelled form, both expose `aria-busy` |
+| Mobile 375 px | no horizontal overflow on any page; 0 targets under 44 px; inputs at 16 px (no zoom-on-focus); zoom not disabled |
+| Desktop 1280 px | no overflow; layout holds inside the learner shell |
+| Timer | none shown in a learning assessment |
+
+Fixed during the check: answer options showed raw `$…$` math (now typeset), option rows were under 44 px and
+had no focus ring, the finished page had no heading.
+
+Limits: these are static captures. Hydrated behaviour in a signed-in browser — typing, the autosave status
+appearing, the submit click and the result replacing the form — was exercised over HTTP, not on screen.
+Pre-existing and not changed here: the document declares `lang="en"` while the Student's content is Spanish.
+
+## AL. Final DEV Certification
+
+```text
+DEV_INTEGRATED_ASSESSMENT_PASS_WITH_CONDITIONS        STAGE_ENTRY: STAGE_NO_GO        NOT_READY_FOR_RELEASE
+```
+
+| # | Criterion | Result |
+|---|---|---|
+| 1 | Branch matches DEV migration history | PASS |
+| 2 | Canonical code deployed to DEV | PASS (`3288d6f`, immutable deployment; stable alias not moved) |
+| 3 | Flag ON in DEV | PASS |
+| 4 | Today / My Path enter the canonical flow | PASS (launch authority and continuation, hosted) |
+| 5 | B2 creates the assessment | PASS |
+| 6 | Snapshot persisted | PASS |
+| 7 | Resume preserves answers | PASS |
+| 8 | B3 completion executes | PASS |
+| 9 | Legacy evidence cannot double-run | PASS |
+| 10 | B4 result renders `PostAssessmentState` | PASS for the components on the real hosted state; not seen in a signed-in browser |
+| 11 | Continuation works | PASS |
+| 12 | Signed-in safe-fixture **browser** E2E | **NOT MET** — passed over HTTP as the fixture identity; no browser session |
+| 13 | Desktop / mobile | PASS on captures of the hosted pages |
+| 14 | Mounted-page accessibility | PASS, manual, with the limits in AK |
+| 15 | Tests / typecheck / build | PASS — 508 files / 9,096 tests, `tsc --noEmit` clean, `next build` OK |
+
+Stage is `STAGE_NO_GO` only because of item 12. It becomes `STAGE_GO_WITH_CONDITIONS` when an operator does
+one signed-in click-through on the DEV deployment as the fixture Student (ticket:
+`npx tsx --env-file=.env.local scripts/operations/track-a-fixtures.ts signin student-a`): Today → setup →
+start → type an answer → reload → answer restored → submit → result → "Ir a Hoy", on desktop and on a phone.
+
+Question Bank readiness (separate track; read-only on DEV; nothing changed):
+
+| | |
+|---|---|
+| Approved items | 509 (bank items 496: 477 `FIXTURE`, 19 `STUDYUS_GENERATED`) |
+| Student-eligible for the fixture Student's exam version | 0 |
+| Human review decisions | 0 |
+| Item-level canonical attribution | 0 rows |
+| Recorded durations | 0 |
+| Provenance / licensing | fixture or generated; no licensed or official source |
+
+Remaining conditions:
+
+1. Operator signed-in click-through on DEV (above).
+2. Secondary entries that link straight to the legacy quiz (subject concept list, concept page, learning-debt,
+   cognitive pages) still start a legacy practice with the flag on.
+3. The canonical start selects from the Student's validated question cache and never generates. On DEV the
+   fixture concept (48 validated questions) yields 1 / 1 / 2 questions. A Student whose concept has no cached
+   questions, or no canonical link (24 unresolved and 11 label-only of 94 mappings on DEV), sees
+   "not available yet" from Today. Whether anything still fills that cache once practice no longer runs the
+   legacy generator was not established.
+4. A retried completion grades again before the database refuses the duplicate: correct, but it spends AI calls.
+5. The stable DEV alias still points at an older deployment; moving it is the operator's call. The flag is
+   set for the whole `dev` environment, so any later DEV deployment that contains this code starts canonical.
+6. Stage, when opened: promote exactly `3288d6f` (or its successor certified the same way), apply the same
+   82-entry chain, certify safe Stage data, run the Stage smoke. The Stage flag stays off until then.
+7. Exam content: review, item-level attribution, durations and provenance before any exam attempt can
+   produce learning evidence or a mock can be offered.
+8. An automated accessibility scan once tooling exists; the `lang` attribute.
 
