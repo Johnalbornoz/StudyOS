@@ -372,7 +372,7 @@ export async function setClassSubject(institutionId: string, classId: string, ca
 //                           |--decline--> DECLINED
 //
 // ENDED and DECLINED are CLOSED: the row is history and never changes status
-// again (migration 20261120_1500 enforces it in the database). Re-adding a
+// again (migration 20261120_1100 enforces it in the database). Re-adding a
 // learner always creates a NEW row, so the departure or the refusal stays on
 // record. At most one OPEN row (PENDING or ACTIVE) exists per learner per
 // class. Every writer of `class_enrollments` goes through the functions in
@@ -391,7 +391,7 @@ export interface ClassEnrollmentState {
 export async function getClassEnrollmentState(classId: string, studentId: string): Promise<ClassEnrollmentState> {
   const r = await db.query(
     `SELECT id, status FROM class_enrollments WHERE class_id = $1 AND student_id = $2
-     ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC`,
+     ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC, id DESC`,
     [classId, studentId]
   );
   const rows: Array<{ id: string; status: ClassEnrollmentStatus }> = r.rows ?? [];

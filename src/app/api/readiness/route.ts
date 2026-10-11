@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { canAccessLearner } from '@/lib/authorization';
+import { canReadLearnerRoute } from '@/lib/authorization/teacher-subject-scope';
 import { getLatestReadinessSnapshot, listReadinessSnapshots } from '@/lib/readiness/readiness.service';
 import { isExamProfileOwnedByStudent } from '@/lib/assessment/student-exam-profile.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -23,7 +23,8 @@ async function handleGET(request: NextRequest) {
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
 
-  const allowed = await canAccessLearner(actor.id, studentId, 'LEARNER_PROGRESS_VIEW');
+  // L10-R2: exam-wide readiness payload -- it cannot be sliced by subject, so a reader who is only this learner's Teacher is refused.
+  const allowed = await canReadLearnerRoute(actor.id, studentId, 'LEARNER_PROGRESS_VIEW', 'DENY');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   // UX-2 security fix: the exam profile must belong to the authorized

@@ -1,4 +1,4 @@
--- L10 schema batch (6/6, added by Orchestrator change request CR-L9-02) --
+-- L10 schema batch (2/3, Orchestrator change request CR-L9-02) --
 -- a closed class enrolment is history, never reopened. Closes L4-18.
 --
 -- Ruling (Orchestrator, 2026-10-11): an ENDED or DECLINED enrolment must
@@ -34,7 +34,7 @@
 --   DROP INDEX IF EXISTS public.uq_class_enrollments_one_open;
 --   DROP INDEX IF EXISTS public.idx_class_enrollments_class_student;
 --   ALTER TABLE public.class_enrollments ADD CONSTRAINT class_enrollments_unique UNIQUE (class_id, student_id);
---   DELETE FROM schema_migrations WHERE version = '20261120_1500';
+--   DELETE FROM schema_migrations WHERE version = '20261120_1100';
 
 ALTER TABLE public.class_enrollments DROP CONSTRAINT IF EXISTS class_enrollments_unique;
 

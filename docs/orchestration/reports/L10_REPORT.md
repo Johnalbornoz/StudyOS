@@ -599,3 +599,253 @@ Expected hand-resolved files are the four listed in the core report, plus `src/a
 ## NEXT SAFE ACTION
 
 Orchestrator reviews the R1 commit and routes CR-L10-01, -03, -04, -07 and -08.
+
+---
+
+# L10-R2 — 2026-10-11
+
+Finalization run after the Orchestrator's ruling "L10-R2 FINALIZATION". `e094c5a` was not amended; R2 is a third commit.
+
+## LANE
+
+`L10_SHARED_FOUNDATION`, run R2. Worktree `/Users/jalbornoz/PROYECTOS/studyos-l10-shared-foundation`, branch `feat/l10-shared-foundation` (local only).
+
+## STATUS
+
+`READY_FOR_ORCHESTRATOR_REVIEW`
+
+Values requested by the ruling (the lane's own results, for the Orchestrator to verify):
+
+```
+L10_CORE = PASS
+D2_SEAT_MODEL = DEFERRED
+D3_INDEPENDENT_TEACHERS = DEFERRED
+D4_ONBOARDING_MODEL = PASS
+D5_MINOR_CONSENT = DEFERRED_LEGAL_GATE
+D6_PERSONA_MODEL = PASS
+D7_SELF_SERVE_INSTITUTION = DEFERRED
+
+CR_L7_01 = CLOSED
+CR_L9_02 = CLOSED
+CR_L8_01 = OPEN
+
+TEACHER_WHOLE_LEARNER_SCOPE = PASS
+REVOKED_STUDENT_HTTP = PASS
+TRANSFER_CONCURRENT_EXACTLY_ONCE = PASS
+ENROLMENT_SQL_L10 = PASS
+CR_L9_ENROLMENT_LOOKUP = OPEN
+
+MIGRATION_CHAIN_CLEAN = YES
+MIGRATION_PREFLIGHT_READY = YES
+EXPECTED_LEDGER_BEFORE = 83 rows, last version 20261112_1000
+EXPECTED_LEDGER_AFTER  = 86 rows, last version 20261120_1200
+
+L11_SCHEMA_DEPENDENCY = NONE
+L10_READY_FOR_CONVERGENCE = YES, with the three convergence requirements below
+```
+
+**What "YES" means here.** L10 has no remaining work of its own. Converging it is still conditional on work in other lanes, and the merged line will not be green until that work lands — by design, because the guard tests live in L10:
+
+1. L8 switches to the shared entry point (CR-L10-03). Until then three tests in `l10-cr-l8-01-…` fail on the merged line.
+2. L9 fixes `enrollmentOf` (CR-L9-ENROLMENT-LOOKUP below). Until then one test in `l10-cr-l9-02-…` fails on the merged line.
+3. L5 runs the preflight contract before the three migrations reach any shared database.
+
+CR-L8-01 itself stays OPEN after convergence until L2's subject-aware aggregates exist. If "ready for convergence" must mean "nothing external outstanding", read this as NO.
+
+## BASE SHA
+
+`e094c5a` (L10-R1, accepted), parent `c2bcae9`.
+
+## FINAL SHA
+
+The commit on `feat/l10-shared-foundation` whose parent is `e094c5a`. Run `git rev-parse feat/l10-shared-foundation`.
+
+## FILES CHANGED
+
+Migrations: three deleted, two renumbered, headers updated (R2 Finding 1).
+
+- Deleted: `20261120_1100_sf12_institution_student_memberships.sql`, `20261120_1200_en1_institution_licenses.sql`, `20261120_1300_sf8_role_onboarding_state.sql`
+- Renamed: `20261120_1500_cr_l9_02_enrollment_history.sql` → `20261120_1100_…`; `20261120_1400_sf10_single_persona_constraint.sql` → `20261120_1200_…`
+- Unchanged name: `20261120_1000_sf7_parent_relationship_lifecycle.sql`
+
+Deleted application code (1): `src/lib/identity/role-onboarding.service.ts`.
+
+New (2): `src/lib/authorization/teacher-subject-scope.ts`, `tests/unit/l10-r2-teacher-whole-learner-scope.test.ts`.
+
+Modified application code (15): `src/lib/authorization/learner-result-scope.ts`; `src/lib/teacher/read-model.service.ts`, `src/lib/teacher/intervention.service.ts` (one query); `src/services/transfer-task-instance.service.ts`, `src/services/institution.service.ts` (one ORDER BY, one comment); routes `api/cognitive/transfer/submit`, `api/learners/[id]/summary`, `api/readiness`, `api/readiness/[id]`, `api/diagnostics`, `api/diagnostics/[id]/explain`, `api/exam-profiles`, `api/simulation/eligibility`, `api/learning/session-eligibility`, `api/teaching/interventions/[id]`.
+
+Scripts (3), docs (3: this report, status, preflight contract), tests modified (14: the six L10 files, three migration-list pins, four route-security mocks, three Transfer route tests — details under TESTS).
+
+## LOCKS USED
+
+`SHARED_FOUNDATION`. `SCHEMA_AND_MIGRATIONS`: used to remove and renumber un-applied migration files. No migration was applied to any shared database.
+
+## TESTS
+
+| Command | Result |
+|---|---|
+| Focused: `npx vitest run tests/unit/l10-*.test.ts` | 9 files, 196 tests passed |
+| Full: `env -u DATABASE_URL -u DATABASE_URL_UNPOOLED -u POSTGRES_URL npx vitest run` | 528 files, 9,489 tests passed |
+| `npx tsc --noEmit -p .` | no output |
+| `npx next build` | exit 0; 229/229 static pages |
+| Ephemeral DB — apply / re-apply | three files apply and re-apply; SF-10 pre-check refuses a seeded multi-persona account and leaves its rows |
+| Ephemeral DB — governed runner and ledger | before 83 rows, last `20261112_1000`; dry run 3 pending; after 86 rows, last `20261120_1200`; dry run 0 pending |
+| Ephemeral DB — preflight contract SQL | 21 statements before the batch, 6 after; all run; all `SELECT` |
+| Ephemeral DB — real guard / service checks | 178 passed, 0 failed |
+| First full-suite run after the R2 code changes | 24 failures in 8 existing files: route tests whose mock of `@/lib/authorization` lacked `resolveLearnerReadScope`, three Transfer route tests whose database mock had no connection for the claim, and the AI import-graph guard (fixed by moving the gate into a module with no exam-core import). No behaviour regression |
+| Browser, HTTP E2E, DEV / Stage / Production | NOT_RUN |
+
+DB-backed concurrent regression (ruling requirement), in `scripts/operations/l10-foundation-integration.ts`, against real Postgres:
+
+| Check | Result |
+|---|---|
+| 8 simultaneous first submissions of one task | exactly 1 grading invocation; 1 `COMPLETED`, 7 `IN_PROGRESS`; 1 evidence row; no lock left |
+| 3 requests arriving while the first is still grading | all refused at once, no grading |
+| A later request | `ALREADY_ANSWERED`, no grading |
+| Grader throws | error reaches the caller; no lock left; no evidence; the retry grades |
+| The holder's connection is closed without commit or rollback | the next submission grades |
+
+## FINDINGS
+
+### R2-1. Migration chain — rebuilt as three files
+
+| File | Content |
+|---|---|
+| `20261120_1000_sf7_parent_relationship_lifecycle` | unchanged since core |
+| `20261120_1100_cr_l9_02_enrollment_history` | was `1500`; content unchanged |
+| `20261120_1200_sf10_single_persona_constraint` | was `1400`; content unchanged. Last on purpose: it has a pre-check that can stop it, and nothing depends on it |
+
+Removed, with nothing left behind in code:
+
+| Removed | Ruling | Also removed |
+|---|---|---|
+| `institution_licenses`, `institution_license_seats`, their two triggers | D-2: seat model deferred | — |
+| `institution_student_memberships` and its trigger on `class_enrollments` | D-2: it existed only to carry a seat | — |
+| `user_role_onboarding` | D-4: no free-form profile JSON; onboarding rests on existing typed identity and relationships | `role-onboarding.service.ts` (nothing called it) |
+
+The batch now creates **no table**. It adds four columns, three indexes, one trigger function, and replaces one constraint. A test asserts the batch contains no licence, seat, membership, onboarding, consent, age or Transfer-marker schema, and that no application code names any removed object.
+
+No completion marker was kept for D-4. Nothing reads one, and the ruling's model (Parent: account + relationship flow; Teacher: account + institution membership + class authorization) needs none.
+
+Because the old drafts were never applied anywhere, renumbering is safe. The preflight contract gained check 0.5: the four removed tables and the three superseded version numbers must not exist in any database.
+
+**Ledger.** Before L10: **83** rows, last `20261112_1000`. After L10: **86** rows, last `20261120_1200`. Versions added, in order: `20261120_1000`, `20261120_1100`, `20261120_1200`. Verified through `scripts/db-migrate.ts` on the throwaway database.
+
+### R2-2. Decisions D-2 to D-7 — what the branch now does
+
+| Decision | Ruling | In the branch |
+|---|---|---|
+| D-2 | Per-student admin / institution grants for the pilot; seat model deferred | No seat, licence or membership schema. Sponsored access is whatever L11's existing admin grant does; L10 adds nothing |
+| D-3 | Independent teachers out of scope | Nothing built. Teacher access requires an ACTIVE TEACHER role, an ACTIVE institution and an authorized class (SF-1, SF-3), and for learner data also the class's subject |
+| D-4 | No free-form JSON; onboarding from typed identity and relationships | Table and service removed. No onboarding state is stored by L10. A Teacher cannot assert an institution, class or subject: all three come from membership and assignment rows a coordinator writes |
+| D-5 | Deferred legal gate | Nothing built. No consent or age field anywhere in the batch |
+| D-6 | One ACTIVE primary persona; admin and coordinator are privileges | `uq_user_roles_one_persona` over ACTIVE `STUDENT` / `PARENT` / `TEACHER` rows only. `STUDYUS_ADMIN` and `INSTITUTION_ADMIN` are not in the index. DB-checked: second ACTIVE persona refused; revoke-then-grant allowed; a coordinator privilege beside a persona allowed |
+| D-7 | No self-service institution creation | Nothing built |
+
+SF-9, SF-11, SF-12 and SF-13 are deferred and not started (SF-12's draft was removed). EN-1 and IN-4 from L3R1 depended on the seat model and are deferred with it.
+
+### R2-3. Teacher whole-learner scope — audit and result
+
+One gate, `canReadLearnerRoute` (`src/lib/authorization/teacher-subject-scope.ts`), now fronts every learner-wide read route. For a reader who reaches the learner only as a Teacher, each route declares what its payload is: learner-wide (refused) or about one concept (allowed only inside a subject the teacher holds for that learner).
+
+| Surface | Payload | Teacher now |
+|---|---|---|
+| `GET /api/learners/[id]/summary` | every subject of the learner, debts, upcoming exams | refused |
+| `GET /api/readiness`, `GET /api/readiness/[id]` | exam-wide readiness snapshots | refused |
+| `GET /api/exam-profiles` | the learner's exam goals | refused |
+| `POST /api/simulation/eligibility` | exam-wide eligibility | refused |
+| `GET /api/learning/session-eligibility` | learner-wide | `authorized: false` |
+| `GET /api/diagnostics?conceptId=` | diagnoses of one concept | only when that concept is in subject |
+| `GET /api/diagnostics/[id]/explain` | one diagnosis | only when its concept is in subject |
+| `GET /api/teaching/interventions/[id]` | one session and its attempts | only in subject (R1) |
+| `GET /api/simulation/attempts/[id]` | exam-wide state and scores | refused (R1) |
+| `GET /api/simulation/attempts/[id]/result` | per-objective results | in-subject objectives only (R1) |
+| `getTeacherStudentOverview` (`/api/teacher/students/[id]/overview`) | counts over the whole learner, plus exam readiness | counts over in-subject concepts only; readiness `WITHHELD` |
+| `getTeacherClassExamGaps` (`/api/teacher/exam-insights`) | gaps, goals, AICE | gaps in subject; goals and AICE withheld (R1) |
+
+"In subject" always means: the concept has a MATCHED catalogue mapping to a canonical concept whose subject is the subject of an ACTIVE class, in an ACTIVE institution, that the actor teaches and the learner is actively enrolled in. A concept with no confirmed mapping is in nobody's subject.
+
+A test asserts that no route under `src/app/api` still calls the unsliced check with a read permission; the only remaining `canAccessLearner` calls ask for the owner-only permission. The owner and an accepted Parent are unaffected. A Coordinator is refused on every rule.
+
+Also found and fixed during the sweep: `listTeacherClassIdsForActor` in `src/lib/teacher/intervention.service.ts` was a third copy of the "classes this actor teaches" query and had none of the SF-1 / SF-3 conditions, so a teacher of two institutions kept reading intervention rows of a suspended one.
+
+Read and judged already subject- or class-scoped, **not changed**: `getTeacherLearnerView` and `listClassLearnerAttention` (driven by the class subject's topics), `class-progress.service.ts` (class concepts; exam dates filtered to the class subject), `listTeacherInterventionsForStudent` (only classes the actor teaches). I read their scoping logic, not every field they return.
+
+One item outside a read path, not changed: `POST /api/teacher/interventions` checks that a concept target belongs to the learner, not that it belongs to the class's subject (L8 reported this). It is a write, in L8's area.
+
+### R2-4. Transfer concurrent exactly-once — no schema
+
+`runTransferSubmissionExclusively` (`src/services/transfer-task-instance.service.ts`) wraps the grading call and the evidence write in the submit route.
+
+- **The claim** is a transaction-scoped advisory lock on a dedicated connection, keyed by the task's own evidence identity, taken with `pg_try_advisory_xact_lock` so it never waits. This is the mechanism the activity launch lock already uses, for the reason documented there (a session-level lock is unsafe behind the Neon pooler).
+- **Order inside the claim:** read the persisted answer state, then grade, then write evidence. The evidence is committed before the claim is released.
+- **Second request, deterministically:** while the first is grading → `409 TRANSFER_TASK_SUBMISSION_IN_PROGRESS`; after it → `409 TRANSFER_TASK_ALREADY_ANSWERED`. Neither grades.
+- **One outcome:** one grading invocation, one evidence row (the unique operation key still stands behind it).
+- **Crash / retry:** the claim persists nothing. If the process dies or grading throws, the transaction ends and the lock goes with it; no evidence exists, so the task is still open. There is no lease and nothing to clean up.
+
+Two things to know:
+
+1. **Cost.** One pooled connection is held, idle in a transaction, for the length of one grading call. The grading code itself uses other connections. With the default pool size, many simultaneous Transfer gradings on one instance could exhaust the pool; the launch lock has the same property today. If that is a concern at pilot volume, the alternative is a lease column (schema), which I did not add because existing state suffices.
+2. **Merge with L11.** L11 changed the same route above this block. My change re-indents the grading block inside the wrapper. If the merge conflicts, keep L11's licence gate where it is and keep the grading inside `runTransferSubmissionExclusively`. L11 needs no further patch.
+
+### R2-5. Enrolment lifecycle
+
+**L10's own branch (ENROLMENT_SQL_L10 = PASS).** No `ON CONFLICT (class_id, student_id)` in `src/` or `scripts/`; no later migration re-creates the constraint; no read by (class, learner) without a status filter or order; every insert into `class_enrollments` is in the lifecycle module. Four repository-wide tests assert this.
+
+**Convergence conflict-resolution requirements for L5** (also written into the preflight contract, check 4.6). Every other lane branch, and both integration lines, still carry the six inherited occurrences. When merging, take L10's version of the enrolment hunks in:
+
+- `src/services/institution.service.ts` (2: `enrollStudent`, `inviteStudentToClass`)
+- `src/lib/institution/institution-operations.service.ts` (1: `enrollActive`) — L9 also edited this file; resolve by hand
+- `scripts/operations/track-a-fixtures.ts`, `track-a-learning-plan-e2e-http.ts`, `track-a-curriculum-v2-e2e-http.ts` (1 each)
+
+then re-run the search on the merged line.
+
+**CR-L9-ENROLMENT-LOOKUP (OPEN, owner L9).** `enrollmentOf(classId, studentId)` in L9's `src/lib/institution/institution-operations.service.ts` runs `SELECT status FROM class_enrollments WHERE class_id = $1 AND student_id = $2` and takes the first row. After `20261120_1100` a pair can have one open row and several closed ones, so that row is arbitrary.
+
+Required selection semantics:
+
+1. If the pair has an OPEN row (`status IN ('PENDING', 'ACTIVE')`), that row is the current enrolment. There is at most one (unique index `uq_class_enrollments_one_open`).
+2. Otherwise the current state is the **most recent** CLOSED row (`status IN ('ENDED', 'DECLINED')`), by `created_at DESC`, then `id DESC`.
+3. Otherwise there is no enrolment.
+
+Equivalent SQL: `… ORDER BY (status IN ('PENDING', 'ACTIVE')) DESC, created_at DESC, id DESC LIMIT 1`. Preferably call the existing `getClassEnrollmentState(classId, studentId)` from `src/services/institution.service.ts`, which returns `{ open, lastClosed }` with exactly these rules.
+
+What L9's bulk add must then report: `open` present → `ALREADY_ENROLLED`; no `open` and `lastClosed.status = 'DECLINED'` → `PREVIOUSLY_DECLINED`; no `open` and `lastClosed.status = 'ENDED'` → `PREVIOUSLY_ENDED`; neither → proceed with the single add. An open row always wins over any closed one: a learner who declined once and was later invited again is `ALREADY_ENROLLED` (pending), not `PREVIOUSLY_DECLINED`.
+
+### R2-6. Page authorization
+
+No change. API 403 and page 307 stay as accepted.
+
+### R2-7. CR-L8-01
+
+OPEN, unchanged. L10 maintains the boundary (`getTeacherClassExamGaps`); `src/lib/exam-core/**` was not edited.
+
+## BLOCKERS
+
+NONE for the lane.
+
+## CHANGE_REQUESTS
+
+| # | Owner | State |
+|---|---|---|
+| CR-L7-01 | L10 | CLOSED |
+| CR-L9-02 | L10 | CLOSED |
+| CR-L8-01 | L8 + L2 (boundary kept by L10) | OPEN |
+| CR-L11-05 | L10 | Implemented (R1) |
+| CR-L11-06 | L10 | Implemented; sequential and concurrent, no schema |
+| CR-L9-ENROLMENT-LOOKUP (was CR-L10-04) | L9 | OPEN — semantics in R2-5 |
+| CR-L10-01 | L2 | OPEN — subject-aware domain / objective aggregates in `examGapsFor`; subject attribution for exam goals and AICE syllabi |
+| CR-L10-03 | L8 | OPEN — gaps, goals and AICE through `getTeacherClassExamGaps`; handle `withheld`; note `getTeacherStudentOverview` now returns `latestReadinessStatus: 'WITHHELD'` and a `subjectScope` field |
+| CR-L10-05 | L7 | OPEN (cosmetic) — show `OWN_EMAIL` / `ALREADY_LINKED` |
+| CR-L10-07 | L11 | WITHDRAWN — the licence schema was removed |
+| CR-L10-08 | L2 | OPEN — one exported Student-visibility predicate; the objective or subject of each result review item |
+
+## MERGE RECOMMENDATION
+
+L10 can enter convergence under the three requirements in STATUS. Order: L10 before or together with L8 and L9; code together with the three migrations; preflight before any shared database.
+
+Hand-resolved files to expect: `api/teacher/exam-insights/route.ts` and `tests/unit/aice-pisa-security.test.ts` (L8); `src/lib/institution/institution-operations.service.ts` (L9); `tests/unit/e2e-object-authorization.test.ts` (L6); `api/cognitive/transfer/submit/route.ts` (L11).
+
+## NEXT SAFE ACTION
+
+Orchestrator reviews the R2 commit and routes CR-L10-03 to L8 and CR-L9-ENROLMENT-LOOKUP to L9.

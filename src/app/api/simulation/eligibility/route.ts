@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { canAccessLearner } from '@/lib/authorization';
+import { canReadLearnerRoute } from '@/lib/authorization/teacher-subject-scope';
 import { getSimulationEligibility } from '@/lib/simulation/eligibility.service';
 
 const QuerySchema = z.object({
@@ -38,7 +38,8 @@ export async function GET(request: NextRequest) {
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
 
-  const allowed = await canAccessLearner(actor.id, validated.studentId, 'LEARNER_PROGRESS_VIEW');
+  // L10-R2: exam-wide eligibility -- it cannot be sliced by subject, so a reader who is only this learner's Teacher is refused.
+  const allowed = await canReadLearnerRoute(actor.id, validated.studentId, 'LEARNER_PROGRESS_VIEW', 'DENY');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const eligibility = await getSimulationEligibility(validated);

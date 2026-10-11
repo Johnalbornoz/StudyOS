@@ -9,7 +9,7 @@
  *   - active existing enrolment            => deterministic, no duplicate
  *   - bulk behaviour remains non-reactivating
  *
- * The fixture is an in-memory `class_enrollments` table that enforces what migration 20261120_1500
+ * The fixture is an in-memory `class_enrollments` table that enforces what migration 20261120_1100
  * enforces (one OPEN row per learner per class; a closed row never changes status), behind the real
  * services. The same cases run against a real Postgres in scripts/l10-ephemeral-db-test.sh.
  */
@@ -41,7 +41,7 @@ vi.mock('@/lib/db', () => {
   const unique = () => Object.assign(new Error('duplicate key value violates unique constraint "uq_class_enrollments_one_open"'), { code: '23505', constraint: 'uq_class_enrollments_one_open' });
   const query = async (sql: string, p: any[] = []) => {
     const s = sql.replace(/\s+/g, ' ').trim();
-    if (/ON CONFLICT \(class_id, student_id\)/.test(s)) throw new Error('there is no unique or exclusion constraint matching the ON CONFLICT specification'); // what Postgres says after 20261120_1500
+    if (/ON CONFLICT \(class_id, student_id\)/.test(s)) throw new Error('there is no unique or exclusion constraint matching the ON CONFLICT specification'); // what Postgres says after 20261120_1100
     if (/^SELECT \* FROM classes WHERE id = \$1 AND institution_id = \$2/.test(s)) return { rows: classes[p[0]]?.institution_id === p[1] ? [classes[p[0]]] : [] };
     if (/FROM classes c LEFT JOIN grades g/.test(s)) return { rows: classes[p[0]]?.institution_id === p[1] ? [{ id: p[0], name: classes[p[0]].name, grade_id: null, grade_name: null, canonical_subject_id: null, subject_name: null }] : [] };
     if (/^SELECT id, name, status FROM institutions WHERE id = \$1/.test(s)) return { rows: [{ id: 'inst-1', name: 'School', status: 'ACTIVE' }] };
@@ -238,8 +238,8 @@ describe('bulk behaviour remains non-reactivating', () => {
   });
 });
 
-describe('the database holds the rule too (migration 20261120_1500)', () => {
-  const sql = readFileSync(join(process.cwd(), 'database/migrations/20261120_1500_cr_l9_02_enrollment_history.sql'), 'utf8');
+describe('the database holds the rule too (migration 20261120_1100)', () => {
+  const sql = readFileSync(join(process.cwd(), 'database/migrations/20261120_1100_cr_l9_02_enrollment_history.sql'), 'utf8');
   it('one OPEN row per learner per class; closed rows are unlimited history', () => {
     expect(sql).toMatch(/DROP CONSTRAINT IF EXISTS class_enrollments_unique/);
     expect(sql).toMatch(/CREATE UNIQUE INDEX IF NOT EXISTS uq_class_enrollments_one_open\s+ON public\.class_enrollments \(class_id, student_id\)\s+WHERE status IN \('PENDING', 'ACTIVE'\)/);
@@ -263,12 +263,12 @@ describe('L10-R1: every SQL caller follows the new lifecycle contract (repositor
   });
 
   it('no later migration re-creates the one-row-per-pair constraint', () => {
-    const later = readdirSync(join(root, 'database/migrations')).filter((f) => f > '20261120_1500_z');
+    const later = readdirSync(join(root, 'database/migrations')).filter((f) => f > '20261120_1100_z');
     for (const f of later) expect(code(join(root, 'database/migrations', f)), f).not.toMatch(/class_enrollments_unique|UNIQUE\s*\(\s*class_id\s*,\s*student_id\s*\)/);
   });
 
   it('application code never reads "the" enrolment of a learner in a class without saying which one', () => {
-    // After 20261120_1500 a pair can have one OPEN row and any number of closed ones. A read by
+    // After 20261120_1100 a pair can have one OPEN row and any number of closed ones. A read by
     // (class_id, student_id) must filter by status or order explicitly (as getClassEnrollmentState does).
     const offenders: string[] = [];
     for (const f of walk(join(root, 'src'))) {

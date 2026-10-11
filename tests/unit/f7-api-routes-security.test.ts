@@ -44,7 +44,13 @@ vi.mock('@/lib/auth', () => ({ verifyAuth: () => verifyAuthMock() }));
 const getOrCreateCanonicalUserMock = vi.fn();
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
 const canAccessLearnerMock = vi.fn();
-vi.mock('@/lib/authorization', () => ({ canAccessLearner: (...a: any[]) => canAccessLearnerMock(...a) }));
+vi.mock('@/lib/authorization', () => ({
+  canAccessLearner: (...a: any[]) => canAccessLearnerMock(...a),
+  // L10-R2: the learner-wide routes resolve the whole read scope (Teacher subject boundary). In this file the
+  // single allow/deny switch stands for "the owner" vs "no relationship at all".
+  resolveLearnerReadScope: async (actor: string, learner: string) =>
+    (await canAccessLearnerMock(actor, learner, 'LEARNER_PROGRESS_VIEW')) ? { relationships: ['OWNER'], permissions: ['LEARNER_PROGRESS_VIEW', 'LEARNER_PROFILE_VIEW', 'LEARNER_INTERVENTION_CREATE', 'LEARNER_GAPS_VIEW', 'LEARNER_ASSESSMENT_SUMMARY_VIEW', 'LEARNER_ASSESSMENT_DETAIL_VIEW'] } : { relationships: [], permissions: [] },
+}));
 const createStudentExamProfileMock = vi.fn();
 vi.mock('@/lib/assessment/student-exam-profile.service', () => ({ createStudentExamProfile: (...a: any[]) => createStudentExamProfileMock(...a) }));
 
@@ -145,7 +151,11 @@ describe('F7 learner-facing exam-profiles route', () => {
     const res: any = await examProfilesGET(urlReq(`https://studyus.test/api/exam-profiles?studentId=${VALID_ID}`));
     expect(res.status ?? 200).not.toBe(401);
     expect(res.status ?? 200).not.toBe(403);
-    expect(canAccessLearnerMock).toHaveBeenCalledWith('actor-1', VALID_ID, 'LEARNER_PROFILE_VIEW');
+    // L10-R2: the route resolves the actor's read scope for THIS learner and asks for LEARNER_PROFILE_VIEW through the
+    // shared whole-learner gate (a reader who is only the learner's Teacher is refused: exam goals have no subject).
+    expect(canAccessLearnerMock.mock.calls[0].slice(0, 2)).toEqual(['actor-1', VALID_ID]);
+    const { readFileSync } = await import('fs');
+    expect(readFileSync('src/app/api/exam-profiles/route.ts', 'utf8')).toContain("canReadLearnerRoute(actor.id, studentId, 'LEARNER_PROFILE_VIEW', 'DENY')");
   });
 });
 

@@ -1,4 +1,4 @@
--- L10 SF-7 (1/5 of the L10 schema batch) -- parent relationship lifecycle.
+-- L10 SF-7 (1/3 of the L10 schema batch) -- parent relationship lifecycle.
 -- Findings: L3 P1-4, P2-12, CR-04; L4-07, L4-16, L4-17 (CR-L4-04).
 --
 -- 1. parent_invitations.expires_at: an invitation used to live forever, so a

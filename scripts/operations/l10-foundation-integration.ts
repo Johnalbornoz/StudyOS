@@ -16,12 +16,15 @@ import { verifyStudentAccess } from '@/lib/auth';
 import { ownStudentId } from '@/lib/exam-core/route-auth';
 import { resolveOwnedStudent } from '@/lib/identity/access-predicates';
 import { loadAccountStatus, decideAccountGate } from '@/lib/identity/account-status-gate';
-import { getRoleOnboarding, completeRoleOnboarding } from '@/lib/identity/role-onboarding.service';
 import { isOwner, isActiveParentOf, canTeacherAccessLearner, isCoordinatorOfLearner, canAccessLearner, canAccessInstitution, canAccessClass, resolveLearnerReadScope, resolveTeacherClassScope } from '@/lib/authorization';
 import { getTeacherClassExamGaps, scopeExamGapsToSubject } from '@/lib/authorization/teacher-exam-scope';
 import { teacherSubjectScopeForLearner } from '@/lib/authorization';
-import { canonicalConceptsInSubjects, canonicalSubjectOfLearnerConcept, teacherMayReadLearnerConcept } from '@/lib/authorization/learner-result-scope';
-import { isTransferTaskAlreadyGraded } from '@/services/transfer-task-instance.service';
+import { canonicalConceptsInSubjects, canonicalSubjectOfLearnerConcept, teacherMayReadLearnerConcept } from '@/lib/authorization/teacher-subject-scope';
+import { isTransferTaskAlreadyGraded, runTransferSubmissionExclusively, transferSubmissionLockKey } from '@/services/transfer-task-instance.service';
+import { launchLockId } from '@/services/activity-launch-lock.service';
+import { canReadLearnerRoute } from '@/lib/authorization/teacher-subject-scope';
+import { getTeacherStudentOverview } from '@/lib/teacher/read-model.service';
+import { Client } from 'pg';
 import { buildOperationKey } from '@/lib/algorithms/evidence-idempotency';
 import { approveManualPayment, AdminControlledSubscriptionError } from '@/services/membership-admin.service';
 import { getOrCreateStudentId, requireStudentId, StudentRoleRequiredError, authFailureOf } from '@/lib/auth';
@@ -107,16 +110,11 @@ async function main() {
   await db.query(`INSERT INTO institution_memberships (institution_id, user_id, membership_role, status) VALUES ($1, $2, 'INSTITUTION_ADMIN', 'APPROVED')`, [inst, cu.id]);
   await db.query(`INSERT INTO parent_student_relationships (parent_id, student_id, status, responded_at) VALUES ($1, $2, 'accepted', now())`, [parentId, s1]);
 
-  // ------------------------------------------------- SF-12 membership trigger
-  const membership = async (i: string, s: string) => (await db.query(`SELECT status FROM institution_student_memberships WHERE institution_id = $1 AND student_id = $2`, [i, s])).rows[0]?.status ?? null;
+  // ------------------------------------------------- enrolment fixtures
   const e1 = (await db.query(`INSERT INTO class_enrollments (class_id, student_id, status) VALUES ($1, $2, 'PENDING') RETURNING id`, [klass, s1])).rows[0].id;
-  check('SF-12 a PENDING enrolment creates no membership', await membership(inst, s1), null);
   await db.query(`UPDATE class_enrollments SET status = 'ACTIVE' WHERE id = $1`, [e1]);
-  check('SF-12 enrolling creates an ACTIVE membership', await membership(inst, s1), 'ACTIVE');
   const e1b = (await db.query(`INSERT INTO class_enrollments (class_id, student_id, status) VALUES ($1, $2, 'ACTIVE') RETURNING id`, [klass2, s1])).rows[0].id;
   await db.query(`UPDATE class_enrollments SET status = 'ENDED', ended_at = now() WHERE id = $1`, [e1b]);
-  check('SF-12 ending ONE of two enrolments keeps the membership', await membership(inst, s1), 'ACTIVE');
-  check('SF-12 no cross-institution membership row', await membership(inst2, s1), null);
 
   // ------------------------------------------------------- SF-1 / SF-2 student
   check('SF-1 student: owner with ACTIVE role passes verifyStudentAccess', await verifyStudentAccess(s1u.clerk, s1), true);
@@ -281,6 +279,73 @@ async function main() {
   await rejects('CR-L11-06 the database refuses a second evidence row for the same transfer task', () => evidence(buildOperationKey({ operationType: 'TRANSFER', operationId: taskId, conceptId: lcMath })), /learning_evidence_operation_key_unique_idx/);
   check('CR-L11-06 exactly one evidence row for the task', (await db.query(`SELECT count(*)::int AS n FROM learning_evidence WHERE operation_key = $1`, [buildOperationKey({ operationType: 'TRANSFER', operationId: taskId, conceptId: lcMath })])).rows[0].n, 1);
 
+  // ---------------------------------------- L10-R2: Transfer CONCURRENT exactly-once (real Postgres)
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const concurrentTask = randomUUID();
+  let graderCalls = 0;
+  // Stands for the route's gradeAndRecord: a slow AI grading call, then the evidence write (its own connection, committed).
+  const gradeAndRecord = (task: string) => async () => {
+    graderCalls++;
+    await sleep(150);
+    await evidence(buildOperationKey({ operationType: 'TRANSFER', operationId: task, conceptId: lcMath }));
+    return 'graded';
+  };
+  const racers = await Promise.all(Array.from({ length: 8 }, () => runTransferSubmissionExclusively(concurrentTask, lcMath, gradeAndRecord(concurrentTask))));
+  check('R2 concurrent: 8 simultaneous first submissions => exactly ONE grading invocation', graderCalls, 1);
+  check('R2 concurrent: one COMPLETED, every other request the same deterministic refusal', racers.map((r) => r.outcome).sort(), ['COMPLETED', ...Array(7).fill('IN_PROGRESS')]);
+  check('R2 concurrent: exactly one evidence row for the task', (await db.query(`SELECT count(*)::int AS n FROM learning_evidence WHERE operation_key = $1`, [buildOperationKey({ operationType: 'TRANSFER', operationId: concurrentTask, conceptId: lcMath })])).rows[0].n, 1);
+  const advisoryLocks = async () => (await db.query(`SELECT count(*)::int AS n FROM pg_locks WHERE locktype = 'advisory'`)).rows[0].n;
+  check('R2 concurrent: no claim is left behind', await advisoryLocks(), 0);
+  check('R2 concurrent: a later request reads ALREADY_ANSWERED and does not grade', [(await runTransferSubmissionExclusively(concurrentTask, lcMath, gradeAndRecord(concurrentTask))).outcome, graderCalls], ['ALREADY_ANSWERED', 1]);
+
+  // A second wave arriving while the first request is still grading.
+  const wave = randomUUID();
+  graderCalls = 0;
+  const leader = runTransferSubmissionExclusively(wave, lcMath, gradeAndRecord(wave));
+  await sleep(40);
+  const late = await Promise.all([1, 2, 3].map(() => runTransferSubmissionExclusively(wave, lcMath, gradeAndRecord(wave))));
+  check('R2 concurrent: requests arriving mid-grading are refused at once, without grading', [late.map((r) => r.outcome), graderCalls], [['IN_PROGRESS', 'IN_PROGRESS', 'IN_PROGRESS'], 1]);
+  check('R2 concurrent: the leader completes', (await leader).outcome, 'COMPLETED');
+
+  // Failure while grading: nothing is stranded.
+  const failing = randomUUID();
+  graderCalls = 0;
+  const failed = await runTransferSubmissionExclusively(failing, lcMath, async () => { graderCalls++; throw new Error('grader failed'); }).then(() => 'RESOLVED', (e) => e.message);
+  check('R2 failure: the error reaches the caller', failed, 'grader failed');
+  check('R2 failure: the claim is released and no evidence was written -- the task is still OPEN', [await advisoryLocks(), await isTransferTaskAlreadyGraded(failing, lcMath)], [0, false]);
+  check('R2 failure: the retry grades and completes', [(await runTransferSubmissionExclusively(failing, lcMath, gradeAndRecord(failing))).outcome, graderCalls], ['COMPLETED', 2]);
+
+  // Crash: a process holding the claim dies (its connection is gone, nothing committed).
+  const crashed = randomUUID();
+  const dead = new Client({ connectionString: process.env.DATABASE_URL });
+  await dead.connect();
+  await dead.query('BEGIN');
+  check('R2 crash: a "process" takes the claim', (await dead.query(`SELECT pg_try_advisory_xact_lock($1::bigint) AS locked`, [launchLockId(transferSubmissionLockKey(crashed, lcMath))])).rows[0].locked, true);
+  graderCalls = 0;
+  check('R2 crash: while it holds the claim another request is refused', (await runTransferSubmissionExclusively(crashed, lcMath, gradeAndRecord(crashed))).outcome, 'IN_PROGRESS');
+  await dead.end(); // the process dies: no COMMIT, no ROLLBACK, no cleanup code runs
+  await sleep(100);
+  check('R2 crash: the claim died with the connection; the task is OPEN and the next submission grades', [(await runTransferSubmissionExclusively(crashed, lcMath, gradeAndRecord(crashed))).outcome, graderCalls], ['COMPLETED', 1]);
+
+  // ---------------------------------------- L10-R2: Teacher whole-learner scope (real Postgres)
+  check('R2 teacher: learner-wide payload (summary / readiness / exam profiles / eligibility) => refused', await canReadLearnerRoute(tu.id, s1, 'LEARNER_PROGRESS_VIEW', 'DENY'), false);
+  check('R2 teacher: exam profiles => refused', await canReadLearnerRoute(tu.id, s1, 'LEARNER_PROFILE_VIEW', 'DENY'), false);
+  check('R2 teacher: one concept inside the authorized subject => allowed', await canReadLearnerRoute(tu.id, s1, 'LEARNER_PROGRESS_VIEW', { learnerConceptId: lcMath }), true);
+  check('R2 teacher: one concept of ANOTHER subject of the same learner => refused', await canReadLearnerRoute(tu.id, s1, 'LEARNER_PROGRESS_VIEW', { learnerConceptId: lcRead }), false);
+  check('R2 teacher: an unmapped concept => refused', await canReadLearnerRoute(tu.id, s1, 'LEARNER_PROGRESS_VIEW', { learnerConceptId: lcNone }), false);
+  check('R2 teacher of no class of the learner => refused', await canReadLearnerRoute(strangerU.id, s1, 'LEARNER_PROGRESS_VIEW', { learnerConceptId: lcMath }), false);
+  check('R2 owner: unaffected', await canReadLearnerRoute(s1u.id, s1, 'LEARNER_PROGRESS_VIEW', 'DENY'), true);
+  check('R2 coordinator: still not admitted to the whole-learner routes', [await canReadLearnerRoute(cu.id, s1, 'LEARNER_PROGRESS_VIEW', 'DENY'), await canReadLearnerRoute(cu.id, s1, 'LEARNER_PROGRESS_VIEW', { learnerConceptId: lcMath })], [false, false]);
+  // Evidence so far: transfer evidence on the Mathematics concept only. Add mastery + debt in BOTH subjects.
+  for (const c of [lcMath, lcRead]) {
+    await db.query(`INSERT INTO mastery_records (student_id, concept_id, subject_id) VALUES ($1, $2, $3)`, [s1, c, learnerSubject]);
+    await db.query(`INSERT INTO learning_debt (student_id, concept_id, subject_id, status) VALUES ($1, $2, $3, 'active')`, [s1, c, learnerSubject]);
+  }
+  const overview = await getTeacherStudentOverview(tu.id, s1);
+  check('R2 teacher overview: counts cover the authorized subject only (1 of the learner\'s 2 concepts)', [overview.conceptsWithEvidence, overview.areasNeedingAttentionCount], [1, 1]);
+  check('R2 teacher overview: exam-wide readiness is withheld; the subject scope is stated', [overview.latestReadinessStatus, overview.subjectScope], ['WITHHELD', { canonicalSubjectIds: [maths] }]);
+  check('R2 teacher overview: last activity comes from the authorized subject', overview.lastActivityAt !== null, true);
+
   // ---------------------------------------- CR-L11-05: manual payment approval on an admin-set row
   const approval = { studentId: s1, plan: 'MONTHLY', amountCents: 50000, currency: 'COP', occurredAt: new Date().toISOString(), reference: `l10-${randomUUID()}`, method: 'transfer', validUntil: new Date(Date.now() + 30 * 86_400_000).toISOString() };
   await db.query(`INSERT INTO subscriptions (student_id, status, manually_set_by_admin, grant_expires_at, source) VALUES ($1, 'active', true, now() - interval '1 day', 'ADMIN_PROMOTION')`, [s1]);
@@ -293,22 +358,14 @@ async function main() {
   const paid = await approveManualPayment(adminU.id, { ...approval, studentId: s3, reference: `l10-${randomUUID()}` }).then(() => 'APPROVED', (e) => `UNEXPECTED ${e}`);
   check('CR-L11-05 a row no administrator set keeps the existing approval path', [paid, (await db.query(`SELECT status, manually_set_by_admin FROM subscriptions WHERE student_id = $1`, [s3])).rows[0]], ['APPROVED', { status: 'active', manually_set_by_admin: false }]);
 
-  // ------------------------------------------------------- EN-1 seats schema
-  const lic = (await db.query(`INSERT INTO institution_licenses (institution_id, seat_limit, granted_by_user_id) VALUES ($1, 1, $2) RETURNING id`, [inst, adminU.id])).rows[0].id;
-  await rejects('EN-1 a second ACTIVE licence for the same institution is refused', () => db.query(`INSERT INTO institution_licenses (institution_id, seat_limit) VALUES ($1, 5)`, [inst]), /uq_institution_licenses_one_active/);
-  const m1 = (await db.query(`SELECT id FROM institution_student_memberships WHERE institution_id = $1 AND student_id = $2`, [inst, s1])).rows[0].id;
+  // ------------------------------------------------- D-2 / D-4: no deferred schema
+  check('D-2 / D-4 the deferred seat-model and onboarding tables do not exist', (await db.query(`SELECT count(*)::int AS n FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('institution_student_memberships', 'institution_licenses', 'institution_license_seats', 'user_role_onboarding')`)).rows[0].n, 0);
+
+  // ------------------------------------------------- an enrolment ends
   await db.query(`INSERT INTO class_enrollments (class_id, student_id, status) VALUES ($1, $2, 'ACTIVE')`, [klass, s3]);
-  const m3 = (await db.query(`SELECT id FROM institution_student_memberships WHERE institution_id = $1 AND student_id = $2`, [inst, s3])).rows[0].id;
-  const seat1 = (await db.query(`INSERT INTO institution_license_seats (license_id, membership_id, student_id) VALUES ($1, $2, $3) RETURNING id`, [lic, m1, s1])).rows[0].id;
-  await rejects('EN-1 seat N+1 is refused by the database', () => db.query(`INSERT INTO institution_license_seats (license_id, membership_id, student_id) VALUES ($1, $2, $3)`, [lic, m3, s3]), /INSTITUTION_LICENSE_SEATS_EXHAUSTED/);
-  await rejects('EN-1 a seat on another learner\'s membership is refused', () => db.query(`INSERT INTO institution_license_seats (license_id, membership_id, student_id) VALUES ($1, $2, $3)`, [lic, m1, s3]), /INSTITUTION_LICENSE_SEAT_MEMBERSHIP_MISMATCH/);
   await db.query(`UPDATE class_enrollments SET status = 'ENDED', ended_at = now() WHERE id = $1`, [e1]);
-  check('SF-12 ending the LAST enrolment ends the membership', await membership(inst, s1), 'ENDED');
-  check('EN-1 the seat is released when the membership ends', (await db.query(`SELECT status, release_reason FROM institution_license_seats WHERE id = $1`, [seat1])).rows[0], { status: 'RELEASED', release_reason: 'MEMBERSHIP_ENDED' });
-  check('EN-1 the freed seat can now be assigned', (await db.query(`INSERT INTO institution_license_seats (license_id, membership_id, student_id) VALUES ($1, $2, $3) RETURNING status`, [lic, m3, s3])).rows[0].status, 'ASSIGNED');
   check('SF-3/IN-3 after the enrolment ended the teacher no longer reaches the learner', await canTeacherAccessLearner(tu.id, s1), false);
   await enrollStudent(klass, s1); // a NEW row: the ended one is history (CR-L9-02)
-  check('SF-12 re-enrolling re-activates the SAME membership row', (await db.query(`SELECT id, status FROM institution_student_memberships WHERE institution_id = $1 AND student_id = $2`, [inst, s1])).rows[0], { id: m1, status: 'ACTIVE' });
 
   // ------------------------------------------------------ SF-10 one persona
   await rejects('SF-10 a second ACTIVE persona is rejected by the database', () => db.query(`INSERT INTO user_roles (user_id, role, status, granted_via) VALUES ($1, 'PARENT', 'ACTIVE', 'SELF_REGISTRATION')`, [s3u.id]), /uq_user_roles_one_persona/);
@@ -317,14 +374,6 @@ async function main() {
   await rejects('SF-10 re-activating the old persona beside the new one is rejected', () => setRole(s3u.id, 'STUDENT', 'ACTIVE'), /uq_user_roles_one_persona/);
   check('SF-10 a capability beside a persona is allowed', (await db.query(`INSERT INTO user_roles (user_id, role, status, granted_via) VALUES ($1, 'INSTITUTION_ADMIN', 'ACTIVE', 'INVITATION') RETURNING role`, [tu.id])).rows[0].role, 'INSTITUTION_ADMIN');
 
-  // -------------------------------------------------------- SF-8 onboarding
-  check('SF-8 a new Parent has not started onboarding', (await getRoleOnboarding(pu.id, 'PARENT')).started, false);
-  check('SF-8 completing onboarding for a role the account holds', await completeRoleOnboarding(pu.id, 'PARENT', { relationship: 'guardian' }), true);
-  const first = await getRoleOnboarding(pu.id, 'PARENT');
-  check('SF-8 completion persists', [first.completed, first.profile], [true, { relationship: 'guardian' }]);
-  await completeRoleOnboarding(pu.id, 'PARENT');
-  check('SF-8 completing again keeps the first completion and profile', [(await getRoleOnboarding(pu.id, 'PARENT')).completedAt, (await getRoleOnboarding(pu.id, 'PARENT')).profile], [first.completedAt, first.profile]);
-  check('SF-8 onboarding for a role the account does not hold is refused', await completeRoleOnboarding(pu.id, 'TEACHER'), false);
 
   // ------------------------------------------------- CR-L7-01 + SF-7 invites
   const refusal = async (email: string) => {
@@ -396,7 +445,7 @@ async function main() {
   check('SF-7 column default no longer grants access', (await db.query(`SELECT column_default FROM information_schema.columns WHERE table_name = 'parent_student_relationships' AND column_name = 'status'`)).rows[0].column_default.includes('pending'), true);
 
   // ------------------------------------------------------------ CR-L9-02
-  // s1 is ACTIVE in klass (so: an institution student). klass2 holds s1's ENDED row from the SF-12 section.
+  // s1 is ACTIVE in klass (so: an institution student). klass2 holds s1's ENDED row from the enrolment fixtures.
   const rowsOf = async (c: string, st: string) => (await db.query(`SELECT id, status FROM class_enrollments WHERE class_id = $1 AND student_id = $2 ORDER BY created_at, id`, [c, st])).rows;
   const opsCode = async (fn: () => Promise<unknown>) => {
     try {
@@ -442,7 +491,6 @@ async function main() {
   for (const email of [s1u.email, s1u.email, 'nobody@l10.test']) bulk.push(await opsCode(async () => (await addStudentToClass(inst, klass3, email, cu.id)).outcome).then((c) => c));
   check('CR-L9-02 bulk (single add per address): never reactivates, never duplicates', bulk, ['OK', 'ALREADY_ENROLLED', 'NO_STUDENT_ACCOUNT']);
   check('CR-L9-02 bulk: the ended row is history and the only open row is PENDING', (await rowsOf(klass3, s1)).map((r: any) => r.status).sort(), ['ENDED', 'PENDING']);
-  check('CR-L9-02 SF-12 membership is unaffected by pending re-invitations', await membership(inst, s1), 'ACTIVE');
 
   void randomUUID;
   console.log(`\nL10_INTEGRATION: ${passed} passed, ${failures.length} failed`);

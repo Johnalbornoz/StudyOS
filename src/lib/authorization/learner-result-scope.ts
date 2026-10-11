@@ -5,6 +5,7 @@
 import { db } from '@/lib/db';
 import { isAttemptDeletedFromHistory } from '@/lib/exam-core/history.service';
 import { teacherSubjectScopeForLearner, type LearnerReadScope } from './index';
+import { canonicalConceptsInSubjects } from './teacher-subject-scope';
 import { isOwnerScope, type ResultViewContext } from './learner-data-scope';
 
 /**
@@ -36,37 +37,6 @@ export async function isAttemptResultVisibleToStudent(attempt: { id: string; sta
   }
 }
 
-/** Of these canonical concepts, the ones that belong to one of the given canonical subjects. Fails closed to none. */
-export async function canonicalConceptsInSubjects(conceptIds: readonly string[], subjectIds: readonly string[]): Promise<Set<string>> {
-  if (conceptIds.length === 0 || subjectIds.length === 0) return new Set();
-  try {
-    const r = await db.query(`SELECT id FROM canonical_concepts WHERE id = ANY($1::uuid[]) AND canonical_subject_id = ANY($2::uuid[])`, [[...new Set(conceptIds)], [...subjectIds]]);
-    return new Set((r.rows ?? []).map((row: { id: string }) => row.id));
-  } catch {
-    return new Set();
-  }
-}
-
-/**
- * The canonical subject of a LEARNER's own concept, through its published
- * catalogue match (`concept_catalog_mapping`, MATCHED only). Null when the
- * concept has no confirmed canonical counterpart: then it belongs to no
- * teacher's subject.
- */
-export async function canonicalSubjectOfLearnerConcept(learnerConceptId: string): Promise<string | null> {
-  try {
-    const r = await db.query(
-      `SELECT cc.canonical_subject_id
-         FROM concept_catalog_mapping ccm JOIN canonical_concepts cc ON cc.id = ccm.canonical_concept_id
-        WHERE ccm.learner_concept_id = $1 AND ccm.status = 'MATCHED' LIMIT 1`,
-      [learnerConceptId]
-    );
-    return r.rows?.[0]?.canonical_subject_id ?? null;
-  } catch {
-    return null;
-  }
-}
-
 /** Builds the shaping context for one attempt view and one actor. */
 export async function resolveResultViewContext(params: {
   actorUserId: string;
@@ -83,16 +53,4 @@ export async function resolveResultViewContext(params: {
   const teacherSubjectIds = await teacherSubjectScopeForLearner(actorUserId, attempt.studentId);
   const teacherConceptIds = await canonicalConceptsInSubjects(objectiveConceptIds, teacherSubjectIds);
   return { studentVisible, submitted, teacherConceptIds, teacherSubjectIds };
-}
-
-/**
- * May this TEACHER read item-level detail about this learner's own concept?
- * Only when the concept's canonical subject is one the teacher is authorized
- * for with this learner (D-1 final ruling). A concept with no confirmed
- * canonical counterpart is in nobody's subject scope.
- */
-export async function teacherMayReadLearnerConcept(actorUserId: string, learnerId: string, learnerConceptId: string | null | undefined): Promise<boolean> {
-  if (!learnerConceptId) return false;
-  const [subjectIds, conceptSubject] = await Promise.all([teacherSubjectScopeForLearner(actorUserId, learnerId), canonicalSubjectOfLearnerConcept(learnerConceptId)]);
-  return conceptSubject !== null && subjectIds.includes(conceptSubject);
 }

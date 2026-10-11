@@ -4,7 +4,7 @@
 # Builds an EPHEMERAL, throwaway local Postgres (never DEV, Stage, Production
 # or any Neon database; never reads .env or DATABASE_URL), then:
 #   1. applies the baseline and every migration that precedes the L10 batch;
-#   2. applies the five L10 migrations (20261120_*) in order, each in its own
+#   2. applies the L10 migrations (20261120_*) in order, each in its own
 #      transaction, and applies them a second time to prove idempotency;
 #   3. proves the SF-10 pre-check refuses to apply over a multi-persona account;
 #   4. applies the same series through the governed runner (scripts/db-migrate.ts) and prints the
@@ -67,7 +67,7 @@ INSERT INTO user_roles (user_id, role, status, granted_via) VALUES
   ('00000000-0000-0000-0000-00000000aaaa', 'STUDENT', 'ACTIVE', 'BACKFILL'),
   ('00000000-0000-0000-0000-00000000aaaa', 'PARENT', 'ACTIVE', 'BACKFILL');
 SQL
-if $P -1 -f "$REPO/database/migrations/20261120_1400_sf10_single_persona_constraint.sql" l10pre >/dev/null 2>"$W/err"; then
+if $P -1 -f "$REPO/database/migrations/20261120_1200_sf10_single_persona_constraint.sql" l10pre >/dev/null 2>"$W/err"; then
   echo "SF10_PRECHECK = FAIL (applied over a multi-persona account)"; exit 1
 elif grep -q SF10_MULTI_PERSONA_ACCOUNTS_EXIST "$W/err"; then
   echo "SF10_PRECHECK = OK (refused: $(grep -o 'SF10_MULTI_PERSONA_ACCOUNTS_EXIST: [0-9]* account' "$W/err"))"
@@ -108,7 +108,7 @@ awk '/^## 5\./{s=1} s && /^```sql/{f=1;next} /^```/{f=0} s && f' "$PREFLIGHT" > 
 $P -f "$W/preflight-before.sql" l10pre >"$W/pre.out" 2>"$W/err" && echo "PREFLIGHT_BEFORE_SQL = OK ($(grep -c ';' "$W/preflight-before.sql") statements, read-only)" || { echo "PREFLIGHT_BEFORE_SQL = FAIL"; head -5 "$W/err"; exit 1; }
 $P -f "$W/preflight-after.sql" l10 >"$W/post.out" 2>"$W/err" && echo "PREFLIGHT_AFTER_SQL  = OK ($(grep -c ';' "$W/preflight-after.sql") statements, read-only)" || { echo "PREFLIGHT_AFTER_SQL = FAIL"; head -5 "$W/err"; exit 1; }
 if grep -Eiq '^[[:space:]]*(insert|update|delete|alter|create|drop|truncate|grant)[[:space:]]' "$W/preflight-before.sql" "$W/preflight-after.sql"; then echo "PREFLIGHT_READ_ONLY = FAIL (a write statement is present)"; exit 1; else echo "PREFLIGHT_READ_ONLY = OK (SELECT only)"; fi
-echo "PREFLIGHT 2.1 on the seeded multi-persona database: $($P -tAc "SELECT count(*) FROM (SELECT user_id FROM user_roles WHERE role IN ('STUDENT','PARENT','TEACHER') AND status = 'ACTIVE' GROUP BY user_id HAVING count(*) > 1) t" l10pre) account(s) (expected 1: the check finds what 20261120_1400 refuses)"
+echo "PREFLIGHT 2.1 on the seeded multi-persona database: $($P -tAc "SELECT count(*) FROM (SELECT user_id FROM user_roles WHERE role IN ('STUDENT','PARENT','TEACHER') AND status = 'ACTIVE' GROUP BY user_id HAVING count(*) > 1) t" l10pre) account(s) (expected 1: the check finds what 20261120_1200 refuses)"
 
 echo ""
 echo "=== 6. guards + parent service against the migrated database ==="

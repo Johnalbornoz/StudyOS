@@ -289,8 +289,8 @@ describe('B2 architecture', () => {
     const all = migrations.slice(71, 79).map((f) => readFileSync(join(ROOT, 'database/migrations', f), 'utf8').replace(/^\s*--.*$/gm, '')).join('\n');
     expect(all).not.toMatch(/exam_answer_reveals|question_bank_item_curriculum_nodes/);
     // 20261110_1800 (assessment snapshot column) comes from the B5 line; it sorts between the eight and the curriculum link.
-    // + L10 shared-foundation schema batch (20261120_1000..1500): identity, relationships and memberships only; none touches a B2 table.
-    expect(migrations.filter((f) => f >= '20261110_1800')).toEqual(['20261110_1800_assessment_snapshot.sql', '20261111_1000_qb_item_curriculum_nodes.sql', '20261112_1000_qb_review_requires_primary_attribution.sql', '20261120_1000_sf7_parent_relationship_lifecycle.sql', '20261120_1100_sf12_institution_student_memberships.sql', '20261120_1200_en1_institution_licenses.sql', '20261120_1300_sf8_role_onboarding_state.sql', '20261120_1400_sf10_single_persona_constraint.sql', '20261120_1500_cr_l9_02_enrollment_history.sql']);
+    // + L10 shared-foundation schema batch (20261120_1000..1200): parent relationships, enrolment history and the persona index only; none touches a B2 table.
+    expect(migrations.filter((f) => f >= '20261110_1800')).toEqual(['20261110_1800_assessment_snapshot.sql', '20261111_1000_qb_item_curriculum_nodes.sql', '20261112_1000_qb_review_requires_primary_attribution.sql', '20261120_1000_sf7_parent_relationship_lifecycle.sql', '20261120_1100_cr_l9_02_enrollment_history.sql', '20261120_1200_sf10_single_persona_constraint.sql']);
   });
 
   it('the B1 authorities are consumed, not redefined', () => {

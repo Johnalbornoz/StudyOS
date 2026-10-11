@@ -19,6 +19,8 @@ const { w, h } = vi.hoisted(() => ({
   w: {
     subscription: { id: 'sub-1', status: 'active', manuallySetByAdmin: true, grantExpiresAt: '2026-01-01T00:00:00Z' } as any,
     evidenceKeys: new Set<string>(),
+    locks: new Set<string>(),
+    connections: 0,
     taskInstances: new Map<string, any>(),
     sql: [] as string[],
   },
@@ -53,7 +55,27 @@ vi.mock('@/lib/db', () => {
     if (/^INSERT INTO subscriptions \(student_id, status\)/.test(s)) return { rows: [{ id: 'sub-1' }] };
     return { rows: [] };
   };
-  return { db: { query, connect: vi.fn() }, query };
+  // One dedicated connection per claim: a transaction-scoped advisory lock, released when the transaction ends.
+  const connect = async () => {
+    w.connections++;
+    const held: string[] = [];
+    return {
+      query: async (sql: string, p: any[] = []) => {
+        const s = sql.replace(/\s+/g, ' ').trim();
+        if (/pg_try_advisory_xact_lock/.test(s)) {
+          const key = String(p[0]);
+          if (w.locks.has(key)) return { rows: [{ locked: false }] };
+          w.locks.add(key);
+          held.push(key);
+          return { rows: [{ locked: true }] };
+        }
+        if (s === 'ROLLBACK' || s === 'COMMIT') for (const k of held.splice(0)) w.locks.delete(k);
+        return { rows: [] };
+      },
+      release: () => { w.connections--; },
+    };
+  };
+  return { db: { query, connect }, query };
 });
 
 import { NextRequest } from 'next/server';
@@ -75,6 +97,8 @@ const submit = (taskId: string = TASK) =>
 beforeEach(() => {
   w.subscription = { id: 'sub-1', studentId: STUDENT, status: 'active', plan: null, payerUserId: null, currentPeriodEnd: null, manuallySetByAdmin: true, grantExpiresAt: '2026-01-01T00:00:00Z' };
   w.evidenceKeys.clear();
+  w.locks.clear();
+  w.connections = 0;
   w.taskInstances.clear();
   w.taskInstances.set(TASK, instanceRow(TASK));
   w.sql.length = 0;
@@ -140,9 +164,17 @@ describe('CR-L11-06: Transfer exactly-once', () => {
     w.evidenceKeys.add(keyOf(TASK));
     expect(await isTransferTaskAlreadyGraded(TASK, CONCEPT)).toBe(true);
     expect(w.sql.filter((s) => s.includes('learning_evidence')).every((s) => /^SELECT 1 FROM learning_evidence WHERE operation_key = \$1 LIMIT 1$/.test(s))).toBe(true);
+    // In the route the grader is only reachable INSIDE the exclusive runner, which checks the answered state first.
     const route = readFileSync(join(process.cwd(), 'src/app/api/cognitive/transfer/submit/route.ts'), 'utf8');
-    expect(route.indexOf('isTransferTaskAlreadyGraded(canonicalTaskId, validated.conceptId)')).toBeGreaterThan(0);
-    expect(route.indexOf('isTransferTaskAlreadyGraded(canonicalTaskId, validated.conceptId)')).toBeLessThan(route.indexOf('await evaluateTransferResponse('));
+    const open = route.indexOf('await runTransferSubmissionExclusively(canonicalTaskId, validated.conceptId, async () => {');
+    expect(open).toBeGreaterThan(0);
+    expect(route.match(/evaluateTransferResponse\(/g)).toHaveLength(1);
+    expect(route.indexOf('await evaluateTransferResponse(')).toBeGreaterThan(open);
+    expect(route.indexOf('await updateMastery(')).toBeGreaterThan(open);
+    const service = readFileSync(join(process.cwd(), 'src/services/transfer-task-instance.service.ts'), 'utf8');
+    const runner = service.slice(service.indexOf('export async function runTransferSubmissionExclusively'));
+    expect(runner.indexOf('pg_try_advisory_xact_lock')).toBeLessThan(runner.indexOf('isTransferTaskAlreadyGraded('));
+    expect(runner.indexOf('isTransferTaskAlreadyGraded(')).toBeLessThan(runner.indexOf('await gradeAndRecord()'));
   });
 
   it('if the answered state cannot be read, the submission does not proceed to grading', async () => {
@@ -154,6 +186,76 @@ describe('CR-L11-06: Transfer exactly-once', () => {
     expect(h.grade).not.toHaveBeenCalled();
     (db as any).query = original;
     err.mockRestore();
+  });
+
+  describe('L10-R2: CONCURRENT first submissions', () => {
+    const slowGrader = () => {
+      let release!: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      h.grade = vi.fn(async () => { await gate; return { result: 'correct', feedback: 'ok', aiExecution: { aiExecutionId: 'ai-1' } }; });
+      return release;
+    };
+
+    it('two simultaneous submissions of the same task: ONE grading invocation, the other refused deterministically (409 IN_PROGRESS)', async () => {
+      const release = slowGrader();
+      const first = submit();
+      const second = submit();
+      const loser: any = await second; // the loser never waits for the grader
+      expect(loser.status).toBe(409);
+      expect((await loser.json()).error).toBe('TRANSFER_TASK_SUBMISSION_IN_PROGRESS');
+      expect(h.grade).toHaveBeenCalledTimes(1);
+      release();
+      expect(((await first) as any).status).toBe(200);
+      expect(h.grade).toHaveBeenCalledTimes(1);
+      expect(h.updateMastery).toHaveBeenCalledTimes(1);
+      expect([...w.evidenceKeys]).toEqual([keyOf(TASK)]); // one completion / evidence outcome
+    });
+
+    it('ten at once: still one grading invocation and one evidence outcome; nine identical refusals', async () => {
+      const release = slowGrader();
+      const all = Array.from({ length: 10 }, () => submit());
+      await new Promise((r) => setTimeout(r, 5));
+      release();
+      const statuses = (await Promise.all(all)).map((r: any) => r.status).sort();
+      expect(statuses).toEqual([200, 409, 409, 409, 409, 409, 409, 409, 409, 409]);
+      expect(h.grade).toHaveBeenCalledTimes(1);
+      expect(w.evidenceKeys.size).toBe(1);
+    });
+
+    it('after the winner finishes, a later request reads ALREADY_ANSWERED (not IN_PROGRESS): the claim was released', async () => {
+      expect(((await submit()) as any).status).toBe(200);
+      expect(w.locks.size).toBe(0);
+      expect(w.connections).toBe(0);
+      expect((await ((await submit()) as any).json()).error).toBe('TRANSFER_TASK_ALREADY_ANSWERED');
+    });
+
+    it('crash / failure while grading does not strand the task: the claim is released, nothing was written, the next submission grades', async () => {
+      h.grade = vi.fn(async () => { throw new Error('process died mid-grading'); });
+      const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+      expect(((await submit()) as any).status).toBe(500);
+      err.mockRestore();
+      expect([w.locks.size, w.connections, w.evidenceKeys.size]).toEqual([0, 0, 0]);
+      h.grade = vi.fn(async () => ({ result: 'correct', feedback: 'ok', aiExecution: { aiExecutionId: 'ai-2' } }));
+      expect(((await submit()) as any).status).toBe(200);
+      expect(h.grade).toHaveBeenCalledTimes(1);
+    });
+
+    it('the claim is per task: two different tasks are graded in parallel', async () => {
+      w.taskInstances.set(OTHER_TASK, instanceRow(OTHER_TASK));
+      const release = slowGrader();
+      const a = submit(TASK);
+      const b = submit(OTHER_TASK);
+      await new Promise((r) => setTimeout(r, 5));
+      release();
+      expect((await Promise.all([a, b])).map((r: any) => r.status)).toEqual([200, 200]);
+      expect(h.grade).toHaveBeenCalledTimes(2);
+    });
+
+    it('the claim is transaction-scoped (never a session lock, which is unsafe behind the pooler) and never waits', () => {
+      const service = readFileSync(join(process.cwd(), 'src/services/transfer-task-instance.service.ts'), 'utf8').replace(/^\s*(\/\/|\*).*$/gm, '');
+      expect(service).toMatch(/pg_try_advisory_xact_lock\(\$1::bigint\)/);
+      expect(service).not.toMatch(/pg_advisory_lock\(|pg_advisory_unlock|pg_try_advisory_lock\(/);
+    });
   });
 
   it('no schema was added for it', () => {

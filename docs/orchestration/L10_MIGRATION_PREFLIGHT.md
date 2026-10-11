@@ -1,6 +1,6 @@
 # L10 migration preflight — contract for L5
 
-**Who runs this:** `L5_RELEASE_PREFLIGHT`, against each shared database (DEV, Stage) **before** the L10 migration batch `20261120_1000` … `20261120_1500` is applied there.
+**Who runs this:** `L5_RELEASE_PREFLIGHT`, against each shared database (DEV, Stage) **before** the L10 migration batch `20261120_1000` … `20261120_1200` (three files) is applied there.
 
 **What it is:** read-only SQL. Every statement is a `SELECT`. Nothing here writes, locks or alters anything. L10 did not run any of it against a shared database; it was run only against a throwaway local Postgres (`scripts/l10-ephemeral-db-test.sh`).
 
@@ -40,37 +40,45 @@ npm run db:status
 npm run db:migrate -- --dry-run
 ```
 
-Pass when both list exactly these six files as pending, in this order, and nothing else:
+Pass when both list exactly these three files as pending, in this order, and nothing else:
 
 ```
 20261120_1000_sf7_parent_relationship_lifecycle.sql
-20261120_1100_sf12_institution_student_memberships.sql
-20261120_1200_en1_institution_licenses.sql
-20261120_1300_sf8_role_onboarding_state.sql
-20261120_1400_sf10_single_persona_constraint.sql
-20261120_1500_cr_l9_02_enrollment_history.sql
+20261120_1100_cr_l9_02_enrollment_history.sql
+20261120_1200_sf10_single_persona_constraint.sql
 ```
 
 and when neither command reports a checksum mismatch for an already-applied file.
 
 ### 0.3 Ledger after (run after the batch, by whoever applies it)
 
-The same query as 0.1. Expected: `ledger_rows` 89, `migration_rows` 88, `last_version` `20261120_1500`, `l10_rows_already_present` 6. `npm run db:status` reports 0 pending.
+The same query as 0.1. Expected: `ledger_rows` 86, `migration_rows` 85, `last_version` `20261120_1200`, `l10_rows_already_present` 3. `npm run db:status` reports 0 pending.
 
-The migration runner applies each file in its own transaction. If `20261120_1400` stops on its own pre-check (section 2), files `1000`–`1300` are already recorded and `1400`, `1500` remain pending: ledger 87, last `20261120_1300`. That state is safe (no file depends on a later one) but **the application code expects all six**; do not deploy the L10 code against it.
+The migration runner applies each file in its own transaction. If `20261120_1200` stops on its own pre-check (section 2), files `1000` and `1100` are already recorded and `1200` remains pending: ledger 85, last `20261120_1100`. That state is safe (neither file depends on `1200`), and the application code does not depend on `1200` either (the persona rule is also enforced in application code); resolve the accounts section 2 lists, then apply `1200`.
 
 ### 0.4 Names the batch creates do not exist yet (BLOCKER)
 
 ```sql
 SELECT n AS object_name, to_regclass('public.' || n) IS NOT NULL AS already_exists
-FROM unnest(ARRAY[
-  'institution_student_memberships', 'institution_licenses', 'institution_license_seats', 'user_role_onboarding',
-  'uq_user_roles_one_persona', 'uq_class_enrollments_one_open', 'idx_class_enrollments_class_student',
-  'uq_institution_licenses_one_active', 'uq_institution_license_seats_one_per_student'
-]) AS n;
+FROM unnest(ARRAY['uq_user_roles_one_persona', 'uq_class_enrollments_one_open', 'idx_class_enrollments_class_student']) AS n;
 ```
 
 Pass when every `already_exists` is `false`. A `true` means something outside the ledger created the object; report it and stop.
+
+The batch creates no table. It adds five columns (`parent_invitations.expires_at`; `parent_student_relationships.request_count`, `ended_by_user_id`, `ended_reason`), two indexes on `class_enrollments`, one index on `user_roles`, and one trigger function on `class_enrollments`.
+
+### 0.5 Objects that must NOT exist — earlier drafts of this batch (BLOCKER)
+
+An earlier, never-applied draft of the batch created four tables that were removed by ruling (seat model deferred, D-2; no onboarding carrier, D-4). They must not be present anywhere.
+
+```sql
+SELECT n AS object_name, to_regclass('public.' || n) IS NOT NULL AS present
+FROM unnest(ARRAY['institution_student_memberships', 'institution_licenses', 'institution_license_seats', 'user_role_onboarding']) AS n;
+
+SELECT count(*) AS superseded_ledger_rows FROM schema_migrations WHERE version IN ('20261120_1300', '20261120_1400', '20261120_1500');
+```
+
+Pass when every `present` is `false` and `superseded_ledger_rows` is 0. Anything else means a draft of the batch was applied to this database; stop and report — the ledger and the files no longer agree and a corrective migration is needed.
 
 ---
 
@@ -178,7 +186,7 @@ These teachers lose access after the deploy (SF-3, intended). Report the numbers
 
 ---
 
-## 2. Accounts with more than one ACTIVE persona — protects `20261120_1400`
+## 2. Accounts with more than one ACTIVE persona — protects `20261120_1200`
 
 ### 2.1 Count (BLOCKER for the batch)
 
@@ -191,7 +199,7 @@ FROM (
 ) t;
 ```
 
-Pass when 0. If it is not 0, `20261120_1400` refuses to apply (`SF10_MULTI_PERSONA_ACCOUNTS_EXIST`) and changes nothing. Do not edit roles to make it pass: return the list below to the Orchestrator, who decides per account which persona stays.
+Pass when 0. If it is not 0, `20261120_1200` refuses to apply (`SF10_MULTI_PERSONA_ACCOUNTS_EXIST`) and changes nothing. Do not edit roles to make it pass: return the list below to the Orchestrator, who decides per account which persona stays.
 
 ### 2.2 The accounts (only when 2.1 > 0)
 
@@ -251,9 +259,9 @@ This is the L4-07 exposure as it stands. After the L10 code is deployed these in
 
 ---
 
-## 4. Enrolment data against the new constraints — protects `20261120_1500` and `20261120_1100`
+## 4. Enrolment data against the new constraints — protects `20261120_1100`
 
-`20261120_1500` replaces "one row per learner per class" by "one OPEN row (PENDING or ACTIVE) per learner per class".
+`20261120_1100` replaces "one row per learner per class" by "one OPEN row (PENDING or ACTIVE) per learner per class".
 
 ### 4.1 More than one OPEN row for a pair (BLOCKER)
 
@@ -286,7 +294,7 @@ SELECT status, count(*) FROM class_enrollments GROUP BY status ORDER BY status;
 
 Pass when every status is one of `PENDING`, `ACTIVE`, `DECLINED`, `ENDED`. Report the four counts.
 
-### 4.4 Enrolments that point at nothing (BLOCKER)
+### 4.4 Enrolments that point at nothing (RECORD)
 
 ```sql
 SELECT
@@ -298,23 +306,9 @@ LEFT JOIN classes c ON c.id = ce.class_id
 LEFT JOIN students s ON s.id = ce.student_id;
 ```
 
-Pass when all three are 0 (`20261120_1100` backfills one membership per institution and learner from these joins).
+Expected 0 for all three (the foreign keys guarantee the first two). Report the numbers; the batch does not depend on them.
 
-### 4.5 What the membership backfill will create (RECORD)
-
-```sql
-SELECT count(*) AS memberships_the_backfill_will_create
-FROM (
-  SELECT c.institution_id, ce.student_id
-  FROM class_enrollments ce JOIN classes c ON c.id = ce.class_id
-  WHERE ce.status = 'ACTIVE'
-  GROUP BY c.institution_id, ce.student_id
-) t;
-```
-
-After the batch, `SELECT count(*) FROM institution_student_memberships WHERE status = 'ACTIVE'` must equal this number. That equality is the post-apply check for `20261120_1100`.
-
-### 4.6 Closed rows that a later re-add will now leave in place (RECORD)
+### 4.5 Closed rows that a later re-add will now leave in place (RECORD)
 
 ```sql
 SELECT status, count(*) FROM class_enrollments WHERE status IN ('ENDED', 'DECLINED') GROUP BY status;
@@ -322,7 +316,7 @@ SELECT status, count(*) FROM class_enrollments WHERE status IN ('ENDED', 'DECLIN
 
 Context only: these rows become immutable history. Before L10 a coordinator's re-add overwrote them.
 
-### 4.7 SQL outside the application that names the dropped constraint (BLOCKER for the batch)
+### 4.6 SQL outside the application that names the dropped constraint (BLOCKER for the batch)
 
 Not a database query. In the code that will run against this database after the batch — every branch being converged, plus any operator or CI script kept outside the repository — search for:
 
@@ -330,7 +324,15 @@ Not a database query. In the code that will run against this database after the 
 ON CONFLICT (class_id, student_id)
 ```
 
-Pass when there is no occurrence. After `20261120_1500`, Postgres rejects that clause ("there is no unique or exclusion constraint matching the ON CONFLICT specification"). On `feat/l10-shared-foundation` there is none in `src/` or `scripts/` (a unit test enforces it). Every other lane branch still carries the six occurrences it inherited from `4fb45b0`, all in five files that L10 rewrote; they disappear when L10 is merged, and that must be re-checked on the merged line.
+Pass when there is no occurrence. After `20261120_1100`, Postgres rejects that clause ("there is no unique or exclusion constraint matching the ON CONFLICT specification"). On `feat/l10-shared-foundation` there is none in `src/` or `scripts/` (a unit test enforces it). Every other lane branch still carries the six occurrences it inherited from `4fb45b0`, all in five files that L10 rewrote. **Convergence conflict-resolution requirement:** when those branches are merged with L10, take L10's version of the enrolment hunks in
+
+- `src/services/institution.service.ts` (2 occurrences: `enrollStudent`, `inviteStudentToClass`)
+- `src/lib/institution/institution-operations.service.ts` (1: `enrollActive`) — L9 also edited this file; resolve by hand
+- `scripts/operations/track-a-fixtures.ts`, `track-a-learning-plan-e2e-http.ts`, `track-a-curriculum-v2-e2e-http.ts` (1 each)
+
+and re-run this search on the merged line. The unit test `l10-cr-l9-02-enrollment-lifecycle` › "nothing in src/ or scripts/ infers the dropped constraint" does the same search and must pass there.
+
+A reader that assumes one row per (class, learner) is equally wrong after the batch. One exists on L9's branch (`enrollmentOf`); its required behaviour is in the L10 report (CR-L9-ENROLMENT-LOOKUP). The unit test "application code never reads "the" enrolment … without saying which one" fails on the merged line until it is fixed.
 
 ---
 
@@ -348,23 +350,14 @@ SELECT count(*) FILTER (WHERE expires_at IS NULL) AS without_expiry FROM parent_
 SELECT column_default FROM information_schema.columns
 WHERE table_schema = 'public' AND table_name = 'parent_student_relationships' AND column_name = 'status';      -- expect 'pending'
 
--- 5.4 membership backfill matches 4.5
-SELECT count(*) FROM institution_student_memberships WHERE status = 'ACTIVE';                                   -- expect the 4.5 number
+-- 5.4 the batch created no table (see 0.5): expect every `present` = false there
 
--- 5.5 the licence tables are empty: the batch licenses nobody
-SELECT (SELECT count(*) FROM institution_licenses) AS licences, (SELECT count(*) FROM institution_license_seats) AS seats;  -- expect 0, 0
-
--- 5.6 the onboarding carrier is empty
-SELECT count(*) FROM user_role_onboarding;                                                                      -- expect 0
-
--- 5.7 the two indexes and the three triggers exist
+-- 5.5 the three indexes and the one trigger exist
 SELECT indexname FROM pg_indexes WHERE schemaname = 'public'
-  AND indexname IN ('uq_user_roles_one_persona', 'uq_class_enrollments_one_open');                              -- expect 2 rows
-SELECT tgname FROM pg_trigger WHERE NOT tgisinternal AND tgname IN (
-  'trg_class_enrollments_sync_institution_membership', 'trg_class_enrollments_closed_row_guard',
-  'trg_institution_license_seats_guard', 'trg_institution_membership_release_seats');                           -- expect 4 rows
+  AND indexname IN ('uq_user_roles_one_persona', 'uq_class_enrollments_one_open', 'idx_class_enrollments_class_student');  -- expect 3 rows
+SELECT tgname FROM pg_trigger WHERE NOT tgisinternal AND tgname = 'trg_class_enrollments_closed_row_guard';     -- expect 1 row
 
--- 5.8 the old one-row-per-pair constraint is gone
+-- 5.6 the old one-row-per-pair constraint is gone
 SELECT count(*) FROM pg_constraint WHERE conname = 'class_enrollments_unique';                                  -- expect 0
 ```
 
@@ -375,8 +368,9 @@ SELECT count(*) FROM pg_constraint WHERE conname = 'class_enrollments_unique';  
 | # | Check | Kind | Value | Verdict |
 |---|---|---|---|---|
 | 0.1 | Ledger before = 83 rows, last `20261112_1000`, no L10 row | BLOCKER | | |
-| 0.2 | Pending set = the six L10 files, no checksum mismatch | BLOCKER | | |
+| 0.2 | Pending set = the three L10 files, no checksum mismatch | BLOCKER | | |
 | 0.4 | No new object name already exists | BLOCKER | | |
+| 0.5 | No table or ledger row from an earlier draft of the batch | BLOCKER | | |
 | 1.1 | Learners with no account row / never a STUDENT role row | BLOCKER (deploy) | | |
 | 1.1 | `students.user_id IS NULL` | RECORD | | |
 | 1.2 | Accepted parents without link or ACTIVE PARENT role | BLOCKER (deploy) | | |
@@ -391,14 +385,22 @@ SELECT count(*) FROM pg_constraint WHERE conname = 'class_enrollments_unique';  
 | 4.1 | Pairs with more than one OPEN enrolment | BLOCKER | | |
 | 4.2 | `class_enrollments_unique` is the only unique constraint | BLOCKER | | |
 | 4.3 | Enrolment status values | BLOCKER | | |
-| 4.4 | Orphan enrolments | BLOCKER | | |
-| 4.5 | Memberships the backfill will create | RECORD | | |
-| 4.6 | ENDED / DECLINED rows | RECORD | | |
-| 4.7 | `ON CONFLICT (class_id, student_id)` in code that will run | BLOCKER | | |
+| 4.4 | Orphan enrolments | RECORD | | |
+| 4.5 | ENDED / DECLINED rows | RECORD | | |
+| 4.6 | `ON CONFLICT (class_id, student_id)` in code that will run | BLOCKER | | |
 
 "BLOCKER" stops the batch. "BLOCKER (deploy)" does not stop the batch but stops the L10 application code from being deployed against that database until resolved or accepted by the Orchestrator.
 
+## Expected ledger, in one place
+
+| | Rows in `schema_migrations` | Last migration version |
+|---|---|---|
+| Before the L10 batch | **83** (baseline + 82) | `20261112_1000` |
+| After the L10 batch | **86** (baseline + 85) | `20261120_1200` |
+
+Versions added, in order: `20261120_1000`, `20261120_1100`, `20261120_1200`.
+
 ## Not in this contract
 
-- The licence tables (`20261120_1200`) are structure only and still await L11's review; nothing reads them. No preflight is needed for them beyond 0.4.
+- Sponsored access for the pilot is per-student admin / institution grants (D-2); the batch contains no licence or seat schema, so there is nothing to preflight for it.
 - Nothing here checks Clerk. Whether verify-at-sign-up is on, and whether sessions are revoked on suspension, belong to L5's own preflight.

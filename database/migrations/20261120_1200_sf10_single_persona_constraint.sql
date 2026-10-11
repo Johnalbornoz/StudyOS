@@ -1,4 +1,4 @@
--- L10 SF-10 (5/5 of the L10 schema batch) -- one persona per account,
+-- L10 SF-10 (3/3 of the L10 schema batch) -- one persona per account,
 -- enforced by the database. Findings: L3 P2-7, CR-11.
 --
 -- The product rule (Track A amendment, 2026-10-01; src/lib/identity/types.ts)
@@ -20,10 +20,10 @@
 -- assignSelfServiceRole; it is a rule about who may change a persona, not
 -- about what the table may hold.
 --
--- STATUS OF THE DECISION: D-6 ("one persona per account, or several") was
--- not re-ruled for this batch. This file encodes the rule the code base
--- already documents and enforces. If D-6 is ruled the other way, drop the
--- index (rollback below); no data is changed by this file either way.
+-- DECISION: D-6, confirmed by the Orchestrator (L10-R2). One ACTIVE primary
+-- persona per account; Student / Parent / Teacher are mutually exclusive
+-- active personas; administrator and coordinator authority are privileges or
+-- memberships, never an additional persona.
 --
 -- PRE-CHECK -- this migration REFUSES to apply if any account already holds
 -- more than one ACTIVE persona. It changes no data and deletes no role: legacy
@@ -35,11 +35,11 @@
 --   GROUP BY user_id HAVING count(*) > 1;
 --
 -- It is the LAST file of the batch on purpose: if the pre-check stops it,
--- the four files before it are already applied and do not depend on it.
+-- the two files before it are already applied and do not depend on it.
 --
 -- Rollback:
 --   DROP INDEX IF EXISTS public.uq_user_roles_one_persona;
---   DELETE FROM schema_migrations WHERE version = '20261120_1400';
+--   DELETE FROM schema_migrations WHERE version = '20261120_1200';
 
 DO $$
 DECLARE
@@ -51,7 +51,7 @@ BEGIN
     GROUP BY user_id HAVING count(*) > 1
   ) t;
   IF offenders > 0 THEN
-    RAISE EXCEPTION 'SF10_MULTI_PERSONA_ACCOUNTS_EXIST: % account(s) hold more than one ACTIVE persona role; resolve them before applying 20261120_1400 (see the query in this file''s header)', offenders;
+    RAISE EXCEPTION 'SF10_MULTI_PERSONA_ACCOUNTS_EXIST: % account(s) hold more than one ACTIVE persona role; resolve them before applying 20261120_1200 (see the query in this file''s header)', offenders;
   END IF;
 END $$;
 

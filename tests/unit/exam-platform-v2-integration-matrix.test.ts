@@ -154,9 +154,9 @@ describe('E12: one deterministic migration chain', () => {
       '20261111_1000_qb_item_curriculum_nodes.sql',
       // + QB-R1C: the approval trigger requires an explicit PRIMARY attribution (20261112_1000); one function replaced.
       '20261112_1000_qb_review_requires_primary_attribution.sql',
-      // + L10 shared-foundation schema batch (20261120_1000..1500): parent lifecycle, institution-student membership, licence seats,
-      //   role onboarding, one-persona index, enrolment history. Additive except one constraint replaced by a partial index (1500).
-      ...['20261120_1000_sf7_parent_relationship_lifecycle.sql', '20261120_1100_sf12_institution_student_memberships.sql', '20261120_1200_en1_institution_licenses.sql', '20261120_1300_sf8_role_onboarding_state.sql', '20261120_1400_sf10_single_persona_constraint.sql', '20261120_1500_cr_l9_02_enrollment_history.sql']]);
+      // + L10 shared-foundation schema batch (20261120_1000..1200): parent lifecycle, enrolment history, one-persona index.
+      //   Additive except one constraint replaced by a partial index (1100).
+      ...['20261120_1000_sf7_parent_relationship_lifecycle.sql', '20261120_1100_cr_l9_02_enrollment_history.sql', '20261120_1200_sf10_single_persona_constraint.sql']]);
     expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);
   });
 });

@@ -48,7 +48,7 @@ async function query(sql: string, params: any[] = []) {
   }
   return { rows: [], rowCount: 0 };
 }
-vi.mock('@/lib/db', () => ({ db: { query: (sql: string, params?: any[]) => query(sql, params), connect: async () => ({ query: (sql: string, params?: any[]) => query(sql, params), release: () => {} }) } }));
+vi.mock('@/lib/db', () => ({ db: { query: (sql: string, params?: any[]) => query(sql, params), connect: async () => ({ query: (sql: string, params?: any[]) => (/pg_try_advisory_xact_lock/.test(sql) ? Promise.resolve({ rows: [{ locked: true }] }) : query(sql, params)), release: () => {} }) } }));
 
 /** Statements that touch the assessment calendar of a given subject id (read or write). */
 const calendarStatementsFor = (subjectId: string) => log.filter((q) => /assessment_(occurrences|schedule_rules)/.test(q.sql) && q.params.includes(subjectId));

@@ -10,7 +10,7 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { resolveLearnerReadScope } from '@/lib/authorization';
 import { getInterventionSession, listAttemptsForSession } from '@/lib/teaching/session.service';
 import { getDiagnosisById } from '@/lib/diagnostics/diagnosis.service';
-import { teacherMayReadLearnerConcept } from '@/lib/authorization/learner-result-scope';
+import { teacherMayReadLearnerConcept } from '@/lib/authorization/teacher-subject-scope';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 async function handleGET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

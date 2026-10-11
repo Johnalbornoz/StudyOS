@@ -17,7 +17,8 @@ vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => h.query(...a) } }));
 vi.mock('@/lib/exam-core/history.service', () => ({ isAttemptDeletedFromHistory: (...a: any[]) => h.deleted(...a) }));
 
 import { shapeAttemptResultViewForScope, type ResultViewContext } from '@/lib/authorization/learner-data-scope';
-import { isAttemptResultVisibleToStudent, resolveResultViewContext, teacherMayReadLearnerConcept, canonicalConceptsInSubjects } from '@/lib/authorization/learner-result-scope';
+import { isAttemptResultVisibleToStudent, resolveResultViewContext } from '@/lib/authorization/learner-result-scope';
+import { teacherMayReadLearnerConcept, canonicalConceptsInSubjects } from '@/lib/authorization/teacher-subject-scope';
 import { LEARNER_READ_SCOPE } from '@/lib/authorization/permissions';
 import { teacherSubjectScopeForLearner } from '@/lib/authorization';
 
