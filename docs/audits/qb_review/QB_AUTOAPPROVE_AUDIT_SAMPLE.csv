@@ -15,14 +15,14 @@ Si n es mayor que 20, el costo del servicio B es 20·900 + (n − 20)·500, que 
 200 < n.
 
 Por tanto, el menor número entero de cajas que cumple la desigualdad es 201. Además, para n ≤ 20, el servicio A no resulta más barato, pues en ese intervalo se compara 18.000 + 450n con 900n y la desigualdad a favor de A exigiría n > 40, algo imposible en ese intervalo. La respuesta es 201 cajas.",v2.saber11.math/math/saber.formulacion#0,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
-AUDIT,v2.saber11.math/math/saber.argumentacion#2/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Para decidir si amplía el horario de la biblioteca, un colegio encuestó a estudiantes de sus dos turnos. Los resultados fueron:
+AUDIT,v2.saber11.math/math/saber.formulacion#2/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Un centro cultural debe instalar al menos 25 lámparas iguales. El proveedor ofrece estas opciones:
 
-| Turno | Estudiantes encuestados | Apoyan la ampliación | Porcentaje que apoya |
-|---|---:|---:|---:|
-| Mañana | 80 | 52 | 65% |
-| Tarde | 40 | 20 | 50% |
+| Opción de compra | Cantidad de lámparas | Precio |
+|---|---:|---:|
+| Una caja | 6 lámparas | $48.000 |
+| Una lámpara suelta | 1 lámpara | $9.000 |
 
-En un informe se afirma: «El apoyo del turno de la mañana es 15% mayor que el del turno de la tarde, porque 65% − 50% = 15%». En el informe, «15% mayor» pretende expresar un aumento porcentual relativo, no una diferencia en puntos porcentuales.",¿Cuál evaluación de la afirmación del informe es correcta?,"A. Es válida, porque restar los dos porcentajes permite obtener directamente el aumento porcentual relativo: 15%. | B. No es válida, porque la diferencia es de 15 puntos porcentuales y el aumento relativo es 30%, calculado sobre el 50% del turno de la tarde. | C. Es válida, porque 65% / 50% = 1,3; por tanto, el apoyo de la mañana es 130% mayor. | D. No es válida, porque el aumento relativo es 23,1%, obtenido al dividir la diferencia de 15% entre el 65% del turno de la mañana.",B,B,"La resta 65% − 50% = 15% representa una diferencia de 15 puntos porcentuales, no un aumento porcentual relativo. Para calcular el aumento relativo se compara la diferencia con el valor inicial, que es el porcentaje del turno de la tarde: (65% − 50%) / 50% = 15% / 50% = 0,30 = 30%. Por tanto, la afirmación del informe no es válida: el aumento relativo es 30%.",v2.saber11.math/math/saber.argumentacion#2,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+El centro dispone de un presupuesto máximo de $210.000. Todas las lámparas compradas se pueden utilizar.","¿Cuál estrategia permite instalar al menos 25 lámparas, respetar el presupuesto y gastar la menor cantidad posible?","A. Comprar 4 cajas y 1 lámpara suelta, para gastar $201.000. | B. Comprar 3 cajas y 7 lámparas sueltas, para gastar $207.000. | C. Comprar 4 cajas, para gastar $192.000. | D. Comprar 5 cajas, para gastar $240.000.",A,A,"Se compara cuántas cajas pueden comprarse y cuántas lámparas sueltas se necesitarían para llegar a 25. Con 4 cajas se obtienen 24 lámparas, por lo que se necesita 1 lámpara suelta. El costo es 4*48.000 + 9.000 = 201.000 pesos, y se usan 25 lámparas. Con 3 cajas se necesitan 7 lámparas sueltas y el costo es 207.000 pesos, mayor que 201.000. Con 5 cajas se supera el presupuesto, y con 4 cajas solamente no se alcanza la cantidad requerida. Por tanto, la estrategia de menor costo que cumple las dos condiciones es comprar 4 cajas y 1 lámpara suelta.",v2.saber11.math/math/saber.formulacion#2,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
 AUDIT,v2.paa/lectura/paa.lect.evidencia#0/003#0,PAA,Lectura,LECTURA,SELECTED_RESPONSE,"Texto 1
 
 El ayuntamiento plantó 120 árboles nativos en tres colonias que un mapa térmico había señalado como especialmente calurosas. Doce meses después, 103 árboles seguían vivos, lo que el informe municipal describió como una supervivencia aproximada del 86 %. Durante los primeros cuatro meses, las cuadrillas los regaron una vez por semana. El informe también recogió que varios vecinos percibían más sombra en algunas calles.

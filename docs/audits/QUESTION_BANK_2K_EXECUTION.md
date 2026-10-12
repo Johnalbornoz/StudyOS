@@ -111,3 +111,87 @@ QB_GENERATION_BUDGET_USD=<n> OPENAI_API_KEY=... ANTHROPIC_API_KEY=... npx tsx sc
 
 Pass only those three variables; never `--env-file` an application `.env`. The run writes under
 `docs/audits/qb_review/` and ingests nothing.
+
+---
+
+# Addendum — live run under the 25 USD authorisation (2026-10-12)
+
+The sections above describe the state before a budget existed. This addendum records what the live run found.
+
+## Outcome
+
+| | |
+|---|---|
+| Authorised | 25.00 USD |
+| Spent (estimate on assumed prices 5 / 30 USD per million tokens) | 17.47 USD (17.37 in run ledgers + about 0.10 for 18 refused or diagnostic calls) |
+| Provider calls | 668 |
+| Candidates authored | 126 |
+| Machine-certified (`AUTO_APPROVE`) | 27 |
+| Review required | 38 |
+| Rejected | 18 |
+| Student-eligible items created | **0** — nothing was ingested; promotion rules are unchanged |
+| Profiles passing C1 | **0 of 10** |
+
+The run ended when the validation provider returned "credit balance is too low" on the key in
+`studyos-dev/.env.neon-dev`. That is the provider account running out, not the 25 USD cap. Anything else that uses
+that key will fail until it is topped up.
+
+## Runs
+
+| Run | What | Versions | Specs / candidates | Spend |
+|---|---|---|---|---|
+| `qf5-live-001` | preflight, Saber 11 | validators 1.1.0 | 3 / 4 | 0.37 |
+| `qf5-live-002` | C1, 10 profiles, 6 families | validators 1.2.0 | 36 / 65 | 6.97 |
+| `qf5-live-003`, `-004` | solver request refused by the model | 1.3.0 | 12 refused calls | ≈ 0.10 |
+| `qf5-live-005` | re-validation of the 38 parsed candidates of run 002 | validators 1.3.0 | 38 | 2.56 |
+| `qf5-live-006` | fresh out-of-sample C1, 8 profiles, then Saber 11 core tiers | profiles 1.1.0, validators 1.4.0 | 45 / 57 | 7.47 |
+
+Every version change was committed before the calls made under it. No batch was rescored: run 002 was invalidated
+and its candidates were validated again in a new run.
+
+## What the run established
+
+1. **The first batch's "wrong answers" were the validator's.** Run 002 rejected 18 candidates for a key the solver
+   contradicted. Seven were checked by hand and all seven keys were correct. The solver's reply shape put the
+   answer before the working. With the working first, the same 38 candidates gave 0 mismatches. Run 006 also gave
+   0. The one genuinely untrue key seen (preflight) was rejected.
+2. **Three more validator defects** were found and fixed: a parenthesis rule that rejected nine sound items, an
+   option check that treated "61.8 N upward" and "61.8 N downward" as one option, and an arithmetic check that
+   compared amperes with milliamperes.
+3. **No leakage** in any learner-visible text. One construct FAIL (IB Math AA HL) and three provenance flags
+   (Cambridge 0580, AICE 9709 ×2), all rejected.
+4. **CHALLENGE is not being produced.** Of the CHALLENGE specifications that reached the calibrator, 4 of 26 (run
+   005) and 4 of 20 (run 006, after sharpening the request) were read as CHALLENGE. STANDARD items land on tier
+   (10 of 12, 13 of 14).
+5. **The review rate is four to five times the target.** 39 % in run 005, 51 % in run 006, against 10 %. The largest
+   cause is the construct judge returning authenticity MEDIUM (17 of 33 judged in the first part of run 006).
+6. **Restricting to easier tiers does not fix it.** Saber 11 on STANDARD and FOUNDATIONAL only: 18 specifications,
+   9 certified, 8 for review (44 %), first-attempt pass 50 %.
+
+## What it did not establish
+
+Whether the judges are right. No human has looked at any of these items. A 44 % review rate could mean the
+generator writes generic items, or that a model judge will not call routine-but-valid items "HIGH". The 23-item
+review queue and the audit sample of the certified items (`docs/audits/qb_review/`) are the cheapest way to find
+out, and that answer decides whether the next money goes into the generator or into the judge.
+
+## Machine-certified items by family
+
+| Family | Certified | Of them Saber/PAA/… profile |
+|---|---|---|
+| ICFES / Saber 11 | 16 | Matemáticas |
+| PAA | 4 | Lectura 3, Matemáticas 1 |
+| PISA | 4 | Science 3, Mathematics 1 |
+| IB | 3 | Math AA HL Paper 1 |
+| Cambridge | 0 | |
+| AICE | 0 | |
+
+These are candidates that passed every automated gate. They are not in any database, carry no concept
+attribution, no rights row and no human review, and are not Student eligible.
+
+## Cost of 2,000
+
+At the yield of run 006 (16 certified from 45 specifications for 7.47 USD) a machine-certified item costs about
+0.47 USD on the assumed prices, so 2,000 would be roughly 930 USD of generation, with about 2,800 further items
+landing in human review along the way. That figure is not a plan: no profile passes calibration, so scaling is
+not permitted by the gates, and the governed blueprints call for 957 items, not 2,000.

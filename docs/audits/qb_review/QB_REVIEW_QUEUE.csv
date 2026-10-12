@@ -119,6 +119,82 @@ P1,v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/003#1,PISA,Ciencias,SCIENC
 La reducción de temperatura de un día se calcula como la temperatura del aula B menos la del aula A.","Según la regla establecida antes de recoger los datos, ¿cuál es la reducción media de temperatura, en °C, que puede atribuirse a la pintura? Escribe solo el valor numérico.",,1.8,"1,8","Primero se incluyen solo los días en que la diferencia de temperatura exterior es como máximo 1,0 °C. Son válidos los días 1, 2 y 4; los días 3 y 5 se excluyen porque sus diferencias son 1,3 °C y 1,2 °C.
 
 Las reducciones válidas son: día 1, 27,6 − 25,4 = 2,2 °C; día 2, 26,4 − 24,8 = 1,6 °C; día 4, 25,5 − 23,9 = 1,6 °C. La media es (2,2 + 1,6 + 1,6) / 3 = 1,8 °C.",v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,WEAK,MEDIUM,NOT_APPLICABLE,,"CONSTRUCT_WEAK: Compute exterior differences: day1 0,8 (valid), day2 0,6 (valid), day3 1,3 (excluded), day4 0,8 (valid), day5 1,2 (excluded). Reductions on valid days: 2,2; 1,6; 1,6 → mean 1,8 °C. The item requires applying a pre-specified exclusion criterion to data, which reflects experimental control reasoning, but the final step is mostly filtering plus simple arithmetic and asks for no justification, so the epistemic reasoning is modest and the claim 'attributable to the pintura' rests on only three days."
+P1,v2.saber11.math/math/saber.argumentacion#0/002#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"En una huerta escolar, un rectángulo de 5 m de largo y 4 m de ancho se ampliará. El largo aumentará 20 % y el ancho aumentará 10 %. Un estudiante afirma: «El área aumentará 30 %, porque se suman los porcentajes de aumento de las dos dimensiones».",¿Cuál opción evalúa correctamente la afirmación del estudiante sobre el porcentaje de aumento del área?,"A. Es válida: el área aumenta 30 %, porque se suman los porcentajes de las dimensiones. | B. No es válida: el área aumenta 32 %, porque se multiplican los factores 1,20 y 1,10. | C. No es válida: el área aumenta 20 %, porque solo el cambio del largo determina el área. | D. No es válida: el área aumenta 10 %, porque solo el cambio del ancho determina el área.",B,B,"El área inicial es 5 × 4 = 20 m². Después de los aumentos, el largo es 5 × 1,20 = 6 m y el ancho es 4 × 1,10 = 4,4 m. Por tanto, el área nueva es 6 × 4,4 = 26,4 m². El aumento es 26,4 − 20 = 6,4 m², que corresponde a 6,4/20 = 0,32, es decir, 32 %. También puede verse directamente que el área se multiplica por 1,20 × 1,10 = 1,32. La afirmación del estudiante no es válida porque sumar los porcentajes ignora que el segundo aumento se aplica a una dimensión que ya cambió.",v2.saber11.math/math/saber.argumentacion#0,FOUNDATIONAL,STANDARD,BORDERLINE,TOO_HARD,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: The item asks the examinee to validate or refute a claim (additive percentages for area) and to run the check by computing 1,2×1,1=1,32; this is an argumentación move typical of Saber 11, and the proportional-change misconception is a real one. The situation (rectangle dimensions) supports the reasoning, although the garden story is light. The distractors come from plausible faulty procedures (adding percentages, using only one dimension). Weakness: the claim is largely checked by one computation, so the argumentative demand is modest, and the item's label says 'formulation and execution' while it mainly tests validation."
+P1,v2.saber11.math/math/saber.argumentacion#1/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"En una campaña escolar de reciclaje se registró la cantidad de botellas recolectadas en dos semanas.
+
+| Semana | Botellas recolectadas |
+|---|---:|
+| 1 | 240 |
+| 2 | 300 |
+
+Un estudiante afirma: «La cantidad recolectada aumentó 20%, porque el aumento fue de 60 botellas y 60/300 = 0,20».",¿Cuál opción evalúa correctamente el procedimiento del estudiante?,"A. El procedimiento es correcto, porque 60 botellas corresponden al 20% de las recolectadas en la semana 2. | B. El procedimiento es incorrecto, porque el aumento debe compararse con las 240 botellas de la semana 1; por tanto, fue de 25%. | C. El procedimiento es incorrecto, porque el aumento porcentual fue de 60%, que es la diferencia entre las cantidades registradas. | D. El procedimiento es correcto, porque 300/240 = 1,25 y ese resultado representa un aumento de 1,25%.",B,B,"La cantidad aumentó en 300 - 240 = 60 botellas. Para calcular el porcentaje de aumento, la diferencia se compara con la cantidad inicial, que es 240, no con la cantidad final. Entonces, el aumento porcentual es 60/240 = 0,25 = 25%. Por tanto, el procedimiento del estudiante es incorrecto y la opción B es la única que lo evalúa correctamente.",v2.saber11.math/math/saber.argumentacion#1,FOUNDATIONAL,STANDARD,BORDERLINE,TOO_HARD,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: The item asks the learner to validate a student's percentage-change procedure, which is argumentación, and the error (wrong base) is a real, recognizable misconception. The distractors map to plausible faulty procedures (60 as a percent, 1.25 read as 1.25%). The stated claim is 'interpret and represent', but the item mainly evidences argumentación, which is the Saber 11 competency named in the first line, so the fit is acceptable though slightly mismatched to the label. The context is light but the data and the claim drive the reasoning."
+P1,v2.saber11.math/math/saber.formulacion#0/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una institución educativa compara dos planes mensuales de internet para el próximo mes.
+
+| Plan | Cargo fijo mensual | Cargo por cada GB utilizado |
+|---|---:|---:|
+| A | $20.000 | $500 |
+| B | $8.000 | $800 |
+
+Durante el mes actual, la institución utilizó internet para las actividades registradas en la tabla.
+
+| Actividad | Consumo actual |
+|---|---:|
+| Videos educativos | 12 GB |
+| Plataforma de tareas | 8 GB |
+
+Para el próximo mes, se estima que el consumo de videos educativos disminuirá en 1/4 y el de la plataforma de tareas aumentará en 1/2.","¿Qué plan debe escoger la institución para que el costo total del próximo mes sea menor, y cuál será ese costo?","A. Plan A, $30.500 | B. Plan B, $24.800 | C. Plan B, $23.200 | D. Plan B, $28.000",B,B,"El consumo de videos educativos será 12 × (1 - 1/4) = 9 GB. El consumo de la plataforma será 8 × (1 + 1/2) = 12 GB. Por tanto, el consumo total previsto es 9 + 12 = 21 GB.
+
+Con el plan A, el costo sería 20.000 + 500 × 21 = $30.500.
+Con el plan B, el costo sería 8.000 + 800 × 21 = $24.800.
+
+Como $24.800 es menor que $30.500, la institución debe escoger el plan B. La respuesta correcta es B.",v2.saber11.math/math/saber.formulacion#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: Compute: videos 12 - 3 = 9 GB; tareas 8 + 4 = 12 GB; total 21 GB. Plan A: 20.000 + 10.500 = 30.500. Plan B: 8.000 + 16.800 = 24.800. So Plan B at $24.800 is correct (option B). Option A is the cost of the wrong plan, and C and D are plausible error outcomes (C: 8.000+19.000? not clearly; D: 28.000 = 8.000+25.000 is hard to derive), so some distractors are weakly justified. The item requires multi-step strategy: fractional changes, totals, cost function per plan, comparison, which fits formulación y ejecución, and the context drives the reasoning. The mismatch is mild: the claimed competency is formulation/execution, and the item is mostly execution without much representation or argumentation."
+P1,v2.saber11.math/math/saber.formulacion#0/002#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una organización juvenil necesita contratar un servicio de internet móvil para compartirlo durante un mes. La empresa ofrece estos planes:
+
+| Plan | Cargo fijo mensual | Costo por cada GB consumido |
+|---|---:|---:|
+| A | $12.000 | $1.000 |
+| B | $4.000 | $1.400 |
+
+El costo mensual de cada plan se obtiene sumando el cargo fijo y el costo de los gigabytes consumidos.",¿Cuántos gigabytes se deben consumir en un mes para que el costo total sea igual con los dos planes?,A. 10 GB | B. 20 GB | C. 30 GB | D. 40 GB,B,B,"Si x representa la cantidad de gigabytes consumidos, los costos son:
+
+Plan A: 12.000 + 1.000x
+Plan B: 4.000 + 1.400x
+
+Para que sean iguales:
+12.000 + 1.000x = 4.000 + 1.400x
+
+La diferencia entre los cargos fijos es $8.000 y la diferencia entre los costos por GB es $400. Por tanto:
+
+x = 8.000 / 400 = 20
+
+Se deben consumir 20 GB.",v2.saber11.math/math/saber.formulacion#0,FOUNDATIONAL,FOUNDATIONAL,YES,MATCH,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: Equating 12000+1000x = 4000+1400x gives x=20 GB (option B), so the item requires modeling two linear cost functions and solving, which is real formulación y ejecución in a plausible mobile-data setting. Distractors (10, 30, 40) are reachable by slips such as dividing 8000 by 400 wrongly or using the sum of the rates, but the item is a standard break-even linear problem with little interpretive or argumentative demand, so fit is only moderate in depth."
+P1,v2.saber11.math/math/saber.formulacion#1/001#1,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una empresa ofrece dos planes mensuales de internet para hogares. En ambos planes, x representa la cantidad de gigabytes (GB) adicionales consumidos durante el mes.
+
+| Plan | Cargo fijo mensual | Costo por cada GB adicional |
+|---|---:|---:|
+| Básico | $18.000 | $1.500 |
+| Flexible | $10.000 | $2.000 |",¿Cuál ecuación permite determinar el consumo x para el cual el costo mensual es igual en los dos planes?,A. 18.000 + 1.500x = 10.000 + 2.000x | B. 18.000x + 1.500 = 10.000x + 2.000 | C. 18.000 + 2.000x = 10.000 + 1.500x | D. 18.000 + 1.500 + x = 10.000 + 2.000 + x,A,A,"El costo de cada plan se obtiene sumando el cargo fijo y el costo de cada GB adicional multiplicado por x. Por tanto, el costo del plan Básico es 18.000 + 1.500x y el del plan Flexible es 10.000 + 2.000x. Para hallar cuándo son iguales, se igualan estas expresiones: 18.000 + 1.500x = 10.000 + 2.000x. La opción correcta es A.",v2.saber11.math/math/saber.formulacion#1,FOUNDATIONAL,FOUNDATIONAL,YES,MATCH,CONFIRMED,HIGH,WEAK,MEDIUM,PASS,,"CONSTRUCT_WEAK: The item sits in Saber 11's algebra and linear-modeling territory, and the context (two internet plans) is needed to build the equation. However, it only asks the student to translate a table into an equation without solving it, which is largely interpretation and representation, with little formulation and execution of a strategy. The distractors map to plausible errors (coefficient swap, misplaced variable, additive treatment), but the item is a routine, low-demand translation that only weakly matches the claimed formulation and execution competency."
+P1,v2.saber11.math/math/saber.interpretacion#1/002#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una biblioteca organizó dos talleres de lectura. La tabla muestra cuántas personas se inscribieron, qué porcentaje asistió y qué fracción de quienes asistieron completó el taller.
+
+| Taller | Personas inscritas | Porcentaje que asistió | Fracción de asistentes que completó |
+|---|---:|---:|---:|
+| A | 72 | 75% | 2/3 |
+| B | 80 | 75% | 3/4 |","¿Cuántas personas completaron el taller A y cuántas completaron el taller B, respectivamente?",A. 36 personas y 45 personas. | B. 54 personas y 60 personas. | C. 48 personas y 60 personas. | D. 36 personas y 60 personas.,A,A,"En el taller A asistió el 75% de 72 personas: 72 × 75/100 = 54. De esas 54 personas, completaron el taller 2/3: 54 × 2/3 = 36.
+
+En el taller B asistió el 75% de 80 personas: 80 × 75/100 = 60. De esas 60 personas, completaron el taller 3/4: 60 × 3/4 = 45.
+
+Por lo tanto, la opción correcta es A.",v2.saber11.math/math/saber.interpretacion#1,STANDARD,FOUNDATIONAL,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,WEAK,MEDIUM,PASS,,"CONSTRUCT_WEAK: Compute: A: 72*0.75=54, 54*2/3=36; B: 80*0.75=60, 60*3/4=45. Correct answer is 36 and 45 (option A). The item requires reading a table and chaining percentage and fraction, which fits interpretation and strategy, but it is a fairly routine two-step computation with no argumentation and the table is essentially a wrapper for the calculation. Distractors are plausible: B gives attendees only, D mixes A's result with B's attendees, C gives 48 (2/3 of 72) and 60 (attendees of B). All are produced by faulty procedures, so the item is sound but modest in construct depth."
+P1,v2.saber11.math/math/saber.interpretacion#2/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"La biblioteca de un colegio compara los préstamos de libros de ficción y de no ficción realizados durante dos semanas.
+
+| Tipo de libro | Semana 1 | Semana 2 |
+|---|---:|---:|
+| Ficción | 120 | 150 |
+| No ficción | 80 | 50 |
+| Total de préstamos | 200 | 200 |",¿Cuál afirmación representa correctamente el cambio en los préstamos de libros de ficción entre las dos semanas?,A. Los préstamos de ficción aumentaron en 30 y su participación pasó de 60 % a 75 %. | B. Los préstamos de ficción aumentaron en 30 y su participación pasó de 60 % a 70 %. | C. Los préstamos de ficción disminuyeron en 30 y su participación pasó de 75 % a 60 %. | D. Los préstamos de ficción aumentaron en 15 y su participación pasó de 60 % a 75 %.,A,A,"En la semana 1 hubo 120 préstamos de ficción de un total de 200. Su participación fue 120/200 = 60 %.
+
+En la semana 2 hubo 150 préstamos de ficción de un total de 200. Su participación fue 150/200 = 75 %.
+
+La cantidad de préstamos aumentó en 150 - 120 = 30, y la participación aumentó de 60 % a 75 %. Por tanto, la afirmación correcta es la opción A.",v2.saber11.math/math/saber.interpretacion#2,STANDARD,FOUNDATIONAL,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: The item asks the learner to read a table and turn the counts into an absolute change (+30) and a share of the total (60 % to 75 %), which is genuine interpretation and representation of quantitative information. The distractors map to plausible faulty procedures (miscomputed share 70 %, halved or wrong difference 15, reversed direction). The weakness is that the reasoning is light, since it takes only two quick computations and there is little transformation between representations, so fit is moderate rather than strong."
 P2,v2.aice.9709-a/p1/aice.9709.p1.quadratics#0/004#1,AICE,Mathematics (9709),"Pure Mathematics (Papers 1, 2, 3)",SHORT_RESPONSE,,Show that the equation x² − (a + 6)x + 3a + 10 = 0 has two distinct roots both lying strictly between 1 and 5 if and only if −5/2 < a < −2 or 2 < a < 5/2.,,−5/2 < a < −2 or 2 < a < 5/2,"Proved: the roots are distinct and in (1,5) iff discriminant a²−4>0, f(1)=2a+5>0, f(5)=5−2a>0 and axis (a+6)/2 in (1,5), which gives −5/2<a<−2 or 2<a<5/2.","Let f(x) = x² − (a + 6)x + 3a + 10.
 
 If both roots lie strictly between 1 and 5, then f(1) > 0 and f(5) > 0. These give
@@ -158,6 +234,14 @@ P2,v2.saber11.math/math/saber.argumentacion#1/009#1,ICFES,Matemáticas,Matemáti
 | Sur | 80 | 24 | 70 | 21 |
 
 Un estudiante afirma: «La proporción total de personas que pidieron préstamo aumentó 5 puntos porcentuales, porque en la sede Norte pasó de 25% a 30% y en la sede Sur se mantuvo en 30%; por tanto, basta considerar el cambio de la sede Norte».",¿Cuál de las siguientes opciones evalúa correctamente el procedimiento del estudiante?,"A. La afirmación es válida, porque el aumento de 5 puntos porcentuales en la sede Norte representa el cambio de toda la biblioteca. | B. La afirmación no es válida, porque la proporción total pasó de 54/200 = 27% a 75/250 = 30%, es decir, aumentó 3 puntos porcentuales. | C. La afirmación no es válida, porque los préstamos aumentaron en 21 y las inscripciones en 50; por tanto, la proporción total aumentó 21/50 = 42%. | D. La afirmación no es válida, porque el promedio de las proporciones de las sedes pasó de (25% + 30%)/2 = 27,5% a (30% + 30%)/2 = 30%, un aumento de 2,5 puntos porcentuales.",B,B,"Para hallar la proporción total no se deben promediar directamente las proporciones de las sedes ni usar solo el cambio de una sede. Primero se suman los préstamos y las personas inscritas en cada momento. Antes de la campaña hubo 30 + 24 = 54 préstamos entre 120 + 80 = 200 personas, de modo que la proporción total fue 54/200 = 27%. Después hubo 54 + 21 = 75 préstamos entre 180 + 70 = 250 personas, de modo que la proporción total fue 75/250 = 30%. La diferencia es 30% - 27% = 3 puntos porcentuales, no 5. Por eso, la opción B refuta correctamente el procedimiento: considera los tamaños de las dos sedes y compara las proporciones totales.",v2.saber11.math/math/saber.argumentacion#1,CHALLENGE,STANDARD,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,PASS,HIGH,PASS,,"TIER_BORDERLINE: intended CHALLENGE, read as STANDARD (TOO_EASY)"
+P2,v2.saber11.math/math/saber.argumentacion#2/004#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"En dos ediciones de una campaña escolar de donación de libros se registraron estos datos:
+
+| Edición | Estudiantes invitados | Estudiantes participantes |
+|---|---:|---:|
+| 2024 | 80 | 32 |
+| 2025 | 120 | 42 |
+
+Una estudiante afirma: «El porcentaje de participación aumentó 10 puntos porcentuales en 2025, porque participaron 10 estudiantes más que en 2024».",¿Cuál opción evalúa correctamente el procedimiento de la estudiante?,"A. Es válida, porque hubo 10 participantes más y eso equivale a 10 puntos porcentuales. | B. No es válida, porque 32/80 = 40% y 42/120 = 35%; por tanto, bajó 5 puntos porcentuales. | C. Es válida, porque el número de participantes creció 10/32 = 31,25%, que supera el 10%. | D. No es válida, porque 42/80 = 52,5%; por tanto, bajó 12,5 puntos porcentuales.",B,B,"Para hallar el porcentaje de participación se debe dividir el número de participantes entre el número de estudiantes invitados en la misma edición. En 2024, 32/80 = 0,40 = 40%. En 2025, 42/120 = 0,35 = 35%. Por tanto, el porcentaje no aumentó: disminuyó 40% - 35% = 5 puntos porcentuales. La opción B evalúa correctamente la afirmación.",v2.saber11.math/math/saber.argumentacion#2,FOUNDATIONAL,STANDARD,BORDERLINE,TOO_HARD,CONFIRMED,HIGH,PASS,HIGH,PASS,,"TIER_BORDERLINE: intended FOUNDATIONAL, read as STANDARD (TOO_HARD)"
 P2,v2.saber11.math/math/saber.argumentacion#2/008#1,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una institución aplicó una prueba de participación en una campaña ambiental. Se consideró correcta la respuesta de cada estudiante que entregó el material solicitado. El director comparó los resultados antes y después de cambiar la distribución de estudiantes entre las dos jornadas.
 
 | Momento | Jornada | Estudiantes | Respuestas correctas |

@@ -1,0 +1,37 @@
+{
+  "runId": "qf5-live-006",
+  "batchId": "ICFES.SABER11.MATEMATICAS:C1:011",
+  "phase": "C1",
+  "profileId": "ICFES.SABER11.MATEMATICAS",
+  "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.4.0",
+  "cumulativeSpendUsd": 7.260745,
+  "timestamp": "2026-10-12T13:38:34.579Z",
+  "candidateIds": [
+    "v2.saber11.math/math/saber.argumentacion#2/004#0",
+    "v2.saber11.math/math/saber.formulacion#0/002#0"
+  ],
+  "decisions": {
+    "v2.saber11.math/math/saber.argumentacion#2/004#0": "HUMAN_REVIEW",
+    "v2.saber11.math/math/saber.formulacion#0/002#0": "HUMAN_REVIEW"
+  },
+  "metrics": {
+    "rawGenerated": 2,
+    "structuralPass": 2,
+    "answerPass": 2,
+    "constructPass": 2,
+    "difficultyMatch": 1,
+    "autoApproved": 0,
+    "humanReview": 2,
+    "autoRejected": 0,
+    "specifications": 2,
+    "firstAttemptPass": 0,
+    "regenerated": 0,
+    "specificationIssues": 0,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 0,
+    "humanReviewRate": 1,
+    "rejectionRate": 0
+  },
+  "hash": "f680288a15836c6067bf018df9967b3a020485a022aaffc9699bc851315e6938"
+}
