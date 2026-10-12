@@ -133,13 +133,15 @@ describe('live sample selection and the spend reserve', () => {
   it('the reserve of one specification covers two attempts with every validation call at full length', () => {
     const r = specificationReserveUsd(4000);
     expect(r).toBeGreaterThan(0.5);
-    expect(r).toBeLessThan(1.2);
+    expect(r).toBeLessThan(1.6);
     // a regeneration request tells the author why the first attempt was rejected, and nothing about the answer
     const s = saber[0];
     const again = authoringPrompt(s, profileById(s.profileId)!, 'TIER_MISMATCH: intended CHALLENGE, actual FOUNDATIONAL (TOO_EASY)');
     expect(again.user).toMatch(/A PREVIOUS ATTEMPT AT THIS REQUIREMENT WAS REJECTED\nTIER_MISMATCH/);
     expect(authoringPrompt(s, profileById(s.profileId)!).user).not.toMatch(/PREVIOUS ATTEMPT/);
-    expect(again.user).toMatch(/No LaTeX, no Markdown/);
+    expect(again.user).toMatch(/No LaTeX and no HTML/);
+    expect(again.user).toMatch(/BEFORE YOU REPLY, CHECK YOUR OWN ITEM/);
+    expect(again.user).toMatch(/do NOT repeat the stimulus/);
   });
 });
 

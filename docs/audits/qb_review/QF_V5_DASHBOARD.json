@@ -1,0 +1,232 @@
+{
+  "runId": "qf5-live-001",
+  "gates": {
+    "ICFES.SABER11.MATEMATICAS:C1": {
+      "phase": "C1",
+      "pass": false,
+      "unmet": [
+        "FIRST_ATTEMPT_PASS 0 < 0.8"
+      ],
+      "size": 1,
+      "versions": {
+        "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+        "validatorVersion": "qf-v5-validators-1.1.0"
+      }
+    }
+  },
+  "overall": {
+    "rawGenerated": 4,
+    "structuralPass": 4,
+    "answerPass": 3,
+    "constructPass": 1,
+    "difficultyMatch": 0,
+    "autoApproved": 0,
+    "humanReview": 0,
+    "autoRejected": 3,
+    "specifications": 3,
+    "firstAttemptPass": 0,
+    "regenerated": 1,
+    "specificationIssues": 1,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 0.3333,
+    "humanReviewRate": 0,
+    "rejectionRate": 1
+  },
+  "byFamily": {
+    "ICFES": {
+      "rawGenerated": 4,
+      "structuralPass": 4,
+      "answerPass": 3,
+      "constructPass": 1,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 1,
+      "specificationIssues": 1,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 0.3333,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    }
+  },
+  "bySubject": {
+    "Matemáticas": {
+      "rawGenerated": 4,
+      "structuralPass": 4,
+      "answerPass": 3,
+      "constructPass": 1,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 1,
+      "specificationIssues": 1,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 0.3333,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    }
+  },
+  "byProfile": {
+    "ICFES.SABER11.MATEMATICAS": {
+      "rawGenerated": 4,
+      "structuralPass": 4,
+      "answerPass": 3,
+      "constructPass": 1,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 1,
+      "specificationIssues": 1,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 0.3333,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    }
+  },
+  "byDifficulty": {
+    "CHALLENGE": {
+      "rawGenerated": 4,
+      "structuralPass": 4,
+      "answerPass": 3,
+      "constructPass": 1,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 1,
+      "specificationIssues": 1,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 0.3333,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    }
+  },
+  "byItemType": {
+    "SELECTED_RESPONSE": {
+      "rawGenerated": 4,
+      "structuralPass": 4,
+      "answerPass": 3,
+      "constructPass": 1,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 1,
+      "specificationIssues": 1,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 0.3333,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    }
+  },
+  "keyPosition": null,
+  "spend": {
+    "authorizedUsd": 25,
+    "cumulativeUsd": 0.37161,
+    "entries": [
+      {
+        "batchId": "ICFES.SABER11.MATEMATICAS:C1:001",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "estimatedUsd": 0.039015
+      },
+      {
+        "batchId": "ICFES.SABER11.MATEMATICAS:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "estimatedUsd": 0.010255
+      },
+      {
+        "batchId": "ICFES.SABER11.MATEMATICAS:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "estimatedUsd": 0.05415
+      },
+      {
+        "batchId": "ICFES.SABER11.MATEMATICAS:C1:002",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "estimatedUsd": 0.057975
+      },
+      {
+        "batchId": "ICFES.SABER11.MATEMATICAS:C1:002",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "estimatedUsd": 0.016415
+      },
+      {
+        "batchId": "ICFES.SABER11.MATEMATICAS:C1:002",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 3,
+        "succeeded": 2,
+        "failed": 1,
+        "estimatedUsd": 0.038175
+      },
+      {
+        "batchId": "ICFES.SABER11.MATEMATICAS:C1:003",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 2,
+        "succeeded": 2,
+        "failed": 0,
+        "estimatedUsd": 0.090445
+      },
+      {
+        "batchId": "ICFES.SABER11.MATEMATICAS:C1:003",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 2,
+        "succeeded": 2,
+        "failed": 0,
+        "estimatedUsd": 0.033135
+      },
+      {
+        "batchId": "ICFES.SABER11.MATEMATICAS:C1:003",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "estimatedUsd": 0.032045000000000004
+      }
+    ]
+  }
+}

@@ -104,6 +104,11 @@ describe('stage 1-3: specification and structure', () => {
     expect(declaredArithmeticFindings({ ...units, proposedAnswer: 'B' }).map((f) => f.code)).toEqual(['KEY_CONTRADICTS_DECLARED_ARITHMETIC']);
     expect(declaredArithmeticFindings(mcq({ options: [{ label: 'A', text: 'nueve' }, { label: 'B', text: 'diez' }, { label: 'C', text: 'once' }, { label: 'D', text: 'doce' }] }))).toEqual([]);
   });
+  it('the material is shown once: a prompt that repeats its stimulus is rejected', () => {
+    const material = 'En un colegio se encuestó a estudiantes de dos grados sobre su preferencia por incluir fruta en el refrigerio escolar durante el año.';
+    expect(codes(mcq({ stimulus: material }))).toEqual([]);
+    expect(codes(mcq({ stimulus: material, fullLearnerPrompt: `${material} ¿Después de cuántos meses el primer plan supera al segundo?` }))).toEqual(['STIMULUS_REPEATED_IN_PROMPT']);
+  });
   it('internal generation language never reaches the learner', () => {
     for (const leak of ['Target difficulty: hard. ¿Cuál es el valor de x en la ecuación?', 'Expected answer B. ¿Cuál es el valor de x en la ecuación?', 'Según el blueprint, ¿cuál es el valor de x en la ecuación?', 'Dificultad objetivo alta. ¿Cuál es el valor de x en 2x = 4?']) expect(codes(mcq({ fullLearnerPrompt: leak })), leak).toContain('SPEC_LEAKAGE');
     expect(codes(mcq({ options: [{ label: 'A', text: '9' }, { label: 'B', text: '10 (distractor)' }, { label: 'C', text: '11' }, { label: 'D', text: '12' }] }))).toContain('SPEC_LEAKAGE');

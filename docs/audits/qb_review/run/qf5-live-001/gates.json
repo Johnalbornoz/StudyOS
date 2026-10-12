@@ -1,0 +1,14 @@
+{
+  "ICFES.SABER11.MATEMATICAS:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0 < 0.8"
+    ],
+    "size": 1,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.1.0"
+    }
+  }
+}

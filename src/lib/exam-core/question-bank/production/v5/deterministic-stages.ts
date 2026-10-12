@@ -11,7 +11,7 @@ import { textualSimilarity } from '../originality-gate';
 import { CandidateItemSchema, learnerText, type CandidateItem, type GenerationSpecification } from './item';
 import type { QuestionGenerationProfile } from './generation-profile';
 
-export const VALIDATOR_VERSION = 'qf-v5-validators-1.1.0';
+export const VALIDATOR_VERSION = 'qf-v5-validators-1.2.0';
 
 export type Severity = 'FAIL' | 'REVIEW';
 export interface Finding { code: string; severity: Severity; detail: string }
@@ -53,6 +53,8 @@ export function structuralFindings(raw: unknown, spec: GenerationSpecification, 
     for (const r of LEAKAGE_PATTERNS) if (r.test(folded)) f.push(fail('SPEC_LEAKAGE', `${where} matches ${r}`));
     if (!balanced(text)) f.push(fail('TRUNCATED', `${where}: unbalanced parentheses`));
   }
+  // the material and the question are shown together: a prompt that repeats the material shows it to the learner twice
+  if (item.stimulus && squash(item.stimulus).length >= 60 && squash(item.fullLearnerPrompt).includes(squash(item.stimulus).slice(0, 120))) f.push(fail('STIMULUS_REPEATED_IN_PROMPT', 'fullLearnerPrompt repeats the stimulus'));
   for (const [where, text] of texts.filter(([w]) => !w.startsWith('option') && !w.startsWith('stimulus'))) for (const r of TRUNCATED) if (text.trim().length && r.test(text.trim())) f.push(fail('TRUNCATED', `${where} ends mid-sentence`));
 
   const selected = item.itemType === 'SELECTED_RESPONSE' || item.itemType === 'MULTI_SELECT';
