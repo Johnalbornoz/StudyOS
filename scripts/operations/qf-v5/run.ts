@@ -116,13 +116,15 @@ async function generate(): Promise<void> {
   const live = liveModelCall(process.env);
   const size = Number(arg('batch-size') ?? 4);
   let halted = false;
+  const earlier = (arg('exclude-runs')?.split(',') ?? []).flatMap((id) => readJson<RunState | null>(join(OUT, 'run', id, 'state.json'), null)?.records.map((r) => r.slotKey) ?? []);
 
   for (const entry of manifest) {
     if (halted) break;
     const need = entry.phase === 'C2' ? 'C1' : entry.phase === 'SCALE' ? 'C1' : null;
     // nothing is scaled on a profile that has not passed its live calibration under these exact versions
     if (need && !gates[`${entry.profileId}:${need}`]?.pass) { console.error(`SKIPPED ${entry.profileId} ${entry.phase}: no passing ${need} gate under ${versions.profileVersion} / ${versions.validatorVersion}.`); continue; }
-    const done = new Set(state.records.map((r) => r.slotKey));
+    // slots an earlier run already used are never drawn again: a calibration batch is out of sample
+    const done = new Set([...state.records.map((r) => r.slotKey), ...earlier]);
     const chosen = selectForProfile(specifications, entry.profileId, entry.count, done);
     const outcomes: SpecificationOutcome[] = [];
     for (let b = 0; b * size < chosen.length; b += 1) {
@@ -147,7 +149,9 @@ async function generate(): Promise<void> {
       console.log(JSON.stringify({ BATCH_ID: batchId, FAMILY: p.family, PROFILE: p.profileId, RAW_CANDIDATES: result.outcomes.reduce((a, o) => a + o.attempts.length, 0), MACHINE_CERTIFIED: cp.metrics.autoApproved, REVIEW_REQUIRED: cp.metrics.humanReview, REJECTED: cp.metrics.autoRejected, ACTUAL_SPEND: +(spent - before).toFixed(4), CUMULATIVE_SPEND: +spent.toFixed(4), BUDGET_REMAINING: +(budget - spent).toFixed(4), reasons: result.outcomes.filter((o) => o.final.record.reviewDecision !== 'AUTO_APPROVE').map((o) => `${o.final.record.reviewDecision}:${o.final.record.reviewReason.slice(0, 110)}`) }));
       // a wrong key, a construct failure, leakage or a harness error stops this profile at once: no more is spent on it
       const verdict = stopCondition(state.batchesByProfile[entry.profileId]);
-      if (verdict.stop) { console.error(`STOPPED ${entry.profileId}: ${verdict.reasons.join(', ')}`); break; }
+      // the review-rate and tier-drift conditions govern SCALE; a calibration batch runs to its size and is judged by its gate
+      const reasons = entry.phase === 'SCALE' ? verdict.reasons : verdict.reasons.filter((r) => !r.startsWith('HUMAN_REVIEW_OVER') && !r.startsWith('DIFFICULTY_SYSTEMATICALLY'));
+      if (reasons.length) { console.error(`STOPPED ${entry.profileId}: ${reasons.join(', ')}`); break; }
     }
     if (entry.phase !== 'SCALE' && outcomes.length) {
       const gate = calibrationGate(entry.phase, outcomes, entry.count);

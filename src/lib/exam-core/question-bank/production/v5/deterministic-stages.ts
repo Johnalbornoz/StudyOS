@@ -11,7 +11,7 @@ import { textualSimilarity } from '../originality-gate';
 import { CandidateItemSchema, learnerText, type CandidateItem, type GenerationSpecification } from './item';
 import type { QuestionGenerationProfile } from './generation-profile';
 
-export const VALIDATOR_VERSION = 'qf-v5-validators-1.3.0';
+export const VALIDATOR_VERSION = 'qf-v5-validators-1.4.0';
 
 export type Severity = 'FAIL' | 'REVIEW';
 export interface Finding { code: string; severity: Severity; detail: string }

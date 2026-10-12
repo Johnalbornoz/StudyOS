@@ -1,42 +1,18 @@
 priority,item_id,exam_family,subject,component,item_type,stimulus,question,options,proposed_canonical_answer,independent_solver_answer,solution,objective,intended_difficulty,actual_difficulty,tier_fit,direction,answer_match,answer_confidence,construct_fit,authenticity,distractor_quality,validator_flags,reason_for_escalation
-AUDIT,v2.ib.math-aa-hl/p1/aahl.p1.calculus#0/004#0,IB,Mathematics: analysis and approaches,P1,SHORT_RESPONSE,"The curve C has equation y = x⁴ − 2x². The tangent to C at x = 1, together with C, encloses a region R. Let A be the area of R. When R is rotated through 2π radians about the y-axis, it generates a solid of volume V.",Find the exact value of V/A. Give a complete justification for your answer.,,5π/16,5π/16,"The derivative of y = x⁴ − 2x² is
+AUDIT,v2.ib.math-aa-hl/p1/aahl.p1.extended#0/004#0,IB,Mathematics: analysis and approaches,P1,SHORT_RESPONSE,,"Let P(x) = x³ − 3x − 1. Show that the equation P(x) = 0 has exactly three distinct real solutions, and that these solutions are 2cos(π/9), 2cos(5π/9) and 2cos(7π/9). If the solutions are r₁, r₂ and r₃, show also that r₁ + r₂ + r₃ = 0 and r₁r₂r₃ = 1.",,"The equation has exactly three distinct real solutions: 2cos(π/9), 2cos(5π/9) and 2cos(7π/9). Their sum is 0 and their product is 1.","Roots of x³ − 3x − 1 = 0 are 2cos(π/9), 2cos(5π/9), 2cos(7π/9), which are exactly three distinct real roots; their sum is 0 and their product is 1.","P′(x) = 3x² − 3 = 3(x − 1)(x + 1). Hence P is increasing on (−∞, −1) and (1, ∞), and decreasing on (−1, 1).
 
-dy/dx = 4x³ − 4x.
+P(−1) = 1 and P(1) = −3. Also, P(x) → −∞ as x → −∞ and P(x) → ∞ as x → ∞. Therefore, by the intermediate value theorem, there is one root in each of the intervals (−∞, −1), (−1, 1) and (1, ∞). The monotonicity on each interval shows that there can be no more than one root in each interval. Thus P(x) = 0 has exactly three real roots.
 
-At x = 1, dy/dx = 0 and y = 1 − 2 = −1, so the tangent is the line y = −1.
+Using cos(3θ) = 4cos³θ − 3cosθ, put x = 2cosθ. Then
+P(x) = 8cos³θ − 6cosθ − 1 = 2cos(3θ) − 1.
 
-The intersections of the curve and the tangent satisfy
+For θ = π/9, 5π/9 and 7π/9, the values of 3θ are π/3, 5π/3 and 7π/3 respectively. In each case cos(3θ) = 1/2, so P(2cosθ) = 0. The three angles lie in [0, π] and are distinct; since cosθ is strictly decreasing on [0, π], the corresponding three values of x are distinct. As there are exactly three real roots, they are therefore 2cos(π/9), 2cos(5π/9) and 2cos(7π/9).
 
-x⁴ − 2x² = −1,
+Factoring P using its roots gives
+P(x) = (x − r₁)(x − r₂)(x − r₃)
+= x³ − (r₁ + r₂ + r₃)x² + (r₁r₂ + r₁r₃ + r₂r₃)x − r₁r₂r₃.
 
-so
-
-x⁴ − 2x² + 1 = 0
-(x² − 1)² = 0.
-
-Thus the bounded region extends from x = −1 to x = 1. The vertical height of the region is
-
-(x⁴ − 2x²) − (−1) = (x² − 1)².
-
-Therefore
-
-A = ∫ from −1 to 1 (x² − 1)² dx
-  = 2∫ from 0 to 1 (x⁴ − 2x² + 1) dx
-  = 2[ x⁵/5 − 2x³/3 + x ] from 0 to 1
-  = 2(1/5 − 2/3 + 1)
-  = 16/15.
-
-The region is symmetric about the y-axis, so rotating the right half about the y-axis generates the same solid as rotating the whole region. Using cylindrical shells,
-
-V = 2π∫ from 0 to 1 x(x⁴ − 2x² + 1) dx
-  = 2π∫ from 0 to 1 (x⁵ − 2x³ + x) dx
-  = 2π[ x⁶/6 − x⁴/2 + x²/2 ] from 0 to 1
-  = 2π(1/6 − 1/2 + 1/2)
-  = π/3.
-
-Hence
-
-V/A = (π/3)/(16/15) = 5π/16.",v2.ib.math-aa-hl/p1/aahl.p1.calculus#0,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS
+Comparing this with x³ − 3x − 1 gives r₁ + r₂ + r₃ = 0 and −r₁r₂r₃ = −1, so r₁r₂r₃ = 1.",v2.ib.math-aa-hl/p1/aahl.p1.extended#0,CHALLENGE,CHALLENGE,YES,MATCH,JUDGED_EQUIVALENT,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS
 AUDIT,v2.ib.math-aa-hl/p1/aahl.p1.calculus#0/001#0,IB,Mathematics: analysis and approaches,P1,SHORT_RESPONSE,,"A curve C passes through the point (0, 0) and has derivative f′(x) = 3x² − 3, where y = f(x) is the equation of C. Find the exact area enclosed by C and the tangent to C at its local maximum.",,27/4,27/4,"Since f′(x) = 3x² − 3, integrating gives
 f(x) = x³ − 3x + C.
 
@@ -64,9 +40,41 @@ Thus the enclosed region lies between x = −1 and x = 2. On this interval, the 
 = [2x − x⁴/4 + 3x²/2] from −1 to 2
 = 6 − (−3/4)
 = 27/4.",v2.ib.math-aa-hl/p1/aahl.p1.calculus#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS
+AUDIT,v2.saber11.math/math/saber.argumentacion#1/003#1,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una alcaldía comparó dos convocatorias para asignar un subsidio de transporte. Para analizar si una convocatoria fue más efectiva, registró cuántas personas de cada grupo recibieron el subsidio.
+
+| Convocatoria | Grupo | Solicitudes | Subsidios asignados |
+|---|---|---:|---:|
+| X | Mujeres | 30 | 18 |
+| X | Hombres | 10 | 9 |
+| Y | Mujeres | 40 | 20 |
+| Y | Hombres | 60 | 48 |
+
+Un estudiante afirma: «La convocatoria X fue más efectiva que la Y, porque asignó una proporción mayor de subsidios tanto entre las mujeres como entre los hombres; por lo tanto, también tuvo una proporción mayor al considerar todas las solicitudes»",¿Cuál evaluación de la afirmación del estudiante es correcta?,"A. Es incorrecta: aunque X supera a Y en cada grupo, X asignó 27 de 40 subsidios (67,5 %) y Y asignó 68 de 100 (68 %); por tanto, Y tuvo la mayor proporción total. | B. Es correcta: como X supera a Y en cada grupo, necesariamente también supera a Y al reunir todas las solicitudes, sin importar cuántas haya en cada grupo. | C. Es incorrecta: basta comparar las cantidades asignadas, pues X entregó 27 subsidios y Y entregó 68; por tanto, Y tuvo la mayor proporción total. | D. Es correcta: al promediar las proporciones de cada grupo, X obtiene 75 % y Y obtiene 65 %; por tanto, X tuvo la mayor proporción total.",A,A,"En X, entre las mujeres se asignaron 18/30 = 60 % de los subsidios y entre los hombres 9/10 = 90 %. En Y, las proporciones correspondientes son 20/40 = 50 % y 48/60 = 80 %. Por eso, X sí supera a Y dentro de cada grupo.
+
+Sin embargo, la proporción total debe calcularse usando todos los subsidios asignados y todas las solicitudes, no comparando únicamente los grupos por separado ni promediando sus porcentajes. En X se asignaron 18 + 9 = 27 subsidios de 30 + 10 = 40 solicitudes, es decir, 27/40 = 67,5 %. En Y se asignaron 20 + 48 = 68 subsidios de 40 + 60 = 100 solicitudes, es decir, 68 %.
+
+Así, la conclusión del estudiante no se sigue de sus comparaciones por grupo: Y tuvo una proporción total ligeramente mayor. La opción correcta es A.",v2.saber11.math/math/saber.argumentacion#1,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.saber11.math/math/saber.argumentacion#0/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una empresa de transporte encuestó a personas de dos barrios para decidir si debe ampliar una ruta. La tabla muestra el barrio, el número de personas encuestadas y el porcentaje que está a favor de la ampliación.
+
+| Barrio | Personas encuestadas | Porcentaje a favor |
+|---|---:|---:|
+| Norte | 80 | 60% |
+| Sur | 40 | 30% |
+
+Una estudiante afirma: «Para hallar el porcentaje total a favor, basta con promediar los dos porcentajes: (60% + 30%)/2 = 45%».",¿Cuál de las siguientes evaluaciones de la afirmación de la estudiante es correcta?,"A. Es válida, porque los dos barrios deben tener el mismo peso al calcular un promedio de porcentajes; el resultado es 45%. | B. No es válida, porque los porcentajes deben ponderarse por la cantidad encuestada; el porcentaje total es 60/120 = 50%. | C. No es válida, porque al combinar porcentajes se deben sumar directamente; el porcentaje total es 60% + 30% = 90%. | D. Es válida, porque 60% y 30% representan 60 y 30 personas, respectivamente; el porcentaje total es 90/120 = 75%.",B,B,"La cantidad de personas a favor en el barrio Norte es 0,60 × 80 = 48. En el barrio Sur es 0,30 × 40 = 12. Por tanto, hay 48 + 12 = 60 personas a favor de un total de 80 + 40 = 120 encuestadas. El porcentaje total es 60/120 = 50%. La afirmación de la estudiante no es válida porque da el mismo peso a ambos porcentajes, aunque los tamaños de las muestras son diferentes. Por eso, la opción correcta es B.",v2.saber11.math/math/saber.argumentacion#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
 AUDIT,v2.paa/lectura/paa.lect.explicitas#0/001#0,PAA,Lectura,LECTURA,SELECTED_RESPONSE,"Durante seis semanas de 2024, la biblioteca municipal colocó cerca de la entrada una mesa con libros de divulgación científica y un letrero que invitaba a hojearlos. En ese periodo, los préstamos de esos títulos aumentaron 35 % respecto de las seis semanas anteriores; el total de préstamos de la biblioteca aumentó 4 %.
 
 De las 42 personas entrevistadas al salir, 29 dijeron que la nueva ubicación les había hecho notar libros que antes no veían. Sin embargo, las entrevistas se realizaron únicamente entre quienes visitaron la biblioteca. Además, durante las mismas seis semanas, varias escuelas cercanas organizaron una campaña para recomendar lecturas científicas. El informe concluye que conviene repetir la experiencia en otras sucursales y comparar los resultados con un periodo en que no haya una campaña semejante.",¿Cuál conclusión está mejor respaldada por la información del texto?,"A. La nueva ubicación probablemente ayudó a visibilizar algunos títulos, pero no permite atribuirle por sí sola el aumento total. | B. La nueva ubicación fue la causa principal del aumento total, porque los préstamos científicos crecieron más que los demás. | C. La campaña escolar tuvo poca influencia, porque la mayoría de las personas entrevistadas mencionó la ubicación. | D. La nueva ubicación benefició a la mayoría de los residentes, porque 29 de 42 entrevistados la consideraron útil.",A,A,"La opción A es la mejor respaldada. El aumento de los préstamos de los títulos colocados cerca de la entrada y las respuestas de 29 visitantes sugieren que la ubicación pudo hacerlos más visibles. Sin embargo, la campaña escolar ocurrió al mismo tiempo, por lo que no se puede atribuir todo el aumento únicamente a la mesa. Además, como solo se entrevistó a visitantes, las respuestas no representan necesariamente a todos los residentes. Por eso, A combina la inferencia apoyada por los datos con la limitación que el informe reconoce.",v2.paa/lectura/paa.lect.explicitas#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.pisa.2022/science/pisa.sci.evaluate.procedural#0/004#0,PISA,Ciencias,SCIENCE,SHORT_RESPONSE,"Un grupo de estudiantes quiere averiguar si el color de la luz de una lámpara LED influye en el crecimiento de plantas de albahaca. Colocaron 12 plantas bajo una lámpara azul y otras 12 bajo una lámpara blanca durante 14 días. Usaron el mismo tipo de tierra y dieron la misma cantidad de agua a todas las plantas, pero cada lámpara permaneció en un estante distinto.
+
+Al finalizar, calcularon la altura media de las plantas y registraron las condiciones de cada estante.
+
+| Tipo de luz | Intensidad medida | Temperatura media | Altura media final |
+|---|---:|---:|---:|
+| Azul | 420 unidades | 28,1 °C | 18,4 cm |
+| Blanca | 760 unidades | 23,0 °C | 15,9 cm |
+
+La lámpara azul y la blanca no se cambiaron de estante durante el experimento.",¿Qué cambio concreto deberían hacer en una nueva investigación para decidir si la diferencia de altura se debe al color de la luz y no a las otras diferencias entre los estantes? Explica por qué ese cambio permite una conclusión más segura.,,"No se puede atribuir todavía la mayor altura al color, porque también cambiaron la intensidad de la luz y la temperatura. Deberían mantener iguales esas dos condiciones y alternar aleatoriamente las lámparas y las plantas entre los estantes; así las diferencias de altura podrían relacionarse con el color de la luz.","Igualar la intensidad y la temperatura (por ejemplo, poner ambas lámparas en el mismo estante o en condiciones idénticas, o intercambiar los estantes), cambiando solo el color de la luz, para que el color sea la única diferencia y se pueda atribuir la diferencia de altura a él.","La investigación mezcla el efecto del color con el de la intensidad luminosa y la temperatura: las plantas con luz azul recibieron menos luz medida, pero estuvieron a mayor temperatura y en un estante diferente. Por tanto, la mayor altura no demuestra que el color causara el crecimiento. En una nueva prueba deben igualar la intensidad y la temperatura, y distribuir o alternar aleatoriamente las lámparas y las plantas entre los estantes. Así se controlan las explicaciones alternativas y una diferencia persistente de crecimiento puede atribuirse con mayor seguridad al color.",v2.pisa.2022/science/pisa.sci.evaluate.procedural#0,CHALLENGE,CHALLENGE,YES,MATCH,JUDGED_EQUIVALENT,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS
 AUDIT,v2.pisa.2022/science/pisa.sci.evaluate.procedural#0/001#0,PISA,Ciencias,SCIENCE,SELECTED_RESPONSE,"En una ciudad se están instalando marquesinas de autobús con una lámina transparente sobre el techo. El fabricante afirma que la lámina mantiene más fresco el interior al reducir el calentamiento causado por la luz solar.
 
 Un grupo de estudiantes quiere comprobar esta afirmación con dos modelos idénticos de una marquesina. Cada modelo tiene un termómetro en el interior. Disponen de una lámpara halógena fija, una lámina transparente, un cronómetro y una habitación cuya temperatura se mantiene constante. La lámpara calienta más el lado de la mesa que está más cerca de ella.",¿Qué procedimiento proporcionaría la evidencia más sólida para determinar si la lámina reduce el calentamiento del modelo?,"A. Colocar un modelo con lámina y otro sin lámina bajo la lámpara durante 20 minutos, medir la temperatura final una vez y comparar los resultados. | B. Colocar ambos modelos a igual distancia de la lámpara, poner la lámina solo en uno, medir el aumento de temperatura durante 20 minutos, intercambiar sus posiciones a los 10 minutos y repetir la prueba cinco veces. | C. Colocar ambos modelos bajo la lámpara, poner la lámina solo en uno y aumentar también la ventilación de ese modelo para imitar mejor una marquesina real; después comparar sus temperaturas finales. | D. Medir durante 20 minutos un modelo sin lámina y, al día siguiente, medir el mismo modelo con lámina, usando la temperatura final de cada día como comparación.",B,B,"La opción B cambia principalmente una variable: la presencia de la lámina. Los dos modelos se prueban al mismo tiempo y se mide el aumento de temperatura, por lo que se comparan cambios equivalentes aunque no comiencen exactamente a la misma temperatura. Intercambiar las posiciones evita que el lado más cercano a la lámpara favorezca siempre al mismo modelo, y repetir la prueba permite comprobar si el resultado es consistente. Las demás opciones introducen una diferencia no controlada, no repiten la medición o confunden el efecto de la lámina con el de otra variable.",v2.pisa.2022/science/pisa.sci.evaluate.procedural#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS

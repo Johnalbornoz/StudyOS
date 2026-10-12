@@ -14,7 +14,7 @@
  */
 import { EXAM_FAMILIES, type ExamFamily } from '../../../taxonomy';
 
-export const GENERATOR_PROFILE_VERSION = 'qf-v5-profiles-1.0.0-provisional';
+export const GENERATOR_PROFILE_VERSION = 'qf-v5-profiles-1.1.0-provisional';
 
 export const DIFFICULTY_TIERS = ['FOUNDATIONAL', 'STANDARD', 'CHALLENGE'] as const;
 export type DifficultyTier = (typeof DIFFICULTY_TIERS)[number];
