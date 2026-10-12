@@ -5,7 +5,7 @@
 import { readFileSync } from 'fs';
 import path from 'path';
 import { describe, it, expect } from 'vitest';
-import { FALLBACK_DOCUMENT_LANGUAGE, resolveDocumentLanguage } from '@/lib/i18n/document-language';
+import { FALLBACK_DOCUMENT_LANGUAGE, isWorkspacePath, resolveDocumentLanguage } from '@/lib/i18n/document-language';
 import { LOCALES } from '@/lib/i18n/messages';
 
 describe('resolveDocumentLanguage', () => {
@@ -39,6 +39,27 @@ describe('root layout', () => {
   });
 
   it('derives it from the path the proxy forwards', () => {
-    expect(source).toContain('resolveDocumentLanguage((await headers()).get(PATHNAME_HEADER))');
+    expect(source).toContain('resolveRequestDocumentLanguage((await headers()).get(PATHNAME_HEADER))');
+  });
+});
+
+describe('authenticated workspace (OE-003)', () => {
+  it('only /dashboard routes take the person\'s interface language', () => {
+    for (const p of ['/dashboard', '/dashboard/today', '/dashboard/quiz']) expect(isWorkspacePath(p)).toBe(true);
+    for (const p of ['/', '/es', '/sign-in', '/dashboardx', '', null, undefined]) expect(isWorkspacePath(p)).toBe(false);
+  });
+
+  it('resolves it read-only from the same preference the shell renders in', () => {
+    const server = readFileSync(path.resolve(__dirname, '../../src/lib/i18n/document-language.server.ts'), 'utf-8');
+    expect(server).toContain('getUserInterfaceLanguage(userId)');
+    expect(server).not.toMatch(/getOrCreate|INSERT|UPDATE/);
+  });
+
+  it('every shell variant declares the language, and the shell keeps <html lang> in step', () => {
+    const shell = readFileSync(path.resolve(__dirname, '../../src/app/dashboard/LearnerShell.tsx'), 'utf-8');
+    const roots = shell.match(/<div className=[^>]*lx-shell[^>]*>/g) ?? [];
+    expect(roots.length).toBeGreaterThanOrEqual(3);
+    for (const root of roots) expect(root).toContain('lang={locale}');
+    expect(shell).toContain('document.documentElement.lang = locale');
   });
 });

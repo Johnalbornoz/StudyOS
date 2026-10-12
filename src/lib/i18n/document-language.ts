@@ -16,3 +16,8 @@ export function resolveDocumentLanguage(pathname: string | null | undefined): Lo
   const segment = pathname?.split('/')[1];
   return isLocale(segment) ? segment : FALLBACK_DOCUMENT_LANGUAGE;
 }
+
+/** The authenticated app: its language is the signed-in person's interface language, not a route segment. */
+export function isWorkspacePath(pathname: string | null | undefined): boolean {
+  return pathname === '/dashboard' || !!pathname?.startsWith('/dashboard/');
+}

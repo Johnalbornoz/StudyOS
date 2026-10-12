@@ -1,12 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 
 export default function LanguageSwitcher({ locale, label }: { locale: Locale; label: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const selectId = useId();
 
   async function onChange(next: string) {
     setPending(true);
@@ -21,10 +22,11 @@ export default function LanguageSwitcher({ locale, label }: { locale: Locale; la
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label className="label" style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+      <label className="label" htmlFor={selectId} style={{ color: 'var(--text-muted)', fontSize: 11 }}>
         {label}
       </label>
       <select
+        id={selectId}
         value={locale}
         disabled={pending}
         onChange={(e) => onChange(e.target.value)}

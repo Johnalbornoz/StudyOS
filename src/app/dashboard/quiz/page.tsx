@@ -1,7 +1,7 @@
 'use client';
 
 import { SafetyNotice, safetyFromBody, type SafetyNoticeData } from '@/components/safety/SafetyNotice';
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useId, useState, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -324,6 +324,7 @@ export default function QuizPage() {
 
 function QuizPageContent() {
   const searchParams = useSearchParams();
+  const maxQuestionsId = useId();
   const subjectId = searchParams.get('subjectId');
   const conceptId = searchParams.get('conceptId');
   const diagnosisId = searchParams.get('diagnosisId'); // only used for mode=diagnostic_check
@@ -1670,10 +1671,11 @@ function QuizPageContent() {
           <p className="label" style={{ color: 'var(--brand-ink)' }}>{modeLabel(quizMode)}</p>
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '6px 0 var(--space-6)' }}>{modeDesc(quizMode)}</p>
 
-          <label className="label" style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
+          <label className="label" htmlFor={maxQuestionsId} style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
             {t['quiz.maxQuestionsLabel']}: <strong className="tabular">{maxQuestions}</strong>
           </label>
           <input
+            id={maxQuestionsId}
             type="range"
             min={1}
             max={20}

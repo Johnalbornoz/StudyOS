@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { SITE_URL, SITE_NAME } from "@/lib/seo";
 import { PATHNAME_HEADER } from "@/lib/admin/shell-context";
-import { resolveDocumentLanguage } from "@/lib/i18n/document-language";
+import { resolveRequestDocumentLanguage } from "@/lib/i18n/document-language.server";
 import "./globals.css";
 
 // No `weight` array: Inter is a variable font, so omitting it keeps
@@ -45,9 +45,10 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // The document language follows the route locale (/es, /en, ...). The
-  // path is the one src/proxy.ts forwards; reading it renders per request.
-  const lang = resolveDocumentLanguage((await headers()).get(PATHNAME_HEADER));
+  // The document language follows the route locale (/es, /en, ...) and, in
+  // the authenticated workspace, the person's interface language. The path
+  // is the one src/proxy.ts forwards; reading it renders per request.
+  const lang = await resolveRequestDocumentLanguage((await headers()).get(PATHNAME_HEADER));
 
   return (
     <ClerkProvider>

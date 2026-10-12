@@ -1,7 +1,8 @@
 :root {
   --text-primary: #191919;
   --text-secondary: #37352F;
-  --text-muted: #787774;
+  /* 5.4:1 on --bg-base, 5.0:1 on --bg-subtle (WCAG AA for small text). #787774 was 4.48:1 and 4.15:1. */
+  --text-muted: #6B6A67;
   --bg-base: #FFFFFF;
   --bg-subtle: #F7F6F3;
   --border-default: #E7E5E0;
@@ -18,6 +19,10 @@
   --warning-subtle: #F6EBD8;
   --error: #C9372C;
   --error-subtle: #FBE7E5;
+  /* Status text on its own -subtle background (chips): >= 4.5:1, where the base colours are 3.1-4.2:1. */
+  --success-ink: #1A6B2A;
+  --warning-ink: #8A5A12;
+  --error-ink: #A82A21;
   --shadow-sm: 0 1px 2px rgba(25, 25, 25, 0.05);
   --shadow-md: 0 4px 16px rgba(25, 25, 25, 0.07);
   --radius-sm: 6px;
@@ -86,6 +91,9 @@
     --warning-subtle: #3A2E14;
     --error: #E5675C;
     --error-subtle: #3B1A17;
+    --success-ink: #4CAF63;
+    --warning-ink: #E0A94A;
+    --error-ink: #E5675C;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
@@ -244,9 +252,9 @@ a { color: inherit; text-decoration: none; }
   background: currentColor;
   flex-shrink: 0;
 }
-.chip-good { background: var(--success-subtle); color: var(--success); }
-.chip-warn { background: var(--warning-subtle); color: var(--warning); }
-.chip-critical { background: var(--error-subtle); color: var(--error); }
+.chip-good { background: var(--success-subtle); color: var(--success-ink); }
+.chip-warn { background: var(--warning-subtle); color: var(--warning-ink); }
+.chip-critical { background: var(--error-subtle); color: var(--error-ink); }
 
 /* ---------- Mastery bar ---------- */
 .mastery-row { display: flex; align-items: center; gap: var(--space-3); }

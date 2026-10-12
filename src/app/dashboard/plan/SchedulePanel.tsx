@@ -25,7 +25,7 @@
  * version / Transfer & Memory internals are never shown -- the server
  * hands back friendly i18n keys.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { getMessages, Locale } from '@/lib/i18n/messages';
 import { activityLabel } from '../activityLabel';
 import type { ActivityType } from '@/lib/activity-taxonomy';
@@ -73,6 +73,7 @@ export default function SchedulePanel() {
   const [rescheduleFor, setRescheduleFor] = useState<string | null>(null);
   const [extraConcept, setExtraConcept] = useState('');
   const [minutes, setMinutes] = useState(90);
+  const capacityId = useId();
   const tzCaptured = useRef(false);
 
   const t = getMessages(locale);
@@ -211,8 +212,9 @@ export default function SchedulePanel() {
       )}
 
       <div className="card" style={{ marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-        <label className="label" style={{ color: 'var(--text-muted)' }}>{t['plan8.capacityLabel']}</label>
+        <label className="label" htmlFor={capacityId} style={{ color: 'var(--text-muted)' }}>{t['plan8.capacityLabel']}</label>
         <input
+          id={capacityId}
           type="number"
           min={15}
           max={300}
@@ -272,6 +274,7 @@ export default function SchedulePanel() {
                           <>
                             <input
                               type="date"
+                              aria-label={`${t['plan8.reschedule']}: ${item.conceptLabel}`}
                               min={view.horizonStart ?? undefined}
                               max={view.horizonEnd ?? undefined}
                               defaultValue={item.scheduledDate}

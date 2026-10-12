@@ -344,6 +344,13 @@ export default function LearnerShell({
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
 
+  // The document language is the workspace language. The root layout already renders it on <html>
+  // (resolveRequestDocumentLanguage); this keeps the document in step when the language is switched
+  // or when that server read fell back.
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   // Track A: the notifications badge counts UNREAD notifications only. The
   // notifications page announces the new count right after it marks what it
   // displayed as read (or after "mark all" / "mark unread"), so the badge
@@ -502,7 +509,7 @@ export default function LearnerShell({
 
   if (inFocusMode) {
     return (
-      <div className="lx-shell lx-shell--focus">
+      <div className="lx-shell lx-shell--focus" lang={locale}>
         <div className="lx-focusbar">
           <Link href={originExitHref ?? exitHref} className="lx-exit" aria-label={exitLabel}>
             <ArrowLeft size={16} strokeWidth={2.2} aria-hidden />
