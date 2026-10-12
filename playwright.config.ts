@@ -9,7 +9,7 @@
  */
 import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
-import { LOCAL_PORT, VIEWPORTS, resolveBaseUrl, type ViewportName } from './tests/e2e/support/target';
+import { LOCAL_PORT, VIEWPORTS, protectionBypass, resolveBaseUrl, type ViewportName } from './tests/e2e/support/target';
 
 const envFile = process.env.E2E_ENV_FILE;
 if (envFile) {
@@ -19,6 +19,8 @@ if (envFile) {
 
 const { baseUrl, managedServer } = resolveBaseUrl(process.env);
 const OUTPUT = 'tests/e2e/.output';
+// A trace stores every request header. With the protection bypass active that would write the secret to disk.
+const bypassActive = protectionBypass(process.env, baseUrl) !== null;
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -35,7 +37,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: baseUrl,
-    trace: 'retain-on-failure',
+    trace: bypassActive ? 'off' : 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   projects: (Object.keys(VIEWPORTS) as ViewportName[]).map((name) => ({

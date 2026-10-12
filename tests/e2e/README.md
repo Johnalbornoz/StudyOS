@@ -30,6 +30,7 @@ With no `E2E_BASE_URL`, the harness builds this checkout and serves it on `http:
 | Variable | Meaning |
 |---|---|
 | `E2E_BASE_URL` | Audit an already running target instead. Production hosts are refused. |
+| `E2E_VERCEL_BYPASS_SECRET` | The project's Vercel "Protection Bypass for Automation" secret, for a target behind Deployment Protection (Stage). Sent only to the target origin, only to an https `*.vercel.app` host; never printed; tracing is off while it is set. Without it a protected target fails every test with "the browser was sent to vercel.com" instead of being audited as Vercel's login page. |
 | `E2E_ENV_FILE` | Env file loaded before the run. |
 | `E2E_STORAGE_STATE_DIR` | Directory with `student.json`, `parent.json`, `teacher.json`, `institution.json`. Unset: role suites are skipped as `NOT_RUN`. |
 | `E2E_<ROLE>_PATHS` | Extra comma-separated paths to audit for that role. |

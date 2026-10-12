@@ -14,10 +14,13 @@ import {
   ROLE_DEFAULTS,
   VIEWPORTS,
   axeFailImpacts,
+  isVercelProtectionHost,
   primaryLanguage,
+  protectionBypass,
   resolveBaseUrl,
   rolePaths,
 } from '../e2e/support/target';
+import { readFileSync } from 'fs';
 
 describe('L12 harness target', () => {
   it('serves this checkout locally when no target is named', () => {
@@ -94,5 +97,70 @@ describe('L12 harness role sessions', () => {
 
   it('reads hosts from cookies and origins', () => {
     expect(storageStateHosts({ cookies: [{ domain: '.A.test' }, {}], origins: [{ origin: 'https://b.test:8443' }, { origin: 'nonsense' }] })).toEqual(['a.test', 'b.test']);
+  });
+});
+
+describe('L12 harness Deployment Protection bypass', () => {
+  const STAGE = 'https://study-os-stage-study-so.vercel.app';
+  const SECRET = 'not-a-real-secret-0123456789';
+
+  it('without the variable there is no bypass, on any target', () => {
+    expect(protectionBypass({}, STAGE)).toBeNull();
+    expect(protectionBypass({ E2E_VERCEL_BYPASS_SECRET: '   ' }, STAGE)).toBeNull();
+  });
+
+  it('with it, the header is bound to the target origin and nothing else', () => {
+    expect(protectionBypass({ E2E_VERCEL_BYPASS_SECRET: ` ${SECRET} ` }, `${STAGE}/es?x=1`)).toEqual({ origin: STAGE, headers: { 'x-vercel-protection-bypass': SECRET } });
+  });
+
+  it('refuses Production, and never sends the secret to a host that is not an https vercel.app deployment', () => {
+    expect(() => protectionBypass({ E2E_VERCEL_BYPASS_SECRET: SECRET }, 'https://studyus.pro')).toThrow(/Production/);
+    expect(() => protectionBypass({ E2E_VERCEL_BYPASS_SECRET: SECRET }, 'https://www.studyus.pro')).toThrow(/Production/);
+    expect(() => protectionBypass({ E2E_VERCEL_BYPASS_SECRET: SECRET }, 'https://example.org')).toThrow(/not an https \*\.vercel\.app/);
+    expect(() => protectionBypass({ E2E_VERCEL_BYPASS_SECRET: SECRET }, 'http://study-os-stage-study-so.vercel.app')).toThrow(/not an https/);
+    expect(() => protectionBypass({ E2E_VERCEL_BYPASS_SECRET: SECRET }, 'https://vercel.app.evil.test')).toThrow(/not an https/);
+  });
+
+  it('the local build is not behind protection: the secret is not sent to it', () => {
+    expect(protectionBypass({ E2E_VERCEL_BYPASS_SECRET: SECRET }, LOCAL_BASE_URL)).toBeNull();
+    expect(protectionBypass({ E2E_VERCEL_BYPASS_SECRET: SECRET }, 'http://localhost:3100')).toBeNull();
+  });
+
+  it('an error never contains the secret', () => {
+    for (const target of ['https://studyus.pro', 'https://example.org']) {
+      try { protectionBypass({ E2E_VERCEL_BYPASS_SECRET: SECRET }, target); } catch (e) { expect(String((e as Error).message)).not.toContain(SECRET); }
+    }
+  });
+
+  it('recognises where Vercel sends a visitor it does not let through', () => {
+    expect(isVercelProtectionHost('vercel.com')).toBe(true);
+    expect(isVercelProtectionHost('sso.vercel.com')).toBe(true);
+    expect(isVercelProtectionHost('study-os-stage-study-so.vercel.app')).toBe(false);
+    expect(isVercelProtectionHost('notvercel.com')).toBe(false);
+  });
+
+  it('the fixtures attach the header to the target origin only, follow no redirect with it, never print it, and fail a test sent to Vercel', () => {
+    const fx = readFileSync(path.join(process.cwd(), 'tests/e2e/support/fixtures.ts'), 'utf-8');
+    expect(fx).toMatch(/context\.route\(`\$\{bypass\.origin\}\/\*\*`/);
+    expect(fx).toMatch(/maxRedirects: 0/);
+    expect(fx).not.toMatch(/console\.|extraHTTPHeaders: bypass\.headers \}\s*\)\s*;?\s*$/m);
+    expect(fx).toMatch(/isVercelProtectionHost\(host\)/);
+    expect(fx).toMatch(/auto: true/);
+    // every spec goes through those fixtures
+    for (const spec of ['public.spec.ts', 'roles.spec.ts', 'harness.selftest.spec.ts']) {
+      const code = readFileSync(path.join(process.cwd(), 'tests/e2e', spec), 'utf-8');
+      expect(code, spec).toMatch(/from '\.\/support\/fixtures'/);
+      expect(code, spec).not.toMatch(/import \{[^}]*\btest\b[^}]*\} from '@playwright\/test'/);
+    }
+    // a trace records request headers: off while the bypass is active
+    expect(readFileSync(path.join(process.cwd(), 'playwright.config.ts'), 'utf-8')).toMatch(/trace: bypassActive \? 'off' : 'retain-on-failure'/);
+  });
+
+  it('the public spec is as strict as before: exact language in the initial HTML, and now also served by the target itself', () => {
+    const spec = readFileSync(path.join(process.cwd(), 'tests/e2e/public.spec.ts'), 'utf-8');
+    for (const p of ["{ path: '/es', lang: 'es' }", "{ path: '/es/how-it-works', lang: 'es' }", "{ path: '/en', lang: 'en' }", "{ path: '/en/how-it-works', lang: 'en' }", "{ path: '/de', lang: 'de' }"]) expect(spec).toContain(p);
+    expect(spec).toMatch(/\)\?\.\[1\]\)\.toBe\(lang\);/);
+    expect(spec).toMatch(/served by another origin/);
+    expect(spec).toMatch(/toHaveURL\(\/\\\/sign-in\\\?redirect_url=\/\)/);
   });
 });

@@ -4,7 +4,8 @@
  * viewport. Needs an operator-captured session per role (support/session.ts);
  * without one the suite reports NOT_RUN, it does not pass.
  */
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './support/fixtures';
 import {
   expectDocumentLanguage,
   expectNavigationControlsNamed,

@@ -4,7 +4,7 @@
  * test passes only if the assertion fails) and must accept the repaired page.
  * Without this, a green run could mean the checks see nothing.
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support/fixtures';
 import { expectDocumentLanguage, expectNavigationControlsNamed, expectNoAccessibilityViolations, expectNoHorizontalOverflow } from './support/audit';
 
 const ICON = '<svg width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="8"/></svg>';

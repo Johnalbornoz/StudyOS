@@ -14,6 +14,10 @@
  *                       role suites are skipped, never silently passed. The
  *                       harness never signs in by itself.
  *   E2E_<ROLE>_PATHS    extra comma-separated paths to audit for a role.
+ *   E2E_VERCEL_BYPASS_SECRET  the project's Vercel "Protection Bypass for Automation" secret, for a target
+ *                       behind Vercel Deployment Protection. Sent only to the target origin, only over https,
+ *                       only to a *.vercel.app host. Never printed. Unset: no bypass; a protected target then
+ *                       fails the run loudly (see fixtures.ts) instead of being audited as Vercel's login page.
  *   E2E_KNOWN_FINDINGS  expected (default) | strict. See known-findings.ts.
  *   E2E_AXE_FAIL_ON     extra axe impacts that fail a page, on top of the release
  *                       policy (see AXE_POLICY). It can tighten, never loosen.
@@ -73,6 +77,34 @@ export function resolveBaseUrl(env: Env): { baseUrl: string; managedServer: bool
     throw new Error(`E2E_BASE_URL points at Production (${url.hostname}). The browser harness never runs against Production.`);
   }
   return { baseUrl: url.origin, managedServer: false };
+}
+
+export const VERCEL_BYPASS_ENV = 'E2E_VERCEL_BYPASS_SECRET';
+export const VERCEL_BYPASS_HEADER = 'x-vercel-protection-bypass';
+/** Where Vercel Deployment Protection sends a visitor it does not let through. */
+export const VERCEL_PROTECTION_HOSTS = ['vercel.com'] as const;
+
+export const isVercelProtectionHost = (hostname: string) => {
+  const host = hostname.toLowerCase();
+  return VERCEL_PROTECTION_HOSTS.some((p) => host === p || host.endsWith(`.${p}`));
+};
+
+/**
+ * The Deployment Protection bypass for this run, or null when none applies.
+ * The secret goes to the target origin and nowhere else: the caller attaches
+ * `headers` only to requests whose origin is `origin`.
+ */
+export function protectionBypass(env: Env, baseUrl: string): { origin: string; headers: Record<string, string> } | null {
+  const secret = env[VERCEL_BYPASS_ENV]?.trim();
+  if (!secret) return null;
+  const url = new URL(baseUrl);
+  if (isProductionHost(url.hostname)) throw new Error(`${VERCEL_BYPASS_ENV} is set for a Production target (${url.hostname}). The browser harness never runs against Production.`);
+  // the local build is not behind Deployment Protection: the secret is not sent to it
+  if (url.hostname === '127.0.0.1' || url.hostname === 'localhost') return null;
+  if (url.protocol !== 'https:' || !url.hostname.toLowerCase().endsWith('.vercel.app')) {
+    throw new Error(`${VERCEL_BYPASS_ENV} is set but the target (${url.origin}) is not an https *.vercel.app deployment; the secret is not sent there.`);
+  }
+  return { origin: url.origin, headers: { [VERCEL_BYPASS_HEADER]: secret } };
 }
 
 /** The role's home first, then any extra paths from E2E_<ROLE>_PATHS. Only same-origin absolute paths are accepted. */

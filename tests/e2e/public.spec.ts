@@ -2,7 +2,7 @@
  * L12 / UX-1 -- pages reachable without a session: the marketing site in
  * Spanish and English, sign-in and sign-up. Runs at every viewport.
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support/fixtures';
 import { expectDocumentLanguage, expectNavigationControlsNamed, expectNoAccessibilityViolations, expectNoHorizontalOverflow, openPage } from './support/audit';
 import { coversKnownFinding } from './support/known-findings';
 
@@ -45,7 +45,9 @@ for (const { path, lang } of PUBLIC_PAGES) {
       // What a crawler or a reader without JavaScript receives.
       test(`serves <html lang="${lang}"> in the initial HTML`, async ({ request }) => {
         coversKnownFinding('KF-L12-01');
-        const html = await (await request.get(path)).text();
+        const response = await request.get(path);
+        expect(new URL(response.url()).origin, `the initial HTML for ${path} was served by another origin`).toBe(new URL(test.info().project.use.baseURL!).origin);
+        const html = await response.text();
         expect(html.match(/<html[^>]*\slang="([^"]*)"/)?.[1]).toBe(lang);
       });
     } else {
