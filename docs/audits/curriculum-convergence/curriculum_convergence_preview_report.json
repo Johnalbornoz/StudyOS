@@ -1,0 +1,214 @@
+{
+ "db": "53d158d5811e7ee0",
+ "mode": "APPLIED",
+ "nodeTypes": {
+  "before": {
+   "DOMAIN": 17,
+   "EXAM_SECTION": 263,
+   "SECTION": 4,
+   "TOPIC": 174
+  },
+  "after": {
+   "DOMAIN": 17,
+   "EXAM_SECTION": 263,
+   "SECTION": 4,
+   "TOPIC": 174
+  }
+ },
+ "paaNodeTypes": {
+  "before": {
+   "DOMAIN": 17,
+   "EXAM_SECTION": 4,
+   "SECTION": 4,
+   "TOPIC": 84
+  },
+  "after": {
+   "DOMAIN": 17,
+   "EXAM_SECTION": 4,
+   "SECTION": 4,
+   "TOPIC": 84
+  }
+ },
+ "paa": {
+  "created": {
+   "sections": 0,
+   "domains": 0,
+   "topics": 0
+  },
+  "existing": {
+   "sections": 4,
+   "domains": 17,
+   "topics": 84
+  },
+  "state": {
+   "sections": 4,
+   "domains": 17,
+   "topics": 84,
+   "topicsByAuthority": {
+    "OFFICIAL": 83,
+    "STUDYUS_POLICY": 1
+   }
+  },
+  "objectivesMoved": 0
+ },
+ "aice": {
+  "created": 0,
+  "existing": 89,
+  "structures": [
+   {
+    "syllabusCode": "9702",
+    "level": "AS",
+    "structureVersionId": "dd89989e-804e-456e-ad48-3ad19676758a",
+    "topicsBefore": 12,
+    "topicsAfter": 12,
+    "created": 0,
+    "existing": 12
+   },
+   {
+    "syllabusCode": "9702",
+    "level": "A",
+    "structureVersionId": "2ba44c2e-95fb-49f8-b995-e39c4d95167b",
+    "topicsBefore": 27,
+    "topicsAfter": 27,
+    "created": 0,
+    "existing": 27
+   },
+   {
+    "syllabusCode": "9700",
+    "level": "AS",
+    "structureVersionId": "5e3868a2-cf6b-48d9-bb44-73275a9e144c",
+    "topicsBefore": 12,
+    "topicsAfter": 12,
+    "created": 0,
+    "existing": 12
+   },
+   {
+    "syllabusCode": "9700",
+    "level": "A",
+    "structureVersionId": "4d49e51b-7008-4716-81f3-3bf5308572be",
+    "topicsBefore": 21,
+    "topicsAfter": 21,
+    "created": 0,
+    "existing": 21
+   },
+   {
+    "syllabusCode": "9708",
+    "level": "AS",
+    "structureVersionId": "2502887b-d96b-499f-ba1b-460789756a6a",
+    "topicsBefore": 6,
+    "topicsAfter": 6,
+    "created": 0,
+    "existing": 6
+   },
+   {
+    "syllabusCode": "9708",
+    "level": "A",
+    "structureVersionId": "11dc4079-c716-4b0b-b446-4269cbdf6bed",
+    "topicsBefore": 11,
+    "topicsAfter": 11,
+    "created": 0,
+    "existing": 11
+   }
+  ],
+  "sourceGaps": [
+   {
+    "syllabusCode": "9709",
+    "status": "CURRICULUM_DATA_NOT_READY",
+    "gap": "the governed source lists 6 of 7 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
+   },
+   {
+    "syllabusCode": "9701",
+    "status": "CURRICULUM_DATA_NOT_READY",
+    "gap": "the governed source lists 8 of 10 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
+   },
+   {
+    "syllabusCode": "9239",
+    "status": "CURRICULUM_DATA_NOT_READY",
+    "gap": "the governed source lists 3 of 3 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
+   },
+   {
+    "syllabusCode": "9093",
+    "status": "CURRICULUM_DATA_NOT_READY",
+    "gap": "the governed source lists 4 of 4 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
+   }
+  ]
+ },
+ "canonicalSubjects": {
+  "unmappedBefore": 48,
+  "mapped": [],
+  "unmappedAfter": 48,
+  "classificationBefore": {
+   "NEEDS_HUMAN_DECISION": 43,
+   "NOT_APPLICABLE": 2,
+   "DUPLICATE_LEGACY": 3
+  },
+  "classificationAfter": {
+   "NEEDS_HUMAN_DECISION": 43,
+   "NOT_APPLICABLE": 2,
+   "DUPLICATE_LEGACY": 3
+  }
+ },
+ "structureVersions": {
+  "zeroMappingBefore": 52,
+  "zeroMappingAfter": 52,
+  "classificationAfter": {
+   "EXPECTED_TO_HAVE_CONCEPT_MAPPINGS": 4,
+   "MAPPING_DATA_MISSING": 43,
+   "NON_ACADEMIC_COMPONENT": 2,
+   "LEGACY_RETIRED": 3
+  }
+ },
+ "gates": {
+  "brokenBefore": 0,
+  "brokenAfter": 0,
+  "findings": [
+   {
+    "gate": "ACADEMIC_SUBJECT_CANONICAL_MAPPING",
+    "kind": "REVIEW",
+    "count": 43,
+    "detail": "no canonical subject can be stated deterministically (review queue)"
+   },
+   {
+    "gate": "ACADEMIC_SUBJECT_CANONICAL_MAPPING",
+    "kind": "VALID_NOT_APPLICABLE",
+    "count": 5,
+    "detail": "programme core components and outgoing / retired courses"
+   },
+   {
+    "gate": "STRUCTURE_VERSION_CONCEPT_MAPPINGS",
+    "kind": "NOT_READY_FAIL_CLOSED",
+    "count": 47,
+    "detail": "active academic structures without a node -> concept path: resolution answers CURRICULUM_MAPPING_NOT_READY",
+    "sample": [
+     "Cambridge IGCSE · Mathematics (0580) · Extended (EXPECTED_TO_HAVE_CONCEPT_MAPPINGS)",
+     "Examen Saber 11.° · Matemáticas (EXPECTED_TO_HAVE_CONCEPT_MAPPINGS)",
+     "IB Diploma Programme · Business management · HL (MAPPING_DATA_MISSING)",
+     "IB Diploma Programme · Business management · SL (MAPPING_DATA_MISSING)",
+     "IB Diploma Programme · Classical languages (Latin / Classical Greek) · HL (MAPPING_DATA_MISSING)",
+     "IB Diploma Programme · Classical languages (Latin / Classical Greek) · SL (MAPPING_DATA_MISSING)",
+     "IB Diploma Programme · Computer science · HL (MAPPING_DATA_MISSING)",
+     "IB Diploma Programme · Computer science · SL (MAPPING_DATA_MISSING)"
+    ]
+   },
+   {
+    "gate": "STRUCTURE_VERSION_CONCEPT_MAPPINGS",
+    "kind": "VALID_NOT_APPLICABLE",
+    "count": 5,
+    "detail": "structural-only, non-academic component or legacy / retired versions"
+   },
+   {
+    "gate": "STUDENT_CURRICULUM_NOT_READY",
+    "kind": "NOT_READY_FAIL_CLOSED",
+    "count": 1,
+    "detail": "academic subjects Students selected whose curriculum is not loaded: Learn shows it as not ready, never another curriculum"
+   },
+   {
+    "gate": "UNRESOLVED_STUDENT_CONCEPTS",
+    "kind": "VALID_NOT_APPLICABLE",
+    "count": 1,
+    "detail": "personal concepts: the catalogue holds no canonical concept with that label in that subject (nothing to resolve to; none is fabricated)"
+   }
+  ]
+ },
+ "problems": []
+}
