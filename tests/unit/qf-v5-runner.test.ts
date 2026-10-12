@@ -218,13 +218,14 @@ describe('the lane makes no provider call without an authorised budget', () => {
     let out = ''; let status = 0;
     try { execFileSync('npx', ['tsx', 'scripts/operations/qf-v5/run.ts', 'generate', '--run', 't', '--phase', 'C1', '--cluster', 'PAA.MATEMATICAS'], { cwd: ROOT, env, stdio: 'pipe' }); } catch (e) { status = (e as { status: number }).status; out = String((e as { stderr: Buffer }).stderr); }
     expect(status).toBe(2);
-    expect(out).toMatch(/REFUSED: BUDGET_NOT_AUTHORIZED/);
+    // while the human-calibration freeze is in force the freeze refuses first; without it, the missing budget does
+    expect(out).toMatch(/REFUSED: (GENERATION_FROZEN|BUDGET_NOT_AUTHORIZED)/);
   }, 60_000);
   it('only live.ts opens a network connection or reads a key; nothing in the lane touches a database', () => {
     const dir = 'scripts/operations/qf-v5';
-    expect(readdirSync(join(ROOT, dir)).sort()).toEqual(['artifacts.ts', 'engine.ts', 'live.ts', 'run.ts']);
+    expect(readdirSync(join(ROOT, dir)).sort()).toEqual(['artifacts.ts', 'engine.ts', 'human-calibration-analysis.ts', 'human-calibration.ts', 'live.ts', 'run.ts']);
     const strip = (f: string) => readFileSync(join(ROOT, dir, f), 'utf8').replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '');
-    for (const f of ['artifacts.ts', 'engine.ts', 'run.ts']) expect(strip(f), f).not.toMatch(/fetch\(|https?:\/\/|API_KEY/);
+    for (const f of ['artifacts.ts', 'engine.ts', 'human-calibration-analysis.ts', 'human-calibration.ts', 'run.ts']) expect(strip(f).replace(/http:\/\/schemas\.openxmlformats\.org[^"]*/g, ''), f).not.toMatch(/fetch\(|https?:\/\/|API_KEY/);
     for (const f of ['artifacts.ts', 'engine.ts', 'live.ts', 'run.ts']) expect(strip(f), f).not.toMatch(/DATABASE_URL|from 'pg'|@\/lib\/db|src\/lib\/db|dotenv|INSERT INTO|UPDATE \w+ SET/);
     expect(strip('run.ts')).toMatch(/await import\('\.\/live'\)/);
   });

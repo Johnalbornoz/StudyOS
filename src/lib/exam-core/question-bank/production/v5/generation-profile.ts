@@ -275,6 +275,21 @@ export const GENERATION_PROFILES: readonly QuestionGenerationProfile[] = Object.
   }),
 ]);
 
+/**
+ * Whether a tier of a profile may be SCALED. Calibration is per tier: a profile can write sound STANDARD items and
+ * still fail to write CHALLENGE ones.
+ *
+ * CHALLENGE is CALIBRATION_REQUIRED for every profile. Live evidence (runs qf5-live-005 and qf5-live-006,
+ * 2026-10-12): 46 CHALLENGE specifications reached the blind difficulty calibrator and 8 were read as CHALLENGE.
+ * That is a profile-level failure of the generator, recorded here so that no run can scale the tier by accident.
+ * The other tiers have passed no calibration gate either; they are NOT_CALIBRATED, which also forbids scaling.
+ */
+export const TIER_SCALING_STATUSES = ['CALIBRATED', 'NOT_CALIBRATED', 'CALIBRATION_REQUIRED'] as const;
+export type TierScalingStatus = (typeof TIER_SCALING_STATUSES)[number];
+export const CHALLENGE_CALIBRATION_EVIDENCE = { specificationsEvaluated: 46, recognisedAsChallenge: 8, runs: ['qf5-live-005', 'qf5-live-006'], recordedOn: '2026-10-12' } as const;
+export const tierScalingStatus = (_profile: QuestionGenerationProfile, tier: DifficultyTier): TierScalingStatus => (tier.startsWith('CHALLENGE') ? 'CALIBRATION_REQUIRED' : 'NOT_CALIBRATED');
+export const mayScaleTier = (profile: QuestionGenerationProfile, tier: DifficultyTier): boolean => tierScalingStatus(profile, tier).startsWith('CALIBRATED');
+
 export const profileById = (id: string): QuestionGenerationProfile | null => GENERATION_PROFILES.find((p) => p.profileId === id) ?? null;
 
 /** Component types that are not item-bankable at all: nothing is generated for them and they never block a bank gate. */

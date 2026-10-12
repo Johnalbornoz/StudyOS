@@ -1,0 +1,1570 @@
+{
+  "kind": "PRIVATE_CROSSWALK -- not for reviewers before their review is complete",
+  "seed": "qb-human-calibration-50-2026-10-12",
+  "sources": {
+    "machineCertified": [
+      "qf5-live-005",
+      "qf5-live-006"
+    ],
+    "reviewRequired": [
+      "qf5-live-006"
+    ]
+  },
+  "counts": {
+    "machineCertified": 27,
+    "reviewRequired": 23,
+    "reviewRequiredNotIncluded": 15
+  },
+  "items": [
+    {
+      "REVIEW_ID": "HC-001",
+      "ORIGINAL_ITEM_ID": "v2.ib.math-aa-hl/p1/aahl.p1.algebra#0/001#0",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "JUDGED_EQUIVALENT",
+        "method": "NONE",
+        "independentAnswer": "x = log₂ 3",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "IB.MATH_AA.HL.P1",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SHORT_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-002",
+      "ORIGINAL_ITEM_ID": "v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/003#1",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "NUMERIC",
+        "independentAnswer": "1,8",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "WEAK",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "CONSTRUCT_WEAK: Compute exterior differences: day1 0,8 (valid), day2 0,6 (valid), day3 1,3 (excluded), day4 0,8 (valid), day5 1,2 (excluded). Reductions on valid days: 2,2; 1,6; 1,6 → mean 1,8 °C. The item requires applying a pre-specified exclusion criterion to data, which reflects experimental control reasoning, but the final step is mostly filtering plus simple arithmetic and asks for no justification, so the epistemic reasoning is modest and the claim 'attributable to the pintura' rests on only three days.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PISA.SCIENCE",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "NUMERIC_ENTRY",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-003",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.formulacion#0/002#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "FOUNDATIONAL",
+        "actual": "FOUNDATIONAL",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: Equating 12000+1000x = 4000+1400x gives x=20 GB (option B), so the item requires modeling two linear cost functions and solving, which is real formulación y ejecución in a plausible mobile-data setting. Distractors (10, 30, 40) are reachable by slips such as dividing 8000 by 400 wrongly or using the sum of the rates, but the item is a standard break-even linear problem with little interpretive or argumentative demand, so fit is only moderate in depth.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-004",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.interpretacion#1/002#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "A",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "WEAK",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "FOUNDATIONAL",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "CONSTRUCT_WEAK: Compute: A: 72*0.75=54, 54*2/3=36; B: 80*0.75=60, 60*3/4=45. Correct answer is 36 and 45 (option A). The item requires reading a table and chaining percentage and fraction, which fits interpretation and strategy, but it is a fairly routine two-step computation with no argumentation and the table is essentially a wrapper for the calculation. Distractors are plausible: B gives attendees only, D mixes A's result with B's attendees, C gives 48 (2/3 of 72) and 60 (attendees of B). All are produced by faulty procedures, so the item is sound but modest in construct depth.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-005",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#1/001#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "FOUNDATIONAL",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_HARD"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: The item asks the learner to validate a student's percentage-change procedure, which is argumentación, and the error (wrong base) is a real, recognizable misconception. The distractors map to plausible faulty procedures (60 as a percent, 1.25 read as 1.25%). The stated claim is 'interpret and represent', but the item mainly evidences argumentación, which is the Saber 11 competency named in the first line, so the fit is acceptable though slightly mismatched to the label. The context is light but the data and the claim drive the reasoning.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-006",
+      "ORIGINAL_ITEM_ID": "v2.paa/matematicas/paa.mat.geometria#0/004#1",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "NUMERIC",
+        "independentAnswer": "116/125",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "CHALLENGE",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: Solving requires deriving AD=12 from the altitude relation, AB=15, AC=20, then relating areas of BED to ABC via BE=3 and sharing the angle at B; the stem gives no formula, so the item demands setting up relationships and structural reasoning. A problem: the quadrilateral is named AECD, but E is on AB and D on BC, so the region cut off by ED is AEDC (vertices A, E, D, C), a labeling slip that is minor. Answer: BED/ABC = (BE·BD)/(BA·BC) = (3·9)/(15·25) = 9/125, so AECD = 116/125. Open response, so no distractors to audit.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PAA.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "NUMERIC_ENTRY",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-007",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.interpretacion#0/001#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "A",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-008",
+      "ORIGINAL_ITEM_ID": "v2.paa/matematicas/paa.mat.aritmetica#0/001#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "C",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: Let T be the total. Public transport = 2/7 T; the rest = 5/7 T; walking = 2/5 of that = 2/7 T; private vehicle = 3/5 of 5/7 T = 3/7 T. The difference is 1/7 T = 22, so T = 154, which is option C. The solver must build the equation from nested fractions and compare parts, which fits the construct of setting up an unstated relationship and reasoning about structure. Distractors are plausible: 70 and 110 come from misreading the fractions, and 770 from 22 × 35 (multiplying by the product of the denominators). The context is thin but it carries the reasoning, and the item is not a plain formula substitution. Quality is good, though the arithmetic is light.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PAA.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-009",
+      "ORIGINAL_ITEM_ID": "v2.paa/matematicas/paa.mat.algebra#0/010#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "NUMERIC",
+        "independentAnswer": "12.5 km",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: The learner must derive the linear model from two data points (slope 13 pesos/km, fixed fee 50 pesos), then equate it with 17x, giving 50 + 13x = 17x and x = 12.5 km. The relationship is never stated as a formula, and the setup requires structural reasoning, which fits the algebra/variation construct. It is open response, so there are no options to audit. The context carries the reasoning, though the arithmetic is light and the item is fairly standard; the non-integer result (12.5 km) is plausible for a distance.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PAA.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "NUMERIC_ENTRY",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-010",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#1/009#1",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P2",
+      "REVIEW_REASON": "TIER_BORDERLINE: intended CHALLENGE, read as STANDARD (TOO_EASY)",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-011",
+      "ORIGINAL_ITEM_ID": "v2.pisa.2022/math/pisa.espacio.emplear#0/004#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "NUMERIC",
+        "independentAnswer": "41,05 m",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "WEAK",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "CONSTRUCT_WEAK: The item asks for the border length around a rectangle-plus-semicircle plan, leaving out the wall side and a 1 cm entrance, with a 1:250 scale. The solver does have to read the geometry (semicircle arc, excluded wall side, entrance on a 4 cm side) and convert the scale, so some formulation is needed. But it reduces to a single linear chain of perimeter arithmetic: arc 3π plus 4 + 3 = 10.14 cm, times 250 = 25.35 m. There is no interpretation or evaluation of the result back in the situation, and the 'garden' context is largely decorative, so it reads as a curriculum perimeter exercise with a story attached.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PISA.MATHEMATICS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SHORT_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-012",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#0/002#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "FOUNDATIONAL",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_HARD"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: The item asks the examinee to validate or refute a claim (additive percentages for area) and to run the check by computing 1,2×1,1=1,32; this is an argumentación move typical of Saber 11, and the proportional-change misconception is a real one. The situation (rectangle dimensions) supports the reasoning, although the garden story is light. The distractors come from plausible faulty procedures (adding percentages, using only one dimension). Weakness: the claim is largely checked by one computation, so the argumentative demand is modest, and the item's label says 'formulation and execution' while it mainly tests validation.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-013",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#1/008#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-014",
+      "ORIGINAL_ITEM_ID": "v2.paa/lectura/paa.lect.evidencia#0/001#0",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "C",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PAA.LECTURA",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-015",
+      "ORIGINAL_ITEM_ID": "v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/001#0",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PISA.SCIENCE",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-016",
+      "ORIGINAL_ITEM_ID": "v2.paa/lectura/paa.lect.evidencia#0/003#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "C",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PAA.LECTURA",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-017",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#1/006#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "C",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-018",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#2/008#1",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P2",
+      "REVIEW_REASON": "TIER_BORDERLINE: intended CHALLENGE, read as STANDARD (TOO_EASY)",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-019",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#2/003#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-020",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#0/005#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "C",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-021",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#2/005#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-022",
+      "ORIGINAL_ITEM_ID": "v2.aice.9709-a/p1/aice.9709.p1.quadratics#0/004#1",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "JUDGED_EQUIVALENT",
+        "method": "NONE",
+        "independentAnswer": "Proved: the roots are distinct and in (1,5) iff discriminant a²−4>0, f(1)=2a+5>0, f(5)=5−2a>0 and axis (a+6)/2 in (1,5), which gives −5/2<a<−2 or 2<a<5/2.",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P2",
+      "REVIEW_REASON": "TIER_BORDERLINE: intended CHALLENGE, read as STANDARD (TOO_EASY)",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "AICE.9709.PURE",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SHORT_RESPONSE",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-023",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.interpretacion#2/001#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "A",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "FOUNDATIONAL",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: The item asks the learner to read a table and turn the counts into an absolute change (+30) and a share of the total (60 % to 75 %), which is genuine interpretation and representation of quantitative information. The distractors map to plausible faulty procedures (miscomputed share 70 %, halved or wrong difference 15, reversed direction). The weakness is that the reasoning is light, since it takes only two quick computations and there is little transformation between representations, so fit is moderate rather than strong.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-024",
+      "ORIGINAL_ITEM_ID": "v2.paa/matematicas/paa.mat.datos#0/001#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "A",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "WEAK",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "FOUNDATIONAL",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "CONSTRUCT_WEAK: Each 'después' value is exactly 3 less than 'antes', so a shift-invariance argument settles it: mean and median fall by 3 and range is unchanged (15 in both). The item rewards structural reasoning rather than computing, and the distractors correspond to plausible errors (shift affects range, mean/median differ). However, the tabulated values make direct computation of all three statistics easy, so the structural insight is optional, and the context could be swapped for any paired data without changing the reasoning, which weakens the fit.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PAA.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-025",
+      "ORIGINAL_ITEM_ID": "v2.pisa.2022/math/pisa.cambio.formular#0/001#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "A",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: The item requires the candidate to build a model of net flow per interval from a table (inflow minus plant use, then pump plus plant use as outflow) and pick the correct expression, which is genuine formulation and the situation drives the reasoning. Weaknesses are that it is a multiple-choice item that essentially asks for a single expression and the arithmetic is light, and option A is correct (360+210-280=290) while the distractors map to plausible misreadings, so it fits. It does not require interpreting the result back in the situation, but formulation is the claimed move and it is met.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PISA.MATHEMATICS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-026",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.formulacion#0/001#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: Compute: videos 12 - 3 = 9 GB; tareas 8 + 4 = 12 GB; total 21 GB. Plan A: 20.000 + 10.500 = 30.500. Plan B: 8.000 + 16.800 = 24.800. So Plan B at $24.800 is correct (option B). Option A is the cost of the wrong plan, and C and D are plausible error outcomes (C: 8.000+19.000? not clearly; D: 28.000 = 8.000+25.000 is hard to derive), so some distractors are weakly justified. The item requires multi-step strategy: fractional changes, totals, cost function per plan, comparison, which fits formulación y ejecución, and the context drives the reasoning. The mismatch is mild: the claimed competency is formulation/execution, and the item is mostly execution without much representation or argumentation.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-027",
+      "ORIGINAL_ITEM_ID": "v2.ib.math-aa-hl/p1/aahl.p1.calculus#0/001#0",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "NUMERIC",
+        "independentAnswer": "27/4",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "IB.MATH_AA.HL.P1",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SHORT_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-028",
+      "ORIGINAL_ITEM_ID": "v2.paa/matematicas/paa.mat.aritmetica#0/010#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "NUMERIC",
+        "independentAnswer": "600",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: Solving: cash 2k, electronic 3k; after the changes cash is 1.6k and electronic is 3k+24, with 1.6k:(3k+24)=1:2, so 3.2k=3k+24, k=120, total 600. The learner must build the equation from ratios and percentage changes and no formula is given, so the item fits the 'set up a relationship' move; it is open response, so there are no options to audit. The context (cash vs electronic contributions) is thin but the quantities are reasoned about; the arithmetic is light and the difficulty comes from the setup, which is acceptable for PAA.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PAA.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "NUMERIC_ENTRY",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-029",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#1/002#1",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-030",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#2/001#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-031",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#0/001#0",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-032",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.formulacion#0/010#1",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "D",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "CHALLENGE",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-033",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.formulacion#2/001#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "A",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-034",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#0/007#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-035",
+      "ORIGINAL_ITEM_ID": "v2.pisa.2022/math/pisa.cantidad.formular#0/004#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "NUMERIC",
+        "independentAnswer": "45 litros",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "CHALLENGE",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PISA.MATHEMATICS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SHORT_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-036",
+      "ORIGINAL_ITEM_ID": "v2.ib.math-aa-hl/p1/aahl.p1.extended#0/004#0",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "JUDGED_EQUIVALENT",
+        "method": "NONE",
+        "independentAnswer": "Roots of x³ − 3x − 1 = 0 are 2cos(π/9), 2cos(5π/9), 2cos(7π/9), which are exactly three distinct real roots; their sum is 0 and their product is 1.",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "CHALLENGE",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "IB.MATH_AA.HL.P1",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SHORT_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-037",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#1/004#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-038",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.formulacion#1/002#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "A",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-039",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#2/004#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "FOUNDATIONAL",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_HARD"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P2",
+      "REVIEW_REASON": "TIER_BORDERLINE: intended FOUNDATIONAL, read as STANDARD (TOO_HARD)",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-040",
+      "ORIGINAL_ITEM_ID": "v2.pisa.2022/science/pisa.sci.evaluate.procedural#0/004#0",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "JUDGED_EQUIVALENT",
+        "method": "NONE",
+        "independentAnswer": "Igualar la intensidad y la temperatura (por ejemplo, poner ambas lámparas en el mismo estante o en condiciones idénticas, o intercambiar los estantes), cambiando solo el color de la luz, para que el color sea la única diferencia y se pueda atribuir la diferencia de altura a él.",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "CHALLENGE",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PISA.SCIENCE",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SHORT_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-041",
+      "ORIGINAL_ITEM_ID": "v2.cambridge.0580-extended/p4/cie.p4.structured#0/004#1",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "NORMALISED_TEXT",
+        "independentAnswer": "(a) 81.4°; (b) 205 m²; (c) 44.4%",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "WEAK",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "CHALLENGE",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "CONSTRUCT_WEAK: The item is a sound three-part chain (cosine rule, then area, then incircle ratio) with a plausible garden setting. However, the pond is only said to touch all three sides, so part (c) needs the incircle radius r = Area/s, a step that is not signposted and not strictly IGCSE-standard. The context can be reduced to a bare triangle without changing the working, so it is decorative. Part (a) also gives the angle a name that does not match the usual vertex labelling, and 5 marks across three parts is thin for the reasoning demanded.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "CAMBRIDGE.0580.EXTENDED.P4",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SHORT_RESPONSE",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-042",
+      "ORIGINAL_ITEM_ID": "v2.pisa.2022/science/pisa.sci.evaluate.procedural#0/001#0",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PISA.SCIENCE",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-043",
+      "ORIGINAL_ITEM_ID": "v2.paa/matematicas/paa.mat.algebra#0/001#1",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "C",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PAA.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-044",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#1/003#1",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "A",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "CHALLENGE",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-045",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.argumentacion#0/003#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "B",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-046",
+      "ORIGINAL_ITEM_ID": "v2.saber11.math/math/saber.formulacion#1/001#1",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "A",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "WEAK",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "FOUNDATIONAL",
+        "actual": "FOUNDATIONAL",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "CONSTRUCT_WEAK: The item sits in Saber 11's algebra and linear-modeling territory, and the context (two internet plans) is needed to build the equation. However, it only asks the student to translate a table into an equation without solving it, which is largely interpretation and representation, with little formulation and execution of a strategy. The distractors map to plausible errors (coefficient swap, misplaced variable, additive treatment), but the item is a routine, low-demand translation that only weakly matches the claimed formulation and execution competency.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "ICFES.SABER11.MATEMATICAS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 1
+    },
+    {
+      "REVIEW_ID": "HC-047",
+      "ORIGINAL_ITEM_ID": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0/004#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "JUDGED_EQUIVALENT",
+        "method": "NONE",
+        "independentAnswer": "x ≥ 3 + √10/2, i.e. the solution set is [3 + √10/2, ∞) = [(6+√10)/2, ∞)",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: Working it through: f(x)=(x+1)/(x-2) is self-inverse, since y=(x+1)/(x-2) gives x=(2y+1)/(y-1), which is the same form. The domain x>2 gives range y>1, so f⁻¹ has domain x>1 and range x>2, and f⁻¹(x)=(2x+1)/(x-1) is not the same function as f. The inequality must therefore be solved on x>2, where both functions are defined. It reduces to a rational inequality with quadratic factors and yields an exact solution set with surds, which requires choosing a method, reasoning about domain and range, and combining inverses with inequalities. That is a fair HL P1 task, and the 'show working to justify the domain' prompt rewards communicable reasoning. The weakness is a possible slip: the domain restriction makes f map (2,∞) to (1,∞), so f⁻¹ is f with a different domain, which is subtle but legitimate. The 'find' command term is slightly light for 9 marks, but acceptable.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "IB.MATH_AA.HL.P1",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SHORT_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-048",
+      "ORIGINAL_ITEM_ID": "v2.pisa.2022/science/pisa.sci.explain.earth#0/004#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "JUDGED_EQUIVALENT",
+        "method": "NONE",
+        "independentAnswer": "La ladera occidental es de barlovento: el aire húmedo del oeste asciende por la cordillera, se enfría, condensa y descarga lluvia (2.400 mm). Al pasar la cumbre (8 °C) el aire ya está seco y desciende por la ladera oriental, calentándose y alejándose de la saturación, por lo que allí llueve poco (320 mm): es una sombra de lluvia (efecto Foehn).",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "CHALLENGE",
+        "actual": "STANDARD",
+        "tierFit": "BORDERLINE",
+        "direction": "TOO_EASY"
+      },
+      "DISTRACTOR_RESULT": "NOT_APPLICABLE",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P2",
+      "REVIEW_REASON": "TIER_BORDERLINE: intended CHALLENGE, read as STANDARD (TOO_EASY)",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PISA.SCIENCE",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SHORT_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-049",
+      "ORIGINAL_ITEM_ID": "v2.paa/lectura/paa.lect.explicitas#0/001#0",
+      "SOURCE_RUN": "qf5-live-005",
+      "ORIGINAL_MACHINE_DISPOSITION": "MACHINE_CERTIFIED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "A",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "HIGH",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": null,
+      "REVIEW_REASON": "ALL_GATES_PASS",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PAA.LECTURA",
+      "PROFILE_VERSION": "qf-v5-profiles-1.0.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.3.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    },
+    {
+      "REVIEW_ID": "HC-050",
+      "ORIGINAL_ITEM_ID": "v2.pisa.2022/math/pisa.cambio.razonar#0/001#0",
+      "SOURCE_RUN": "qf5-live-006",
+      "ORIGINAL_MACHINE_DISPOSITION": "REVIEW_REQUIRED",
+      "SOLVER_RESULT": {
+        "answerMatch": "CONFIRMED",
+        "method": "OPTION_LABEL",
+        "independentAnswer": "C",
+        "confidence": "HIGH",
+        "ambiguity": false
+      },
+      "CONSTRUCT_JUDGE_RESULT": "PASS",
+      "AUTHENTICITY_RESULT": "MEDIUM",
+      "DIFFICULTY_RESULT": {
+        "intended": "STANDARD",
+        "actual": "STANDARD",
+        "tierFit": "YES",
+        "direction": "MATCH"
+      },
+      "DISTRACTOR_RESULT": "PASS",
+      "PLAUSIBILITY_RESULT": "PASS",
+      "REVIEW_PRIORITY": "P1",
+      "REVIEW_REASON": "AUTHENTICITY_MEDIUM: Plan A: 64, 84, 104, 124 sum to 376. Plan B: 64, 96, 144, 216 sum to 520, so B reaches 500 and the key C is correct and unique. The task needs the student to model arithmetic vs geometric growth and then interpret cumulative totals against a threshold. The 'no double counting' condition is what makes summing valid. The weakness is that it is a fairly standard sequence-sum exercise with modest context dependence; the distractors (144 is the day-3 value of B, 384 is a plausible slip) are reasonable but the computation is short.",
+      "FLAGS": [],
+      "GENERATOR_PROFILE": "PISA.MATHEMATICS",
+      "PROFILE_VERSION": "qf-v5-profiles-1.1.0-provisional",
+      "VALIDATOR_VERSION": "qf-v5-validators-1.4.0",
+      "ITEM_FORMAT": "SELECTED_RESPONSE",
+      "ATTEMPT": 0
+    }
+  ]
+}

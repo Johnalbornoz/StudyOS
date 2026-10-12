@@ -20,7 +20,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from 'node:path';
 import { allV2Configs } from '../../../src/lib/exam-core/verticals/v2/all';
 import { RETIRED_V2_CONFIG_KEYS } from '../../../src/lib/exam-core/verticals/v2/index';
-import { GENERATION_PROFILES, GENERATOR_PROFILE_VERSION, profileById } from '../../../src/lib/exam-core/question-bank/production/v5/generation-profile';
+import { GENERATION_PROFILES, GENERATOR_PROFILE_VERSION, mayScaleTier, profileById } from '../../../src/lib/exam-core/question-bank/production/v5/generation-profile';
 import { VALIDATOR_VERSION, keyPositionFinding, type CorpusEntry } from '../../../src/lib/exam-core/question-bank/production/v5/deterministic-stages';
 import { learnerText, type CandidateItem, type GenerationSpecification } from '../../../src/lib/exam-core/question-bank/production/v5/item';
 import { auditSample, calibrationGate, checkpoint, cumulativeSpend, maySpend, metricsBy, metricsOf, reviewQueue, stopCondition, type Checkpoint, type SpendLedger } from '../../../src/lib/exam-core/question-bank/production/v5/batch-control';
@@ -37,6 +37,15 @@ const OUT = join(ROOT, 'docs', 'audits', 'qb_review');
 const AUDITS = join(ROOT, 'docs', 'audits');
 /** Share of raw candidates expected to be certified. A planning assumption until C1/C2 measure it. */
 export const PLANNING_YIELD = 0.8;
+
+/** While this file exists no provider call is made by this lane: generate and revalidate refuse before reading a key. */
+export const FREEZE_FILE = join(OUT, 'GENERATION_FREEZE.json');
+export function refuseIfFrozen(): void {
+  if (!existsSync(FREEZE_FILE)) return;
+  const f = readJson<{ reason?: string }>(FREEZE_FILE, {});
+  console.error(`REFUSED: GENERATION_FROZEN -- ${f.reason ?? 'a freeze is in force'}. No provider call was made. Remove ${FREEZE_FILE} only on the operator's instruction.`);
+  process.exit(2);
+}
 
 export const clusterOf = (profileId: string): string => profileId.split('.').slice(0, 2).join('.');
 const arg = (name: string): string | null => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] ?? null : null; };
@@ -95,6 +104,7 @@ export function selectForProfile(all: readonly GenerationSpecification[], profil
 }
 
 async function generate(): Promise<void> {
+  refuseIfFrozen();
   const budget = Number(process.env.QB_GENERATION_BUDGET_USD);
   const probe = maySpend({ authorizedUsd: Number.isFinite(budget) && budget > 0 ? budget : null, entries: [] }, 0);
   if (!probe.allowed) { console.error(`REFUSED: ${probe.code} -- ${probe.detail}. No provider call was made.`); process.exit(2); }
@@ -125,7 +135,10 @@ async function generate(): Promise<void> {
     if (need && !gates[`${entry.profileId}:${need}`]?.pass) { console.error(`SKIPPED ${entry.profileId} ${entry.phase}: no passing ${need} gate under ${versions.profileVersion} / ${versions.validatorVersion}.`); continue; }
     // slots an earlier run already used are never drawn again: a calibration batch is out of sample
     const done = new Set([...state.records.map((r) => r.slotKey), ...earlier]);
-    const chosen = selectForProfile(specifications, entry.profileId, entry.count, done, entry.tiers);
+    // a tier that is not calibrated is never scaled, whatever the manifest asks for
+    const scalable = entry.phase === 'SCALE' ? specifications.filter((s) => mayScaleTier(profileById(s.profileId)!, s.intendedDifficulty)) : specifications;
+    const chosen = selectForProfile(scalable, entry.profileId, entry.count, done, entry.tiers);
+    if (entry.phase === 'SCALE' && !chosen.length) { console.error(`SKIPPED ${entry.profileId} SCALE: no tier of this profile is calibrated for scaling.`); continue; }
     const outcomes: SpecificationOutcome[] = [];
     for (let b = 0; b * size < chosen.length; b += 1) {
       const batch = chosen.slice(b * size, (b + 1) * size);
@@ -168,6 +181,7 @@ async function generate(): Promise<void> {
  * version, into a NEW run. No authoring call is made. The earlier run's verdicts are left as they were recorded.
  */
 async function revalidate(): Promise<void> {
+  refuseIfFrozen();
   const budget = Number(process.env.QB_GENERATION_BUDGET_USD);
   const probe = maySpend({ authorizedUsd: Number.isFinite(budget) && budget > 0 ? budget : null, entries: [] }, 0);
   if (!probe.allowed) { console.error(`REFUSED: ${probe.code} -- ${probe.detail}. No provider call was made.`); process.exit(2); }
