@@ -379,9 +379,9 @@ describe('blueprint readiness from the global certified bank', () => {
 });
 
 describe('the V5 modules are pure and exam-neutral in their control flow', () => {
-  it('six files, no database, environment, network, clock or randomness, and no branch on a family name', () => {
+  it('eight files, no database, environment, network, clock or randomness, and no branch on a family name', () => {
     const files = readdirSync(join(ROOT, V5)).sort();
-    expect(files).toEqual(['batch-control.ts', 'deterministic-stages.ts', 'generation-profile.ts', 'item.ts', 'pipeline.ts', 'readiness.ts']);
+    expect(files).toEqual(['batch-control.ts', 'deterministic-stages.ts', 'generation-profile.ts', 'item.ts', 'pipeline.ts', 'plan.ts', 'prompts.ts', 'readiness.ts']);
     for (const f of files) {
       const src = readFileSync(join(ROOT, V5, f), 'utf8').replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '');
       expect(src, f).not.toMatch(/from '@\/lib\/db'|\bquery\(|INSERT INTO|process\.env|fetch\(|from '(node:)?fs'|from 'pg'|@\/lib\/ai\/|\bDate\.now\(|new Date\(|Math\.random\(|@\/lib\/assessment-blueprint/);

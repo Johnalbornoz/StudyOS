@@ -1,0 +1,1 @@
+priority,item_id,exam_family,subject,component,item_type,stimulus,question,options,proposed_canonical_answer,independent_solver_answer,solution,objective,intended_difficulty,actual_difficulty,tier_fit,direction,answer_match,answer_confidence,construct_fit,authenticity,distractor_quality,validator_flags,reason_for_escalation

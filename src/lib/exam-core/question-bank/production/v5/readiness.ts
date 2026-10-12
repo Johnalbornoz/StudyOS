@@ -24,18 +24,18 @@ export interface BlueprintSection {
   /** Items of the official full form, when the framework publishes it. */
   officialItemCount: number | null;
   fullFormDocumented: boolean;
-  buckets: { bucketKey: string; objectiveCode: string; required: number }[];
+  buckets: { bucketKey: string; objectiveCode: string; targetIndex: number; required: number; description: string; commandTerm: string | null; questionType: string | null }[];
 }
 
 export const bucketKeyOf = (configKey: string, sectionKey: string, objectiveCode: string, targetIndex: number): string => `${configKey}/${sectionKey}/${objectiveCode}#${targetIndex}`;
 
-interface ConfigLike { key: string; family: ExamFamily; sections: { key: string; componentType: string; simulationCapable?: boolean; objectives: { code: string; targets: { count?: number }[] }[]; definition?: { officialItemCount?: number | null; blueprintSpecification?: { status: string } } }[] }
+interface ConfigLike { key: string; family: ExamFamily; sections: { key: string; componentType: string; simulationCapable?: boolean; objectives: { code: string; description?: string; targets: { count?: number; commandTerm?: string; questionType?: string }[] }[]; definition?: { officialItemCount?: number | null; blueprintSpecification?: { status: string } } }[] }
 export function blueprintSections(configs: readonly ConfigLike[]): BlueprintSection[] {
   return configs.flatMap((c) => c.sections.map((s) => ({
     configKey: c.key, family: c.family, sectionKey: s.key, componentType: s.componentType, simulationCapable: s.simulationCapable ?? true,
     officialItemCount: s.definition?.officialItemCount ?? null,
     fullFormDocumented: s.definition?.blueprintSpecification?.status === 'DOCUMENTED',
-    buckets: s.objectives.flatMap((o) => o.targets.map((t, i) => ({ bucketKey: bucketKeyOf(c.key, s.key, o.code, i), objectiveCode: o.code, required: t.count ?? 1 }))),
+    buckets: s.objectives.flatMap((o) => o.targets.map((t, i) => ({ bucketKey: bucketKeyOf(c.key, s.key, o.code, i), objectiveCode: o.code, targetIndex: i, required: t.count ?? 1, description: o.description ?? o.code, commandTerm: t.commandTerm ?? null, questionType: t.questionType ?? null }))),
   })));
 }
 
