@@ -56,6 +56,12 @@ export interface TargetPlan {
     excludeRecent: boolean;
     /** A hard time limit. Verified only against KNOWN durations; an unknown duration is never assumed to fit. */
     maxSeconds: number | null;
+    /**
+     * A difficulty the Student asked for, as levels of the 1-5 item scale (question-bank/requested-difficulty). Only a
+     * question whose RECORDED difficulty rounds into the range may be selected: one outside it, or of unknown
+     * difficulty, is never used to fill the requirement. Absent / null = not asked for.
+     */
+    difficulty?: { min: number; max: number } | null;
   };
   /** Targets the caller asked for that have no canonical identity: reported, never guessed. */
   unresolvedTargets: Array<{ ref: string; reason: 'TRANSITIONAL_LINK' | 'UNRESOLVED_LINK' | 'NOT_IN_SCOPE' | 'NOT_EXAM_RELEVANT' }>;
@@ -125,6 +131,8 @@ export type UnmetCause =
   | 'DURATION_UNKNOWN'
   /** The only candidates left are recently seen and the policy excludes them. */
   | 'ONLY_RECENT_CANDIDATES'
+  /** The only candidates left are not of the difficulty that was asked for (or their difficulty is not recorded). */
+  | 'ONLY_OTHER_DIFFICULTY'
   /** The target has no canonical identity. */
   | 'UNRESOLVED_TARGET'
   /** No eligible reviewed item fits this official slot. */

@@ -32,6 +32,8 @@ async function handlePOST(request: NextRequest) {
   if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const { intent, scope } = parsed.request;
   let { depth, availableMinutes } = parsed.request;
+  // a difficulty is a choice of a Student's own partial exam only; on any other intent it is not read
+  let difficultyBand = isAdHocExamIntent(intent) ? parsed.request.difficultyBand : null;
   const now = new Date();
   const asOf = now.toISOString();
   let canonicalConceptIds = scope.canonicalConceptIds;
@@ -48,7 +50,7 @@ async function handlePOST(request: NextRequest) {
     let subjectId: unknown = scope.subjectId;
     let selected: readonly unknown[] = scope.learnerConceptIds;
     if (scope.scheduledAssessmentId) {
-      // A scheduled exam starts with exactly what was scheduled: Subject, concepts, size and time come from the
+      // A scheduled exam starts with exactly what was scheduled: Subject, concepts, size, time and difficulty come from the
       // Student's own record, never from the request. Another Student's schedule does not exist here.
       const schedule = await getScheduledAdHocExam(studentId, scope.scheduledAssessmentId);
       if (!schedule) return NextResponse.json({ success: false, reason: 'SCOPE_REJECTED' }, { status: 403 });
@@ -60,9 +62,10 @@ async function handlePOST(request: NextRequest) {
       selected = schedule.conceptIds;
       depth = schedule.depth;
       availableMinutes = schedule.availableMinutes;
+      difficultyBand = schedule.difficultyBand;
     }
     // ...and the same authoritative check either way: ownership of the Subject, every concept, eligible content
-    const ready = await adHocExamReadiness(studentId, { subjectId, learnerConceptIds: selected, depth, availableMinutes }, asOf, { enabled: isSnapshotExecutionEnabled() });
+    const ready = await adHocExamReadiness(studentId, { subjectId, learnerConceptIds: selected, depth, availableMinutes, difficultyBand }, asOf, { enabled: isSnapshotExecutionEnabled() });
     if (!ready.ok) {
       if (ready.reason === 'SCOPE_REJECTED') return NextResponse.json({ success: false, reason: 'SCOPE_REJECTED' }, { status: 403 });
       if (ready.reason === 'INSUFFICIENT_CERTIFIED_CONTENT') return NextResponse.json({ success: false, reason: ready.reason, unmetConceptIds: ready.unmetConceptIds }, { status: 409 });
@@ -74,7 +77,7 @@ async function handlePOST(request: NextRequest) {
     verifiedScope = { subjectId: ready.subjectId, learnerConceptByCanonical: ready.learnerConceptByCanonical };
   }
   const language = await getInterfaceLanguage(studentId).catch(() => 'es');
-  const started = await startLearningAssessment({ studentId, request: { intent, depth, canonicalConceptIds, learnerConceptIds, availableMinutes }, asOf, language, scope: verifiedScope });
+  const started = await startLearningAssessment({ studentId, request: { intent, depth, canonicalConceptIds, learnerConceptIds, availableMinutes, difficultyBand }, asOf, language, scope: verifiedScope });
   if (!started.ok) {
     // a governed state for the experience to render, never a 500
     return NextResponse.json({ success: false, reason: started.reason }, { status: started.reason === 'DISABLED' ? 404 : 409 });

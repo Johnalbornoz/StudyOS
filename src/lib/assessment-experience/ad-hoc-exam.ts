@@ -13,11 +13,19 @@ import type { LearningIntent } from '@/lib/assessment-blueprint/policy/learning'
 import { PRACTICE_DEPTHS, type PracticeDepth } from '@/lib/assessment-blueprint/policy/practice-depth';
 import { ASSESSMENT_SETUP_PATH } from './entry';
 import { AD_HOC_EXAM_MAX_CONCEPTS, isUuid, normalizeSelection } from '@/lib/ad-hoc-exam/selection';
+import { REQUESTED_DIFFICULTY_BANDS, type RequestedDifficultyBand } from '@/lib/exam-core/question-bank/requested-difficulty';
 
 export { AD_HOC_EXAM_MAX_CONCEPTS };
 /** The sizes a Student can choose: the existing practice depths. */
 export const AD_HOC_EXAM_SIZES = PRACTICE_DEPTHS;
 export type AdHocExamSize = PracticeDepth;
+
+/**
+ * The difficulties a Student can choose: the Question Bank's own item bands (question-bank/quality `DifficultyBand`).
+ * null = not stated: the exam keeps the canonical band of an independent check as a preference.
+ */
+export const AD_HOC_EXAM_DIFFICULTIES = REQUESTED_DIFFICULTY_BANDS;
+export type AdHocExamDifficulty = RequestedDifficultyBand;
 
 export const AD_HOC_EXAM_INTENT = 'AD_HOC_CONCEPT_EXAM' as const satisfies LearningIntent;
 export const AD_HOC_EXAM_ORIGIN = 'SUBJECT' as const;
@@ -33,12 +41,13 @@ export const isAdHocExamIntent = (intent: string | null | undefined): boolean =>
  * The link that opens the setup of this exam: exactly these concepts of this Subject, nothing else.
  * `conceptIds` are the Student's own concepts of that Subject; the server checks both again.
  */
-export function adHocExamHref(input: { subjectId: string; conceptIds: readonly string[]; depth?: PracticeDepth | null; minutes?: number | null }): string | null {
+export function adHocExamHref(input: { subjectId: string; conceptIds: readonly string[]; depth?: PracticeDepth | null; minutes?: number | null; difficulty?: AdHocExamDifficulty | null }): string | null {
   const selection = normalizeSelection(input.conceptIds);
   if (!selection.ok || !isUuid(input.subjectId)) return null;
   const params = new URLSearchParams({ intent: AD_HOC_EXAM_INTENT, origin: AD_HOC_EXAM_ORIGIN, s: input.subjectId, lc: selection.conceptIds.join(',') });
   if (input.depth && (PRACTICE_DEPTHS as readonly string[]).includes(input.depth)) params.set('depth', input.depth);
   if (input.minutes && (AD_HOC_EXAM_MINUTES as readonly number[]).includes(input.minutes)) params.set('m', String(input.minutes));
+  if (input.difficulty && (AD_HOC_EXAM_DIFFICULTIES as readonly string[]).includes(input.difficulty)) params.set('d', input.difficulty);
   return `${ASSESSMENT_SETUP_PATH}?${params.toString()}`;
 }
 

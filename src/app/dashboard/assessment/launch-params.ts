@@ -4,8 +4,8 @@
  */
 import { parseLaunchRequest, type AssessmentLaunchRequest } from '@/lib/assessment-experience/launch';
 
-/** `s`: the Subject a Student's own partial exam was created from. `m`: a time limit in minutes the Student stated. `sch`: a scheduled partial exam being started. */
-export type LaunchQuery = { intent?: string; origin?: string; c?: string; lc?: string; depth?: string; confirm?: string; s?: string; m?: string; sch?: string };
+/** `s`: the Subject a Student's own partial exam was created from. `m`: a time limit in minutes the Student stated. `sch`: a scheduled partial exam being started. `d`: the difficulty the Student chose for their own partial exam. */
+export type LaunchQuery = { intent?: string; origin?: string; c?: string; lc?: string; depth?: string; confirm?: string; s?: string; m?: string; sch?: string; d?: string };
 
 const minutesOf = (raw: string | undefined): number | null => (raw && /^[0-9]{1,3}$/.test(raw) && Number(raw) >= 1 && Number(raw) <= 240 ? Number(raw) : null);
 
@@ -19,6 +19,8 @@ export function launchRequestOfQuery(query: LaunchQuery): Extract<AssessmentLaun
     depth: query.depth ?? 'BALANCED',
     scope: { canonicalConceptIds: list(query.c), learnerConceptIds: list(query.lc) },
     availableMinutes: minutesOf(query.m),
+    // an unknown value fails the parse: a link never falls back to another difficulty
+    difficultyBand: query.d ? query.d : null,
   });
   return parsed.ok && parsed.request.family === 'LEARNING' ? parsed.request : null;
 }
@@ -30,6 +32,7 @@ export const hiddenFieldsOf = (request: Extract<AssessmentLaunchRequest, { famil
   ...(request.scope.canonicalConceptIds.length > 0 ? { c: request.scope.canonicalConceptIds.join(',') } : {}),
   ...(request.scope.learnerConceptIds.length > 0 ? { lc: request.scope.learnerConceptIds.join(',') } : {}),
   ...(request.availableMinutes ? { m: String(request.availableMinutes) } : {}),
+  ...(request.difficultyBand ? { d: request.difficultyBand } : {}),
   ...(extra.subjectId ? { s: extra.subjectId } : {}),
   ...(extra.scheduledAssessmentId ? { sch: extra.scheduledAssessmentId } : {}),
   confirm: '1',

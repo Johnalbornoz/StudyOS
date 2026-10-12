@@ -50,7 +50,7 @@ export async function learningSetupForStudent(studentId: string, request: Extrac
   const depths: readonly PracticeDepth[] = DEPTH_INTENTS.has(request.intent) ? PRACTICE_DEPTHS : [request.depth];
   const byDepth: Partial<Record<PracticeDepth, BlueprintSolution>> = {};
   for (const depth of depths) {
-    const solved = await deps.solve(studentId, { intent: request.intent, depth, canonicalConceptIds, learnerConceptIds: request.scope.learnerConceptIds, availableMinutes: request.availableMinutes, asOf });
+    const solved = await deps.solve(studentId, { intent: request.intent, depth, canonicalConceptIds, learnerConceptIds: request.scope.learnerConceptIds, availableMinutes: request.availableMinutes, difficultyBand: request.intent === 'AD_HOC_CONCEPT_EXAM' ? request.difficultyBand : null, asOf });
     if (!solved.ok) return { ok: false, reason: 'CONTEXT_UNAVAILABLE' };
     byDepth[depth] = solved.solution;
   }

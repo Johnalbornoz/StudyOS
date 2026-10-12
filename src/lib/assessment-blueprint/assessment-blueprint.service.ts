@@ -15,6 +15,7 @@ import type { ExposureFacts } from './solver/candidate';
 import { projectEvidenceNeeds, type EvidenceCountPolicy, type LearnerConceptState } from './policy/evidence-requirement';
 import { candidateSourceOf, resolveLearningTargets, type LearningIntent } from './policy/learning';
 import type { PracticeDepth } from './policy/practice-depth';
+import type { RequestedDifficultyBand } from '@/lib/exam-core/question-bank/requested-difficulty';
 import { solveLearningBlueprint, type ExposureIndex } from './pipeline';
 import type { BlueprintSolution } from './result';
 import { evaluateFeasibility, type FeasibilityReport } from './readiness/feasibility';
@@ -117,6 +118,8 @@ export interface LearningSelectionRequest {
   canonicalConceptIds?: readonly string[];
   learnerConceptIds?: readonly string[];
   availableMinutes?: number | null;
+  /** A difficulty the Student states (question-bank/requested-difficulty): a hard constraint on the selection. */
+  difficultyBand?: RequestedDifficultyBand | null;
   /** Explicit "now". The pipeline never reads a clock. */
   asOf: string;
 }
@@ -145,7 +148,7 @@ export async function solveLearningForStudent(studentId: string, request: Learni
   ]);
   const needs = projectEvidenceNeeds(canonicalConceptIds, states, policy, request.asOf);
   const solution = solveLearningBlueprint({
-    policy: { studentId, intent: request.intent, depth: request.depth, canonicalConceptIds, needs, unresolved, curriculum: context.curriculum.map(({ structureVersionId, academicSubjectId }) => ({ structureVersionId, academicSubjectId })), availableMinutes: request.availableMinutes ?? null },
+    policy: { studentId, intent: request.intent, depth: request.depth, canonicalConceptIds, needs, unresolved, curriculum: context.curriculum.map(({ structureVersionId, academicSubjectId }) => ({ structureVersionId, academicSubjectId })), availableMinutes: request.availableMinutes ?? null, ...(request.difficultyBand ? { difficultyBand: request.difficultyBand } : {}) },
     coverages: pool.coverages,
     exposure: pool.exposure,
     asOf: request.asOf,

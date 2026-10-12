@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Locale } from '@/lib/i18n/messages';
 import { getAdHocExamMessages } from '@/lib/i18n/ad-hoc-exam-messages';
-import { AD_HOC_EXAM_MAX_CONCEPTS, AD_HOC_EXAM_MINUTES, AD_HOC_EXAM_SIZES, AD_HOC_SCHEDULED_EVENT, adHocExamHref, scheduledInstantOfLocal, toggleGroup, type AdHocExamSize } from '@/lib/assessment-experience/ad-hoc-exam';
+import { AD_HOC_EXAM_DIFFICULTIES, AD_HOC_EXAM_MAX_CONCEPTS, AD_HOC_EXAM_MINUTES, AD_HOC_EXAM_SIZES, AD_HOC_SCHEDULED_EVENT, adHocExamHref, scheduledInstantOfLocal, toggleGroup, type AdHocExamDifficulty, type AdHocExamSize } from '@/lib/assessment-experience/ad-hoc-exam';
 import type { SubjectHierarchy, HierarchyConcept } from '@/services/topic-hierarchy.service';
 
 function GroupCheckbox({ id, label, conceptIds, selected, onToggle }: { id: string; label: string; conceptIds: string[]; selected: string[]; onToggle: (ids: string[]) => void }) {
@@ -66,6 +66,7 @@ export default function CreateExamPanel({
   const [selected, setSelected] = useState<string[]>([]);
   const [depth, setDepth] = useState<AdHocExamSize>('BALANCED');
   const [minutes, setMinutes] = useState<number | null>(null);
+  const [difficulty, setDifficulty] = useState<AdHocExamDifficulty | null>(null);
   const [when, setWhen] = useState('');
   const [scheduling, setScheduling] = useState<'IDLE' | 'SAVING' | 'SAVED' | 'FAILED' | 'INVALID_TIME'>('IDLE');
 
@@ -80,7 +81,7 @@ export default function CreateExamPanel({
 
   function startNow() {
     if (!canAct) return;
-    const href = adHocExamHref({ subjectId, conceptIds: selected, depth, minutes });
+    const href = adHocExamHref({ subjectId, conceptIds: selected, depth, minutes, difficulty });
     if (href) router.push(href);
   }
 
@@ -94,7 +95,7 @@ export default function CreateExamPanel({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // the moment carries its offset; the zone is the Student's own, as the browser reports it
-        body: JSON.stringify({ subjectId, conceptIds: selected, depth, availableMinutes: minutes, scheduledAt, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+        body: JSON.stringify({ subjectId, conceptIds: selected, depth, availableMinutes: minutes, difficultyBand: difficulty, scheduledAt, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok || !body?.success) return setScheduling(body?.reason === 'INVALID_TIME' ? 'INVALID_TIME' : 'FAILED');
@@ -182,9 +183,16 @@ export default function CreateExamPanel({
                 {AD_HOC_EXAM_MINUTES.map((v) => <option key={v} value={v}>{v} {m['adhoc.minutes']}</option>)}
               </select>
             </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
+              <span className="label" style={{ color: 'var(--text-muted)' }}>{m['adhoc.difficultyLabel']}</span>
+              <select value={difficulty ?? ''} onChange={(e) => setDifficulty(e.target.value ? (e.target.value as AdHocExamDifficulty) : null)} aria-describedby="create-exam-difficulty-hint" data-create-exam="difficulty" style={{ height: 36, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)', padding: '0 var(--space-3)', fontFamily: 'inherit', fontSize: 14, background: 'var(--bg-base)' }}>
+                <option value="">{m['adhoc.difficulty.none']}</option>
+                {AD_HOC_EXAM_DIFFICULTIES.map((d) => <option key={d} value={d}>{m[`adhoc.difficulty.${d}`]}</option>)}
+              </select>
+            </label>
           </>
         )}
-        <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: 0, flex: '1 1 220px' }}>{m['adhoc.difficulty']}</p>
+        <p id="create-exam-difficulty-hint" style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: 0, flex: '1 1 220px' }}>{difficulty ? m['adhoc.difficulty.exact'] : m['adhoc.difficulty']}</p>
       </div>
 
       {!canonicalAssessment && <p role="status" data-create-exam="unavailable" style={{ fontSize: 13.5, color: 'var(--text-secondary)', marginTop: 'var(--space-3)' }}>{m['adhoc.unavailable']}</p>}

@@ -6,7 +6,7 @@
 -- for a DATE AND TIME, may hold several at once -- several for the same
 -- Subject, over different concept subsets -- and each schedule keeps exactly
 -- what was chosen: Student, Subject, the exact concepts, size (depth), time
--- available, the moment and the Student's timezone.
+-- available, difficulty, the moment and the Student's timezone.
 --
 -- Why new tables. Nothing existing can hold this:
 --   assessment_occurrences / assessment_schedule_rules   the school's "next
@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS public.student_scheduled_assessments (
   timezone text NOT NULL,
   depth text NOT NULL,
   available_minutes integer,
+  -- the difficulty the Student chose (the Question Bank's item bands); NULL = not stated
+  difficulty_band text,
   concept_count integer NOT NULL,
   status text NOT NULL DEFAULT 'SCHEDULED',
   quiz_session_id text REFERENCES public.quiz_sessions(id) ON DELETE SET NULL,
@@ -61,6 +63,7 @@ CREATE TABLE IF NOT EXISTS public.student_scheduled_assessments (
   CONSTRAINT student_scheduled_assessments_depth_check CHECK (depth IN ('QUICK', 'BALANCED', 'DEEP')),
   CONSTRAINT student_scheduled_assessments_status_check CHECK (status IN ('SCHEDULED', 'STARTED', 'COMPLETED', 'CANCELLED')),
   CONSTRAINT student_scheduled_assessments_timezone_check CHECK (char_length(timezone) BETWEEN 1 AND 64),
+  CONSTRAINT student_scheduled_assessments_difficulty_check CHECK (difficulty_band IS NULL OR difficulty_band IN ('LOW', 'MEDIUM', 'HIGH')),
   CONSTRAINT student_scheduled_assessments_minutes_check CHECK (available_minutes IS NULL OR available_minutes BETWEEN 1 AND 600),
   CONSTRAINT student_scheduled_assessments_concept_count_check CHECK (concept_count BETWEEN 1 AND 60),
   -- a schedule that was never started has no session and no start; one that started says when

@@ -27,6 +27,7 @@ import { targetKey } from '../solver/candidate';
 import type { TargetPlan, TargetRequirement } from '../solver/plan';
 import type { EvidenceNeed } from './evidence-requirement';
 import { DEPTH_PRESETS, depthRequirementFor, PRACTICE_DEPTH_POLICY_VERSION, type PracticeDepth } from './practice-depth';
+import { requestedDifficultyRange, type RequestedDifficultyBand } from '@/lib/exam-core/question-bank/requested-difficulty';
 
 export const LEARNING_INTENTS = ['CONCEPT_PRACTICE', 'TOPIC_PRACTICE', 'CUSTOM_CONCEPT_PRACTICE', 'DIAGNOSTIC', 'MASTERY_CHECK', 'RETENTION_CHECK', 'MIXED_CUMULATIVE', 'AD_HOC_CONCEPT_EXAM'] as const;
 export type LearningIntent = (typeof LEARNING_INTENTS)[number];
@@ -99,6 +100,12 @@ export interface LearningPolicyInput {
   scope?: CurriculumScope | null;
   /** A hard limit the Student states. Honoured only against recorded durations. */
   availableMinutes?: number | null;
+  /**
+   * A difficulty the Student states (question-bank/requested-difficulty). Hard: only questions recorded in that band are
+   * selected; with too few of them the requirement is unmet -- it is never filled from another band.
+   * null / absent = not stated: the activity's canonical band stays a preference, as before.
+   */
+  difficultyBand?: RequestedDifficultyBand | null;
 }
 
 export interface LearningBlueprintPlan {
@@ -111,6 +118,8 @@ export interface LearningBlueprintPlan {
 export function buildLearningBlueprint(input: LearningPolicyInput): LearningBlueprintPlan {
   const semantics = activitySemanticsOf(input.intent);
   const preset = DEPTH_PRESETS[input.depth];
+  const requestedDifficulty = input.difficultyBand ? requestedDifficultyRange(input.difficultyBand) : null;
+  const preferredDifficulty = requestedDifficulty ?? semantics.difficulty;
   const unresolved: UnresolvedTarget[] = [...(input.unresolved ?? [])];
   const needByConcept = new Map(input.needs.map((n) => [n.canonicalConceptId, n]));
   const targets: TargetRequirement[] = [];
@@ -137,11 +146,12 @@ export function buildLearningBlueprint(input: LearningPolicyInput): LearningBlue
     // A concept reached only through an objective mapping (DERIVED) never satisfies a concept requirement.
     accept: { supporting: input.intent === 'DIAGNOSTIC' ? false : preset.acceptSupporting, derived: false },
     soft: {
-      difficulty: semantics.difficulty ? { min: semantics.difficulty.min, max: semantics.difficulty.max, target: null } : null,
+      difficulty: preferredDifficulty ? { min: preferredDifficulty.min, max: preferredDifficulty.max, target: null } : null,
       diversity: preset.diversity,
       avoidRecent: true,
     },
-    hard: { excludeRecent: semantics.noveltyRequired, maxSeconds: input.availableMinutes ? Math.round(input.availableMinutes * 60) : null },
+    // the key exists only when a difficulty was asked for: a plan without one is exactly what it always was
+    hard: { excludeRecent: semantics.noveltyRequired, maxSeconds: input.availableMinutes ? Math.round(input.availableMinutes * 60) : null, ...(requestedDifficulty ? { difficulty: requestedDifficulty } : {}) },
     unresolvedTargets: unresolved,
   };
 
@@ -162,7 +172,7 @@ export function buildLearningBlueprint(input: LearningPolicyInput): LearningBlue
       evidenceContract: `B2:${input.intent}:${input.depth}`,
       novelItemsRequired: semantics.noveltyRequired,
     },
-    difficulty: semantics.difficulty ? { min: semantics.difficulty.min, max: semantics.difficulty.max, target: null, reasonCode: 'CANONICAL_ACTIVITY_BAND' } : null,
+    difficulty: preferredDifficulty ? { min: preferredDifficulty.min, max: preferredDifficulty.max, target: null, reasonCode: requestedDifficulty ? `STUDENT_REQUESTED_BAND:${input.difficultyBand}` : 'CANONICAL_ACTIVITY_BAND' } : null,
     diversity: { questionTypes: [], maxPerTemplate: null },
     time: input.availableMinutes ? { availableMinutes: input.availableMinutes, officialMinutes: null } : null,
     exposure: { avoidSeenByStudent: true },

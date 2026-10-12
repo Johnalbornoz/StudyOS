@@ -64,7 +64,7 @@ export default async function AssessmentSetupPage({ searchParams }: { searchPara
       );
     }
     scheduledAssessmentId = schedule.id;
-    query = { intent: 'AD_HOC_CONCEPT_EXAM', origin: 'SUBJECT', s: schedule.subjectId, lc: schedule.conceptIds.join(','), depth: schedule.depth, m: schedule.availableMinutes ? String(schedule.availableMinutes) : undefined, confirm: asked.confirm, sch: schedule.id };
+    query = { intent: 'AD_HOC_CONCEPT_EXAM', origin: 'SUBJECT', s: schedule.subjectId, lc: schedule.conceptIds.join(','), depth: schedule.depth, m: schedule.availableMinutes ? String(schedule.availableMinutes) : undefined, d: schedule.difficultyBand ?? undefined, confirm: asked.confirm, sch: schedule.id };
   }
   const request = launchRequestOfQuery(query);
   if (!request) return unavailable;
@@ -98,7 +98,7 @@ export default async function AssessmentSetupPage({ searchParams }: { searchPara
 
   if (adHoc && query.confirm === '1') {
     // the same check the start performs: scope, and already-eligible content for EVERY selected concept
-    const ready = await adHocExamReadiness(studentId, { subjectId, learnerConceptIds: request.scope.learnerConceptIds, depth: request.depth, availableMinutes: request.availableMinutes }, new Date().toISOString(), { enabled: isSnapshotExecutionEnabled() });
+    const ready = await adHocExamReadiness(studentId, { subjectId, learnerConceptIds: request.scope.learnerConceptIds, depth: request.depth, availableMinutes: request.availableMinutes, difficultyBand: request.difficultyBand }, new Date().toISOString(), { enabled: isSnapshotExecutionEnabled() });
     if (!ready.ok && ready.reason !== 'INSUFFICIENT_CERTIFIED_CONTENT') return unavailable;
     if (!ready.ok) {
       const m = getAdHocExamMessages(locale);

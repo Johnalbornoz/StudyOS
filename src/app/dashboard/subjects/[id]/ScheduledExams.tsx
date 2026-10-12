@@ -17,6 +17,7 @@ interface Schedule {
   scopeIntact: boolean;
   depth: 'QUICK' | 'BALANCED' | 'DEEP';
   availableMinutes: number | null;
+  difficultyBand: 'LOW' | 'MEDIUM' | 'HIGH' | null;
   scheduledAt: string;
   status: 'SCHEDULED' | 'STARTED' | 'COMPLETED' | 'CANCELLED';
   quizSessionId: string | null;
@@ -72,7 +73,7 @@ export default function ScheduledExams({ subjectId, locale }: { subjectId: strin
             <div>
               <div className="tabular" style={{ fontWeight: 600, fontSize: 14 }}>{when.format(new Date(s.scheduledAt))}</div>
               <div className="tabular" style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-                {s.conceptIds.length} {m['adhoc.selected']} · {m[`adhoc.size.${s.depth}`]}{s.availableMinutes ? ` · ${s.availableMinutes} ${m['adhoc.minutes']}` : ''}
+                {s.conceptIds.length} {m['adhoc.selected']} · {m[`adhoc.size.${s.depth}`]}{s.availableMinutes ? ` · ${s.availableMinutes} ${m['adhoc.minutes']}` : ''}{s.difficultyBand ? ` · ${m['adhoc.difficultyLabel']}: ${m[`adhoc.difficulty.${s.difficultyBand}`]}` : ''}
               </div>
               {!s.scopeIntact && <div role="status" style={{ color: 'var(--error)', fontSize: 13 }}>{m['adhoc.scopeChanged']}</div>}
             </div>

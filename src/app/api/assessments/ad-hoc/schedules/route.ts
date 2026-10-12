@@ -2,7 +2,7 @@
  * A Student's own partial exam -- its schedules.
  *
  *   GET  ?subjectId=   the signed-in Student's open schedules (optionally of one Subject)
- *   POST               a new, independent schedule: Subject, exact concepts, size, time available, a moment
+ *   POST               a new, independent schedule: Subject, exact concepts, size, time available, difficulty, a moment
  *                      (date AND time, with its offset) and the Student's timezone
  *
  * The Student is the signed-in one: a request names no Student. The scope is checked here on every write.
@@ -15,6 +15,7 @@ import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 import { verifyAuth, requireStudentId } from '@/lib/auth';
 import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/execution-flag';
 import { AD_HOC_EXAM_MAX_CONCEPTS } from '@/lib/ad-hoc-exam/selection';
+import { REQUESTED_DIFFICULTY_BANDS } from '@/lib/exam-core/question-bank/requested-difficulty';
 import { AD_HOC_SCHEDULE_DEPTHS, createScheduledAdHocExam, listScheduledAdHocExams } from '@/services/ad-hoc-exam-schedule.service';
 
 const CreateSchema = z.strictObject({
@@ -22,6 +23,7 @@ const CreateSchema = z.strictObject({
   conceptIds: z.array(z.string().min(1).max(200)).min(1).max(AD_HOC_EXAM_MAX_CONCEPTS),
   depth: z.enum(AD_HOC_SCHEDULE_DEPTHS),
   availableMinutes: z.number().int().min(1).max(240).nullable().default(null),
+  difficultyBand: z.enum(REQUESTED_DIFFICULTY_BANDS).nullable().default(null),
   scheduledAt: z.string().min(1).max(40),
   timezone: z.string().min(1).max(64),
 });

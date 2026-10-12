@@ -157,7 +157,7 @@ vi.mock('@/lib/db', () => {
     /* ---- the Student's own schedules (migration 20261121_1000) ---- */
     if (/^\s*INSERT INTO student_scheduled_assessments /.test(sql)) {
       const id = `5c5c5c5c-0000-4000-8000-${String(h.schedules.length + 1).padStart(12, '0')}`;
-      h.schedules.push({ id, student_id: params[0], subject_id: params[1], intent: 'AD_HOC_CONCEPT_EXAM', scheduled_at: params[2], timezone: params[3], depth: params[4], available_minutes: params[5], concept_count: params[6], status: 'SCHEDULED', quiz_session_id: null, concept_ids: [] });
+      h.schedules.push({ id, student_id: params[0], subject_id: params[1], intent: 'AD_HOC_CONCEPT_EXAM', scheduled_at: params[2], timezone: params[3], depth: params[4], available_minutes: params[5], concept_count: params[6], difficulty_band: params[7] ?? null, status: 'SCHEDULED', quiz_session_id: null, concept_ids: [] });
       return { rows: [{ id }] };
     }
     if (/^\s*INSERT INTO student_scheduled_assessment_concepts/.test(sql)) { h.schedules.find((x: any) => x.id === params[0]).concept_ids = [...params[1]].sort(); return { rows: [] }; }
@@ -216,7 +216,7 @@ vi.mock('@/lib/assessment-blueprint/assessment-blueprint.service', async (origin
       const ids = [...canonical].sort();
       if (candidateSourceOf(request.intent) !== 'REVIEWED_EXAM_BANK') throw new Error('this world only assembles from the global bank');
       const pool = await actual.loadReviewedBankLearningCandidates(studentId, ids, request.asOf);
-      const solution = solveLearningBlueprint({ policy: { studentId, intent: request.intent, depth: request.depth, canonicalConceptIds: ids, needs: projectEvidenceNeeds(ids, [], { version: 1, minimumEvidenceCount: 3, minimumIndependentEvidenceCount: 2 }, request.asOf), unresolved }, coverages: pool.coverages, exposure: pool.exposure, asOf: request.asOf });
+      const solution = solveLearningBlueprint({ policy: { studentId, intent: request.intent, depth: request.depth, canonicalConceptIds: ids, needs: projectEvidenceNeeds(ids, [], { version: 1, minimumEvidenceCount: 3, minimumIndependentEvidenceCount: 2 }, request.asOf), unresolved, difficultyBand: request.difficultyBand ?? null }, coverages: pool.coverages, exposure: pool.exposure, asOf: request.asOf });
       return { ok: true, solution, coverages: pool.coverages };
     },
   };
@@ -244,6 +244,12 @@ import { GET as schedulesGET, POST as schedulesPOST } from '@/app/api/assessment
 import { DELETE as scheduleDELETE } from '@/app/api/assessments/ad-hoc/schedules/[id]/route';
 import { cancelScheduledAdHocExam, completeScheduledAdHocExamForSession, createScheduledAdHocExam, getScheduledAdHocExam, listScheduledAdHocExams, markScheduledAdHocExamStarted, parseScheduledInstant } from '@/services/ad-hoc-exam-schedule.service';
 import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/execution-flag';
+import { meetsRequestedDifficulty, requestedDifficultyRange, REQUESTED_DIFFICULTY_BANDS } from '@/lib/exam-core/question-bank/requested-difficulty';
+import { bandOf, type DifficultyBand } from '@/lib/exam-core/question-bank/quality';
+import { AD_HOC_EXAM_DIFFICULTIES, adHocExamHref } from '@/lib/assessment-experience/ad-hoc-exam';
+import { hiddenFieldsOf, launchRequestOfQuery } from '@/app/dashboard/assessment/launch-params';
+import { getAdHocExamMessages } from '@/lib/i18n/ad-hoc-exam-messages';
+import { LOCALES } from '@/lib/i18n/messages';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
 const FLAG = 'ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED';
@@ -1010,5 +1016,263 @@ describe('2. SUBJECT-SPECIFIC EVIDENCE: the same canonical concept in two Subjec
     const freeze = read('src/lib/assessment-execution/frozen-assessment.ts');
     expect(freeze).toMatch(/\.\.\.\(learnerScope \? \{ learnerScope \} : \{\}\),/);
     expect(freeze).toMatch(/\.optional\(\),\n\}\);/);
+  });
+});
+
+/* ================================================================== */
+/* 3. DIFFICULTY: the Student's choice is a hard constraint            */
+/* ================================================================== */
+
+describe('3. DIFFICULTY: chosen by the Student, kept exactly, never relaxed', () => {
+  const difficultyOf = (suffix: string) => h.bank.find((i: any) => i.content.key === `item-${suffix}`).content;
+  const setDifficulty = (levels: Record<string, number | undefined>) => { for (const [suffix, level] of Object.entries(levels)) difficultyOf(suffix).difficulty = level; };
+  // every item of the world is recorded at 3 (MEDIUM); each test states what it changes, and it is undone after
+  afterEach(() => { for (const i of h.bank as any[]) i.content.difficulty = 3; });
+  const startAt = (difficultyBand: unknown, over: Record<string, unknown> = {}) => start(body({ subjectId: SUBJECT, learnerConceptIds: [C1, C2] }, { difficultyBand, ...over }));
+  const noSession = () => { expect(inserts()).toEqual([]); expect(h.sql.filter((q) => /^INSERT INTO exam_item_usage/.test(q.sql))).toEqual([]); };
+
+  it('the vocabulary is the Question Bank\'s own item band, and a band is exactly what `bandOf` says it is', () => {
+    const bankBands: DifficultyBand[] = ['LOW', 'MEDIUM', 'HIGH'];
+    expect([...REQUESTED_DIFFICULTY_BANDS]).toEqual(bankBands);
+    expect(AD_HOC_EXAM_DIFFICULTIES).toBe(REQUESTED_DIFFICULTY_BANDS);
+    expect(REQUESTED_DIFFICULTY_BANDS.map(requestedDifficultyRange)).toEqual([{ min: 1, max: 2 }, { min: 3, max: 3 }, { min: 4, max: 5 }]);
+    // no second set of cut points: every level is of the band `bandOf` puts it in, and of no other
+    for (const band of REQUESTED_DIFFICULTY_BANDS) for (const level of [1, 2, 3, 4, 5]) expect(meetsRequestedDifficulty(band, level), `${band} ${level}`).toBe(bandOf(level) === band);
+    // an unknown difficulty is never assumed to be the one asked for
+    for (const band of REQUESTED_DIFFICULTY_BANDS) for (const unknown of [null, undefined, Number.NaN]) expect(meetsRequestedDifficulty(band, unknown)).toBe(false);
+    const policy = read('src/lib/exam-core/question-bank/requested-difficulty.ts');
+    expect(policy).toContain("import { bandOf, type DifficultyBand } from './quality';");
+    // the Factory's planning modules stay unwired from the runtime
+    expect(policy).not.toMatch(/production\/|task-families|assessment-adaptation/);
+  });
+
+  it('concepts [A, B] at HIGH: every delivered question is of A or B, is HIGH and is Student-eligible', async () => {
+    // both concepts hold questions of every band; only two per concept are HIGH
+    setDifficulty({ a1: 4, a2: 5, a3: 3, a4: 1, b1: 5, b2: 4, b3: 2, b4: 3 });
+    const r = await startAt('HIGH');
+    expect(r.status).toBe(200);
+    expect(inserts()).toHaveLength(1);
+    const frozen = frozenOf(inserts()[0]);
+    expect(frozen.difficultyBand).toBe('HIGH');
+    expect(frozen.targets.canonicalConceptIds).toEqual(['K1', 'K2']);
+    expect(frozen.items.length).toBeGreaterThan(0);
+    for (const item of frozen.items) {
+      expect(item.coverage.map((c) => c.canonicalConceptId).every((k) => ['K1', 'K2'].includes(k)), item.key).toBe(true);
+      expect([4, 5], item.key).toContain(item.difficulty);
+      expect(item.question.store).toBe('REVIEWED_EXAM_BANK');
+    }
+    // exactly the HIGH items of the two concepts could be chosen: nothing else of the bank
+    const eligible = new Set(['a1', 'a2', 'b1', 'b2'].map((k) => `eeeeeeee-0000-4000-8000-0000000000${k}`));
+    expect(frozen.items.every((i) => eligible.has(i.question.id))).toBe(true);
+    // the supply request itself carried the concepts, the size and the difficulty
+    expect(h.solveCalls.length).toBeGreaterThan(0);
+    for (const call of h.solveCalls) expect(call).toMatchObject({ intent: 'AD_HOC_CONCEPT_EXAM', depth: 'QUICK', difficultyBand: 'HIGH', learnerConceptIds: [C1, C2] });
+    expect(h.cacheReads).toBe(0);
+    expect(h.provider).toEqual(ZERO);
+  });
+
+  it('each band selects only its own questions', async () => {
+    setDifficulty({ a1: 1, a2: 2, a3: 3, a4: 5, b1: 2, b2: 1, b3: 3, b4: 4 });
+    const r = await startAt('LOW');
+    expect(r.status).toBe(200);
+    expect(frozenOf(inserts()[0]).items.every((i) => i.difficulty === 1 || i.difficulty === 2)).toBe(true);
+    expect(frozenOf(inserts()[0]).difficultyBand).toBe('LOW');
+  });
+
+  it('not enough questions of the chosen difficulty => 409 INSUFFICIENT_CERTIFIED_CONTENT; other difficulties are NOT used to fill it', async () => {
+    // the bank can serve this exam (every item is MEDIUM)...
+    expect((await startAt(null)).status).toBe(200);
+    h.sessions = new Map(); h.sql = []; h.solveCalls = [];
+    // ...but it holds nothing LOW or HIGH for these concepts
+    for (const band of ['LOW', 'HIGH']) {
+      const r = await startAt(band);
+      expect(r.status, band).toBe(409);
+      expect(r.json).toEqual({ success: false, reason: 'INSUFFICIENT_CERTIFIED_CONTENT', unmetConceptIds: [C1, C2] });
+    }
+    noSession();
+    expect(h.solveCalls.map((c) => c.difficultyBand)).toEqual(['LOW', 'HIGH']);
+    expect(h.provider).toEqual(ZERO);
+    expect(providerCalls()).toBe(0);
+  });
+
+  it('one concept short at that difficulty refuses the exam whole, naming it: no partial exam, no borrowed question', async () => {
+    setDifficulty({ a1: 4, a2: 5, a3: 4, a4: 5 }); // K1 is fully HIGH; K2 stays MEDIUM
+    const r = await startAt('HIGH');
+    expect(r.status).toBe(409);
+    expect(r.json).toEqual({ success: false, reason: 'INSUFFICIENT_CERTIFIED_CONTENT', unmetConceptIds: [C2] });
+    noSession();
+    expect(h.provider).toEqual(ZERO);
+  });
+
+  it('a question whose difficulty is not recorded never counts as the chosen one', async () => {
+    setDifficulty({ a1: undefined, a2: undefined, a3: undefined, a4: undefined });
+    const r = await startAt('MEDIUM');
+    expect(r.status).toBe(409);
+    expect(r.json).toEqual({ success: false, reason: 'INSUFFICIENT_CERTIFIED_CONTENT', unmetConceptIds: [C1] });
+    noSession();
+  });
+
+  it('no difficulty stated => exactly the previous behaviour: no constraint, and the snapshot has no new key', async () => {
+    const r = await startAt(null);
+    expect(r.status).toBe(200);
+    const frozen = frozenOf(inserts()[0]);
+    expect('difficultyBand' in frozen).toBe(false);
+    expect(h.solveCalls.every((c) => (c.difficultyBand ?? null) === null)).toBe(true);
+  });
+
+  it('an unknown difficulty is refused as malformed: it is never read as "not stated"', async () => {
+    for (const bad of ['EASY', 'HARD', 'CHALLENGE', 'high', 3, '']) {
+      const r = await startAt(bad);
+      expect(r.status, String(bad)).toBe(400);
+    }
+    noSession();
+    expect(h.solveCalls).toEqual([]);
+  });
+
+  it('the same exam at another difficulty is another assessment: an open session is not resumed across difficulties', async () => {
+    setDifficulty({ a1: 4, a2: 5, b1: 5, b2: 4 }); // a3, a4, b3, b4 stay MEDIUM
+    const standard = await startAt('MEDIUM');
+    expect(standard.status).toBe(200);
+    const challenge = await startAt('HIGH');
+    expect(challenge.status).toBe(200);
+    expect(challenge.json.data.resumed).toBe(false);
+    expect(challenge.json.data.sessionId).not.toBe(standard.json.data.sessionId);
+    expect(inserts().map((i) => frozenOf(i).difficultyBand)).toEqual(['MEDIUM', 'HIGH']);
+    // asking again for the same difficulty resumes its own session
+    const again = await startAt('HIGH');
+    expect(again.json.data).toMatchObject({ resumed: true, sessionId: challenge.json.data.sessionId });
+  });
+
+  it('the difficulty is under the snapshot\'s digest, and the freeze refuses a question outside it whatever selected it', async () => {
+    setDifficulty({ a1: 4, a2: 5, b1: 5, b2: 4 });
+    await startAt('HIGH');
+    const raw = JSON.parse(inserts()[0].params.find((p: any) => typeof p === 'string' && p.includes('"snapshotId"')));
+    expect(readFrozenAssessment({ ...raw, difficultyBand: 'LOW' }).ok).toBe(false);
+    const freeze = read('src/lib/assessment-execution/frozen-assessment.ts');
+    expect(freeze).toMatch(/const outside = items\.filter\(\(i\) => !meetsRequestedDifficulty\(difficultyBand, i\.difficulty\)\);\s+if \(outside\.length > 0\) throw new FreezeError\('DIFFICULTY_NOT_AS_REQUESTED'/);
+    expect(freeze).toMatch(/\.\.\.\(difficultyBand \? \{ difficultyBand \} : \{\}\),/);
+  });
+
+  it('the constraint is in the solver, as a hard one: a candidate outside it is never in the selectable pool', () => {
+    const solver = read('src/lib/assessment-blueprint/solver/solve.ts');
+    expect(solver).toMatch(/const allowed = pool\.filter\(\(c\) => relevant\(c\) && !\(plan\.hard\.excludeRecent && c\.exposure\.recent\) && ofRequestedDifficulty\(c\)\);/);
+    const learning = read('src/lib/assessment-blueprint/policy/learning.ts');
+    expect(learning).toMatch(/\.\.\.\(requestedDifficulty \? \{ difficulty: requestedDifficulty \} : \{\}\)/);
+    // it adds no source, no generator and no supply request
+    for (const file of ['src/lib/exam-core/question-bank/requested-difficulty.ts', 'src/lib/assessment-blueprint/policy/learning.ts', 'src/lib/assessment-blueprint/solver/solve.ts']) {
+      expect(read(file), file).not.toMatch(/executeAI|callModel|generateQuestions|requestAssessmentSupply|scheduleDeliveryReplenishment|enqueueGenerationJob/);
+    }
+  });
+
+  it('the link and the setup keep the difficulty on every step', () => {
+    const href = adHocExamHref({ subjectId: SUBJECT, conceptIds: [C2, C1], depth: 'DEEP', minutes: 30, difficulty: 'HIGH' })!;
+    const query = Object.fromEntries(new URL(href, 'https://app.test').searchParams.entries());
+    expect(query).toMatchObject({ intent: 'AD_HOC_CONCEPT_EXAM', s: SUBJECT, lc: `${C1},${C2}`, depth: 'DEEP', m: '30', d: 'HIGH' });
+    const request = launchRequestOfQuery(query)!;
+    expect(request.difficultyBand).toBe('HIGH');
+    expect(hiddenFieldsOf(request, { subjectId: SUBJECT })).toMatchObject({ d: 'HIGH', s: SUBJECT });
+    // not stated: no parameter at all
+    expect(adHocExamHref({ subjectId: SUBJECT, conceptIds: [C1] })).not.toContain('d=');
+    expect('d' in hiddenFieldsOf(launchRequestOfQuery({ intent: 'AD_HOC_CONCEPT_EXAM', origin: 'SUBJECT', s: SUBJECT, lc: C1 })!)).toBe(false);
+    // a link with an unknown difficulty is not a request: it never becomes another difficulty
+    expect(launchRequestOfQuery({ ...query, d: 'EASY' })).toBeNull();
+    // the setup preview and the confirmation both ask with the difficulty
+    expect(read('src/lib/assessment-experience/assessment-experience.service.ts')).toContain("difficultyBand: request.intent === 'AD_HOC_CONCEPT_EXAM' ? request.difficultyBand : null");
+    expect(read('src/app/dashboard/assessment/page.tsx')).toContain('availableMinutes: request.availableMinutes, difficultyBand: request.difficultyBand }');
+  });
+
+  it('only this exam has the choice: on any other intent the start does not read it', () => {
+    const route = read('src/app/api/assessments/learning/start/route.ts');
+    expect(route).toContain('let difficultyBand = isAdHocExamIntent(intent) ? parsed.request.difficultyBand : null;');
+  });
+
+  it('the control: a labelled select in the existing configuration row, with Spanish copy', () => {
+    const panel = read('src/app/dashboard/subjects/[id]/CreateExamPanel.tsx');
+    // the visible label wraps the select (so it names it), and the hint below is tied to it
+    expect(panel).toMatch(/<label[^>]*>\s*<span className="label"[^>]*>\{m\['adhoc\.difficultyLabel'\]\}<\/span>\s*<select value=\{difficulty \?\? ''\}/);
+    expect(panel).toMatch(/aria-describedby="create-exam-difficulty-hint" data-create-exam="difficulty"/);
+    expect(panel).toMatch(/<p id="create-exam-difficulty-hint"[^>]*>\{difficulty \? m\['adhoc\.difficulty\.exact'\] : m\['adhoc\.difficulty'\]\}<\/p>/);
+    expect(panel).toContain("{AD_HOC_EXAM_DIFFICULTIES.map((d) => <option key={d} value={d}>{m[`adhoc.difficulty.${d}`]}</option>)}");
+    expect(panel).toContain('adHocExamHref({ subjectId, conceptIds: selected, depth, minutes, difficulty })');
+    expect(panel).toContain('availableMinutes: minutes, difficultyBand: difficulty, scheduledAt');
+    const es = getAdHocExamMessages('es');
+    expect([es['adhoc.difficultyLabel'], es['adhoc.difficulty.none'], es['adhoc.difficulty.LOW'], es['adhoc.difficulty.MEDIUM'], es['adhoc.difficulty.HIGH']]).toEqual(['Dificultad', 'Automática', 'Básica', 'Intermedia', 'Avanzada']);
+    for (const locale of LOCALES) for (const band of AD_HOC_EXAM_DIFFICULTIES) expect(getAdHocExamMessages(locale)[`adhoc.difficulty.${band}`].length, `${locale} ${band}`).toBeGreaterThan(0);
+    expect(read('src/app/dashboard/subjects/[id]/ScheduledExams.tsx')).toContain("m[`adhoc.difficulty.${s.difficultyBand}`]");
+  });
+});
+
+describe('3b. DIFFICULTY ROUNDTRIP: schedule with X -> read X -> start with X', () => {
+  const difficultyOf = (suffix: string) => h.bank.find((i: any) => i.content.key === `item-${suffix}`).content;
+  beforeEach(() => { for (const k of ['a1', 'a2', 'b1', 'b2']) difficultyOf(k).difficulty = 5; });
+  afterEach(() => { for (const i of h.bank as any[]) i.content.difficulty = 3; });
+  const due = () => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-10-20T20:30:00.000Z')); };
+
+  it('the schedule persists the difficulty, every read returns it, and the start asks the supply for exactly it', async () => {
+    const saved = await schedule({ difficultyBand: 'HIGH' });
+    expect(saved).toMatchObject({ ok: true, schedule: { difficultyBand: 'HIGH', depth: 'QUICK', availableMinutes: 30 } });
+    const id = saved.ok ? saved.schedule.id : '';
+    // written to its own column
+    const insert = h.sql.find((q) => /^\s*INSERT INTO student_scheduled_assessments /.test(q.sql))!;
+    expect(insert.sql).toMatch(/\(student_id, subject_id, intent, scheduled_at, timezone, depth, available_minutes, concept_count, difficulty_band\)/);
+    expect(insert.params[7]).toBe('HIGH');
+    // read back, both ways
+    expect((await getScheduledAdHocExam(STUDENT, id))?.difficultyBand).toBe('HIGH');
+    expect((await listScheduledAdHocExams(STUDENT, { subjectId: SUBJECT })).map((s) => s.difficultyBand)).toEqual(['HIGH']);
+
+    // at its moment, with a request that claims another difficulty (and another size)
+    due();
+    const r = await start(body({ scheduledAssessmentId: id }, { difficultyBand: 'LOW', depth: 'DEEP' }));
+    expect(r.status).toBe(200);
+    expect(h.solveCalls.length).toBeGreaterThan(0);
+    for (const call of h.solveCalls) expect(call).toMatchObject({ difficultyBand: 'HIGH', depth: 'QUICK', learnerConceptIds: [C1, C2] });
+    const frozen = frozenOf(inserts()[0]);
+    expect(frozen.difficultyBand).toBe('HIGH');
+    expect(frozen.items.every((i) => i.difficulty === 5)).toBe(true);
+    expect(h.schedules[0]).toMatchObject({ status: 'STARTED', difficulty_band: 'HIGH' });
+    expect(h.provider).toEqual(ZERO);
+  });
+
+  it('after its moment too; and a schedule saved with no difficulty starts with none, whatever the request says', async () => {
+    const withBand = await schedule({ difficultyBand: 'HIGH' });
+    const none = await schedule({ conceptIds: [C2], scheduledAt: '2026-10-21T15:30:00-05:00' });
+    expect(none).toMatchObject({ ok: true, schedule: { difficultyBand: null } });
+    vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-10-29T08:00:00.000Z'));
+    expect((await start(body({ scheduledAssessmentId: withBand.ok ? withBand.schedule.id : '' }))).status).toBe(200);
+    expect(h.solveCalls.every((c) => c.difficultyBand === 'HIGH')).toBe(true);
+    h.solveCalls = [];
+    const r = await start(body({ scheduledAssessmentId: none.ok ? none.schedule.id : '' }, { difficultyBand: 'HIGH' }));
+    expect(r.status).toBe(200);
+    expect(h.solveCalls.every((c) => (c.difficultyBand ?? null) === null)).toBe(true);
+  });
+
+  it('a scheduled difficulty the bank cannot serve at launch => 409; the schedule stays SCHEDULED with its difficulty; nothing easier is served', async () => {
+    const saved = await schedule({ difficultyBand: 'LOW' });
+    due();
+    h.sql = [];
+    const r = await start(body({ scheduledAssessmentId: saved.ok ? saved.schedule.id : '' }));
+    expect(r.status).toBe(409);
+    expect(r.json).toEqual({ success: false, reason: 'INSUFFICIENT_CERTIFIED_CONTENT', unmetConceptIds: [C1, C2] });
+    expect(inserts()).toEqual([]);
+    expect(h.schedules[0]).toMatchObject({ status: 'SCHEDULED', difficulty_band: 'LOW', quiz_session_id: null });
+    expect(h.provider).toEqual(ZERO);
+  });
+
+  it('an unknown difficulty is not saved: the service refuses it and the route answers 400', async () => {
+    expect(await schedule({ difficultyBand: 'EASY' })).toEqual({ ok: false, reason: 'INVALID_DIFFICULTY' });
+    const res: any = await (schedulesPOST as any)(new NextRequest('https://app.test/api/assessments/ad-hoc/schedules', { method: 'POST', body: JSON.stringify({ subjectId: SUBJECT, conceptIds: [C1], depth: 'QUICK', scheduledAt: '2026-10-20T15:30:00-05:00', timezone: 'America/Bogota', difficultyBand: 'HARD' }) }));
+    expect(res.status).toBe(400);
+    expect(h.schedules).toEqual([]);
+  });
+
+  it('the route saves and returns it; the setup page reads a scheduled exam\'s difficulty from the record', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(NOW);
+    const res: any = await (schedulesPOST as any)(new NextRequest('https://app.test/api/assessments/ad-hoc/schedules', { method: 'POST', body: JSON.stringify({ subjectId: SUBJECT, conceptIds: [C1], depth: 'QUICK', scheduledAt: '2026-10-20T15:30:00-05:00', timezone: 'America/Bogota', difficultyBand: 'MEDIUM' }) }));
+    expect(res.status).toBe(201);
+    expect((await res.json()).data.schedule.difficultyBand).toBe('MEDIUM');
+    const list: any = await (schedulesGET as any)(new NextRequest(`https://app.test/api/assessments/ad-hoc/schedules?subjectId=${SUBJECT}`));
+    expect((await list.json()).data.schedules.map((s: any) => s.difficultyBand)).toEqual(['MEDIUM']);
+    expect(read('src/app/dashboard/assessment/page.tsx')).toContain('d: schedule.difficultyBand ?? undefined');
+    expect(read('src/app/api/assessments/learning/start/route.ts')).toContain('difficultyBand = schedule.difficultyBand;');
   });
 });

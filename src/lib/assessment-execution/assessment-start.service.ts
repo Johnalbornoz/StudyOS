@@ -92,6 +92,9 @@ export interface StartDeps {
 const sameTargets = (frozen: FrozenAssessment, intent: string, depth: string, canonicalConceptIds: readonly string[]) =>
   frozen.intent === intent && frozen.depth === depth && JSON.stringify(frozen.targets.canonicalConceptIds) === JSON.stringify([...new Set(canonicalConceptIds)].sort());
 
+/** The same exam at another difficulty is another assessment: a start resumes only a session frozen with the difficulty it asks for (or with none, when it asks for none). */
+const sameDifficulty = (frozen: FrozenAssessment, difficultyBand: string | null | undefined) => (frozen.difficultyBand ?? null) === (difficultyBand ?? null);
+
 /** The same canonical targets in another Subject are another assessment: a scoped start resumes only its own Subject's session, an unscoped one only an unscoped session. */
 const sameScope = (frozen: FrozenAssessment, scope: StartLearningInput['scope']) => {
   if (!scope) return !frozen.learnerScope;
@@ -114,7 +117,7 @@ export async function startLearningAssessment(input: StartLearningInput, overrid
     );
     for (const row of open.rows as Array<{ id: string; assessment_snapshot: unknown }>) {
       const read = readFrozenAssessment(row.assessment_snapshot);
-      if (read.ok && read.frozen.studentId === input.studentId && sameTargets(read.frozen, input.request.intent, input.request.depth, wanted) && sameScope(read.frozen, input.scope)) {
+      if (read.ok && read.frozen.studentId === input.studentId && sameTargets(read.frozen, input.request.intent, input.request.depth, wanted) && sameDifficulty(read.frozen, input.request.difficultyBand) && sameScope(read.frozen, input.scope)) {
         log({ event: 'RESUMED', sessionId: row.id, snapshotId: read.frozen.snapshotId, family: read.frozen.family, executionAuthority: 'CANONICAL' });
         return { ok: true, resumed: true, record: { kind: 'QUIZ_SESSION', id: row.id }, snapshotId: read.frozen.snapshotId, questions: read.frozen.items.length, executionAuthority: 'CANONICAL' };
       }
@@ -139,6 +142,8 @@ export async function startLearningAssessment(input: StartLearningInput, overrid
     activity: learningActivityFor(solution.requirement.evidence.activityType, input.request.intent),
     // launched from one Subject: the snapshot says which of the Student's concepts the evidence belongs to
     learnerScope: input.scope ?? null,
+    // the difficulty the Student asked for is frozen with the questions it selected
+    difficultyBand: input.request.difficultyBand ?? null,
   });
 
   /* ---- the frozen questions' content, in the frozen order ---- */

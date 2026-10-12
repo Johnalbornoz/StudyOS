@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { REQUESTED_DIFFICULTY_BANDS } from '@/lib/exam-core/question-bank/requested-difficulty';
 
 const DIR = join(process.cwd(), 'database/migrations');
 const FILE = '20261121_1000_student_scheduled_assessments.sql';
@@ -50,6 +51,12 @@ describe('student_scheduled_assessments', () => {
   it('is the Student\'s own: student and Subject by foreign key', () => {
     expect(t).toMatch(/student_id uuid NOT NULL REFERENCES public\.students\(id\) ON DELETE CASCADE/);
     expect(t).toMatch(/subject_id uuid NOT NULL REFERENCES public\.subjects\(id\) ON DELETE CASCADE/);
+  });
+
+  it('the difficulty the Student chose is kept on the schedule: the bank\'s three item bands, or not stated', () => {
+    expect(t).toMatch(/difficulty_band text,/);
+    expect(t).toMatch(/CHECK \(difficulty_band IS NULL OR difficulty_band IN \('LOW', 'MEDIUM', 'HIGH'\)\)/);
+    expect([...REQUESTED_DIFFICULTY_BANDS]).toEqual(['LOW', 'MEDIUM', 'HIGH']);
   });
 
   it('a moment and a timezone: timestamptz, never a date', () => {
@@ -110,7 +117,7 @@ describe('student_scheduled_assessment_concepts', () => {
 describe('the code that writes these tables agrees with them', () => {
   const service = readFileSync(join(process.cwd(), 'src/services/ad-hoc-exam-schedule.service.ts'), 'utf-8');
   it('every column the service names exists, and it writes no other table', () => {
-    for (const col of ['student_id', 'subject_id', 'intent', 'scheduled_at', 'timezone', 'depth', 'available_minutes', 'concept_count', 'status', 'quiz_session_id', 'started_at', 'completed_at', 'cancelled_at', 'updated_at']) {
+    for (const col of ['student_id', 'subject_id', 'intent', 'scheduled_at', 'timezone', 'depth', 'available_minutes', 'difficulty_band', 'concept_count', 'status', 'quiz_session_id', 'started_at', 'completed_at', 'cancelled_at', 'updated_at']) {
       expect(table('student_scheduled_assessments'), col).toMatch(new RegExp(`\\b${col}\\b`));
     }
     const written = [...service.matchAll(/(?:INSERT INTO|UPDATE|DELETE FROM)\s+(\w+)/g)].map((m) => m[1]);

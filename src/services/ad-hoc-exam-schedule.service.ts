@@ -1,8 +1,8 @@
 /**
  * A Student's own partial exam -- its schedules (database).
  *
- * A schedule is the Student's own record: the Subject, the exact concepts, the size, the time available, a
- * moment (date AND time) and the Student's timezone. A Student may hold any number, several for one Subject.
+ * A schedule is the Student's own record: the Subject, the exact concepts, the size, the time available, the
+ * difficulty, a moment (date AND time) and the Student's timezone. A Student may hold any number, several for one Subject.
  * It has nothing to do with the Subject's school "next exam" record and reads or writes none of it.
  *
  * Lifecycle: SCHEDULED -> STARTED -> COMPLETED, and SCHEDULED -> CANCELLED.
@@ -16,6 +16,7 @@
 import { db } from '@/lib/db';
 import { isUuid } from '@/lib/ad-hoc-exam/selection';
 import { isValidIanaTimezone } from '@/lib/learning-orchestration-policy';
+import { isRequestedDifficultyBand, type RequestedDifficultyBand } from '@/lib/exam-core/question-bank/requested-difficulty';
 import { resolveAdHocExamScope, type AdHocScopeRefusal } from '@/services/ad-hoc-exam.service';
 
 export const AD_HOC_SCHEDULE_STATUSES = ['SCHEDULED', 'STARTED', 'COMPLETED', 'CANCELLED'] as const;
@@ -36,6 +37,8 @@ export interface ScheduledAdHocExam {
   scopeIntact: boolean;
   depth: AdHocScheduleDepth;
   availableMinutes: number | null;
+  /** The difficulty the Student chose when scheduling; null = not stated. The start uses exactly this. */
+  difficultyBand: RequestedDifficultyBand | null;
   /** ISO instant. */
   scheduledAt: string;
   /** The Student's IANA timezone when it was saved. */
@@ -44,12 +47,12 @@ export interface ScheduledAdHocExam {
   quizSessionId: string | null;
 }
 
-export type CreateScheduleRefusal = { reason: 'SCOPE_REJECTED'; detail: AdHocScopeRefusal } | { reason: 'INVALID_TIME' | 'INVALID_TIMEZONE' | 'INVALID_SIZE' | 'UNAVAILABLE' };
+export type CreateScheduleRefusal = { reason: 'SCOPE_REJECTED'; detail: AdHocScopeRefusal } | { reason: 'INVALID_TIME' | 'INVALID_TIMEZONE' | 'INVALID_SIZE' | 'INVALID_DIFFICULTY' | 'UNAVAILABLE' };
 
 const isMissingTable = (e: unknown): boolean => (e as { code?: string } | null)?.code === '42P01';
 const iso = (v: unknown): string => (v instanceof Date ? v.toISOString() : new Date(String(v)).toISOString());
 
-const SELECT = `SELECT a.id, a.subject_id, a.depth, a.available_minutes, a.scheduled_at, a.timezone, a.status, a.quiz_session_id, a.concept_count,
+const SELECT = `SELECT a.id, a.subject_id, a.depth, a.available_minutes, a.difficulty_band, a.scheduled_at, a.timezone, a.status, a.quiz_session_id, a.concept_count,
                        COALESCE((SELECT array_agg(c.concept_id::text ORDER BY c.concept_id::text) FROM student_scheduled_assessment_concepts c WHERE c.scheduled_assessment_id = a.id), '{}') AS concept_ids
                   FROM student_scheduled_assessments a`;
 
@@ -62,6 +65,7 @@ function rowToSchedule(r: any): ScheduledAdHocExam {
     scopeIntact: conceptIds.length === Number(r.concept_count),
     depth: r.depth,
     availableMinutes: r.available_minutes === null || r.available_minutes === undefined ? null : Number(r.available_minutes),
+    difficultyBand: isRequestedDifficultyBand(r.difficulty_band) ? r.difficulty_band : null,
     scheduledAt: iso(r.scheduled_at),
     timezone: r.timezone,
     status: r.status,
@@ -89,6 +93,7 @@ export interface CreateScheduleInput {
   conceptIds: readonly unknown[];
   depth: unknown;
   availableMinutes?: number | null;
+  difficultyBand?: unknown;
   scheduledAt: unknown;
   timezone: unknown;
 }
@@ -102,6 +107,9 @@ export async function createScheduledAdHocExam(studentId: string, input: CreateS
   if (!(AD_HOC_SCHEDULE_DEPTHS as readonly unknown[]).includes(input.depth)) return { ok: false, reason: 'INVALID_SIZE' };
   const minutes = input.availableMinutes ?? null;
   if (minutes !== null && !(Number.isInteger(minutes) && minutes >= 1 && minutes <= 240)) return { ok: false, reason: 'INVALID_SIZE' };
+  // an unknown difficulty is refused: it is never saved as "not stated"
+  const difficultyBand = input.difficultyBand ?? null;
+  if (difficultyBand !== null && !isRequestedDifficultyBand(difficultyBand)) return { ok: false, reason: 'INVALID_DIFFICULTY' };
   if (typeof input.timezone !== 'string' || input.timezone.length > 64 || !isValidIanaTimezone(input.timezone)) return { ok: false, reason: 'INVALID_TIMEZONE' };
   const at = parseScheduledInstant(input.scheduledAt);
   if (!at || at.getTime() < now.getTime() - PAST_TOLERANCE_MS || at.getTime() > now.getTime() + AD_HOC_SCHEDULE_MAX_DAYS_AHEAD * 86_400_000) return { ok: false, reason: 'INVALID_TIME' };
@@ -113,14 +121,14 @@ export async function createScheduledAdHocExam(studentId: string, input: CreateS
   try {
     await client.query('BEGIN');
     const created = await client.query(
-      `INSERT INTO student_scheduled_assessments (student_id, subject_id, intent, scheduled_at, timezone, depth, available_minutes, concept_count)
-       VALUES ($1, $2, 'AD_HOC_CONCEPT_EXAM', $3, $4, $5, $6, $7) RETURNING id`,
-      [studentId, scope.subjectId, at.toISOString(), input.timezone, input.depth, minutes, scope.conceptIds.length]
+      `INSERT INTO student_scheduled_assessments (student_id, subject_id, intent, scheduled_at, timezone, depth, available_minutes, concept_count, difficulty_band)
+       VALUES ($1, $2, 'AD_HOC_CONCEPT_EXAM', $3, $4, $5, $6, $7, $8) RETURNING id`,
+      [studentId, scope.subjectId, at.toISOString(), input.timezone, input.depth, minutes, scope.conceptIds.length, difficultyBand]
     );
     const id = created.rows[0].id as string;
     await client.query(`INSERT INTO student_scheduled_assessment_concepts (scheduled_assessment_id, concept_id) SELECT $1, unnest($2::uuid[])`, [id, scope.conceptIds]);
     await client.query('COMMIT');
-    return { ok: true, schedule: { id, subjectId: scope.subjectId, conceptIds: [...scope.conceptIds].sort(), scopeIntact: true, depth: input.depth as AdHocScheduleDepth, availableMinutes: minutes, scheduledAt: at.toISOString(), timezone: input.timezone, status: 'SCHEDULED', quizSessionId: null } };
+    return { ok: true, schedule: { id, subjectId: scope.subjectId, conceptIds: [...scope.conceptIds].sort(), scopeIntact: true, depth: input.depth as AdHocScheduleDepth, availableMinutes: minutes, difficultyBand, scheduledAt: at.toISOString(), timezone: input.timezone, status: 'SCHEDULED', quizSessionId: null } };
   } catch (e) {
     await client.query('ROLLBACK').catch(() => undefined);
     if (isMissingTable(e)) return { ok: false, reason: 'UNAVAILABLE' };

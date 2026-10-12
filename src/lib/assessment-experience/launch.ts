@@ -11,6 +11,7 @@
 import { z } from 'zod';
 import { LEARNING_INTENTS } from '@/lib/assessment-blueprint/policy/learning';
 import { PRACTICE_DEPTHS } from '@/lib/assessment-blueprint/policy/practice-depth';
+import { REQUESTED_DIFFICULTY_BANDS } from '@/lib/exam-core/question-bank/requested-difficulty';
 
 export const LAUNCH_ORIGINS = ['TODAY', 'LEARNING_PATH', 'PROGRESS', 'EXAM_PREPARATION', 'RESULT_CONTINUATION', 'SUBJECT'] as const;
 export type LaunchOrigin = (typeof LAUNCH_ORIGINS)[number];
@@ -42,6 +43,8 @@ export const AssessmentLaunchRequestSchema = z.discriminatedUnion('family', [
     }),
     /** A limit the Student states. Honoured only where durations are recorded. */
     availableMinutes: z.number().int().min(1).max(240).nullable().default(null),
+    /** A difficulty the Student states for their own partial exam (AD_HOC_CONCEPT_EXAM). Honoured there only; null = not stated. */
+    difficultyBand: z.enum(REQUESTED_DIFFICULTY_BANDS).nullable().default(null),
   }),
   z.strictObject({
     ...Base,

@@ -11,6 +11,7 @@
  */
 import { solveLearningForStudent } from '@/lib/assessment-blueprint/assessment-blueprint.service';
 import type { PracticeDepth } from '@/lib/assessment-blueprint/policy/practice-depth';
+import type { RequestedDifficultyBand } from '@/lib/exam-core/question-bank/requested-difficulty';
 import { canonicalConceptIdForAssessment } from '@/lib/catalog/concept-identity';
 import { resolveStudentConceptIdentities } from '@/lib/catalog/concept-identity.service';
 import { resolveAdHocExamScope, type AdHocScopeRefusal } from '@/services/ad-hoc-exam.service';
@@ -37,6 +38,8 @@ export interface AdHocExamRequest {
   learnerConceptIds: readonly unknown[];
   depth: PracticeDepth;
   availableMinutes?: number | null;
+  /** The difficulty the Student chose, or null. Part of what must be met: it is never relaxed to find questions. */
+  difficultyBand?: RequestedDifficultyBand | null;
 }
 
 export async function adHocExamReadiness(studentId: string, request: AdHocExamRequest, asOf: string, runtime: AdHocRuntime, overrides: Partial<AdHocReadinessDeps> = {}): Promise<AdHocExamReadiness> {
@@ -47,7 +50,7 @@ export async function adHocExamReadiness(studentId: string, request: AdHocExamRe
   const scope = await resolveAdHocExamScope(studentId, request.subjectId, request.learnerConceptIds);
   if (!scope.ok) return { ok: false, reason: 'SCOPE_REJECTED', detail: scope.reason };
 
-  const solved = await deps.solve(studentId, { intent: AD_HOC_EXAM_INTENT, depth: request.depth, canonicalConceptIds: [], learnerConceptIds: scope.conceptIds, availableMinutes: request.availableMinutes ?? null, asOf });
+  const solved = await deps.solve(studentId, { intent: AD_HOC_EXAM_INTENT, depth: request.depth, canonicalConceptIds: [], learnerConceptIds: scope.conceptIds, availableMinutes: request.availableMinutes ?? null, difficultyBand: request.difficultyBand ?? null, asOf });
   if (!solved.ok) return { ok: false, reason: 'CONTEXT_UNAVAILABLE' };
   const { solution } = solved;
 
