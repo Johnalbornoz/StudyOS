@@ -120,15 +120,26 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
     catalogLabelsForLearnerConcepts(concepts.map((c) => c.conceptId), locale),
   ]);
   const titleOf = (c: ConceptPathView) => catalogLabels.get(c.conceptId) ?? c.title;
-  const curriculumSection = curriculum ? (
+  const curriculumSection = !curriculum ? null : curriculum.status === 'READY' ? (
     <CurriculumTopics
       subjectId={selected.id}
       title={tr['acp.learn.curriculum.title'].replace('{curriculum}', [curriculum.context.programme, localizeCatalogSubjectName(curriculum.context.name, locale), levelDisplayLabel(curriculum.context.level, locale)].filter(Boolean).join(' · '))}
       reason={tr[`acp.learn.curriculum.reason.${curriculum.reason}`] ?? null}
       topics={curriculum.topics}
+      provenance={{ academicSubjectId: curriculum.context.academicSubjectId, structureVersionId: curriculum.context.structureVersionId }}
       labels={Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('acp.learn.') || k === 'lp.explore.add' || k === 'lp.explore.adding' || k === 'lp.error'))}
     />
-  ) : null;
+  ) : (
+    // Fail closed: the Student's own curriculum for this subject is not in the catalogue yet. No other curriculum is shown in its place.
+    <section className="ln-curriculum" aria-labelledby="ln-curriculum-title" data-curriculum-not-ready={curriculum.status}>
+      <div className="ui-section-head">
+        <h2 id="ln-curriculum-title" className="ui-section-title">
+          {tr['acp.learn.curriculum.title'].replace('{curriculum}', curriculum.curriculum ? [curriculum.curriculum.programme, localizeCatalogSubjectName(curriculum.curriculum.name, locale), levelDisplayLabel(curriculum.curriculum.level, locale)].filter(Boolean).join(' · ') : subjectLabel)}
+        </h2>
+      </div>
+      <p className="card ln-curriculum-empty" data-curriculum-empty>{tr['acp.learn.curriculum.notReady']}</p>
+    </section>
+  );
   const workedOn = (c: ConceptPathView) => c.journey.engineHasEvidence ?? c.hasEvidence;
   const hasNotStarted = concepts.some((c) => knowledgeStateOf(c.journey, workedOn(c)) === 'NOT_STARTED');
 
@@ -160,7 +171,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
         }).catch(() => null)
       : null;
   // Why this challenge, when the catalogue says so: the curriculum topic the concept belongs to.
-  const heroTopic = heroConcept && curriculum ? curriculum.topics.find((tp) => tp.concepts.some((c) => c.learnerConceptId === heroConcept.conceptId)) ?? null : null;
+  const heroTopic = heroConcept && curriculum?.status === 'READY' ? curriculum.topics.find((tp) => tp.concepts.some((c) => c.learnerConceptId === heroConcept.conceptId)) ?? null : null;
   const heroMinutes = snapshot?.dailyPlan.items.find((i) => i.decision.actionConceptId === decision?.actionConceptId)?.estimatedMinutes ?? null;
 
   // Every concept the Student already has, for "find a concept" (resolved

@@ -16,7 +16,7 @@ export type LearningPlanMessageKey =
   | 'lp.source.SELF_SELECTED' | 'lp.source.CURRICULUM_RECOMMENDATION' | 'lp.source.INSTITUTION_CURRICULUM' | 'lp.source.CLASS_PLAN'
   | 'lp.source.TEACHER_ASSIGNMENT' | 'lp.source.INSTITUTION_ASSIGNMENT' | 'lp.source.EXAM_GAP' | 'lp.source.PREREQUISITE_RECOMMENDATION'
   | 'lp.explore.subject' | 'lp.explore.context' | 'lp.explore.general' | 'lp.explore.reason.REQUESTED' | 'lp.explore.reason.EXAM_PROFILE'
-  | 'lp.explore.reason.ACADEMIC_PROFILE' | 'lp.explore.reason.INSTITUTION' | 'lp.explore.reason.GENERAL' | 'lp.explore.counts'
+  | 'lp.explore.reason.ACADEMIC_PROFILE' | 'lp.explore.reason.INSTITUTION' | 'lp.explore.reason.GENERAL' | 'lp.explore.reason.CURRICULUM_MAPPING_NOT_READY' | 'lp.explore.counts'
   | 'lp.explore.add' | 'lp.explore.adding' | 'lp.explore.added' | 'lp.explore.recommended' | 'lp.explore.inPlan' | 'lp.explore.prereqs'
   | 'lp.explore.noSubjects' | 'lp.explore.createSubject' | 'lp.explore.mine' | 'lp.explore.otherSubjects' | 'lp.explore.choose' | 'lp.explore.empty'
   | 'lp.class.REQUIRED' | 'lp.class.RECOMMENDED' | 'lp.class.OPTIONAL' | 'lp.class.SUPPLEMENTAL'
@@ -93,6 +93,7 @@ const es: Catalog = {
   'lp.explore.reason.ACADEMIC_PROFILE': 'Según tu perfil académico',
   'lp.explore.reason.INSTITUTION': 'Según tu institución',
   'lp.explore.reason.GENERAL': 'Sin programa específico: currículo general',
+  'lp.explore.reason.CURRICULUM_MAPPING_NOT_READY': 'Tu currículo de esta asignatura aún no está cargado; se muestra el catálogo general, no otro programa',
   'lp.explore.counts': '{available} disponibles · {inPlan} en tu plan · {recommended} recomendados · {completed} dominados',
   'lp.explore.add': 'Añadir a mi plan',
   'lp.explore.adding': 'Añadiendo…',
@@ -292,6 +293,7 @@ const en: Catalog = {
   'lp.explore.reason.ACADEMIC_PROFILE': 'Based on your academic profile',
   'lp.explore.reason.INSTITUTION': 'Based on your institution',
   'lp.explore.reason.GENERAL': 'No specific programme: general curriculum',
+  'lp.explore.reason.CURRICULUM_MAPPING_NOT_READY': 'Your curriculum for this subject is not loaded yet; this is the general catalogue, not another programme',
   'lp.explore.counts': '{available} available · {inPlan} in your plan · {recommended} recommended · {completed} mastered',
   'lp.explore.add': 'Add to my plan',
   'lp.explore.adding': 'Adding…',

@@ -24,6 +24,7 @@
  * decision and never changes it; the only pedagogical state remains
  * LEARN / PRACTICE / PROVE / RETAIN / TRANSFER from the engine.
  */
+import { recordCurriculumProvenance, type CurriculumProvenanceRef } from './curriculum-provenance.service';
 import { db } from '@/lib/db';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
 import { catalogSubjectByName, normalizeName } from '@/lib/experience/subject-catalog';
@@ -64,6 +65,8 @@ export interface EnrollResult {
   restored: boolean;
   /** this source was new (or reactivated) */
   sourceAdded: boolean;
+  /** the curriculum lineage of the Learn concept was recorded by this call (false: none stated / it already had one) */
+  provenanceRecorded: boolean;
 }
 
 export const canonicalConceptKey = (canonicalConceptId: string) => `CANON_${canonicalConceptId.replace(/-/g, '').toUpperCase()}`;
@@ -190,7 +193,7 @@ async function audit(client: Executor, studentId: string, canonicalConceptId: st
  * already have authorized the actor for this learner and validated the
  * canonical concept for the context (class subject, curriculum...).
  */
-export async function enrollCanonicalConcept(studentId: string, canonicalConceptId: string, source: PlanSource): Promise<EnrollResult> {
+export async function enrollCanonicalConcept(studentId: string, canonicalConceptId: string, source: PlanSource, provenance: CurriculumProvenanceRef | null = null): Promise<EnrollResult> {
   const key = source.key ?? '';
   const client = await db.connect();
   try {
@@ -227,11 +230,26 @@ export async function enrollCanonicalConcept(studentId: string, canonicalConcept
     );
     const sourceAdded = sourceRow.rows.length > 0;
 
+    // Curriculum provenance (WHERE in the Student's curriculum this concept belongs): the caller states a lineage
+    // it has verified; the database guard verifies it again. A lineage that does not hold is not recorded -- the
+    // enrolment itself stands (the canonical concept is valid on its own).
+    let provenanceRecorded = false;
+    if (provenance) {
+      await client.query('SAVEPOINT curriculum_provenance');
+      try {
+        provenanceRecorded = await recordCurriculumProvenance(client, learnerConceptId, canonicalConceptId, provenance, source.actorUserId ?? null);
+        await client.query('RELEASE SAVEPOINT curriculum_provenance');
+      } catch (error) {
+        await client.query('ROLLBACK TO SAVEPOINT curriculum_provenance');
+        console.error('[plan] curriculum provenance not recorded:', error instanceof Error ? error.message : String(error));
+      }
+    }
+
     if (entryCreated) await audit(client, studentId, canonicalConceptId, 'ADDED', { ...source, key }, { conceptCreated });
     if (restored) await audit(client, studentId, canonicalConceptId, 'RESTORED', { ...source, key });
     if (sourceAdded) await audit(client, studentId, canonicalConceptId, 'SOURCE_ADDED', { ...source, key });
     await client.query('COMMIT');
-    return { learnerConceptId, conceptCreated, entryCreated, restored, sourceAdded };
+    return { learnerConceptId, conceptCreated, entryCreated, restored, sourceAdded, provenanceRecorded };
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     throw error;

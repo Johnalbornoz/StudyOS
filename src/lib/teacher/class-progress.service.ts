@@ -56,7 +56,7 @@ export interface ClassProgressView extends ClassProgressComputed {
     learners: Array<{ studentId: string; name: string }>;
   };
   concepts: ProgressConcept[];
-  topicSource: 'CURRICULUM_BASE' | 'PUBLISHED_CURRICULUM' | 'NONE';
+  topicSource: 'CURRICULUM_BASE' | 'NONE';
   queryCount: number;
 }
 
@@ -96,24 +96,18 @@ export async function getClassProgress(actorUserId: string, classId: string, fil
   ]);
   const allConceptIds = [...new Set([...planRows.rows.map((r: any) => r.canonical_concept_id), ...assignmentRows.rows.filter((r: any) => r.canonical_concept_id).map((r: any) => r.canonical_concept_id)])];
 
-  // Topics (no canonical topic level): the structure of the class's EXPLICITLY bound curriculum.
-  // A bound class never borrows another curriculum's structure (SEP is never grouped by Cambridge);
-  // only an unbound class falls back to the published version covering most of its concepts.
+  // Topics (no canonical topic level): the structure of the class's EXPLICITLY bound curriculum, and only that.
+  // FAIL CLOSED: a class that is not bound to a curriculum (or whose curriculum has no base structure) has no
+  // topic grouping. It never borrows the published structure "covering most of its concepts" -- that would
+  // group one curriculum's class under another curriculum's topics.
   const topicVersion = await q(
-    `SELECT CASE WHEN (SELECT institution_curriculum_id FROM classes WHERE id = $1) IS NOT NULL THEN
-       (SELECT ic.base_structure_version_id FROM institution_curricula ic JOIN classes c ON c.id = $1 WHERE ic.id = c.institution_curriculum_id)
-     ELSE
-       (SELECT sn.structure_version_id FROM objective_concept_mappings ocm
-        JOIN learning_objectives lo ON lo.id = ocm.learning_objective_id JOIN structure_nodes sn ON sn.id = lo.structure_node_id
-        JOIN structure_versions sv ON sv.id = sn.structure_version_id AND sv.status = 'PUBLISHED'
-        WHERE ocm.status = 'PUBLISHED' AND ocm.canonical_concept_id = ANY($2::uuid[])
-        GROUP BY sn.structure_version_id ORDER BY COUNT(DISTINCT ocm.canonical_concept_id) DESC, sn.structure_version_id LIMIT 1)
-     END AS version_id,
-     (SELECT 1 FROM institution_curricula ic JOIN classes c ON c.id = $1 WHERE ic.id = c.institution_curriculum_id AND ic.base_structure_version_id IS NOT NULL) AS from_base`,
-    [classId, allConceptIds]
+    `SELECT ic.base_structure_version_id AS version_id
+       FROM classes c JOIN institution_curricula ic ON ic.id = c.institution_curriculum_id
+      WHERE c.id = $1`,
+    [classId]
   );
   const versionId: string | null = topicVersion.rows[0]?.version_id ?? null;
-  const topicSource: ClassProgressView['topicSource'] = !versionId ? 'NONE' : topicVersion.rows[0]?.from_base ? 'CURRICULUM_BASE' : 'PUBLISHED_CURRICULUM';
+  const topicSource: ClassProgressView['topicSource'] = versionId ? 'CURRICULUM_BASE' : 'NONE';
   const topicRows = versionId
     ? (await q(
         `SELECT DISTINCT ON (ocm.canonical_concept_id) ocm.canonical_concept_id, sn.id AS topic_key, COALESCE(snl.label, sn.source_label, sn.code, '') AS topic_label

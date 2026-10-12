@@ -1,7 +1,7 @@
 /**
  * Track A -- /api/student/plan (the learner's own Personal Learning Plan)
  * GET: plan entries (status, phase, sources) + own unlinked concepts.
- * POST { canonicalConceptId, source?, classId? }: add a catalog concept to
+ * POST { canonicalConceptId, source?, classId?, curriculum? }: add a catalog concept to
  *   MY plan. Reuses my existing learner concept (no duplicate, progress
  *   kept); creates it at "not started" only if it never existed. A source
  *   that names a class / curriculum is verified server-side (I must be
@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireStudentActor, readBody } from '@/lib/learning-plan/route-actors';
 import { enrollCanonicalConcept, getPersonalPlan, type PlanSource } from '@/lib/learning-plan/personal-plan.service';
+import { CURRICULUM_PROVENANCE_INVALID, deriveCurriculumProvenance, verifyCurriculumProvenance, type CurriculumProvenanceRef } from '@/lib/learning-plan/curriculum-provenance.service';
 import { curriculumForClass } from '@/lib/learning-plan/institution-curriculum.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -20,6 +21,8 @@ const Schema = z.object({
   canonicalConceptId: z.string().uuid(),
   source: z.enum(['SELF_SELECTED', 'CURRICULUM_RECOMMENDATION', 'PREREQUISITE_RECOMMENDATION', 'CLASS_PLAN', 'INSTITUTION_CURRICULUM']).default('SELF_SELECTED'),
   classId: z.string().uuid().nullable().optional(),
+  /** WHERE in the curriculum the concept was added from (the catalogue screen knows it). Verified server-side. */
+  curriculum: z.object({ academicSubjectId: z.string().uuid(), structureVersionId: z.string().uuid(), structureNodeId: z.string().uuid(), learningObjectiveId: z.string().uuid() }).nullable().optional(),
 });
 
 async function handleGET() {
@@ -34,7 +37,7 @@ async function handlePOST(request: NextRequest) {
   if ('response' in actor) return actor.response;
   const parsed = Schema.safeParse(await readBody(request));
   if (!parsed.success) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
-  const { canonicalConceptId, source, classId } = parsed.data;
+  const { canonicalConceptId, source, classId, curriculum: statedCurriculum } = parsed.data;
   const concept = await db.query(`SELECT 1 FROM canonical_concepts WHERE id = $1 AND status = 'ACTIVE'`, [canonicalConceptId]);
   if (!concept.rows[0]) return NextResponse.json({ error: 'CONCEPT_NOT_AVAILABLE' }, { status: 404 });
 
@@ -56,7 +59,16 @@ async function handlePOST(request: NextRequest) {
       Object.assign(planSource, { key: curriculum.curriculumId, classId, institutionId: klass.rows[0].institution_id });
     }
   }
-  const result = await enrollCanonicalConcept(actor.studentId, canonicalConceptId, planSource);
+  // Curriculum provenance, fail closed: a stated lineage must be a real PUBLISHED chain reaching this concept (it is
+  // refused, never repaired or replaced). With none stated, it is the Student's own explicit curriculum or nothing.
+  let provenance: CurriculumProvenanceRef | null = null;
+  if (statedCurriculum) {
+    if (!(await verifyCurriculumProvenance(canonicalConceptId, statedCurriculum))) return NextResponse.json({ error: CURRICULUM_PROVENANCE_INVALID }, { status: 422 });
+    provenance = statedCurriculum;
+  } else if (source === 'SELF_SELECTED' || source === 'CURRICULUM_RECOMMENDATION' || source === 'PREREQUISITE_RECOMMENDATION') {
+    provenance = await deriveCurriculumProvenance(actor.studentId, canonicalConceptId).catch(() => null);
+  }
+  const result = await enrollCanonicalConcept(actor.studentId, canonicalConceptId, planSource, provenance);
   return NextResponse.json({ success: true, data: result }, { status: result.entryCreated ? 201 : 200 });
 }
 

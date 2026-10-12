@@ -19,6 +19,7 @@ import { canonicalConceptLabels } from './labels';
 import { getPersonalPlan } from './personal-plan.service';
 import { listOpenExamRecommendations } from './exam-bridge.service';
 import { resolveCurriculumContext, getBaseCurriculum, studentCatalogSubjects, catalogKeyOf } from './curriculum.service';
+import { CURRICULUM_MAPPING_NOT_READY } from './curriculum-context-resolution';
 import { curriculumForClass } from './institution-curriculum.service';
 
 export type RecommendationReasonType = 'EXAM_GAP' | 'CLASS_PLAN' | 'INSTITUTION_REQUIRED' | 'PREREQUISITE' | 'NEXT_CONCEPT';
@@ -102,7 +103,9 @@ export async function getStudentRecommendations(studentId: string, locale: strin
     if (key) catalogKeys.add(key);
   }
   for (const key of catalogKeys) {
-    const { context } = await resolveCurriculumContext(studentId, key);
+    const { context, reason } = await resolveCurriculumContext(studentId, key);
+    // Fail closed: the Student's own curriculum is not ready, so no "next concept of your curriculum" is suggested from another sequence.
+    if (reason === CURRICULUM_MAPPING_NOT_READY) continue;
     const curriculum = await getBaseCurriculum(key, context, locale);
     let suggested = 0;
     let previous: string | null = null;

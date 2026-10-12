@@ -12,6 +12,8 @@
  */
 
 import { db } from '@/lib/db';
+import { curriculumProvenanceForLearnerConcepts } from '@/lib/learning-plan/curriculum-provenance.service';
+import { groupUnassignedByCurriculum } from '@/lib/learning-plan/curriculum-grouping';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { ensureTopicHierarchyLocalizations, ensureConceptLocalizations } from './localization.service';
@@ -341,9 +343,7 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
     [subjectId, studentId, language]
   );
 
-  return {
-    topics: Array.from(topicMap.values()),
-    unassigned: unassignedResult.rows.map((r) => {
+  const unassignedConcepts: HierarchyConcept[] = unassignedResult.rows.map((r) => {
       const conceptIntel = intelligence.get(r.id);
       return {
         id: r.id,
@@ -356,6 +356,16 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
         confidenceCalibration: conceptIntel?.confidenceCalibration ?? undefined,
         hasEvidence: r.has_evidence === true,
       };
-    }),
+    });
+  // Curriculum convergence: a concept added from the catalogue has no place in the Student's own hierarchy, but it
+  // is not unclassified -- its recorded curriculum provenance says where it belongs. It is listed under its
+  // curriculum (programme / subject -> node or objective); only concepts with no resolvable classification stay in
+  // the unassigned bucket ("Sin clasificar").
+  const placements = await curriculumProvenanceForLearnerConcepts(unassignedConcepts.map((c) => c.id), language).catch(() => new Map());
+  const grouped = groupUnassignedByCurriculum(unassignedConcepts, placements, language);
+
+  return {
+    topics: [...Array.from(topicMap.values()), ...grouped.curriculumTopics],
+    unassigned: grouped.unassigned,
   };
 }

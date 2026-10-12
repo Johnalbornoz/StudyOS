@@ -23,13 +23,15 @@ type L = Record<string, string>;
 // Before paint on the client (no flash of a collapsed topic after a remount); a no-op on the server.
 const useBeforePaint = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
-export default function CurriculumTopics({ subjectId, title, reason, topics, labels: l, initialOpen = [] }: {
+export default function CurriculumTopics({ subjectId, title, reason, topics, provenance, labels: l, initialOpen = [] }: {
   subjectId: string;
   /** "Temas de tu currículo — IB Diploma Programme · Física · Nivel Superior (NS)" */
   title: string;
   /** Why this curriculum (exam preparation / academic profile), already in the interface locale; null when unknown. */
   reason: string | null;
   topics: CurriculumTopic[];
+  /** The curriculum these topics belong to: sent with every add so Learn keeps WHERE the concept came from. */
+  provenance?: { academicSubjectId: string; structureVersionId: string };
   labels: L;
   /** Topic keys expanded from the start (default: all closed). */
   initialOpen?: string[];
@@ -109,6 +111,7 @@ export default function CurriculumTopics({ subjectId, title, reason, topics, lab
                             <AddToPlanButton
                               canonicalConceptId={c.canonicalConceptId}
                               source="CURRICULUM_RECOMMENDATION"
+                              curriculum={provenance ? { ...provenance, structureNodeId: c.structureNodeId, learningObjectiveId: c.learningObjectiveId } : null}
                               describedBy={nameId}
                               // Keep this topic expanded through the refresh that follows the add.
                               onAdded={() => setTopicOpen(topic.key, true)}

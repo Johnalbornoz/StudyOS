@@ -22,6 +22,8 @@ export interface ExploreConcept {
   recommended: boolean;
   classification: CurriculumClassification | null;
   prerequisiteLabels: string[];
+  /** Curriculum provenance of the row (only inside a curriculum context). */
+  curriculum: { academicSubjectId: string; structureVersionId: string; structureNodeId: string; learningObjectiveId: string } | null;
 }
 
 export interface StudentCurriculumView {
@@ -75,6 +77,7 @@ export async function getStudentCurriculumView(studentId: string, requestedKey: 
         recommended: recommended.has(c.canonicalConceptId),
         classification: classification.get(c.canonicalConceptId) ?? null,
         prerequisiteLabels: c.prerequisiteIds.map((id) => prereqLabels.get(id) ?? ''),
+        curriculum: context && c.structureNodeId && c.learningObjectiveId ? { academicSubjectId: context.academicSubjectId, structureVersionId: context.structureVersionId, structureNodeId: c.structureNodeId, learningObjectiveId: c.learningObjectiveId } : null,
       };
     }),
   }));

@@ -15,10 +15,12 @@ async function post(url: string, body?: unknown) {
   return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) });
 }
 
-export function AddToPlanButton({ canonicalConceptId, source = 'SELF_SELECTED', classId, labels, describedBy, onAdded }: {
+export function AddToPlanButton({ canonicalConceptId, source = 'SELF_SELECTED', classId, curriculum, labels, describedBy, onAdded }: {
   canonicalConceptId: string;
   source?: Source;
   classId?: string | null;
+  /** Curriculum provenance of the row the button sits in (academic subject -> structure version -> node -> objective); the server verifies it. */
+  curriculum?: { academicSubjectId: string; structureVersionId: string; structureNodeId: string; learningObjectiveId: string } | null;
   /** `added` (optional): after a successful add the button is replaced by this state. `addFor`: accessible name naming the concept. */
   labels: { add: string; adding: string; error: string; added?: string; addFor?: string };
   /** id of the element that names the concept this button affects. */
@@ -42,7 +44,7 @@ export function AddToPlanButton({ canonicalConceptId, source = 'SELF_SELECTED', 
         onClick={async () => {
           setBusy(true);
           setError(false);
-          const res = await post('/api/student/plan', { canonicalConceptId, source, classId: classId ?? null });
+          const res = await post('/api/student/plan', { canonicalConceptId, source, classId: classId ?? null, curriculum: curriculum ?? null });
           setBusy(false);
           if (res.ok) {
             setDone(true);

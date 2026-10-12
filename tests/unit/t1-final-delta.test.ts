@@ -470,7 +470,9 @@ describe('E. the curriculum reaches the content of a Learn subject', () => {
     expect(topics[0].concepts).toEqual([
       { canonicalConceptId: 'c-kin', label: 'Cinemática', learnerConceptId: 'learner-kin', learnerSubjectId: 'sub1', added: true },
       { canonicalConceptId: 'c-mom', label: 'Conservación del momento lineal', learnerConceptId: null, learnerSubjectId: null, added: false },
-    ]);
+    ].map((c) => expect.objectContaining(c)));
+    // curriculum convergence: every row also carries the node and the objective it was listed from (its provenance)
+    expect(topics[0].concepts.every((c) => c.structureNodeId && c.learningObjectiveId)).toBe(true);
     // Topic titles follow the interface locale through the catalogue's reviewed labels (keyed by objective code);
     // an objective without one is shown as stored.
     expect(buildCurriculumTopics(ibPhysics, labels, learner, 'es').map((t) => t.title)).toEqual(['A. Espacio, tiempo y movimiento: cinemática, fuerzas, momento lineal', 'B. La naturaleza corpuscular de la materia: energía térmica, gases', 'Preguntas basadas en datos: gráficas, pendientes, incertidumbres, error sistemático']);

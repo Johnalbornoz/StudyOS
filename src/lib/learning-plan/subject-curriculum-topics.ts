@@ -15,6 +15,8 @@
  *     not a topic: the curriculum's LEARNING OBJECTIVES are the topics ("A Space, time and motion: ..."),
  *     and an objective whose concepts are all already listed under an earlier one is not repeated.
  * A curriculum with no published objective -> concept mapping yields `topics: []` and the page says so.
+ * A curriculum the Student explicitly has but whose mapping chain is not in the catalogue is
+ * CURRICULUM_MAPPING_NOT_READY (fail closed): no other curriculum is shown in its place.
  *
  * Topic titles: the objective's reviewed label in the interface locale where the catalogue has one
  * (objective-localization.ts, keyed by the objective's stable code), else the stored description.
@@ -27,9 +29,9 @@ import { canonicalConceptLabels, catalogSuppliesLabel, resolveLearnerConceptLabe
 import { learningObjectiveLabel } from '@/lib/exam-core/catalog/objective-localization';
 import { localizeComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
 import { catalogKeyOf, resolveCurriculumContext, type ContextReason, type CurriculumOption } from './curriculum.service';
+import { CURRICULUM_MAPPING_NOT_READY, type CurriculumNotReady } from './curriculum-context-resolution';
+import { ASSESSMENT_NODE_TYPES } from './curriculum-grouping';
 
-/** Node types that are assessment components, never syllabus topics. */
-const ASSESSMENT_NODE_TYPES = new Set(['EXAM_SECTION', 'PAPER', 'COMPONENT']);
 
 export interface CurriculumTopicRow {
   nodeId: string;
@@ -51,6 +53,9 @@ export interface CurriculumTopicConcept {
   learnerSubjectId: string | null;
   /** Micro-delta M02: already in the Student's learning / plan -> the row shows "Added", never the same CTA again. */
   added: boolean;
+  /** Curriculum provenance of this row: the node and the objective that hold the concept in this topic. */
+  structureNodeId: string;
+  learningObjectiveId: string;
 }
 
 /** Where the Student already has a catalogue concept. */
@@ -65,9 +70,22 @@ export interface CurriculumTopic {
 }
 
 export interface SubjectCurriculumTopics {
+  status: 'READY';
   context: CurriculumOption;
   reason: ContextReason;
   topics: CurriculumTopic[];
+}
+
+/**
+ * The Student explicitly has a curriculum for this subject (an exam they prepare, a subject of their Academic
+ * Profile) and the catalogue does not hold its mapping chain yet. Learn says so; it never shows another
+ * curriculum's topics in its place.
+ */
+export interface SubjectCurriculumNotReady {
+  status: typeof CURRICULUM_MAPPING_NOT_READY;
+  notReady: CurriculumNotReady[];
+  /** Official names of the curriculum that is not ready (the first one named), for the notice. */
+  curriculum: { programme: string; name: string; level: string | null } | null;
 }
 
 const clean = (s: string) => s.trim().replace(/\.$/, '');
@@ -80,23 +98,24 @@ export function buildCurriculumTopics(
   locale = 'en',
   inPlan: ReadonlySet<string> = new Set()
 ): CurriculumTopic[] {
-  const concept = (id: string): CurriculumTopicConcept => {
+  const concept = (id: string, r: CurriculumTopicRow): CurriculumTopicConcept => {
     const ref = learnerByCanonical.get(id) ?? null;
-    return { canonicalConceptId: id, label: labels.get(id) ?? '', learnerConceptId: ref?.conceptId ?? null, learnerSubjectId: ref?.subjectId ?? null, added: !!ref || inPlan.has(id) };
+    return { canonicalConceptId: id, label: labels.get(id) ?? '', learnerConceptId: ref?.conceptId ?? null, learnerSubjectId: ref?.subjectId ?? null, added: !!ref || inPlan.has(id), structureNodeId: r.nodeId, learningObjectiveId: r.objectiveId };
   };
   const mapped = rows.filter((r) => r.canonicalConceptId && labels.has(r.canonicalConceptId));
   const byNodeTopics = mapped.some((r) => !ASSESSMENT_NODE_TYPES.has(r.nodeType));
   const topics = new Map<string, CurriculumTopic>();
-  const add = (key: string, title: string, component: string | null, id: string) => {
+  const add = (key: string, title: string, component: string | null, r: CurriculumTopicRow) => {
+    const id = r.canonicalConceptId!;
     if (!topics.has(key)) topics.set(key, { key, title, component, concepts: [] });
     const t = topics.get(key)!;
-    if (!t.concepts.some((c) => c.canonicalConceptId === id)) t.concepts.push(concept(id));
+    if (!t.concepts.some((c) => c.canonicalConceptId === id)) t.concepts.push(concept(id, r));
   };
   if (byNodeTopics) {
-    for (const r of mapped) if (!ASSESSMENT_NODE_TYPES.has(r.nodeType)) add(`node:${r.nodeId}`, clean(r.nodeLabel), null, r.canonicalConceptId!);
+    for (const r of mapped) if (!ASSESSMENT_NODE_TYPES.has(r.nodeType)) add(`node:${r.nodeId}`, clean(r.nodeLabel), null, r);
     return [...topics.values()];
   }
-  for (const r of mapped) add(`lo:${r.objectiveId}`, learningObjectiveLabel(r.objectiveCode, locale) ?? clean(r.objectiveDescription), clean(r.nodeLabel) || null, r.canonicalConceptId!);
+  for (const r of mapped) add(`lo:${r.objectiveId}`, learningObjectiveLabel(r.objectiveCode, locale) ?? clean(r.objectiveDescription), clean(r.nodeLabel) || null, r);
   // An objective that only re-assesses concepts already listed (another paper on the same content) is not a new topic.
   const seen = new Set<string>();
   const out: CurriculumTopic[] = [];
@@ -117,10 +136,16 @@ export function curriculumContextParts(context: Pick<CurriculumOption, 'programm
  * The curriculum topics of one of the Student's subjects, or null when the subject is not linked to a
  * known curriculum (then Learn shows no curriculum section at all).
  */
-export async function loadSubjectCurriculumTopics(studentId: string, subject: { id: string; name: string }, locale: string): Promise<SubjectCurriculumTopics | null> {
+export async function loadSubjectCurriculumTopics(studentId: string, subject: { id: string; name: string }, locale: string): Promise<SubjectCurriculumTopics | SubjectCurriculumNotReady | null> {
   const catalogKey = catalogKeyOf(subject.name);
   if (!catalogKey) return null;
-  const { context, reason } = await resolveCurriculumContext(studentId, catalogKey);
+  const { context, reason, notReady } = await resolveCurriculumContext(studentId, catalogKey);
+  if (!context && reason === CURRICULUM_MAPPING_NOT_READY) {
+    const named = await db
+      .query(`SELECT asub.name, asub.level, ap.name AS programme FROM academic_subjects asub JOIN academic_programmes ap ON ap.id = asub.programme_id WHERE asub.id = $1`, [notReady[0]?.academicSubjectId ?? null])
+      .catch(() => ({ rows: [] as any[] }));
+    return { status: CURRICULUM_MAPPING_NOT_READY, notReady, curriculum: named.rows[0] ? { programme: named.rows[0].programme, name: named.rows[0].name, level: named.rows[0].level } : null };
+  }
   if (!context) return null;
   const [rows, learner, plan] = await Promise.all([
     db.query(
@@ -156,7 +181,7 @@ export async function loadSubjectCurriculumTopics(studentId: string, subject: { 
   const inPlan = new Set<string>(plan.rows.map((r: any) => r.canonical_concept_id as string));
   const topics = buildCurriculumTopics(topicRows, labels, learnerByCanonical, locale, inPlan);
   // M03 / M03d: assessment components (IB and Cambridge) through the one component display path.
-  return { context, reason, topics: topics.map((t) => ({ ...t, component: t.component ? localizeComponentLabel(context.programme, t.component, locale) : null })) };
+  return { status: 'READY', context, reason, topics: topics.map((t) => ({ ...t, component: t.component ? localizeComponentLabel(context.programme, t.component, locale) : null })) };
 }
 
 /**

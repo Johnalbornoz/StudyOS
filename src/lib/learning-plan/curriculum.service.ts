@@ -20,6 +20,7 @@ import { db } from '@/lib/db';
 import { catalogSubjectByName } from '@/lib/experience/subject-catalog';
 import { canonicalConceptLabels } from './labels';
 import { learnerExamProfiles, resolveExamProfiles } from './exam-profile-resolution';
+import { CURRICULUM_MAPPING_NOT_READY, decideCurriculumContext, type CurriculumNotReady, type ExplicitAcademicSubject, type ExplicitSubjectSource } from './curriculum-context-resolution';
 
 export interface CurriculumOption {
   academicSubjectId: string;
@@ -40,6 +41,9 @@ export interface CurriculumConcept {
   prerequisiteIds: string[];
   /** position in the curriculum sequence (0-based) */
   order: number;
+  /** In a curriculum context: the node and objective that hold the concept (curriculum provenance); null in the general catalogue. */
+  structureNodeId: string | null;
+  learningObjectiveId: string | null;
 }
 
 export interface CurriculumArea {
@@ -56,7 +60,10 @@ export interface BaseCurriculum {
   concepts: CurriculumConcept[];
 }
 
-export type ContextReason = 'REQUESTED' | 'EXAM_PROFILE' | 'ACADEMIC_PROFILE' | 'INSTITUTION' | 'GENERAL';
+export type ContextReason = 'REQUESTED' | 'EXAM_PROFILE' | 'ACADEMIC_PROFILE' | 'INSTITUTION' | 'GENERAL' | typeof CURRICULUM_MAPPING_NOT_READY;
+
+/** The learner asking for the general catalogue of a subject instead of a curriculum. */
+export const GENERAL_CONTEXT = 'general' as const;
 
 /** The catalog subject key ("mathematics") of a subject / canonical subject name, in any language. */
 export function catalogKeyOf(name: string): string | null {
@@ -69,7 +76,7 @@ export async function canonicalSubjectIdsForCatalogKey(catalogKey: string): Prom
   return r.rows.filter((row: any) => catalogKeyOf(row.name) === catalogKey).map((row: any) => row.id);
 }
 
-/** Published curricula (academic subjects) that cover this catalog subject. */
+/** Published curricula (academic subjects) that cover this catalog subject, in name order (the order carries no meaning: nothing picks "the first" or "the largest"). */
 export async function listCurriculumOptions(catalogKey: string): Promise<CurriculumOption[]> {
   const subjectIds = await canonicalSubjectIdsForCatalogKey(catalogKey);
   if (subjectIds.length === 0) return [];
@@ -86,7 +93,7 @@ export async function listCurriculumOptions(catalogKey: string): Promise<Curricu
      LEFT JOIN academic_qualifications aq ON aq.id = asub.qualification_id
      WHERE ocm.status = 'PUBLISHED' AND cc.canonical_subject_id = ANY($1::uuid[])
      GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
-     ORDER BY concept_count DESC, ap.name, asub.name`,
+     ORDER BY ap.name, asub.name, asub.level NULLS FIRST, asub.id`,
     [subjectIds]
   );
   return r.rows.map((row: any) => ({
@@ -103,45 +110,61 @@ export async function listCurriculumOptions(catalogKey: string): Promise<Curricu
 }
 
 /**
- * Which curriculum fits this learner for this subject, most specific first:
- * an explicitly chosen one, an exam they prepare (student_exam_profiles), their
- * academic profile (the catalogue programme / subjects they selected; legacy:
- * IB Diploma), else the general StudyUs curriculum.
+ * Which curriculum this learner EXPLICITLY has for this subject, most specific first: one they requested,
+ * an exam they prepare (student_exam_profiles), the subjects they selected in their Academic Profile.
+ *
+ * FAIL CLOSED (curriculum-context-resolution.ts): an explicit subject of this Learn subject that has no
+ * PUBLISHED mapping chain is CURRICULUM_MAPPING_NOT_READY -- no sibling subject, no "largest" curriculum
+ * and no default is ever substituted. With no explicit subject at all the result is GENERAL (context null).
+ *
+ * `requestedAcademicSubjectId === 'general'` is the learner asking for the general catalogue.
  */
 export async function resolveCurriculumContext(
   studentId: string,
   catalogKey: string,
   requestedAcademicSubjectId?: string | null
-): Promise<{ context: CurriculumOption | null; options: CurriculumOption[]; reason: ContextReason }> {
+): Promise<{ context: CurriculumOption | null; options: CurriculumOption[]; reason: ContextReason; notReady: CurriculumNotReady[] }> {
   const options = await listCurriculumOptions(catalogKey);
-  if (requestedAcademicSubjectId) {
-    const requested = options.find((o) => o.academicSubjectId === requestedAcademicSubjectId);
-    if (requested) return { context: requested, options, reason: 'REQUESTED' };
+  if (requestedAcademicSubjectId === GENERAL_CONTEXT) return { context: null, options, reason: 'GENERAL', notReady: [] };
+  const named: Array<{ academicSubjectId: string; source: ExplicitSubjectSource }> = [];
+  if (requestedAcademicSubjectId) named.push({ academicSubjectId: requestedAcademicSubjectId, source: 'REQUESTED' });
+  else {
+    // R1: definition-based and objective-first profiles (newest first); objective-first resolves through the governed objective.
+    const profiles = await learnerExamProfiles([studentId], 'ACTIVE').catch(() => []);
+    const resolved = await resolveExamProfiles(profiles).catch(() => new Map());
+    for (const p of profiles) for (const id of resolved.get(p.id)?.academicSubjectIds ?? []) named.push({ academicSubjectId: id, source: 'EXAM_PROFILE' });
+    // The subjects the Student selected in their Academic Profile, in the order they selected them.
+    const selected = await db
+      .query(`SELECT academic_subject_id FROM student_academic_subjects WHERE student_id = $1 AND ended_at IS NULL ORDER BY created_at, academic_subject_id`, [studentId])
+      .catch(() => ({ rows: [] as any[] }));
+    for (const r of selected.rows) named.push({ academicSubjectId: r.academic_subject_id as string, source: 'ACADEMIC_PROFILE' });
   }
-  // R1: definition-based and objective-first profiles (newest first); objective-first resolves through the governed objective.
-  const profiles = await learnerExamProfiles([studentId], 'ACTIVE').catch(() => []);
-  const resolved = await resolveExamProfiles(profiles).catch(() => new Map());
-  for (const p of profiles) {
-    for (const subjectId of resolved.get(p.id)?.academicSubjectIds ?? []) {
-      const match = options.find((o) => o.academicSubjectId === subjectId);
-      if (match) return { context: match, options, reason: 'EXAM_PROFILE' };
-    }
-  }
-  const profile = await db.query(`SELECT curriculum_type, ib_programme, academic_programme_id FROM student_academic_profile WHERE student_id = $1`, [studentId]).catch(() => ({ rows: [] as any[] }));
-  const programmeId: string | null = profile.rows[0]?.academic_programme_id ?? null;
-  if (programmeId) {
-    // Phase A: the selected subject of that programme first, else any published subject of the programme.
-    const selected = await db.query(`SELECT academic_subject_id FROM student_academic_subjects WHERE student_id = $1 AND ended_at IS NULL`, [studentId]).catch(() => ({ rows: [] as any[] }));
-    const ids = new Set(selected.rows.map((r: any) => r.academic_subject_id as string));
-    const inProgramme = options.filter((o) => o.programmeId === programmeId);
-    const match = inProgramme.find((o) => ids.has(o.academicSubjectId)) ?? inProgramme[0];
-    if (match) return { context: match, options, reason: 'ACADEMIC_PROFILE' };
-  }
-  if (!programmeId && profile.rows[0]?.curriculum_type === 'ib' && profile.rows[0]?.ib_programme === 'DP') {
-    const ib = options.find((o) => /IB/i.test(o.programme));
-    if (ib) return { context: ib, options, reason: 'ACADEMIC_PROFILE' };
-  }
-  return { context: null, options, reason: 'GENERAL' };
+  const decision = decideCurriculumContext(options, await describeExplicitSubjects(named, catalogKey));
+  if (decision.status === 'RESOLVED') return { context: decision.context, options, reason: decision.source, notReady: decision.notReady };
+  if (decision.status === 'NOT_READY') return { context: null, options, reason: CURRICULUM_MAPPING_NOT_READY, notReady: decision.notReady };
+  return { context: null, options, reason: 'GENERAL', notReady: [] };
+}
+
+/** What the catalogue says about each named academic subject, for the Learn subject `catalogKey`. */
+async function describeExplicitSubjects(named: Array<{ academicSubjectId: string; source: ExplicitSubjectSource }>, catalogKey: string): Promise<ExplicitAcademicSubject[]> {
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const ids = [...new Set(named.map((n) => n.academicSubjectId).filter((id) => uuid.test(id)))];
+  const rows = ids.length
+    ? (await db.query(
+        `SELECT asub.id, asub.name, cs.name AS canonical_subject_name,
+                EXISTS (SELECT 1 FROM structure_versions sv WHERE sv.academic_subject_id = asub.id AND sv.status = 'PUBLISHED') AS has_published
+           FROM academic_subjects asub LEFT JOIN canonical_subjects cs ON cs.id = asub.canonical_subject_id
+          WHERE asub.id = ANY($1::uuid[])`,
+        [ids]
+      )).rows
+    : [];
+  const byId = new Map(rows.map((r: any) => [r.id as string, r]));
+  return named.map((n) => {
+    const row: any = byId.get(n.academicSubjectId);
+    // The canonical subject link is the authority; an academic subject without one is attributed by its own name only.
+    const key = row ? catalogKeyOf(row.canonical_subject_name ?? row.name) : null;
+    return { ...n, exists: !!row, belongsToCatalogSubject: key === catalogKey, hasPublishedVersion: !!row?.has_published };
+  });
 }
 
 async function prerequisitesFor(conceptIds: string[]): Promise<Map<string, string[]>> {
@@ -154,11 +177,12 @@ async function prerequisitesFor(conceptIds: string[]): Promise<Map<string, strin
 
 /** The base curriculum (areas → concepts → prerequisites) of a context, or the general one. */
 export async function getBaseCurriculum(catalogKey: string, context: CurriculumOption | null, locale: string): Promise<BaseCurriculum> {
-  let rows: Array<{ area_key: string; area_label: string; canonical_concept_id: string }>;
+  let rows: Array<{ area_key: string; area_label: string; canonical_concept_id: string; lo_id?: string | null }>;
   if (context) {
     const r = await db.query(
       `SELECT sn.id AS area_key, COALESCE(snl.label, sn.source_label, sn.code, '') AS area_label, ocm.canonical_concept_id,
-         MIN(sn.order_index) AS node_order, MIN(lo.code) AS lo_code
+         MIN(sn.order_index) AS node_order, MIN(lo.code) AS lo_code,
+         (ARRAY_AGG(lo.id ORDER BY lo.code NULLS LAST, lo.id))[1] AS lo_id
        FROM objective_concept_mappings ocm
        JOIN canonical_concepts cc ON cc.id = ocm.canonical_concept_id AND cc.status = 'ACTIVE'
        JOIN learning_objectives lo ON lo.id = ocm.learning_objective_id AND lo.status = 'ACTIVE'
@@ -199,6 +223,8 @@ export async function getBaseCurriculum(catalogKey: string, context: CurriculumO
       label: labels.get(row.canonical_concept_id) ?? '',
       prerequisiteIds: prereqs.get(row.canonical_concept_id) ?? [],
       order: flat.length,
+      structureNodeId: context ? row.area_key : null,
+      learningObjectiveId: context ? row.lo_id ?? null : null,
     };
     area.concepts.push(concept);
     flat.push(concept);

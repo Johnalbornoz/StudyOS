@@ -223,7 +223,7 @@ export default async function LearningPlanPage({ searchParams }: { searchParams:
                         {c.learnerConceptId && <StartSessionButton studentId={studentId} actionConceptId={c.learnerConceptId} label={t['lp.plan.continue']} variant="secondary" {...startLabels} />}
                       </>
                     ) : (
-                      <AddToPlanButton canonicalConceptId={c.canonicalConceptId} source={c.recommended ? 'CURRICULUM_RECOMMENDATION' : 'SELF_SELECTED'} labels={addLabels} />
+                      <AddToPlanButton canonicalConceptId={c.canonicalConceptId} source={c.recommended ? 'CURRICULUM_RECOMMENDATION' : 'SELF_SELECTED'} curriculum={c.curriculum} labels={addLabels} />
                     )}
                   </li>
                 ))}

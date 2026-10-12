@@ -20,8 +20,10 @@ describe('the series', () => {
       '20261120_1100_cr_l9_02_enrollment_history.sql',
       '20261120_1200_sf10_single_persona_constraint.sql',
     ]);
-    expect(all.slice(-3)).toEqual(batch);
-    expect(all).toHaveLength(85); // 82 before L10 + 3: with the baseline row, the ledger goes 83 -> 86
+    // every migration before the batch is earlier, and the batch is contiguous (later lines add files after it)
+    const first = all.indexOf(batch[0]);
+    expect(all.slice(first, first + 3)).toEqual(batch);
+    expect(first).toBe(82); // 82 before L10 + 3: with the baseline row, the ledger goes 83 -> 86
   });
 
   it('every file documents its rollback and deletes only its own ledger row', () => {
