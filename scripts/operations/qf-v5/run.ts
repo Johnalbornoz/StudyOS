@@ -74,15 +74,15 @@ function plan(): void {
 }
 
 interface RunState { ledger: SpendLedger; checkpoints: Checkpoint[]; records: ValidationRecord[]; items: Record<string, CandidateItem>; batchesByProfile: Record<string, SpecificationOutcome[][]> }
-export interface ManifestEntry { profileId: string; count: number; phase: 'C1' | 'C2' | 'SCALE' }
+export interface ManifestEntry { profileId: string; count: number; phase: 'C1' | 'C2' | 'SCALE'; /** Restrict the sample to these tiers; the gate it earns is a gate for these tiers only. */ tiers?: ('CHALLENGE' | 'STANDARD' | 'FOUNDATIONAL')[] }
 
 /**
  * The specifications of one profile for a live sample: hardest tiers first (40 % CHALLENGE, 40 % STANDARD, the rest
  * FOUNDATIONAL), spread across the profile's blueprint buckets instead of taken from one.
  */
-export function selectForProfile(all: readonly GenerationSpecification[], profileId: string, count: number, done: ReadonlySet<string>): GenerationSpecification[] {
-  const pool = all.filter((s) => s.profileId === profileId && !done.has(s.slotKey));
-  const want = { CHALLENGE: Math.ceil(count * 0.4), STANDARD: Math.ceil(count * 0.4), FOUNDATIONAL: count } as const;
+export function selectForProfile(all: readonly GenerationSpecification[], profileId: string, count: number, done: ReadonlySet<string>, tiers?: readonly string[]): GenerationSpecification[] {
+  const pool = all.filter((s) => s.profileId === profileId && !done.has(s.slotKey) && (!tiers || tiers.includes(s.intendedDifficulty)));
+  const want = tiers ? { CHALLENGE: tiers.includes('CHALLENGE') ? count : 0, STANDARD: Math.ceil(count * 0.6), FOUNDATIONAL: count } : { CHALLENGE: Math.ceil(count * 0.4), STANDARD: Math.ceil(count * 0.4), FOUNDATIONAL: count };
   const out: GenerationSpecification[] = [];
   for (const tier of ['CHALLENGE', 'STANDARD', 'FOUNDATIONAL'] as const) {
     const byBucket = new Map<string, GenerationSpecification[]>();
@@ -125,7 +125,7 @@ async function generate(): Promise<void> {
     if (need && !gates[`${entry.profileId}:${need}`]?.pass) { console.error(`SKIPPED ${entry.profileId} ${entry.phase}: no passing ${need} gate under ${versions.profileVersion} / ${versions.validatorVersion}.`); continue; }
     // slots an earlier run already used are never drawn again: a calibration batch is out of sample
     const done = new Set([...state.records.map((r) => r.slotKey), ...earlier]);
-    const chosen = selectForProfile(specifications, entry.profileId, entry.count, done);
+    const chosen = selectForProfile(specifications, entry.profileId, entry.count, done, entry.tiers);
     const outcomes: SpecificationOutcome[] = [];
     for (let b = 0; b * size < chosen.length; b += 1) {
       const batch = chosen.slice(b * size, (b + 1) * size);
@@ -155,7 +155,7 @@ async function generate(): Promise<void> {
     }
     if (entry.phase !== 'SCALE' && outcomes.length) {
       const gate = calibrationGate(entry.phase, outcomes, entry.count);
-      gates[`${entry.profileId}:${entry.phase}`] = { phase: entry.phase, pass: gate.pass, unmet: gate.unmet, size: outcomes.length, versions };
+      gates[`${entry.profileId}${entry.tiers ? `[${entry.tiers.join('+')}]` : ''}:${entry.phase}`] = { phase: entry.phase, pass: gate.pass, unmet: gate.unmet, size: outcomes.length, versions };
       writeFileSync(gatesPath, `${JSON.stringify(gates, null, 2)}\n`);
       console.log(JSON.stringify({ GATE: `${entry.profileId}:${entry.phase}`, ...gate }));
     }

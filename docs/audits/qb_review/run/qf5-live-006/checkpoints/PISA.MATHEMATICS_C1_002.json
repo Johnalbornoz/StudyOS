@@ -1,0 +1,37 @@
+{
+  "runId": "qf5-live-006",
+  "batchId": "PISA.MATHEMATICS:C1:002",
+  "phase": "C1",
+  "profileId": "PISA.MATHEMATICS",
+  "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.4.0",
+  "cumulativeSpendUsd": 2.869195,
+  "timestamp": "2026-10-12T13:17:26.200Z",
+  "candidateIds": [
+    "v2.pisa.2022/math/pisa.cambio.formular#0/001#0",
+    "v2.pisa.2022/math/pisa.cambio.razonar#0/001#0"
+  ],
+  "decisions": {
+    "v2.pisa.2022/math/pisa.cambio.formular#0/001#0": "HUMAN_REVIEW",
+    "v2.pisa.2022/math/pisa.cambio.razonar#0/001#0": "HUMAN_REVIEW"
+  },
+  "metrics": {
+    "rawGenerated": 2,
+    "structuralPass": 2,
+    "answerPass": 2,
+    "constructPass": 2,
+    "difficultyMatch": 2,
+    "autoApproved": 0,
+    "humanReview": 2,
+    "autoRejected": 0,
+    "specifications": 2,
+    "firstAttemptPass": 0,
+    "regenerated": 0,
+    "specificationIssues": 0,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 0,
+    "humanReviewRate": 1,
+    "rejectionRate": 0
+  },
+  "hash": "47331d76c63f4244ff13ebe50c45e393889b79c382d1bfed87bbd895f66e9e66"
+}

@@ -1,0 +1,37 @@
+{
+  "runId": "qf5-live-006",
+  "batchId": "PISA.MATHEMATICS:C1:001",
+  "phase": "C1",
+  "profileId": "PISA.MATHEMATICS",
+  "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.4.0",
+  "cumulativeSpendUsd": 2.576515,
+  "timestamp": "2026-10-12T13:16:04.582Z",
+  "candidateIds": [
+    "v2.pisa.2022/math/pisa.cantidad.formular#0/004#0",
+    "v2.pisa.2022/math/pisa.espacio.emplear#0/004#0"
+  ],
+  "decisions": {
+    "v2.pisa.2022/math/pisa.cantidad.formular#0/004#0": "AUTO_APPROVE",
+    "v2.pisa.2022/math/pisa.espacio.emplear#0/004#0": "HUMAN_REVIEW"
+  },
+  "metrics": {
+    "rawGenerated": 2,
+    "structuralPass": 2,
+    "answerPass": 2,
+    "constructPass": 1,
+    "difficultyMatch": 1,
+    "autoApproved": 1,
+    "humanReview": 1,
+    "autoRejected": 0,
+    "specifications": 2,
+    "firstAttemptPass": 1,
+    "regenerated": 0,
+    "specificationIssues": 0,
+    "firstAttemptPassRate": 0.5,
+    "regenerationRate": 0,
+    "humanReviewRate": 0.5,
+    "rejectionRate": 0
+  },
+  "hash": "9df581f1e8212099a8dee1e65ad9b784b68eb6b14d5613ac6381f380b4967818"
+}

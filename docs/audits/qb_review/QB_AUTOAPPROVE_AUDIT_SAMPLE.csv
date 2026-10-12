@@ -1,80 +1,41 @@
 priority,item_id,exam_family,subject,component,item_type,stimulus,question,options,proposed_canonical_answer,independent_solver_answer,solution,objective,intended_difficulty,actual_difficulty,tier_fit,direction,answer_match,answer_confidence,construct_fit,authenticity,distractor_quality,validator_flags,reason_for_escalation
-AUDIT,v2.ib.math-aa-hl/p1/aahl.p1.extended#0/004#0,IB,Mathematics: analysis and approaches,P1,SHORT_RESPONSE,,"Let P(x) = x³ − 3x − 1. Show that the equation P(x) = 0 has exactly three distinct real solutions, and that these solutions are 2cos(π/9), 2cos(5π/9) and 2cos(7π/9). If the solutions are r₁, r₂ and r₃, show also that r₁ + r₂ + r₃ = 0 and r₁r₂r₃ = 1.",,"The equation has exactly three distinct real solutions: 2cos(π/9), 2cos(5π/9) and 2cos(7π/9). Their sum is 0 and their product is 1.","Roots of x³ − 3x − 1 = 0 are 2cos(π/9), 2cos(5π/9), 2cos(7π/9), which are exactly three distinct real roots; their sum is 0 and their product is 1.","P′(x) = 3x² − 3 = 3(x − 1)(x + 1). Hence P is increasing on (−∞, −1) and (1, ∞), and decreasing on (−1, 1).
+AUDIT,v2.saber11.math/math/saber.formulacion#0/010#1,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una biblioteca debe enviar cajas de libros y compara estas dos tarifas para un mismo trayecto:
 
-P(−1) = 1 and P(1) = −3. Also, P(x) → −∞ as x → −∞ and P(x) → ∞ as x → ∞. Therefore, by the intermediate value theorem, there is one root in each of the intervals (−∞, −1), (−1, 1) and (1, ∞). The monotonicity on each interval shows that there can be no more than one root in each interval. Thus P(x) = 0 has exactly three real roots.
+- Servicio A: cobra una tarifa fija de $18.000 y $450 por cada caja.
+- Servicio B: cobra $900 por cada una de las primeras 20 cajas. Por cada caja adicional a esas 20, cobra $500.
 
-Using cos(3θ) = 4cos³θ − 3cosθ, put x = 2cosθ. Then
-P(x) = 8cos³θ − 6cosθ − 1 = 2cos(3θ) − 1.
+La biblioteca solo puede enviar un número entero de cajas y desea escoger el servicio A únicamente cuando su costo sea estrictamente menor que el del servicio B.",¿Cuál es el primer número de cajas para el que la biblioteca debe escoger el servicio A?,A. 20 cajas | B. 21 cajas | C. 200 cajas | D. 201 cajas,D,D,"Sea n el número de cajas.
 
-For θ = π/9, 5π/9 and 7π/9, the values of 3θ are π/3, 5π/3 and 7π/3 respectively. In each case cos(3θ) = 1/2, so P(2cosθ) = 0. The three angles lie in [0, π] and are distinct; since cosθ is strictly decreasing on [0, π], the corresponding three values of x are distinct. As there are exactly three real roots, they are therefore 2cos(π/9), 2cos(5π/9) and 2cos(7π/9).
+Para el servicio A, el costo es 18.000 + 450n.
 
-Factoring P using its roots gives
-P(x) = (x − r₁)(x − r₂)(x − r₃)
-= x³ − (r₁ + r₂ + r₃)x² + (r₁r₂ + r₁r₃ + r₂r₃)x − r₁r₂r₃.
+Si n es mayor que 20, el costo del servicio B es 20·900 + (n − 20)·500, que equivale a 8.000 + 500n. Como se busca el primer valor para el que A sea estrictamente más barato, se plantea:
 
-Comparing this with x³ − 3x − 1 gives r₁ + r₂ + r₃ = 0 and −r₁r₂r₃ = −1, so r₁r₂r₃ = 1.",v2.ib.math-aa-hl/p1/aahl.p1.extended#0,CHALLENGE,CHALLENGE,YES,MATCH,JUDGED_EQUIVALENT,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS
-AUDIT,v2.ib.math-aa-hl/p1/aahl.p1.calculus#0/001#0,IB,Mathematics: analysis and approaches,P1,SHORT_RESPONSE,,"A curve C passes through the point (0, 0) and has derivative f′(x) = 3x² − 3, where y = f(x) is the equation of C. Find the exact area enclosed by C and the tangent to C at its local maximum.",,27/4,27/4,"Since f′(x) = 3x² − 3, integrating gives
-f(x) = x³ − 3x + C.
+18.000 + 450n < 8.000 + 500n
+10.000 < 50n
+200 < n.
 
-The point (0, 0) lies on C, so C = 0. Therefore
-f(x) = x³ − 3x.
+Por tanto, el menor número entero de cajas que cumple la desigualdad es 201. Además, para n ≤ 20, el servicio A no resulta más barato, pues en ese intervalo se compara 18.000 + 450n con 900n y la desigualdad a favor de A exigiría n > 40, algo imposible en ese intervalo. La respuesta es 201 cajas.",v2.saber11.math/math/saber.formulacion#0,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.saber11.math/math/saber.argumentacion#2/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Para decidir si amplía el horario de la biblioteca, un colegio encuestó a estudiantes de sus dos turnos. Los resultados fueron:
 
-The stationary points satisfy
-f′(x) = 0
-3x² − 3 = 0,
-so x = −1 or x = 1.
-
-Since f′(x) changes from positive to negative at x = −1, the local maximum is at x = −1. Its y-coordinate is
-f(−1) = (−1)³ − 3(−1) = 2.
-
-The tangent at the local maximum is therefore y = 2.
-
-The intersections of C with this tangent satisfy
-x³ − 3x = 2,
-so
-x³ − 3x − 2 = 0
-(x + 1)²(x − 2) = 0.
-
-Thus the enclosed region lies between x = −1 and x = 2. On this interval, the tangent is above C, so the area is
-∫ from −1 to 2 [2 − (x³ − 3x)] dx
-= [2x − x⁴/4 + 3x²/2] from −1 to 2
-= 6 − (−3/4)
-= 27/4.",v2.ib.math-aa-hl/p1/aahl.p1.calculus#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS
-AUDIT,v2.saber11.math/math/saber.argumentacion#1/003#1,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una alcaldía comparó dos convocatorias para asignar un subsidio de transporte. Para analizar si una convocatoria fue más efectiva, registró cuántas personas de cada grupo recibieron el subsidio.
-
-| Convocatoria | Grupo | Solicitudes | Subsidios asignados |
-|---|---|---:|---:|
-| X | Mujeres | 30 | 18 |
-| X | Hombres | 10 | 9 |
-| Y | Mujeres | 40 | 20 |
-| Y | Hombres | 60 | 48 |
-
-Un estudiante afirma: «La convocatoria X fue más efectiva que la Y, porque asignó una proporción mayor de subsidios tanto entre las mujeres como entre los hombres; por lo tanto, también tuvo una proporción mayor al considerar todas las solicitudes»",¿Cuál evaluación de la afirmación del estudiante es correcta?,"A. Es incorrecta: aunque X supera a Y en cada grupo, X asignó 27 de 40 subsidios (67,5 %) y Y asignó 68 de 100 (68 %); por tanto, Y tuvo la mayor proporción total. | B. Es correcta: como X supera a Y en cada grupo, necesariamente también supera a Y al reunir todas las solicitudes, sin importar cuántas haya en cada grupo. | C. Es incorrecta: basta comparar las cantidades asignadas, pues X entregó 27 subsidios y Y entregó 68; por tanto, Y tuvo la mayor proporción total. | D. Es correcta: al promediar las proporciones de cada grupo, X obtiene 75 % y Y obtiene 65 %; por tanto, X tuvo la mayor proporción total.",A,A,"En X, entre las mujeres se asignaron 18/30 = 60 % de los subsidios y entre los hombres 9/10 = 90 %. En Y, las proporciones correspondientes son 20/40 = 50 % y 48/60 = 80 %. Por eso, X sí supera a Y dentro de cada grupo.
-
-Sin embargo, la proporción total debe calcularse usando todos los subsidios asignados y todas las solicitudes, no comparando únicamente los grupos por separado ni promediando sus porcentajes. En X se asignaron 18 + 9 = 27 subsidios de 30 + 10 = 40 solicitudes, es decir, 27/40 = 67,5 %. En Y se asignaron 20 + 48 = 68 subsidios de 40 + 60 = 100 solicitudes, es decir, 68 %.
-
-Así, la conclusión del estudiante no se sigue de sus comparaciones por grupo: Y tuvo una proporción total ligeramente mayor. La opción correcta es A.",v2.saber11.math/math/saber.argumentacion#1,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
-AUDIT,v2.saber11.math/math/saber.argumentacion#0/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una empresa de transporte encuestó a personas de dos barrios para decidir si debe ampliar una ruta. La tabla muestra el barrio, el número de personas encuestadas y el porcentaje que está a favor de la ampliación.
-
-| Barrio | Personas encuestadas | Porcentaje a favor |
-|---|---:|---:|
-| Norte | 80 | 60% |
-| Sur | 40 | 30% |
-
-Una estudiante afirma: «Para hallar el porcentaje total a favor, basta con promediar los dos porcentajes: (60% + 30%)/2 = 45%».",¿Cuál de las siguientes evaluaciones de la afirmación de la estudiante es correcta?,"A. Es válida, porque los dos barrios deben tener el mismo peso al calcular un promedio de porcentajes; el resultado es 45%. | B. No es válida, porque los porcentajes deben ponderarse por la cantidad encuestada; el porcentaje total es 60/120 = 50%. | C. No es válida, porque al combinar porcentajes se deben sumar directamente; el porcentaje total es 60% + 30% = 90%. | D. Es válida, porque 60% y 30% representan 60 y 30 personas, respectivamente; el porcentaje total es 90/120 = 75%.",B,B,"La cantidad de personas a favor en el barrio Norte es 0,60 × 80 = 48. En el barrio Sur es 0,30 × 40 = 12. Por tanto, hay 48 + 12 = 60 personas a favor de un total de 80 + 40 = 120 encuestadas. El porcentaje total es 60/120 = 50%. La afirmación de la estudiante no es válida porque da el mismo peso a ambos porcentajes, aunque los tamaños de las muestras son diferentes. Por eso, la opción correcta es B.",v2.saber11.math/math/saber.argumentacion#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
-AUDIT,v2.paa/lectura/paa.lect.explicitas#0/001#0,PAA,Lectura,LECTURA,SELECTED_RESPONSE,"Durante seis semanas de 2024, la biblioteca municipal colocó cerca de la entrada una mesa con libros de divulgación científica y un letrero que invitaba a hojearlos. En ese periodo, los préstamos de esos títulos aumentaron 35 % respecto de las seis semanas anteriores; el total de préstamos de la biblioteca aumentó 4 %.
-
-De las 42 personas entrevistadas al salir, 29 dijeron que la nueva ubicación les había hecho notar libros que antes no veían. Sin embargo, las entrevistas se realizaron únicamente entre quienes visitaron la biblioteca. Además, durante las mismas seis semanas, varias escuelas cercanas organizaron una campaña para recomendar lecturas científicas. El informe concluye que conviene repetir la experiencia en otras sucursales y comparar los resultados con un periodo en que no haya una campaña semejante.",¿Cuál conclusión está mejor respaldada por la información del texto?,"A. La nueva ubicación probablemente ayudó a visibilizar algunos títulos, pero no permite atribuirle por sí sola el aumento total. | B. La nueva ubicación fue la causa principal del aumento total, porque los préstamos científicos crecieron más que los demás. | C. La campaña escolar tuvo poca influencia, porque la mayoría de las personas entrevistadas mencionó la ubicación. | D. La nueva ubicación benefició a la mayoría de los residentes, porque 29 de 42 entrevistados la consideraron útil.",A,A,"La opción A es la mejor respaldada. El aumento de los préstamos de los títulos colocados cerca de la entrada y las respuestas de 29 visitantes sugieren que la ubicación pudo hacerlos más visibles. Sin embargo, la campaña escolar ocurrió al mismo tiempo, por lo que no se puede atribuir todo el aumento únicamente a la mesa. Además, como solo se entrevistó a visitantes, las respuestas no representan necesariamente a todos los residentes. Por eso, A combina la inferencia apoyada por los datos con la limitación que el informe reconoce.",v2.paa/lectura/paa.lect.explicitas#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
-AUDIT,v2.pisa.2022/science/pisa.sci.evaluate.procedural#0/004#0,PISA,Ciencias,SCIENCE,SHORT_RESPONSE,"Un grupo de estudiantes quiere averiguar si el color de la luz de una lámpara LED influye en el crecimiento de plantas de albahaca. Colocaron 12 plantas bajo una lámpara azul y otras 12 bajo una lámpara blanca durante 14 días. Usaron el mismo tipo de tierra y dieron la misma cantidad de agua a todas las plantas, pero cada lámpara permaneció en un estante distinto.
-
-Al finalizar, calcularon la altura media de las plantas y registraron las condiciones de cada estante.
-
-| Tipo de luz | Intensidad medida | Temperatura media | Altura media final |
+| Turno | Estudiantes encuestados | Apoyan la ampliación | Porcentaje que apoya |
 |---|---:|---:|---:|
-| Azul | 420 unidades | 28,1 °C | 18,4 cm |
-| Blanca | 760 unidades | 23,0 °C | 15,9 cm |
+| Mañana | 80 | 52 | 65% |
+| Tarde | 40 | 20 | 50% |
 
-La lámpara azul y la blanca no se cambiaron de estante durante el experimento.",¿Qué cambio concreto deberían hacer en una nueva investigación para decidir si la diferencia de altura se debe al color de la luz y no a las otras diferencias entre los estantes? Explica por qué ese cambio permite una conclusión más segura.,,"No se puede atribuir todavía la mayor altura al color, porque también cambiaron la intensidad de la luz y la temperatura. Deberían mantener iguales esas dos condiciones y alternar aleatoriamente las lámparas y las plantas entre los estantes; así las diferencias de altura podrían relacionarse con el color de la luz.","Igualar la intensidad y la temperatura (por ejemplo, poner ambas lámparas en el mismo estante o en condiciones idénticas, o intercambiar los estantes), cambiando solo el color de la luz, para que el color sea la única diferencia y se pueda atribuir la diferencia de altura a él.","La investigación mezcla el efecto del color con el de la intensidad luminosa y la temperatura: las plantas con luz azul recibieron menos luz medida, pero estuvieron a mayor temperatura y en un estante diferente. Por tanto, la mayor altura no demuestra que el color causara el crecimiento. En una nueva prueba deben igualar la intensidad y la temperatura, y distribuir o alternar aleatoriamente las lámparas y las plantas entre los estantes. Así se controlan las explicaciones alternativas y una diferencia persistente de crecimiento puede atribuirse con mayor seguridad al color.",v2.pisa.2022/science/pisa.sci.evaluate.procedural#0,CHALLENGE,CHALLENGE,YES,MATCH,JUDGED_EQUIVALENT,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS
-AUDIT,v2.pisa.2022/science/pisa.sci.evaluate.procedural#0/001#0,PISA,Ciencias,SCIENCE,SELECTED_RESPONSE,"En una ciudad se están instalando marquesinas de autobús con una lámina transparente sobre el techo. El fabricante afirma que la lámina mantiene más fresco el interior al reducir el calentamiento causado por la luz solar.
+En un informe se afirma: «El apoyo del turno de la mañana es 15% mayor que el del turno de la tarde, porque 65% − 50% = 15%». En el informe, «15% mayor» pretende expresar un aumento porcentual relativo, no una diferencia en puntos porcentuales.",¿Cuál evaluación de la afirmación del informe es correcta?,"A. Es válida, porque restar los dos porcentajes permite obtener directamente el aumento porcentual relativo: 15%. | B. No es válida, porque la diferencia es de 15 puntos porcentuales y el aumento relativo es 30%, calculado sobre el 50% del turno de la tarde. | C. Es válida, porque 65% / 50% = 1,3; por tanto, el apoyo de la mañana es 130% mayor. | D. No es válida, porque el aumento relativo es 23,1%, obtenido al dividir la diferencia de 15% entre el 65% del turno de la mañana.",B,B,"La resta 65% − 50% = 15% representa una diferencia de 15 puntos porcentuales, no un aumento porcentual relativo. Para calcular el aumento relativo se compara la diferencia con el valor inicial, que es el porcentaje del turno de la tarde: (65% − 50%) / 50% = 15% / 50% = 0,30 = 30%. Por tanto, la afirmación del informe no es válida: el aumento relativo es 30%.",v2.saber11.math/math/saber.argumentacion#2,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.paa/lectura/paa.lect.evidencia#0/003#0,PAA,Lectura,LECTURA,SELECTED_RESPONSE,"Texto 1
 
-Un grupo de estudiantes quiere comprobar esta afirmación con dos modelos idénticos de una marquesina. Cada modelo tiene un termómetro en el interior. Disponen de una lámpara halógena fija, una lámina transparente, un cronómetro y una habitación cuya temperatura se mantiene constante. La lámpara calienta más el lado de la mesa que está más cerca de ella.",¿Qué procedimiento proporcionaría la evidencia más sólida para determinar si la lámina reduce el calentamiento del modelo?,"A. Colocar un modelo con lámina y otro sin lámina bajo la lámpara durante 20 minutos, medir la temperatura final una vez y comparar los resultados. | B. Colocar ambos modelos a igual distancia de la lámpara, poner la lámina solo en uno, medir el aumento de temperatura durante 20 minutos, intercambiar sus posiciones a los 10 minutos y repetir la prueba cinco veces. | C. Colocar ambos modelos bajo la lámpara, poner la lámina solo en uno y aumentar también la ventilación de ese modelo para imitar mejor una marquesina real; después comparar sus temperaturas finales. | D. Medir durante 20 minutos un modelo sin lámina y, al día siguiente, medir el mismo modelo con lámina, usando la temperatura final de cada día como comparación.",B,B,"La opción B cambia principalmente una variable: la presencia de la lámina. Los dos modelos se prueban al mismo tiempo y se mide el aumento de temperatura, por lo que se comparan cambios equivalentes aunque no comiencen exactamente a la misma temperatura. Intercambiar las posiciones evita que el lado más cercano a la lámpara favorezca siempre al mismo modelo, y repetir la prueba permite comprobar si el resultado es consistente. Las demás opciones introducen una diferencia no controlada, no repiten la medición o confunden el efecto de la lámina con el de otra variable.",v2.pisa.2022/science/pisa.sci.evaluate.procedural#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+El ayuntamiento plantó 120 árboles nativos en tres colonias que un mapa térmico había señalado como especialmente calurosas. Doce meses después, 103 árboles seguían vivos, lo que el informe municipal describió como una supervivencia aproximada del 86 %. Durante los primeros cuatro meses, las cuadrillas los regaron una vez por semana. El informe también recogió que varios vecinos percibían más sombra en algunas calles.
+
+Texto 2
+
+El Observatorio Ambiental revisó el informe y señaló que la supervivencia de los árboles muestra que la plantación y el mantenimiento iniciales funcionaron en buena medida, pero no demuestra que las colonias se hayan enfriado. Para sostener esa conclusión harían falta mediciones de temperatura antes y después, además de comparaciones con calles semejantes sin árboles nuevos. El Observatorio añadió que las entrevistas no permiten separar el efecto de los árboles del de toldos u otras formas de sombra.",¿Cuál conclusión está mejor respaldada por ambos textos?,"A. El programa redujo la temperatura de las colonias porque la mayoría de los árboles sobrevivió. | B. Los árboles se adaptaron al calor sin depender del mantenimiento, pues eran especies nativas. | C. La mayoría de los árboles sobrevivió el primer año, pero aún no se puede atribuir al programa un enfriamiento de las colonias. | D. Los testimonios vecinales confirman el enfriamiento, aunque no existan mediciones comparables.",C,C,"El Texto 1 informa que 103 de los 120 árboles seguían vivos después de doce meses y que recibieron riego durante los primeros cuatro meses; por tanto, sí respalda que la mayoría sobrevivió durante el primer año bajo esas condiciones de mantenimiento. El Texto 2 aclara que ese resultado no basta para demostrar una disminución de la temperatura y especifica que se necesitarían mediciones comparables. Por eso, la conclusión de C relaciona correctamente el resultado comprobado con el límite de la evidencia. A y D convierten indicios insuficientes en una prueba de enfriamiento, mientras que B ignora el riego y atribuye la supervivencia a una adaptación no demostrada.",v2.paa/lectura/paa.lect.evidencia#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.paa/matematicas/paa.mat.algebra#0/001#1,PAA,Matemáticas,MATEMATICAS,SELECTED_RESPONSE,"Una imprenta cobra por cada pedido un cargo fijo de preparación, igual para todos los pedidos, además de un cargo por cada página. Un pedido de 10 páginas cuesta 34 pesos y uno de 25 páginas cuesta 49 pesos.",¿Cuántos pesos se ahorrarían al imprimir 40 páginas en un solo pedido en lugar de imprimirlas en dos pedidos de 20 páginas cada uno?,A. 0 pesos | B. 15 pesos | C. 24 pesos | D. 48 pesos,C,C,"La diferencia entre un pedido de 25 páginas y uno de 10 páginas es de 15 páginas y de 15 pesos. Por tanto, cada página cuesta 1 peso. En el pedido de 10 páginas, las páginas cuestan 10 pesos, así que el cargo fijo de preparación es 34 - 10 = 24 pesos. Un pedido de 40 páginas cuesta 24 + 40 = 64 pesos. Cada pedido de 20 páginas cuesta 24 + 20 = 44 pesos, por lo que dos pedidos cuestan 88 pesos. El ahorro es 88 - 64 = 24 pesos.",v2.paa/matematicas/paa.mat.algebra#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.pisa.2022/math/pisa.cantidad.formular#0/004#0,PISA,Matemáticas,MATHEMATICS,SHORT_RESPONSE,"En un huerto escolar se usa un depósito para recoger agua de lluvia. En el fondo hay 12 litros que la bomba no puede extraer. El indicador del depósito muestra el porcentaje de agua de la parte que sí puede extraerse, no el porcentaje de toda el agua del depósito.
+
+| Momento | Información |
+|---|---|
+| 08:00 | El indicador marca 35 % |
+| Entre 08:00 y 10:00 | Entran 18 litros de lluvia; no se extrae agua |
+| 10:00 | El indicador marca 50 % |
+| Entre 10:00 y 14:00 | La bomba extrae 27 litros; no entra más agua |","¿Cuántos litros de agua hay en total en el depósito a las 14:00, incluidos los 12 litros que la bomba no puede extraer? Escribe tu respuesta y muestra cómo la obtuviste.",,45 litros,45 litros,"Los 18 litros hacen que el indicador suba de 35 % a 50 %, es decir, 15 % de la parte extraíble. Por tanto, la capacidad de esa parte es 18 ÷ 0,15 = 120 litros. A las 10:00 hay 50 % de 120 = 60 litros extraíbles. Después de extraer 27 litros quedan 33 litros extraíbles. Sumando los 12 litros que no puede extraer la bomba, a las 14:00 hay 33 + 12 = 45 litros.",v2.pisa.2022/math/pisa.cantidad.formular#0,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS
