@@ -41,7 +41,7 @@ async function main() {
   if (fp === PREVIEW && !readOnly) throw new Error('REFUSING: Preview is read-only for this script (--read-only)');
 
   const { db } = await import('@/lib/db');
-  const { catalogKeyOf, listCurriculumOptions, resolveCurriculumContext } = await import('@/lib/learning-plan/curriculum.service');
+  const { catalogKeyOf, listCurriculumOptions, resolveCurriculumContext, studentExplicitAcademicSubjects } = await import('@/lib/learning-plan/curriculum.service');
   const { CURRICULUM_MAPPING_NOT_READY } = await import('@/lib/learning-plan/curriculum-context-resolution');
   const { loadSubjectCurriculumTopics } = await import('@/lib/learning-plan/subject-curriculum-topics');
   const { curriculumProvenanceForLearnerConcepts, deriveCurriculumProvenance, verifyCurriculumProvenance } = await import('@/lib/learning-plan/curriculum-provenance.service');
@@ -98,10 +98,9 @@ async function main() {
       const key = catalogKeyOf(s.name);
       if (!key) continue;
       const r = await resolveCurriculumContext(s.id, key);
-      const selected = (await db.query(`SELECT academic_subject_id FROM student_academic_subjects WHERE student_id = $1 AND ended_at IS NULL`, [s.id])).rows.map((x: any) => x.academic_subject_id as string);
-      const profiles = (await db.query(`SELECT d.academic_subject_id FROM student_exam_profiles p JOIN exam_definitions d ON d.id = p.exam_definition_id WHERE p.student_id = $1 AND p.status = 'ACTIVE'`, [s.id])).rows.map((x: any) => x.academic_subject_id as string);
-      const explicit = !r.context || selected.includes(r.context.academicSubjectId) || profiles.includes(r.context.academicSubjectId) || r.reason === 'EXAM_PROFILE';
-      check(`RO-STUDENT ${s.id.slice(0, 8)} · ${key}`, explicit, `${r.reason}${r.context ? ` -> ${r.context.programme} · ${r.context.name}` : ''}${r.notReady.length ? ` · not ready: ${r.notReady.map((x) => `${x.source}/${x.missing}`).join(', ')}` : ''}`);
+      const explicitIds = (await studentExplicitAcademicSubjects(s.id)).map((x) => x.academicSubjectId);
+      const explicit = !r.context || explicitIds.includes(r.context.academicSubjectId);
+      check(`RO-STUDENT ${s.id.slice(0, 8)} · ${key} resolves only to a subject the Student explicitly has`, explicit, `${r.reason}${r.context ? ` -> ${r.context.programme} · ${r.context.name}` : ''}${r.notReady.length ? ` · not ready: ${r.notReady.map((x) => `${x.source}/${x.missing}`).join(', ')}` : ''}`);
     }
   } else {
     const counts = async () => one(

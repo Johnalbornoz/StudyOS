@@ -88,6 +88,8 @@ describe('B2-B2 legacy blueprint readers are explicit', () => {
       'src/lib/exam-core/question-bank/health.service.ts x1',
       'src/lib/exam-core/question-bank/review.service.ts x1',
       'src/lib/institution/intelligence-context.service.ts x1',
+      // curriculum convergence: the academic subjects a prepared exam assesses (legacy blueprint, read-only)
+      'src/lib/learning-plan/curriculum.service.ts x1',
       'src/lib/learning-plan/exam-bridge.service.ts x1',
       'src/lib/simulation/post-exam-diagnosis.service.ts x1',
       'src/lib/teacher/class-progress.service.ts x1',

@@ -136,15 +136,41 @@ export async function resolveCurriculumContext(
 }
 
 /**
- * The academic subjects the Student EXPLICITLY has, in authority order: the exams they prepare (newest first;
- * objective-first profiles resolve through the governed objective), then the subjects they selected in their
- * Academic Profile, in the order they selected them. Nothing else names a curriculum for a Student.
+ * The academic subjects the Student EXPLICITLY has, in authority order:
+ *   1. the exams they prepare, newest first (objective-first profiles resolve through the governed objective):
+ *      the exam definition's own academic subject, then the academic subjects the exam version ASSESSES --
+ *      exam version -> PUBLISHED legacy blueprint (`purpose IS NULL`, as every existing flow) -> objective targets -> learning objectives -> PUBLISHED structure
+ *      version -> academic subject. A multi-section exam (PAA: Lectura, Redacción, Matemáticas, Inglés) names
+ *      one academic subject per section this way; nothing is matched by name.
+ *   2. the subjects they selected in their Academic Profile, in the order they selected them.
+ * Nothing else names a curriculum for a Student.
  */
 export async function studentExplicitAcademicSubjects(studentId: string): Promise<Array<{ academicSubjectId: string; source: ExplicitSubjectSource }>> {
   const named: Array<{ academicSubjectId: string; source: ExplicitSubjectSource }> = [];
   const profiles = await learnerExamProfiles([studentId], 'ACTIVE').catch(() => []);
   const resolved = await resolveExamProfiles(profiles).catch(() => new Map());
-  for (const p of profiles) for (const id of resolved.get(p.id)?.academicSubjectIds ?? []) named.push({ academicSubjectId: id, source: 'EXAM_PROFILE' });
+  const versionIds = [...new Set(profiles.flatMap((p) => resolved.get(p.id)?.versionIds ?? []))] as string[];
+  const assessed = versionIds.length
+    ? await db
+        .query(
+          `SELECT DISTINCT b.exam_version_id, sv.academic_subject_id, asub.name
+             FROM assessment_blueprints b
+             JOIN blueprint_objective_targets t ON t.blueprint_id = b.id
+             JOIN learning_objectives lo ON lo.id = t.learning_objective_id AND lo.status = 'ACTIVE'
+             JOIN structure_nodes sn ON sn.id = lo.structure_node_id
+             JOIN structure_versions sv ON sv.id = sn.structure_version_id AND sv.status = 'PUBLISHED'
+             JOIN academic_subjects asub ON asub.id = sv.academic_subject_id
+            WHERE b.exam_version_id = ANY($1::uuid[]) AND b.status = 'PUBLISHED' AND b.purpose IS NULL
+            ORDER BY asub.name, sv.academic_subject_id`,
+          [versionIds]
+        )
+        .catch(() => ({ rows: [] as any[] }))
+    : { rows: [] as any[] };
+  for (const p of profiles) {
+    const r = resolved.get(p.id);
+    for (const id of r?.academicSubjectIds ?? []) named.push({ academicSubjectId: id, source: 'EXAM_PROFILE' });
+    for (const row of assessed.rows) if ((r?.versionIds ?? []).includes(row.exam_version_id)) named.push({ academicSubjectId: row.academic_subject_id as string, source: 'EXAM_PROFILE' });
+  }
   const selected = await db
     .query(`SELECT academic_subject_id FROM student_academic_subjects WHERE student_id = $1 AND ended_at IS NULL ORDER BY created_at, academic_subject_id`, [studentId])
     .catch(() => ({ rows: [] as any[] }));

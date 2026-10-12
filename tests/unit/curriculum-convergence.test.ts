@@ -78,6 +78,16 @@ describe('curriculum resolution fails closed', () => {
     expect(decision).not.toMatch(/conceptCount|\.sort\(|options\[\d\]|\[0\]/);
   });
 
+  it('an exam the Student prepares names the academic subjects it assesses through its published blueprint, never by name', () => {
+    const service = code('src/lib/learning-plan/curriculum.service.ts');
+    const fn = service.slice(service.indexOf('export async function studentExplicitAcademicSubjects'), service.indexOf('async function describeExplicitSubjects'));
+    expect(fn).toMatch(/FROM assessment_blueprints b\s+JOIN blueprint_objective_targets t ON t\.blueprint_id = b\.id\s+JOIN learning_objectives lo ON lo\.id = t\.learning_objective_id AND lo\.status = 'ACTIVE'\s+JOIN structure_nodes sn ON sn\.id = lo\.structure_node_id\s+JOIN structure_versions sv ON sv\.id = sn\.structure_version_id AND sv\.status = 'PUBLISHED'/);
+    expect(fn).toMatch(/WHERE b\.exam_version_id = ANY\(\$1::uuid\[\]\) AND b\.status = 'PUBLISHED'/);
+    expect(fn).not.toMatch(/LIKE|lower\(|count\(/i);
+    // exam preparations come before Academic Profile selections
+    expect(fn.indexOf("source: 'EXAM_PROFILE'")).toBeLessThan(fn.indexOf("source: 'ACADEMIC_PROFILE'"));
+  });
+
   it('a Teacher class with no bound curriculum gets no borrowed structure ("covering most of its concepts" is gone)', () => {
     const service = code('src/lib/teacher/class-progress.service.ts');
     expect(service).not.toMatch(/ORDER BY COUNT\(DISTINCT ocm\.canonical_concept_id\) DESC/);
