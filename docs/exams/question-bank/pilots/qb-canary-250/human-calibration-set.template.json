@@ -1,0 +1,72 @@
+{
+  "kind": "STUDYUS_HUMAN_CALIBRATION_SET",
+  "version": "1",
+  "about": "Judgements of qualified people on a sample of canary items, beside the AI decision on each. Dev-test content; a calibration label is not a Question Bank approval.",
+  "notForRescoring": "Calibration answers improve the NEXT reviewer, generator and validator versions. They must not be used to silently rescore this same canary as independent certification evidence.",
+  "vocabularies": {
+    "defectClass": {
+      "id": "studyus-calibration-defect-class",
+      "version": "1"
+    },
+    "severity": {
+      "id": "studyus-calibration-severity",
+      "version": "1"
+    }
+  },
+  "source": {
+    "canary": "qb-canary-250",
+    "runId": null,
+    "freezeCommitSha": null,
+    "freezeManifestHash": null,
+    "sampleProcedure": {
+      "id": "studyus-human-calibration-sample-procedure",
+      "version": "1"
+    },
+    "reviewerVersion": "studyus-ai-item-reviewer@1"
+  },
+  "rows": [],
+  "vocabularyValues": {
+    "defectClass": {
+      "id": "studyus-calibration-defect-class",
+      "version": "1",
+      "status": "PROPOSED",
+      "values": [
+        "NONE",
+        "WRONG_KEY",
+        "WRONG_MATHEMATICS",
+        "AMBIGUOUS_OR_MULTIPLE_ANSWERS",
+        "CONSTRUCT_NOT_MEASURED",
+        "ANSWER_GIVEN_AWAY",
+        "PROFILE_MISMATCH",
+        "RESPONSE_FORMAT_DEFECT",
+        "MARK_SCHEME_DEFECT",
+        "DISTRACTOR_DEFECT",
+        "STIMULUS_DEFECT",
+        "DIFFICULTY_MISMATCH",
+        "LANGUAGE_OR_CLARITY",
+        "IMPLAUSIBLE_CONTEXT",
+        "FAIRNESS_OR_BIAS",
+        "ORIGINALITY_CONCERN",
+        "LINEAGE_OR_METADATA",
+        "OTHER"
+      ]
+    },
+    "severity": {
+      "id": "studyus-calibration-severity",
+      "version": "1",
+      "status": "PROPOSED",
+      "values": [
+        "NONE",
+        "MINOR",
+        "MAJOR",
+        "CRITICAL"
+      ],
+      "meanings": {
+        "NONE": "no defect",
+        "MINOR": "usable; a small edit would improve it",
+        "MAJOR": "not usable without a substantive change",
+        "CRITICAL": "wrong or harmful: a learner would be taught or scored wrongly"
+      }
+    }
+  }
+}

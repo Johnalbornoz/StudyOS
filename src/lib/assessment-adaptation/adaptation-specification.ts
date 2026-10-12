@@ -22,13 +22,15 @@ import { z } from 'zod';
 import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
 import { CALCULATOR_POLICIES, ConceptReferenceSchema, CONTEXT_KINDS, ELICITATION_FORMATS, EVIDENCE_ACTIONS, EvidenceTargetSchema, FAMILY_LIFECYCLES, FAMILY_REVIEW_STATUSES, TASK_DIFFICULTY_BANDS } from '@/lib/exam-core/question-bank/task-families/task-family';
 import { APPLICABILITY_BASES, APPLICABILITY_STATUSES, ApplicabilityEvidenceSchema } from './assessment-applicability';
-import { AUTHENTICITY_REQUIREMENTS, MARK_STRUCTURES, PROFILE_STATUSES, REASONING_DEPTHS, RUBRIC_STYLES, RULE_AUTHORITIES, STIMULUS_MODES, TRANSFER_EXPECTATIONS } from './assessment-system-profile';
+import { AuthorityVersionBindingSchema, AUTHENTICITY_REQUIREMENTS, MARK_STRUCTURES, PROFILE_STATUSES, REASONING_DEPTHS, RUBRIC_STYLES, RULE_AUTHORITIES, STIMULUS_MODES, TRANSFER_EXPECTATIONS } from './assessment-system-profile';
 import { sha256OfCanonicalJson } from './canonical-hash';
-import { NUMERIC_PROFILES, VARIABLE_DIMENSIONS } from './discipline-policy';
+import { MARK_POINT_KINDS, MARK_SCORING_KINDS, NUMERIC_PROFILES, VARIABLE_DIMENSIONS } from './discipline-policy';
 import { ADAPTATION_POOLS, CONTENT_USE_CLASSES, INSTANCE_CLASSES, INSTANCE_PURPOSES } from './instance-lineage';
+import { APPROACH_DIMENSIONS, APPROACH_PARTICIPATION_MODES, APPROACH_STATUSES, EVIDENCE_YIELDS, PREFERENCE_STRENGTHS } from '@/lib/learning-approach/learning-approach-profile';
+import { CURRICULUM_STRUCTURE_STATUSES, ENTITLEMENT_BASES } from '@/lib/learning-approach/institution-configuration';
 
 export const ADAPTATION_SPECIFICATION_VERSION = 2 as const;
-export const ADAPTATION_ENGINE = { id: 'studyus-adaptation-engine', version: '2' } as const;
+export const ADAPTATION_ENGINE = { id: 'studyus-adaptation-engine', version: '3' } as const;
 
 const ID = z.string().trim().min(1).max(200);
 const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
@@ -57,6 +59,8 @@ export const AdaptationRequestSchema = z.strictObject({
   requirementCellKey: ID.nullable().optional(),
   /** Default NOT_REQUIRED for dev-test content; evidence-bearing content requires ESTABLISHED regardless. */
   applicabilityRequirement: z.enum(APPLICABILITY_REQUIREMENTS).optional(),
+  /** EA-1A, optional (default INDIVIDUAL). COLLABORATIVE needs an approach and a family that support it, and is never evidence-bearing. */
+  participationMode: z.enum(APPROACH_PARTICIPATION_MODES).optional(),
   /** Exists so that asking is refused BY NAME: any member present is a request to change an invariant. */
   invariantOverrides: z.strictObject({ primaryConceptStableId: ID.optional(), construct: z.unknown().optional(), evidenceActions: z.array(z.enum(EVIDENCE_ACTIONS)).optional(), evidenceObject: z.string().optional() }).optional(),
 });
@@ -70,16 +74,22 @@ export const ADAPTATION_REFUSAL_CODES = [
   'RESPONSE_FORMAT_NOT_ALLOWED', 'CONTEXT_NOT_ALLOWED', 'PROFILE_REQUIRES_CONTEXT_FAMILY_CANNOT_PROVIDE', 'PROFILE_REQUIRES_TRANSFER_FAMILY_CANNOT_PROVIDE',
   'TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE', 'TOOL_POLICY_NOT_ALLOWED_BY_PROFILE', 'STIMULUS_REQUIRED_BY_FAMILY_NOT_OFFERED_BY_PROFILE',
   'COMMAND_TERM_NOT_IN_PROFILE_VOCABULARY', 'PROFILE_COMPETENCY_NOT_ELICITED',
+  // EA-1A: locked rulings, the learning approach and the curriculum
+  'ASSESSMENT_PROFILE_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT', 'DEV_TEST_CONTENT_NOT_ALLOWED_FOR_PURPOSE',
+  'LEARNING_APPROACH_INVALID', 'LEARNING_APPROACH_NOT_CERTIFIED_FOR_EVIDENCE_BEARING_CONTENT', 'LEARNING_APPROACH_REQUIREMENT_UNMET', 'PARTICIPATION_MODE_NOT_ALLOWED', 'COLLABORATIVE_ACTIVITY_IS_NOT_INDIVIDUAL_EVIDENCE',
+  'CURRICULUM_PROFILE_INVALID', 'CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED',
+  // QB-R2E: a mark structure of marked parts cannot be carried by a closed response format
+  'MARK_STRUCTURE_NOT_REALISABLE_BY_RESPONSE_FORMAT',
 ] as const;
 export type AdaptationRefusalCode = (typeof ADAPTATION_REFUSAL_CODES)[number];
 export interface AdaptationRefusal { code: AdaptationRefusalCode; detail: string }
 
 /** Where the value of a variable dimension came from. A dimension may have several contributors. */
 /** A profile rule says which level it came from: the system's common rule, or a component's override. */
-export const PROVENANCE_ORIGINS = ['REQUEST', 'SYSTEM_PROFILE_RULE', 'COMPONENT_PROFILE_RULE', 'POLICY_RULE', 'FAMILY'] as const;
+export const PROVENANCE_ORIGINS = ['REQUEST', 'SYSTEM_PROFILE_RULE', 'COMPONENT_PROFILE_RULE', 'POLICY_RULE', 'FAMILY', 'LEARNING_APPROACH_PREFERENCE'] as const;
 export const FieldProvenanceSchema = z.strictObject({
   origin: z.enum(PROVENANCE_ORIGINS),
-  /** The profile rule id, the policy rule id, the family field or lever, or the request field. */
+  /** The profile rule id, the policy rule id, the family field or lever, the request field, or the approach preference id. */
   ref: ID,
   /** The authority of a profile or policy rule; null for a request or a family field. */
   authority: z.enum(RULE_AUTHORITIES).nullable(),
@@ -99,13 +109,42 @@ export const InvariantsSchema = z.strictObject({
 });
 export type AdaptationInvariants = z.infer<typeof InvariantsSchema>;
 
+/** How an approach's preference fared. An unmet preference is recorded, never dropped. */
+export const UnmetPreferenceSchema = z.strictObject({
+  preferenceId: ID, dimension: z.enum(APPROACH_DIMENSIONS), strength: z.enum(PREFERENCE_STRENGTHS),
+  wanted: z.array(ID).min(1), decided: ID,
+  /** The rule, field or request that decided otherwise, with its authority: OFFICIAL when an official assessment constraint won. */
+  overriddenBy: FieldProvenanceSchema,
+  /**
+   * D6: the certification status of the profile (system or component) that owns the overriding rule; null when the
+   * overrider is a family field or the request. A PROVISIONAL rule can only ever be recorded on dev-test content:
+   * evidence-bearing content is refused unless every profile is CERTIFIED.
+   */
+  overridingRuleCertification: z.enum(PROFILE_STATUSES).nullable(),
+});
+export const LearningApproachResolutionSchema = z
+  .strictObject({
+    approachId: ID, version: ID, status: z.enum(APPROACH_STATUSES), authority: z.literal('STUDYUS_POLICY'), contentHash: SHA256,
+    /** The approach's transversal competencies, by catalogue code, and whether THIS family declares it can evidence each. */
+    transversalCompetencies: z.array(z.strictObject({ key: ID, code: ID, catalogueStatus: z.enum(['IN_CATALOGUE', 'NOT_YET_IN_CATALOGUE']), servedByFamily: z.boolean() })),
+    participation: z.strictObject({ mode: z.enum(APPROACH_PARTICIPATION_MODES), evidenceYield: z.enum(EVIDENCE_YIELDS) }),
+    honouredPreferences: z.array(z.strictObject({ preferenceId: ID, dimension: z.enum(APPROACH_DIMENSIONS), decided: ID })),
+    unmetPreferences: z.array(UnmetPreferenceSchema),
+  })
+  .superRefine((a, ctx) => {
+    // STANDARD is recorded by absence: a specification never carries it
+    if (a.approachId === 'STANDARD') ctx.addIssue({ code: 'custom', path: ['approachId'], message: 'STANDARD_IS_RECORDED_BY_ABSENCE' });
+  });
+export type LearningApproachResolution = z.infer<typeof LearningApproachResolutionSchema>;
+
 export const AdaptationSpecificationSchema = z.strictObject({
   v: z.literal(ADAPTATION_SPECIFICATION_VERSION),
   specificationId: SHA256,
   taskFamily: z.strictObject({ familyId: ID, version: ID, familyType: ID, lifecycle: z.enum(FAMILY_LIFECYCLES), reviewStatus: z.enum(FAMILY_REVIEW_STATUSES) }),
-  systemProfile: z.strictObject({ profileId: ID, version: ID, status: z.enum(PROFILE_STATUSES), examFamilyCode: z.enum(EXAM_FAMILIES).nullable() }),
+  /** `versionBinding` is present only when the system profile holds an OFFICIAL rule of its own (D1). */
+  systemProfile: z.strictObject({ profileId: ID, version: ID, status: z.enum(PROFILE_STATUSES), examFamilyCode: z.enum(EXAM_FAMILIES).nullable(), versionBinding: AuthorityVersionBindingSchema.optional() }),
   /** The concrete component the specification targets. null = the system profile only: generic practice that needed no component-specific behaviour. */
-  componentProfile: z.strictObject({ componentId: ID, version: ID, status: z.enum(PROFILE_STATUSES), localSubject: ID.nullable() }).nullable(),
+  componentProfile: z.strictObject({ componentId: ID, version: ID, status: z.enum(PROFILE_STATUSES), localSubject: ID.nullable(), versionBinding: AuthorityVersionBindingSchema.nullable() }).nullable(),
   disciplinePolicy: z.strictObject({ policyId: ID, version: ID, discipline: ID }),
   /** The ONE concept an instance of this specification is direct evidence of. */
   primaryConcept: ConceptReferenceSchema,
@@ -127,16 +166,42 @@ export const AdaptationSpecificationSchema = z.strictObject({
   invariants: InvariantsSchema,
   invariantHash: SHA256,
   variable: z.strictObject({
-    context: z.strictObject({ kind: z.enum(CONTEXT_KINDS), authenticity: z.enum(AUTHENTICITY_REQUIREMENTS), transfer: z.enum(TRANSFER_EXPECTATIONS) }),
+    /** `situation` (QB-R2E, optional): the family's own description of what a context of that kind is for this task. */
+    context: z.strictObject({ kind: z.enum(CONTEXT_KINDS), authenticity: z.enum(AUTHENTICITY_REQUIREMENTS), transfer: z.enum(TRANSFER_EXPECTATIONS), situation: z.string().trim().min(3).max(400).optional() }),
     responseFormat: z.strictObject({ format: z.enum(ELICITATION_FORMATS), productionFormat: z.enum(['MULTIPLE_CHOICE', 'STUDENT_PRODUCED']).nullable() }),
     reasoningDepth: z.strictObject({ depth: z.enum(REASONING_DEPTHS), workingShown: z.boolean(), justificationRequired: z.boolean() }),
     commandTerm: z.string().nullable(),
+    /**
+     * QB-R2E, OPTIONAL. Present exactly when the profile has a controlled vocabulary. `commandTerm` above stays the
+     * LEAD term (the one that suits the first action of the evidence target); a task of several parts needs more than
+     * one, so the specification carries the whole vocabulary the profile records and, for each action of the
+     * evidence target, the terms of it that suit that action. No term is invented: every one is the profile's.
+     */
+    commandTerms: z.strictObject({
+      allowed: z.array(z.string().trim().min(2).max(60)).min(1), lead: z.string().trim().min(2).max(60),
+      byEvidenceAction: z.record(z.string(), z.array(z.string().trim().min(2).max(60))),
+      perPart: z.literal('EACH_PART_USES_ONE_ALLOWED_TERM'),
+      provenance: z.array(FieldProvenanceSchema).min(1),
+    }).optional(),
     stimulus: z.strictObject({ mode: z.enum(STIMULUS_MODES), kinds: z.array(ID) }),
     /** Codes of the SYSTEM's competency model this instance would count under. Empty when the system has none. */
     competencies: z.array(ID),
     /** Seconds the system's published totals leave per item or per mark; null when it publishes none. */
     timeBudget: z.strictObject({ secondsPerUnit: z.number().positive().nullable(), unit: z.enum(['ITEM', 'MARK']).nullable() }),
     markStructure: z.enum(MARK_STRUCTURES),
+    /**
+     * QB-R2E, OPTIONAL (absent on a specification made before it). What `markStructure` means for THIS instance:
+     * how it is scored, the range its total marks may take, how many parts, which kinds of mark point, whether it
+     * carries coded credit levels -- and who decided each (provenance, with authority).
+     */
+    marks: z.strictObject({
+      scoredAs: z.enum(MARK_SCORING_KINDS),
+      total: z.strictObject({ min: z.number().int().min(1), max: z.number().int().min(1) }),
+      parts: z.strictObject({ min: z.number().int().min(1), max: z.number().int().min(1) }).nullable(),
+      markPointKinds: z.array(z.enum(MARK_POINT_KINDS)),
+      creditLevels: z.boolean(),
+      provenance: z.array(FieldProvenanceSchema).min(1),
+    }).optional(),
     rubricStyle: z.enum(RUBRIC_STYLES),
     toolPolicy: z.strictObject({ calculator: z.enum(CALCULATOR_POLICIES) }),
     numericProfile: z.enum(NUMERIC_PROFILES),
@@ -156,6 +221,21 @@ export const AdaptationSpecificationSchema = z.strictObject({
   lineage: z.strictObject({ engine: z.strictObject({ id: ID, version: ID }), familyContentHash: SHA256, systemProfileContentHash: SHA256, componentProfileContentHash: SHA256.nullable(), policyContentHash: SHA256, requestHash: SHA256 }),
   /** When the adaptation was made. Passed in; not part of the identity. */
   adaptedAt: z.string().datetime({ offset: true }).nullable(),
+  /**
+   * EA-1A, OPTIONAL. The learning approach the specification was resolved under: what it emphasised, how the
+   * learner takes part, which of its preferences were honoured and which could not be -- each unmet one with what
+   * was wanted, what was decided and the rule that overrode it. ABSENT under STANDARD or under no approach: the
+   * default is recorded by absence, so a specification made before approaches existed is unchanged.
+   */
+  learningApproach: LearningApproachResolutionSchema.optional(),
+  /**
+   * EA-1A, OPTIONAL. The curriculum the content is for, as a reference, and whether the concept's ENTITLEMENT under
+   * it is established from what the repository records. Absent when no curriculum was named.
+   */
+  curriculumContext: z.strictObject({
+    curriculumId: ID, country: ID, programmeName: ID, programmeVersion: ID, structureStatus: z.enum(CURRICULUM_STRUCTURE_STATUSES),
+    entitlement: z.strictObject({ status: z.enum(['ESTABLISHED', 'NOT_ESTABLISHED']), basis: z.enum(ENTITLEMENT_BASES), evidenceReferences: z.array(ID) }),
+  }).optional(),
 });
 export type AdaptationSpecification = z.infer<typeof AdaptationSpecificationSchema>;
 

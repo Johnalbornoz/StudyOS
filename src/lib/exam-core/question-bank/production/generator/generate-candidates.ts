@@ -22,6 +22,7 @@
  * originality are checked by the independent validators, which this directory must not import.
  */
 import { AdaptationSpecificationSchema, specificationIntegrityIssues, type AdaptationSpecification } from '@/lib/assessment-adaptation/adaptation-specification';
+import { assessmentSystemOfExamFamily } from '@/lib/assessment-adaptation/assessment-system-profile';
 import { generationReadyPackIssues, REFERENCE_PACK_V2_VERSION, type ConceptProfile, type ReferenceIntelligencePackV2 } from '../concept-profile';
 import { GENERATION_CONTRACT_VERSION, GenerationBatchSchema, GenerationPolicySchema, type CandidateStimulus, type GenerationBatch, type QuestionCandidate } from '../generation-contract';
 import { isBound, type RequirementCell } from '../requirement-cell';
@@ -57,7 +58,7 @@ export interface GenerationPrompt {
     references: { sources: Array<{ sourceKey: string; sourceType: string; title: string; permittedUse: string }>; facts: Array<{ kind: string; statement: string }> };
     responseSchema: { id: string; version: string; shape: typeof RESPONSE_SHAPE_DESCRIPTION };
     /** EA-1. Present ONLY when a slot was given an adaptation specification; absent otherwise, so earlier prompts hash as before. */
-    adaptation?: Array<{ slotKey: string; specificationId: string; contentUseClass: string; taskFamily: { familyId: string; version: string }; systemProfile: { profileId: string; version: string }; componentProfile: { componentId: string; version: string } | null; disciplinePolicy: { policyId: string; version: string }; invariants: AdaptationSpecification['invariants']; invariantHash: string; variable: AdaptationSpecification['variable']; parameterization: unknown }>;
+    adaptation?: Array<{ slotKey: string; specificationId: string; contentUseClass: string; taskFamily: { familyId: string; version: string }; systemProfile: { profileId: string; version: string }; componentProfile: { componentId: string; version: string } | null; disciplinePolicy: { policyId: string; version: string }; invariants: AdaptationSpecification['invariants']; invariantHash: string; variable: AdaptationSpecification['variable']; parameterization: unknown; learningApproach?: { approachId: string; version: string; transversalCompetencies: Array<{ key: string; code: string; servedByFamily: boolean }>; participation: { mode: string; evidenceYield: string } } }>;
   };
 }
 
@@ -108,7 +109,7 @@ function adaptationOf(input: GenerateCandidatesInput, unit: GenerationUnit, cell
     const spec = AdaptationSpecificationSchema.parse(given[key]);
     const cell = cells[i];
     const misfit =
-      spec.systemProfile.examFamilyCode !== cell.examFamily ? 'EXAM_FAMILY'
+      spec.systemProfile.examFamilyCode !== assessmentSystemOfExamFamily(cell.examFamily).systemExamFamily ? 'EXAM_FAMILY'
       : spec.primaryConcept.stableId !== cell.primaryConcept.stableId || spec.primaryConcept.canonicalSubject !== cell.primaryConcept.canonicalSubject ? 'PRIMARY_CONCEPT'
       : spec.variable.responseFormat.productionFormat !== cell.responseFormat ? 'RESPONSE_FORMAT'
       : spec.variable.difficulty.band !== cell.difficultyBand ? 'DIFFICULTY_BAND'
@@ -166,7 +167,9 @@ function prepare(input: GenerateCandidatesInput): Prepared {
       // the member exists only when a specification was given: a prompt without one is byte-identical to what it was
       ...(adaptation.size > 0 ? { adaptation: slots.filter((s) => adaptation.has(s.slotKey)).map((s) => {
         const a = adaptation.get(s.slotKey)!;
-        return { slotKey: s.slotKey, specificationId: a.specificationId, contentUseClass: a.contentUseClass, taskFamily: { familyId: a.taskFamily.familyId, version: a.taskFamily.version }, systemProfile: { profileId: a.systemProfile.profileId, version: a.systemProfile.version }, componentProfile: a.componentProfile ? { componentId: a.componentProfile.componentId, version: a.componentProfile.version } : null, disciplinePolicy: { policyId: a.disciplinePolicy.policyId, version: a.disciplinePolicy.version }, invariants: a.invariants, invariantHash: a.invariantHash, variable: a.variable, parameterization: a.parameterization };
+        return { slotKey: s.slotKey, specificationId: a.specificationId, contentUseClass: a.contentUseClass, taskFamily: { familyId: a.taskFamily.familyId, version: a.taskFamily.version }, systemProfile: { profileId: a.systemProfile.profileId, version: a.systemProfile.version }, componentProfile: a.componentProfile ? { componentId: a.componentProfile.componentId, version: a.componentProfile.version } : null, disciplinePolicy: { policyId: a.disciplinePolicy.policyId, version: a.disciplinePolicy.version }, invariants: a.invariants, invariantHash: a.invariantHash, variable: a.variable, parameterization: a.parameterization,
+          // EA-1A: present only under a non-STANDARD learning approach, so a specification without one renders the prompt it rendered before
+          ...(a.learningApproach ? { learningApproach: { approachId: a.learningApproach.approachId, version: a.learningApproach.version, transversalCompetencies: a.learningApproach.transversalCompetencies.map((c) => ({ key: c.key, code: c.code, servedByFamily: c.servedByFamily })), participation: a.learningApproach.participation } } : {}) };
       }) } : {}),
     },
   };
@@ -249,7 +252,7 @@ export async function generateCandidates(input: GenerateCandidatesInput): Promis
         kind: 'MODEL', model: input.provider.model, promptVersion: `${p.template.id}@${p.template.version}`, runId: input.runId, requestedBy: author.requestedBy, generatedAt: input.now, humanEdits: [],
         provider: input.provider.id, generationPolicy: { id: p.policy.policyId, version: p.policy.policyVersion }, template: { id: p.template.id, version: p.template.version }, promptHash: p.rendered.promptHash, generationUnitKey: p.unit.unitKey, requirementCellKey: cell.cellKey,
         referencePack: { version: REFERENCE_PACK_V2_VERSION, conceptProfileVersion: pack.conceptProfile.v, conceptProfilePackVersion: pack.conceptProfile.packVersion },
-        ...(adapted ? { adaptation: { taskFamily: { id: adapted.taskFamily.familyId, version: adapted.taskFamily.version }, systemProfile: { id: adapted.systemProfile.profileId, version: adapted.systemProfile.version }, componentProfile: adapted.componentProfile ? { id: adapted.componentProfile.componentId, version: adapted.componentProfile.version } : null, disciplinePolicy: { id: adapted.disciplinePolicy.policyId, version: adapted.disciplinePolicy.version }, adaptationSpecificationId: adapted.specificationId, invariantHash: adapted.invariantHash, contentUseClass: adapted.contentUseClass, generationRunId: input.runId } } : {}),
+        ...(adapted ? { adaptation: { taskFamily: { id: adapted.taskFamily.familyId, version: adapted.taskFamily.version }, systemProfile: { id: adapted.systemProfile.profileId, version: adapted.systemProfile.version }, componentProfile: adapted.componentProfile ? { id: adapted.componentProfile.componentId, version: adapted.componentProfile.version } : null, disciplinePolicy: { id: adapted.disciplinePolicy.policyId, version: adapted.disciplinePolicy.version }, adaptationSpecificationId: adapted.specificationId, invariantHash: adapted.invariantHash, contentUseClass: adapted.contentUseClass, generationRunId: input.runId, ...(adapted.learningApproach ? { learningApproach: { id: adapted.learningApproach.approachId, version: adapted.learningApproach.version } } : {}) } } : {}),
       },
       instruction: p.template.fixedInstruction[language]?.[cell.responseFormat] ?? null, slotKey: slot.slotKey, stimulusPlanId,
       ...(item.answerCheck ? { answerCheck: item.answerCheck } : {}), ...(item.numericKey ? { numericKey: item.numericKey } : {}), ...(item.usesStimulusValues ? { usesStimulusValues: item.usesStimulusValues } : {}),

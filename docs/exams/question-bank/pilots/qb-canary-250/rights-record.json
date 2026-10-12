@@ -1,0 +1,1588 @@
+{
+  "kind": "QB_CANARY_250_RIGHTS_RECORD",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- RIGHTS_NOT_ESTABLISHED -- AUTOMATED VALIDATION AND AI REVIEW ONLY, NO HUMAN REVIEW",
+  "freeze": {
+    "freezeCommitSha": "f445e7afa89cffd69865fd3f9dbf9d98bdddb1f9",
+    "manifestHash": "51baba1bbecf12f399b997b65e525e0db169fa12ccca8e21f855cd360c7d2191"
+  },
+  "run": {
+    "runId": "qb-canary-250-20261011205000",
+    "startedAt": "2026-10-11T20:50:00.030Z"
+  },
+  "versions": {
+    "generator": {
+      "harness": {
+        "id": "studyus-specification-generation-harness",
+        "version": "3"
+      },
+      "slotGuidance": {
+        "id": "qb-canary-250-slot-guidance",
+        "version": "1"
+      }
+    },
+    "validators": {
+      "revision": 4
+    },
+    "reviewer": {
+      "id": "studyus-ai-item-reviewer",
+      "version": "1",
+      "promptVersion": "1",
+      "schemaVersion": "1",
+      "redactionVersion": "1",
+      "decisionPolicyVersion": "1"
+    }
+  },
+  "contentUseClass": "DEV_TEST_CONTENT",
+  "rights": "RIGHTS_NOT_ESTABLISHED",
+  "ownership": "NOT_CLAIMED",
+  "statement": "Model output generated for a development test. No rights are established and no ownership is claimed. Nothing here is ingested, pooled, approved or delivered to a learner.",
+  "candidates": [
+    {
+      "slotId": "c250-001",
+      "candidateKey": "cand|c250-001#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-003",
+      "candidateKey": "cand|c250-003#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-004",
+      "candidateKey": "cand|c250-004#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-005",
+      "candidateKey": "cand|c250-005#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-006",
+      "candidateKey": "cand|c250-006#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-007",
+      "candidateKey": "cand|c250-007#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-008",
+      "candidateKey": "cand|c250-008#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-009",
+      "candidateKey": "cand|c250-009#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-010",
+      "candidateKey": "cand|c250-010#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-011",
+      "candidateKey": "cand|c250-011#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-012",
+      "candidateKey": "cand|c250-012#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-013",
+      "candidateKey": "cand|c250-013#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-014",
+      "candidateKey": "cand|c250-014#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-015",
+      "candidateKey": "cand|c250-015#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-016",
+      "candidateKey": "cand|c250-016#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-017",
+      "candidateKey": "cand|c250-017#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-018",
+      "candidateKey": "cand|c250-018#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-019",
+      "candidateKey": "cand|c250-019#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-020",
+      "candidateKey": "cand|c250-020#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-021",
+      "candidateKey": "cand|c250-021#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-022",
+      "candidateKey": "cand|c250-022#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-023",
+      "candidateKey": "cand|c250-023#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-024",
+      "candidateKey": "cand|c250-024#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-025",
+      "candidateKey": "cand|c250-025#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-026",
+      "candidateKey": "cand|c250-026#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-027",
+      "candidateKey": "cand|c250-027#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-029",
+      "candidateKey": "cand|c250-029#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-030",
+      "candidateKey": "cand|c250-030#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-032",
+      "candidateKey": "cand|c250-032#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-033",
+      "candidateKey": "cand|c250-033#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-034",
+      "candidateKey": "cand|c250-034#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-035",
+      "candidateKey": "cand|c250-035#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-036",
+      "candidateKey": "cand|c250-036#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-037",
+      "candidateKey": "cand|c250-037#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-038",
+      "candidateKey": "cand|c250-038#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-039",
+      "candidateKey": "cand|c250-039#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-040",
+      "candidateKey": "cand|c250-040#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-041",
+      "candidateKey": "cand|c250-041#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-043",
+      "candidateKey": "cand|c250-043#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-044",
+      "candidateKey": "cand|c250-044#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-045",
+      "candidateKey": "cand|c250-045#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-046",
+      "candidateKey": "cand|c250-046#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-047",
+      "candidateKey": "cand|c250-047#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-048",
+      "candidateKey": "cand|c250-048#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-049",
+      "candidateKey": "cand|c250-049#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-050",
+      "candidateKey": "cand|c250-050#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-051",
+      "candidateKey": "cand|c250-051#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-052",
+      "candidateKey": "cand|c250-052#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-053",
+      "candidateKey": "cand|c250-053#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-054",
+      "candidateKey": "cand|c250-054#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-055",
+      "candidateKey": "cand|c250-055#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-056",
+      "candidateKey": "cand|c250-056#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-057",
+      "candidateKey": "cand|c250-057#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-058",
+      "candidateKey": "cand|c250-058#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-059",
+      "candidateKey": "cand|c250-059#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-060",
+      "candidateKey": "cand|c250-060#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-061",
+      "candidateKey": "cand|c250-061#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-062",
+      "candidateKey": "cand|c250-062#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-063",
+      "candidateKey": "cand|c250-063#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-064",
+      "candidateKey": "cand|c250-064#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-065",
+      "candidateKey": "cand|c250-065#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-066",
+      "candidateKey": "cand|c250-066#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-067",
+      "candidateKey": "cand|c250-067#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-068",
+      "candidateKey": "cand|c250-068#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-069",
+      "candidateKey": "cand|c250-069#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-070",
+      "candidateKey": "cand|c250-070#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-071",
+      "candidateKey": "cand|c250-071#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-073",
+      "candidateKey": "cand|c250-073#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-074",
+      "candidateKey": "cand|c250-074#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-075",
+      "candidateKey": "cand|c250-075#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-076",
+      "candidateKey": "cand|c250-076#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-077",
+      "candidateKey": "cand|c250-077#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-078",
+      "candidateKey": "cand|c250-078#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-079",
+      "candidateKey": "cand|c250-079#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-080",
+      "candidateKey": "cand|c250-080#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-082",
+      "candidateKey": "cand|c250-082#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-084",
+      "candidateKey": "cand|c250-084#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-085",
+      "candidateKey": "cand|c250-085#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-086",
+      "candidateKey": "cand|c250-086#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-087",
+      "candidateKey": "cand|c250-087#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-088",
+      "candidateKey": "cand|c250-088#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-089",
+      "candidateKey": "cand|c250-089#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-090",
+      "candidateKey": "cand|c250-090#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-091",
+      "candidateKey": "cand|c250-091#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-092",
+      "candidateKey": "cand|c250-092#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-093",
+      "candidateKey": "cand|c250-093#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-094",
+      "candidateKey": "cand|c250-094#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-096",
+      "candidateKey": "cand|c250-096#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-097",
+      "candidateKey": "cand|c250-097#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-098",
+      "candidateKey": "cand|c250-098#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-099",
+      "candidateKey": "cand|c250-099#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-100",
+      "candidateKey": "cand|c250-100#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-101",
+      "candidateKey": "cand|c250-101#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-102",
+      "candidateKey": "cand|c250-102#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-103",
+      "candidateKey": "cand|c250-103#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-104",
+      "candidateKey": "cand|c250-104#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-105",
+      "candidateKey": "cand|c250-105#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-106",
+      "candidateKey": "cand|c250-106#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-107",
+      "candidateKey": "cand|c250-107#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-108",
+      "candidateKey": "cand|c250-108#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-109",
+      "candidateKey": "cand|c250-109#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-110",
+      "candidateKey": "cand|c250-110#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-111",
+      "candidateKey": "cand|c250-111#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-112",
+      "candidateKey": "cand|c250-112#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-113",
+      "candidateKey": "cand|c250-113#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-114",
+      "candidateKey": "cand|c250-114#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-115",
+      "candidateKey": "cand|c250-115#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-116",
+      "candidateKey": "cand|c250-116#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-117",
+      "candidateKey": "cand|c250-117#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-118",
+      "candidateKey": "cand|c250-118#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-119",
+      "candidateKey": "cand|c250-119#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-120",
+      "candidateKey": "cand|c250-120#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-121",
+      "candidateKey": "cand|c250-121#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-122",
+      "candidateKey": "cand|c250-122#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-124",
+      "candidateKey": "cand|c250-124#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-125",
+      "candidateKey": "cand|c250-125#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-126",
+      "candidateKey": "cand|c250-126#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-127",
+      "candidateKey": "cand|c250-127#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-128",
+      "candidateKey": "cand|c250-128#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-129",
+      "candidateKey": "cand|c250-129#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-130",
+      "candidateKey": "cand|c250-130#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-131",
+      "candidateKey": "cand|c250-131#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-132",
+      "candidateKey": "cand|c250-132#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-133",
+      "candidateKey": "cand|c250-133#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-134",
+      "candidateKey": "cand|c250-134#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-135",
+      "candidateKey": "cand|c250-135#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-137",
+      "candidateKey": "cand|c250-137#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-138",
+      "candidateKey": "cand|c250-138#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-139",
+      "candidateKey": "cand|c250-139#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-140",
+      "candidateKey": "cand|c250-140#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-141",
+      "candidateKey": "cand|c250-141#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-142",
+      "candidateKey": "cand|c250-142#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-143",
+      "candidateKey": "cand|c250-143#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-144",
+      "candidateKey": "cand|c250-144#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-145",
+      "candidateKey": "cand|c250-145#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-146",
+      "candidateKey": "cand|c250-146#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-147",
+      "candidateKey": "cand|c250-147#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-148",
+      "candidateKey": "cand|c250-148#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-149",
+      "candidateKey": "cand|c250-149#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-150",
+      "candidateKey": "cand|c250-150#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-151",
+      "candidateKey": "cand|c250-151#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-153",
+      "candidateKey": "cand|c250-153#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-154",
+      "candidateKey": "cand|c250-154#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-155",
+      "candidateKey": "cand|c250-155#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-156",
+      "candidateKey": "cand|c250-156#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-158",
+      "candidateKey": "cand|c250-158#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-159",
+      "candidateKey": "cand|c250-159#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-160",
+      "candidateKey": "cand|c250-160#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-161",
+      "candidateKey": "cand|c250-161#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-162",
+      "candidateKey": "cand|c250-162#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-163",
+      "candidateKey": "cand|c250-163#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-164",
+      "candidateKey": "cand|c250-164#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-165",
+      "candidateKey": "cand|c250-165#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-166",
+      "candidateKey": "cand|c250-166#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-167",
+      "candidateKey": "cand|c250-167#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-168",
+      "candidateKey": "cand|c250-168#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-169",
+      "candidateKey": "cand|c250-169#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-170",
+      "candidateKey": "cand|c250-170#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-172",
+      "candidateKey": "cand|c250-172#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-173",
+      "candidateKey": "cand|c250-173#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-174",
+      "candidateKey": "cand|c250-174#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-175",
+      "candidateKey": "cand|c250-175#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-176",
+      "candidateKey": "cand|c250-176#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-177",
+      "candidateKey": "cand|c250-177#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-183",
+      "candidateKey": "cand|c250-183#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-184",
+      "candidateKey": "cand|c250-184#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-185",
+      "candidateKey": "cand|c250-185#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-186",
+      "candidateKey": "cand|c250-186#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-187",
+      "candidateKey": "cand|c250-187#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-191",
+      "candidateKey": "cand|c250-191#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-193",
+      "candidateKey": "cand|c250-193#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-194",
+      "candidateKey": "cand|c250-194#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-196",
+      "candidateKey": "cand|c250-196#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-199",
+      "candidateKey": "cand|c250-199#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-200",
+      "candidateKey": "cand|c250-200#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-201",
+      "candidateKey": "cand|c250-201#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-203",
+      "candidateKey": "cand|c250-203#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-204",
+      "candidateKey": "cand|c250-204#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-205",
+      "candidateKey": "cand|c250-205#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-206",
+      "candidateKey": "cand|c250-206#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-207",
+      "candidateKey": "cand|c250-207#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-208",
+      "candidateKey": "cand|c250-208#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-209",
+      "candidateKey": "cand|c250-209#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-210",
+      "candidateKey": "cand|c250-210#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-211",
+      "candidateKey": "cand|c250-211#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-212",
+      "candidateKey": "cand|c250-212#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-213",
+      "candidateKey": "cand|c250-213#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-214",
+      "candidateKey": "cand|c250-214#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-215",
+      "candidateKey": "cand|c250-215#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-216",
+      "candidateKey": "cand|c250-216#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-217",
+      "candidateKey": "cand|c250-217#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-218",
+      "candidateKey": "cand|c250-218#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-219",
+      "candidateKey": "cand|c250-219#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-220",
+      "candidateKey": "cand|c250-220#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-221",
+      "candidateKey": "cand|c250-221#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-222",
+      "candidateKey": "cand|c250-222#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-223",
+      "candidateKey": "cand|c250-223#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-224",
+      "candidateKey": "cand|c250-224#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-225",
+      "candidateKey": "cand|c250-225#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-226",
+      "candidateKey": "cand|c250-226#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-228",
+      "candidateKey": "cand|c250-228#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-229",
+      "candidateKey": "cand|c250-229#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-230",
+      "candidateKey": "cand|c250-230#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-231",
+      "candidateKey": "cand|c250-231#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-232",
+      "candidateKey": "cand|c250-232#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-233",
+      "candidateKey": "cand|c250-233#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-234",
+      "candidateKey": "cand|c250-234#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-235",
+      "candidateKey": "cand|c250-235#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-237",
+      "candidateKey": "cand|c250-237#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-238",
+      "candidateKey": "cand|c250-238#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-240",
+      "candidateKey": "cand|c250-240#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-241",
+      "candidateKey": "cand|c250-241#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-242",
+      "candidateKey": "cand|c250-242#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-243",
+      "candidateKey": "cand|c250-243#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-244",
+      "candidateKey": "cand|c250-244#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-245",
+      "candidateKey": "cand|c250-245#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-246",
+      "candidateKey": "cand|c250-246#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-247",
+      "candidateKey": "cand|c250-247#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-248",
+      "candidateKey": "cand|c250-248#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-249",
+      "candidateKey": "cand|c250-249#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    },
+    {
+      "slotId": "c250-250",
+      "candidateKey": "cand|c250-250#a1",
+      "provenance": "STUDYUS_GENERATED",
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "rights": "RIGHTS_NOT_ESTABLISHED"
+    }
+  ]
+}

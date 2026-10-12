@@ -57,6 +57,8 @@ export const AdaptationLineageSchema = z.strictObject({
   contentUseClass: z.enum(CONTENT_USE_CLASSES),
   /** The generation run that produced the instance. */
   generationRunId: ID,
+  /** EA-1A, optional: the learning approach the specification was produced under. Absent = STANDARD (or none): recorded by absence. */
+  learningApproach: VERSIONED.optional(),
 });
 export type AdaptationLineage = z.infer<typeof AdaptationLineageSchema>;
 
@@ -96,20 +98,24 @@ export type InstancePurpose = (typeof INSTANCE_PURPOSES)[number];
 export interface InstancePolicy {
   purpose: InstancePurpose;
   useClass: ContentUseClass;
-  /** The instance classes this purpose accepts for this use. */
+  /** Is this use permitted for this purpose at all? false = no instance of any class: the adaptation is refused by name. */
+  permitted: boolean;
+  /** The instance classes this purpose accepts for this use. Empty when the use is not permitted. */
   allowedClasses: readonly InstanceClass[];
-  /** The least of them. */
-  minimumClass: InstanceClass;
+  /** The least of them; null when the use is not permitted. */
+  minimumClass: InstanceClass | null;
   /**
-   * USER_DECISION: locked by the user on 2026-10-11. BRIEF: fixed by the EA-1 brief and not revisited.
-   * READING_OF_DECISION: follows from the decision's wording and is flagged for confirmation.
+   * USER_DECISION: locked by the user (2026-10-11, and the EA-1A rulings). BRIEF: fixed by the EA-1 brief and not
+   * revisited. CONSERVATIVE_READING: the rulings do not name the purpose; the stricter rule of its nearest
+   * neighbour is taken and flagged.
    */
-  basis: 'USER_DECISION' | 'BRIEF' | 'READING_OF_DECISION';
+  basis: 'USER_DECISION' | 'BRIEF' | 'CONSERVATIVE_READING';
   reason: string;
 }
 
 const BOTH: readonly InstanceClass[] = ['DYNAMIC', 'CERTIFIED_FROZEN'];
 const FROZEN: readonly InstanceClass[] = ['CERTIFIED_FROZEN'];
+const NONE: readonly InstanceClass[] = [];
 type Rule = Pick<InstancePolicy, 'allowedClasses' | 'basis' | 'reason'>;
 /** Evidence-bearing (real assessment) use, per purpose. */
 const EVIDENCE_BEARING_RULES: Record<InstancePurpose, Rule> = {
@@ -117,30 +123,45 @@ const EVIDENCE_BEARING_RULES: Record<InstancePurpose, Rule> = {
   LOW_STAKES_REINFORCEMENT: { allowedClasses: BOTH, basis: 'BRIEF', reason: 'Low-stakes reinforcement may use dynamic instances, subject to governance.' },
   DIAGNOSTIC: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'Evidence-bearing Stage / Production use of a Diagnostic requires frozen certified instances.' },
   VERIFICATION: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'Evidence-bearing Stage / Production use of a Verification requires frozen certified instances.' },
-  REDUCED_MOCK: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'A Reduced Mock in real assessment use is frozen certified content only.' },
-  FULL_MOCK_1: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'A Full Mock in real assessment use is frozen certified content only.' },
-  FULL_MOCK_2: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'A Full Mock in real assessment use is frozen certified content only.' },
+  REDUCED_MOCK: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'A Reduced Mock is frozen certified content only.' },
+  FULL_MOCK_1: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'A Full Mock is frozen certified content only.' },
+  FULL_MOCK_2: { allowedClasses: FROZEN, basis: 'USER_DECISION', reason: 'A Full Mock is frozen certified content only.' },
   BENCHMARK: { allowedClasses: FROZEN, basis: 'BRIEF', reason: 'A benchmark compares learners on the same content.' },
   CALIBRATION: { allowedClasses: FROZEN, basis: 'BRIEF', reason: 'Calibration measures one fixed item; a changing instance has no facility to measure.' },
   PILOT_CERTIFICATION: { allowedClasses: FROZEN, basis: 'BRIEF', reason: 'Pilot certification certifies specific content.' },
 };
 /**
- * Dev-test use. For DIAGNOSTIC and VERIFICATION the user's decision allows dynamic instances ONLY as dev-test
- * content. For the other purposes the decision speaks of real assessment use; that dev-test content -- which is
- * never evidence -- may be dynamic there too is this module's reading, and is marked as such.
+ * Dev-test use (EA-1A, locked -- this replaces the earlier reading that allowed it everywhere).
+ *   PRACTICE, LOW_STAKES_REINFORCEMENT   dev-test content allowed.
+ *   DIAGNOSTIC, VERIFICATION             dynamic dev-test content allowed ONLY in non-evidence test execution --
+ *                                        which is what DEV_TEST_CONTENT is: it never bears evidence.
+ *   REDUCED_MOCK, FULL_MOCK_1/2          NOT ACCEPTED. A protected mock pool takes frozen certified content only;
+ *                                        there is no dev-test mock.
+ *   BENCHMARK, CALIBRATION, PILOT_CERTIFICATION   not named by the rulings; they certify or compare on fixed
+ *                                        content like the mock pools, so dev-test content is refused there too
+ *                                        (CONSERVATIVE_READING).
  */
-const devTestRule = (purpose: InstancePurpose): Rule => ({
-  allowedClasses: BOTH,
-  basis: purpose === 'DIAGNOSTIC' || purpose === 'VERIFICATION' || purpose === 'PRACTICE' ? 'USER_DECISION' : 'READING_OF_DECISION',
-  reason: 'DEV_TEST_CONTENT is non-certifying UX content: it may be dynamic, and it is never evidence whatever its purpose.',
-});
+const DEV_TEST_RULES: Record<InstancePurpose, Rule> = {
+  PRACTICE: { allowedClasses: BOTH, basis: 'USER_DECISION', reason: 'Dev-test practice content: non-certifying, never evidence.' },
+  LOW_STAKES_REINFORCEMENT: { allowedClasses: BOTH, basis: 'BRIEF', reason: 'Dev-test reinforcement content: non-certifying, never evidence.' },
+  DIAGNOSTIC: { allowedClasses: BOTH, basis: 'USER_DECISION', reason: 'Dynamic dev-test content only in non-evidence test execution of a Diagnostic.' },
+  VERIFICATION: { allowedClasses: BOTH, basis: 'USER_DECISION', reason: 'Dynamic dev-test content only in non-evidence test execution of a Verification.' },
+  REDUCED_MOCK: { allowedClasses: NONE, basis: 'USER_DECISION', reason: 'A protected mock pool does not accept DEV_TEST_CONTENT: frozen certified content only.' },
+  FULL_MOCK_1: { allowedClasses: NONE, basis: 'USER_DECISION', reason: 'A protected mock pool does not accept DEV_TEST_CONTENT: frozen certified content only.' },
+  FULL_MOCK_2: { allowedClasses: NONE, basis: 'USER_DECISION', reason: 'A protected mock pool does not accept DEV_TEST_CONTENT: frozen certified content only.' },
+  BENCHMARK: { allowedClasses: NONE, basis: 'CONSERVATIVE_READING', reason: 'A benchmark compares learners on fixed certified content; dev-test content is refused like in a mock pool.' },
+  CALIBRATION: { allowedClasses: NONE, basis: 'CONSERVATIVE_READING', reason: 'Calibration measures certified items; dev-test content is refused like in a mock pool.' },
+  PILOT_CERTIFICATION: { allowedClasses: NONE, basis: 'CONSERVATIVE_READING', reason: 'Pilot certification certifies content; dev-test content certifies nothing.' },
+};
+/** The pools whose content is protected: they take frozen certified content only, and never DEV_TEST_CONTENT. */
+export const PROTECTED_MOCK_POOLS: readonly AdaptationPool[] = ['REDUCED_MOCK', 'FULL_MOCK_1', 'FULL_MOCK_2'];
 
 /** What an instance may be for a purpose and a use. Pure and total over the known purposes and uses; anything unknown is an error, never a default. */
 export function instancePolicyFor(purpose: string, useClass: string): InstancePolicy {
   if (!(INSTANCE_PURPOSES as readonly string[]).includes(purpose)) throw new Error(`UNKNOWN_INSTANCE_PURPOSE: ${purpose}`);
   if (!(CONTENT_USE_CLASSES as readonly string[]).includes(useClass)) throw new Error(`UNKNOWN_CONTENT_USE_CLASS: ${useClass}`);
-  const rule = useClass === 'DEV_TEST_CONTENT' ? devTestRule(purpose as InstancePurpose) : EVIDENCE_BEARING_RULES[purpose as InstancePurpose];
-  return { purpose: purpose as InstancePurpose, useClass: useClass as ContentUseClass, ...rule, minimumClass: rule.allowedClasses.includes('DYNAMIC') ? 'DYNAMIC' : 'CERTIFIED_FROZEN' };
+  const rule = (useClass === 'DEV_TEST_CONTENT' ? DEV_TEST_RULES : EVIDENCE_BEARING_RULES)[purpose as InstancePurpose];
+  return { purpose: purpose as InstancePurpose, useClass: useClass as ContentUseClass, ...rule, permitted: rule.allowedClasses.length > 0, minimumClass: rule.allowedClasses.length === 0 ? null : rule.allowedClasses.includes('DYNAMIC') ? 'DYNAMIC' : 'CERTIFIED_FROZEN' };
 }
 /** May an instance of this class be used for this purpose and this use? */
 export const instanceClassSatisfies = (actual: InstanceClass, purpose: string, useClass: string): boolean => instancePolicyFor(purpose, useClass).allowedClasses.includes(actual);
@@ -199,7 +220,7 @@ export interface InstancePairRelationship { sibling: SiblingRelationship; exposu
 
 // ------------------------------------------------------------------------------------------------ 4. evidence facets (TYPES ONLY)
 /** Dimensions along which B3 could later describe evidence. Names only: nothing here computes, weighs or writes evidence. */
-export const ADAPTATION_EVIDENCE_FACETS = ['KNOWLEDGE', 'SKILL', 'COMPETENCY', 'CONTEXT', 'TRANSFER', 'ASSESSMENT_PROFILE', 'INDEPENDENCE', 'RETENTION'] as const;
+export const ADAPTATION_EVIDENCE_FACETS = ['KNOWLEDGE', 'SKILL', 'COMPETENCY', 'CONTEXT', 'INDEPENDENCE', 'TRANSFER', 'LEARNING_APPROACH', 'ASSESSMENT_PROFILE', 'RETENTION'] as const;
 export type AdaptationEvidenceFacet = (typeof ADAPTATION_EVIDENCE_FACETS)[number];
 
 /** What an instance's lineage could later tell B3 on each facet. A shape for a future contract; unused by any engine. */
@@ -210,6 +231,12 @@ export interface EvidenceFacetCarrier {
   CONTEXT: { kind: string } | null;
   TRANSFER: { expectation: string } | null;
   ASSESSMENT_PROFILE: { profileId: string; version: string } | null;
+  /**
+   * EA-1A: the approach the content was produced under, the transversal competencies it emphasised, how the learner
+   * took part and what that can be evidence of. null = STANDARD / none. A collaborative activity yields a group
+   * artefact: it is never individual evidence by itself. B3 decides what any of this is worth; nothing here does.
+   */
+  LEARNING_APPROACH: { approachId: string; version: string; transversalCompetencyCodes: string[]; participationMode: 'INDIVIDUAL' | 'COLLABORATIVE'; evidenceYield: 'INDIVIDUAL_EVIDENCE' | 'GROUP_ARTEFACT_ONLY' } | null;
   INDEPENDENCE: InstanceIndependenceCarrier | null;
   /** Retention is a fact about WHEN evidence was produced, which no specification knows. Always null here. */
   RETENTION: null;

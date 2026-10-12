@@ -1,0 +1,1049 @@
+{
+  "kind": "QB_R2D_STANDARD_VS_STEM_PLUS_PROOF",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- AUTOMATED VALIDATION ONLY, NO HUMAN REVIEW",
+  "about": "One family (the rate-comparison model) generated under the STANDARD and the STEM_PLUS learning approach. STEM_PLUS is PROVISIONAL and uncertified; the school profile is an illustrative design. The approach changes how the knowledge is asked, never which knowledge: concept and invariant hash are compared, and every preference an assessment rule overrode is listed with that rule's authority and certification status.",
+  "familyId": "tf.math.proportion.rate-comparison-model",
+  "pairs": [
+    {
+      "why": "A target with no official constraint: the approach can act.",
+      "standard": {
+        "selectionKey": "16.approach.school.standard",
+        "targetId": "SCHOOL_STEM_PERFORMANCE",
+        "approach": "STANDARD",
+        "specificationId": "26e01f25bf8eeb55deb4ec97fc8b18d2c5106eb05fb2dad2f0f171c88e3a6d4a",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "SOCIETAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "language": "es",
+        "generated": true,
+        "unitKey": "16.approach.school.standard#a1",
+        "item": {
+          "stem": "Una cooperativa compara dos opciones para distribuir alimentos. La opción 1 entrega 20 cajas por cada 8 horas de trabajo, mientras que la opción 2 entrega 33 cajas por cada 15 horas. ¿Cuál opción ofrece la mayor cantidad de cajas por hora y por cuánto supera a la otra?",
+          "instruction": "Selecciona la única opción correcta.",
+          "declaredContext": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de la productividad de dos opciones de distribución de alimentos."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 8,
+              "q1": 20,
+              "p2": 15,
+              "q2": 33
+            }
+          },
+          "marks": 1,
+          "stimulus": null,
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "La opción 1: 20/8 = 2.5 cajas por hora y 33/15 = 2.2 cajas por hora; la opción 1 supera a la opción 2 por 0.3 cajas por hora."
+              },
+              {
+                "id": "B",
+                "text": "La opción 2, porque entrega 33 cajas y la opción 1 solo entrega 20 cajas."
+              },
+              {
+                "id": "C",
+                "text": "La opción 2: al calcular horas por caja, 15/33 es mayor que 8/20, por lo que la opción 2 tiene la mejor tasa."
+              },
+              {
+                "id": "D",
+                "text": "La opción 2, porque la diferencia entre las cantidades entregadas es 33 - 20 = 13 cajas."
+              }
+            ],
+            "answerKey": "A",
+            "target": {
+              "kind": "COMPARISON",
+              "left": "20/8",
+              "operator": ">",
+              "right": "33/15",
+              "holds": true,
+              "verdict": "OPTION_1 ofrece 0.3 cajas por hora más que OPTION_2"
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Selecciona la opción que forma ambas tasas unitarias, identifica correctamente la opción superior y calcula la diferencia de 0.3 cajas por hora."
+            },
+            {
+              "code": "PARTIAL_CREDIT",
+              "description": "No aplicable a una respuesta seleccionada única."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "Selecciona una opción basada en una cantidad aislada, una tasa invertida o una diferencia sin ajustar por el tiempo."
+            }
+          ]
+        },
+        "validation": {
+          "automatedStatus": "AUTOMATED_CHECKS_FAILED",
+          "profileCompliance": "FAIL",
+          "profileComplianceIssues": [
+            "SPECIFICATION_LEVEL:MARK_STRUCTURE_MULTI_MARK_PARTS_NOT_REALISABLE_BY_A_CLOSED_FORMAT"
+          ],
+          "constructPreservation": "WEAK",
+          "answerKey": "DETERMINISTIC_RULE_VERIFIED"
+        }
+      },
+      "stemPlus": {
+        "selectionKey": "17.approach.school.stem-plus",
+        "targetId": "SCHOOL_STEM_PERFORMANCE",
+        "approach": "STEM_PLUS",
+        "specificationId": "995b4c29713381c5be0ca629c4e0df15b66da82b152a1b8491c22a8d0fde46c7",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "SOCIETAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED"
+          },
+          "responseFormat": {
+            "format": "EXTENDED_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "JUSTIFIED_ARGUMENT",
+            "workingShown": true,
+            "justificationRequired": true
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "language": "es",
+        "generated": true,
+        "unitKey": "17.approach.school.stem-plus#a2",
+        "item": {
+          "stem": "Un ayuntamiento compara dos programas de reciclaje. En el programa 1, una inversión de 240 euros permite recoger 18 toneladas de residuos. En el programa 2, una inversión de 160 euros permite recoger 14.4 toneladas. Compara los programas mediante la cantidad de toneladas recogidas por cada euro e indica cuál conviene más y por cuánto supera al otro. Explica tu razonamiento.",
+          "instruction": "Muestra tu procedimiento.",
+          "declaredContext": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos programas municipales de reciclaje según toneladas recogidas por euro invertido."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 240,
+              "q1": 18,
+              "p2": 160,
+              "q2": 14.4
+            }
+          },
+          "marks": 7,
+          "stimulus": null,
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "totalMarks": 7,
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Calcula la tasa unitaria del programa 1, expresada en toneladas por euro.",
+                "marks": 2,
+                "markPoints": [
+                  "METHOD1",
+                  "ACCURACY1"
+                ],
+                "finalAnswer": "0.075 toneladas por euro",
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "UNIT_RATE_1"
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Calcula la tasa unitaria del programa 2 y determina cuánto difieren las dos tasas unitarias.",
+                "marks": 3,
+                "markPoints": [
+                  "METHOD1",
+                  "ACCURACY1",
+                  "REASONING1"
+                ],
+                "finalAnswer": "La tasa del programa 2 es 0.09 toneladas por euro y la diferencia entre las tasas es 0.015 toneladas por euro.",
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "UNIT_RATE_DIFFERENCE"
+                }
+              },
+              {
+                "label": "c",
+                "prompt": "Interpreta la comparación: indica qué programa ofrece el mayor rendimiento por euro y justifica tu decisión con las tasas calculadas.",
+                "marks": 2,
+                "markPoints": [
+                  "REASONING1",
+                  "ACCURACY1"
+                ],
+                "finalAnswer": "Conviene el programa 2, porque recoge 0.09 toneladas por euro frente a 0.075 toneladas por euro del programa 1; supera al programa 1 en 0.015 toneladas por euro.",
+                "target": {
+                  "kind": "VERDICT",
+                  "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+                  "value": "OPTION_2"
+                }
+              }
+            ]
+          },
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Formula ambas tasas unitarias, calcula correctamente la diferencia y justifica que el programa 2 es superior por su mayor rendimiento por euro."
+            },
+            {
+              "code": "PARTIAL_CREDIT",
+              "description": "Muestra un método proporcional pertinente y obtiene parte de las tasas o identifica correctamente el programa superior, pero contiene un error de cálculo o una justificación incompleta."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "No forma tasas unitarias pertinentes, compara únicamente cantidades totales o no ofrece un razonamiento relacionado con el rendimiento por euro."
+            }
+          ]
+        },
+        "validation": {
+          "automatedStatus": "AUTOMATED_CHECKS_PASSED",
+          "profileCompliance": "PASS",
+          "profileComplianceIssues": [],
+          "constructPreservation": "PASS",
+          "answerKey": "DETERMINISTIC_RULE_VERIFIED"
+        }
+      },
+      "curriculumKnowledgeUnchanged": {
+        "samePrimaryConcept": true,
+        "sameInvariantHash": true,
+        "sameDeclaredConstructInBothItems": true
+      },
+      "standardRecordedByAbsence": true,
+      "stemPlusRecordedExplicitly": true,
+      "specificationDimensionsChangedByTheApproach": [
+        "responseFormat",
+        "reasoningDepth",
+        "distractors"
+      ],
+      "honouredPreferences": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "dimension": "responseFormat",
+          "decided": "EXTENDED_RESPONSE"
+        },
+        {
+          "preferenceId": "stem-plus.context.situated",
+          "dimension": "context",
+          "decided": "SOCIETAL"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "dimension": "toolPolicy",
+          "decided": "ALLOWED"
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "dimension": "reasoningDepth",
+          "decided": "JUSTIFIED_ARGUMENT"
+        }
+      ],
+      "unmetPreferences": [
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "dimension": "stimulus",
+          "wanted": [
+            "OWN_STIMULUS",
+            "SHARED_STIMULUS"
+          ],
+          "decided": "NONE",
+          "overriddenBy": {
+            "origin": "FAMILY",
+            "ref": "responseConstraints.stimulusNeed",
+            "authority": null
+          },
+          "overridingRuleCertification": null
+        }
+      ],
+      "officialConstraintWon": false,
+      "observedInTheItems": {
+        "responseKind": {
+          "standard": "SELECTED",
+          "stemPlus": "CONSTRUCTED"
+        },
+        "declaredContextKind": {
+          "standard": "SOCIETAL",
+          "stemPlus": "SOCIETAL"
+        },
+        "marks": {
+          "standard": 1,
+          "stemPlus": 7
+        },
+        "reasoningMarkPoints": {
+          "standard": 0,
+          "stemPlus": 2
+        },
+        "hasStimulus": {
+          "standard": false,
+          "stemPlus": false
+        }
+      },
+      "bothGenerated": true,
+      "bothPassItemLevelAutomatedChecks": true
+    },
+    {
+      "why": "A target with OFFICIAL constraints: they win, and the unmet preferences are recorded.",
+      "standard": {
+        "selectionKey": "18.approach.paa.standard",
+        "targetId": "PAA.MATEMATICAS",
+        "approach": "STANDARD",
+        "specificationId": "435568f81541f9321230e8c23f4b92eeefdbd33d1a163edeec754cc7a97071b6",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "language": "es",
+        "generated": true,
+        "unitKey": "18.approach.paa.standard#a1",
+        "item": {
+          "stem": "Una tienda ofrece dos planes. El plan 1 cuesta 8 euros y entrega 12 unidades. El plan 2 cuesta 10 euros y entrega 14 unidades. ¿Qué comparación de proporcionalidad es correcta?",
+          "instruction": "Selecciona la única opción correcta.",
+          "declaredContext": {
+            "kind": "PERSONAL",
+            "description": "Comparación de dos planes de compra según las unidades recibidas por cada euro pagado."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 8,
+              "q1": 12,
+              "p2": 10,
+              "q2": 14
+            }
+          },
+          "marks": 1,
+          "stimulus": null,
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "El plan 1 es mejor: entrega 12 unidades frente a 14, y la diferencia entre las cantidades entregadas es 2 unidades."
+              },
+              {
+                "id": "B",
+                "text": "El plan 2 es mejor porque entrega más unidades: 14 frente a 12."
+              },
+              {
+                "id": "C",
+                "text": "El plan 1 es mejor porque entrega 1,5 unidades por euro, mientras que el plan 2 entrega 1,4; por tanto, favorece al plan 1 por 0,1 unidades por euro."
+              },
+              {
+                "id": "D",
+                "text": "El plan 2 es mejor porque su tasa inversa es mayor: 10/14 es mayor que 8/12."
+              }
+            ],
+            "answerKey": "C",
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+              "value": "OPTION_1"
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null
+        },
+        "validation": {
+          "automatedStatus": "AUTOMATED_CHECKS_PASSED",
+          "profileCompliance": "PASS",
+          "profileComplianceIssues": [],
+          "constructPreservation": "PASS",
+          "answerKey": "DETERMINISTIC_RULE_VERIFIED"
+        }
+      },
+      "stemPlus": {
+        "selectionKey": "19.approach.paa.stem-plus",
+        "targetId": "PAA.MATEMATICAS",
+        "approach": "STEM_PLUS",
+        "specificationId": "eec87ecc86fa9aaac5cfec600407ce51a13c6570ab31c14c7a193e91840a3202",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "SOCIETAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "language": "es",
+        "generated": true,
+        "unitKey": "19.approach.paa.stem-plus#a1",
+        "item": {
+          "stem": "Una cooperativa compara dos opciones de inversión. La opción 1 requiere 8 unidades monetarias y devuelve 20 unidades de beneficio. La opción 2 requiere 15 unidades monetarias y devuelve 33 unidades de beneficio. ¿Qué opción ofrece la mayor tasa de beneficio por unidad monetaria y por cuánto supera a la otra?",
+          "instruction": "Selecciona la única opción correcta.",
+          "declaredContext": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos opciones de inversión de una cooperativa."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 8,
+              "q1": 20,
+              "p2": 15,
+              "q2": 33
+            }
+          },
+          "marks": 1,
+          "stimulus": null,
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "La opción 1, porque 20/8 = 2.5 y 33/15 = 2.2; la supera por 0.3 unidades de beneficio por unidad monetaria."
+              },
+              {
+                "id": "B",
+                "text": "La opción 2, porque devuelve 33 unidades de beneficio, mientras que la opción 1 devuelve 20; la supera por 13 unidades."
+              },
+              {
+                "id": "C",
+                "text": "La opción 2, porque su tasa invertida es 15/33, menor que 8/20; la supera por aproximadamente 0.05."
+              },
+              {
+                "id": "D",
+                "text": "La opción 2, porque la diferencia entre beneficio y costo es 18, frente a 12 para la opción 1; la supera por 6 unidades."
+              }
+            ],
+            "answerKey": "A",
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+              "value": "OPTION_1"
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null
+        },
+        "validation": {
+          "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED",
+          "profileCompliance": "PASS",
+          "profileComplianceIssues": [],
+          "constructPreservation": "PASS",
+          "answerKey": "DETERMINISTIC_RULE_VERIFIED"
+        }
+      },
+      "curriculumKnowledgeUnchanged": {
+        "samePrimaryConcept": true,
+        "sameInvariantHash": true,
+        "sameDeclaredConstructInBothItems": true
+      },
+      "standardRecordedByAbsence": true,
+      "stemPlusRecordedExplicitly": true,
+      "specificationDimensionsChangedByTheApproach": [
+        "context"
+      ],
+      "honouredPreferences": [
+        {
+          "preferenceId": "stem-plus.context.situated",
+          "dimension": "context",
+          "decided": "SOCIETAL"
+        }
+      ],
+      "unmetPreferences": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "dimension": "responseFormat",
+          "wanted": [
+            "EXTENDED_RESPONSE",
+            "SHORT_RESPONSE"
+          ],
+          "decided": "SELECTED_RESPONSE",
+          "overriddenBy": {
+            "origin": "COMPONENT_PROFILE_RULE",
+            "ref": "paa.matematicas.response-formats",
+            "authority": "OFFICIAL"
+          },
+          "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "dimension": "toolPolicy",
+          "wanted": [
+            "ALLOWED",
+            "SCIENTIFIC_REQUIRED",
+            "GDC_REQUIRED"
+          ],
+          "decided": "NONE",
+          "overriddenBy": {
+            "origin": "COMPONENT_PROFILE_RULE",
+            "ref": "paa.matematicas.calculator",
+            "authority": "OFFICIAL"
+          },
+          "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "dimension": "stimulus",
+          "wanted": [
+            "OWN_STIMULUS",
+            "SHARED_STIMULUS"
+          ],
+          "decided": "NONE",
+          "overriddenBy": {
+            "origin": "FAMILY",
+            "ref": "responseConstraints.stimulusNeed",
+            "authority": null
+          },
+          "overridingRuleCertification": null
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "dimension": "reasoningDepth",
+          "wanted": [
+            "JUSTIFIED_ARGUMENT",
+            "METHOD_SHOWN"
+          ],
+          "decided": "ANSWER_ONLY",
+          "overriddenBy": {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "paa.reasoning",
+            "authority": "STUDYUS_POLICY"
+          },
+          "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ],
+      "officialConstraintWon": true,
+      "observedInTheItems": {
+        "responseKind": {
+          "standard": "SELECTED",
+          "stemPlus": "SELECTED"
+        },
+        "declaredContextKind": {
+          "standard": "PERSONAL",
+          "stemPlus": "SOCIETAL"
+        },
+        "marks": {
+          "standard": 1,
+          "stemPlus": 1
+        },
+        "reasoningMarkPoints": {
+          "standard": 0,
+          "stemPlus": 0
+        },
+        "hasStimulus": {
+          "standard": false,
+          "stemPlus": false
+        }
+      },
+      "bothGenerated": true,
+      "bothPassItemLevelAutomatedChecks": true
+    },
+    {
+      "why": "PISA: the same family under no approach (EA-1 family version) and under STEM_PLUS (EA-1A family version, same invariants).",
+      "standard": {
+        "selectionKey": "08.proportion-rate-comparison.pisa",
+        "targetId": "PISA.MATHEMATICS",
+        "approach": null,
+        "specificationId": "2cf557ee41b1ac100abbcb6b25778fd6dd55d62d6be156e2bfca1658d04a3c9f",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.1.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULATE",
+            "EMPLOY",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "language": "es",
+        "generated": true,
+        "unitKey": "08.proportion-rate-comparison.pisa#a1",
+        "item": {
+          "stem": "En una tienda, la opción 1 cuesta 20 euros y ofrece 50 unidades del producto. La opción 2 cuesta 30 euros y ofrece 60 unidades. ¿Qué opción ofrece más unidades por euro y por cuánto supera su tasa a la de la otra opción?",
+          "instruction": "Selecciona la única opción correcta.",
+          "declaredContext": {
+            "kind": "PERSONAL",
+            "description": "Comparación de dos opciones de compra en una tienda para decidir cuál ofrece mejor valor por euro."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 20,
+              "q1": 50,
+              "p2": 30,
+              "q2": 60
+            }
+          },
+          "marks": 1,
+          "stimulus": null,
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "La opción 1: 50/20 = 2.5 unidades por euro; supera a la opción 2, cuya tasa es 60/30 = 2, por 0.5 unidades por euro."
+              },
+              {
+                "id": "B",
+                "text": "La opción 2, porque ofrece 60 unidades, que son 10 más que la opción 1."
+              },
+              {
+                "id": "C",
+                "text": "La opción 2: 30/60 = 0.5 euros por unidad, una tasa mayor que 20/50 = 0.4 euros por unidad."
+              },
+              {
+                "id": "D",
+                "text": "La opción 1, porque la diferencia entre las cantidades ofrecidas es 50 - 30 = 20."
+              }
+            ],
+            "answerKey": "A",
+            "target": {
+              "kind": "COMPARISON",
+              "left": "50 / 20",
+              "operator": ">",
+              "right": "60 / 30",
+              "holds": true,
+              "verdict": "OPTION_1; diferencia entre tasas = 0.5 unidades por euro"
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Selecciona la opción A, que forma ambas tasas unitarias, identifica la opción 1 y calcula la diferencia de 0.5 unidades por euro."
+            },
+            {
+              "code": "PARTIAL_CREDIT",
+              "description": "No aplicable en este formato de respuesta seleccionada."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "Selecciona una opción distinta de A o no proporciona una comparación válida de las tasas unitarias."
+            }
+          ]
+        },
+        "validation": {
+          "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED",
+          "profileCompliance": "PASS",
+          "profileComplianceIssues": [],
+          "constructPreservation": "WEAK",
+          "answerKey": "DETERMINISTIC_RULE_VERIFIED"
+        }
+      },
+      "stemPlus": {
+        "selectionKey": "20.approach.pisa.stem-plus",
+        "targetId": "PISA.MATHEMATICS",
+        "approach": "STEM_PLUS",
+        "specificationId": "8e3bc937689743768828e3c5ea4eb45171dd737e86a3847313d006d345895a09",
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "taskFamily": {
+          "id": "tf.math.proportion.rate-comparison-model",
+          "version": "0.2.0-draft"
+        },
+        "variable": {
+          "context": {
+            "kind": "SOCIETAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED"
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULATE",
+            "EMPLOY",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "language": "es",
+        "generated": true,
+        "unitKey": "20.approach.pisa.stem-plus#a2",
+        "item": {
+          "stem": "Una ciudad compara dos programas de recuperación de alimentos para decidir cuál devuelve más paquetes por cada euro invertido. El programa 1 usa 100 euros y devuelve 24 paquetes. El programa 2 usa 80 euros y devuelve 20 paquetes. ¿Qué opción expresa correctamente la comparación de las tasas unitarias?",
+          "instruction": "Selecciona la única opción correcta.",
+          "declaredContext": {
+            "kind": "SOCIETAL",
+            "description": "Una ciudad debe elegir entre dos programas de recuperación de alimentos con distintos costes y cantidades de paquetes devueltos."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 100,
+              "q1": 24,
+              "p2": 80,
+              "q2": 20
+            }
+          },
+          "marks": 1,
+          "stimulus": null,
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "El programa 1 es mejor porque devuelve 24 paquetes, mientras que el programa 2 devuelve 20 paquetes; la diferencia es de 4 paquetes."
+              },
+              {
+                "id": "B",
+                "text": "El programa 1 es mejor porque su coste por paquete es aproximadamente 4.167 euros, frente a 4 euros del programa 2."
+              },
+              {
+                "id": "C",
+                "text": "El programa 1 es mejor por una diferencia de 20, obtenida al restar los costes de 100 euros y 80 euros."
+              },
+              {
+                "id": "D",
+                "text": "El programa 2 es mejor: devuelve 0.25 paquetes por euro, frente a 0.24 paquetes por euro del programa 1, una diferencia de 0.01 paquetes por euro."
+              }
+            ],
+            "answerKey": "D",
+            "target": {
+              "kind": "COMPARISON",
+              "left": "20/80",
+              "operator": ">",
+              "right": "24/100",
+              "holds": true,
+              "verdict": "OPTION_2"
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Selecciona la opción que formula y compara correctamente las dos tasas unitarias e interpreta cuál programa favorece la comparación y por cuánto."
+            },
+            {
+              "code": "PARTIAL_CREDIT",
+              "description": "No aplicable en este ítem de opción múltiple de una sola unidad puntuada."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "Selecciona una opción que compara una sola cantidad, invierte la tasa o usa una diferencia que no representa una tasa unitaria."
+            }
+          ]
+        },
+        "validation": {
+          "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED",
+          "profileCompliance": "PASS",
+          "profileComplianceIssues": [],
+          "constructPreservation": "WEAK",
+          "answerKey": "DETERMINISTIC_RULE_VERIFIED"
+        }
+      },
+      "curriculumKnowledgeUnchanged": {
+        "samePrimaryConcept": true,
+        "sameInvariantHash": true,
+        "sameDeclaredConstructInBothItems": true
+      },
+      "standardRecordedByAbsence": true,
+      "stemPlusRecordedExplicitly": true,
+      "specificationDimensionsChangedByTheApproach": [
+        "context"
+      ],
+      "honouredPreferences": [
+        {
+          "preferenceId": "stem-plus.context.situated",
+          "dimension": "context",
+          "decided": "SOCIETAL"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "dimension": "toolPolicy",
+          "decided": "ALLOWED"
+        }
+      ],
+      "unmetPreferences": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "dimension": "responseFormat",
+          "wanted": [
+            "EXTENDED_RESPONSE",
+            "SHORT_RESPONSE"
+          ],
+          "decided": "SELECTED_RESPONSE",
+          "overriddenBy": {
+            "origin": "COMPONENT_PROFILE_RULE",
+            "ref": "pisa.mathematics.response-formats",
+            "authority": "OFFICIAL"
+          },
+          "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "dimension": "stimulus",
+          "wanted": [
+            "OWN_STIMULUS",
+            "SHARED_STIMULUS"
+          ],
+          "decided": "NONE",
+          "overriddenBy": {
+            "origin": "FAMILY",
+            "ref": "responseConstraints.stimulusNeed",
+            "authority": null
+          },
+          "overridingRuleCertification": null
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "dimension": "reasoningDepth",
+          "wanted": [
+            "JUSTIFIED_ARGUMENT",
+            "METHOD_SHOWN"
+          ],
+          "decided": "ANSWER_ONLY",
+          "overriddenBy": {
+            "origin": "SYSTEM_PROFILE_RULE",
+            "ref": "pisa.reasoning",
+            "authority": "STUDYUS_POLICY"
+          },
+          "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ],
+      "officialConstraintWon": true,
+      "observedInTheItems": {
+        "responseKind": {
+          "standard": "SELECTED",
+          "stemPlus": "SELECTED"
+        },
+        "declaredContextKind": {
+          "standard": "PERSONAL",
+          "stemPlus": "SOCIETAL"
+        },
+        "marks": {
+          "standard": 1,
+          "stemPlus": 1
+        },
+        "reasoningMarkPoints": {
+          "standard": 0,
+          "stemPlus": 0
+        },
+        "hasStimulus": {
+          "standard": false,
+          "stemPlus": false
+        }
+      },
+      "bothGenerated": true,
+      "bothPassItemLevelAutomatedChecks": true
+    }
+  ],
+  "checks": {
+    "everyPairGenerated": true,
+    "knowledgeUnchangedInEveryPair": true,
+    "approachChangedTheItemWhereItCould": true,
+    "officialConstraintsWonOnPaa": true,
+    "unmetPreferencesRecordedWithAuthorityAndCertification": true,
+    "standardByAbsenceEverywhere": true,
+    "everyItemPassesItsItemLevelAutomatedChecks": true
+  },
+  "STANDARD_VS_STEM_PLUS_PROOF": "PASS"
+}

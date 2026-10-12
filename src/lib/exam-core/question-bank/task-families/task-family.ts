@@ -71,6 +71,12 @@ export const TOOL_DEPENDENCIES = ['NONE', 'HELPFUL', 'REQUIRED'] as const;
 export type ToolDependency = (typeof TOOL_DEPENDENCIES)[number];
 export const FAMILY_LIFECYCLES = ['DRAFT', 'IN_REVIEW', 'CERTIFIED', 'RETIRED'] as const;
 export const FAMILY_REVIEW_STATUSES = ['UNREVIEWED', 'IN_REVIEW', 'REVIEWED'] as const;
+/**
+ * EA-1A -- how learners take part in a task. COLLABORATIVE is a group activity: by itself it yields a group
+ * artefact, never evidence about one learner. A family says which modes its task can be run in.
+ */
+export const PARTICIPATION_MODES = ['INDIVIDUAL', 'COLLABORATIVE'] as const;
+export type ParticipationMode = (typeof PARTICIPATION_MODES)[number];
 
 /** A certified concept, by reference. The same three fields a requirement cell names its PRIMARY concept by. */
 export const ConceptReferenceSchema = z.strictObject({ stableId: ID, canonicalSubject: ID, canonicalName: ID });
@@ -153,6 +159,15 @@ export const TaskFamilyCommonSchema = z
     lifecycle: z.enum(FAMILY_LIFECYCLES),
     reviewStatus: z.enum(FAMILY_REVIEW_STATUSES),
     specialization: z.unknown(),
+    /**
+     * EA-1A, OPTIONAL and additive: what a learning approach can ask of this family. Absent on every family written
+     * before learning approaches existed, which stay valid and unchanged; an absent member means "declares nothing":
+     * no transversal competency is evidenced and only INDIVIDUAL participation is supported.
+     *   transversalCompetencies   codes of the competency catalogue the task can show (references, like the concept)
+     *   participationModes        the modes the task can be run in
+     * It holds no approach id: a family knows no approach, exactly as it knows no exam.
+     */
+    approachSupport: z.strictObject({ transversalCompetencies: z.array(ID), participationModes: z.array(z.enum(PARTICIPATION_MODES)).min(1) }).optional(),
   })
   .superRefine((f, ctx) => {
     f.primaryConcepts.forEach((c, i) => {
@@ -163,6 +178,7 @@ export const TaskFamilyCommonSchema = z
     if (new Set(f.supportedContexts.map((c) => c.kind)).size !== f.supportedContexts.length) ctx.addIssue({ code: 'custom', path: ['supportedContexts'], message: 'CONTEXT_LISTED_TWICE' });
     if (new Set(f.difficultyLevers.map((l) => l.lever)).size !== f.difficultyLevers.length) ctx.addIssue({ code: 'custom', path: ['difficultyLevers'], message: 'LEVER_LISTED_TWICE' });
     if ((f.responseConstraints.stimulusNeed === 'NONE') !== (f.responseConstraints.stimulusKinds.length === 0)) ctx.addIssue({ code: 'custom', path: ['responseConstraints', 'stimulusKinds'], message: f.responseConstraints.stimulusNeed === 'NONE' ? 'NO_STIMULUS_NEEDS_NO_KIND' : 'STIMULUS_NEEDS_A_KIND' });
+    if (f.approachSupport && (new Set(f.approachSupport.transversalCompetencies).size !== f.approachSupport.transversalCompetencies.length || new Set(f.approachSupport.participationModes).size !== f.approachSupport.participationModes.length || !f.approachSupport.participationModes.includes('INDIVIDUAL'))) ctx.addIssue({ code: 'custom', path: ['approachSupport'], message: 'APPROACH_SUPPORT_INVALID' });
     // a family is certified only by a review; nothing certifies itself
     if (f.lifecycle === 'CERTIFIED' && f.reviewStatus !== 'REVIEWED') ctx.addIssue({ code: 'custom', path: ['lifecycle'], message: 'CERTIFIED_NEEDS_A_REVIEW' });
     for (const [profileId, s] of Object.entries(f.profileSupport)) {
@@ -207,20 +223,41 @@ export interface TaskFamilySpecialization<S = unknown> {
 }
 
 /**
- * The family types the brief names. IMPLEMENTED has a registered schema in this repository; DECLARED is a
+ * The family types the briefs name. IMPLEMENTED has a registered schema in this repository; DECLARED is a
  * reserved name with the fields its specialisation is expected to carry -- documentation of intent, not a schema.
  * A family of a DECLARED type is refused (`FAMILY_TYPE_NOT_REGISTERED`) until its schema is registered.
+ *
+ * EA-1A adds the STEM-oriented names. Two decisions, both made so that nothing written under EA-1 breaks:
+ *   - SCIENTIFIC_INVESTIGATION is the name. EA-1 declared the same thing as SCIENCE_INVESTIGATION; that name had
+ *     no schema, no family and no data anywhere, so it is kept only as an alias (`FAMILY_TYPE_ALIASES`) that
+ *     resolves to the canonical name. A family is written with the canonical name.
+ *   - MATHEMATICAL_MODELLING and DATA_ANALYSIS are declared as types of their OWN only for tasks whose construct
+ *     is the modelling cycle or the data-analysis cycle itself, typically across disciplines. A task of ONE
+ *     mathematical construct that happens to require formulating a model or reading data stays a MATH_PROBLEM
+ *     (as the EA-1 modelling and data families are): there, modelling and data analysis are BEHAVIOURS, declared
+ *     through the evidence target (FORMULATE, INTERPRET, EVALUATE) and through `approachSupport`. No existing
+ *     family changes type.
  */
-export const KNOWN_FAMILY_TYPES: Readonly<Record<string, { status: 'IMPLEMENTED' | 'DECLARED'; discipline: string; intendedSpecializationFields: readonly string[] }>> = {
+export type KnownFamilyType = { status: 'IMPLEMENTED' | 'DECLARED'; discipline: string; intendedSpecializationFields: readonly string[] };
+export const KNOWN_FAMILY_TYPES: Readonly<Record<string, KnownFamilyType>> = {
   MATH_PROBLEM: { status: 'IMPLEMENTED', discipline: 'MATHEMATICS', intendedSpecializationFields: ['mathematicalStructure', 'variables', 'parameterRanges', 'relationships', 'constraints', 'validSolutionRules', 'misconceptionModels', 'numericalDifficultyLevers', 'calculatorDependency'] },
   SCIENCE_PROBLEM: { status: 'DECLARED', discipline: 'SCIENCE', intendedSpecializationFields: ['physicalModel', 'quantitiesAndUnits', 'parameterRanges', 'governingRelationships', 'assumptions', 'validSolutionRules', 'misconceptionModels', 'dataBookletDependency'] },
-  SCIENCE_INVESTIGATION: { status: 'DECLARED', discipline: 'SCIENCE', intendedSpecializationFields: ['investigationQuestionType', 'variablesAndControls', 'dataShape', 'analysisMoves', 'sourcesOfError', 'validConclusionRules'] },
+  SCIENTIFIC_INVESTIGATION: { status: 'DECLARED', discipline: 'SCIENCE', intendedSpecializationFields: ['investigationQuestionType', 'variablesAndControls', 'dataShape', 'analysisMoves', 'sourcesOfError', 'validConclusionRules'] },
+  ENGINEERING_DESIGN: { status: 'DECLARED', discipline: 'ENGINEERING', intendedSpecializationFields: ['designBrief', 'criteriaAndConstraints', 'designVariables', 'tradeOffs', 'testAndIterationPlan', 'validSolutionRules', 'evaluationCriteria'] },
+  MATHEMATICAL_MODELLING: { status: 'DECLARED', discipline: 'TRANSVERSAL_STEM', intendedSpecializationFields: ['situationClass', 'modellingAssumptions', 'modelFamiliesAdmitted', 'validationAgainstSituation', 'modelLimitations', 'revisionCycle'] },
+  DATA_ANALYSIS: { status: 'DECLARED', discipline: 'TRANSVERSAL_STEM', intendedSpecializationFields: ['dataShape', 'questionType', 'analysisMoves', 'representationChoices', 'validInferenceRules', 'sourcesOfVariation'] },
+  COMPUTATIONAL_PROBLEM: { status: 'DECLARED', discipline: 'COMPUTING', intendedSpecializationFields: ['problemClass', 'inputOutputSpecification', 'algorithmicIdea', 'representation', 'correctnessRules', 'efficiencyExpectation', 'misconceptionModels'] },
+  INTERDISCIPLINARY_CHALLENGE: { status: 'DECLARED', discipline: 'INTERDISCIPLINARY', intendedSpecializationFields: ['challengeStatement', 'disciplinesIntegrated', 'productOrDecision', 'criteriaAndConstraints', 'evidenceByDiscipline', 'collaborationStructure', 'individualAccountability'] },
   READING_ANALYSIS: { status: 'DECLARED', discipline: 'READING', intendedSpecializationFields: ['textTypes', 'textFeaturesRequired', 'readingOperation', 'evidenceLocation', 'distractorLogic', 'textComplexityLevers'] },
   WRITING_EDITING: { status: 'DECLARED', discipline: 'WRITING', intendedSpecializationFields: ['editingOperation', 'draftFeaturesRequired', 'unitOfRevision', 'acceptableRevisionRules', 'distractorLogic'] },
   SOURCE_ANALYSIS: { status: 'DECLARED', discipline: 'HUMANITIES', intendedSpecializationFields: ['sourceTypes', 'sourceCount', 'analysisOperation', 'provenanceFeatures', 'validJudgementRules'] },
   CASE_ANALYSIS: { status: 'DECLARED', discipline: 'SOCIAL_SCIENCES', intendedSpecializationFields: ['caseShape', 'stakeholders', 'analysisFramework', 'decisionOrRecommendation', 'validArgumentRules'] },
   LANGUAGE_USE: { status: 'DECLARED', discipline: 'LANGUAGE', intendedSpecializationFields: ['languageFeature', 'proficiencyBand', 'carrierSentenceRules', 'acceptableAnswerRules', 'distractorLogic'] },
 };
+/** Earlier names of a declared type. An alias names nothing of its own: it resolves to the canonical type. */
+export const FAMILY_TYPE_ALIASES: Readonly<Record<string, string>> = { SCIENCE_INVESTIGATION: 'SCIENTIFIC_INVESTIGATION' };
+export const canonicalFamilyType = (name: string): string => FAMILY_TYPE_ALIASES[name] ?? name;
+export const knownFamilyType = (name: string): KnownFamilyType | null => KNOWN_FAMILY_TYPES[canonicalFamilyType(name)] ?? null;
 
 export type TaskFamilyIssue = 'COMMON_SCHEMA_INVALID' | 'FAMILY_TYPE_NOT_REGISTERED' | 'SPECIALIZATION_INVALID';
 export type TaskFamilyValidation = { ok: true; family: TaskFamily; specialization: TaskFamilySpecialization } | { ok: false; issue: TaskFamilyIssue; details: string[] };

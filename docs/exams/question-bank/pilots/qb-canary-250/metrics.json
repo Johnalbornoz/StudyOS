@@ -1,0 +1,779 @@
+{
+  "kind": "QB_CANARY_250_METRICS",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- RIGHTS_NOT_ESTABLISHED -- AUTOMATED VALIDATION AND AI REVIEW ONLY, NO HUMAN REVIEW",
+  "freeze": {
+    "freezeCommitSha": "f445e7afa89cffd69865fd3f9dbf9d98bdddb1f9",
+    "manifestHash": "51baba1bbecf12f399b997b65e525e0db169fa12ccca8e21f855cd360c7d2191"
+  },
+  "run": {
+    "runId": "qb-canary-250-20261011205000",
+    "startedAt": "2026-10-11T20:50:00.030Z"
+  },
+  "versions": {
+    "generator": {
+      "harness": {
+        "id": "studyus-specification-generation-harness",
+        "version": "3"
+      },
+      "slotGuidance": {
+        "id": "qb-canary-250-slot-guidance",
+        "version": "1"
+      }
+    },
+    "validators": {
+      "revision": 4
+    },
+    "reviewer": {
+      "id": "studyus-ai-item-reviewer",
+      "version": "1",
+      "promptVersion": "1",
+      "schemaVersion": "1",
+      "redactionVersion": "1",
+      "decisionPolicyVersion": "1"
+    }
+  },
+  "definitions": {
+    "GENERATED": {
+      "source": "RUN_LOG + HARNESS",
+      "definition": "Slots whose one generation call returned an answer the version-3 harness accepted as a candidate, over 250."
+    },
+    "PROVIDER_FAILURES": {
+      "source": "RUN_LOG + HARNESS",
+      "definition": "Slots with no usable answer from the provider: a transport failure, a rejected request, a call started and never recorded (NO_CONTENT), or an answer that is not the strict response shape -- not JSON, schema-invalid, empty, truncated, or a provider refusal (MALFORMED)."
+    },
+    "HARNESS_REFUSALS": {
+      "source": "HARNESS",
+      "definition": "Slots whose answer was well-formed and was refused by one of the harness's named rules (duplicate labels, leaked vocabulary, marks or command terms outside the specification, ...). Not a provider failure; not a candidate."
+    },
+    "NOT_CALLED_BUDGET_STOP": {
+      "source": "RUN_LOG",
+      "definition": "Slots (or candidates, for the review phase) the budget guard refused to call."
+    },
+    "VALIDATOR_STRICT_PASS": {
+      "source": "VALIDATOR",
+      "definition": "Candidates with no gate failure under revision 4, construct preservation PASS and item writing PASS (the strict pass of QB-R2E / QB-R2F)."
+    },
+    "APPROVED": {
+      "source": "AI_REVIEWER + DECISION_POLICY",
+      "definition": "Reviewed candidates the decision policy classified APPROVED. An AI classification: not a human review, not an approval for use."
+    },
+    "NEEDS_HUMAN_REVIEW": {
+      "source": "AI_REVIEWER + DECISION_POLICY",
+      "definition": "Reviewed candidates the decision policy classified NEEDS_HUMAN_REVIEW."
+    },
+    "REJECTED": {
+      "source": "AI_REVIEWER + DECISION_POLICY",
+      "definition": "Reviewed candidates the decision policy classified REJECTED."
+    },
+    "REVIEWER_FAILURES": {
+      "source": "RUN_LOG + REVIEW_PARSER",
+      "definition": "Candidates whose one review call gave no usable review: transport failure, rejected request, call never recorded, truncated answer, provider refusal, malformed answer, or an answer refused by the no-repair rule. Never counted as approved."
+    },
+    "ACADEMIC_FAILURES": {
+      "source": "EITHER",
+      "definition": "VALIDATOR: answer key FAILED or machine recomputation FAIL. AI_REVIEWER: ACADEMIC_CORRECTNESS = FAIL or the reviewer's own solution DISAGREES with the key. EITHER: the union."
+    },
+    "ANSWER_KEY_FAILURES": {
+      "source": "EITHER",
+      "definition": "VALIDATOR: answer key class FAILED. AI_REVIEWER: the reviewer's own solution DISAGREES with the key. EITHER: the union."
+    },
+    "CONSTRUCT_FAILURES": {
+      "source": "EITHER",
+      "definition": "VALIDATOR: construct preservation FAIL. AI_REVIEWER: CONSTRUCT_VALIDITY = FAIL. EITHER: the union."
+    },
+    "PROFILE_FAILURES": {
+      "source": "EITHER",
+      "definition": "VALIDATOR: profile compliance FAIL (including the item demand policy). AI_REVIEWER: PROFILE_FIDELITY = FAIL. EITHER: the union."
+    },
+    "STRUCTURAL_FAILURES": {
+      "source": "EITHER",
+      "definition": "VALIDATOR: structural FAIL. AI_REVIEWER: RESPONSE_CONTRACT = FAIL. EITHER: the union."
+    },
+    "MATERIAL_DUPLICATES": {
+      "source": "VALIDATOR",
+      "definition": "Candidates whose originality outcome is not PASS_LOW_SIMILARITY: textual similarity, the same parameter set, a shared defining parameter pair or a near-duplicate scenario, against the other fresh candidates and every QB-R2D and QB-R2E candidate. The reviewer's ORIGINALITY verdict is reported beside it and is not part of this count (the reviewer is shown no corpus)."
+    },
+    "GUIDANCE_FOLLOWED": {
+      "source": "VALIDATOR-SIDE CHECK",
+      "definition": "Candidates whose declared model uses the slot's pinned parameter values (and, for claim evaluation, keys the slot's verdict where a verdict is keyed)."
+    },
+    "ASSUMED_CUMULATIVE_SPEND_USD": {
+      "source": "RUN_LOG + EARLIER LEDGERS",
+      "definition": "QB-R2D + QB-R2E spend + canary spend, on the ASSUMED price bases. A call never recorded is charged at its worst case. Not an invoice."
+    },
+    "HUMAN_CALIBRATION_SAMPLE_PROPOSED": {
+      "source": "SAMPLE_PROCEDURE",
+      "definition": "The number of items the frozen sample procedure selects, with the reasons for each."
+    }
+  },
+  "complete": true,
+  "balance": {
+    "slots": 250,
+    "distinctSpecifications": 250,
+    "slotsSharingASpecification": 0,
+    "distinctInvariantHashes": 10,
+    "bySystem": {
+      "CAMBRIDGE": 45,
+      "IB": 50,
+      "ICFES": 40,
+      "PAA": 45,
+      "PISA": 45,
+      "SCHOOL_STEM_PERFORMANCE": 25
+    },
+    "byComponent": {
+      "CAMBRIDGE.9709.P1": 45,
+      "IB.MATH_AA_HL.P1": 25,
+      "IB.MATH_AA_HL.P2": 25,
+      "ICFES.SABER11_MATEMATICAS": 40,
+      "PAA.MATEMATICAS": 45,
+      "PISA.MATHEMATICS": 45,
+      "SCHOOL_STEM_PERFORMANCE": 25
+    },
+    "byFamily": {
+      "tf.math.data.judge-claim-against-display": 26,
+      "tf.math.data.rate-of-change-from-realistic-dataset": 25,
+      "tf.math.linear.constant-rate-model": 25,
+      "tf.math.linear.line-through-two-points": 25,
+      "tf.math.probability.compare-chances-to-decide": 25,
+      "tf.math.probability.single-event-equally-likely": 25,
+      "tf.math.proportion.missing-value": 24,
+      "tf.math.proportion.rate-comparison-model": 26,
+      "tf.math.quadratic.optimum-of-a-model": 25,
+      "tf.math.quadratic.solve-by-factorising": 24
+    },
+    "byConcept": {
+      "math.alg.quadratics": 49,
+      "math.fun.linear-functions-lines": 50,
+      "math.num.ratio-proportion": 50,
+      "math.prob.probability": 50,
+      "math.stat.data-representation": 51
+    },
+    "byApproach": {
+      "STANDARD_BY_ABSENCE": 166,
+      "STEM_PLUS": 84
+    },
+    "byResponseType": {
+      "CONSTRUCTED_RESPONSE": 120,
+      "NUMERIC_ENTRY": 46,
+      "SELECTED_RESPONSE": 84
+    },
+    "byResponseFormat": {
+      "EXTENDED_RESPONSE": 51,
+      "NUMERIC_ENTRY": 46,
+      "SELECTED_RESPONSE": 84,
+      "SHORT_RESPONSE": 69
+    },
+    "byCalculator": {
+      "ALLOWED": 70,
+      "GDC_REQUIRED": 25,
+      "NONE": 110,
+      "SCIENTIFIC_REQUIRED": 45
+    },
+    "byEvidenceClass": {
+      "DATA_INTERPRETATION": 25,
+      "MODELLING": 76,
+      "PROCEDURAL": 98,
+      "REASONING": 51
+    },
+    "byEvidenceActions": {
+      "COMPUTE": 25,
+      "COMPUTE+REPRESENT": 25,
+      "FORMULATE+COMPUTE+EVALUATE": 25,
+      "FORMULATE+INTERPRET": 25,
+      "FORMULATE+SOLVE+INTERPRET": 51,
+      "INTERPRET+COMPUTE": 25,
+      "INTERPRET+EVALUATE": 26,
+      "SOLVE": 48
+    },
+    "byStimulus": {
+      "NONE": 188,
+      "TABLE+GRAPH": 37,
+      "TABLE+GRAPH+DATA_SET": 25
+    },
+    "byBand": {
+      "CHALLENGE": 84,
+      "FOUNDATIONAL": 83,
+      "STANDARD": 83
+    },
+    "byContextKind": {
+      "ABSTRACT": 72,
+      "OCCUPATIONAL": 42,
+      "PERSONAL": 60,
+      "SCIENTIFIC": 40,
+      "SOCIETAL": 36
+    },
+    "byTransfer": {
+      "EXPECTED": 65,
+      "NOT_REQUIRED": 140,
+      "REQUIRED": 45
+    },
+    "byReasoningDepth": {
+      "ANSWER_ONLY": 130,
+      "JUSTIFIED_ARGUMENT": 25,
+      "METHOD_SHOWN": 95
+    },
+    "bySystemAndResponseType": {
+      "CAMBRIDGE | CONSTRUCTED_RESPONSE": 45,
+      "IB | CONSTRUCTED_RESPONSE": 50,
+      "ICFES | SELECTED_RESPONSE": 40,
+      "PAA | NUMERIC_ENTRY": 24,
+      "PAA | SELECTED_RESPONSE": 21,
+      "PISA | NUMERIC_ENTRY": 22,
+      "PISA | SELECTED_RESPONSE": 23,
+      "SCHOOL_STEM_PERFORMANCE | CONSTRUCTED_RESPONSE": 25
+    },
+    "byFamilyAndSystem": {
+      "tf.math.data.judge-claim-against-display | CAMBRIDGE": 2,
+      "tf.math.data.judge-claim-against-display | IB": 2,
+      "tf.math.data.judge-claim-against-display | ICFES": 4,
+      "tf.math.data.judge-claim-against-display | PAA": 2,
+      "tf.math.data.judge-claim-against-display | PISA": 5,
+      "tf.math.data.judge-claim-against-display | SCHOOL_STEM_PERFORMANCE": 11,
+      "tf.math.data.rate-of-change-from-realistic-dataset | CAMBRIDGE": 6,
+      "tf.math.data.rate-of-change-from-realistic-dataset | IB": 4,
+      "tf.math.data.rate-of-change-from-realistic-dataset | PISA": 15,
+      "tf.math.linear.constant-rate-model | CAMBRIDGE": 4,
+      "tf.math.linear.constant-rate-model | IB": 6,
+      "tf.math.linear.constant-rate-model | ICFES": 5,
+      "tf.math.linear.constant-rate-model | PAA": 4,
+      "tf.math.linear.constant-rate-model | PISA": 6,
+      "tf.math.linear.line-through-two-points | CAMBRIDGE": 5,
+      "tf.math.linear.line-through-two-points | IB": 5,
+      "tf.math.linear.line-through-two-points | ICFES": 6,
+      "tf.math.linear.line-through-two-points | PAA": 9,
+      "tf.math.probability.compare-chances-to-decide | CAMBRIDGE": 5,
+      "tf.math.probability.compare-chances-to-decide | IB": 5,
+      "tf.math.probability.compare-chances-to-decide | ICFES": 6,
+      "tf.math.probability.compare-chances-to-decide | PAA": 3,
+      "tf.math.probability.compare-chances-to-decide | PISA": 6,
+      "tf.math.probability.single-event-equally-likely | CAMBRIDGE": 5,
+      "tf.math.probability.single-event-equally-likely | IB": 5,
+      "tf.math.probability.single-event-equally-likely | ICFES": 8,
+      "tf.math.probability.single-event-equally-likely | PAA": 7,
+      "tf.math.proportion.missing-value | CAMBRIDGE": 5,
+      "tf.math.proportion.missing-value | IB": 5,
+      "tf.math.proportion.missing-value | ICFES": 7,
+      "tf.math.proportion.missing-value | PAA": 7,
+      "tf.math.proportion.rate-comparison-model | CAMBRIDGE": 2,
+      "tf.math.proportion.rate-comparison-model | IB": 2,
+      "tf.math.proportion.rate-comparison-model | ICFES": 4,
+      "tf.math.proportion.rate-comparison-model | PAA": 2,
+      "tf.math.proportion.rate-comparison-model | PISA": 5,
+      "tf.math.proportion.rate-comparison-model | SCHOOL_STEM_PERFORMANCE": 11,
+      "tf.math.quadratic.optimum-of-a-model | CAMBRIDGE": 5,
+      "tf.math.quadratic.optimum-of-a-model | IB": 7,
+      "tf.math.quadratic.optimum-of-a-model | PAA": 5,
+      "tf.math.quadratic.optimum-of-a-model | PISA": 8,
+      "tf.math.quadratic.solve-by-factorising | CAMBRIDGE": 6,
+      "tf.math.quadratic.solve-by-factorising | IB": 9,
+      "tf.math.quadratic.solve-by-factorising | PAA": 6,
+      "tf.math.quadratic.solve-by-factorising | SCHOOL_STEM_PERFORMANCE": 3
+    },
+    "scenarioDomainReuseWithinFamilyAndContext": 0,
+    "spaceSize": 1317,
+    "excludedSpecifications": 0
+  },
+  "unsuppliedStrata": [
+    "DISCIPLINES: mathematics only. There is no science, language or social-science family, profile component or construct.",
+    "CONCEPTS: five canonical concepts only (ratio and proportion, linear functions, quadratics, probability, data representation).",
+    "TASK FAMILIES: ten families, all of lifecycle DRAFT; three of them have an EA-1A version. 250 slots over ten families is about 25 slots per family.",
+    "CONSTRUCTS: one machine-checkable construct per family (ten constructs).",
+    "SCHOOL: the only school profile is SCHOOL_STEM_PERFORMANCE, and only the three EA-1A families support it.",
+    "COMPONENTS: one component per system, except IB with two papers (Mathematics AA HL paper 1 and paper 2). No IB paper 3, no Cambridge paper other than 9709 paper 1, no PAA or Icfes component other than mathematics.",
+    "RESPONSE FORMATS: MULTI_SELECT and MATH_EXPRESSION are accepted by adapt() on PISA but generator version 3 has no template for them; they are not in the canary. Icfes is selected response only; IB, Cambridge and the school profile are constructed response only; numeric entry exists on PAA and PISA only.",
+    "LEARNING APPROACH: STANDARD (recorded by absence) and STEM_PLUS only.",
+    "TRANSFER: there is no transfer family. What is reported is the specification's own context.transfer expectation.",
+    "STIMULI: tables, graphs and data sets a specification asks for as the item's OWN stimulus. No shared stimulus, no image, no passage.",
+    "DIFFICULTY: three editorial bands (FOUNDATIONAL, STANDARD, CHALLENGE); an editorial estimate, not a calibrated difficulty.",
+    "CALCULATOR: whatever the component rules; it is not a free dimension. A family that needs a tool the component forbids is refused by adapt() and is not forced."
+  ],
+  "metrics": {
+    "slots": 250,
+    "MAX_AUTOMATIC_REGENERATIONS": 0,
+    "GENERATED": {
+      "count": 221,
+      "of": 250
+    },
+    "PROVIDER_FAILURES": {
+      "count": 9,
+      "byCode": {
+        "NO_CONTENT:TRANSPORT_ERROR": 9
+      }
+    },
+    "HARNESS_REFUSALS": {
+      "count": 20,
+      "byCode": {
+        "RESPONSE_CONTENT_INVALID": 1,
+        "RESPONSE_LEAKS_SPECIFICATION_VOCABULARY": 8,
+        "RESPONSE_STRUCTURED_STIMULUS_INVALID": 9,
+        "RESPONSE_WIRE_INCONSISTENT": 2
+      }
+    },
+    "NOT_CALLED_BUDGET_STOP": {
+      "generation": 0,
+      "review": 11
+    },
+    "NOT_RUN": {
+      "generation": 0,
+      "review": 0
+    },
+    "VALIDATOR_STRICT_PASS": 66,
+    "REVIEWED": 210,
+    "APPROVED": 25,
+    "NEEDS_HUMAN_REVIEW": 157,
+    "REJECTED": 28,
+    "REVIEWER_FAILURES": {
+      "count": 0,
+      "byCode": {}
+    },
+    "ACADEMIC_FAILURES": {
+      "validator": 13,
+      "aiReviewer": 6,
+      "either": 14,
+      "both": 5
+    },
+    "ANSWER_KEY_FAILURES": {
+      "validator": 13,
+      "aiReviewer": 6,
+      "either": 14,
+      "both": 5
+    },
+    "CONSTRUCT_FAILURES": {
+      "validator": 12,
+      "aiReviewer": 6,
+      "either": 14,
+      "both": 4
+    },
+    "PROFILE_FAILURES": {
+      "validator": 55,
+      "aiReviewer": 5,
+      "either": 55,
+      "both": 5
+    },
+    "STRUCTURAL_FAILURES": {
+      "validator": 3,
+      "aiReviewer": 5,
+      "either": 7,
+      "both": 1
+    },
+    "MATERIAL_DUPLICATES": {
+      "count": 93,
+      "byOutcome": {
+        "REVIEW_STRUCTURAL_SIMILARITY": 93
+      },
+      "withBatchDiversityFinding": 93,
+      "reviewerOriginalityFail": 0
+    },
+    "GUIDANCE_FOLLOWED": {
+      "count": 218,
+      "of": 221
+    },
+    "validatorGateFailures": {
+      "structural": 3,
+      "profileCompliance": 55,
+      "constructPreservation": 12,
+      "machineRecomputation": 13,
+      "stimulusIntegrity": 2,
+      "lineage": 0,
+      "learnerTextLeakage": 0
+    },
+    "validatorOther": {
+      "constructWeak": 54,
+      "itemWritingFlagged": 4,
+      "answerKeyClass": {
+        "DETERMINISTIC_RULE_VERIFIED": 39,
+        "FAILED": 13,
+        "HUMAN_REVIEW_REQUIRED": 69,
+        "MACHINE_VERIFIED": 100
+      }
+    },
+    "reviewerDimensionVerdicts": {
+      "ACADEMIC_CORRECTNESS": {
+        "CONCERN": 5,
+        "FAIL": 6,
+        "PASS": 199
+      },
+      "CONSTRUCT_VALIDITY": {
+        "CONCERN": 54,
+        "FAIL": 6,
+        "PASS": 150
+      },
+      "PROFILE_FIDELITY": {
+        "CONCERN": 61,
+        "FAIL": 5,
+        "PASS": 144
+      },
+      "RESPONSE_CONTRACT": {
+        "CONCERN": 46,
+        "FAIL": 5,
+        "PASS": 159
+      },
+      "DIFFICULTY": {
+        "CONCERN": 69,
+        "FAIL": 3,
+        "PASS": 138
+      },
+      "LEARNER_QUALITY": {
+        "CONCERN": 38,
+        "FAIL": 1,
+        "PASS": 171
+      },
+      "STIMULUS_INTEGRITY": {
+        "CONCERN": 3,
+        "FAIL": 1,
+        "NOT_APPLICABLE": 169,
+        "PASS": 37
+      },
+      "ORIGINALITY": {
+        "CONCERN": 26,
+        "PASS": 184
+      },
+      "FAIRNESS_AMBIGUITY": {
+        "CONCERN": 20,
+        "FAIL": 3,
+        "PASS": 187
+      },
+      "LINEAGE_CONSISTENCY": {
+        "PASS": 210
+      }
+    },
+    "decisionRules": {
+      "R1": 15,
+      "R2": 8,
+      "R5": 99,
+      "R5+R9": 5,
+      "R6": 57,
+      "R7": 1,
+      "R8": 25
+    },
+    "disagreements": {
+      "REVIEWER_FAIL_VALIDATOR_STRICT_PASS": 1,
+      "REVIEWER_PROPOSAL_LAXER_THAN_POLICY": 69,
+      "REVIEWER_PROPOSAL_STRICTER_THAN_ITS_VERDICTS": 5,
+      "VALIDATOR_DOUBT_REVIEWER_PASS": 1,
+      "VALIDATOR_FAIL_REVIEWER_PASS": 107
+    },
+    "agreementMatrix": {
+      "rows": "VALIDATOR (STRICT_PASS / DOUBT = no gate failure but construct WEAK or item writing FLAGGED / FAIL)",
+      "columns": "AI classification by the decision policy",
+      "matrix": {
+        "STRICT_PASS": {
+          "APPROVED": 25,
+          "NEEDS_HUMAN_REVIEW": 38,
+          "REJECTED": 1,
+          "REVIEWER_FAILURE": 0,
+          "NOT_REVIEWED": 2
+        },
+        "DOUBT": {
+          "APPROVED": 0,
+          "NEEDS_HUMAN_REVIEW": 20,
+          "REJECTED": 2,
+          "REVIEWER_FAILURE": 0,
+          "NOT_REVIEWED": 0
+        },
+        "FAIL": {
+          "APPROVED": 0,
+          "NEEDS_HUMAN_REVIEW": 99,
+          "REJECTED": 25,
+          "REVIEWER_FAILURE": 0,
+          "NOT_REVIEWED": 9
+        }
+      }
+    },
+    "reviewerProposalMatrix": {
+      "about": "the reviewer model's own proposed classification, before the decision policy, against the validators",
+      "matrix": {
+        "STRICT_PASS": {
+          "APPROVED": 42,
+          "NEEDS_HUMAN_REVIEW": 21,
+          "REJECTED": 1
+        },
+        "DOUBT": {
+          "APPROVED": 6,
+          "NEEDS_HUMAN_REVIEW": 14,
+          "REJECTED": 2
+        },
+        "FAIL": {
+          "APPROVED": 38,
+          "NEEDS_HUMAN_REVIEW": 69,
+          "REJECTED": 17
+        }
+      }
+    },
+    "breakdowns": {
+      "bySystem": {
+        "CAMBRIDGE": {
+          "slots": 45,
+          "generated": 36,
+          "validatorStrictPass": 8,
+          "approved": 3,
+          "needsHumanReview": 28,
+          "rejected": 3,
+          "reviewerFailures": 0,
+          "notReviewed": 2
+        },
+        "IB": {
+          "slots": 50,
+          "generated": 46,
+          "validatorStrictPass": 16,
+          "approved": 4,
+          "needsHumanReview": 34,
+          "rejected": 6,
+          "reviewerFailures": 0,
+          "notReviewed": 2
+        },
+        "ICFES": {
+          "slots": 40,
+          "generated": 36,
+          "validatorStrictPass": 14,
+          "approved": 6,
+          "needsHumanReview": 21,
+          "rejected": 7,
+          "reviewerFailures": 0,
+          "notReviewed": 2
+        },
+        "PAA": {
+          "slots": 45,
+          "generated": 43,
+          "validatorStrictPass": 10,
+          "approved": 6,
+          "needsHumanReview": 31,
+          "rejected": 4,
+          "reviewerFailures": 0,
+          "notReviewed": 2
+        },
+        "PISA": {
+          "slots": 45,
+          "generated": 40,
+          "validatorStrictPass": 13,
+          "approved": 5,
+          "needsHumanReview": 28,
+          "rejected": 5,
+          "reviewerFailures": 0,
+          "notReviewed": 2
+        },
+        "SCHOOL_STEM_PERFORMANCE": {
+          "slots": 25,
+          "generated": 20,
+          "validatorStrictPass": 5,
+          "approved": 1,
+          "needsHumanReview": 15,
+          "rejected": 3,
+          "reviewerFailures": 0,
+          "notReviewed": 1
+        }
+      },
+      "byResponseType": {
+        "CONSTRUCTED_RESPONSE": {
+          "slots": 120,
+          "generated": 102,
+          "validatorStrictPass": 29,
+          "approved": 8,
+          "needsHumanReview": 77,
+          "rejected": 12,
+          "reviewerFailures": 0,
+          "notReviewed": 5
+        },
+        "NUMERIC_ENTRY": {
+          "slots": 46,
+          "generated": 42,
+          "validatorStrictPass": 8,
+          "approved": 4,
+          "needsHumanReview": 30,
+          "rejected": 6,
+          "reviewerFailures": 0,
+          "notReviewed": 2
+        },
+        "SELECTED_RESPONSE": {
+          "slots": 84,
+          "generated": 77,
+          "validatorStrictPass": 29,
+          "approved": 13,
+          "needsHumanReview": 50,
+          "rejected": 10,
+          "reviewerFailures": 0,
+          "notReviewed": 4
+        }
+      },
+      "byFamily": {
+        "tf.math.data.judge-claim-against-display": {
+          "slots": 26,
+          "generated": 15,
+          "validatorStrictPass": 9,
+          "approved": 2,
+          "needsHumanReview": 10,
+          "rejected": 2,
+          "reviewerFailures": 0,
+          "notReviewed": 1
+        },
+        "tf.math.data.rate-of-change-from-realistic-dataset": {
+          "slots": 25,
+          "generated": 18,
+          "validatorStrictPass": 12,
+          "approved": 4,
+          "needsHumanReview": 13,
+          "rejected": 0,
+          "reviewerFailures": 0,
+          "notReviewed": 1
+        },
+        "tf.math.linear.constant-rate-model": {
+          "slots": 25,
+          "generated": 25,
+          "validatorStrictPass": 5,
+          "approved": 1,
+          "needsHumanReview": 22,
+          "rejected": 1,
+          "reviewerFailures": 0,
+          "notReviewed": 1
+        },
+        "tf.math.linear.line-through-two-points": {
+          "slots": 25,
+          "generated": 24,
+          "validatorStrictPass": 0,
+          "approved": 0,
+          "needsHumanReview": 17,
+          "rejected": 5,
+          "reviewerFailures": 0,
+          "notReviewed": 2
+        },
+        "tf.math.probability.compare-chances-to-decide": {
+          "slots": 25,
+          "generated": 24,
+          "validatorStrictPass": 10,
+          "approved": 3,
+          "needsHumanReview": 17,
+          "rejected": 3,
+          "reviewerFailures": 0,
+          "notReviewed": 1
+        },
+        "tf.math.probability.single-event-equally-likely": {
+          "slots": 25,
+          "generated": 24,
+          "validatorStrictPass": 14,
+          "approved": 8,
+          "needsHumanReview": 15,
+          "rejected": 0,
+          "reviewerFailures": 0,
+          "notReviewed": 1
+        },
+        "tf.math.proportion.missing-value": {
+          "slots": 24,
+          "generated": 22,
+          "validatorStrictPass": 12,
+          "approved": 7,
+          "needsHumanReview": 14,
+          "rejected": 1,
+          "reviewerFailures": 0,
+          "notReviewed": 0
+        },
+        "tf.math.proportion.rate-comparison-model": {
+          "slots": 26,
+          "generated": 25,
+          "validatorStrictPass": 2,
+          "approved": 0,
+          "needsHumanReview": 15,
+          "rejected": 8,
+          "reviewerFailures": 0,
+          "notReviewed": 2
+        },
+        "tf.math.quadratic.optimum-of-a-model": {
+          "slots": 25,
+          "generated": 23,
+          "validatorStrictPass": 1,
+          "approved": 0,
+          "needsHumanReview": 16,
+          "rejected": 6,
+          "reviewerFailures": 0,
+          "notReviewed": 1
+        },
+        "tf.math.quadratic.solve-by-factorising": {
+          "slots": 24,
+          "generated": 21,
+          "validatorStrictPass": 1,
+          "approved": 0,
+          "needsHumanReview": 18,
+          "rejected": 2,
+          "reviewerFailures": 0,
+          "notReviewed": 1
+        }
+      },
+      "byApproach": {
+        "STANDARD_BY_ABSENCE": {
+          "slots": 166,
+          "generated": 145,
+          "validatorStrictPass": 47,
+          "approved": 15,
+          "needsHumanReview": 104,
+          "rejected": 18,
+          "reviewerFailures": 0,
+          "notReviewed": 8
+        },
+        "STEM_PLUS": {
+          "slots": 84,
+          "generated": 76,
+          "validatorStrictPass": 19,
+          "approved": 10,
+          "needsHumanReview": 53,
+          "rejected": 10,
+          "reviewerFailures": 0,
+          "notReviewed": 3
+        }
+      },
+      "byBand": {
+        "CHALLENGE": {
+          "slots": 84,
+          "generated": 76,
+          "validatorStrictPass": 23,
+          "approved": 0,
+          "needsHumanReview": 62,
+          "rejected": 11,
+          "reviewerFailures": 0,
+          "notReviewed": 3
+        },
+        "FOUNDATIONAL": {
+          "slots": 83,
+          "generated": 73,
+          "validatorStrictPass": 19,
+          "approved": 12,
+          "needsHumanReview": 49,
+          "rejected": 8,
+          "reviewerFailures": 0,
+          "notReviewed": 4
+        },
+        "STANDARD": {
+          "slots": 83,
+          "generated": 72,
+          "validatorStrictPass": 24,
+          "approved": 13,
+          "needsHumanReview": 46,
+          "rejected": 9,
+          "reviewerFailures": 0,
+          "notReviewed": 4
+        }
+      }
+    },
+    "ASSUMED_CUMULATIVE_SPEND_USD": {
+      "cumulative": 29.913190000000007,
+      "capUsd": 30,
+      "earlierRuns": 3.0051349999999992,
+      "canaryGeneration": 13.912345000000013,
+      "canaryReview": 12.995709999999995,
+      "basis": "ASSUMED prices; not an invoice",
+      "generatorPriceBasis": {
+        "id": "qb-r2d-guard-price",
+        "label": "ASSUMED",
+        "source": "QB-R2D lane assumption, deliberately above the repository's configured price of its most expensive routed model; not a vendor quotation",
+        "inputPerMillionUsd": 5,
+        "outputPerMillionUsd": 30
+      },
+      "reviewerPriceBasis": {
+        "id": "qb-canary-250-reviewer-assumed-price",
+        "label": "ASSUMED",
+        "source": "Canary assumption: the floor set by the orchestrator (the generator's assumed basis). The repository price table does not price this model. Not a vendor quotation and not an invoice; close to, not far above, the vendor list price.",
+        "inputPerMillionUsd": 5,
+        "outputPerMillionUsd": 30
+      }
+    },
+    "HUMAN_CALIBRATION_SAMPLE_PROPOSED": 37
+  }
+}

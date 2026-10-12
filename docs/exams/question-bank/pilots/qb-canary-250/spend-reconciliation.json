@@ -1,0 +1,71 @@
+{
+  "kind": "QB_CANARY_250_SPEND_RECONCILIATION",
+  "label": "Reconciliation statement for the Canary. A NEW file: no frozen Canary artifact was edited. ASSUMED prices; not an invoice.",
+  "canaryFreeze": {
+    "freezeCommitSha": "f445e7afa89cffd69865fd3f9dbf9d98bdddb1f9",
+    "manifestHash": "51baba1bbecf12f399b997b65e525e0db169fa12ccca8e21f855cd360c7d2191"
+  },
+  "AUTHORITATIVE_CUMULATIVE_SPEND_USD": 29.973085,
+  "derivedFrom": "the frozen run log: earlier runs + every call of every phase at its recorded cost",
+  "authoritative": {
+    "earlierRunsUsd": 3.005135,
+    "byPhase": {
+      "PREFLIGHT": {
+        "calls": 1,
+        "usd": 0.059895
+      },
+      "GENERATION": {
+        "calls": 250,
+        "usd": 13.912345
+      },
+      "REVIEW": {
+        "calls": 210,
+        "usd": 12.99571
+      }
+    },
+    "runUsd": 26.96795,
+    "cumulativeUsd": 29.973085
+  },
+  "sources": [
+    {
+      "source": "run-log.jsonl (every call line, every phase) -- AUTHORITATIVE",
+      "cumulativeUsd": 29.973085,
+      "differenceFromAuthoritativeUsd": 0,
+      "reconciles": true,
+      "explanation": null
+    },
+    {
+      "source": "spend-ledger.json entries (last cumulativeAfterUsdAssumed)",
+      "cumulativeUsd": 29.973085,
+      "differenceFromAuthoritativeUsd": 0,
+      "reconciles": true,
+      "explanation": null
+    },
+    {
+      "source": "spend-ledger.json entries (earlier runs + sum of costUsdAssumed)",
+      "cumulativeUsd": 29.973085,
+      "differenceFromAuthoritativeUsd": 0,
+      "reconciles": true,
+      "explanation": null
+    },
+    {
+      "source": "spend-ledger.json header (cumulativeUsd)",
+      "cumulativeUsd": 29.91319,
+      "differenceFromAuthoritativeUsd": -0.059895,
+      "reconciles": false,
+      "explanation": "The frozen report summed the GENERATION and REVIEW phases only and left out the one PREFLIGHT call (0.059895). The difference is exactly that call."
+    },
+    {
+      "source": "metrics.json (ASSUMED_CUMULATIVE_SPEND_USD.cumulative)",
+      "cumulativeUsd": 29.91319,
+      "differenceFromAuthoritativeUsd": -0.059895,
+      "reconciles": false,
+      "explanation": "The frozen report summed the GENERATION and REVIEW phases only and left out the one PREFLIGHT call (0.059895). The difference is exactly that call."
+    }
+  ],
+  "reconciled": false,
+  "CANARY_FIGURES_RECONCILE_AS_WRITTEN": "NO",
+  "EVERY_DIFFERENCE_EXPLAINED": "YES",
+  "statement": "The authoritative cumulative assumed spend of the Canary is 29.973085. The run log and the ledger's entries agree with it. The ledger header and metrics.json state 29.913190: they omit the reviewer pre-flight call of 0.059895. The budget guard during the run read the run log, so the cap was enforced on the authoritative figure. Spend accounting version 2 reports one total and refuses to write a report that does not reconcile.",
+  "signedOffBy": "question-bank lane (automated reconciliation; recomputed by test from the frozen run log)"
+}

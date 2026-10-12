@@ -1,0 +1,457 @@
+{
+  "kind": "QB_CANARY_250_PACKET_AUDIT",
+  "packet": "human-calibration-packet.json",
+  "items": 37,
+  "blindItems": 10,
+  "blindItemIds": [
+    "c250-016",
+    "c250-032",
+    "c250-037",
+    "c250-093",
+    "c250-128",
+    "c250-138",
+    "c250-147",
+    "c250-187",
+    "c250-226",
+    "c250-233"
+  ],
+  "BLIND_ITEMS_EXPOSE_NO_AUTOMATED_RESULT": true,
+  "whatTheOtherItemsShow": {
+    "items": 27,
+    "automatedContentShown": [
+      "aiReview",
+      "classification",
+      "dimensions",
+      "independentSolution",
+      "reviewerQuestion",
+      "validatorGates"
+    ],
+    "statement": "The 27 items that are not blind are shown WITH the AI review (its classification, its ten verdicts with reasons, its own worked solution, its question) and the validator gates. A person reviewing them is not independent of the AI reviewer on those items."
+  },
+  "positionsOfBlindItems": [
+    5,
+    16,
+    17,
+    18,
+    24,
+    28,
+    29,
+    31,
+    32,
+    37
+  ],
+  "recommendation": "For a first review that is independent on all 37 items, hand out reviewer-packet-fully-blind.html (or .json): the same items in the same order with no automated result for any item. The orchestrator named human-calibration-packet.json as the reviewer-facing packet, so reviewer-packet.html -- its rendering, automated results shown for the 27 -- remains the default. Either way the key file is not for reviewers.",
+  "perItem": [
+    {
+      "ITEM_ID": "c250-079",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-048",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-076",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-214",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-032",
+      "presentation": "BLIND",
+      "designatedBlind": true,
+      "automatedContent": []
+    },
+    {
+      "ITEM_ID": "c250-023",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-099",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-211",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-033",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-205",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-082",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-194",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-007",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-013",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-087",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-226",
+      "presentation": "BLIND",
+      "designatedBlind": true,
+      "automatedContent": []
+    },
+    {
+      "ITEM_ID": "c250-187",
+      "presentation": "BLIND",
+      "designatedBlind": true,
+      "automatedContent": []
+    },
+    {
+      "ITEM_ID": "c250-138",
+      "presentation": "BLIND",
+      "designatedBlind": true,
+      "automatedContent": []
+    },
+    {
+      "ITEM_ID": "c250-001",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-005",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-011",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-077",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-090",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-016",
+      "presentation": "BLIND",
+      "designatedBlind": true,
+      "automatedContent": []
+    },
+    {
+      "ITEM_ID": "c250-003",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-107",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-186",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-037",
+      "presentation": "BLIND",
+      "designatedBlind": true,
+      "automatedContent": []
+    },
+    {
+      "ITEM_ID": "c250-147",
+      "presentation": "BLIND",
+      "designatedBlind": true,
+      "automatedContent": []
+    },
+    {
+      "ITEM_ID": "c250-010",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-128",
+      "presentation": "BLIND",
+      "designatedBlind": true,
+      "automatedContent": []
+    },
+    {
+      "ITEM_ID": "c250-233",
+      "presentation": "BLIND",
+      "designatedBlind": true,
+      "automatedContent": []
+    },
+    {
+      "ITEM_ID": "c250-154",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-014",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-111",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-132",
+      "presentation": "WITH_AUTOMATED_RESULTS",
+      "designatedBlind": false,
+      "automatedContent": [
+        "aiReview",
+        "classification",
+        "dimensions",
+        "independentSolution",
+        "reviewerQuestion",
+        "validatorGates"
+      ]
+    },
+    {
+      "ITEM_ID": "c250-093",
+      "presentation": "BLIND",
+      "designatedBlind": true,
+      "automatedContent": []
+    }
+  ]
+}

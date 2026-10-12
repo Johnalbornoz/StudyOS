@@ -1,0 +1,1749 @@
+{
+  "kind": "QB_CANARY_250_HUMAN_CALIBRATION_KEY",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- RIGHTS_NOT_ESTABLISHED -- AUTOMATED VALIDATION AND AI REVIEW ONLY, NO HUMAN REVIEW",
+  "freeze": {
+    "freezeCommitSha": "f445e7afa89cffd69865fd3f9dbf9d98bdddb1f9",
+    "manifestHash": "51baba1bbecf12f399b997b65e525e0db169fa12ccca8e21f855cd360c7d2191"
+  },
+  "run": {
+    "runId": "qb-canary-250-20261011205000",
+    "startedAt": "2026-10-11T20:50:00.030Z"
+  },
+  "versions": {
+    "generator": {
+      "harness": {
+        "id": "studyus-specification-generation-harness",
+        "version": "3"
+      },
+      "slotGuidance": {
+        "id": "qb-canary-250-slot-guidance",
+        "version": "1"
+      }
+    },
+    "validators": {
+      "revision": 4
+    },
+    "reviewer": {
+      "id": "studyus-ai-item-reviewer",
+      "version": "1",
+      "promptVersion": "1",
+      "schemaVersion": "1",
+      "redactionVersion": "1",
+      "decisionPolicyVersion": "1"
+    }
+  },
+  "notForReviewers": "Do not give this file to a person reviewing BLIND items.",
+  "items": [
+    {
+      "ITEM_ID": "c250-001",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 7,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R6",
+        "reasons": [
+          "reviewer:CONSTRUCT_VALIDITY=CONCERN",
+          "reviewer:RESPONSE_CONTRACT=CONCERN",
+          "reviewer:DIFFICULTY=CONCERN"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Is an item in which the claim is plainly supported by the largest of three values acceptable for the CHALLENGE difficulty band and the evidence target, or is it too easy and with overlapping distractors C and D?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "STRICT_PASS",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "NOT_APPLICABLE",
+        "stimulusIntegrity": "PASS",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-003",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 5,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R6",
+        "reasons": [
+          "reviewer:CONSTRUCT_VALIDITY=CONCERN",
+          "reviewer:PROFILE_FIDELITY=CONCERN"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Is a single predicted value from a two-point table acceptable evidence for a target that asks the learner to write the linear relation and interpret slope and intercept?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "DOUBT",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "WEAK",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "PASS",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-005",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 9,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Is the working shown in parts (a)-(c) adequate for the profile's method-shown depth, given the validator flagged the working outline as shorter than the method points, and does part (a) give away too much of the formulation?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-007",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 9,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Does part (a), by instructing to divide boxes by euros, give away the choice of quantity to compare that the evidence target requires, and is the item's demand adequate for the CHALLENGE band?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-010",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "uncertaintyScore": 4,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:originality"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Is a three-row table comparison with the claim directly contradicted an acceptable demand for the CHALLENGE band, and are options C and D distinct enough as distractors?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "NOT_APPLICABLE",
+        "stimulusIntegrity": "PASS",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-011",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 3,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R6",
+        "reasons": [
+          "reviewer:CONSTRUCT_VALIDITY=CONCERN"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Does an item that only asks for the value after 9 hours adequately evidence the target's requirement to formulate the linear relation and interpret slope and intercept, given that these can be bypassed by proportional reasoning?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "DOUBT",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "WEAK",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "PASS",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-013",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 8,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Does 'qué diferencia hay entre las dos probabilidades' unambiguously direct a positive 11/126 (larger minus smaller), or should a negative answer also be accepted, and is it acceptable that the claim is not itself judged?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "PASS",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-014",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 10,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Given the profile-compliance FAIL and part (a) giving away the unit-rate structure with order-ambiguous credit, is this item acceptable as it stands for the evidence target (choosing the quantity and forming the rates)?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "WEAK",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-016",
+      "blind": true,
+      "reasons": [
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "uncertaintyScore": 17,
+      "aiOutcome": "REJECTED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "REJECTED",
+        "rule": "R1",
+        "reasons": [
+          "validator:answerKey",
+          "validator:machineRecomputation"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "REJECTED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "FAIL",
+        "answerKey": "FAILED",
+        "machineRecomputation": "FAIL",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-023",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "ACADEMIC_CORRECTNESS=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 10,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R6",
+        "reasons": [
+          "reviewer:ACADEMIC_CORRECTNESS=CONCERN",
+          "reviewer:RESPONSE_CONTRACT=CONCERN",
+          "reviewer:LEARNER_QUALITY=CONCERN",
+          "reviewer:FAIRNESS_AMBIGUITY=CONCERN"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Does the stem's phrasing ('total parcels processed', '35 ready', '4 more than at the start') unambiguously support y = 4x + 35 with intercept meaning 35 parcels ready at the start?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "STRICT_PASS",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-032",
+      "blind": true,
+      "reasons": [
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "uncertaintyScore": 12,
+      "aiOutcome": "REJECTED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "REJECTED",
+        "rule": "R1",
+        "reasons": [
+          "validator:structural"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "REJECTED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "FAIL",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "DETERMINISTIC_RULE_VERIFIED",
+        "machineRecomputation": "NOT_APPLICABLE",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-033",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "uncertaintyScore": 8,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Does the validator's profile-compliance FAIL (xv and Qv listed as parameters not of the construct) reflect a genuine specification defect, and does the item adequately evidence the INTERPRET action given no part asks for a contextual statement?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "WEAK",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-037",
+      "blind": true,
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "uncertaintyScore": 0,
+      "aiOutcome": "APPROVED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "APPROVED",
+        "rule": "R8",
+        "reasons": [],
+        "disagreements": [],
+        "reviewerProposed": "APPROVED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "STRICT_PASS",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-048",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "uncertaintyScore": 5,
+      "aiOutcome": "REJECTED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "REJECTED",
+        "rule": "R1",
+        "reasons": [
+          "validator:answerKey",
+          "validator:machineRecomputation"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS",
+          "REVIEWER_PROPOSAL_LAXER_THAN_POLICY"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "WEAK",
+        "answerKey": "FAILED",
+        "machineRecomputation": "FAIL",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-076",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 9,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Does the failing profileCompliance gate (working outline 2 of 4 method points) and the stimulus wording revealing the fixed-fee-plus-rate structure make this item unfit for use as specified?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "PASS",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-077",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "uncertaintyScore": 4,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:originality"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Is a context where abstract 'first and second factors' multiply into 'satisfaction' acceptable as an authentic personal situation and sufficient evidence of formulating and interpreting, given that the model is fully handed over?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "WEAK",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-079",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "uncertaintyScore": 5,
+      "aiOutcome": "REJECTED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "REJECTED",
+        "rule": "R1",
+        "reasons": [
+          "validator:answerKey",
+          "validator:machineRecomputation"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS",
+          "REVIEWER_PROPOSAL_LAXER_THAN_POLICY"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "WEAK",
+        "answerKey": "FAILED",
+        "machineRecomputation": "FAIL",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "FLAGGED"
+      }
+    },
+    {
+      "ITEM_ID": "c250-082",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 6,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R6",
+        "reasons": [
+          "reviewer:CONSTRUCT_VALIDITY=CONCERN",
+          "reviewer:PROFILE_FIDELITY=CONCERN",
+          "reviewer:DIFFICULTY=CONCERN"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Does a single evaluation of the total (275 + 13*7) adequately evidence the target's FORMULATE and INTERPRET of slope and intercept, and is its single-step demand acceptable for the CHALLENGE band?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "DOUBT",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "WEAK",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "PASS",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-087",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "uncertaintyScore": 4,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance",
+          "validator:originality"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Is the PARAMETER_NOT_OF_THE_CONSTRUCT:x profile flag a validator false positive, and is this single-step item with a clean integer ratio acceptable for the CHALLENGE band?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "WEAK",
+        "answerKey": "DETERMINISTIC_RULE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-090",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "uncertaintyScore": 6,
+      "aiOutcome": "REJECTED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "REJECTED",
+        "rule": "R1",
+        "reasons": [
+          "validator:answerKey",
+          "validator:machineRecomputation"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS",
+          "REVIEWER_PROPOSAL_LAXER_THAN_POLICY"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "WEAK",
+        "answerKey": "FAILED",
+        "machineRecomputation": "FAIL",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "FLAGGED"
+      }
+    },
+    {
+      "ITEM_ID": "c250-093",
+      "blind": true,
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "uncertaintyScore": 0,
+      "aiOutcome": "APPROVED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "APPROVED",
+        "rule": "R8",
+        "reasons": [],
+        "disagreements": [],
+        "reviewerProposed": "APPROVED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "STRICT_PASS",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-099",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 9,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance",
+          "validator:constructPreservation",
+          "validator:originality"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Given that the stem supplies both linear side expressions and the validators flag profile and construct failures, is the formulation demand adequate for the evidence target and the mark allocation (1 mark per part in b-d) acceptable?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "FAIL",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-107",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 9,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance",
+          "validator:originality"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Given that the stem already names the comparison quantity (trees per work-day) and part (a) names the ratio, does the item still elicit the evidence action 'chooses the quantity to compare', and is the profile-compliance failure (working outline shorter than the method points) disqualifying?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "WEAK",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-111",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 3,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R6",
+        "reasons": [
+          "reviewer:CONSTRUCT_VALIDITY=CONCERN"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Is an answer-only item asking for a single evaluated value (136 hojas) acceptable evidence for the target of writing the linear relation and interpreting slope and intercept, given the item never asks for either?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "DOUBT",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "WEAK",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-128",
+      "blind": true,
+      "reasons": [
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "uncertaintyScore": 10,
+      "aiOutcome": "REJECTED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "REJECTED",
+        "rule": "R1",
+        "reasons": [
+          "validator:structural"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "REJECTED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "FAIL",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "NOT_APPLICABLE",
+        "stimulusIntegrity": "PASS",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-132",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "uncertaintyScore": 4,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:stimulusIntegrity"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "The stimulus-integrity validator reports FAIL although the table and chart look consistent; what specifically failed (e.g. chart structure or rendering), and does it affect use of the item?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "WEAK",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "FAIL",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-138",
+      "blind": true,
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "uncertaintyScore": 1,
+      "aiOutcome": "APPROVED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "APPROVED",
+        "rule": "R8",
+        "reasons": [],
+        "disagreements": [],
+        "reviewerProposed": "APPROVED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "STRICT_PASS",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-147",
+      "blind": true,
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "uncertaintyScore": 0,
+      "aiOutcome": "APPROVED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "APPROVED",
+        "rule": "R8",
+        "reasons": [],
+        "disagreements": [],
+        "reviewerProposed": "APPROVED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "STRICT_PASS",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-154",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 4,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R6",
+        "reasons": [
+          "reviewer:CONSTRUCT_VALIDITY=CONCERN",
+          "reviewer:DIFFICULTY=CONCERN"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Does evaluating the total for 14 garments adequately evidence the target of formulating the linear relation and interpreting slope and intercept, and is it sufficient for the CHALLENGE band?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "DOUBT",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "WEAK",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-186",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "uncertaintyScore": 9,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Does the part-by-part scaffolding (part a naming the unit-rate relation) and the easy integer values still meet the CHALLENGE band and the 'chooses the quantity to compare' evidence target, and is part a's relation-style response acceptable for scoring?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-187",
+      "blind": true,
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "uncertaintyScore": 0,
+      "aiOutcome": "APPROVED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "APPROVED",
+        "rule": "R8",
+        "reasons": [],
+        "disagreements": [],
+        "reviewerProposed": "APPROVED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "STRICT_PASS",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "MACHINE_VERIFIED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-194",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "uncertaintyScore": 10,
+      "aiOutcome": "REJECTED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "REJECTED",
+        "rule": "R1",
+        "reasons": [
+          "validator:answerKey",
+          "validator:machineRecomputation"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS",
+          "REVIEWER_PROPOSAL_LAXER_THAN_POLICY"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "PASS",
+        "answerKey": "FAILED",
+        "machineRecomputation": "FAIL",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-205",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "ACADEMIC_CORRECTNESS=CONCERN+CONSTRUCT_VALIDITY=CONCERN"
+        }
+      ],
+      "uncertaintyScore": 13,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:originality"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Should x be treated as a continuous quantity (key 17.9) or as a whole number of sessions (optimum 18, index 14688), given that the item speaks of a count of sessions?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "WEAK",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-211",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "REVIEWER_FAIL_VALIDATOR_STRICT_PASS"
+        }
+      ],
+      "uncertaintyScore": 5,
+      "aiOutcome": "REJECTED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "REJECTED",
+        "rule": "R2",
+        "reasons": [
+          "reviewer:STIMULUS_INTEGRITY"
+        ],
+        "disagreements": [
+          "REVIEWER_FAIL_VALIDATOR_STRICT_PASS"
+        ],
+        "reviewerProposed": "REJECTED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "STRICT_PASS",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "NOT_APPLICABLE",
+        "stimulusIntegrity": "PASS",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-214",
+      "blind": false,
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "uncertaintyScore": 9,
+      "aiOutcome": "NEEDS_HUMAN_REVIEW",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "NEEDS_HUMAN_REVIEW",
+        "rule": "R5",
+        "reasons": [
+          "validator:profileCompliance"
+        ],
+        "disagreements": [
+          "VALIDATOR_FAIL_REVIEWER_PASS"
+        ],
+        "reviewerProposed": "NEEDS_HUMAN_REVIEW",
+        "reviewerQuestion": {
+          "question": "Is the profile-compliance failure (no 'work out' command term and thin working outline) serious enough to block use, given that the item otherwise matches the specification and the key is correct?",
+          "source": "AI_REVIEWER"
+        }
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-226",
+      "blind": true,
+      "reasons": [
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "uncertaintyScore": 14,
+      "aiOutcome": "REJECTED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "REJECTED",
+        "rule": "R1",
+        "reasons": [
+          "validator:answerKey",
+          "validator:machineRecomputation"
+        ],
+        "disagreements": [],
+        "reviewerProposed": "REJECTED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "FAIL",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "FAIL",
+        "constructPreservation": "PASS",
+        "answerKey": "FAILED",
+        "machineRecomputation": "FAIL",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "REVIEW_STRUCTURAL_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    },
+    {
+      "ITEM_ID": "c250-233",
+      "blind": true,
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "uncertaintyScore": 2,
+      "aiOutcome": "APPROVED",
+      "decision": {
+        "kind": "AI_REVIEW",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "policy": {
+          "id": "studyus-ai-review-decision-policy",
+          "version": "1"
+        },
+        "classification": "APPROVED",
+        "rule": "R8",
+        "reasons": [],
+        "disagreements": [],
+        "reviewerProposed": "APPROVED",
+        "reviewerQuestion": null
+      },
+      "validatorOutcome": "STRICT_PASS",
+      "validatorGates": {
+        "structural": "PASS",
+        "profileCompliance": "PASS",
+        "constructPreservation": "PASS",
+        "answerKey": "HUMAN_REVIEW_REQUIRED",
+        "machineRecomputation": "PASS",
+        "stimulusIntegrity": "NOT_APPLICABLE",
+        "originality": "PASS_LOW_SIMILARITY",
+        "lineage": "PASS",
+        "learnerTextLeakage": "PASS",
+        "itemWriting": "PASS"
+      }
+    }
+  ]
+}

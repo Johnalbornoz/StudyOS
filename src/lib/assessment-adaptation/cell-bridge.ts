@@ -22,7 +22,7 @@
 import type { ElicitationFormat, TaskFamily, TaskFamilyRegistry } from '@/lib/exam-core/question-bank/task-families/task-family';
 import { adapt, type AdaptationResult } from './adapt';
 import type { AdaptationRefusalCode, AdaptationRequest, ApplicabilityRequirement } from './adaptation-specification';
-import type { AssessmentComponentProfile, AssessmentSystemProfile } from './assessment-system-profile';
+import { assessmentSystemOfExamFamily, type AssessmentComponentProfile, type AssessmentSystemProfile } from './assessment-system-profile';
 import { INSTANCE_PURPOSES, type ContentUseClass, type InstancePurpose } from './instance-lineage';
 
 /** The fields of a requirement cell the bridge reads. */
@@ -98,7 +98,8 @@ export interface AdaptForCellInput {
 export function adaptForCell(input: AdaptForCellInput): CellAdaptationResult {
   const { cell, family } = input;
   const no = (code: CellBridgeRefusalCode, detail: string): CellAdaptationResult => ({ ok: false, refusal: { code, detail } });
-  const profile = input.profiles.find((p) => p.examFamilyCode === cell.examFamily);
+  // D5: an exam family that is a qualification context of another system (AICE of CAMBRIDGE) is assessed by that system's profile
+  const profile = input.profiles.find((p) => p.examFamilyCode === assessmentSystemOfExamFamily(cell.examFamily).systemExamFamily);
   if (!profile) return no('NO_PROFILE_FOR_EXAM_FAMILY', cell.examFamily);
   if (!family.primaryConcepts.some((c) => c.stableId === cell.primaryConcept.stableId && c.canonicalSubject === cell.primaryConcept.canonicalSubject)) return no('FAMILY_DOES_NOT_TARGET_THE_CELLS_CONCEPT', `${family.familyId} / ${cell.primaryConcept.stableId} (${cell.primaryConcept.canonicalSubject})`);
   const responseFormat = ELICITATION_FORMAT_OF_PRODUCTION[cell.responseFormat];

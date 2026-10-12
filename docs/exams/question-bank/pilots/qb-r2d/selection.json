@@ -1,0 +1,456 @@
+{
+  "kind": "QB_R2D_SELECTION",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- AUTOMATED VALIDATION ONLY, NO HUMAN REVIEW",
+  "adaptations": [
+    {
+      "selectionKey": "01.linear-model.paa",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "specificationId": "584fd68f232c0de0fb6558b7e73375e36789a3cb658df612bcbbff11cfe9770e",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerm": null,
+      "markStructure": "ONE_MARK_PER_ITEM",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "PERSONAL",
+      "language": "es",
+      "tests": "Selected response, no calculator, exact numbers, one mark, key only (Spanish)."
+    },
+    {
+      "selectionKey": "02.linear-model.ib-p1",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "approach": null,
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "specificationId": "8cf89a34d9ba9826fac636ee8784c60e943b66858b4c3d7c7f96a0de12146c49",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "NONE",
+      "commandTerm": "find",
+      "markStructure": "MULTI_MARK_PARTS",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "SCIENTIFIC",
+      "language": "en",
+      "tests": "Constructed response with method shown, NO calculator, command term fixed, multi-mark parts with a method-and-accuracy scheme."
+    },
+    {
+      "selectionKey": "03.linear-model.ib-p2",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "specificationId": "a94bb59af42b08d59019969bd71067829d1b444e50d8dd498e295eb604325258",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "GDC_REQUIRED",
+      "commandTerm": "find",
+      "markStructure": "MULTI_MARK_PARTS",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "SCIENTIFIC",
+      "language": "en",
+      "tests": "Same system, other component: calculator REQUIRED and realistic values -- the calculator / non-calculator contrast inside one system."
+    },
+    {
+      "selectionKey": "04.linear-model.cambridge-p1",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "approach": null,
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "specificationId": "7058bec48ee09ed94f9a38eb75241c4866415038499b973b4628d23cf5a709e5",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "SCIENTIFIC_REQUIRED",
+      "commandTerm": "work out",
+      "markStructure": "MULTI_MARK_PARTS",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "SCIENTIFIC",
+      "language": "en",
+      "tests": "Constructed response, scientific calculator, another command term; bound to a syllabus version."
+    },
+    {
+      "selectionKey": "05.linear-model.pisa",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": null,
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "specificationId": "271c14ec7ce2b9c8f1e7b41176288ac69d3c657f0174ad44bb517363a27238f2",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "ALLOWED",
+      "commandTerm": null,
+      "markStructure": "CODED_CREDIT",
+      "stimulus": {
+        "mode": "OWN_STIMULUS",
+        "kinds": [
+          "TABLE",
+          "GRAPH"
+        ]
+      },
+      "context": "PERSONAL",
+      "language": "es",
+      "tests": "Selected response WITH a stimulus of its own (table / graph), authentic context required, transfer required, coded credit."
+    },
+    {
+      "selectionKey": "06.linear-model.icfes",
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "specificationId": "8da1b8dfdf9108aa41b737bfa904a55c62e8317acfe4a629520a2114745e9e79",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerm": null,
+      "markStructure": "ONE_MARK_PER_ITEM",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "PERSONAL",
+      "language": "es",
+      "tests": "Selected response, no calculator, plausible context preferred, the Icfes competency model."
+    },
+    {
+      "selectionKey": "07.proportion-missing-value.paa",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.proportion.missing-value",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "fe72768dc737b03a58f64c195377cfd49674cdc99c87e122cfdd37f2f7cfe04a",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerm": null,
+      "markStructure": "ONE_MARK_PER_ITEM",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "ABSTRACT",
+      "language": "es",
+      "tests": "Procedural and ABSTRACT: a SOLVE family with no situation at all."
+    },
+    {
+      "selectionKey": "08.proportion-rate-comparison.pisa",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": null,
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "2cf557ee41b1ac100abbcb6b25778fd6dd55d62d6be156e2bfca1658d04a3c9f",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "ALLOWED",
+      "commandTerm": null,
+      "markStructure": "CODED_CREDIT",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "PERSONAL",
+      "language": "es",
+      "tests": "Modelling in context (FORMULATE + SOLVE + INTERPRET) as a selected response, calculator allowed, realistic values."
+    },
+    {
+      "selectionKey": "09.quadratic-factorising.paa",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.alg.quadratics",
+      "specificationId": "f918a5113ddb1836345b7c63e614df81dc8aa0251d806a19287663a617bb2aa3",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "responseFormat": "NUMERIC_ENTRY",
+      "calculator": "NONE",
+      "commandTerm": null,
+      "markStructure": "ONE_MARK_PER_ITEM",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "ABSTRACT",
+      "language": "es",
+      "tests": "NUMERIC ENTRY (student-produced number): the family excludes options because substitution would replace the method."
+    },
+    {
+      "selectionKey": "10.quadratic-factorising.ib-p1",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "approach": null,
+      "primaryConceptStableId": "math.alg.quadratics",
+      "specificationId": "39292031d19e5844386003250916b14f7c6139037e5260716239ff01a7ef9159",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "NONE",
+      "commandTerm": "solve",
+      "markStructure": "MULTI_MARK_PARTS",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "ABSTRACT",
+      "language": "en",
+      "tests": "The same procedural family as a constructed response with marks and the command term \"solve\", no calculator."
+    },
+    {
+      "selectionKey": "11.quadratic-optimum.ib-p2",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "primaryConceptStableId": "math.alg.quadratics",
+      "specificationId": "287e6d2e21f8747923c538198880a1749f2b26e23009546d8a8eff4151dd4b76",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "GDC_REQUIRED",
+      "commandTerm": "find",
+      "markStructure": "MULTI_MARK_PARTS",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "SCIENTIFIC",
+      "language": "en",
+      "tests": "Modelling with an optimum, calculator required, multi-mark parts: formulate, solve, interpret."
+    },
+    {
+      "selectionKey": "12.probability-single-event.icfes",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.prob.probability",
+      "specificationId": "c8633d32d2c64f424240c7ae154f615a4f32460b9a4a690444acec48bf897f7b",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerm": null,
+      "markStructure": "ONE_MARK_PER_ITEM",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "PERSONAL",
+      "language": "es",
+      "tests": "A COMPUTE family in a personal context, selected response, fraction answers."
+    },
+    {
+      "selectionKey": "13.probability-compare.cambridge-p1",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "approach": null,
+      "primaryConceptStableId": "math.prob.probability",
+      "specificationId": "fea7f3bdb9aac5be1194fc9bc928523cc3e89ecb525ee4ab6a855407a73ccf1f",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "SCIENTIFIC_REQUIRED",
+      "commandTerm": "work out",
+      "markStructure": "MULTI_MARK_PARTS",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "SCIENTIFIC",
+      "language": "en",
+      "tests": "FORMULATE + COMPUTE + EVALUATE as a constructed response: a verdict that a mark scheme must reward."
+    },
+    {
+      "selectionKey": "14.data-judge-claim.paa",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "primaryConceptStableId": "math.stat.data-representation",
+      "specificationId": "83380108b12edb3f3ed3ea534cf41f3ee2cf62613865a08d0563d09c368923bd",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerm": null,
+      "markStructure": "ONE_MARK_PER_ITEM",
+      "stimulus": {
+        "mode": "OWN_STIMULUS",
+        "kinds": [
+          "TABLE",
+          "GRAPH"
+        ]
+      },
+      "context": "PERSONAL",
+      "language": "es",
+      "tests": "Stimulus REQUIRED by the family (table / graph), whole numbers without a calculator, a judgement keyed as an option."
+    },
+    {
+      "selectionKey": "15.data-relative-change.ib-p2",
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "familyVersion": "0.1.0-draft",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "primaryConceptStableId": "math.stat.data-representation",
+      "specificationId": "ff017a9a1c09d4abd0dea2a9522949d58cf1f5b1d430a9277353bd1101f07b8d",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
+      "responseFormat": "SHORT_RESPONSE",
+      "calculator": "GDC_REQUIRED",
+      "commandTerm": "write down",
+      "markStructure": "MULTI_MARK_PARTS",
+      "stimulus": {
+        "mode": "OWN_STIMULUS",
+        "kinds": [
+          "TABLE",
+          "GRAPH",
+          "DATA_SET"
+        ]
+      },
+      "context": "SCIENTIFIC",
+      "language": "en",
+      "tests": "A realistic data set as stimulus and a calculator-dependent computation with stated rounding; refused on the no-calculator paper."
+    },
+    {
+      "selectionKey": "16.approach.school.standard",
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "approach": "STANDARD",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "26e01f25bf8eeb55deb4ec97fc8b18d2c5106eb05fb2dad2f0f171c88e3a6d4a",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "ALLOWED",
+      "commandTerm": null,
+      "markStructure": "MULTI_MARK_PARTS",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "SOCIETAL",
+      "language": "es",
+      "tests": "Baseline for the approach comparison on a target with no official constraint."
+    },
+    {
+      "selectionKey": "17.approach.school.stem-plus",
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "approach": "STEM_PLUS",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "995b4c29713381c5be0ca629c4e0df15b66da82b152a1b8491c22a8d0fde46c7",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "EXTENDED_RESPONSE",
+      "calculator": "ALLOWED",
+      "commandTerm": null,
+      "markStructure": "MULTI_MARK_PARTS",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "SOCIETAL",
+      "language": "es",
+      "tests": "STEM_PLUS where it can act: constructed response, justified argument -- same concept, same invariants."
+    },
+    {
+      "selectionKey": "18.approach.paa.standard",
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": "STANDARD",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "435568f81541f9321230e8c23f4b92eeefdbd33d1a163edeec754cc7a97071b6",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerm": null,
+      "markStructure": "ONE_MARK_PER_ITEM",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "PERSONAL",
+      "language": "es",
+      "tests": "Baseline on a target with OFFICIAL constraints."
+    },
+    {
+      "selectionKey": "19.approach.paa.stem-plus",
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": "STEM_PLUS",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "eec87ecc86fa9aaac5cfec600407ce51a13c6570ab31c14c7a193e91840a3202",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "NONE",
+      "commandTerm": null,
+      "markStructure": "ONE_MARK_PER_ITEM",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "SOCIETAL",
+      "language": "es",
+      "tests": "STEM_PLUS where official constraints win: format, calculator and reasoning preferences recorded as unmet; only the context moves."
+    },
+    {
+      "selectionKey": "20.approach.pisa.stem-plus",
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": "STEM_PLUS",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "specificationId": "8e3bc937689743768828e3c5ea4eb45171dd737e86a3847313d006d345895a09",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "responseFormat": "SELECTED_RESPONSE",
+      "calculator": "ALLOWED",
+      "commandTerm": null,
+      "markStructure": "CODED_CREDIT",
+      "stimulus": {
+        "mode": "NONE",
+        "kinds": []
+      },
+      "context": "SOCIETAL",
+      "language": "es",
+      "tests": "STEM_PLUS on PISA: tools preference honoured, context moved; compared with the PISA item of the same family under no approach (08)."
+    }
+  ]
+}
