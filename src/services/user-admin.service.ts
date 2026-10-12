@@ -15,7 +15,7 @@
  */
 import { clerkClient } from '@clerk/nextjs/server';
 import { maskEmail } from '@/lib/admin/mask';
-import { findClerkIdsMissingInClerk } from '@/services/identity-reconciliation.service';
+import { detectIdentityInconsistencies, findClerkIdsMissingInClerk } from '@/services/identity-reconciliation.service';
 import { db } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getOrCreateCanonicalUser, getUserRoles, hasRole, type Role, type SelfServiceRole } from '@/lib/identity';
@@ -634,6 +634,8 @@ export interface SyncCheckResult {
   usersWithoutClerkMatch: string[];
   /** Track A: the same accounts, identified (name / email / state) -- never just an internal id. */
   accounts: SyncErrorAccount[];
+  /** false when Clerk could not be consulted: the lists are then empty because nothing was verified, not because nothing is wrong. */
+  clerkReachable: boolean;
 }
 
 /** Best-effort, read-only detection -- never fabricates a role or profile. A `users` row whose `clerk_id` no longer resolves via Clerk is flagged, not repaired automatically. */
@@ -647,17 +649,22 @@ export interface SyncErrorAccount {
   roles: string[];
 }
 
-export async function detectSyncErrors(sampleLimit: number): Promise<SyncCheckResult> {
-  const client = await clerkClient();
-  const rows = await db.query(`SELECT id, clerk_id FROM users ORDER BY created_at DESC LIMIT $1`, [sampleLimit]);
-  const missing: string[] = [];
-  for (const row of rows.rows) {
-    try {
-      await client.users.getUser(row.clerk_id);
-    } catch {
-      missing.push(row.id);
-    }
-  }
+/**
+ * The StudyUs accounts the admin inbox lists as having no Clerk identity.
+ *
+ * Which accounts those are is decided in ONE place, the canonical reconciliation
+ * (`detectIdentityInconsistencies`), so the inbox and the Overview cannot disagree: human accounts only.
+ * A technical identity (`users.is_system`) has no Clerk account by design and is never an inconsistency.
+ * `limit` caps how many are listed (most recent first).
+ */
+export async function detectSyncErrors(limit: number): Promise<SyncCheckResult> {
+  const report = await detectIdentityInconsistencies();
+  if (!report.clerkReachable) return { usersWithoutClerkMatch: [], accounts: [], clerkReachable: false };
+  const missing: string[] = report.items
+    .filter((i) => i.kind === 'DB_WITHOUT_CLERK' && i.userId !== null)
+    .map((i) => i.userId as string)
+    .reverse() // the reconciliation lists oldest first
+    .slice(0, limit);
   // Track A: identify each affected account from its own StudyUs records
   // (its Clerk user is, by definition, missing).
   const accounts: SyncErrorAccount[] = missing.length
@@ -667,7 +674,7 @@ export async function detectSyncErrors(sampleLimit: number): Promise<SyncCheckRe
                   NULLIF(TRIM(COALESCE((SELECT s.name FROM students s WHERE s.user_id = u.id LIMIT 1),
                                        (SELECT p.full_name FROM profiles p WHERE p.user_id = u.id AND p.full_name IS NOT NULL LIMIT 1))), '') AS name,
                   ARRAY(SELECT r.role FROM user_roles r WHERE r.user_id = u.id AND r.status = 'ACTIVE' ORDER BY r.role) AS roles
-           FROM users u WHERE u.id = ANY($1::uuid[]) ORDER BY u.created_at DESC`,
+           FROM users u WHERE u.id = ANY($1::uuid[]) AND NOT u.is_system ORDER BY u.created_at DESC`,
           [missing]
         )
       ).rows.map((r: any) => ({
@@ -680,7 +687,7 @@ export async function detectSyncErrors(sampleLimit: number): Promise<SyncCheckRe
         roles: r.roles ?? [],
       }))
     : [];
-  return { usersWithoutClerkMatch: missing, accounts };
+  return { usersWithoutClerkMatch: missing, accounts, clerkReachable: true };
 }
 
 export async function reconcileSyncError(actorUserId: string, targetUserId: string): Promise<void> {

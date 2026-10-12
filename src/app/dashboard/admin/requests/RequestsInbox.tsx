@@ -10,7 +10,7 @@ function who(name: string | null | undefined, email: string | null | undefined):
 }
 
 export default function RequestsInbox() {
-  const [data, setData] = useState<{ institutionRequests: any[]; invitations: any[]; syncErrors: string[]; syncAccounts?: any[] } | null>(null);
+  const [data, setData] = useState<{ institutionRequests: any[]; invitations: any[]; syncErrors: string[]; syncAccounts?: any[]; syncVerified?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
@@ -76,8 +76,10 @@ export default function RequestsInbox() {
 
       <section>
         <h2 style={{ fontSize: 15, marginBottom: 'var(--space-2)' }}>Inconsistencias Clerk ↔ StudyUs</h2>
-        {data.syncErrors.length === 0 ? (
-          <EmptyState title="No se detectaron inconsistencias en la muestra reciente." />
+        {data.syncVerified === false ? (
+          <EmptyState title="No se pudo consultar Clerk: la reconciliación no está verificada en este momento (no significa 0 inconsistencias)." />
+        ) : data.syncErrors.length === 0 ? (
+          <EmptyState title="No se detectaron inconsistencias." />
         ) : (
           <ul className="list-card card">
             {(data.syncAccounts ?? data.syncErrors.map((userId) => ({ userId }))).map((a: any) => (

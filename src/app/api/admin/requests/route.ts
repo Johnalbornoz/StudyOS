@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
   const [institutionRequests, invitations, syncCheck] = await Promise.all([
     listAllPendingMembershipsAcrossInstitutions(),
     listPendingInvitations().catch(() => []),
-    detectSyncErrors(50).catch(() => ({ usersWithoutClerkMatch: [] as string[], accounts: [] })),
+    detectSyncErrors(50).catch(() => ({ usersWithoutClerkMatch: [] as string[], accounts: [], clerkReachable: false })),
   ]);
 
   return NextResponse.json({
@@ -30,6 +30,8 @@ export async function GET(_request: NextRequest) {
       syncErrors: syncCheck.usersWithoutClerkMatch,
       // Track A: identified accounts (name / email / state) for the inbox.
       syncAccounts: syncCheck.accounts,
+      // false: Clerk could not be consulted, so "no inconsistencies" was not verified.
+      syncVerified: syncCheck.clerkReachable,
     },
   });
 }

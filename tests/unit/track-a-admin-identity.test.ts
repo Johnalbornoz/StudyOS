@@ -90,14 +90,12 @@ describe('requester identity', () => {
 describe('Clerk <-> StudyUs inconsistencies', () => {
   it('identifies the affected account (name, email, state, roles) from its own records', async () => {
     dbQueryMock.mockImplementation(async (sql: string) => {
-      if (sql.includes('SELECT id, clerk_id FROM users')) return { rows: [{ id: 'ok', clerk_id: 'c-ok' }, { id: 'gone', clerk_id: 'c-gone' }] };
+      // the inbox now asks the canonical reconciliation which accounts are affected (human accounts only)
+      if (sql.includes('FROM users WHERE NOT is_system')) return { rows: [{ id: 'ok', clerk_id: 'c-ok', email: 'ok@example.com', status: 'ACTIVE', created_at: new Date('2026-09-29') }, { id: 'gone', clerk_id: 'c-gone', email: 'gone@example.com', status: 'ACTIVE', created_at: new Date('2026-09-30') }] };
       if (sql.includes('FROM users u WHERE u.id = ANY')) return { rows: [{ id: 'gone', email: 'gone@example.com', status: 'ACTIVE', is_test: false, created_at: new Date('2026-09-30'), name: 'Ida', roles: ['STUDENT'] }] };
       return { rows: [] };
     });
-    getUserMock.mockImplementation(async (clerkId: string) => {
-      if (clerkId === 'c-gone') throw new Error('not found');
-      return { id: clerkId };
-    });
+    getUserListMock.mockResolvedValue({ data: [{ id: 'c-ok', emailAddresses: [], primaryEmailAddressId: null, createdAt: null }] });
     const result = await detectSyncErrors(50);
     expect(result.usersWithoutClerkMatch).toEqual(['gone']);
     expect(result.accounts).toEqual([expect.objectContaining({ userId: 'gone', email: 'gone@example.com', name: 'Ida', status: 'ACTIVE', roles: ['STUDENT'] })]);
