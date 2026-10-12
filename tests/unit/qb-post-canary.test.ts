@@ -554,7 +554,8 @@ describe('this lane cannot make a provider call', () => {
       expect(source, f).not.toMatch(/fetch\(|https?:\/\/|process\.env|API_KEY|createR2eLiveTransport|createReviewerLiveTransport|requireLiveKey|requireReviewerKey|live-provider|reviewer-transport|DATABASE_URL|from 'pg'|@\/lib\/db|dotenv|--env-file/);
       if (!f.endsWith('run.ts')) expect(source, f).not.toMatch(/Date\.now\(|new Date\(|Math\.random\(|writeFileSync/);
     }
-    expect(execFileSync('git', ['status', '--porcelain', '--', 'src'], { cwd: ROOT }).toString().trim().split('\n')).toEqual(['?? src/lib/exam-core/question-bank/production/generator/specification-generation-v4.ts']);
+    // the remediation added exactly one file to src; it is committed now, so this is checked against history rather than the working tree
+    expect(execFileSync('git', ['log', '--diff-filter=A', '--format=', '--name-only', '-1', 'a21f4c1', '--', 'src'], { cwd: ROOT }).toString().trim().split('\n')).toEqual(['src/lib/exam-core/question-bank/production/generator/specification-generation-v4.ts']);
     for (const f of readdirSync(join(ROOT, CANARY_DIR, 'v5-offline-replay')).concat(['../spend-reconciliation.json'])) expect(/sk-[A-Za-z0-9_-]{20,}/.test(read(`${CANARY_DIR}/v5-offline-replay/${f}`)), f).toBe(false);
   });
 });

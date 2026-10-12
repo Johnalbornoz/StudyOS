@@ -55,7 +55,7 @@ describe('one authoring contract', () => {
       'paa-concept-identity.ts', 'paa-concept-profiles.ts', 'paa-generation-plan.ts', 'pilot-projection.ts', 'pool-assignment.ts', 'reference-pack.ts', 'requirement-cell.ts', 'review-package.ts', 'rights-gate.ts', 'specification-candidate.ts', 'specification-validators-r3.ts', 'specification-validators-r4.ts', 'specification-validators.ts',
       'stimulus-plan.ts', 'stimulus-spec.ts', 'structural-validation.ts', 'validated-candidate.ts',
     ]);
-    expect(readdirSync(join(ROOT, PROD), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)).toEqual(['generator']);
+    expect(readdirSync(join(ROOT, PROD), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)).toEqual(['generator', 'v5']);
     // QB-R2D adds, additively, the specification-driven path: its contract, its construct vocabulary, its validators and one generator file.
     expect(readdirSync(join(ROOT, PROD, 'generator')).sort()).toEqual(['generate-candidates.ts', 'provider.ts', 'response-schema.ts', 'specification-generation-v2.ts', 'specification-generation-v3.ts', 'specification-generation-v4.ts', 'specification-generation.ts', 'templates.ts']);
     expect(existsSync(join(ROOT, PROD, 'draft-package.ts'))).toBe(false);
@@ -68,7 +68,7 @@ describe('one authoring contract', () => {
     const walk = (d: string): string[] => readdirSync(join(ROOT, d), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${d}/${e.name}`) : e.name.endsWith('.ts') || e.name.endsWith('.tsx') ? [`${d}/${e.name}`] : []));
     // every production module, the generator directory included: no database, no query, no environment, no network, no file system
     const production = walk(PROD);
-    expect(production.length).toBe(36); // post-canary: +1 generator file (version 4, for future runs); // QB-R2D: +3 modules and +1 generator file; QB-R2E: +1 module (validators revision 3) and +1 generator file (version 2); QB-R2F: +1 module (validators revision 4) and +1 generator file (version 3); all pure
+    expect(production.length).toBe(42); // Question Factory V5: +6 modules under v5/ (profiles, item, deterministic stages, pipeline, batch control, readiness); // post-canary: +1 generator file (version 4, for future runs); // QB-R2D: +3 modules and +1 generator file; QB-R2E: +1 module (validators revision 3) and +1 generator file (version 2); QB-R2F: +1 module (validators revision 4) and +1 generator file (version 3); all pure
     for (const f of production) {
       const src = read(f).replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '');
       expect(src, f).not.toMatch(/from '@\/lib\/db'|\bquery\(|INSERT INTO|UPDATE \w+ SET|DELETE FROM|process\.env|fetch\(|from '(node:)?fs'|from 'pg'|@\/lib\/ai\/|\bDate\.now\(|new Date\(\)|Math\.random\(/);
