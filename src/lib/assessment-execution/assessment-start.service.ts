@@ -25,6 +25,7 @@ import { db, type DbExecutor } from '@/lib/db';
 import { QUIZ_SESSION_TTL_MINUTES } from '@/services/quiz-persistence.service';
 import { recordBankDeliveries } from '@/services/question-bank.service';
 import { solveLearningForStudent, type LearningSelectionRequest } from '@/lib/assessment-blueprint/assessment-blueprint.service';
+import { loadReviewedLearningQuestions } from '@/lib/exam-core/reviewed-item-learning.service';
 import { freezeAssessment, readFrozenAssessment, type FrozenAssessment } from './frozen-assessment';
 import { learningActivityFor } from './assessment-execution.service';
 
@@ -68,6 +69,12 @@ export interface StartLearningInput {
   /** Explicit "now" (ISO): the evidence projection and the snapshot are stamped with it. */
   asOf: string;
   language?: string;
+  /**
+   * Required when the selection is made from the GLOBAL reviewed bank, whose questions belong to no Student:
+   * the Subject the session is for and the Student's own concept each canonical target stands for. The caller
+   * has verified both (the Subject is the Student's, every concept is one of its concepts).
+   */
+  scope?: { subjectId: string; learnerConceptByCanonical: Readonly<Record<string, string>> };
 }
 
 export type StartRefusal = 'DISABLED' | 'CONTEXT_UNAVAILABLE' | 'NOT_STARTABLE' | 'CONTENT_UNAVAILABLE' | 'SUBJECT_UNRESOLVED';
@@ -85,6 +92,12 @@ export interface StartDeps {
 const sameTargets = (frozen: FrozenAssessment, intent: string, depth: string, canonicalConceptIds: readonly string[]) =>
   frozen.intent === intent && frozen.depth === depth && JSON.stringify(frozen.targets.canonicalConceptIds) === JSON.stringify([...new Set(canonicalConceptIds)].sort());
 
+/** The same canonical targets in another Subject are another assessment: a scoped start resumes only its own Subject's session, an unscoped one only an unscoped session. */
+const sameScope = (frozen: FrozenAssessment, scope: StartLearningInput['scope']) => {
+  if (!scope) return !frozen.learnerScope;
+  return !!frozen.learnerScope && frozen.learnerScope.subjectId === scope.subjectId && frozen.learnerScope.concepts.every((c) => scope.learnerConceptByCanonical[c.canonicalConceptId] === c.learnerConceptId);
+};
+
 export async function startLearningAssessment(input: StartLearningInput, overrides: Partial<StartDeps> = {}): Promise<StartResult> {
   const deps: StartDeps = { solve: solveLearningForStudent, enabled: isSnapshotExecutionEnabled, ...overrides };
   const log = deps.log ?? ((event) => console.info('[b5-assessment-start]', JSON.stringify(event)));
@@ -101,7 +114,7 @@ export async function startLearningAssessment(input: StartLearningInput, overrid
     );
     for (const row of open.rows as Array<{ id: string; assessment_snapshot: unknown }>) {
       const read = readFrozenAssessment(row.assessment_snapshot);
-      if (read.ok && read.frozen.studentId === input.studentId && sameTargets(read.frozen, input.request.intent, input.request.depth, wanted)) {
+      if (read.ok && read.frozen.studentId === input.studentId && sameTargets(read.frozen, input.request.intent, input.request.depth, wanted) && sameScope(read.frozen, input.scope)) {
         log({ event: 'RESUMED', sessionId: row.id, snapshotId: read.frozen.snapshotId, family: read.frozen.family, executionAuthority: 'CANONICAL' });
         return { ok: true, resumed: true, record: { kind: 'QUIZ_SESSION', id: row.id }, snapshotId: read.frozen.snapshotId, questions: read.frozen.items.length, executionAuthority: 'CANONICAL' };
       }
@@ -124,17 +137,37 @@ export async function startLearningAssessment(input: StartLearningInput, overrid
     path: 'LEARNING_ACTIVITY',
     intent: input.request.intent,
     activity: learningActivityFor(solution.requirement.evidence.activityType, input.request.intent),
+    // launched from one Subject: the snapshot says which of the Student's concepts the evidence belongs to
+    learnerScope: input.scope ?? null,
   });
 
   /* ---- the frozen questions' content, in the frozen order ---- */
   const ids = frozen.items.map((i) => i.question.id);
-  const content = await db.query(
-    `SELECT qc.id, qc.question, qc.concept_id, c.subject_id
-       FROM question_bank_candidates qc JOIN concepts c ON c.id = qc.concept_id
-      WHERE qc.id = ANY($1::uuid[]) AND qc.student_id = $2 AND qc.validation_status = 'VALIDATED'`,
-    [ids, input.studentId]
-  );
-  const byId = new Map((content.rows as Array<{ id: string; question: Record<string, unknown>; concept_id: string; subject_id: string }>).map((r) => [r.id, r]));
+  const cacheIds = frozen.items.filter((i) => i.question.store === 'LEARNING_ITEM_CACHE').map((i) => i.question.id);
+  const bankIds = frozen.items.filter((i) => i.question.store === 'REVIEWED_EXAM_BANK').map((i) => i.question.id);
+  const byId = new Map<string, { id: string; question: Record<string, unknown>; concept_id: string; subject_id: string }>();
+  if (cacheIds.length > 0) {
+    const content = await db.query(
+      `SELECT qc.id, qc.question, qc.concept_id, c.subject_id
+         FROM question_bank_candidates qc JOIN concepts c ON c.id = qc.concept_id
+        WHERE qc.id = ANY($1::uuid[]) AND qc.student_id = $2 AND qc.validation_status = 'VALIDATED'`,
+      [cacheIds, input.studentId]
+    );
+    for (const r of content.rows as Array<{ id: string; question: Record<string, unknown>; concept_id: string; subject_id: string }>) byId.set(r.id, r);
+  }
+  if (bankIds.length > 0) {
+    // a reviewed item belongs to no Student: the verified scope says which Subject and which of the Student's concepts it serves
+    if (!input.scope) return { ok: false, reason: 'CONTENT_UNAVAILABLE' };
+    const deliverable = await loadReviewedLearningQuestions(bankIds);
+    for (const item of frozen.items) {
+      if (item.question.store !== 'REVIEWED_EXAM_BANK') continue;
+      const question = deliverable.get(item.question.id) ?? null;
+      const frozenConcepts = new Map((frozen.learnerScope?.concepts ?? []).map((c) => [c.canonicalConceptId, c.learnerConceptId]));
+      const learnerConceptId = item.coverage.map((c) => frozenConcepts.get(c.canonicalConceptId)).find((id): id is string => typeof id === 'string');
+      if (!question || !learnerConceptId) return { ok: false, reason: 'CONTENT_UNAVAILABLE' };
+      byId.set(item.question.id, { id: item.question.id, question: question as unknown as Record<string, unknown>, concept_id: learnerConceptId, subject_id: input.scope.subjectId });
+    }
+  }
   if (ids.some((id) => !byId.has(id))) return { ok: false, reason: 'CONTENT_UNAVAILABLE' };
   const subjects = [...new Set(ids.map((id) => byId.get(id)!.subject_id))];
   if (subjects.length !== 1) return { ok: false, reason: 'SUBJECT_UNRESOLVED' };
@@ -156,7 +189,9 @@ export async function startLearningAssessment(input: StartLearningInput, overrid
       [sessionId, input.studentId, learnerConcepts.length === 1 ? learnerConcepts[0] : null, subjects[0], JSON.stringify(questions), input.language ?? 'es', QUIZ_SESSION_TTL_MINUTES, frozen.activity!.quizMode, learnerConcepts, frozen.activity!.activityType, frozen.activity!.evidenceMode, JSON.stringify(frozen)]
     );
     // the existing delivery ledger: the questions are now exposed to this Student
-    await recordBankDeliveries(ids, sessionId, input.studentId, client);
+    await recordBankDeliveries(cacheIds, sessionId, input.studentId, client);
+    // ...and the reviewed bank's own ledger for its items (what "seen" and exposure are read from)
+    if (bankIds.length > 0) await client.query(`INSERT INTO exam_item_usage (student_id, approved_item_id, delivery_use) SELECT $1, unnest($2::uuid[]), 'PRACTICE'`, [input.studentId, bankIds]);
     await client.query('COMMIT');
   } catch (e) {
     await client.query('ROLLBACK').catch(() => undefined);

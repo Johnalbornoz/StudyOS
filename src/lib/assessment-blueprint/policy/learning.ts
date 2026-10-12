@@ -10,6 +10,10 @@
  * Intents map onto the existing activity semantics -- no new persisted activity type:
  *   CONCEPT_PRACTICE / TOPIC_PRACTICE / CUSTOM_CONCEPT_PRACTICE / MIXED_CUMULATIVE  -> PRACTICE
  *   MASTERY_CHECK                                                                   -> PROVE
+ *   AD_HOC_CONCEPT_EXAM (a Student's own partial exam over concepts they chose)     -> PROVE
+ *       Same activity as a mastery check: independent, no assistance, novel items. It is its own intent
+ *       so that the frozen assessment and the evidence it produces carry that provenance explicitly.
+ *       It is a LEARNING assessment: never an official paper, a mock or an institutional examination.
  *   RETENTION_CHECK                                                                 -> RETENTION_CHECK
  *   DIAGNOSTIC                                                                      -> one direct look at every concept
  */
@@ -24,7 +28,7 @@ import type { TargetPlan, TargetRequirement } from '../solver/plan';
 import type { EvidenceNeed } from './evidence-requirement';
 import { DEPTH_PRESETS, depthRequirementFor, PRACTICE_DEPTH_POLICY_VERSION, type PracticeDepth } from './practice-depth';
 
-export const LEARNING_INTENTS = ['CONCEPT_PRACTICE', 'TOPIC_PRACTICE', 'CUSTOM_CONCEPT_PRACTICE', 'DIAGNOSTIC', 'MASTERY_CHECK', 'RETENTION_CHECK', 'MIXED_CUMULATIVE'] as const;
+export const LEARNING_INTENTS = ['CONCEPT_PRACTICE', 'TOPIC_PRACTICE', 'CUSTOM_CONCEPT_PRACTICE', 'DIAGNOSTIC', 'MASTERY_CHECK', 'RETENTION_CHECK', 'MIXED_CUMULATIVE', 'AD_HOC_CONCEPT_EXAM'] as const;
 export type LearningIntent = (typeof LEARNING_INTENTS)[number];
 
 export const LEARNING_POLICY = { id: 'b2-learning', version: '1' } as const;
@@ -41,7 +45,7 @@ interface ActivitySemantics {
 
 /** Every value is read from the canonical pedagogical policy; none is restated. */
 export function activitySemanticsOf(intent: LearningIntent): ActivitySemantics {
-  if (intent === 'MASTERY_CHECK') return { activityType: 'PROVE', independence: CANONICAL_POLICY.prove.independenceRequired, difficulty: CANONICAL_POLICY.prove.difficulty, minimumScorePercent: CANONICAL_POLICY.prove.minimumScorePercent, noveltyRequired: false };
+  if (intent === 'MASTERY_CHECK' || intent === 'AD_HOC_CONCEPT_EXAM') return { activityType: 'PROVE', independence: CANONICAL_POLICY.prove.independenceRequired, difficulty: CANONICAL_POLICY.prove.difficulty, minimumScorePercent: CANONICAL_POLICY.prove.minimumScorePercent, noveltyRequired: false };
   if (intent === 'RETENTION_CHECK') return { activityType: 'RETENTION_CHECK', independence: CANONICAL_POLICY.retention.independenceRequired, difficulty: CANONICAL_POLICY.retention.difficulty, minimumScorePercent: CANONICAL_POLICY.retention.minimumScorePercent, noveltyRequired: CANONICAL_POLICY.retention.noveltyRequired };
   // A diagnostic looks, it does not train: no difficulty band is imposed and no pass bar exists.
   if (intent === 'DIAGNOSTIC') return { activityType: 'DIAGNOSTIC_CHECK', independence: true, difficulty: null, minimumScorePercent: null, noveltyRequired: false };
@@ -49,6 +53,16 @@ export function activitySemanticsOf(intent: LearningIntent): ActivitySemantics {
 }
 
 export type UnresolvedTarget = TargetPlan['unresolvedTargets'][number];
+
+/**
+ * Where a learning intent's questions come from. A Student's own partial exam is assembled from the GLOBAL
+ * reviewed Question Bank: it must be available to a Student who has never practised, so it never depends on
+ * the Student's own cached questions. Every other learning intent keeps its source.
+ */
+export type LearningCandidateSource = 'LEARNING_ITEM_CACHE' | 'REVIEWED_EXAM_BANK';
+export function candidateSourceOf(intent: LearningIntent): LearningCandidateSource {
+  return intent === 'AD_HOC_CONCEPT_EXAM' ? 'REVIEWED_EXAM_BANK' : 'LEARNING_ITEM_CACHE';
+}
 
 /**
  * The canonical targets of a request, through the B1 identity rule only: a learner concept counts when its

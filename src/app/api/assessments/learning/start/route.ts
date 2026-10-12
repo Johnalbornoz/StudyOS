@@ -14,6 +14,9 @@ import { verifyAuth, requireStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { parseLaunchRequest } from '@/lib/assessment-experience/launch';
 import { isSnapshotExecutionEnabled, startLearningAssessment } from '@/lib/assessment-execution/assessment-start.service';
+import { isAdHocExamIntent } from '@/lib/assessment-experience/ad-hoc-exam';
+import { adHocExamReadiness } from '@/lib/assessment-experience/ad-hoc-exam.service';
+import { getScheduledAdHocExam, isScheduledExamDue, markScheduledAdHocExamStarted } from '@/services/ad-hoc-exam-schedule.service';
 
 async function handlePOST(request: NextRequest) {
   if (!isSnapshotExecutionEnabled()) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
@@ -27,13 +30,57 @@ async function handlePOST(request: NextRequest) {
   // the Student is the signed-in one: a request cannot name another; an account without an ACTIVE Student role is refused
   const studentId = await requireStudentId(authContext.userId);
   if (!studentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
-  const { intent, depth, scope, availableMinutes } = parsed.request;
+  const { intent, scope } = parsed.request;
+  let { depth, availableMinutes } = parsed.request;
+  const now = new Date();
+  const asOf = now.toISOString();
+  let canonicalConceptIds = scope.canonicalConceptIds;
+  let learnerConceptIds = scope.learnerConceptIds;
+  let scheduledAssessmentId: string | null = null;
+  let verifiedScope: { subjectId: string; learnerConceptByCanonical: Record<string, string> } | undefined;
+  // a schedule is only ever a Student's own partial exam
+  if (scope.scheduledAssessmentId && !isAdHocExamIntent(intent)) return NextResponse.json({ success: false, reason: 'SCOPE_REJECTED' }, { status: 403 });
+  if (isAdHocExamIntent(intent)) {
+    // A Student's own partial exam. Whatever a page checked before, the start checks again, here: the Subject is
+    // the Student's own, EVERY concept is one of its concepts, and already-eligible content meets every one of
+    // them. Concepts are accepted only as the Student's own concept ids, never as catalogue ids or a node.
+    if (scope.canonicalConceptIds.length > 0 || scope.node) return NextResponse.json({ success: false, reason: 'SCOPE_REJECTED' }, { status: 403 });
+    let subjectId: unknown = scope.subjectId;
+    let selected: readonly unknown[] = scope.learnerConceptIds;
+    if (scope.scheduledAssessmentId) {
+      // A scheduled exam starts with exactly what was scheduled: Subject, concepts, size and time come from the
+      // Student's own record, never from the request. Another Student's schedule does not exist here.
+      const schedule = await getScheduledAdHocExam(studentId, scope.scheduledAssessmentId);
+      if (!schedule) return NextResponse.json({ success: false, reason: 'SCOPE_REJECTED' }, { status: 403 });
+      if (schedule.status !== 'SCHEDULED' || !schedule.scopeIntact) return NextResponse.json({ success: false, reason: 'SCHEDULE_NOT_STARTABLE' }, { status: 409 });
+      // not before its moment: nothing is selected, frozen or created until then
+      if (!isScheduledExamDue(schedule, now)) return NextResponse.json({ success: false, reason: 'ASSESSMENT_NOT_DUE', scheduledAt: schedule.scheduledAt }, { status: 409 });
+      scheduledAssessmentId = schedule.id;
+      subjectId = schedule.subjectId;
+      selected = schedule.conceptIds;
+      depth = schedule.depth;
+      availableMinutes = schedule.availableMinutes;
+    }
+    // ...and the same authoritative check either way: ownership of the Subject, every concept, eligible content
+    const ready = await adHocExamReadiness(studentId, { subjectId, learnerConceptIds: selected, depth, availableMinutes }, asOf, { enabled: isSnapshotExecutionEnabled() });
+    if (!ready.ok) {
+      if (ready.reason === 'SCOPE_REJECTED') return NextResponse.json({ success: false, reason: 'SCOPE_REJECTED' }, { status: 403 });
+      if (ready.reason === 'INSUFFICIENT_CERTIFIED_CONTENT') return NextResponse.json({ success: false, reason: ready.reason, unmetConceptIds: ready.unmetConceptIds }, { status: 409 });
+      return NextResponse.json({ success: false, reason: ready.reason }, { status: ready.reason === 'DISABLED' ? 404 : 409 });
+    }
+    canonicalConceptIds = ready.canonicalConceptIds;
+    // the Student's own concepts stay named: they are the instances the evidence need is read from
+    learnerConceptIds = ready.learnerConceptIds;
+    verifiedScope = { subjectId: ready.subjectId, learnerConceptByCanonical: ready.learnerConceptByCanonical };
+  }
   const language = await getInterfaceLanguage(studentId).catch(() => 'es');
-  const started = await startLearningAssessment({ studentId, request: { intent, depth, canonicalConceptIds: scope.canonicalConceptIds, learnerConceptIds: scope.learnerConceptIds, availableMinutes }, asOf: new Date().toISOString(), language });
+  const started = await startLearningAssessment({ studentId, request: { intent, depth, canonicalConceptIds, learnerConceptIds, availableMinutes }, asOf, language, scope: verifiedScope });
   if (!started.ok) {
     // a governed state for the experience to render, never a 500
     return NextResponse.json({ success: false, reason: started.reason }, { status: started.reason === 'DISABLED' ? 404 : 409 });
   }
+  // SCHEDULED -> STARTED, bound to the session that executes it
+  if (scheduledAssessmentId) await markScheduledAdHocExamStarted(studentId, scheduledAssessmentId, started.record.id);
   return NextResponse.json({ success: true, data: { sessionId: started.record.id, snapshotId: started.snapshotId, questions: started.questions, resumed: started.resumed, executionAuthority: started.executionAuthority } });
 }
 

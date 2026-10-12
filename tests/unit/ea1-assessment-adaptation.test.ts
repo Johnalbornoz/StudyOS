@@ -1261,7 +1261,7 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     const NEW_SCHEMA = /question_bank_task_famil|task_family_version|adaptation_specification|item_adaptation|assessment_system_profile|assessment_discipline_polic/i;
     expect(migrations.filter((f) => NEW_SCHEMA.test(f) || NEW_SCHEMA.test(read(`database/migrations/${f}`)))).toEqual([]);
     // 82 files up to QB-R1C, plus the three of the L10 shared-foundation batch (20261120_*), which name nothing of this phase (asserted above).
-    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([85, '20261120_1200_sf10_single_persona_constraint.sql']);
+    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([86, '20261121_1000_student_scheduled_assessments.sql']);
   });
 
   it('B3 is not implemented here: no evidence engine, no evidence path, no second evidence writer', () => {

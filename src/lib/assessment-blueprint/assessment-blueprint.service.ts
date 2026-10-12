@@ -7,12 +7,13 @@
  */
 import { db, type DbExecutor } from '@/lib/db';
 import { loadQuestionCoverage, reviewedExamBankCoverageProvider } from '@/lib/assessment-foundation/question-coverage.service';
-import type { QuestionCoverage } from '@/lib/assessment-foundation/question-coverage';
+import { coveredConceptIds, type QuestionCoverage } from '@/lib/assessment-foundation/question-coverage';
+import { reviewedItemAsLearningQuestion } from '@/lib/exam-core/reviewed-item-learning.service';
 import { loadStudentAssessmentContext } from '@/lib/assessment-foundation/student-assessment-context.service';
 import type { IntentIssue } from '@/lib/assessment-foundation/student-assessment-context';
 import type { ExposureFacts } from './solver/candidate';
 import { projectEvidenceNeeds, type EvidenceCountPolicy, type LearnerConceptState } from './policy/evidence-requirement';
-import { resolveLearningTargets, type LearningIntent } from './policy/learning';
+import { candidateSourceOf, resolveLearningTargets, type LearningIntent } from './policy/learning';
 import type { PracticeDepth } from './policy/practice-depth';
 import { solveLearningBlueprint, type ExposureIndex } from './pipeline';
 import type { BlueprintSolution } from './result';
@@ -75,6 +76,41 @@ export async function loadLearningCandidates(studentId: string, learnerConceptId
   return { coverages, exposure };
 }
 
+/**
+ * The GLOBAL reviewed Question Bank's candidates for these canonical concepts, with this Student's exposure.
+ * Nothing here is the Student's own: a Student who has never practised sees the same candidates as any other.
+ *
+ * A candidate is the CURRENT version of a live bank item that
+ *   - is attributed to at least one of the concepts (the reviewer's attribution of that version; for a
+ *     version with none, its objective's PUBLISHED concept mapping), and to NO concept outside them -- a
+ *     question that also assesses something else would widen the scope it was asked for;
+ *   - a learning session can deliver as it is (no parts, stimulus, asset or exam-only marking key).
+ * Lifecycle, usage, audience and reuse rights are NOT decided here: the pipeline's hard eligibility judges
+ * every candidate by the one Student delivery rule. Read-only; it never asks for content to be produced.
+ */
+export async function loadReviewedBankLearningCandidates(studentId: string, canonicalConceptIds: readonly string[], asOf: string, client: DbExecutor = db): Promise<{ coverages: QuestionCoverage[]; exposure: ExposureIndex }> {
+  const targets = [...new Set(canonicalConceptIds)];
+  if (targets.length === 0) return { coverages: [], exposure: new Map() };
+  const r = await client.query(
+    `SELECT ai.id, ai.learning_objective_id, ai.content
+       FROM approved_items ai
+       JOIN question_bank_items qi ON qi.id = ai.bank_item_id AND qi.current_version_id = ai.id
+      WHERE qi.retired_at IS NULL
+        AND (EXISTS (SELECT 1 FROM question_bank_item_concepts ic WHERE ic.approved_item_id = ai.id AND ic.canonical_concept_id = ANY($1::uuid[]))
+             OR (NOT EXISTS (SELECT 1 FROM question_bank_item_concepts ic WHERE ic.approved_item_id = ai.id)
+                 AND EXISTS (SELECT 1 FROM objective_concept_mappings m WHERE m.learning_objective_id = ai.learning_objective_id AND m.status = 'PUBLISHED' AND m.canonical_concept_id = ANY($1::uuid[]))))
+      ORDER BY ai.id`,
+    [targets]
+  );
+  const deliverable = (r.rows as Array<{ id: string; learning_objective_id: string; content: unknown }>).filter((row) => reviewedItemAsLearningQuestion(row) !== null);
+  const wanted = new Set(targets);
+  const coverages = (await loadQuestionCoverage(deliverable.map((row) => ({ store: 'REVIEWED_EXAM_BANK' as const, id: row.id })), [reviewedExamBankCoverageProvider(client)])).filter((c) => {
+    const covered = coveredConceptIds(c);
+    return covered.length > 0 && covered.every((id) => wanted.has(id)) && c.stimulus === null && c.assets.length === 0;
+  });
+  return { coverages, exposure: await loadReviewedBankExposure(studentId, asOf, client) };
+}
+
 export interface LearningSelectionRequest {
   intent: LearningIntent;
   depth: PracticeDepth;
@@ -90,7 +126,7 @@ export type LearningSelection = { ok: true; solution: BlueprintSolution; coverag
 
 /**
  * A LEARNING blueprint for a Student, end to end and read-only: context -> canonical targets -> evidence
- * needs -> the Student's eligible questions -> solver. It creates no session and delivers nothing.
+ * needs -> the eligible questions of the intent's source (policy/learning `candidateSourceOf`) -> solver. It creates no session and delivers nothing.
  */
 export async function solveLearningForStudent(studentId: string, request: LearningSelectionRequest): Promise<LearningSelection> {
   const loaded = await loadStudentAssessmentContext(studentId, { family: 'LEARNING', purpose: request.intent === 'DIAGNOSTIC' ? 'DIAGNOSTIC' : request.intent === 'MASTERY_CHECK' ? 'PROVE' : request.intent === 'RETENTION_CHECK' ? 'RETAIN' : 'PRACTICE' });
@@ -99,8 +135,14 @@ export async function solveLearningForStudent(studentId: string, request: Learni
   const { canonicalConceptIds, unresolved } = resolveLearningTargets(context, request);
   // The Student's own instance of each canonical target, through a CANONICAL link only.
   const instances = new Map<string, string>();
+  // a concept the request names as the Student's own is that target's instance (the Student may hold the same
+  // canonical concept in more than one Subject)
+  const named = new Set(request.learnerConceptIds ?? []);
+  for (const c of context.learnerState.concepts) if (named.has(c.learnerConceptId) && c.status === 'CANONICAL' && canonicalConceptIds.includes(c.canonicalConceptId) && !instances.has(c.canonicalConceptId)) instances.set(c.canonicalConceptId, c.learnerConceptId);
   for (const c of context.learnerState.concepts) if (c.status === 'CANONICAL' && canonicalConceptIds.includes(c.canonicalConceptId) && !instances.has(c.canonicalConceptId)) instances.set(c.canonicalConceptId, c.learnerConceptId);
-  const [policy, states, pool] = await Promise.all([loadEvidenceCountPolicy(), loadLearnerConceptStates(studentId, instances), loadLearningCandidates(studentId, [...instances.values()], request.asOf)]);
+  const [policy, states, pool] = await Promise.all([loadEvidenceCountPolicy(), loadLearnerConceptStates(studentId, instances),
+    candidateSourceOf(request.intent) === 'REVIEWED_EXAM_BANK' ? loadReviewedBankLearningCandidates(studentId, canonicalConceptIds, request.asOf) : loadLearningCandidates(studentId, [...instances.values()], request.asOf),
+  ]);
   const needs = projectEvidenceNeeds(canonicalConceptIds, states, policy, request.asOf);
   const solution = solveLearningBlueprint({
     policy: { studentId, intent: request.intent, depth: request.depth, canonicalConceptIds, needs, unresolved, curriculum: context.curriculum.map(({ structureVersionId, academicSubjectId }) => ({ structureVersionId, academicSubjectId })), availableMinutes: request.availableMinutes ?? null },

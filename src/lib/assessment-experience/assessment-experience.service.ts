@@ -33,8 +33,8 @@ export interface SetupDeps {
 
 const defaults: SetupDeps = { solve: solveLearningForStudent, loadScope: loadCurriculumScope };
 
-/** Intents with a depth choice. A diagnostic or a mastery / retention check has one shape, whatever the depth. */
-const DEPTH_INTENTS: ReadonlySet<string> = new Set(['CONCEPT_PRACTICE', 'TOPIC_PRACTICE', 'CUSTOM_CONCEPT_PRACTICE', 'MIXED_CUMULATIVE']);
+/** Intents with a depth choice. A diagnostic or a mastery / retention check has one shape, whatever the depth. A Student's own partial exam has a size. */
+const DEPTH_INTENTS: ReadonlySet<string> = new Set(['CONCEPT_PRACTICE', 'TOPIC_PRACTICE', 'CUSTOM_CONCEPT_PRACTICE', 'MIXED_CUMULATIVE', 'AD_HOC_CONCEPT_EXAM']);
 
 export async function learningSetupForStudent(studentId: string, request: Extract<AssessmentLaunchRequest, { family: 'LEARNING' }>, asOf: string, overrides: Partial<SetupDeps> = {}): Promise<LearningSetupResult> {
   const deps = { ...defaults, ...overrides };

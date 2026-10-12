@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { verifyAuth, requireStudentId } from '@/lib/auth';
 import { completeLearningAssessment } from '@/lib/assessment-execution/assessment-completion.service';
 import { requestSupplyForSession } from '@/lib/assessment-experience/assessment-supply.service';
+import { completeScheduledAdHocExamForSession } from '@/services/ad-hoc-exam-schedule.service';
 
 const Schema = z.strictObject({ answers: z.array(z.strictObject({ itemKey: z.string().min(1).max(200), answer: z.string().max(20_000) })).max(200) });
 
@@ -30,6 +31,8 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
     const status = result.reason === 'NOT_FOUND' ? 404 : result.reason === 'GRADING_FAILED' ? 502 : 409;
     return NextResponse.json({ success: false, reason: result.reason }, { status });
   }
+  // a scheduled partial exam that this session executed is now done (bookkeeping: it cannot change or fail the result)
+  await completeScheduledAdHocExamForSession(studentId, sessionId).catch((err) => console.error('[ad-hoc-schedule] completion mark failed', err));
   // B5-F: after the response, keep what was just practised supplied (the existing async worker, deduplicated).
   // It is not part of the result: it cannot delay it, change it or fail it.
   after(() => requestSupplyForSession(studentId, sessionId).catch((err) => console.error('[assessment-supply] request failed', err)));

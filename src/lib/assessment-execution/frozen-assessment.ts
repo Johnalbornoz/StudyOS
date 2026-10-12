@@ -90,6 +90,17 @@ export const FrozenAssessmentSchema = z.strictObject({
     /** Identifies the learner evidence the policy read; the evidence itself is not copied. */
     learnerEvidence: z.strictObject({ digest: z.string().max(64), asOf: z.string().nullable() }).nullable(),
   }),
+  /**
+   * LEARNING, when the assessment was launched from ONE of the Student's Subjects (a Student's own partial
+   * exam): that Subject, and the Student's own concept IN THAT SUBJECT each canonical target stands for. A
+   * Student may hold the same canonical concept in more than one Subject; evidence of an attempt frozen with
+   * this scope goes to these concepts and to no other instance. Fixed by the server at the start, part of the
+   * digest. Absent on every other snapshot (and on every snapshot frozen before it existed): those attribute
+   * exactly as before.
+   */
+  learnerScope: z
+    .strictObject({ subjectId: ID, concepts: z.array(z.strictObject({ canonicalConceptId: ID, learnerConceptId: ID })).min(1) })
+    .optional(),
 });
 
 export type FrozenAssessment = z.infer<typeof FrozenAssessmentSchema>;
@@ -131,9 +142,11 @@ export interface FreezeInput {
   contentAudience?: 'STUDENT' | 'TECHNICAL_DEMO';
   /** Exam families: the published fixed form the instance serves, when it serves one. */
   frozenForm?: { id: string | null; formHash: string } | null;
+  /** LEARNING launched from one Subject: the verified Subject and the Student's concept of it per canonical target. */
+  learnerScope?: { subjectId: string; learnerConceptByCanonical: Readonly<Record<string, string>> } | null;
 }
 
-export type FreezeRefusal = 'PATH_FAMILY_MISMATCH' | 'NOTHING_SELECTED' | 'OFFICIAL_FORM_INCOMPLETE' | 'EXAM_CONTEXT_REQUIRED' | 'ACTIVITY_REQUIRED' | 'COVERAGE_MISSING_FOR_SELECTED';
+export type FreezeRefusal = 'PATH_FAMILY_MISMATCH' | 'NOTHING_SELECTED' | 'OFFICIAL_FORM_INCOMPLETE' | 'EXAM_CONTEXT_REQUIRED' | 'ACTIVITY_REQUIRED' | 'COVERAGE_MISSING_FOR_SELECTED' | 'LEARNER_SCOPE_NOT_ALLOWED' | 'LEARNER_SCOPE_INCOMPLETE';
 
 export class FreezeError extends Error {
   constructor(public readonly code: FreezeRefusal, detail = '') {
@@ -175,6 +188,15 @@ export function freezeAssessment(input: FreezeInput): FrozenAssessment {
   });
 
   const targets = solution.plan.mode === 'TARGETS' ? solution.plan.targets : [];
+  // A Subject scope names the Student's concept for EVERY concept the frozen questions assess, or it is not a scope.
+  let learnerScope: FrozenAssessment['learnerScope'];
+  if (input.learnerScope) {
+    if (solution.family !== 'LEARNING') throw new FreezeError('LEARNER_SCOPE_NOT_ALLOWED');
+    const assessed = [...new Set([...targets.filter((t) => t.kind === 'CONCEPT').map((t) => t.id), ...items.flatMap((i) => i.coverage.map((c) => c.canonicalConceptId))])].sort();
+    const missing = assessed.filter((id) => typeof input.learnerScope!.learnerConceptByCanonical[id] !== 'string');
+    if (missing.length > 0) throw new FreezeError('LEARNER_SCOPE_INCOMPLETE', missing.join(','));
+    learnerScope = { subjectId: input.learnerScope.subjectId, concepts: assessed.map((id) => ({ canonicalConceptId: id, learnerConceptId: input.learnerScope!.learnerConceptByCanonical[id] })) };
+  }
   const content: Omit<FrozenAssessment, 'snapshotId'> = {
     v: FROZEN_ASSESSMENT_VERSION,
     createdAt: input.createdAt,
@@ -203,6 +225,8 @@ export function freezeAssessment(input: FreezeInput): FrozenAssessment {
       candidates: { count: solution.snapshot.candidates.count, digest: solution.snapshot.candidates.digest },
       learnerEvidence: solution.snapshot.learnerEvidence ? { digest: solution.snapshot.learnerEvidence.digest, asOf: solution.snapshot.learnerEvidence.asOf } : null,
     },
+    // last, and only when there is one: a snapshot without a scope is byte-for-byte what it always was
+    ...(learnerScope ? { learnerScope } : {}),
   };
   return FrozenAssessmentSchema.parse({ ...content, snapshotId: digestOf(content) });
 }

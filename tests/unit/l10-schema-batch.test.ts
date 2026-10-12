@@ -20,8 +20,9 @@ describe('the series', () => {
       '20261120_1100_cr_l9_02_enrollment_history.sql',
       '20261120_1200_sf10_single_persona_constraint.sql',
     ]);
-    expect(all.slice(-3)).toEqual(batch);
-    expect(all).toHaveLength(85); // 82 before L10 + 3: with the baseline row, the ledger goes 83 -> 86
+    // one later migration exists: the Student's own scheduled assessments (20261121_1000), which touches none of this
+    expect(all.slice(-4, -1)).toEqual(batch);
+    expect(all).toHaveLength(86); // 82 before L10 + 3: with the baseline row, the ledger goes 83 -> 86
   });
 
   it('every file documents its rollback and deletes only its own ledger row', () => {

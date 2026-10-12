@@ -19,6 +19,8 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
 import AssessmentPanel from './AssessmentPanel';
+import CreateExamPanel from './CreateExamPanel';
+import ScheduledExams from './ScheduledExams';
 import SubjectSettingsPanel from './SubjectSettingsPanel';
 import HierarchicalConceptList from './HierarchicalConceptList';
 import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/execution-flag';
@@ -232,6 +234,10 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           </Link>
         </div>
       )}
+
+      {/* The Student's own partial exam: exactly the concepts they choose, with or without a curriculum. */}
+      {isSnapshotExecutionEnabled() && <ScheduledExams subjectId={id} locale={locale} />}
+      <CreateExamPanel subjectId={id} locale={locale} hierarchy={hierarchy} canonicalAssessment={isSnapshotExecutionEnabled()} />
 
       <AssessmentPanel
         subjectId={id}
