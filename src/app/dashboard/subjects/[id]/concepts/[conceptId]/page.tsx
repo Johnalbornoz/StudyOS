@@ -1,5 +1,4 @@
 import { auth } from '@clerk/nextjs/server';
-import { after } from 'next/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { query } from '@/lib/db';
@@ -21,7 +20,6 @@ import { getConceptMissionView } from '@/services/concept-mission-view.service';
 import { learnerConceptDisplayLabel } from '@/lib/learning-plan/labels';
 import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 import ConceptMission from './ConceptMission';
-import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import { buildProgressExplanation, fillLine, isFutureStage } from '@/lib/lx/progress-explanation';
 
 const pct = (v: number | null) => (v !== null ? `${Math.round(v)}%` : null);
@@ -141,11 +139,8 @@ export default async function ConceptDetailPage({
     throw new Error('CANONICAL_DECISION_UNAVAILABLE');
   }
   const missionView = missionResult.view;
-  // LEARNING_ACTIVITY_DELIVERY -- the learner decides what to launch here:
-  // keep this concept's next activity READY (background, after the response).
-  if (missionResult.canonicalDecision) {
-    after(() => scheduleDeliveryReplenishment({ studentId, subjectId, conceptId }).catch((err) => console.error('[activity-delivery] replenishment failed', err)));
-  }
+  // OE-011: rendering this page is read-only. It never queues inventory replenishment or generation;
+  // what the learner can launch is what is already eligible.
   // Canonical progress explanation (gate on): the ONE phase + its real requirement.
   const progress = missionResult.canonicalDecision
     ? buildProgressExplanation(missionResult.canonicalDecision, (iso) => new Date(iso).toLocaleDateString(locale))

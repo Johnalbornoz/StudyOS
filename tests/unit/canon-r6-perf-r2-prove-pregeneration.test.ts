@@ -345,32 +345,17 @@ describe('DB migration -- Part 5', () => {
 // ============================================================
 // Route wiring -- trigger (Part 2/3) and consumption (Part 8/10/11)
 // ============================================================
-describe('route wiring -- Part 2 trigger (LEARNING_ACTIVITY_DELIVERY: now every canonical stage)', () => {
-  const TRIGGER = 'after(() => scheduleDeliveryReplenishment(target, { language: replenishLanguage })';
-  it('the trigger fires only inside the fresh-canonical-decision success branch (canonicalResultsStatus = OK)', () => {
+describe('route wiring -- OE-014: a finished activity never triggers preparation or replenishment', () => {
+  it('the fresh-canonical-decision success branch schedules nothing', () => {
     const okIdx = ROUTE_SRC.indexOf("canonicalResultsStatus = 'OK';");
     expect(okIdx).toBeGreaterThan(-1);
-    const triggerIdx = ROUTE_SRC.indexOf(TRIGGER, okIdx);
-    expect(triggerIdx).toBeGreaterThan(okIdx);
-    expect(triggerIdx).toBeLessThan(ROUTE_SRC.indexOf('} catch (error) {', okIdx));
+    const branch = ROUTE_SRC.slice(okIdx, ROUTE_SRC.indexOf('} catch (error) {', okIdx));
+    expect(branch.replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/scheduleDeliveryReplenishment|prepareCanonicalProveActivity|after\(/);
   });
 
-  it('uses after() (Next.js post-response background work, Vercel waitUntil) -- never a bare detached Promise', () => {
-    expect(ROUTE_SRC).toMatch(/import \{ NextRequest, NextResponse, after \} from 'next\/server';/);
-    expect(ROUTE_SRC).toContain(TRIGGER);
-  });
-
-  it('Part 2 -- the response is never gated on preparation (scheduled after it is sent)', () => {
-    const triggerIdx = ROUTE_SRC.indexOf(TRIGGER);
-    const returnIdx = ROUTE_SRC.indexOf('return NextResponse.json({\n      success: true,\n      data: {\n        quizId: validated.quizId,');
-    expect(triggerIdx).toBeGreaterThan(-1);
-    expect(returnIdx).toBeGreaterThan(triggerIdx);
-    expect(ROUTE_SRC.slice(triggerIdx - 10, triggerIdx + 20)).not.toMatch(/await after\(/);
-  });
-
-  it('a background failure is caught inside the scheduled callback itself -- never an unhandled rejection', () => {
-    const idx = ROUTE_SRC.indexOf(TRIGGER);
-    expect(ROUTE_SRC.slice(idx, idx + 300)).toMatch(/\.catch\(\(err\) => console\.error\('\[activity-delivery\] replenishment failed', err\)\)/);
+  it('the route has no post-response work at all: no after(), no replenishment import', () => {
+    expect(ROUTE_SRC).toMatch(/import \{ NextRequest, NextResponse \} from 'next\/server';/);
+    expect(ROUTE_SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/\bafter\(|scheduleDeliveryReplenishment|activity-delivery-worker\.service/);
   });
 });
 

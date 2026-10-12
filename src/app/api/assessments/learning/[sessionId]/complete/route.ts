@@ -7,12 +7,11 @@
  *
  * A legacy session (no frozen assessment snapshot) is refused here: it completes on the existing path.
  */
-import { after, NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 import { z } from 'zod';
 import { verifyAuth, requireStudentId } from '@/lib/auth';
 import { completeLearningAssessment } from '@/lib/assessment-execution/assessment-completion.service';
-import { requestSupplyForSession } from '@/lib/assessment-experience/assessment-supply.service';
 
 const Schema = z.strictObject({ answers: z.array(z.strictObject({ itemKey: z.string().min(1).max(200), answer: z.string().max(20_000) })).max(200) });
 
@@ -32,7 +31,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   }
   // B5-F: after the response, keep what was just practised supplied (the existing async worker, deduplicated).
   // It is not part of the result: it cannot delay it, change it or fail it.
-  after(() => requestSupplyForSession(studentId, sessionId).catch((err) => console.error('[assessment-supply] request failed', err)));
+  // OE-014: completing an assessment never asks for supply.
   return NextResponse.json({ success: true, data: { state: result.state } });
 }
 

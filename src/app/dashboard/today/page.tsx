@@ -1,8 +1,6 @@
 import { objectiveDisplayLabel } from '@/lib/exam-core/objectives/objective-display';
 import { examSessionLabel, storedExamSession } from '@/lib/exam-core/objectives/objective-session';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { after } from 'next/server';
-import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import Link from 'next/link';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
@@ -204,9 +202,7 @@ export default async function TodayPage() {
 
   const todayState = deriveTodayState({ snapshotReadFailed, hasPrimaryAction: heroHasAction, isColdProfile: isCold });
   if (todayState === 'NEXT_ACTION_AVAILABLE' && best) {
-    // LEARNING_ACTIVITY_DELIVERY -- the primary action is one tap away: keep it READY.
-    const replenishTarget = { studentId, subjectId: best.decision.subjectId, conceptId: best.decision.actionConceptId };
-    after(() => scheduleDeliveryReplenishment(replenishTarget).catch((err) => console.error('[activity-delivery] replenishment failed', err)));
+    // OE-011: rendering Today is read-only. It never queues inventory replenishment or generation.
     logToday('TODAY_PRIMARY_ACTION_RENDERED', {
       activityType: hero?.status === 'READY' ? hero.activityType : null,
       authority: hero?.authority ?? null,

@@ -29,7 +29,7 @@ export interface HierarchyConcept {
   retention?: number;
   independentMastery?: number;
   confidenceCalibration?: number;
-  hasEvidence: boolean; // for Evidence Coverage at Topic/Subtopic level -- distinct from masteryScore being 0
+  hasEvidence: boolean; // the Student has at least one learning_evidence row for the concept (never: a mastery_records row exists)
 }
 
 export interface HierarchySubtopic {
@@ -282,7 +282,8 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
       t.id AS topic_id, COALESCE(tl.name, t.name) AS topic_name, t.display_order AS topic_order,
       st.id AS subtopic_id, COALESCE(sl.name, st.name) AS subtopic_name, st.display_order AS subtopic_order,
       c.id AS concept_id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS concept_label,
-      mr.mastery_score, mr.confidence_score, mr.last_practiced
+      mr.mastery_score, mr.confidence_score, mr.last_practiced,
+      EXISTS (SELECT 1 FROM learning_evidence e WHERE e.student_id = $2 AND e.concept_id = c.id) AS has_evidence
     FROM concepts c
     JOIN subtopics st ON st.id = c.subtopic_id
     JOIN topics t ON t.id = st.topic_id
@@ -322,13 +323,15 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
       retention: canonicalMemorySignals.get(row.concept_id)?.retrievabilityNow ?? undefined,
       independentMastery: conceptIntel?.independentMastery ?? undefined,
       confidenceCalibration: conceptIntel?.confidenceCalibration ?? undefined,
-      hasEvidence: row.mastery_score !== null,
+      // OE-008: a mastery_records row exists from the moment the concept is created; only learning_evidence is evidence
+      hasEvidence: row.has_evidence === true,
     });
   }
 
   const unassignedResult = await db.query(
     `
-    SELECT c.id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, mr.mastery_score, mr.confidence_score, mr.last_practiced
+    SELECT c.id, COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label, mr.mastery_score, mr.confidence_score, mr.last_practiced,
+      EXISTS (SELECT 1 FROM learning_evidence e WHERE e.student_id = $2 AND e.concept_id = c.id) AS has_evidence
     FROM concepts c
     LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $3
     LEFT JOIN mastery_records mr ON mr.concept_id = c.id AND mr.student_id = $2
@@ -351,7 +354,7 @@ export async function getSubjectHierarchy(subjectId: string, studentId: string, 
         retention: canonicalMemorySignals.get(r.id)?.retrievabilityNow ?? undefined,
         independentMastery: conceptIntel?.independentMastery ?? undefined,
         confidenceCalibration: conceptIntel?.confidenceCalibration ?? undefined,
-        hasEvidence: r.mastery_score !== null,
+        hasEvidence: r.has_evidence === true,
       };
     }),
   };

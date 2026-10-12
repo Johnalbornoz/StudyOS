@@ -568,6 +568,22 @@ function QuizPageContent() {
   // Demo mode (no LEARNING_FULL_ACCESS): an account/licence message, so it
   // uses the interface language (`t`), with the path to activate a licence
   // -- never the generic "try again".
+  // OE-014: this activity has no certified content yet. A calm, final state with a way forward -- never "try again".
+  const notReadyCard = () => (
+    <div className="ls" data-kind={activityKind}>
+      <InlineAlert
+        tone="info"
+        title={t['ax.avail.UNAVAILABLE']}
+        body={t['ax.limit.NOT_ENOUGH_QUESTIONS']}
+        actions={
+          <Link href={subjectId && conceptId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'} className="btn btn-primary">
+            {subjectId && conceptId ? t['continuation.backToConcept'] : t['ax.cont.RETURN']}
+          </Link>
+        }
+      />
+    </div>
+  );
+
   const licenseRequiredCard = () => (
     <div className="card empty-state" role="note">
       <strong>{t['learning.licenseRequiredTitle']}</strong>
@@ -761,6 +777,12 @@ function QuizPageContent() {
             setPhase('error');
             return;
           }
+          // OE-014: the certified content cannot supply this activity yet. Not a failure and not retryable.
+          if (body.error === 'NOT_READY') {
+            setErrorReason('INSUFFICIENT_CERTIFIED_CONTENT');
+            setPhase('error');
+            return;
+          }
           throw new Error(body.message || 'Could not generate the quiz');
         }
 
@@ -842,6 +864,7 @@ function QuizPageContent() {
             const err = new Error(b.message || 'Could not generate the quiz') as Error & { reason?: string };
             if (b.error === 'INVALID_GENERATION_CONTRACT' && b.reason === 'ZERO_GAP_PRACTICE_MISMATCH') err.reason = b.reason;
             if (r.status === 403 && b.error === 'ENTITLEMENT_REQUIRED') err.reason = 'ENTITLEMENT_REQUIRED';
+            if (b.error === 'NOT_READY') err.reason = 'INSUFFICIENT_CERTIFIED_CONTENT';
             throw err;
           }
           return b.data;
@@ -1773,6 +1796,7 @@ function QuizPageContent() {
     // IS actually next) is shown -- never a dead end, never a repeated
     // invalid request.
     if (errorReason === 'ENTITLEMENT_REQUIRED') return licenseRequiredCard();
+    if (errorReason === 'INSUFFICIENT_CERTIFIED_CONTENT') return notReadyCard();
     if (errorReason === 'ZERO_GAP_PRACTICE_MISMATCH') {
       return (
         <div className="ls" data-kind={activityKind}>
@@ -2473,6 +2497,7 @@ function QuizPageContent() {
   // `errorReason` handling above.
   if (phase === 'quiz' && teachingStage === 'questions' && questions.length === 0 && genState !== 'ready') {
     if (genErrorReason === 'ENTITLEMENT_REQUIRED') return licenseRequiredCard();
+    if (genErrorReason === 'INSUFFICIENT_CERTIFIED_CONTENT') return notReadyCard();
     if (genErrorReason === 'ZERO_GAP_PRACTICE_MISMATCH') {
       return (
         <div className="ls" data-kind={activityKind}>

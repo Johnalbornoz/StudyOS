@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { notFound, redirect } from 'next/navigation';
-import { after } from 'next/server';
+import { db } from '@/lib/db';
 import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
@@ -9,12 +9,21 @@ import { InlineAlert } from '@/components/ui/InlineAlert';
 import { AssessmentAvailability, AssessmentSetup, effortText } from '@/components/assessment/AssessmentExperience';
 import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/assessment-start.service';
 import { canonicalConceptLabels, learningSetupForStudent } from '@/lib/assessment-experience/assessment-experience.service';
-import { requestAssessmentSupply } from '@/lib/assessment-experience/assessment-supply.service';
 import { TODAY_HREF } from '@/lib/assessment-experience/continuation';
 import { hiddenFieldsOf, launchRequestOfQuery, type LaunchQuery } from './launch-params';
 import { StartAssessment } from './StartAssessment';
 
 export const dynamic = 'force-dynamic';
+
+/** The page of the Student's own concept, when the request is about exactly one. Read-only; a foreign or unknown id has no link. */
+async function ownConceptHref(studentId: string, learnerConceptIds: readonly string[]): Promise<string | undefined> {
+  if (learnerConceptIds.length !== 1) return undefined;
+  const r = await db
+    .query(`SELECT c.id, c.subject_id FROM concepts c JOIN subjects s ON s.id = c.subject_id WHERE c.id::text = $1 AND s.student_id = $2`, [learnerConceptIds[0], studentId])
+    .catch(() => null);
+  const row = r?.rows[0] as { id: string; subject_id: string } | undefined;
+  return row ? `/dashboard/subjects/${row.subject_id}/concepts/${row.id}` : undefined;
+}
 
 /**
  * B5-R -- Setup and Preview of a learning assessment, under ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED.
@@ -24,7 +33,7 @@ export const dynamic = 'force-dynamic';
  * reached through POST /api/assessments/learning/start.
  *
  * With the flag off this page does not exist and the existing practice path is the only one.
- * It reads; it selects nothing, counts nothing and creates nothing.
+ * It reads; it selects nothing, counts nothing, creates nothing and queues nothing.
  */
 export default async function AssessmentSetupPage({ searchParams }: { searchParams?: Promise<LaunchQuery> } = {}) {
   if (!isSnapshotExecutionEnabled()) notFound();
@@ -37,16 +46,26 @@ export default async function AssessmentSetupPage({ searchParams }: { searchPara
 
   const query = (await searchParams) ?? {};
   const request = launchRequestOfQuery(query);
+  // A check of ONE of the Student's concepts that cannot start is not a dead end: the concept's own page
+  // holds its next step (learn, practise), so that is where "unavailable" sends the Student.
+  const conceptHref = request ? await ownConceptHref(studentId, request.scope.learnerConceptIds) : undefined;
   const unavailable = (
     <div className="xp-page">
-      <InlineAlert tone="warning" title={t['ax.avail.UNAVAILABLE']} actions={<Link href={TODAY_HREF} className="btn btn-primary">{t['ax.cont.RETURN']}</Link>} />
+      <InlineAlert
+        tone="warning"
+        title={t['ax.avail.UNAVAILABLE']}
+        actions={
+          <>
+            {conceptHref && <Link href={conceptHref} className="btn btn-primary">{t['ax.setup.openConcept']}</Link>}
+            <Link href={TODAY_HREF} className={conceptHref ? 'btn btn-ghost' : 'btn btn-primary'}>{t['ax.cont.RETURN']}</Link>
+          </>
+        }
+      />
     </div>
   );
   if (!request) return unavailable;
-  // B5-F: the setup is a supply trigger. After the response, ask the existing replenishment worker for these
-  // concepts (deduplicated per Student + concept; the worker decides whether anything is short). Nothing here
-  // waits for it: what is offered below is what is eligible now.
-  after(() => requestAssessmentSupply(studentId, request.scope).catch((err) => console.error('[assessment-supply] request failed', err)));
+  // OE-011: the setup is read-only. It never requests supply: what is offered below is what is eligible now,
+  // and when nothing is, the answer is "not available" -- never a queued generation.
   const setup = await learningSetupForStudent(studentId, request, new Date().toISOString());
   if (!setup.ok) return unavailable;
 
@@ -86,7 +105,7 @@ export default async function AssessmentSetupPage({ searchParams }: { searchPara
 
   return (
     <div className="xp-page">
-      <AssessmentSetup view={setup.view} t={t} scopeLabel={scopeLabel} action="/dashboard/assessment" hidden={hiddenFieldsOf(launch)} selectedDepth={request.depth} backHref={TODAY_HREF} />
+      <AssessmentSetup view={setup.view} t={t} scopeLabel={scopeLabel} action="/dashboard/assessment" hidden={hiddenFieldsOf(launch)} selectedDepth={request.depth} backHref={TODAY_HREF} conceptHref={conceptHref} />
     </div>
   );
 }

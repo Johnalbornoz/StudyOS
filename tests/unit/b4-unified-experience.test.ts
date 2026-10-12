@@ -305,6 +305,13 @@ describe('B4 shared components', () => {
     expect(text(partial)).toContain('Aún no tenemos suficientes preguntas para cubrirlo completo.');
     expect(text(partial)).toContain('Cubre 1 de 2 conceptos');
     const none = html(createElement(C.AssessmentSetup, { view: learningSetupView(byDepth([], ['C1'])), t, action: '/x', backHref: '/back' }));
+    // OE-009: an unavailable check of one concept is not a dead end -- the concept's own page is the primary way forward
+    const withConcept = html(createElement(C.AssessmentSetup, { view: learningSetupView(byDepth([], ['C1'])), t, action: '/x', backHref: '/back', conceptHref: '/dashboard/subjects/s1/concepts/c1' }));
+    expect(withConcept).toMatch(/<a[^>]*href="\/dashboard\/subjects\/s1\/concepts\/c1"[^>]*class="btn btn-primary"[^>]*>Ir al concepto<\/a>/);
+    expect(withConcept).toMatch(/<a[^>]*href="\/back"[^>]*class="btn btn-ghost"/);
+    expect(withConcept).not.toContain('type="submit"');
+    // a startable setup never shows it
+    expect(html(createElement(C.AssessmentSetup, { view: setup(), t, action: '/x', backHref: '/y', conceptHref: '/dashboard/subjects/s1/concepts/c1' }))).not.toContain('Ir al concepto');
     expect(text(none)).toContain('Esta práctica todavía no está disponible.');
     expect(none).not.toMatch(/<button[^>]*type="submit"/);
     expect((none.match(/<input[^>]*type="radio"[^>]*>/g) ?? []).filter((r) => /disabled=""/.test(r))).toHaveLength(3);

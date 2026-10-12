@@ -295,11 +295,24 @@ export interface ConceptIntelligenceLite {
 }
 
 /**
+ * How many distinct concepts a set of `learning_evidence` rows covers. A
+ * concept counts once however many evidence rows it has.
+ */
+export function countEvidencedConcepts(evidenceRows: ReadonlyArray<{ concept_id: string | null }>): number {
+  return new Set(evidenceRows.map((r) => r.concept_id).filter((id): id is string => !!id)).size;
+}
+
+/**
  * What fraction of a subject's (or, with no subjectId, every active
- * subject's) concepts have ever been attempted at all -- distinct from
- * Mastery, which only describes the concepts that already have
- * evidence. Null when the scope has zero concepts (nothing to cover
- * yet, not 0% coverage).
+ * subject's) concepts the Student has real evidence for -- distinct from
+ * Mastery, which only describes the concepts that already have evidence.
+ * Null when the scope has zero concepts (nothing to cover yet, not 0%
+ * coverage).
+ *
+ * OE-008: evidence is a `learning_evidence` row, the record every graded
+ * attempt writes. A `mastery_records` row is NOT evidence: one is inserted
+ * with zero values the moment a concept is created, so counting those rows
+ * reported a never-attempted concept as covered.
  */
 export async function getEvidenceCoverage(studentId: string, subjectId?: string): Promise<EvidenceCoverage | null> {
   const totalResult = await db.query(
@@ -313,11 +326,11 @@ export async function getEvidenceCoverage(studentId: string, subjectId?: string)
 
   const evidencedResult = await db.query(
     subjectId
-      ? `SELECT COUNT(*)::int AS count FROM mastery_records WHERE student_id = $1 AND subject_id = $2`
-      : `SELECT COUNT(*)::int AS count FROM mastery_records mr JOIN subjects s ON s.id = mr.subject_id WHERE mr.student_id = $1 AND s.status = 'active'`,
+      ? `SELECT DISTINCT e.concept_id FROM learning_evidence e JOIN concepts c ON c.id = e.concept_id WHERE e.student_id = $1 AND c.subject_id = $2`
+      : `SELECT DISTINCT e.concept_id FROM learning_evidence e JOIN concepts c ON c.id = e.concept_id JOIN subjects s ON s.id = c.subject_id WHERE e.student_id = $1 AND s.student_id = $1 AND s.status = 'active'`,
     subjectId ? [studentId, subjectId] : [studentId]
   );
-  const evidencedConcepts = Number(evidencedResult.rows[0].count);
+  const evidencedConcepts = Math.min(totalConcepts, countEvidencedConcepts(evidencedResult.rows));
 
   return { totalConcepts, evidencedConcepts, percent: Math.round((evidencedConcepts / totalConcepts) * 100) };
 }

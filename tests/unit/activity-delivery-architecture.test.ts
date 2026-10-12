@@ -209,12 +209,14 @@ describe('3. the hot path (0 AI calls)', () => {
     expect(ai).toEqual({ executions: 0, providerCalls: 0 });
     expect(h.executeAI).not.toHaveBeenCalled();
     expect(h.callModel).not.toHaveBeenCalled();
+    expect(h.schedule).not.toHaveBeenCalled();
   });
 
   it('bank short -> EMERGENCY_REQUIRED, explicit, with the lock still held until the caller completes it', async () => {
     h.assemble.mockResolvedValue({ status: 'SHORT', available: 4, needed: 10, poolSize: 4 });
     const r = await deliverCanonicalActivity(INPUT);
     expect(r).toMatchObject({ status: 'EMERGENCY_REQUIRED', bank: { available: 4, needed: 10 } });
+    expect(h.schedule).not.toHaveBeenCalled(); // OE-014: a short bank queues nothing
     expect(h.clientQuery.mock.calls.map((c) => c[0])).not.toContain('COMMIT');
     expect(h.storeQuiz).not.toHaveBeenCalled();
     await (r as any).lock.release();
@@ -236,10 +238,10 @@ describe('3. the hot path (0 AI calls)', () => {
     expect(h.deliveries).toHaveBeenCalledWith(['n1', 'n2'], 'quiz-e', 's1');
   });
 
-  it('the hot-path module never calls a generator or the AI gateway (replenishment only via after()/queue)', () => {
+  it('the hot-path module never calls a generator or the AI gateway, and queues no replenishment (OE-014)', async () => {
     const src = read('src/services/activity-delivery.service.ts');
     expect(src).not.toMatch(/generateActivityCandidates|generateCanonicalProveQuestions|generatePracticeQuestions|executeAI|callModel|gradeAnswer/);
-    expect(src).toMatch(/after\(\(\) => scheduleDeliveryReplenishment\(target, \{ language \}\)/);
+    expect(src).not.toMatch(/scheduleDeliveryReplenishment|scheduleReplenishment|activity-delivery-worker\.service|\bafter\(/);
     expect(src).toMatch(/const hotPathAiViolation = fields\.source !== 'EMERGENCY_AI' && aiCalls > 0;/);
     expect(src).toMatch(/console\.error\('\[activity-launch\] HOT_PATH_AI_VIOLATION'/);
     expect(src).toMatch(/console\.warn\('\[activity-launch\] EMERGENCY_GENERATION'/);
@@ -271,11 +273,11 @@ describe('4. route wiring', () => {
 });
 
 describe('5. replenishment triggers', () => {
-  it('activity finished, Concept Mission, Today and consumption all use the ONE trigger, after the response', () => {
-    expect(read('src/app/api/quizzes/generate-and-take/route.ts')).toMatch(/after\(\(\) => scheduleDeliveryReplenishment\(target, \{ language: replenishLanguage \}\)/);
-    expect(read('src/app/dashboard/subjects/[id]/concepts/[conceptId]/page.tsx')).toMatch(/after\(\(\) => scheduleDeliveryReplenishment\(\{ studentId, subjectId, conceptId \}\)/);
-    expect(read('src/app/dashboard/today/page.tsx')).toMatch(/after\(\(\) => scheduleDeliveryReplenishment\(replenishTarget\)/);
-    expect(read('src/services/activity-delivery.service.ts')).toMatch(/scheduleReplenishment\(input\);\s*return \{ status: 'DELIVERED', source: 'INVENTORY'/);
+  it('no Student path triggers replenishment: not a finished activity, not consumption, not a page render (OE-011, OE-014)', () => {
+    expect(read('src/app/api/quizzes/generate-and-take/route.ts')).not.toMatch(/scheduleDeliveryReplenishment\(/);
+    expect(read('src/app/dashboard/subjects/[id]/concepts/[conceptId]/page.tsx')).not.toMatch(/scheduleDeliveryReplenishment/);
+    expect(read('src/app/dashboard/today/page.tsx')).not.toMatch(/scheduleDeliveryReplenishment/);
+    expect(read('src/services/activity-delivery.service.ts')).not.toMatch(/scheduleReplenishment\(/);
   });
 
   it('the old PROVE-only AI pre-generation trigger is gone', () => {

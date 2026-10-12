@@ -17,7 +17,6 @@
  * first launch and then RESUMES its session -- never a second one.
  * Launching writes no learning evidence.
  */
-import { after } from 'next/server';
 import { db } from '@/lib/db';
 import { currentAiCallCount } from '@/lib/ai/request-metrics';
 import { shuffleArray } from '@/lib/quiz/client-question';
@@ -38,7 +37,6 @@ import { assembleActivityForLearner } from '@/services/activity-assembly.service
 import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
 import { addValidatedCandidates, recordBankDeliveries } from '@/services/question-bank.service';
 import { computeAskConfidenceFlags } from '@/services/ask-confidence.service';
-import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import { acquireLaunchLock, launchLockKey, type LaunchLock } from '@/services/activity-launch-lock.service';
 
 export { launchLockId, type LaunchLock } from '@/services/activity-launch-lock.service';
@@ -93,18 +91,6 @@ async function openSession(
     consumedPreparedId ? linkConsumedActivity(consumedPreparedId, quizId) : Promise.resolve(),
   ]);
   return { quizId, questions: ordered };
-}
-
-function scheduleReplenishment(input: Pick<DeliveryInput, 'studentId' | 'subjectId' | 'conceptId' | 'contract'>) {
-  const target = { studentId: input.studentId, subjectId: input.subjectId, conceptId: input.conceptId };
-  const language = input.contract.language;
-  try {
-    // after the response: the learner never waits for replenishment
-    after(() => scheduleDeliveryReplenishment(target, { language }).catch(() => {}));
-  } catch {
-    // outside a request scope (scripts / benchmark): queue only
-    void scheduleDeliveryReplenishment(target, { language, dispatch: false }).catch(() => {});
-  }
 }
 
 /**
@@ -193,7 +179,6 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
       t = Date.now();
       const session = await openSession(input, consumed.questions, 'INVENTORY', consumed.candidateIds, askConfidence, consumed.id);
       timings.sessionMs = Date.now() - t;
-      scheduleReplenishment(input);
       return { status: 'DELIVERED', source: 'INVENTORY', ...session, timings };
     }
 
@@ -205,13 +190,12 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
       t = Date.now();
       const session = await openSession(input, assembly.questions, 'BANK', assembly.candidateIds, askConfidence, null);
       timings.sessionMs = Date.now() - t;
-      scheduleReplenishment(input);
       return { status: 'DELIVERED', source: 'BANK', ...session, timings };
     }
 
-    // 4. neither: explicit emergency -- the lock stays held until the caller completes it
+    // 4. neither: the certified content cannot supply this launch. The lock stays held until the caller
+    //    answers (OE-014: a Student caller answers NOT_READY; it never generates and nothing is queued here).
     keepLock = true;
-    scheduleReplenishment(input);
     return { status: 'EMERGENCY_REQUIRED', lock, timings, bank: { available: assembly.available, needed: assembly.needed } };
   } finally {
     if (!keepLock) await lock.release();

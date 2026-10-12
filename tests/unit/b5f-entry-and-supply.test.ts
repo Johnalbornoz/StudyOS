@@ -143,18 +143,17 @@ describe('B5-F question supply requested by the canonical flow', () => {
     expect(read('src/services/activity-delivery-worker.service.ts')).toMatch(/enqueueGenerationJob\('PREPARE_INVENTORY', `prepare:\$\{target\.studentId\}:\$\{target\.conceptId\}`/);
   });
 
-  it('setup requests supply AFTER the response; start never generates; completion is not delayed or changed by it', () => {
+  it('setup is read-only (OE-011); start never generates; completion is not delayed or changed by supply', () => {
     const setup = read('src/app/dashboard/assessment/page.tsx');
-    expect(setup).toMatch(/after\(\(\) => requestAssessmentSupply\(studentId, request\.scope\)\.catch\(/);
-    // what is offered is still what the Blueprint Core found eligible now
-    expect(setup.indexOf('after(() => requestAssessmentSupply')).toBeLessThan(setup.indexOf('await learningSetupForStudent('));
-    expect(code('src/app/dashboard/assessment/page.tsx')).not.toMatch(/await requestAssessmentSupply/);
+    // OE-011: opening the setup never requests supply; what is offered is what the Blueprint Core found eligible now
+    expect(setup).toContain('await learningSetupForStudent(');
+    expect(code('src/app/dashboard/assessment/page.tsx')).not.toMatch(/requestAssessmentSupply|scheduleDeliveryReplenishment|enqueueGenerationJob|\bafter\(/);
     for (const rel of ['src/lib/assessment-execution/assessment-start.service.ts', 'src/app/api/assessments/learning/start/route.ts', 'src/lib/assessment-execution/assessment-completion.service.ts', 'src/lib/assessment-blueprint/assessment-blueprint.service.ts']) {
       expect(code(rel), rel).not.toMatch(/scheduleDeliveryReplenishment|requestAssessmentSupply|requestSupplyForSession|enqueueGenerationJob|generateActivityCandidates|dispatchDeliveryWorker/);
     }
     const complete = read('src/app/api/assessments/learning/[sessionId]/complete/route.ts');
-    expect(complete).toMatch(/after\(\(\) => requestSupplyForSession\(studentId, sessionId\)\.catch\(/);
-    expect(complete.indexOf('if (!result.ok)')).toBeLessThan(complete.indexOf('after(() => requestSupplyForSession'));
+    // OE-014: completion never requests supply
+    expect(complete).not.toMatch(/requestSupplyForSession|requestAssessmentSupply|scheduleDeliveryReplenishment|\bafter\(/);
     expect(complete.match(/completeLearningAssessment\(/g)).toHaveLength(1);
   });
 });

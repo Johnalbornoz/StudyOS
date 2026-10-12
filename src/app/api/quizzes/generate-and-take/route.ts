@@ -42,7 +42,7 @@
 
 import { executionAuthorityOfQuizSession } from '@/lib/assessment-execution/assessment-start.service';
 import { randomUUID } from 'crypto';
-import { NextRequest, NextResponse, after } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
 import { computeAskConfidenceFlags } from '@/services/ask-confidence.service';
 import { isRecordableError, type PedagogicalGrade } from '@/lib/grading/pedagogical-grade';
@@ -51,7 +51,7 @@ import { recordQuizResponses } from '@/services/quiz-response-audit.service';
 import { DELIVERY_QUIZ_MODES } from '@/lib/activity-delivery/contract';
 import { buildDeliveryInput, deliverCanonicalActivity, completeEmergencyDelivery, logActivityLaunch, type DeliveryInput, type LaunchLock } from '@/services/activity-delivery.service';
 import { questionGeneratorIdentity } from '@/services/activity-candidate-generation.service';
-import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
+import { INSUFFICIENT_CERTIFIED_CONTENT, INSUFFICIENT_CERTIFIED_CONTENT_STATUS, studentRuntimeMayGenerateQuestions } from '@/lib/student-runtime/question-supply-policy';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
 import { verifyAuth, verifyStudentAccess, verifySubjectAccess, verifyConceptsAccess, verifyDiagnosisAccess, verifyRemediationStepAccess, checkRateLimit, type UserRole } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
@@ -547,7 +547,16 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         });
       }
       emergencyLaunch = { lock: delivery.lock, input: deliveryInput, authorizationMs };
-      console.warn('[activity-launch] EMERGENCY_GENERATION_STARTED', JSON.stringify({ activityType: deliveryActivityType, conceptId: validated.conceptId, bank: delivery.bank }));
+      if (studentRuntimeMayGenerateQuestions()) console.warn('[activity-launch] EMERGENCY_GENERATION_STARTED', JSON.stringify({ activityType: deliveryActivityType, conceptId: validated.conceptId, bank: delivery.bank }));
+    }
+
+    // OE-014: a Student launch is supplied by certified content or it is not ready. Nothing below this line --
+    // every generator of this route -- runs for a Student request: no provider call, no legacy generation, and
+    // the launch lock taken for an "emergency" is released without one.
+    if (!studentRuntimeMayGenerateQuestions()) {
+      if (emergencyLaunch) await emergencyLaunch.lock.release().catch(() => {});
+      console.warn('[activity-launch] NOT_READY', JSON.stringify({ quizMode: validated.quizMode, conceptId: validated.conceptId ?? null, reason: INSUFFICIENT_CERTIFIED_CONTENT.reason }));
+      return NextResponse.json(INSUFFICIENT_CERTIFIED_CONTENT, { status: INSUFFICIENT_CERTIFIED_CONTENT_STATUS });
     }
 
     // Only the generation path below needs the IB context -- a delivered launch never pays this read.
@@ -2239,7 +2248,9 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
             // call generateQuestionsForConcept directly for a verification
             // question, which would bypass the equivalence contract
             // entirely (the bug this fixes).
-            const variantResult = await generateQuestionVariant(originalQuestion, validated.studentId, quizSession.subjectId, language);
+            // OE-014: a submission never generates a question. The documented fallback below (re-ask the original
+            // question) is the only path for a Student request.
+            const variantResult = studentRuntimeMayGenerateQuestions() ? await generateQuestionVariant(originalQuestion, validated.studentId, quizSession.subjectId, language) : null;
 
             let verificationQuestion: GeneratedQuestion;
             let variantEquivalenceConfidence: number | null;
@@ -2488,30 +2499,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         };
         canonicalResultsStatus = 'OK';
 
-        // CANON-R6-PERF-R2 Part 2 -- selective Prove pre-generation
-        // trigger. Fires AFTER this v1-qualifying submission's evidence
-        // was already written AND the fresh canonical decision (just
-        // computed above, the SOLE authority) confirms PROVE/EXECUTABLE.
-        // `after()` (Next.js's own supported mechanism for post-response
-        // background work, backed by Vercel's `waitUntil` in production
-        // -- no queue/job platform exists in this codebase, confirmed by
-        // audit) schedules the ENTIRE preparation pipeline to run once
-        // this response has already been sent -- the learner's own
-        // Practice Results response is never delayed by so much as one
-        // extra await. A background failure is caught entirely inside
-        // `prepareCanonicalProveActivity` itself (Part 14) and can never
-        // surface here or affect this response, which has already
-        // returned by the time it could.
-        // LEARNING_ACTIVITY_DELIVERY: an activity just finished and the
-        // canonical next action may have changed -- re-plan this learner's
-        // inventory (retire what no longer fits, assemble the next READY
-        // activity, top up the bank) after the response, in the language of
-        // the session just completed. Never on the learner's critical path.
-        {
-          const target = { studentId: validated.studentId, subjectId: quizSession.subjectId, conceptId: quizSession.conceptId! };
-          const replenishLanguage = quizSession.language;
-          after(() => scheduleDeliveryReplenishment(target, { language: replenishLanguage }).catch((err) => console.error('[activity-delivery] replenishment failed', err)));
-        }
+        // OE-014: a finished activity never asks for inventory replenishment. Supply is a Factory / Admin workflow.
       } catch (error) {
         if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;
         canonicalResultsStatus = 'CANONICAL_RESULTS_UNAVAILABLE';

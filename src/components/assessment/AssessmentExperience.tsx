@@ -71,6 +71,7 @@ export function AssessmentSetup({
   hidden = {},
   selectedDepth,
   backHref,
+  conceptHref,
 }: {
   view: AssessmentSetupView;
   t: T;
@@ -82,6 +83,8 @@ export function AssessmentSetup({
   hidden?: Record<string, string>;
   selectedDepth?: PracticeDepth;
   backHref: string;
+  /** The page of the one concept this check is about. When nothing can start, it is the way forward: the concept's own next step. */
+  conceptHref?: string;
 }) {
   const tr = t as Record<string, string>;
   const startable = view.depthOptions.filter((o) => o.preview.canStart);
@@ -117,7 +120,8 @@ export function AssessmentSetup({
         )}
         <div className="xr-next-actions">
           {canStart && <button type="submit" className="btn btn-primary btn-lg">{t['ax.setup.start']}</button>}
-          <Link href={backHref} className={canStart ? 'btn btn-ghost' : 'btn btn-primary'}>{t['ax.setup.back']}</Link>
+          {!canStart && conceptHref && <Link href={conceptHref} className="btn btn-primary">{t['ax.setup.openConcept']}</Link>}
+          <Link href={backHref} className={canStart || conceptHref ? 'btn btn-ghost' : 'btn btn-primary'}>{t['ax.setup.back']}</Link>
         </div>
       </form>
     </section>

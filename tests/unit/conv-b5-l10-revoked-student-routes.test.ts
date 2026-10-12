@@ -79,12 +79,12 @@ describe('ACTIVE Student: the three routes behave as before', () => {
     expect(h.saveDraft).toHaveBeenCalledWith({ studentId: STUDENT, sessionId: SESSION, answers: ANSWERS.answers });
   });
 
-  it('completion reaches the one completion authority and then requests supply', async () => {
+  it('completion reaches the one completion authority and never requests supply (OE-014)', async () => {
     const res = await complete();
     expect(res.status).toBe(200);
     expect((await res.json()).data.state).toEqual({ kind: 'COMPLETED' });
     expect(h.complete).toHaveBeenCalledWith({ studentId: STUDENT, sessionId: SESSION, answers: ANSWERS.answers });
-    expect(h.supply).toHaveBeenCalledWith(STUDENT, SESSION);
+    expect(h.supply).not.toHaveBeenCalled();
   });
 
   it('a governed refusal keeps its own status (not 403)', async () => {
