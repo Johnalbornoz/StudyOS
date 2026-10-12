@@ -6,7 +6,7 @@
  */
 import { profileById } from '../../../src/lib/exam-core/question-bank/production/v5/generation-profile';
 import { learnerText, type CandidateItem, type GenerationSpecification } from '../../../src/lib/exam-core/question-bank/production/v5/item';
-import { runSpecification, type SpecificationOutcome, type StageProviders } from '../../../src/lib/exam-core/question-bank/production/v5/pipeline';
+import { runSpecification, validateCandidate, type SpecificationOutcome, type StageProviders } from '../../../src/lib/exam-core/question-bank/production/v5/pipeline';
 import { authoringPrompt, constructPrompt, difficultyPrompt, distractorPrompt, equivalencePrompt, parseAuthored, parseConstruct, parseDifficulty, parseDistractors, parseEquivalence, parseSolver, solverPrompt, type Rendered, type ReplyKind } from '../../../src/lib/exam-core/question-bank/production/v5/prompts';
 import type { CorpusEntry } from '../../../src/lib/exam-core/question-bank/production/v5/deterministic-stages';
 
@@ -32,6 +32,14 @@ function counted(call: ModelCall, account: CallAccount): ModelCall {
   };
 }
 
+/** A number where the answer text belongs is the same answer: the shape is repaired, the content is never touched. */
+export function authoredItem(text: string): unknown {
+  const v = parseAuthored(text) as Record<string, unknown>;
+  if (typeof v.proposedAnswer === 'number') v.proposedAnswer = String(v.proposedAnswer);
+  if (Array.isArray(v.parts)) for (const p of v.parts as Record<string, unknown>[]) if (p && typeof p.canonicalAnswer === 'number') p.canonicalAnswer = String(p.canonicalAnswer);
+  return v;
+}
+
 export function modelStages(call: ModelCall): StageProviders {
   return {
     solve: async (i) => parseSolver((await call('SOLVER', solverPrompt(i), 'SOLVER')).text),
@@ -40,6 +48,24 @@ export function modelStages(call: ModelCall): StageProviders {
     calibrateDifficulty: async (i) => parseDifficulty((await call('JUDGE', difficultyPrompt(i), 'DIFFICULTY')).text),
     judgeDistractors: async (i) => parseDistractors((await call('JUDGE', distractorPrompt(i), 'DISTRACTORS')).text),
   };
+}
+
+/** Stages 3 to 11 again for candidates already authored (after a validator fix): no authoring call is made. */
+export async function revalidateItems(pairs: readonly { spec: GenerationSpecification; item: CandidateItem }[], call: ModelCall, corpus: readonly CorpusEntry[]): Promise<BatchResult> {
+  const account = emptyAccount();
+  const stages = modelStages(counted(call, account));
+  const live: CorpusEntry[] = [...corpus];
+  const outcomes: SpecificationOutcome[] = [];
+  const accepted: CandidateItem[] = [];
+  for (const { spec, item } of pairs) {
+    const profile = profileById(spec.profileId);
+    if (!profile) throw new Error(`UNKNOWN_PROFILE: ${spec.profileId}`);
+    const final = await validateCandidate(item, spec, profile, { stages, corpus: live });
+    outcomes.push({ slotKey: spec.slotKey, attempts: [final], final, firstAttemptPass: spec.attempt === 0 && final.record.reviewDecision === 'AUTO_APPROVE', regenerated: false, specificationIssue: false });
+    if (final.record.reviewDecision !== 'AUTO_REJECT') live.push({ id: item.itemId, source: 'THIS_BATCH', text: learnerText(item) });
+    if (final.record.reviewDecision === 'AUTO_APPROVE') accepted.push(item);
+  }
+  return { outcomes, account, accepted };
 }
 
 export interface BatchResult { outcomes: SpecificationOutcome[]; account: CallAccount; accepted: CandidateItem[] }
@@ -58,7 +84,7 @@ export async function runBatch(specs: readonly GenerationSpecification[], call: 
   for (const spec of specs) {
     const profile = profileById(spec.profileId);
     if (!profile) throw new Error(`UNKNOWN_PROFILE: ${spec.profileId}`);
-    const outcome = await runSpecification(spec, profile, async (s, previousFailure) => parseAuthored((await c('AUTHOR', authoringPrompt(s, profile, previousFailure), 'ITEM')).text), { stages, corpus: live });
+    const outcome = await runSpecification(spec, profile, async (s, previousFailure) => authoredItem((await c('AUTHOR', authoringPrompt(s, profile, previousFailure), 'ITEM')).text), { stages, corpus: live });
     outcomes.push(outcome);
     const item = outcome.final.item;
     if (item && outcome.final.record.reviewDecision !== 'AUTO_REJECT') live.push({ id: item.itemId, source: 'THIS_BATCH', text: learnerText(item) });

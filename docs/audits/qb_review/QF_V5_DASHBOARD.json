@@ -1,62 +1,404 @@
 {
-  "runId": "qf5-live-001",
+  "runId": "qf5-live-002",
   "gates": {
     "ICFES.SABER11.MATEMATICAS:C1": {
       "phase": "C1",
       "pass": false,
       "unmet": [
-        "FIRST_ATTEMPT_PASS 0 < 0.8"
+        "BATCH_TOO_SMALL: 6 of 8",
+        "FIRST_ATTEMPT_PASS 0 < 0.8",
+        "HUMAN_REVIEW 0.6667 > 0.1"
       ],
-      "size": 1,
+      "size": 6,
       "versions": {
         "profileVersion": "qf-v5-profiles-1.0.0-provisional",
-        "validatorVersion": "qf-v5-validators-1.1.0"
+        "validatorVersion": "qf-v5-validators-1.2.0"
+      }
+    },
+    "PAA.MATEMATICAS:C1": {
+      "phase": "C1",
+      "pass": false,
+      "unmet": [
+        "BATCH_TOO_SMALL: 3 of 8",
+        "FIRST_ATTEMPT_PASS 0 < 0.8",
+        "SCHEMA_FAILURES = 3 (must be 0)"
+      ],
+      "size": 3,
+      "versions": {
+        "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+        "validatorVersion": "qf-v5-validators-1.2.0"
+      }
+    },
+    "PISA.MATHEMATICS:C1": {
+      "phase": "C1",
+      "pass": false,
+      "unmet": [
+        "BATCH_TOO_SMALL: 3 of 7",
+        "FIRST_ATTEMPT_PASS 0 < 0.8",
+        "ANSWER_FAILURES = 2 (must be 0)"
+      ],
+      "size": 3,
+      "versions": {
+        "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+        "validatorVersion": "qf-v5-validators-1.2.0"
+      }
+    },
+    "IB.MATH_AA.HL.P1:C1": {
+      "phase": "C1",
+      "pass": false,
+      "unmet": [
+        "FIRST_ATTEMPT_PASS 0.3333 < 0.8",
+        "STAGE_ERRORS = 1 (must be 0)",
+        "HUMAN_REVIEW 0.1667 > 0.1"
+      ],
+      "size": 6,
+      "versions": {
+        "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+        "validatorVersion": "qf-v5-validators-1.2.0"
+      }
+    },
+    "CAMBRIDGE.0580.EXTENDED.P4:C1": {
+      "phase": "C1",
+      "pass": false,
+      "unmet": [
+        "BATCH_TOO_SMALL: 3 of 6",
+        "FIRST_ATTEMPT_PASS 0 < 0.8",
+        "ANSWER_FAILURES = 2 (must be 0)",
+        "SCHEMA_FAILURES = 1 (must be 0)"
+      ],
+      "size": 3,
+      "versions": {
+        "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+        "validatorVersion": "qf-v5-validators-1.2.0"
+      }
+    },
+    "AICE.9709.PURE:C1": {
+      "phase": "C1",
+      "pass": false,
+      "unmet": [
+        "BATCH_TOO_SMALL: 3 of 5",
+        "FIRST_ATTEMPT_PASS 0 < 0.8",
+        "ANSWER_FAILURES = 1 (must be 0)"
+      ],
+      "size": 3,
+      "versions": {
+        "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+        "validatorVersion": "qf-v5-validators-1.2.0"
+      }
+    },
+    "PAA.LECTURA:C1": {
+      "phase": "C1",
+      "pass": false,
+      "unmet": [
+        "FIRST_ATTEMPT_PASS 0.25 < 0.8",
+        "HUMAN_REVIEW 0.5 > 0.1"
+      ],
+      "size": 4,
+      "versions": {
+        "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+        "validatorVersion": "qf-v5-validators-1.2.0"
+      }
+    },
+    "PISA.SCIENCE:C1": {
+      "phase": "C1",
+      "pass": false,
+      "unmet": [
+        "FIRST_ATTEMPT_PASS 0.25 < 0.8",
+        "HUMAN_REVIEW 0.75 > 0.1"
+      ],
+      "size": 4,
+      "versions": {
+        "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+        "validatorVersion": "qf-v5-validators-1.2.0"
+      }
+    },
+    "IB.PHYSICS.HL.P1A:C1": {
+      "phase": "C1",
+      "pass": false,
+      "unmet": [
+        "FIRST_ATTEMPT_PASS 0 < 0.8",
+        "ANSWER_FAILURES = 1 (must be 0)",
+        "SCHEMA_FAILURES = 1 (must be 0)"
+      ],
+      "size": 3,
+      "versions": {
+        "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+        "validatorVersion": "qf-v5-validators-1.2.0"
+      }
+    },
+    "AICE.9702.MCQ:C1": {
+      "phase": "C1",
+      "pass": false,
+      "unmet": [
+        "FIRST_ATTEMPT_PASS 0 < 0.8",
+        "ANSWER_FAILURES = 2 (must be 0)"
+      ],
+      "size": 3,
+      "versions": {
+        "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+        "validatorVersion": "qf-v5-validators-1.2.0"
       }
     }
   },
   "overall": {
-    "rawGenerated": 4,
-    "structuralPass": 4,
-    "answerPass": 3,
-    "constructPass": 1,
-    "difficultyMatch": 0,
-    "autoApproved": 0,
-    "humanReview": 0,
-    "autoRejected": 3,
-    "specifications": 3,
-    "firstAttemptPass": 0,
-    "regenerated": 1,
-    "specificationIssues": 1,
-    "firstAttemptPassRate": 0,
-    "regenerationRate": 0.3333,
-    "humanReviewRate": 0,
-    "rejectionRate": 1
+    "rawGenerated": 65,
+    "structuralPass": 51,
+    "answerPass": 32,
+    "constructPass": 34,
+    "difficultyMatch": 13,
+    "autoApproved": 4,
+    "humanReview": 10,
+    "autoRejected": 24,
+    "specifications": 38,
+    "firstAttemptPass": 4,
+    "regenerated": 27,
+    "specificationIssues": 23,
+    "firstAttemptPassRate": 0.1053,
+    "regenerationRate": 0.7105,
+    "humanReviewRate": 0.2632,
+    "rejectionRate": 0.6316
   },
   "byFamily": {
-    "ICFES": {
-      "rawGenerated": 4,
-      "structuralPass": 4,
-      "answerPass": 3,
-      "constructPass": 1,
+    "AICE": {
+      "rawGenerated": 12,
+      "structuralPass": 8,
+      "answerPass": 5,
+      "constructPass": 3,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 6,
+      "specifications": 6,
+      "firstAttemptPass": 0,
+      "regenerated": 6,
+      "specificationIssues": 6,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 1,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    },
+    "CAMBRIDGE": {
+      "rawGenerated": 6,
+      "structuralPass": 5,
+      "answerPass": 0,
+      "constructPass": 2,
       "difficultyMatch": 0,
       "autoApproved": 0,
       "humanReview": 0,
       "autoRejected": 3,
       "specifications": 3,
       "firstAttemptPass": 0,
-      "regenerated": 1,
-      "specificationIssues": 1,
+      "regenerated": 3,
+      "specificationIssues": 3,
       "firstAttemptPassRate": 0,
-      "regenerationRate": 0.3333,
+      "regenerationRate": 1,
       "humanReviewRate": 0,
       "rejectionRate": 1
+    },
+    "IB": {
+      "rawGenerated": 14,
+      "structuralPass": 9,
+      "answerPass": 6,
+      "constructPass": 6,
+      "difficultyMatch": 4,
+      "autoApproved": 2,
+      "humanReview": 1,
+      "autoRejected": 6,
+      "specifications": 9,
+      "firstAttemptPass": 2,
+      "regenerated": 5,
+      "specificationIssues": 5,
+      "firstAttemptPassRate": 0.2222,
+      "regenerationRate": 0.5556,
+      "humanReviewRate": 0.1111,
+      "rejectionRate": 0.6667
+    },
+    "ICFES": {
+      "rawGenerated": 11,
+      "structuralPass": 10,
+      "answerPass": 10,
+      "constructPass": 9,
+      "difficultyMatch": 3,
+      "autoApproved": 0,
+      "humanReview": 4,
+      "autoRejected": 2,
+      "specifications": 6,
+      "firstAttemptPass": 0,
+      "regenerated": 5,
+      "specificationIssues": 2,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 0.8333,
+      "humanReviewRate": 0.6667,
+      "rejectionRate": 0.3333
+    },
+    "PAA": {
+      "rawGenerated": 12,
+      "structuralPass": 9,
+      "answerPass": 6,
+      "constructPass": 7,
+      "difficultyMatch": 2,
+      "autoApproved": 1,
+      "humanReview": 2,
+      "autoRejected": 4,
+      "specifications": 7,
+      "firstAttemptPass": 1,
+      "regenerated": 5,
+      "specificationIssues": 4,
+      "firstAttemptPassRate": 0.1429,
+      "regenerationRate": 0.7143,
+      "humanReviewRate": 0.2857,
+      "rejectionRate": 0.5714
+    },
+    "PISA": {
+      "rawGenerated": 10,
+      "structuralPass": 10,
+      "answerPass": 5,
+      "constructPass": 7,
+      "difficultyMatch": 4,
+      "autoApproved": 1,
+      "humanReview": 3,
+      "autoRejected": 3,
+      "specifications": 7,
+      "firstAttemptPass": 1,
+      "regenerated": 3,
+      "specificationIssues": 3,
+      "firstAttemptPassRate": 0.1429,
+      "regenerationRate": 0.4286,
+      "humanReviewRate": 0.4286,
+      "rejectionRate": 0.4286
     }
   },
   "bySubject": {
-    "Matemáticas": {
+    "Ciencias": {
       "rawGenerated": 4,
       "structuralPass": 4,
+      "answerPass": 4,
+      "constructPass": 4,
+      "difficultyMatch": 3,
+      "autoApproved": 1,
+      "humanReview": 3,
+      "autoRejected": 0,
+      "specifications": 4,
+      "firstAttemptPass": 1,
+      "regenerated": 0,
+      "specificationIssues": 0,
+      "firstAttemptPassRate": 0.25,
+      "regenerationRate": 0,
+      "humanReviewRate": 0.75,
+      "rejectionRate": 0
+    },
+    "Lectura": {
+      "rawGenerated": 6,
+      "structuralPass": 6,
+      "answerPass": 6,
+      "constructPass": 6,
+      "difficultyMatch": 2,
+      "autoApproved": 1,
+      "humanReview": 2,
+      "autoRejected": 1,
+      "specifications": 4,
+      "firstAttemptPass": 1,
+      "regenerated": 2,
+      "specificationIssues": 1,
+      "firstAttemptPassRate": 0.25,
+      "regenerationRate": 0.5,
+      "humanReviewRate": 0.5,
+      "rejectionRate": 0.25
+    },
+    "Matemáticas": {
+      "rawGenerated": 23,
+      "structuralPass": 19,
+      "answerPass": 11,
+      "constructPass": 13,
+      "difficultyMatch": 4,
+      "autoApproved": 0,
+      "humanReview": 4,
+      "autoRejected": 8,
+      "specifications": 12,
+      "firstAttemptPass": 0,
+      "regenerated": 11,
+      "specificationIssues": 8,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 0.9167,
+      "humanReviewRate": 0.3333,
+      "rejectionRate": 0.6667
+    },
+    "Mathematics (0580)": {
+      "rawGenerated": 6,
+      "structuralPass": 5,
+      "answerPass": 0,
+      "constructPass": 2,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 3,
+      "specificationIssues": 3,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 1,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    },
+    "Mathematics (9709)": {
+      "rawGenerated": 6,
+      "structuralPass": 2,
+      "answerPass": 1,
+      "constructPass": 2,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 3,
+      "specificationIssues": 3,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 1,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    },
+    "Mathematics: analysis and approaches": {
+      "rawGenerated": 8,
+      "structuralPass": 4,
       "answerPass": 3,
+      "constructPass": 4,
+      "difficultyMatch": 4,
+      "autoApproved": 2,
+      "humanReview": 1,
+      "autoRejected": 3,
+      "specifications": 6,
+      "firstAttemptPass": 2,
+      "regenerated": 2,
+      "specificationIssues": 2,
+      "firstAttemptPassRate": 0.3333,
+      "regenerationRate": 0.3333,
+      "humanReviewRate": 0.1667,
+      "rejectionRate": 0.5
+    },
+    "Physics": {
+      "rawGenerated": 6,
+      "structuralPass": 5,
+      "answerPass": 3,
+      "constructPass": 2,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 3,
+      "specificationIssues": 3,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 1,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    },
+    "Physics (9702)": {
+      "rawGenerated": 6,
+      "structuralPass": 6,
+      "answerPass": 4,
       "constructPass": 1,
       "difficultyMatch": 0,
       "autoApproved": 0,
@@ -64,19 +406,19 @@
       "autoRejected": 3,
       "specifications": 3,
       "firstAttemptPass": 0,
-      "regenerated": 1,
-      "specificationIssues": 1,
+      "regenerated": 3,
+      "specificationIssues": 3,
       "firstAttemptPassRate": 0,
-      "regenerationRate": 0.3333,
+      "regenerationRate": 1,
       "humanReviewRate": 0,
       "rejectionRate": 1
     }
   },
   "byProfile": {
-    "ICFES.SABER11.MATEMATICAS": {
-      "rawGenerated": 4,
-      "structuralPass": 4,
-      "answerPass": 3,
+    "AICE.9702.MCQ": {
+      "rawGenerated": 6,
+      "structuralPass": 6,
+      "answerPass": 4,
       "constructPass": 1,
       "difficultyMatch": 0,
       "autoApproved": 0,
@@ -84,39 +426,219 @@
       "autoRejected": 3,
       "specifications": 3,
       "firstAttemptPass": 0,
-      "regenerated": 1,
-      "specificationIssues": 1,
+      "regenerated": 3,
+      "specificationIssues": 3,
       "firstAttemptPassRate": 0,
-      "regenerationRate": 0.3333,
+      "regenerationRate": 1,
       "humanReviewRate": 0,
       "rejectionRate": 1
+    },
+    "AICE.9709.PURE": {
+      "rawGenerated": 6,
+      "structuralPass": 2,
+      "answerPass": 1,
+      "constructPass": 2,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 3,
+      "specificationIssues": 3,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 1,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    },
+    "CAMBRIDGE.0580.EXTENDED.P4": {
+      "rawGenerated": 6,
+      "structuralPass": 5,
+      "answerPass": 0,
+      "constructPass": 2,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 3,
+      "specificationIssues": 3,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 1,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    },
+    "IB.MATH_AA.HL.P1": {
+      "rawGenerated": 8,
+      "structuralPass": 4,
+      "answerPass": 3,
+      "constructPass": 4,
+      "difficultyMatch": 4,
+      "autoApproved": 2,
+      "humanReview": 1,
+      "autoRejected": 3,
+      "specifications": 6,
+      "firstAttemptPass": 2,
+      "regenerated": 2,
+      "specificationIssues": 2,
+      "firstAttemptPassRate": 0.3333,
+      "regenerationRate": 0.3333,
+      "humanReviewRate": 0.1667,
+      "rejectionRate": 0.5
+    },
+    "IB.PHYSICS.HL.P1A": {
+      "rawGenerated": 6,
+      "structuralPass": 5,
+      "answerPass": 3,
+      "constructPass": 2,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 3,
+      "specificationIssues": 3,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 1,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    },
+    "ICFES.SABER11.MATEMATICAS": {
+      "rawGenerated": 11,
+      "structuralPass": 10,
+      "answerPass": 10,
+      "constructPass": 9,
+      "difficultyMatch": 3,
+      "autoApproved": 0,
+      "humanReview": 4,
+      "autoRejected": 2,
+      "specifications": 6,
+      "firstAttemptPass": 0,
+      "regenerated": 5,
+      "specificationIssues": 2,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 0.8333,
+      "humanReviewRate": 0.6667,
+      "rejectionRate": 0.3333
+    },
+    "PAA.LECTURA": {
+      "rawGenerated": 6,
+      "structuralPass": 6,
+      "answerPass": 6,
+      "constructPass": 6,
+      "difficultyMatch": 2,
+      "autoApproved": 1,
+      "humanReview": 2,
+      "autoRejected": 1,
+      "specifications": 4,
+      "firstAttemptPass": 1,
+      "regenerated": 2,
+      "specificationIssues": 1,
+      "firstAttemptPassRate": 0.25,
+      "regenerationRate": 0.5,
+      "humanReviewRate": 0.5,
+      "rejectionRate": 0.25
+    },
+    "PAA.MATEMATICAS": {
+      "rawGenerated": 6,
+      "structuralPass": 3,
+      "answerPass": 0,
+      "constructPass": 1,
+      "difficultyMatch": 0,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 3,
+      "specificationIssues": 3,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 1,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    },
+    "PISA.MATHEMATICS": {
+      "rawGenerated": 6,
+      "structuralPass": 6,
+      "answerPass": 1,
+      "constructPass": 3,
+      "difficultyMatch": 1,
+      "autoApproved": 0,
+      "humanReview": 0,
+      "autoRejected": 3,
+      "specifications": 3,
+      "firstAttemptPass": 0,
+      "regenerated": 3,
+      "specificationIssues": 3,
+      "firstAttemptPassRate": 0,
+      "regenerationRate": 1,
+      "humanReviewRate": 0,
+      "rejectionRate": 1
+    },
+    "PISA.SCIENCE": {
+      "rawGenerated": 4,
+      "structuralPass": 4,
+      "answerPass": 4,
+      "constructPass": 4,
+      "difficultyMatch": 3,
+      "autoApproved": 1,
+      "humanReview": 3,
+      "autoRejected": 0,
+      "specifications": 4,
+      "firstAttemptPass": 1,
+      "regenerated": 0,
+      "specificationIssues": 0,
+      "firstAttemptPassRate": 0.25,
+      "regenerationRate": 0,
+      "humanReviewRate": 0.75,
+      "rejectionRate": 0
     }
   },
   "byDifficulty": {
     "CHALLENGE": {
-      "rawGenerated": 4,
-      "structuralPass": 4,
-      "answerPass": 3,
-      "constructPass": 1,
-      "difficultyMatch": 0,
-      "autoApproved": 0,
-      "humanReview": 0,
-      "autoRejected": 3,
-      "specifications": 3,
-      "firstAttemptPass": 0,
-      "regenerated": 1,
-      "specificationIssues": 1,
-      "firstAttemptPassRate": 0,
-      "regenerationRate": 0.3333,
-      "humanReviewRate": 0,
-      "rejectionRate": 1
+      "rawGenerated": 48,
+      "structuralPass": 38,
+      "answerPass": 23,
+      "constructPass": 25,
+      "difficultyMatch": 4,
+      "autoApproved": 1,
+      "humanReview": 6,
+      "autoRejected": 19,
+      "specifications": 26,
+      "firstAttemptPass": 1,
+      "regenerated": 22,
+      "specificationIssues": 19,
+      "firstAttemptPassRate": 0.0385,
+      "regenerationRate": 0.8462,
+      "humanReviewRate": 0.2308,
+      "rejectionRate": 0.7308
+    },
+    "STANDARD": {
+      "rawGenerated": 17,
+      "structuralPass": 13,
+      "answerPass": 9,
+      "constructPass": 9,
+      "difficultyMatch": 9,
+      "autoApproved": 3,
+      "humanReview": 4,
+      "autoRejected": 5,
+      "specifications": 12,
+      "firstAttemptPass": 3,
+      "regenerated": 5,
+      "specificationIssues": 4,
+      "firstAttemptPassRate": 0.25,
+      "regenerationRate": 0.4167,
+      "humanReviewRate": 0.3333,
+      "rejectionRate": 0.4167
     }
   },
   "byItemType": {
-    "SELECTED_RESPONSE": {
-      "rawGenerated": 4,
-      "structuralPass": 4,
-      "answerPass": 3,
+    "NUMERIC_ENTRY": {
+      "rawGenerated": 6,
+      "structuralPass": 3,
+      "answerPass": 0,
       "constructPass": 1,
       "difficultyMatch": 0,
       "autoApproved": 0,
@@ -124,108 +646,474 @@
       "autoRejected": 3,
       "specifications": 3,
       "firstAttemptPass": 0,
-      "regenerated": 1,
-      "specificationIssues": 1,
+      "regenerated": 3,
+      "specificationIssues": 3,
       "firstAttemptPassRate": 0,
-      "regenerationRate": 0.3333,
+      "regenerationRate": 1,
       "humanReviewRate": 0,
       "rejectionRate": 1
+    },
+    "SELECTED_RESPONSE": {
+      "rawGenerated": 31,
+      "structuralPass": 29,
+      "answerPass": 25,
+      "constructPass": 20,
+      "difficultyMatch": 7,
+      "autoApproved": 2,
+      "humanReview": 7,
+      "autoRejected": 9,
+      "specifications": 18,
+      "firstAttemptPass": 2,
+      "regenerated": 13,
+      "specificationIssues": 9,
+      "firstAttemptPassRate": 0.1111,
+      "regenerationRate": 0.7222,
+      "humanReviewRate": 0.3889,
+      "rejectionRate": 0.5
+    },
+    "SHORT_RESPONSE": {
+      "rawGenerated": 28,
+      "structuralPass": 19,
+      "answerPass": 7,
+      "constructPass": 13,
+      "difficultyMatch": 6,
+      "autoApproved": 2,
+      "humanReview": 3,
+      "autoRejected": 12,
+      "specifications": 17,
+      "firstAttemptPass": 2,
+      "regenerated": 11,
+      "specificationIssues": 11,
+      "firstAttemptPassRate": 0.1176,
+      "regenerationRate": 0.6471,
+      "humanReviewRate": 0.1765,
+      "rejectionRate": 0.7059
     }
   },
   "keyPosition": null,
   "spend": {
-    "authorizedUsd": 25,
-    "cumulativeUsd": 0.37161,
+    "authorizedUsd": 24.62,
+    "cumulativeUsd": 6.97193,
     "entries": [
       {
         "batchId": "ICFES.SABER11.MATEMATICAS:C1:001",
         "provider": "openai",
         "model": "gpt-5.6-luna",
         "purpose": "GENERATION",
-        "calls": 1,
-        "succeeded": 1,
+        "calls": 6,
+        "succeeded": 6,
         "failed": 0,
-        "estimatedUsd": 0.039015
+        "estimatedUsd": 0.440055
       },
       {
         "batchId": "ICFES.SABER11.MATEMATICAS:C1:001",
         "provider": "anthropic",
         "model": "claude-sonnet-5-5",
         "purpose": "VALIDATION",
-        "calls": 1,
-        "succeeded": 1,
+        "calls": 6,
+        "succeeded": 6,
         "failed": 0,
-        "estimatedUsd": 0.010255
+        "estimatedUsd": 0.08690500000000001
       },
       {
         "batchId": "ICFES.SABER11.MATEMATICAS:C1:001",
         "provider": "anthropic",
         "model": "claude-sonnet-5-5",
         "purpose": "VALIDATION",
-        "calls": 3,
-        "succeeded": 3,
+        "calls": 18,
+        "succeeded": 18,
         "failed": 0,
-        "estimatedUsd": 0.05415
+        "estimatedUsd": 0.234585
       },
       {
         "batchId": "ICFES.SABER11.MATEMATICAS:C1:002",
         "provider": "openai",
         "model": "gpt-5.6-luna",
         "purpose": "GENERATION",
-        "calls": 1,
-        "succeeded": 1,
+        "calls": 5,
+        "succeeded": 5,
         "failed": 0,
-        "estimatedUsd": 0.057975
+        "estimatedUsd": 0.33437500000000003
       },
       {
         "batchId": "ICFES.SABER11.MATEMATICAS:C1:002",
         "provider": "anthropic",
         "model": "claude-sonnet-5-5",
         "purpose": "VALIDATION",
-        "calls": 1,
-        "succeeded": 1,
+        "calls": 4,
+        "succeeded": 4,
         "failed": 0,
-        "estimatedUsd": 0.016415
+        "estimatedUsd": 0.05237
       },
       {
         "batchId": "ICFES.SABER11.MATEMATICAS:C1:002",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 12,
+        "succeeded": 12,
+        "failed": 0,
+        "estimatedUsd": 0.138125
+      },
+      {
+        "batchId": "PAA.MATEMATICAS:C1:001",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 6,
+        "succeeded": 6,
+        "failed": 0,
+        "estimatedUsd": 0.5193300000000001
+      },
+      {
+        "batchId": "PAA.MATEMATICAS:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 4,
+        "succeeded": 4,
+        "failed": 0,
+        "estimatedUsd": 0.047505
+      },
+      {
+        "batchId": "PAA.MATEMATICAS:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 2,
+        "succeeded": 2,
+        "failed": 0,
+        "estimatedUsd": 0.029525000000000003
+      },
+      {
+        "batchId": "PISA.MATHEMATICS:C1:001",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 6,
+        "succeeded": 6,
+        "failed": 0,
+        "estimatedUsd": 0.40029499999999996
+      },
+      {
+        "batchId": "PISA.MATHEMATICS:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 10,
+        "succeeded": 10,
+        "failed": 0,
+        "estimatedUsd": 0.120615
+      },
+      {
+        "batchId": "PISA.MATHEMATICS:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 8,
+        "succeeded": 8,
+        "failed": 0,
+        "estimatedUsd": 0.11725000000000001
+      },
+      {
+        "batchId": "IB.MATH_AA.HL.P1:C1:001",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 4,
+        "succeeded": 4,
+        "failed": 0,
+        "estimatedUsd": 0.404595
+      },
+      {
+        "batchId": "IB.MATH_AA.HL.P1:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "estimatedUsd": 0.054105
+      },
+      {
+        "batchId": "IB.MATH_AA.HL.P1:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 4,
+        "succeeded": 4,
+        "failed": 0,
+        "estimatedUsd": 0.075085
+      },
+      {
+        "batchId": "IB.MATH_AA.HL.P1:C1:002",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 4,
+        "succeeded": 4,
+        "failed": 0,
+        "estimatedUsd": 0.44318
+      },
+      {
+        "batchId": "IB.MATH_AA.HL.P1:C1:002",
         "provider": "anthropic",
         "model": "claude-sonnet-5-5",
         "purpose": "VALIDATION",
         "calls": 3,
         "succeeded": 2,
         "failed": 1,
-        "estimatedUsd": 0.038175
+        "estimatedUsd": 0.03013
       },
       {
-        "batchId": "ICFES.SABER11.MATEMATICAS:C1:003",
-        "provider": "openai",
-        "model": "gpt-5.6-luna",
-        "purpose": "GENERATION",
-        "calls": 2,
-        "succeeded": 2,
-        "failed": 0,
-        "estimatedUsd": 0.090445
-      },
-      {
-        "batchId": "ICFES.SABER11.MATEMATICAS:C1:003",
+        "batchId": "IB.MATH_AA.HL.P1:C1:002",
         "provider": "anthropic",
         "model": "claude-sonnet-5-5",
         "purpose": "VALIDATION",
-        "calls": 2,
-        "succeeded": 2,
+        "calls": 4,
+        "succeeded": 4,
         "failed": 0,
-        "estimatedUsd": 0.033135
+        "estimatedUsd": 0.045265
       },
       {
-        "batchId": "ICFES.SABER11.MATEMATICAS:C1:003",
+        "batchId": "CAMBRIDGE.0580.EXTENDED.P4:C1:001",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 6,
+        "succeeded": 6,
+        "failed": 0,
+        "estimatedUsd": 0.49871
+      },
+      {
+        "batchId": "CAMBRIDGE.0580.EXTENDED.P4:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 10,
+        "succeeded": 10,
+        "failed": 0,
+        "estimatedUsd": 0.09917
+      },
+      {
+        "batchId": "CAMBRIDGE.0580.EXTENDED.P4:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 10,
+        "succeeded": 10,
+        "failed": 0,
+        "estimatedUsd": 0.13146
+      },
+      {
+        "batchId": "AICE.9709.PURE:C1:001",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 6,
+        "succeeded": 6,
+        "failed": 0,
+        "estimatedUsd": 0.357285
+      },
+      {
+        "batchId": "AICE.9709.PURE:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 4,
+        "succeeded": 4,
+        "failed": 0,
+        "estimatedUsd": 0.03871
+      },
+      {
+        "batchId": "AICE.9709.PURE:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 4,
+        "succeeded": 4,
+        "failed": 0,
+        "estimatedUsd": 0.05008
+      },
+      {
+        "batchId": "PAA.LECTURA:C1:001",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 5,
+        "succeeded": 5,
+        "failed": 0,
+        "estimatedUsd": 0.38019
+      },
+      {
+        "batchId": "PAA.LECTURA:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 5,
+        "succeeded": 5,
+        "failed": 0,
+        "estimatedUsd": 0.07619500000000001
+      },
+      {
+        "batchId": "PAA.LECTURA:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 15,
+        "succeeded": 15,
+        "failed": 0,
+        "estimatedUsd": 0.180385
+      },
+      {
+        "batchId": "PAA.LECTURA:C1:002",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "estimatedUsd": 0.04101
+      },
+      {
+        "batchId": "PAA.LECTURA:C1:002",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "estimatedUsd": 0.01443
+      },
+      {
+        "batchId": "PAA.LECTURA:C1:002",
         "provider": "anthropic",
         "model": "claude-sonnet-5-5",
         "purpose": "VALIDATION",
         "calls": 3,
         "succeeded": 3,
         "failed": 0,
-        "estimatedUsd": 0.032045000000000004
+        "estimatedUsd": 0.035449999999999995
+      },
+      {
+        "batchId": "PISA.SCIENCE:C1:001",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "estimatedUsd": 0.223435
+      },
+      {
+        "batchId": "PISA.SCIENCE:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 5,
+        "succeeded": 5,
+        "failed": 0,
+        "estimatedUsd": 0.06344
+      },
+      {
+        "batchId": "PISA.SCIENCE:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 7,
+        "succeeded": 7,
+        "failed": 0,
+        "estimatedUsd": 0.085835
+      },
+      {
+        "batchId": "PISA.SCIENCE:C1:002",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "estimatedUsd": 0.059865
+      },
+      {
+        "batchId": "PISA.SCIENCE:C1:002",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 1,
+        "succeeded": 1,
+        "failed": 0,
+        "estimatedUsd": 0.013864999999999999
+      },
+      {
+        "batchId": "PISA.SCIENCE:C1:002",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 3,
+        "succeeded": 3,
+        "failed": 0,
+        "estimatedUsd": 0.034585
+      },
+      {
+        "batchId": "IB.PHYSICS.HL.P1A:C1:001",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 6,
+        "succeeded": 6,
+        "failed": 0,
+        "estimatedUsd": 0.39214
+      },
+      {
+        "batchId": "IB.PHYSICS.HL.P1A:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 5,
+        "succeeded": 5,
+        "failed": 0,
+        "estimatedUsd": 0.054369999999999995
+      },
+      {
+        "batchId": "IB.PHYSICS.HL.P1A:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 6,
+        "succeeded": 6,
+        "failed": 0,
+        "estimatedUsd": 0.07686
+      },
+      {
+        "batchId": "AICE.9702.MCQ:C1:001",
+        "provider": "openai",
+        "model": "gpt-5.6-luna",
+        "purpose": "GENERATION",
+        "calls": 6,
+        "succeeded": 6,
+        "failed": 0,
+        "estimatedUsd": 0.34717000000000003
+      },
+      {
+        "batchId": "AICE.9702.MCQ:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 7,
+        "succeeded": 7,
+        "failed": 0,
+        "estimatedUsd": 0.059539999999999996
+      },
+      {
+        "batchId": "AICE.9702.MCQ:C1:001",
+        "provider": "anthropic",
+        "model": "claude-sonnet-5-5",
+        "purpose": "VALIDATION",
+        "calls": 6,
+        "succeeded": 6,
+        "failed": 0,
+        "estimatedUsd": 0.084455
       }
     ]
   }

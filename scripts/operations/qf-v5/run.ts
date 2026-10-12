@@ -29,7 +29,7 @@ import { planSpecifications } from '../../../src/lib/exam-core/question-bank/pro
 import { authoringPrompt } from '../../../src/lib/exam-core/question-bank/production/v5/prompts';
 import type { SpecificationOutcome, ValidationRecord } from '../../../src/lib/exam-core/question-bank/production/v5/pipeline';
 import { COVERAGE_HEADER, coverageRows, reviewCsv, reviewRow, toCsv, toJsonl } from './artifacts';
-import { WORST_CASE_CALLS, runBatch, type ModelRole } from './engine';
+import { WORST_CASE_CALLS, revalidateItems, runBatch, type ModelRole } from './engine';
 
 
 const ROOT = join(__dirname, '..', '..', '..');
@@ -159,6 +159,55 @@ async function generate(): Promise<void> {
   writeReview(state, runId, gates);
 }
 
+/**
+ * After a validator fix: every candidate a previous run authored is validated again under the current validator
+ * version, into a NEW run. No authoring call is made. The earlier run's verdicts are left as they were recorded.
+ */
+async function revalidate(): Promise<void> {
+  const budget = Number(process.env.QB_GENERATION_BUDGET_USD);
+  const probe = maySpend({ authorizedUsd: Number.isFinite(budget) && budget > 0 ? budget : null, entries: [] }, 0);
+  if (!probe.allowed) { console.error(`REFUSED: ${probe.code} -- ${probe.detail}. No provider call was made.`); process.exit(2); }
+  const runId = arg('run'); const from = arg('from'); const only = arg('only')?.split(',') ?? null;
+  if (!runId || !from) { console.error('usage: revalidate --run <new id> --from <old id> [--only <itemId suffix>,...] [--batch-size n]'); process.exit(2); }
+  const source = readJson<RunState | null>(join(OUT, 'run', from, 'state.json'), null);
+  if (!source) { console.error(`REFUSED: run ${from} has no state.`); process.exit(2); }
+  const dir = join(OUT, 'run', runId);
+  mkdirSync(join(dir, 'checkpoints'), { recursive: true });
+  const statePath = join(dir, 'state.json');
+  const state = readJson<RunState>(statePath, { ledger: { authorizedUsd: budget, entries: [] }, checkpoints: [], records: [], items: {}, batchesByProfile: {} });
+  state.ledger.authorizedUsd = budget;
+  const versions = { profileVersion: GENERATOR_PROFILE_VERSION, validatorVersion: VALIDATOR_VERSION };
+  if (state.records.some((r) => r.validatorVersion !== versions.validatorVersion)) { console.error('REFUSED: this run id holds records of another validator version.'); process.exit(2); }
+  const specs = new Map(planState([]).specifications.map((s) => [s.slotKey, s]));
+  const done = new Set(state.records.map((r) => r.itemId));
+  const pairs = Object.values(source.items)
+    .filter((i) => !done.has(i.itemId) && (!only || only.some((o) => i.itemId.endsWith(o))))
+    .map((item) => ({ item, spec: { ...specs.get(item.slotKey)!, attempt: Number(item.itemId.slice(-1)) === 1 ? 1 : 0 } as GenerationSpecification }))
+    .filter((p) => p.spec.slotKey)
+    .sort((a, b) => (a.item.itemId < b.item.itemId ? -1 : 1));
+  const { liveModelCall, revalidationReserveUsd, estimatedUsd, VALIDATION_MODEL } = await import('./live');
+  const live = liveModelCall(process.env);
+  const size = Number(arg('batch-size') ?? 6);
+  for (let b = 0; b * size < pairs.length; b += 1) {
+    const batch = pairs.slice(b * size, (b + 1) * size);
+    const batchId = `REVALIDATION:${from}:${String(state.checkpoints.length + 1).padStart(3, '0')}`;
+    const permission = maySpend(state.ledger, batch.length * revalidationReserveUsd());
+    if (!permission.allowed) { console.error(`STOPPED before ${batchId}: ${permission.code} -- ${permission.detail}`); break; }
+    const before = cumulativeSpend(state.ledger);
+    const corpus: CorpusEntry[] = Object.values(state.items).filter((i) => state.records.some((r) => r.itemId === i.itemId && r.reviewDecision !== 'AUTO_REJECT')).map((i) => ({ id: i.itemId, source: 'EARLIER_BATCH', text: learnerText(i) }));
+    const result = await revalidateItems(batch, live.call, corpus);
+    for (const role of ['SOLVER', 'JUDGE'] as const) { const a = result.account[role]; state.ledger.entries.push({ batchId, provider: 'anthropic', model: VALIDATION_MODEL, purpose: 'VALIDATION', calls: a.calls, succeeded: a.succeeded, failed: a.failed, estimatedUsd: estimatedUsd(role, a) }); }
+    for (const o of result.outcomes) { state.records.push(o.final.record); if (o.final.item) state.items[o.final.item.itemId] = o.final.item; (state.batchesByProfile[o.final.record.profileId] ??= []).push([o]); }
+    const spent = cumulativeSpend(state.ledger);
+    const cp = checkpoint({ runId, batchId, phase: 'C1', profileId: 'REVALIDATION', ...versions, cumulativeSpendUsd: spent, timestamp: new Date().toISOString(), outcomes: result.outcomes });
+    state.checkpoints.push(cp);
+    writeFileSync(join(dir, 'checkpoints', `${batchId.replace(/[:]/g, '_')}.json`), `${JSON.stringify(cp, null, 2)}\n`);
+    writeFileSync(statePath, `${JSON.stringify(state)}\n`);
+    console.log(JSON.stringify({ BATCH_ID: batchId, REVALIDATED: batch.length, MACHINE_CERTIFIED: cp.metrics.autoApproved, REVIEW_REQUIRED: cp.metrics.humanReview, REJECTED: cp.metrics.autoRejected, ACTUAL_SPEND: +(spent - before).toFixed(4), CUMULATIVE_SPEND: +spent.toFixed(4), BUDGET_REMAINING: +(budget - spent).toFixed(4), verdicts: result.outcomes.map((o) => `${o.final.record.itemId.slice(-28)} ${o.final.record.reviewDecision}:${o.final.record.reviewReason.slice(0, 90)}`) }));
+  }
+  writeReview(state, runId, {});
+}
+
 /** The review package: every review-bound item and the 2 % audit sample of the auto-approved. Nothing else. */
 function writeReview(state: RunState, runId: string, gates: Record<string, { phase: string; pass: boolean }>): void {
   const finals = new Map<string, ValidationRecord>();
@@ -178,6 +227,7 @@ function writeReview(state: RunState, runId: string, gates: Record<string, { pha
 if (require.main === module) {
   const command = process.argv[2];
   if (command === 'plan') plan();
+  else if (command === 'revalidate') revalidate().catch((e) => { console.error((e as Error).message); process.exit(1); });
   else if (command === 'generate') generate().catch((e) => { console.error((e as Error).message); process.exit(1); });
   else { console.error(`usage: run.ts plan | generate   (existing runs: ${existsSync(join(OUT, 'run')) ? readdirSync(join(OUT, 'run')).join(', ') : 'none'})`); process.exit(2); }
 }

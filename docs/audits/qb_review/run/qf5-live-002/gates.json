@@ -1,0 +1,140 @@
+{
+  "ICFES.SABER11.MATEMATICAS:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "BATCH_TOO_SMALL: 6 of 8",
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "HUMAN_REVIEW 0.6667 > 0.1"
+    ],
+    "size": 6,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.2.0"
+    }
+  },
+  "PAA.MATEMATICAS:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "BATCH_TOO_SMALL: 3 of 8",
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "SCHEMA_FAILURES = 3 (must be 0)"
+    ],
+    "size": 3,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.2.0"
+    }
+  },
+  "PISA.MATHEMATICS:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "BATCH_TOO_SMALL: 3 of 7",
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "ANSWER_FAILURES = 2 (must be 0)"
+    ],
+    "size": 3,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.2.0"
+    }
+  },
+  "IB.MATH_AA.HL.P1:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0.3333 < 0.8",
+      "STAGE_ERRORS = 1 (must be 0)",
+      "HUMAN_REVIEW 0.1667 > 0.1"
+    ],
+    "size": 6,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.2.0"
+    }
+  },
+  "CAMBRIDGE.0580.EXTENDED.P4:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "BATCH_TOO_SMALL: 3 of 6",
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "ANSWER_FAILURES = 2 (must be 0)",
+      "SCHEMA_FAILURES = 1 (must be 0)"
+    ],
+    "size": 3,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.2.0"
+    }
+  },
+  "AICE.9709.PURE:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "BATCH_TOO_SMALL: 3 of 5",
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "ANSWER_FAILURES = 1 (must be 0)"
+    ],
+    "size": 3,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.2.0"
+    }
+  },
+  "PAA.LECTURA:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0.25 < 0.8",
+      "HUMAN_REVIEW 0.5 > 0.1"
+    ],
+    "size": 4,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.2.0"
+    }
+  },
+  "PISA.SCIENCE:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0.25 < 0.8",
+      "HUMAN_REVIEW 0.75 > 0.1"
+    ],
+    "size": 4,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.2.0"
+    }
+  },
+  "IB.PHYSICS.HL.P1A:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "ANSWER_FAILURES = 1 (must be 0)",
+      "SCHEMA_FAILURES = 1 (must be 0)"
+    ],
+    "size": 3,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.2.0"
+    }
+  },
+  "AICE.9702.MCQ:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "ANSWER_FAILURES = 2 (must be 0)"
+    ],
+    "size": 3,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.2.0"
+    }
+  }
+}

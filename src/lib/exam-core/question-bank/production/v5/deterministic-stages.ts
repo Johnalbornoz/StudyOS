@@ -11,7 +11,7 @@ import { textualSimilarity } from '../originality-gate';
 import { CandidateItemSchema, learnerText, type CandidateItem, type GenerationSpecification } from './item';
 import type { QuestionGenerationProfile } from './generation-profile';
 
-export const VALIDATOR_VERSION = 'qf-v5-validators-1.2.0';
+export const VALIDATOR_VERSION = 'qf-v5-validators-1.3.0';
 
 export type Severity = 'FAIL' | 'REVIEW';
 export interface Finding { code: string; severity: Severity; detail: string }
@@ -33,8 +33,19 @@ export const LEAKAGE_PATTERNS: readonly RegExp[] = [
 ];
 const RESIDUE = [/\{\{\s*[a-zA-Z_.]+\s*\}\}/, /\$\{[a-zA-Z_.]+\}/, /<(placeholder|todo|insert|value|answer|stem|option)[a-z_]*>/i, /\[(todo|tbd|placeholder|insert[^\]]*)\]/i, /\bNaN\b/, /\blorem ipsum\b/i, /```/, /"[a-zA-Z_]+"\s*:\s*["\[{]/, /\\n(?![a-zA-Z])/];
 const TRUNCATED = [/[,;(\[¿¡]\s*$/, /…\s*$|\.\.\.\s*$/, /\b(and|or|the|of|que|de|la|el|y|o)\s*$/i];
-/** Parentheses must close, ignoring what is not a parenthesis pair: half-open intervals "[2, 5)" and list labels "a)". */
-const balanced = (raw: string): boolean => { const s = raw.replace(/[\[(\]][^()\[\]]{0,40}[,;][^()\[\]]{0,40}[\])\[]/g, ' ').replace(/(^|\s)[a-zA-Z0-9]{1,3}\)/g, '$1'); let n = 0; for (const c of s) { if (c === '(') n += 1; if (c === ')') n -= 1; if (n < 0) return false; } return n === 0; };
+/**
+ * Parentheses must close. Two things that are not a parenthesis pair are set aside: a closer with nothing open
+ * that ends a list label or a half-open interval ("a)", "ii)", "[2, 5)"), and an opener closed by a bracket
+ * ("(−∞, 3]").
+ */
+const balanced = (s: string): boolean => {
+  let open = 0;
+  for (let i = 0; i < s.length; i += 1) {
+    if (s[i] === '(') { if (!/^[^()\[\]]{0,40}[,;][^()\[\]]{0,40}\]/.test(s.slice(i + 1))) open += 1; }
+    else if (s[i] === ')') { if (open > 0) open -= 1; else if (!/(^|[\s:;,.\[])[^\s()]{1,12}$/.test(s.slice(Math.max(0, i - 14), i))) return false; }
+  }
+  return open === 0;
+};
 
 export function structuralFindings(raw: unknown, spec: GenerationSpecification, profile: QuestionGenerationProfile): { item: CandidateItem | null; findings: Finding[] } {
   const parsed = CandidateItemSchema.safeParse(raw);
@@ -123,10 +134,12 @@ export function optionFindings(item: CandidateItem): Finding[] {
   const unit = (s: string): string => (/[\d)]\s*([a-zA-Z%°µ²³/]+)\s*$/.exec(s.trim())?.[1] ?? '');
   if (unit(key.text) && others.every((o) => unit(o.text) !== unit(key.text))) f.push(review('KEY_UNIT_CLUE', `only the key carries the unit ${unit(key.text)}`));
   // two options that are the same number written differently: more than one defensible answer
+  // the same number with different words ("61.8 N upward" / "61.8 N downward") is not the same option
   const values = item.options.map((o) => numericValue(o.text, item.acceptedUnits));
+  const words = item.options.map((o) => squash(o.text.replace(/[\d.,/\s]+/g, ' ')));
   for (let i = 0; i < values.length; i += 1) for (let j = i + 1; j < values.length; j += 1) {
     const a = values[i]; const b = values[j];
-    if (a !== null && b !== null && nearlyEqual(a, b)) f.push(fail('EQUIVALENT_OPTIONS', `options ${item.options[i].label} and ${item.options[j].label} are the same value`));
+    if (a !== null && b !== null && nearlyEqual(a, b) && words[i] === words[j]) f.push(fail('EQUIVALENT_OPTIONS', `options ${item.options[i].label} and ${item.options[j].label} are the same value`));
   }
   return f;
 }
@@ -201,12 +214,15 @@ export function compareAnswers(item: CandidateItem, independent: string): Answer
   return { verdict: 'UNDETERMINED', method: 'NONE', detail: 'no deterministic normaliser applies' };
 }
 
+const BARE_NUMBER = /^[-+−]?[\d.,]+(\s*\/\s*[\d.,]+)?$/;
 /** The arithmetic the generator declared must give its own key, and for a selected response exactly one option. */
 export function declaredArithmeticFindings(item: CandidateItem): Finding[] {
   if (!item.answerExpression) return [];
   let value: number;
   try { value = evaluateExpression(item.answerExpression); } catch (e) { return [fail('ANSWER_EXPRESSION_INVALID', e instanceof Error ? e.message : 'not evaluable')]; }
   if (item.itemType === 'SELECTED_RESPONSE') {
+    // options that carry a unit or words may be in another unit than the arithmetic (A against mA): not comparable here
+    if (!item.options.every((o) => BARE_NUMBER.test(o.text.trim()))) return [];
     const hits = item.options.filter((o) => { const v = numericValue(o.text, item.acceptedUnits); return v !== null && nearlyEqual(v, value, 1e-6); }).map((o) => o.label);
     // only when every option reads as a number can "none of them equals it" be asserted
     if (hits.length < 1) return item.options.every((o) => numericValue(o.text, item.acceptedUnits) !== null) ? [fail('NO_OPTION_EQUALS_COMPUTED_ANSWER', `the declared arithmetic gives ${value}; no option has that value`)] : [];

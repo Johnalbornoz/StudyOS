@@ -101,7 +101,13 @@ describe('stage 1-3: specification and structure', () => {
     // options with units still check against the declared arithmetic; unreadable options never produce a false failure
     const units = mcq({ options: [{ label: 'A', text: '9 meses' }, { label: 'B', text: '10 meses' }, { label: 'C', text: '11 meses' }, { label: 'D', text: '12 meses' }] });
     expect(declaredArithmeticFindings(units)).toEqual([]);
-    expect(declaredArithmeticFindings({ ...units, proposedAnswer: 'B' }).map((f) => f.code)).toEqual(['KEY_CONTRADICTS_DECLARED_ARITHMETIC']);
+    // options with a unit may be in another unit than the arithmetic (A against mA): the check stands aside (found live, run qf5-live-002)
+    expect(declaredArithmeticFindings({ ...units, proposedAnswer: 'B' })).toEqual([]);
+    expect(declaredArithmeticFindings(mcq({ answerExpression: '9/15000', options: [{ label: 'A', text: '0.60 mA' }, { label: 'B', text: '0.90 mA' }, { label: 'C', text: '1.50 mA' }, { label: 'D', text: '1.80 mA' }], proposedAnswer: 'A' }))).toEqual([]);
+    // the same number in opposite directions is two options, not one (found live)
+    expect(optionFindings(mcq({ answerExpression: null, proposedAnswer: 'A', options: [{ label: 'A', text: '61.8 N upward' }, { label: 'B', text: '58.8 N upward' }, { label: 'C', text: '3.0 N upward' }, { label: 'D', text: '61.8 N downward' }] })).map((f) => f.code)).not.toContain('EQUIVALENT_OPTIONS');
+    // text whose parentheses close as written is never "truncated", whatever labels or intervals it contains (found live: nine false rejections)
+    expect(codes(mcq({ fullLearnerPrompt: 'Sea f(x) = (x − 1)(x + 2) para x en (0, 5). Indica: i) el valor de f(2) y ii) el mes en que el plan lo supera.' }))).toEqual([]);
     expect(declaredArithmeticFindings(mcq({ options: [{ label: 'A', text: 'nueve' }, { label: 'B', text: 'diez' }, { label: 'C', text: 'once' }, { label: 'D', text: 'doce' }] }))).toEqual([]);
   });
   it('the material is shown once: a prompt that repeats its stimulus is rejected', () => {

@@ -1,1 +1,72 @@
 priority,item_id,exam_family,subject,component,item_type,stimulus,question,options,proposed_canonical_answer,independent_solver_answer,solution,objective,intended_difficulty,actual_difficulty,tier_fit,direction,answer_match,answer_confidence,construct_fit,authenticity,distractor_quality,validator_flags,reason_for_escalation
+AUDIT,v2.ib.math-aa-hl/p1/aahl.p1.calculus#0/004#0,IB,Mathematics: analysis and approaches,P1,SHORT_RESPONSE,"The curve C has equation y = x⁴ − 2x². The tangent to C at x = 1, together with C, encloses a region R. Let A be the area of R. When R is rotated through 2π radians about the y-axis, it generates a solid of volume V.",Find the exact value of V/A. Give a complete justification for your answer.,,5π/16,5π/16,"The derivative of y = x⁴ − 2x² is
+
+dy/dx = 4x³ − 4x.
+
+At x = 1, dy/dx = 0 and y = 1 − 2 = −1, so the tangent is the line y = −1.
+
+The intersections of the curve and the tangent satisfy
+
+x⁴ − 2x² = −1,
+
+so
+
+x⁴ − 2x² + 1 = 0
+(x² − 1)² = 0.
+
+Thus the bounded region extends from x = −1 to x = 1. The vertical height of the region is
+
+(x⁴ − 2x²) − (−1) = (x² − 1)².
+
+Therefore
+
+A = ∫ from −1 to 1 (x² − 1)² dx
+  = 2∫ from 0 to 1 (x⁴ − 2x² + 1) dx
+  = 2[ x⁵/5 − 2x³/3 + x ] from 0 to 1
+  = 2(1/5 − 2/3 + 1)
+  = 16/15.
+
+The region is symmetric about the y-axis, so rotating the right half about the y-axis generates the same solid as rotating the whole region. Using cylindrical shells,
+
+V = 2π∫ from 0 to 1 x(x⁴ − 2x² + 1) dx
+  = 2π∫ from 0 to 1 (x⁵ − 2x³ + x) dx
+  = 2π[ x⁶/6 − x⁴/2 + x²/2 ] from 0 to 1
+  = 2π(1/6 − 1/2 + 1/2)
+  = π/3.
+
+Hence
+
+V/A = (π/3)/(16/15) = 5π/16.",v2.ib.math-aa-hl/p1/aahl.p1.calculus#0,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS
+AUDIT,v2.ib.math-aa-hl/p1/aahl.p1.calculus#0/001#0,IB,Mathematics: analysis and approaches,P1,SHORT_RESPONSE,,"A curve C passes through the point (0, 0) and has derivative f′(x) = 3x² − 3, where y = f(x) is the equation of C. Find the exact area enclosed by C and the tangent to C at its local maximum.",,27/4,27/4,"Since f′(x) = 3x² − 3, integrating gives
+f(x) = x³ − 3x + C.
+
+The point (0, 0) lies on C, so C = 0. Therefore
+f(x) = x³ − 3x.
+
+The stationary points satisfy
+f′(x) = 0
+3x² − 3 = 0,
+so x = −1 or x = 1.
+
+Since f′(x) changes from positive to negative at x = −1, the local maximum is at x = −1. Its y-coordinate is
+f(−1) = (−1)³ − 3(−1) = 2.
+
+The tangent at the local maximum is therefore y = 2.
+
+The intersections of C with this tangent satisfy
+x³ − 3x = 2,
+so
+x³ − 3x − 2 = 0
+(x + 1)²(x − 2) = 0.
+
+Thus the enclosed region lies between x = −1 and x = 2. On this interval, the tangent is above C, so the area is
+∫ from −1 to 2 [2 − (x³ − 3x)] dx
+= [2x − x⁴/4 + 3x²/2] from −1 to 2
+= 6 − (−3/4)
+= 27/4.",v2.ib.math-aa-hl/p1/aahl.p1.calculus#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS
+AUDIT,v2.paa/lectura/paa.lect.explicitas#0/001#0,PAA,Lectura,LECTURA,SELECTED_RESPONSE,"Durante seis semanas de 2024, la biblioteca municipal colocó cerca de la entrada una mesa con libros de divulgación científica y un letrero que invitaba a hojearlos. En ese periodo, los préstamos de esos títulos aumentaron 35 % respecto de las seis semanas anteriores; el total de préstamos de la biblioteca aumentó 4 %.
+
+De las 42 personas entrevistadas al salir, 29 dijeron que la nueva ubicación les había hecho notar libros que antes no veían. Sin embargo, las entrevistas se realizaron únicamente entre quienes visitaron la biblioteca. Además, durante las mismas seis semanas, varias escuelas cercanas organizaron una campaña para recomendar lecturas científicas. El informe concluye que conviene repetir la experiencia en otras sucursales y comparar los resultados con un periodo en que no haya una campaña semejante.",¿Cuál conclusión está mejor respaldada por la información del texto?,"A. La nueva ubicación probablemente ayudó a visibilizar algunos títulos, pero no permite atribuirle por sí sola el aumento total. | B. La nueva ubicación fue la causa principal del aumento total, porque los préstamos científicos crecieron más que los demás. | C. La campaña escolar tuvo poca influencia, porque la mayoría de las personas entrevistadas mencionó la ubicación. | D. La nueva ubicación benefició a la mayoría de los residentes, porque 29 de 42 entrevistados la consideraron útil.",A,A,"La opción A es la mejor respaldada. El aumento de los préstamos de los títulos colocados cerca de la entrada y las respuestas de 29 visitantes sugieren que la ubicación pudo hacerlos más visibles. Sin embargo, la campaña escolar ocurrió al mismo tiempo, por lo que no se puede atribuir todo el aumento únicamente a la mesa. Además, como solo se entrevistó a visitantes, las respuestas no representan necesariamente a todos los residentes. Por eso, A combina la inferencia apoyada por los datos con la limitación que el informe reconoce.",v2.paa/lectura/paa.lect.explicitas#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.pisa.2022/science/pisa.sci.evaluate.procedural#0/001#0,PISA,Ciencias,SCIENCE,SELECTED_RESPONSE,"En una ciudad se están instalando marquesinas de autobús con una lámina transparente sobre el techo. El fabricante afirma que la lámina mantiene más fresco el interior al reducir el calentamiento causado por la luz solar.
+
+Un grupo de estudiantes quiere comprobar esta afirmación con dos modelos idénticos de una marquesina. Cada modelo tiene un termómetro en el interior. Disponen de una lámpara halógena fija, una lámina transparente, un cronómetro y una habitación cuya temperatura se mantiene constante. La lámpara calienta más el lado de la mesa que está más cerca de ella.",¿Qué procedimiento proporcionaría la evidencia más sólida para determinar si la lámina reduce el calentamiento del modelo?,"A. Colocar un modelo con lámina y otro sin lámina bajo la lámpara durante 20 minutos, medir la temperatura final una vez y comparar los resultados. | B. Colocar ambos modelos a igual distancia de la lámpara, poner la lámina solo en uno, medir el aumento de temperatura durante 20 minutos, intercambiar sus posiciones a los 10 minutos y repetir la prueba cinco veces. | C. Colocar ambos modelos bajo la lámpara, poner la lámina solo en uno y aumentar también la ventilación de ese modelo para imitar mejor una marquesina real; después comparar sus temperaturas finales. | D. Medir durante 20 minutos un modelo sin lámina y, al día siguiente, medir el mismo modelo con lámina, usando la temperatura final de cada día como comparación.",B,B,"La opción B cambia principalmente una variable: la presencia de la lámina. Los dos modelos se prueban al mismo tiempo y se mide el aumento de temperatura, por lo que se comparan cambios equivalentes aunque no comiencen exactamente a la misma temperatura. Intercambiar las posiciones evita que el lado más cercano a la lámpara favorezca siempre al mismo modelo, y repetir la prueba permite comprobar si el resultado es consistente. Las demás opciones introducen una diferencia no controlada, no repiten la medición o confunden el efecto de la lámina con el de otra variable.",v2.pisa.2022/science/pisa.sci.evaluate.procedural#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS

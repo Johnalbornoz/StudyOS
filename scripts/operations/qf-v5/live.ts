@@ -16,7 +16,7 @@ import { REPLY_SCHEMAS, type ReplyKind } from '../../../src/lib/exam-core/questi
 import { WORST_CASE_CALLS, type ModelCall, type ModelReply, type ModelRole } from './engine';
 
 export const VALIDATION_MODEL = 'claude-sonnet-5-5' as const;
-export const MAX_OUTPUT_TOKENS: Record<ModelRole, number> = { AUTHOR: 6000, SOLVER: 2500, JUDGE: 1500 };
+export const MAX_OUTPUT_TOKENS: Record<ModelRole, number> = { AUTHOR: 6000, SOLVER: 4000, JUDGE: 1500 };
 /** ASSUMED prices, deliberately high (the bases the earlier lanes fixed). Spend figures are estimates on these. */
 export const PRICE: Record<ModelRole, PriceBasis> = { AUTHOR: GENERATOR_PRICE_BASIS, SOLVER: REVIEWER_PRICE_BASIS, JUDGE: REVIEWER_PRICE_BASIS };
 export const estimatedUsd = (role: ModelRole, usage: { inputTokens: number; outputTokens: number }): number => costOf(usage, PRICE[role]);
@@ -27,6 +27,9 @@ export const worstCaseUsd = (role: ModelRole, characters: number): number => cos
  * The most one specification can cost: two authoring attempts and every validation call of both, each with a
  * full-length reply and an input that carries the longest item the author is allowed to write.
  */
+/** The most the validation of one stored candidate can cost (no authoring): the solver twice and three judges. */
+export const revalidationReserveUsd = (): number => 2 * worstCaseUsd('SOLVER', 17000) + 3 * worstCaseUsd('JUDGE', 17000);
+
 export function specificationReserveUsd(authoringPromptCharacters: number): number {
   // an item is bounded by its schema (stimulus 12,000 characters, prompt 8,000), not by the author's reasoning allowance
   const validationCharacters = 3000 + 14000;
@@ -39,7 +42,7 @@ async function anthropic(apiKey: string, system: string, user: string, maxTokens
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 180_000);
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model: VALIDATION_MODEL, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }], output_config: { effort: kind === 'SOLVER' ? 'medium' : 'low', format: { type: 'json_schema', schema: REPLY_SCHEMAS[kind] } } }), signal: controller.signal });
+    const response = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model: VALIDATION_MODEL, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }], output_config: { effort: kind === 'SOLVER' ? 'high' : 'low', format: { type: 'json_schema', schema: REPLY_SCHEMAS[kind] } } }), signal: controller.signal });
     if (!response.ok) throw new Error(`PROVIDER_HTTP_${response.status}: ${redact(await response.text().catch(() => '')).slice(0, 240)}`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await response.json();

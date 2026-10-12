@@ -1,0 +1,35 @@
+{
+  "runId": "qf5-live-002",
+  "batchId": "PISA.SCIENCE:C1:002",
+  "phase": "C1",
+  "profileId": "PISA.SCIENCE",
+  "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.2.0",
+  "cumulativeSpendUsd": 5.957395,
+  "timestamp": "2026-10-12T12:41:13.305Z",
+  "candidateIds": [
+    "v2.pisa.2022/science/pisa.sci.evaluate.procedural#0/001#0"
+  ],
+  "decisions": {
+    "v2.pisa.2022/science/pisa.sci.evaluate.procedural#0/001#0": "AUTO_APPROVE"
+  },
+  "metrics": {
+    "rawGenerated": 1,
+    "structuralPass": 1,
+    "answerPass": 1,
+    "constructPass": 1,
+    "difficultyMatch": 1,
+    "autoApproved": 1,
+    "humanReview": 0,
+    "autoRejected": 0,
+    "specifications": 1,
+    "firstAttemptPass": 1,
+    "regenerated": 0,
+    "specificationIssues": 0,
+    "firstAttemptPassRate": 1,
+    "regenerationRate": 0,
+    "humanReviewRate": 0,
+    "rejectionRate": 0
+  },
+  "hash": "348db947f88d522485b52cbe3700ba995d0099a324af4b297087496367e67e33"
+}
