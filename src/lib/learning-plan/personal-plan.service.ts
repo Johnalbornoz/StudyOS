@@ -24,7 +24,7 @@
  * decision and never changes it; the only pedagogical state remains
  * LEARN / PRACTICE / PROVE / RETAIN / TRANSFER from the engine.
  */
-import { recordCurriculumProvenance, type CurriculumProvenanceRef } from './curriculum-provenance.service';
+import { deriveCurriculumProvenance, recordCurriculumProvenance, type CurriculumProvenanceRef } from './curriculum-provenance.service';
 import { db } from '@/lib/db';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
 import { catalogSubjectByName, normalizeName } from '@/lib/experience/subject-catalog';
@@ -193,8 +193,11 @@ async function audit(client: Executor, studentId: string, canonicalConceptId: st
  * already have authorized the actor for this learner and validated the
  * canonical concept for the context (class subject, curriculum...).
  */
-export async function enrollCanonicalConcept(studentId: string, canonicalConceptId: string, source: PlanSource, provenance: CurriculumProvenanceRef | null = null): Promise<EnrollResult> {
+export async function enrollCanonicalConcept(studentId: string, canonicalConceptId: string, source: PlanSource, statedProvenance?: CurriculumProvenanceRef | null): Promise<EnrollResult> {
   const key = source.key ?? '';
+  // WHERE in the Student's curriculum the concept belongs: the lineage the caller states (already verified), else
+  // the Student's own explicit curriculum that maps the concept, else none (`null` from the caller: none, by choice).
+  const provenance = statedProvenance !== undefined ? statedProvenance : await deriveCurriculumProvenance(studentId, canonicalConceptId).catch(() => null);
   const client = await db.connect();
   try {
     await client.query('BEGIN');
@@ -230,8 +233,8 @@ export async function enrollCanonicalConcept(studentId: string, canonicalConcept
     );
     const sourceAdded = sourceRow.rows.length > 0;
 
-    // Curriculum provenance (WHERE in the Student's curriculum this concept belongs): the caller states a lineage
-    // it has verified; the database guard verifies it again. A lineage that does not hold is not recorded -- the
+    // Curriculum provenance (WHERE in the Student's curriculum this concept belongs): stated and verified by the
+    // caller, or derived above; the database guard verifies it again. A lineage that does not hold is not recorded -- the
     // enrolment itself stands (the canonical concept is valid on its own).
     let provenanceRecorded = false;
     if (provenance) {

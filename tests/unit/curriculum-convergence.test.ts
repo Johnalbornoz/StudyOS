@@ -72,6 +72,7 @@ describe('curriculum resolution fails closed', () => {
     expect(service).not.toMatch(/inProgramme\[0\]|options\[0\]/);
     expect(service).not.toMatch(/\/IB\/i/);
     expect(service).toMatch(/decideCurriculumContext\(options, await describeExplicitSubjects\(named, catalogKey\)\)/);
+    expect(service).toMatch(/: await studentExplicitAcademicSubjects\(studentId\);/);
     // the decision module never reads a count or a position
     const decision = code('src/lib/learning-plan/curriculum-context-resolution.ts');
     expect(decision).not.toMatch(/conceptCount|\.sort\(|options\[\d\]|\[0\]/);
@@ -126,10 +127,15 @@ describe('Learn curriculum provenance', () => {
 
   it('the API refuses a lineage that does not hold (never repairs it) and never guesses one', () => {
     const route = read('src/app/api/student/plan/route.ts');
-    expect(route).toMatch(/if \(!\(await verifyCurriculumProvenance\(canonicalConceptId, statedCurriculum\)\)\) return NextResponse\.json\(\{ error: CURRICULUM_PROVENANCE_INVALID \}, \{ status: 422 \}\)/);
+    expect(route).toMatch(/if \(statedCurriculum && !\(await verifyCurriculumProvenance\(canonicalConceptId, statedCurriculum\)\)\) return NextResponse\.json\(\{ error: CURRICULUM_PROVENANCE_INVALID \}, \{ status: 422 \}\)/);
+    // every way a catalogue concept enters Learn records its lineage: plan enrolment (all sources) and the exam bridge
+    expect(read('src/lib/learning-plan/personal-plan.service.ts')).toMatch(/statedProvenance !== undefined \? statedProvenance : await deriveCurriculumProvenance\(studentId, canonicalConceptId\)/);
+    expect(read('src/lib/exam-core/catalog/learning-links.service.ts')).toMatch(/recordCurriculumProvenance\(db, conceptId, canonicalConceptId, lineage, null\)/);
     const service = code('src/lib/learning-plan/curriculum-provenance.service.ts');
-    // derived only from the Student's own explicit curriculum context
-    expect(service).toMatch(/const \{ context \} = await resolveCurriculumContext\(studentId, catalogKey\);\s+if \(!context\) return null;/);
+    // derived only from an academic subject the Student explicitly has, and only where the concept is mapped
+    expect(service).toMatch(/const explicit = \[\.\.\.new Set\(\(await studentExplicitAcademicSubjects\(studentId\)\)\.map\(\(e\) => e\.academicSubjectId\)\)\];\s+if \(explicit\.length === 0\) return null;/);
+    expect(service).toMatch(/AND sv\.academic_subject_id = ANY\(\$1::uuid\[\]\)/);
+    expect(service).not.toMatch(/ORDER BY\s+count/i);
     expect(service).toMatch(/ON CONFLICT \(learner_concept_id\) DO NOTHING/);
   });
 });

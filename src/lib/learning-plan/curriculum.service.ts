@@ -126,23 +126,30 @@ export async function resolveCurriculumContext(
 ): Promise<{ context: CurriculumOption | null; options: CurriculumOption[]; reason: ContextReason; notReady: CurriculumNotReady[] }> {
   const options = await listCurriculumOptions(catalogKey);
   if (requestedAcademicSubjectId === GENERAL_CONTEXT) return { context: null, options, reason: 'GENERAL', notReady: [] };
-  const named: Array<{ academicSubjectId: string; source: ExplicitSubjectSource }> = [];
-  if (requestedAcademicSubjectId) named.push({ academicSubjectId: requestedAcademicSubjectId, source: 'REQUESTED' });
-  else {
-    // R1: definition-based and objective-first profiles (newest first); objective-first resolves through the governed objective.
-    const profiles = await learnerExamProfiles([studentId], 'ACTIVE').catch(() => []);
-    const resolved = await resolveExamProfiles(profiles).catch(() => new Map());
-    for (const p of profiles) for (const id of resolved.get(p.id)?.academicSubjectIds ?? []) named.push({ academicSubjectId: id, source: 'EXAM_PROFILE' });
-    // The subjects the Student selected in their Academic Profile, in the order they selected them.
-    const selected = await db
-      .query(`SELECT academic_subject_id FROM student_academic_subjects WHERE student_id = $1 AND ended_at IS NULL ORDER BY created_at, academic_subject_id`, [studentId])
-      .catch(() => ({ rows: [] as any[] }));
-    for (const r of selected.rows) named.push({ academicSubjectId: r.academic_subject_id as string, source: 'ACADEMIC_PROFILE' });
-  }
+  const named: Array<{ academicSubjectId: string; source: ExplicitSubjectSource }> = requestedAcademicSubjectId
+    ? [{ academicSubjectId: requestedAcademicSubjectId, source: 'REQUESTED' }]
+    : await studentExplicitAcademicSubjects(studentId);
   const decision = decideCurriculumContext(options, await describeExplicitSubjects(named, catalogKey));
   if (decision.status === 'RESOLVED') return { context: decision.context, options, reason: decision.source, notReady: decision.notReady };
   if (decision.status === 'NOT_READY') return { context: null, options, reason: CURRICULUM_MAPPING_NOT_READY, notReady: decision.notReady };
   return { context: null, options, reason: 'GENERAL', notReady: [] };
+}
+
+/**
+ * The academic subjects the Student EXPLICITLY has, in authority order: the exams they prepare (newest first;
+ * objective-first profiles resolve through the governed objective), then the subjects they selected in their
+ * Academic Profile, in the order they selected them. Nothing else names a curriculum for a Student.
+ */
+export async function studentExplicitAcademicSubjects(studentId: string): Promise<Array<{ academicSubjectId: string; source: ExplicitSubjectSource }>> {
+  const named: Array<{ academicSubjectId: string; source: ExplicitSubjectSource }> = [];
+  const profiles = await learnerExamProfiles([studentId], 'ACTIVE').catch(() => []);
+  const resolved = await resolveExamProfiles(profiles).catch(() => new Map());
+  for (const p of profiles) for (const id of resolved.get(p.id)?.academicSubjectIds ?? []) named.push({ academicSubjectId: id, source: 'EXAM_PROFILE' });
+  const selected = await db
+    .query(`SELECT academic_subject_id FROM student_academic_subjects WHERE student_id = $1 AND ended_at IS NULL ORDER BY created_at, academic_subject_id`, [studentId])
+    .catch(() => ({ rows: [] as any[] }));
+  for (const r of selected.rows) named.push({ academicSubjectId: r.academic_subject_id as string, source: 'ACADEMIC_PROFILE' });
+  return named;
 }
 
 /** What the catalogue says about each named academic subject, for the Learn subject `catalogKey`. */

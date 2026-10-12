@@ -8,12 +8,12 @@
  *
  * Authority, fail closed:
  *   - a lineage the caller states is VERIFIED against the published catalogue (it is refused, never repaired);
- *   - when none is stated, the lineage is taken from the curriculum the Student EXPLICITLY has for that
- *     subject (resolveCurriculumContext) and only when the concept is mapped there. Otherwise nothing is
- *     recorded: a concept is never attributed to a curriculum by similarity, size or default.
+ *   - when none is stated, the lineage is taken from an academic subject the Student EXPLICITLY has (an exam
+ *     they prepare, a subject of their Academic Profile) and only when the concept is mapped there. Otherwise
+ *     nothing is recorded: a concept is never attributed to a curriculum by similarity, size or default.
  */
 import { db } from '@/lib/db';
-import { catalogKeyOf, resolveCurriculumContext } from './curriculum.service';
+import { studentExplicitAcademicSubjects } from './curriculum.service';
 
 type Executor = { query: (sql: string, params?: unknown[]) => Promise<{ rows: any[]; rowCount?: number | null }> };
 
@@ -43,28 +43,32 @@ export async function verifyCurriculumProvenance(canonicalConceptId: string, ref
 }
 
 /**
- * The lineage of a canonical concept inside the curriculum the Student explicitly has for its subject, or
- * null. Inside that ONE structure version the objective is the first in catalogue order (node order,
- * objective code, id) -- a choice among the objectives of the Student's own curriculum, never among curricula.
+ * The lineage of a canonical concept inside a curriculum the Student EXPLICITLY has, or null: the first of
+ * their explicit academic subjects (exam preparations, then Academic Profile selections -- the same authority
+ * order as resolveCurriculumContext) whose PUBLISHED structure maps this concept. Inside that one structure
+ * the objective is the first in catalogue order (node order, objective code, id). The choice is among the
+ * objectives of the Student's own curriculum, never among curricula the Student did not name: with no
+ * explicit subject that maps the concept, nothing is derived.
  */
 export async function deriveCurriculumProvenance(studentId: string, canonicalConceptId: string): Promise<CurriculumProvenanceRef | null> {
-  const subject = await db.query(`SELECT cs.name FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id WHERE cc.id = $1`, [canonicalConceptId]);
-  const catalogKey = subject.rows[0] ? catalogKeyOf(subject.rows[0].name) : null;
-  if (!catalogKey) return null;
-  const { context } = await resolveCurriculumContext(studentId, catalogKey);
-  if (!context) return null;
+  const explicit = [...new Set((await studentExplicitAcademicSubjects(studentId)).map((e) => e.academicSubjectId))];
+  if (explicit.length === 0) return null;
   const r = await db.query(
-    `SELECT lo.id AS learning_objective_id, sn.id AS structure_node_id
+    `SELECT sv.academic_subject_id, sv.id AS structure_version_id, sn.id AS structure_node_id, lo.id AS learning_objective_id
        FROM objective_concept_mappings ocm
+       JOIN canonical_concepts cc ON cc.id = ocm.canonical_concept_id AND cc.status = 'ACTIVE'
        JOIN learning_objectives lo ON lo.id = ocm.learning_objective_id AND lo.status = 'ACTIVE'
-       JOIN structure_nodes sn ON sn.id = lo.structure_node_id AND sn.structure_version_id = $1
-      WHERE ocm.status = 'PUBLISHED' AND ocm.relation_type IN ('FULL', 'PARTIAL') AND ocm.canonical_concept_id = $2
-      ORDER BY sn.order_index, lo.code NULLS LAST, lo.id
-      LIMIT 1`,
-    [context.structureVersionId, canonicalConceptId]
+       JOIN structure_nodes sn ON sn.id = lo.structure_node_id
+       JOIN structure_versions sv ON sv.id = sn.structure_version_id AND sv.status = 'PUBLISHED'
+      WHERE ocm.status = 'PUBLISHED' AND ocm.relation_type IN ('FULL', 'PARTIAL') AND ocm.canonical_concept_id = $2 AND sv.academic_subject_id = ANY($1::uuid[])
+      ORDER BY sn.order_index, lo.code NULLS LAST, lo.id`,
+    [explicit, canonicalConceptId]
   );
-  if (!r.rows[0]) return null;
-  return { academicSubjectId: context.academicSubjectId, structureVersionId: context.structureVersionId, structureNodeId: r.rows[0].structure_node_id, learningObjectiveId: r.rows[0].learning_objective_id };
+  for (const academicSubjectId of explicit) {
+    const row = r.rows.find((x: any) => x.academic_subject_id === academicSubjectId);
+    if (row) return { academicSubjectId, structureVersionId: row.structure_version_id, structureNodeId: row.structure_node_id, learningObjectiveId: row.learning_objective_id };
+  }
+  return null;
 }
 
 /**

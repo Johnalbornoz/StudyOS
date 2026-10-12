@@ -13,6 +13,7 @@
  *                            so the concept page opens the regular Learning
  *                            Engine (Explain -> Practice -> Prove -> Retain -> Transfer).
  */
+import { deriveCurriculumProvenance, recordCurriculumProvenance } from '@/lib/learning-plan/curriculum-provenance.service';
 import type { PoolClient } from 'pg';
 import { db } from '@/lib/db';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
@@ -150,5 +151,9 @@ export async function addConceptToStudentLearning(studentId: string, canonicalCo
   // B1: the concept was created FROM this canonical concept, so the link is that fact, written explicitly --
   // never re-derived by matching the label we just copied (label matching is not a canonical relationship).
   await linkLearnerConceptCreatedFromCanonical(conceptId, canonicalConceptId);
+  // Curriculum convergence: the concept comes from the catalogue, so its place in the Student's own explicit
+  // curriculum (the exam they prepare / their Academic Profile) is recorded when that curriculum maps it.
+  const lineage = await deriveCurriculumProvenance(studentId, canonicalConceptId).catch(() => null);
+  if (lineage) await recordCurriculumProvenance(db, conceptId, canonicalConceptId, lineage, null).catch((error) => console.error('[learning-links] curriculum provenance not recorded:', error instanceof Error ? error.message : String(error)));
   return { studentConceptId: conceptId, subjectId, existed: false };
 }

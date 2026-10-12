@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requireStudentActor, readBody } from '@/lib/learning-plan/route-actors';
 import { enrollCanonicalConcept, getPersonalPlan, type PlanSource } from '@/lib/learning-plan/personal-plan.service';
-import { CURRICULUM_PROVENANCE_INVALID, deriveCurriculumProvenance, verifyCurriculumProvenance, type CurriculumProvenanceRef } from '@/lib/learning-plan/curriculum-provenance.service';
+import { CURRICULUM_PROVENANCE_INVALID, verifyCurriculumProvenance } from '@/lib/learning-plan/curriculum-provenance.service';
 import { curriculumForClass } from '@/lib/learning-plan/institution-curriculum.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -60,15 +60,10 @@ async function handlePOST(request: NextRequest) {
     }
   }
   // Curriculum provenance, fail closed: a stated lineage must be a real PUBLISHED chain reaching this concept (it is
-  // refused, never repaired or replaced). With none stated, it is the Student's own explicit curriculum or nothing.
-  let provenance: CurriculumProvenanceRef | null = null;
-  if (statedCurriculum) {
-    if (!(await verifyCurriculumProvenance(canonicalConceptId, statedCurriculum))) return NextResponse.json({ error: CURRICULUM_PROVENANCE_INVALID }, { status: 422 });
-    provenance = statedCurriculum;
-  } else if (source === 'SELF_SELECTED' || source === 'CURRICULUM_RECOMMENDATION' || source === 'PREREQUISITE_RECOMMENDATION') {
-    provenance = await deriveCurriculumProvenance(actor.studentId, canonicalConceptId).catch(() => null);
-  }
-  const result = await enrollCanonicalConcept(actor.studentId, canonicalConceptId, planSource, provenance);
+  // refused, never repaired or replaced). With none stated, the service records the Student's own explicit curriculum
+  // when it maps the concept, or nothing.
+  if (statedCurriculum && !(await verifyCurriculumProvenance(canonicalConceptId, statedCurriculum))) return NextResponse.json({ error: CURRICULUM_PROVENANCE_INVALID }, { status: 422 });
+  const result = await enrollCanonicalConcept(actor.studentId, canonicalConceptId, planSource, statedCurriculum ?? undefined);
   return NextResponse.json({ success: true, data: result }, { status: result.entryCreated ? 201 : 200 });
 }
 

@@ -54,8 +54,8 @@ async function main() {
   const rejects = async (fn: () => Promise<unknown>, code: string) => fn().then(() => false, (e: any) => String(e?.message ?? e).includes(code));
   console.log(`curriculum convergence scenarios -- db ${fp} -- ${readOnly ? 'READ-ONLY' : `run ${RUN}`}`);
 
-  /** The richest published academic subject of a family, with the canonical subject its concepts are in. */
-  const richest = async (family: string) => one(
+  /** The richest published academic subject of a family whose canonical subject is a Learn subject (has a catalogue key). */
+  const richest = async (family: string) => ((await db.query(
     `SELECT a.id, a.name, a.level, a.programme_id, p.name AS programme, sv.id AS version_id, cs.id AS canonical_subject_id, cs.name AS canonical_subject, count(DISTINCT cc.id)::int AS concepts
        FROM academic_subjects a JOIN academic_programmes p ON p.id = a.programme_id
        JOIN structure_versions sv ON sv.academic_subject_id = a.id AND sv.status = 'PUBLISHED'
@@ -63,8 +63,8 @@ async function main() {
        JOIN objective_concept_mappings m ON m.learning_objective_id = lo.id AND m.status = 'PUBLISHED' AND m.relation_type IN ('FULL', 'PARTIAL')
        JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id AND cc.status = 'ACTIVE' JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id AND cs.status = 'ACTIVE'
       WHERE ${family === 'PAA' ? `sv.source_locator = 'exam-vertical-config:v2.paa'` : `(p.name LIKE 'IB %' OR p.name LIKE 'Cambridge%')`}
-      GROUP BY a.id, p.name, sv.id, cs.id ORDER BY count(DISTINCT cc.id) DESC, a.id LIMIT 1`
-  );
+      GROUP BY a.id, p.name, sv.id, cs.id ORDER BY count(DISTINCT cc.id) DESC, a.id`
+  )).rows as any[]).find((r) => catalogKeyOf(r.canonical_subject));
 
   if (readOnly) {
     // Negative test on the live catalogue: an academic subject with a canonical subject and NO mapping chain (A),
@@ -179,7 +179,7 @@ async function main() {
         const second = topics.flatMap((t) => t.concepts).find((c) => c.canonicalConceptId !== row.c.canonicalConceptId && !c.added);
         if (second) {
           const derived = await deriveCurriculumProvenance(S, second.canonicalConceptId);
-          const e2 = await enrollCanonicalConcept(S, second.canonicalConceptId, { type: 'SELF_SELECTED', actorUserId: null }, derived);
+          const e2 = await enrollCanonicalConcept(S, second.canonicalConceptId, { type: 'SELF_SELECTED', actorUserId: null });
           check(`${tag} 4d with none stated, the lineage is the Student's own explicit curriculum`, derived?.academicSubjectId === B.id && derived?.structureVersionId === B.version_id && e2.provenanceRecorded);
           // The database refuses a lineage that names the wrong canonical concept / a node of another version.
           check(`${tag} 5e the database refuses a false lineage`, await rejects(() => db.query(
