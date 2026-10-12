@@ -17,7 +17,7 @@ import { DIFFICULTY_TIERS, NOT_DIFFICULTY, type QuestionGenerationProfile } from
 import type { GenerationSpecification, LearnerView } from './item';
 import type { ConstructInput, ConstructResult, DifficultyInput, DifficultyResult, DistractorInput, DistractorResult, EquivalenceInput, EquivalenceResult, SolverInput, SolverResult } from './pipeline';
 
-export const PROMPT_POLICY_VERSION = 'qf-v5-prompts-1';
+export const PROMPT_POLICY_VERSION = 'qf-v5-prompts-2';
 export interface Rendered { system: string; user: string }
 
 const TIER_MEANING: Record<(typeof DIFFICULTY_TIERS)[number], string> = {
@@ -28,7 +28,7 @@ const TIER_MEANING: Record<(typeof DIFFICULTY_TIERS)[number], string> = {
 const lines = (xs: readonly string[]): string => xs.map((x) => `- ${x}`).join('\n');
 const JSON_ONLY = 'Reply with one JSON object and nothing else: no prose before or after it, no code fence.';
 
-export function authoringPrompt(spec: GenerationSpecification, p: QuestionGenerationProfile): Rendered {
+export function authoringPrompt(spec: GenerationSpecification, p: QuestionGenerationProfile, previousFailure: string | null = null): Rendered {
   const selected = spec.itemFormat === 'SELECTED_RESPONSE' || spec.itemFormat === 'MULTI_SELECT';
   const system = [
     'You write original assessment items for StudyUs. You are an experienced item writer for the assessment described below.',
@@ -45,7 +45,8 @@ export function authoringPrompt(spec: GenerationSpecification, p: QuestionGenera
     'G. ORIGINALITY\nWrite a new item. Do not reproduce or paraphrase any published examination question, passage, option set or explanation. Any passage, data set or source is your own original text.',
     `H. LEARNER LANGUAGE\nWrite everything the learner reads in ${p.language === 'es' ? 'Spanish' : 'English'}. "fullLearnerPrompt" is the complete question exactly as the learner sees it. Nothing about this request may appear in it: no level, tier, objective code, marks rationale, answer or note to a marker.`,
     `I. PROHIBITED\n${lines(p.forbiddenPatterns)}`,
-    `OUTPUT\n${JSON_ONLY}\nFields: v (1), itemId ("${spec.slotKey}#${spec.attempt}"), slotKey ("${spec.slotKey}"), itemType ("${spec.itemFormat}"), language ("${p.language}"), stimulus (string or null), fullLearnerPrompt, parts (array of {label, prompt, marks, commandTerm, canonicalAnswer, dependsOn}), options (array of {label, text}), proposedAnswer, answerExpression (plain arithmetic giving the numeric answer, or null), acceptedUnits (array), solution, rubric (array of {marks, criterion}), distractorRationales (object: label -> the reasoning error), marks, commandTerm (string or null), provenance ("ORIGINAL_STUDYUS").`,
+    `OUTPUT\n${JSON_ONLY}\nWrite mathematics as plain text with Unicode (x², √, ≤, π, fractions as 3/4). No LaTeX, no Markdown, no HTML.\nExactly these fields and no others:\n- v: 1\n- itemId: "${spec.slotKey}#${spec.attempt}"\n- slotKey: "${spec.slotKey}"\n- itemType: "${spec.itemFormat}"\n- language: "${p.language}"\n- stimulus: the passage, data or situation shown with the question, or null\n- fullLearnerPrompt: the complete question (for a multi-part item: the shared stem)\n- parts: ${spec.itemFormat === 'MULTI_PART' ? 'array of {label ("(a)", "(b)", ...), prompt, marks, commandTerm (one of the terms above, and the word must appear in that part\'s prompt), canonicalAnswer, dependsOn (labels of earlier parts it uses, or [])}' : '[]'}\n- options: ${selected ? 'array of {label, text}' : '[]'}\n- proposedAnswer: ${selected ? 'the label of the correct option, alone' : 'the final answer (for a multi-part item, the answers of all parts in order)'}\n- answerExpression: plain arithmetic (digits, + - * / ^, parentheses, sqrt()) whose value IS the final numeric answer, or null if the answer is not a single number\n- acceptedUnits: []\n- solution: the full worked solution\n- rubric: ${selected ? '[]' : `array of {marks, criterion}; the marks sum to ${spec.intendedMarks}`}\n- distractorRationales: ${selected ? 'object mapping each WRONG option label to the reasoning error that produces it' : '{}'}\n- marks: ${spec.intendedMarks}\n- commandTerm: ${spec.commandTerm && spec.itemFormat !== 'MULTI_PART' ? `"${spec.commandTerm}" (the word must appear in fullLearnerPrompt)` : spec.commandTerm ? `"${spec.commandTerm}"` : 'null'}\n- provenance: "ORIGINAL_STUDYUS"`,
+    ...(previousFailure ? [`A PREVIOUS ATTEMPT AT THIS REQUIREMENT WAS REJECTED\n${previousFailure.slice(0, 300)}\nWrite a different item that does not have this fault.`] : []),
   ].join('\n\n');
   return { system, user };
 }
@@ -101,3 +102,16 @@ export const parseDifficulty = (t: string): DifficultyResult => parseReply(Diffi
 export const parseConstruct = (t: string): ConstructResult => parseReply(ConstructSchema, t);
 export const parseDistractors = (t: string): DistractorResult => parseReply(DistractorSchema, t);
 export const parseEquivalence = (t: string): EquivalenceResult => parseReply(EquivalenceSchema, t);
+
+/** Reply shapes for a provider's structured-output mode. The strict parsers above remain the authority. */
+const obj = (properties: Record<string, unknown>) => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false });
+const oneOf = (...values: string[]) => ({ type: 'string', enum: values });
+const nullable = (schema: unknown) => ({ anyOf: [schema, { type: 'null' }] });
+export const REPLY_SCHEMAS = {
+  SOLVER: obj({ independentAnswer: { type: 'string' }, solution: { type: 'string' }, confidence: oneOf('HIGH', 'MEDIUM', 'LOW'), ambiguityFlag: { type: 'boolean' }, ambiguityNote: nullable({ type: 'string' }) }),
+  DIFFICULTY: obj({ actualDifficulty: oneOf(...DIFFICULTY_TIERS), alsoPlausible: nullable(oneOf(...DIFFICULTY_TIERS)), reasoningTransitions: { type: 'integer' }, note: { type: 'string' } }),
+  CONSTRUCT: obj({ constructFit: oneOf('PASS', 'WEAK', 'FAIL'), authenticity: oneOf('HIGH', 'MEDIUM', 'LOW'), contextMaterial: { type: 'boolean' }, languageQuality: oneOf('PASS', 'FAIL'), plausibility: oneOf('PASS', 'WEAK', 'FAIL'), provenanceConcern: { type: 'boolean' }, note: { type: 'string' } }),
+  DISTRACTORS: obj({ quality: oneOf('PASS', 'WEAK', 'AMBIGUOUS'), defensibleOptions: { type: 'array', items: oneOf('A', 'B', 'C', 'D', 'E', 'F') }, note: { type: 'string' } }),
+  EQUIVALENCE: obj({ verdict: oneOf('EQUIVALENT', 'DIFFERENT', 'UNSURE') }),
+} as const;
+export type ReplyKind = keyof typeof REPLY_SCHEMAS;

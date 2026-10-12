@@ -12,23 +12,33 @@ import { createLiveTransport, requireLiveKey, configuredGeneration } from '../qb
 import { costOf, type PriceBasis } from '../qb-r2d/budget';
 import { GENERATOR_PRICE_BASIS, REVIEWER_PRICE_BASIS } from '../qb-canary-250/budget';
 import { requireReviewerKey } from '../qb-canary-250/reviewer-transport';
-import type { ModelCall, ModelReply, ModelRole } from './engine';
+import { REPLY_SCHEMAS, type ReplyKind } from '../../../src/lib/exam-core/question-bank/production/v5/prompts';
+import { WORST_CASE_CALLS, type ModelCall, type ModelReply, type ModelRole } from './engine';
 
 export const VALIDATION_MODEL = 'claude-sonnet-5-5' as const;
-export const MAX_OUTPUT_TOKENS: Record<ModelRole, number> = { AUTHOR: 3500, SOLVER: 1500, JUDGE: 600 };
+export const MAX_OUTPUT_TOKENS: Record<ModelRole, number> = { AUTHOR: 3000, SOLVER: 1500, JUDGE: 400 };
 /** ASSUMED prices, deliberately high (the bases the earlier lanes fixed). Spend figures are estimates on these. */
 export const PRICE: Record<ModelRole, PriceBasis> = { AUTHOR: GENERATOR_PRICE_BASIS, SOLVER: REVIEWER_PRICE_BASIS, JUDGE: REVIEWER_PRICE_BASIS };
 export const estimatedUsd = (role: ModelRole, usage: { inputTokens: number; outputTokens: number }): number => costOf(usage, PRICE[role]);
 /** Worst case of one call: a prompt of `characters` and a full-length reply. */
 export const worstCaseUsd = (role: ModelRole, characters: number): number => costOf({ inputTokens: Math.ceil(characters / 2), outputTokens: MAX_OUTPUT_TOKENS[role] }, PRICE[role]);
 
+/**
+ * The most one specification can cost: two authoring attempts and every validation call of both, each with a
+ * full-length reply and an input that carries the longest item the author is allowed to write.
+ */
+export function specificationReserveUsd(authoringPromptCharacters: number): number {
+  const validationCharacters = 3000 + MAX_OUTPUT_TOKENS.AUTHOR * 4;
+  return WORST_CASE_CALLS.AUTHOR * worstCaseUsd('AUTHOR', authoringPromptCharacters + 400) + WORST_CASE_CALLS.SOLVER * worstCaseUsd('SOLVER', validationCharacters) + WORST_CASE_CALLS.JUDGE * worstCaseUsd('JUDGE', validationCharacters);
+}
+
 const redact = (t: string): string => t.replace(/sk-[A-Za-z0-9_\-*.]{4,}/g, '[REDACTED]').replace(/x-api-key\s*[:=]\s*\S+/gi, 'x-api-key: [REDACTED]').replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]');
 
-async function anthropic(apiKey: string, system: string, user: string, maxTokens: number): Promise<ModelReply> {
+async function anthropic(apiKey: string, system: string, user: string, maxTokens: number, kind: ReplyKind): Promise<ModelReply> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 180_000);
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model: VALIDATION_MODEL, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }] }), signal: controller.signal });
+    const response = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model: VALIDATION_MODEL, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }], output_config: { format: { type: 'json_schema', schema: REPLY_SCHEMAS[kind] } } }), signal: controller.signal });
     if (!response.ok) throw new Error(`PROVIDER_HTTP_${response.status}: ${redact(await response.text().catch(() => '')).slice(0, 240)}`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await response.json();
@@ -43,8 +53,8 @@ export function liveModelCall(env: Record<string, string | undefined>): { call: 
   const authorModel = configuredGeneration().primaryModel;
   const author = createLiveTransport({ model: authorModel, apiKey: requireLiveKey(env) });
   const validationKey = requireReviewerKey(env);
-  const call: ModelCall = async (role, prompt) => {
-    if (role !== 'AUTHOR') return anthropic(validationKey, prompt.system, prompt.user, MAX_OUTPUT_TOKENS[role]);
+  const call: ModelCall = async (role, prompt, kind) => {
+    if (role !== 'AUTHOR' && kind !== 'ITEM') return anthropic(validationKey, prompt.system, prompt.user, MAX_OUTPUT_TOKENS[role], kind);
     const r = await author.complete({ system: prompt.system, user: prompt.user, maxOutputTokens: MAX_OUTPUT_TOKENS.AUTHOR });
     return { text: r.rawText, inputTokens: r.usage?.inputTokens ?? Math.ceil((prompt.system.length + prompt.user.length) / 2), outputTokens: r.usage?.outputTokens ?? MAX_OUTPUT_TOKENS.AUTHOR };
   };

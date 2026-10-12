@@ -6,9 +6,11 @@
  *       governed blueprints and a bank inventory (default: empty), and writes the coverage matrix and plan.
  *
  *   QB_GENERATION_BUDGET_USD=<n> OPENAI_API_KEY=... ANTHROPIC_API_KEY=... \
- *   npx tsx scripts/operations/qf-v5/run.ts generate --run <id> --phase C1|C2|SCALE --cluster <id> [--batch-size 50]
- *       Live. Refuses without an authorised budget. Asks the spend guard before every batch with the batch's
- *       worst case, checkpoints after every batch, and stops a cluster on any stop condition.
+ *   npx tsx scripts/operations/qf-v5/run.ts generate --run <id> --manifest <manifest.json> [--batch-size 4]
+ *       Live. Refuses without an authorised budget. The manifest lists {profileId, count, phase}. Before every
+ *       batch the spend guard is asked with the batch's conservative maximum; a checkpoint follows every batch; a
+ *       profile stops at once on a wrong key, a construct failure, leakage or a harness error; C2 and SCALE need
+ *       a passing C1 of that profile under the same versions.
  *
  * Pass ONLY the three variables into the process. Never --env-file an application .env: it holds a DATABASE_URL.
  * This script writes under docs/audits/qb_review/ only. It ingests nothing: promotion to the bank is a separate,
@@ -21,13 +23,14 @@ import { RETIRED_V2_CONFIG_KEYS } from '../../../src/lib/exam-core/verticals/v2/
 import { GENERATION_PROFILES, GENERATOR_PROFILE_VERSION, profileById } from '../../../src/lib/exam-core/question-bank/production/v5/generation-profile';
 import { VALIDATOR_VERSION, keyPositionFinding, type CorpusEntry } from '../../../src/lib/exam-core/question-bank/production/v5/deterministic-stages';
 import { learnerText, type CandidateItem, type GenerationSpecification } from '../../../src/lib/exam-core/question-bank/production/v5/item';
-import { auditSample, calibrationGate, checkpoint, completedBatchIds, cumulativeSpend, maySpend, metricsBy, metricsOf, reviewQueue, stopCondition, type Checkpoint, type SpendLedger } from '../../../src/lib/exam-core/question-bank/production/v5/batch-control';
+import { auditSample, calibrationGate, checkpoint, cumulativeSpend, maySpend, metricsBy, metricsOf, reviewQueue, stopCondition, type Checkpoint, type SpendLedger } from '../../../src/lib/exam-core/question-bank/production/v5/batch-control';
 import { blueprintSections, generationAllocation, globalReadiness, type BankItem } from '../../../src/lib/exam-core/question-bank/production/v5/readiness';
 import { planSpecifications } from '../../../src/lib/exam-core/question-bank/production/v5/plan';
 import { authoringPrompt } from '../../../src/lib/exam-core/question-bank/production/v5/prompts';
 import type { SpecificationOutcome, ValidationRecord } from '../../../src/lib/exam-core/question-bank/production/v5/pipeline';
 import { COVERAGE_HEADER, coverageRows, reviewCsv, reviewRow, toCsv, toJsonl } from './artifacts';
 import { WORST_CASE_CALLS, runBatch, type ModelRole } from './engine';
+
 
 const ROOT = join(__dirname, '..', '..', '..');
 const OUT = join(ROOT, 'docs', 'audits', 'qb_review');
@@ -70,71 +73,94 @@ function plan(): void {
   console.log(JSON.stringify(summary, null, 2));
 }
 
-interface RunState { ledger: SpendLedger; checkpoints: Checkpoint[]; records: ValidationRecord[]; items: Record<string, CandidateItem>; batchesByCluster: Record<string, SpecificationOutcome[][]> }
+interface RunState { ledger: SpendLedger; checkpoints: Checkpoint[]; records: ValidationRecord[]; items: Record<string, CandidateItem>; batchesByProfile: Record<string, SpecificationOutcome[][]> }
+export interface ManifestEntry { profileId: string; count: number; phase: 'C1' | 'C2' | 'SCALE' }
+
+/**
+ * The specifications of one profile for a live sample: hardest tiers first (40 % CHALLENGE, 40 % STANDARD, the rest
+ * FOUNDATIONAL), spread across the profile's blueprint buckets instead of taken from one.
+ */
+export function selectForProfile(all: readonly GenerationSpecification[], profileId: string, count: number, done: ReadonlySet<string>): GenerationSpecification[] {
+  const pool = all.filter((s) => s.profileId === profileId && !done.has(s.slotKey));
+  const want = { CHALLENGE: Math.ceil(count * 0.4), STANDARD: Math.ceil(count * 0.4), FOUNDATIONAL: count } as const;
+  const out: GenerationSpecification[] = [];
+  for (const tier of ['CHALLENGE', 'STANDARD', 'FOUNDATIONAL'] as const) {
+    const byBucket = new Map<string, GenerationSpecification[]>();
+    for (const s of pool.filter((x) => x.intendedDifficulty === tier)) { const k = `${s.bucket.objectiveCode}#${s.bucket.targetIndex}`; byBucket.set(k, [...(byBucket.get(k) ?? []), s]); }
+    const queues = [...byBucket.values()];
+    let taken = 0;
+    for (let round = 0; taken < want[tier] && out.length < count && queues.some((q) => q.length > round); round += 1) for (const q of queues) if (q[round] && taken < want[tier] && out.length < count) { out.push(q[round]); taken += 1; }
+  }
+  return out;
+}
 
 async function generate(): Promise<void> {
   const budget = Number(process.env.QB_GENERATION_BUDGET_USD);
-  const ledgerProbe: SpendLedger = { authorizedUsd: Number.isFinite(budget) && budget > 0 ? budget : null, entries: [] };
-  const probe = maySpend(ledgerProbe, 0);
+  const probe = maySpend({ authorizedUsd: Number.isFinite(budget) && budget > 0 ? budget : null, entries: [] }, 0);
   if (!probe.allowed) { console.error(`REFUSED: ${probe.code} -- ${probe.detail}. No provider call was made.`); process.exit(2); }
-  const runId = arg('run'); const phase = arg('phase') as 'C1' | 'C2' | 'SCALE' | null; const cluster = arg('cluster');
-  if (!runId || !phase || !cluster || !['C1', 'C2', 'SCALE'].includes(phase)) { console.error('usage: generate --run <id> --phase C1|C2|SCALE --cluster <id> [--batch-size n]'); process.exit(2); }
+  const runId = arg('run'); const manifestPath = arg('manifest');
+  if (!runId || !manifestPath) { console.error('usage: generate --run <id> --manifest <manifest.json> [--batch-size n]'); process.exit(2); }
+  const manifest = readJson<ManifestEntry[]>(manifestPath, []);
   const dir = join(OUT, 'run', runId);
   mkdirSync(join(dir, 'checkpoints'), { recursive: true });
   const statePath = join(dir, 'state.json');
-  const state = readJson<RunState>(statePath, { ledger: { authorizedUsd: budget, entries: [] }, checkpoints: [], records: [], items: {}, batchesByCluster: {} });
+  const state = readJson<RunState>(statePath, { ledger: { authorizedUsd: budget, entries: [] }, checkpoints: [], records: [], items: {}, batchesByProfile: {} });
   state.ledger.authorizedUsd = budget; // the operator's figure for this invocation; never raised by the script
   const versions = { profileVersion: GENERATOR_PROFILE_VERSION, validatorVersion: VALIDATOR_VERSION };
-  // a calibration gate must be on record before scale: C1 before C2, C2 before SCALE, for this cluster and these versions
-  const gates = readJson<Record<string, { phase: string; pass: boolean; versions: typeof versions }>>(join(dir, 'gates.json'), {});
-  const need = phase === 'C2' ? 'C1' : phase === 'SCALE' ? 'C2' : null;
-  if (need && !(gates[`${cluster}:${need}`]?.pass && gates[`${cluster}:${need}`].versions.validatorVersion === versions.validatorVersion && gates[`${cluster}:${need}`].versions.profileVersion === versions.profileVersion)) { console.error(`REFUSED: ${cluster} has no passing ${need} gate under ${versions.profileVersion} / ${versions.validatorVersion}.`); process.exit(2); }
-
+  const stale = state.records.filter((r) => r.validatorVersion !== versions.validatorVersion).length;
+  if (stale) { console.error(`REFUSED: ${stale} record(s) of this run were scored by another validator version. Start a new run id; never mix rulers in one run.`); process.exit(2); }
+  const gatesPath = join(dir, 'gates.json');
+  const gates = readJson<Record<string, { phase: string; pass: boolean; unmet: string[]; size: number; versions: typeof versions }>>(gatesPath, {});
   const { specifications } = planState([]);
-  const done = new Set(state.records.map((r) => r.slotKey));
-  const mine = specifications.filter((s) => clusterOf(s.profileId) === cluster && !done.has(s.slotKey));
-  const size = phase === 'C1' ? 20 : phase === 'C2' ? 50 : Number(arg('batch-size') ?? 50);
-  const batches: GenerationSpecification[][] = phase === 'SCALE' ? Array.from({ length: Math.ceil(mine.length / size) }, (_, i) => mine.slice(i * size, (i + 1) * size)) : [mine.slice(0, size)];
-  const { liveModelCall, worstCaseUsd, estimatedUsd, VALIDATION_MODEL } = await import('./live');
+  const { liveModelCall, specificationReserveUsd, estimatedUsd, VALIDATION_MODEL } = await import('./live');
   const live = liveModelCall(process.env);
-  const finished = new Set(completedBatchIds(state.checkpoints, versions));
+  const size = Number(arg('batch-size') ?? 4);
+  let halted = false;
 
-  for (let b = 0; b < batches.length; b += 1) {
-    const batchId = `${cluster}:${phase}:${String(state.checkpoints.filter((c) => c.profileId === cluster && c.phase === phase).length + 1).padStart(3, '0')}`;
-    if (finished.has(batchId) || !batches[b].length) continue;
-    const chars = Math.max(...batches[b].map((s) => { const r = authoringPrompt(s, profileById(s.profileId)!); return r.system.length + r.user.length; }));
-    const worst = batches[b].length * (Object.keys(WORST_CASE_CALLS) as ModelRole[]).reduce((a, role) => a + WORST_CASE_CALLS[role] * worstCaseUsd(role, role === 'AUTHOR' ? chars : chars + 12000), 0);
-    const permission = maySpend(state.ledger, worst);
-    if (!permission.allowed) { console.error(`STOPPED before ${batchId}: ${permission.code} -- ${permission.detail}`); break; }
-    const corpus: CorpusEntry[] = Object.values(state.items).map((i) => ({ id: i.itemId, source: 'EARLIER_BATCH', text: learnerText(i) }));
-    const result = await runBatch(batches[b], live.call, corpus);
-    for (const role of Object.keys(result.account) as ModelRole[]) { const a = result.account[role]; state.ledger.entries.push({ batchId, provider: role === 'AUTHOR' ? 'openai' : 'anthropic', model: role === 'AUTHOR' ? live.authorModel : VALIDATION_MODEL, purpose: role === 'AUTHOR' ? 'GENERATION' : 'VALIDATION', calls: a.calls, succeeded: a.succeeded, failed: a.failed, estimatedUsd: estimatedUsd(role, a) }); }
-    for (const o of result.outcomes) { for (const a of o.attempts) state.records.push(a.record); if (o.final.item) state.items[o.final.item.itemId] = o.final.item; }
-    (state.batchesByCluster[cluster] ??= []).push(result.outcomes);
-    const cp = checkpoint({ runId, batchId, phase, profileId: cluster, ...versions, cumulativeSpendUsd: cumulativeSpend(state.ledger), timestamp: new Date().toISOString(), outcomes: result.outcomes });
-    state.checkpoints.push(cp);
-    writeFileSync(join(dir, 'checkpoints', `${batchId.replace(/[:]/g, '_')}.json`), `${JSON.stringify(cp, null, 2)}\n`);
-    writeFileSync(statePath, `${JSON.stringify(state)}\n`);
-    console.log(JSON.stringify({ batchId, metrics: cp.metrics, cumulativeSpendUsd: cp.cumulativeSpendUsd, authorizedUsd: budget }));
-    if (phase !== 'SCALE') {
-      const gate = calibrationGate(phase, result.outcomes);
-      gates[`${cluster}:${phase}`] = { phase, pass: gate.pass, versions };
-      writeFileSync(join(dir, 'gates.json'), `${JSON.stringify(gates, null, 2)}\n`);
-      console.log(JSON.stringify(gate));
-      // a failed calibration batch is discarded from certification: its items are never promoted
-      if (!gate.pass) for (const o of result.outcomes) if (o.final.item) delete state.items[o.final.item.itemId];
+  for (const entry of manifest) {
+    if (halted) break;
+    const need = entry.phase === 'C2' ? 'C1' : entry.phase === 'SCALE' ? 'C1' : null;
+    // nothing is scaled on a profile that has not passed its live calibration under these exact versions
+    if (need && !gates[`${entry.profileId}:${need}`]?.pass) { console.error(`SKIPPED ${entry.profileId} ${entry.phase}: no passing ${need} gate under ${versions.profileVersion} / ${versions.validatorVersion}.`); continue; }
+    const done = new Set(state.records.map((r) => r.slotKey));
+    const chosen = selectForProfile(specifications, entry.profileId, entry.count, done);
+    const outcomes: SpecificationOutcome[] = [];
+    for (let b = 0; b * size < chosen.length; b += 1) {
+      const batch = chosen.slice(b * size, (b + 1) * size);
+      const batchId = `${entry.profileId}:${entry.phase}:${String(state.checkpoints.filter((c) => c.profileId === entry.profileId).length + 1).padStart(3, '0')}`;
+      const reserve = batch.reduce((a, s) => { const r = authoringPrompt(s, profileById(s.profileId)!); return a + specificationReserveUsd(r.system.length + r.user.length); }, 0);
+      const permission = maySpend(state.ledger, reserve);
+      if (!permission.allowed) { console.error(`STOPPED before ${batchId}: ${permission.code} -- ${permission.detail}`); halted = true; break; }
+      const before = cumulativeSpend(state.ledger);
+      const corpus: CorpusEntry[] = Object.values(state.items).map((i) => ({ id: i.itemId, source: 'EARLIER_BATCH', text: learnerText(i) }));
+      const result = await runBatch(batch, live.call, corpus);
+      for (const role of Object.keys(result.account) as ModelRole[]) { const a = result.account[role]; state.ledger.entries.push({ batchId, provider: role === 'AUTHOR' ? 'openai' : 'anthropic', model: role === 'AUTHOR' ? live.authorModel : VALIDATION_MODEL, purpose: role === 'AUTHOR' ? 'GENERATION' : 'VALIDATION', calls: a.calls, succeeded: a.succeeded, failed: a.failed, estimatedUsd: estimatedUsd(role, a) }); }
+      for (const o of result.outcomes) { for (const a of o.attempts) state.records.push(a.record); if (o.final.item) state.items[o.final.item.itemId] = o.final.item; }
+      (state.batchesByProfile[entry.profileId] ??= []).push(result.outcomes);
+      outcomes.push(...result.outcomes);
+      const spent = cumulativeSpend(state.ledger);
+      const cp = checkpoint({ runId, batchId, phase: entry.phase, profileId: entry.profileId, ...versions, cumulativeSpendUsd: spent, timestamp: new Date().toISOString(), outcomes: result.outcomes });
+      state.checkpoints.push(cp);
+      writeFileSync(join(dir, 'checkpoints', `${batchId.replace(/[:]/g, '_')}.json`), `${JSON.stringify(cp, null, 2)}\n`);
       writeFileSync(statePath, `${JSON.stringify(state)}\n`);
-    } else {
-      const verdict = stopCondition(state.batchesByCluster[cluster].filter((x) => x.length));
-      if (verdict.warnings.length) console.warn(JSON.stringify(verdict.warnings));
-      if (verdict.stop) { console.error(`STOPPED scaling ${cluster}: ${verdict.reasons.join(', ')}. Fix the profile, bump the version, run a fresh calibration batch.`); break; }
+      const p = profileById(entry.profileId)!;
+      console.log(JSON.stringify({ BATCH_ID: batchId, FAMILY: p.family, PROFILE: p.profileId, RAW_CANDIDATES: result.outcomes.reduce((a, o) => a + o.attempts.length, 0), MACHINE_CERTIFIED: cp.metrics.autoApproved, REVIEW_REQUIRED: cp.metrics.humanReview, REJECTED: cp.metrics.autoRejected, ACTUAL_SPEND: +(spent - before).toFixed(4), CUMULATIVE_SPEND: +spent.toFixed(4), BUDGET_REMAINING: +(budget - spent).toFixed(4), reasons: result.outcomes.filter((o) => o.final.record.reviewDecision !== 'AUTO_APPROVE').map((o) => `${o.final.record.reviewDecision}:${o.final.record.reviewReason.slice(0, 110)}`) }));
+      // a wrong key, a construct failure, leakage or a harness error stops this profile at once: no more is spent on it
+      const verdict = stopCondition(state.batchesByProfile[entry.profileId]);
+      if (verdict.stop) { console.error(`STOPPED ${entry.profileId}: ${verdict.reasons.join(', ')}`); break; }
+    }
+    if (entry.phase !== 'SCALE' && outcomes.length) {
+      const gate = calibrationGate(entry.phase, outcomes, entry.count);
+      gates[`${entry.profileId}:${entry.phase}`] = { phase: entry.phase, pass: gate.pass, unmet: gate.unmet, size: outcomes.length, versions };
+      writeFileSync(gatesPath, `${JSON.stringify(gates, null, 2)}\n`);
+      console.log(JSON.stringify({ GATE: `${entry.profileId}:${entry.phase}`, ...gate }));
     }
   }
-  writeReview(state, runId);
+  writeReview(state, runId, gates);
 }
 
 /** The review package: every review-bound item and the 2 % audit sample of the auto-approved. Nothing else. */
-function writeReview(state: RunState, runId: string): void {
+function writeReview(state: RunState, runId: string, gates: Record<string, { phase: string; pass: boolean }>): void {
   const finals = new Map<string, ValidationRecord>();
   for (const r of state.records) finals.set(r.slotKey, r);
   const records = [...finals.values()];
@@ -144,9 +170,9 @@ function writeReview(state: RunState, runId: string): void {
   writeFileSync(join(OUT, 'QB_REVIEW_QUEUE.jsonl'), toJsonl(queue));
   writeFileSync(join(OUT, 'QB_AUTOAPPROVE_AUDIT_SAMPLE.csv'), reviewCsv(audit));
   writeFileSync(join(OUT, 'QB_ALL_VALIDATION_RESULTS.jsonl'), toJsonl(state.records));
-  const all = Object.values(state.batchesByCluster).flat().flat();
+  const all = Object.values(state.batchesByProfile).flat().flat();
   const keys = records.filter((r) => r.reviewDecision === 'AUTO_APPROVE' && r.itemType === 'SELECTED_RESPONSE').map((r) => state.items[r.itemId]?.proposedAnswer).filter((k): k is string => !!k);
-  writeFileSync(join(OUT, 'QF_V5_DASHBOARD.json'), `${JSON.stringify({ runId, overall: metricsOf(all), byFamily: metricsBy(all, 'family'), bySubject: metricsBy(all, 'subject'), byProfile: metricsBy(all, 'profileId'), byDifficulty: metricsBy(all, 'intendedDifficulty'), byItemType: metricsBy(all, 'itemType'), keyPosition: keyPositionFinding(keys, 4), spend: { authorizedUsd: state.ledger.authorizedUsd, cumulativeUsd: cumulativeSpend(state.ledger), entries: state.ledger.entries } }, null, 2)}\n`);
+  writeFileSync(join(OUT, 'QF_V5_DASHBOARD.json'), `${JSON.stringify({ runId, gates, overall: metricsOf(all), byFamily: metricsBy(all, 'family'), bySubject: metricsBy(all, 'subject'), byProfile: metricsBy(all, 'profileId'), byDifficulty: metricsBy(all, 'intendedDifficulty'), byItemType: metricsBy(all, 'itemType'), keyPosition: keyPositionFinding(keys, 4), spend: { authorizedUsd: state.ledger.authorizedUsd, cumulativeUsd: cumulativeSpend(state.ledger), entries: state.ledger.entries } }, null, 2)}\n`);
 }
 
 if (require.main === module) {

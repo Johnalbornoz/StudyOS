@@ -53,8 +53,9 @@ export type CalibrationPhase = keyof typeof CALIBRATION_PHASES;
 export interface GateResult { phase: CalibrationPhase; pass: boolean; unmet: string[] }
 
 /** Whether a calibration batch of one profile cluster passes. A failed batch is discarded, never rescored. */
-export function calibrationGate(phase: CalibrationPhase, outcomes: readonly SpecificationOutcome[]): GateResult {
-  const rule = CALIBRATION_PHASES[phase];
+export function calibrationGate(phase: CalibrationPhase, outcomes: readonly SpecificationOutcome[], sizeOverride?: number): GateResult {
+  // an operator may authorise a smaller live sample; the zero-tolerance gates and the review ceiling never change
+  const rule = { ...CALIBRATION_PHASES[phase], size: sizeOverride ?? CALIBRATION_PHASES[phase].size };
   const m = metricsOf(outcomes);
   const firsts = outcomes.map((o) => o.attempts[0].record);
   const reason = (r: ValidationRecord) => r.reviewReason.split(':')[0];

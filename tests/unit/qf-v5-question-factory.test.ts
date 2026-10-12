@@ -10,7 +10,7 @@ import { RETIRED_V2_CONFIG_KEYS } from '@/lib/exam-core/verticals/v2/index';
 import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
 import { GENERATION_PROFILES, GENERATOR_PROFILE_VERSION, profileById, profilesByFamily, resolveProfile } from '@/lib/exam-core/question-bank/production/v5/generation-profile';
 import { CandidateItemSchema, GenerationSpecificationSchema, learnerText, learnerView, specificationHash, type CandidateItem, type GenerationSpecification } from '@/lib/exam-core/question-bank/production/v5/item';
-import { algebraicallyEqual, compareAnswers, declaredArithmeticFindings, duplicateOf, keyPositionFinding, optionFindings, plausibilityFindings, structuralFindings, templateSkeleton } from '@/lib/exam-core/question-bank/production/v5/deterministic-stages';
+import { numericValue, algebraicallyEqual, compareAnswers, declaredArithmeticFindings, duplicateOf, keyPositionFinding, optionFindings, plausibilityFindings, structuralFindings, templateSkeleton } from '@/lib/exam-core/question-bank/production/v5/deterministic-stages';
 import { decide, difficultyInput, runSpecification, solverInput, tierFit, validateCandidate, PIPELINE_STAGES, type StageProviders } from '@/lib/exam-core/question-bank/production/v5/pipeline';
 import { auditPausesPromotion, auditSample, calibrationGate, checkpoint, completedBatchIds, cumulativeSpend, isStudentEligibleLifecycle, lifecycleAfter, maySpend, metricsBy, metricsOf, needsRevalidation, reviewQueue, stopCondition } from '@/lib/exam-core/question-bank/production/v5/batch-control';
 import { blueprintSections, bucketKeyOf, familyReadiness, generationAllocation, globalReadiness, type BankItem } from '@/lib/exam-core/question-bank/production/v5/readiness';
@@ -91,6 +91,18 @@ describe('stage 1-3: specification and structure', () => {
     expect(codes('not json at all')).toEqual(['SCHEMA_INVALID']);
     expect(codes(mcq({ fullLearnerPrompt: 'Dos planes de ahorro comienzan con 40 y 100 unidades y crecen 15 y' }))).toContain('TRUNCATED');
     expect(codes(mcq({ fullLearnerPrompt: 'Calcula el valor de {{x}} en la expresión dada para los dos planes.' }))).toContain('TEMPLATE_RESIDUE');
+  });
+  it('ordinary mathematics is not residue or truncation: intervals, list labels, nested braces, units', () => {
+    expect(codes(mcq({ fullLearnerPrompt: 'La función f está definida en el intervalo [2, 5) y toma valores en (−∞, 3]. ¿Cuál es el valor de f en el extremo incluido?' }))).toEqual([]);
+    expect(codes(mcq({ fullLearnerPrompt: 'Considera las afirmaciones: a) el plan crece más rápido; b) el plan empieza con menos. ¿Cuántos meses pasan hasta que lo supera?' }))).toEqual([]);
+    expect(codes(mcq({ fullLearnerPrompt: 'Si g(x) = e^{x^{2}} y h(x) = \\nu·x, ¿cuál de los valores siguientes corresponde al número de meses pedido?' }))).toEqual([]);
+    expect(codes(mcq({ fullLearnerPrompt: 'Calcula el valor de f(2 en la expresión dada para los dos planes de ahorro descritos.' }))).toContain('TRUNCATED');
+    expect([numericValue('12 cm'), numericValue('x = 3'), numericValue('$ 4.50'), numericValue('25 %'), numericValue('3/4'), numericValue('about twelve')]).toEqual([12, 3, 4.5, 25, 0.75, null]);
+    // options with units still check against the declared arithmetic; unreadable options never produce a false failure
+    const units = mcq({ options: [{ label: 'A', text: '9 meses' }, { label: 'B', text: '10 meses' }, { label: 'C', text: '11 meses' }, { label: 'D', text: '12 meses' }] });
+    expect(declaredArithmeticFindings(units)).toEqual([]);
+    expect(declaredArithmeticFindings({ ...units, proposedAnswer: 'B' }).map((f) => f.code)).toEqual(['KEY_CONTRADICTS_DECLARED_ARITHMETIC']);
+    expect(declaredArithmeticFindings(mcq({ options: [{ label: 'A', text: 'nueve' }, { label: 'B', text: 'diez' }, { label: 'C', text: 'once' }, { label: 'D', text: 'doce' }] }))).toEqual([]);
   });
   it('internal generation language never reaches the learner', () => {
     for (const leak of ['Target difficulty: hard. ¿Cuál es el valor de x en la ecuación?', 'Expected answer B. ¿Cuál es el valor de x en la ecuación?', 'Según el blueprint, ¿cuál es el valor de x en la ecuación?', 'Dificultad objetivo alta. ¿Cuál es el valor de x en 2x = 4?']) expect(codes(mcq({ fullLearnerPrompt: leak })), leak).toContain('SPEC_LEAKAGE');
@@ -263,6 +275,9 @@ describe('regeneration, calibration, stop conditions, audit, spend, checkpoint',
     const good = await Promise.all(Array.from({ length: 20 }, (_, i) => outcome({}, i)));
     expect(calibrationGate('C1', good)).toEqual({ phase: 'C1', pass: true, unmet: [] });
     expect(calibrationGate('C2', good).unmet).toEqual(['BATCH_TOO_SMALL: 20 of 50']);
+    // an operator may authorise a smaller live sample; nothing else about the gate moves
+    expect(calibrationGate('C1', good.slice(0, 8), 8).pass).toBe(true);
+    expect(calibrationGate('C1', good.slice(0, 6), 8).unmet).toEqual(['BATCH_TOO_SMALL: 6 of 8']);
     const weak = await Promise.all(Array.from({ length: 20 }, (_, i) => outcome(i < 5 ? { judgeConstruct: async () => ({ constructFit: 'WEAK', authenticity: 'HIGH', contextMaterial: true, languageQuality: 'PASS', plausibility: 'PASS', provenanceConcern: false, note: '' }) } : {}, i)));
     expect(calibrationGate('C1', weak).unmet).toEqual(['FIRST_ATTEMPT_PASS 0.75 < 0.8', 'HUMAN_REVIEW 0.25 > 0.1']);
     const wrong = [...good.slice(1), await outcome({ solve: async () => ({ independentAnswer: 'A', solution: '', confidence: 'HIGH', ambiguityFlag: false, ambiguityNote: null }) }, 99)];

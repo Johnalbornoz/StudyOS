@@ -221,13 +221,13 @@ export async function validateCandidate(raw: unknown, spec: GenerationSpecificat
 export interface SpecificationOutcome { slotKey: string; attempts: CandidateOutcome[]; final: CandidateOutcome; firstAttemptPass: boolean; regenerated: boolean; specificationIssue: boolean }
 
 /** One specification: a first attempt and, for a fixable generation fault, exactly one regeneration. Never more. */
-export async function runSpecification(spec: GenerationSpecification, profile: QuestionGenerationProfile, author: (s: GenerationSpecification) => Promise<unknown>, deps: PipelineDeps): Promise<SpecificationOutcome> {
+export async function runSpecification(spec: GenerationSpecification, profile: QuestionGenerationProfile, author: (s: GenerationSpecification, previousFailure: string | null) => Promise<unknown>, deps: PipelineDeps): Promise<SpecificationOutcome> {
   const attempts: CandidateOutcome[] = [];
   for (const n of [0, 1] as const) {
     const s = { ...spec, attempt: n };
     let raw: unknown = null;
     let authoringError: string | null = null;
-    try { raw = await author(s); } catch (err) { authoringError = err instanceof Error ? err.message : 'error'; }
+    try { raw = await author(s, attempts[0]?.record.reviewReason ?? null); } catch (err) { authoringError = err instanceof Error ? err.message : 'error'; }
     const outcome = await validateCandidate(raw, s, profile, deps);
     if (authoringError) { outcome.record.reviewReason = `AUTHORING_FAILED: ${authoringError}`; outcome.record.regenerable = true; }
     attempts.push(outcome);

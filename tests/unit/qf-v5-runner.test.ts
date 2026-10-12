@@ -12,7 +12,8 @@ import { authoringPrompt, difficultyPrompt, parseAuthored, parseSolver, solverPr
 import { assessmentBrief, difficultyInput, solverInput } from '@/lib/exam-core/question-bank/production/v5/pipeline';
 import { TIER_CYCLE } from '@/lib/exam-core/question-bank/production/v5/plan';
 import { auditSample, calibrationGate, reviewQueue } from '@/lib/exam-core/question-bank/production/v5/batch-control';
-import { clusterOf, planState } from '../../scripts/operations/qf-v5/run';
+import { clusterOf, planState, selectForProfile } from '../../scripts/operations/qf-v5/run';
+import { specificationReserveUsd } from '../../scripts/operations/qf-v5/live';
 import { WORST_CASE_CALLS, runBatch, type ModelCall } from '../../scripts/operations/qf-v5/engine';
 import { REVIEW_HEADER, coverageRows, reviewCsv, reviewRow, toCsv } from '../../scripts/operations/qf-v5/artifacts';
 
@@ -41,7 +42,7 @@ const model = (over: { author?: (slot: string, attempt: number, n: number) => st
   const call: ModelCall = async (role, prompt) => {
     seen.push({ role, text: `${prompt.system}\n${prompt.user}` });
     const usage = { inputTokens: 900, outputTokens: 300 };
-    if (role === 'AUTHOR') { const m = /itemId \("(.+)#(\d)"\)/.exec(prompt.user)!; n += 1; return { text: (over.author ?? authored)(m[1], Number(m[2]), n), ...usage }; }
+    if (role === 'AUTHOR') { const m = /itemId: "(.+)#(\d)"/.exec(prompt.user)!; n += 1; return { text: (over.author ?? authored)(m[1], Number(m[2]), n), ...usage }; }
     if (role === 'SOLVER') return { text: JSON.stringify({ independentAnswer: over.solver ?? 'B', solution: 'producto', confidence: 'HIGH', ambiguityFlag: false, ambiguityNote: null }), ...usage };
     if (prompt.user.includes('"actualDifficulty"')) return { text: JSON.stringify(over.difficulty ? over.difficulty(prompt.user) : { actualDifficulty: null }), ...usage };
     if (prompt.user.includes('"constructFit"')) return { text: JSON.stringify({ constructFit: 'PASS', authenticity: 'HIGH', contextMaterial: true, languageQuality: 'PASS', plausibility: 'PASS', provenanceConcern: false, note: 'ok', ...over.construct }), ...usage };
@@ -116,6 +117,29 @@ describe('coverage-driven specification planning', () => {
     // no selected-response slot is given more marks because it is a CHALLENGE slot
     expect(specifications.filter((s) => s.itemFormat === 'SELECTED_RESPONSE' && s.intendedDifficulty === 'CHALLENGE').every((s) => s.intendedMarks === 1)).toBe(true);
     expect(GENERATION_PROFILES.filter((p) => !specifications.some((s) => s.profileId === p.profileId)).map((p) => p.profileId)).toEqual([]);
+  });
+});
+
+describe('live sample selection and the spend reserve', () => {
+  it('takes the hardest tiers first and spreads over the profile\'s buckets; never repeats a finished slot', () => {
+    const picked = selectForProfile(specifications, 'ICFES.SABER11.MATEMATICAS', 10, new Set());
+    expect(picked.length).toBe(10);
+    const tiers = picked.map((s) => s.intendedDifficulty);
+    expect([tiers.filter((t) => t === 'CHALLENGE').length, tiers.filter((t) => t === 'STANDARD').length, tiers.filter((t) => t === 'FOUNDATIONAL').length]).toEqual([4, 4, 2]);
+    expect(new Set(picked.map((s) => s.bucket.objectiveCode + s.bucket.targetIndex)).size).toBeGreaterThan(3);
+    const again = selectForProfile(specifications, 'ICFES.SABER11.MATEMATICAS', 10, new Set(picked.map((s) => s.slotKey)));
+    expect(again.filter((s) => picked.includes(s))).toEqual([]);
+  });
+  it('the reserve of one specification covers two attempts with every validation call at full length', () => {
+    const r = specificationReserveUsd(4000);
+    expect(r).toBeGreaterThan(0.5);
+    expect(r).toBeLessThan(1.2);
+    // a regeneration request tells the author why the first attempt was rejected, and nothing about the answer
+    const s = saber[0];
+    const again = authoringPrompt(s, profileById(s.profileId)!, 'TIER_MISMATCH: intended CHALLENGE, actual FOUNDATIONAL (TOO_EASY)');
+    expect(again.user).toMatch(/A PREVIOUS ATTEMPT AT THIS REQUIREMENT WAS REJECTED\nTIER_MISMATCH/);
+    expect(authoringPrompt(s, profileById(s.profileId)!).user).not.toMatch(/PREVIOUS ATTEMPT/);
+    expect(again.user).toMatch(/No LaTeX, no Markdown/);
   });
 });
 

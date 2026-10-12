@@ -11,7 +11,7 @@ import { textualSimilarity } from '../originality-gate';
 import { CandidateItemSchema, learnerText, type CandidateItem, type GenerationSpecification } from './item';
 import type { QuestionGenerationProfile } from './generation-profile';
 
-export const VALIDATOR_VERSION = 'qf-v5-validators-1.0.0';
+export const VALIDATOR_VERSION = 'qf-v5-validators-1.1.0';
 
 export type Severity = 'FAIL' | 'REVIEW';
 export interface Finding { code: string; severity: Severity; detail: string }
@@ -31,9 +31,10 @@ export const LEAKAGE_PATTERNS: readonly RegExp[] = [
   /\bmetadata\b/, /\bmetadatos\b/, /\bgeneration (spec|specification|profile)\b/, /\bjson\b/, /\bdistractor(es|s)?\b/,
   /\b(foundational|standard|challenge)\b(?= (tier|band|item|level))/, /\bslot ?key\b/, /\bcommand term\b/, /\bcognitive (target|demand)\b/, /\blearning objective id\b/, /\bas an ai\b/,
 ];
-const RESIDUE = [/\{\{|\}\}/, /\$\{/, /<[a-z_]+>/i, /\[(todo|tbd|placeholder|insert[^\]]*)\]/i, /\bNaN\b/, /\blorem ipsum\b/i, /```/, /"[a-zA-Z_]+"\s*:/, /\\n/];
+const RESIDUE = [/\{\{\s*[a-zA-Z_.]+\s*\}\}/, /\$\{[a-zA-Z_.]+\}/, /<(placeholder|todo|insert|value|answer|stem|option)[a-z_]*>/i, /\[(todo|tbd|placeholder|insert[^\]]*)\]/i, /\bNaN\b/, /\blorem ipsum\b/i, /```/, /"[a-zA-Z_]+"\s*:\s*["\[{]/, /\\n(?![a-zA-Z])/];
 const TRUNCATED = [/[,;(\[¿¡]\s*$/, /…\s*$|\.\.\.\s*$/, /\b(and|or|the|of|que|de|la|el|y|o)\s*$/i];
-const balanced = (s: string): boolean => { let n = 0; for (const c of s) { if (c === '(') n += 1; if (c === ')') n -= 1; if (n < 0) return false; } return n === 0; };
+/** Parentheses must close, ignoring what is not a parenthesis pair: half-open intervals "[2, 5)" and list labels "a)". */
+const balanced = (raw: string): boolean => { const s = raw.replace(/[\[(\]][^()\[\]]{0,40}[,;][^()\[\]]{0,40}[\])\[]/g, ' ').replace(/(^|\s)[a-zA-Z0-9]{1,3}\)/g, '$1'); let n = 0; for (const c of s) { if (c === '(') n += 1; if (c === ')') n -= 1; if (n < 0) return false; } return n === 0; };
 
 export function structuralFindings(raw: unknown, spec: GenerationSpecification, profile: QuestionGenerationProfile): { item: CandidateItem | null; findings: Finding[] } {
   const parsed = CandidateItemSchema.safeParse(raw);
@@ -143,7 +144,8 @@ export function keyPositionFinding(keys: readonly string[], optionCount: number)
 
 // ----------------------------------------------------------------------------- stages 4 and 9: answers, recomputed
 export function numericValue(text: string, units: readonly string[] = []): number | null {
-  const s = text.trim().replace(/^\$\s*/, '').replace(/\s*%$/, '');
+  // "x = 3" is the number 3; a currency sign, a percent sign or a trailing unit word does not change the value
+  const s = text.trim().replace(/^[a-zA-Z]\w{0,3}\s*=\s*/, '').replace(/^[$€£]\s*/, '').replace(/(?<=\d)\s*(%|°|[a-zA-Zµ°][a-zA-Zµ°²³/·. ]{0,18})$/, '');
   const direct = normalizeStudentResponse(s, units);
   if (direct.ok && direct.readings.length === 1) return rationalToNumber(direct.readings[0].value);
   try { return evaluateExpression(s); } catch { return null; }
@@ -204,7 +206,8 @@ export function declaredArithmeticFindings(item: CandidateItem): Finding[] {
   try { value = evaluateExpression(item.answerExpression); } catch (e) { return [fail('ANSWER_EXPRESSION_INVALID', e instanceof Error ? e.message : 'not evaluable')]; }
   if (item.itemType === 'SELECTED_RESPONSE') {
     const hits = item.options.filter((o) => { const v = numericValue(o.text, item.acceptedUnits); return v !== null && nearlyEqual(v, value, 1e-6); }).map((o) => o.label);
-    if (hits.length < 1) return [fail('NO_OPTION_EQUALS_COMPUTED_ANSWER', `the declared arithmetic gives ${value}; no option has that value`)];
+    // only when every option reads as a number can "none of them equals it" be asserted
+    if (hits.length < 1) return item.options.every((o) => numericValue(o.text, item.acceptedUnits) !== null) ? [fail('NO_OPTION_EQUALS_COMPUTED_ANSWER', `the declared arithmetic gives ${value}; no option has that value`)] : [];
     if (hits.length > 1) return [fail('SEVERAL_OPTIONS_EQUAL_COMPUTED_ANSWER', hits.join(', '))];
     return hits[0] === item.proposedAnswer ? [] : [fail('KEY_CONTRADICTS_DECLARED_ARITHMETIC', `arithmetic gives option ${hits[0]}, the key says ${item.proposedAnswer}`)];
   }
@@ -219,10 +222,9 @@ export function plausibilityFindings(item: CandidateItem): Finding[] {
   const text = fold(learnerText(item));
   const f: Finding[] = [];
   for (const m of text.matchAll(/(\d+(?:[.,]\d+)?)\s*%/g)) { const v = Number(m[1].replace(',', '.')); if (v > 100 && /\b(probab|chance|of the (students|people|sample)|de los (estudiantes|encuestados))/.test(text)) f.push(review('PERCENTAGE_OVER_100', `${m[0]} of a population`)); }
-  for (const m of text.matchAll(/\bprobab\w*[^.]{0,40}?\b(\d+[.,]\d+)\b/g)) { const v = Number(m[1].replace(',', '.')); if (v > 1) f.push(fail('PROBABILITY_OVER_1', m[0])); }
+  for (const m of text.matchAll(/\bprobab\w*(?: [a-z]+){0,4} (?:is|es|=|:)\s*(\d+[.,]\d+)(?!\s*%)/g)) { const v = Number(m[1].replace(',', '.')); if (v > 1) f.push(review('PROBABILITY_OVER_1', m[0])); }
   for (const m of text.matchAll(/(\d+(?:[.,]\d+)?)\s*(km\/h|kph)\b/g)) { const v = Number(m[1].replace(',', '.')); if (v > 1300 && !/\b(avion|aircraft|plane|jet|rocket|cohete|satel)/.test(text)) f.push(review('SPEED_IMPLAUSIBLE', m[0])); }
   for (const m of text.matchAll(/(\d+(?:[.,]\d+)?)\s*(anos|years old)\b/g)) { const v = Number(m[1].replace(',', '.')); if (v > 120) f.push(review('AGE_IMPLAUSIBLE', m[0])); }
-  if (/-\s*\d+(?:[.,]\d+)?\s*(kg|metros|meters|m2|litros|liters|personas|people|students|estudiantes)\b/.test(text)) f.push(review('NEGATIVE_PHYSICAL_QUANTITY', 'a negative count, mass, length or volume'));
   return f;
 }
 
