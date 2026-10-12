@@ -74,7 +74,8 @@ describe('one authoring contract', () => {
       expect(src, f).not.toMatch(/from '@\/lib\/db'|\bquery\(|INSERT INTO|UPDATE \w+ SET|DELETE FROM|process\.env|fetch\(|from '(node:)?fs'|from 'pg'|@\/lib\/ai\/|\bDate\.now\(|new Date\(\)|Math\.random\(/);
       expect(src, f).not.toMatch(/@\/lib\/assessment-blueprint/);
     }
-    expect(walk('src').filter((f) => !f.startsWith(PROD) && /question-bank\/production\//.test(read(f)))).toEqual([]);
+    // QF V5.1: the one adapter registry reads the V5 generation profiles (read-only) to expose their adapter-shaped fields through the single adapter contract
+    expect(walk('src').filter((f) => !f.startsWith(PROD) && /question-bank\/production\//.test(read(f)))).toEqual(['src/lib/assessment-instance/assessment-adapter.ts']);
     // the QB-R2C scripts open no database and no network: they read and write files under docs/exams/question-bank only
     for (const s of ['scripts/operations/qb-paa-generation-plan.ts', 'scripts/operations/qb-r2c/pilot-v2-run.ts', 'scripts/operations/qb-r2c/pilot-v2-pipeline.ts']) {
       const src = read(s).replace(/\/\*[\s\S]*?\*\//g, '');

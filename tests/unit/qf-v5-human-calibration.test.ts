@@ -4,7 +4,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CHALLENGE_CALIBRATION_EVIDENCE, DIFFICULTY_TIERS, GENERATION_PROFILES, mayScaleTier, tierScalingStatus } from '@/lib/exam-core/question-bank/production/v5/generation-profile';
 import { HUMAN_COLUMNS, ITEM_COLUMNS, MACHINE_VOCABULARY, calibrationSet, workbook } from '../../scripts/operations/qf-v5/human-calibration';
@@ -45,16 +46,27 @@ describe('the blind set', () => {
       if (r.RESPONSE_FORMAT === 'SELECTED_RESPONSE') expect(r.OPTIONS.split('\n').length).toBe(4);
     }
   });
-  it('the workbook is a readable archive with one row per item and a list for each closed human column', () => {
-    const out = execFileSync('unzip', ['-p', join(ROOT, DIR, 'QB_HUMAN_CALIBRATION_50.xlsx'), 'xl/worksheets/sheet1.xml']).toString();
+  it('the blank workbook the script builds is a readable archive with one row per item and a list for each closed human column', () => {
+    // The file in the worktree is no longer the blank sheet: it is the COMPLETED review (tests/unit/qf51-human50-benchmark).
+    // What is checked here is the workbook this script generates, written to a temporary file.
+    const dir = mkdtempSync(join(tmpdir(), 'qf-hc-'));
+    const file = join(dir, 'blank.xlsx');
+    writeFileSync(file, workbook(header, set.rows));
+    const out = execFileSync('unzip', ['-p', file, 'xl/worksheets/sheet1.xml']).toString();
+    rmSync(dir, { recursive: true, force: true });
     expect(out.match(/<row /g)?.length).toBe(51);
     expect(out.match(/<dataValidation /g)?.length).toBe(9);
     expect(out).not.toMatch(MACHINE_VOCABULARY);
     expect(workbook(header, set.rows).subarray(0, 2).toString()).toBe('PK');
   });
+  it('the workbook in the worktree is the completed review: fifty rows, still nothing the machine decided', () => {
+    const out = execFileSync('unzip', ['-p', join(ROOT, DIR, 'QB_HUMAN_CALIBRATION_50.xlsx'), 'xl/worksheets/sheet1.xml']).toString();
+    expect(out.match(/<row /g)?.length).toBe(51);
+    expect(execFileSync('unzip', ['-p', join(ROOT, DIR, 'QB_HUMAN_CALIBRATION_50.xlsx'), 'xl/sharedStrings.xml'], { maxBuffer: 64 * 1024 * 1024 }).toString()).not.toMatch(MACHINE_VOCABULARY);
+  });
   it('the crosswalk is separate, and holds every machine verdict', () => {
     // a spreadsheet application leaves a lock file beside a workbook it has open; it is not part of the set
-    expect(readdirSync(join(ROOT, DIR)).filter((f) => !f.startsWith('~$') && !f.startsWith('.')).sort()).toEqual(['QB_HUMAN_CALIBRATION_50.csv', 'QB_HUMAN_CALIBRATION_50.xlsx', 'README.md', 'private']);
+    expect(readdirSync(join(ROOT, DIR)).filter((f) => !f.startsWith('~$') && !f.startsWith('.')).sort()).toEqual(['HUMAN50_LABELS.json', 'QB_HUMAN_CALIBRATION_50.csv', 'QB_HUMAN_CALIBRATION_50.xlsx', 'README.md', 'private']);
     for (const c of set.crosswalk) for (const k of ['REVIEW_ID', 'ORIGINAL_ITEM_ID', 'ORIGINAL_MACHINE_DISPOSITION', 'SOLVER_RESULT', 'CONSTRUCT_JUDGE_RESULT', 'AUTHENTICITY_RESULT', 'DIFFICULTY_RESULT', 'REVIEW_REASON', 'GENERATOR_PROFILE', 'VALIDATOR_VERSION']) expect(c).toHaveProperty(k);
   });
 });

@@ -219,6 +219,8 @@ describe('B5-D answers in progress', () => {
       '20261120_1000_sf7_parent_relationship_lifecycle.sql',
       '20261120_1100_cr_l9_02_enrollment_history.sql',
       '20261120_1200_sf10_single_persona_constraint.sql',
+      // QF V5.1: construct cores and instance lineage -- no response model
+      '20261121_1100_qf51_construct_core_lineage.sql',
     ]);
   });
 

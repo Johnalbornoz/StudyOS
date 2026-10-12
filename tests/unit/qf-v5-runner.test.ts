@@ -223,10 +223,10 @@ describe('the lane makes no provider call without an authorised budget', () => {
   }, 60_000);
   it('only live.ts opens a network connection or reads a key; nothing in the lane touches a database', () => {
     const dir = 'scripts/operations/qf-v5';
-    expect(readdirSync(join(ROOT, dir)).sort()).toEqual(['artifacts.ts', 'engine.ts', 'human-calibration-analysis.ts', 'human-calibration.ts', 'live.ts', 'run.ts']);
+    expect(readdirSync(join(ROOT, dir)).sort()).toEqual(['artifacts.ts', 'engine.ts', 'human-calibration-analysis.ts', 'human-calibration.ts', 'human50-benchmark.ts', 'live.ts', 'run.ts']);
     const strip = (f: string) => readFileSync(join(ROOT, dir, f), 'utf8').replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '');
-    for (const f of ['artifacts.ts', 'engine.ts', 'human-calibration-analysis.ts', 'human-calibration.ts', 'run.ts']) expect(strip(f).replace(/http:\/\/schemas\.openxmlformats\.org[^"]*/g, ''), f).not.toMatch(/fetch\(|https?:\/\/|API_KEY/);
-    for (const f of ['artifacts.ts', 'engine.ts', 'live.ts', 'run.ts']) expect(strip(f), f).not.toMatch(/DATABASE_URL|from 'pg'|@\/lib\/db|src\/lib\/db|dotenv|INSERT INTO|UPDATE \w+ SET/);
+    for (const f of ['artifacts.ts', 'engine.ts', 'human-calibration-analysis.ts', 'human-calibration.ts', 'human50-benchmark.ts', 'run.ts']) expect(strip(f).replace(/http:\/\/schemas\.openxmlformats\.org[^"]*/g, ''), f).not.toMatch(/fetch\(|https?:\/\/|API_KEY/);
+    for (const f of ['artifacts.ts', 'engine.ts', 'human50-benchmark.ts', 'live.ts', 'run.ts']) expect(strip(f), f).not.toMatch(/DATABASE_URL|from 'pg'|@\/lib\/db|src\/lib\/db|dotenv|INSERT INTO|UPDATE \w+ SET/);
     expect(strip('run.ts')).toMatch(/await import\('\.\/live'\)/);
   });
 });

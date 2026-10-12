@@ -157,7 +157,9 @@ describe('E12: one deterministic migration chain', () => {
       '20261112_1000_qb_review_requires_primary_attribution.sql',
       // + L10 shared-foundation schema batch (20261120_1000..1200): parent lifecycle, enrolment history, one-persona index.
       //   Additive except one constraint replaced by a partial index (1100).
-      ...['20261120_1000_sf7_parent_relationship_lifecycle.sql', '20261120_1100_cr_l9_02_enrollment_history.sql', '20261120_1200_sf10_single_persona_constraint.sql']]);
+      ...['20261120_1000_sf7_parent_relationship_lifecycle.sql', '20261120_1100_cr_l9_02_enrollment_history.sql', '20261120_1200_sf10_single_persona_constraint.sql'],
+      // + QF V5.1 (20261121_1100): construct cores, applicability, adapters, renderers, item-instance lineage. Additive; existing items become LEGACY by column default.
+      '20261121_1100_qf51_construct_core_lineage.sql']);
     expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);
   });
 });

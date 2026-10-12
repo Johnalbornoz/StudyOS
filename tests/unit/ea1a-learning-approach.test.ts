@@ -498,7 +498,8 @@ describe('locked rulings', () => {
   it('no stable key was added to canonical_concepts, no migration or SQL file was created, and nothing ingests dev-test content', () => {
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
     // merged onto the stage-convergence line, which carries the three shared-foundation migrations (20261120_*); the adaptation and question-factory lanes still add none
-    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([85, '20261120_1200_sf10_single_persona_constraint.sql']);
+    // + QF V5.1 (20261121_1100): the one migration that persists construct cores, applicability and instance lineage. It adds no learning-approach column.
+    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([86, '20261121_1100_qf51_construct_core_lineage.sql']);
     expect(migrations.filter((f) => /canonical_concepts\s+ADD COLUMN|learning_approach|stem_plus/i.test(read(`database/migrations/${f}`)))).toEqual([]);
     for (const d of [APPROACH_DIR, ADAPTATION_DIR, FAMILIES_DIR]) for (const f of walk(d)) {
       expect(f.endsWith('.sql')).toBe(false);

@@ -20,8 +20,9 @@ describe('the series', () => {
       '20261120_1100_cr_l9_02_enrollment_history.sql',
       '20261120_1200_sf10_single_persona_constraint.sql',
     ]);
-    expect(all.slice(-3)).toEqual(batch);
-    expect(all).toHaveLength(85); // 82 before L10 + 3: with the baseline row, the ledger goes 83 -> 86
+    // QF V5.1 added one later migration (20261121_1100); the batch is still the last three before it
+    expect(all.filter((f) => f < '20261121').slice(-3)).toEqual(batch);
+    expect(all.filter((f) => f < '20261121')).toHaveLength(85); // 82 before L10 + 3: with the baseline row, the ledger goes 83 -> 86
   });
 
   it('every file documents its rollback and deletes only its own ledger row', () => {

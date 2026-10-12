@@ -1355,7 +1355,11 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
   });
 
   it('no runtime wiring: nothing under src imports the new modules except the two additive Production OS contracts; no route, no service, no table', () => {
-    const importers = walk('src').filter((f) => !f.startsWith(ADAPTATION_DIR) && !f.startsWith(FAMILIES_DIR) && /assessment-adaptation|question-bank\/task-families/.test(read(f))).sort();
+    // QF V5.1: `src/lib/assessment-instance` is the composition layer over these modules (construct core -> adapter ->
+    // instance). It is the one consumer added; it is pure except its repository, and it is wired to no route or service.
+    const INSTANCE_DIR = 'src/lib/assessment-instance';
+    expect(walk('src').filter((f) => !f.startsWith(INSTANCE_DIR) && /assessment-instance/.test(read(f)))).toEqual([]);
+    const importers = walk('src').filter((f) => !f.startsWith(ADAPTATION_DIR) && !f.startsWith(FAMILIES_DIR) && !f.startsWith(INSTANCE_DIR) && /assessment-adaptation|question-bank\/task-families/.test(read(f))).sort();
     // QB-R2D adds three Production OS modules of the specification-driven path. Same direction (production -> adaptation), still pure, still no route, service or table.
     expect(importers).toEqual([
       'src/lib/exam-core/question-bank/production/generation-contract.ts', 'src/lib/exam-core/question-bank/production/generator/generate-candidates.ts',
@@ -1368,9 +1372,10 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     // no migration names anything of this phase: the persistence is a design
     const migrations = readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.endsWith('.sql')).sort();
     const NEW_SCHEMA = /question_bank_task_famil|task_family_version|adaptation_specification|item_adaptation|assessment_system_profile|assessment_discipline_polic/i;
-    expect(migrations.filter((f) => NEW_SCHEMA.test(f) || NEW_SCHEMA.test(read(`database/migrations/${f}`)))).toEqual([]);
+    // QF V5.1 realises that design in ONE additive migration (construct cores = persisted task families, instance lineage with the specification id). No other file names it.
+    expect(migrations.filter((f) => NEW_SCHEMA.test(f) || NEW_SCHEMA.test(read(`database/migrations/${f}`)))).toEqual(['20261121_1100_qf51_construct_core_lineage.sql']);
     // 82 files up to QB-R1C, plus the three of the L10 shared-foundation batch (20261120_*), which name nothing of this phase (asserted above).
-    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([85, '20261120_1200_sf10_single_persona_constraint.sql']);
+    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([86, '20261121_1100_qf51_construct_core_lineage.sql']);
   });
 
   it('B3 is not implemented here: no evidence engine, no evidence path, no second evidence writer', () => {
