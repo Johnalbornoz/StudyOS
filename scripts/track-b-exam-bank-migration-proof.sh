@@ -8,9 +8,9 @@
 #   - every file is read from THIS worktree (Track B now holds all five);
 #   - the QF V5.2 file is read from database/migrations once promoted, from the proposal directory before that;
 #   - APPLY_ORDER chooses the order the five are applied in:
-#       LEXICAL      87 88 89 90 91   a fresh database (the runner applies pending files in file-name order)
-#       ENVIRONMENT  87 89 90 88 91   DEV and Preview: their ledger (89) already holds 87, 89 and 90, so the
-#                                     runner applies 88 (QF V5.1) and then 91 (QF V5.2) on top of them
+#       LEXICAL      87 88 89 90 91 92   a fresh database (the runner applies pending files in file-name order)
+#       ENVIRONMENT  87 89 90 88 91 92   DEV and Preview: their ledger (89) already holds 87, 89 and 90, so the
+#                                     runner applies 88 (QF V5.1), 91 (QF V5.2) and 92 (core-derived authorship) on top
 #   Both must pass: no collision, no object lost, no weaker eligibility view left standing.
 set -uo pipefail
 
@@ -21,10 +21,10 @@ PROPOSAL="$REPO/database/migrations/$NAME52"
 [ -e "$PROPOSAL" ] || PROPOSAL="$REPO/docs/exams/question-factory/v52/proposed/$NAME52"
 APPLY_ORDER="${APPLY_ORDER:-LEXICAL}"
 E87="87:20261121_1000_student_scheduled_assessments.sql:WORKTREE"; E88="88:20261121_1100_qf51_construct_core_lineage.sql:WORKTREE"
-E89="89:20261122_1000_learner_concept_curriculum_provenance.sql:WORKTREE"; E90="90:20261122_1100_canonical_concept_reviewed_aliases.sql:WORKTREE"; E91="91:$NAME52:PROPOSAL"
+E89="89:20261122_1000_learner_concept_curriculum_provenance.sql:WORKTREE"; E90="90:20261122_1100_canonical_concept_reviewed_aliases.sql:WORKTREE"; E91="91:$NAME52:PROPOSAL"; E92="92:20261123_1000_exam_bank_core_derived_authorship.sql:WORKTREE"
 case "$APPLY_ORDER" in
-  LEXICAL) SEQ=("$E87" "$E88" "$E89" "$E90" "$E91") ;;
-  ENVIRONMENT) SEQ=("$E87" "$E89" "$E90" "$E88" "$E91") ;;
+  LEXICAL) SEQ=("$E87" "$E88" "$E89" "$E90" "$E91" "$E92") ;;
+  ENVIRONMENT) SEQ=("$E87" "$E89" "$E90" "$E88" "$E91" "$E92") ;;
   *) echo "APPLY_ORDER must be LEXICAL or ENVIRONMENT"; exit 1 ;;
 esac
 echo "APPLY_ORDER = $APPLY_ORDER   QF V5.2 file read from: ${PROPOSAL#$REPO/}"
@@ -52,7 +52,7 @@ $P -f "$W/b.sql" "$DB" >/dev/null 2>"$W/err" || { echo "BASELINE = FAIL"; head -
 $P -f "$REPO/database/ledger/0000_baseline_ledger.sql" "$DB" >/dev/null
 n=0
 for f in $(ls "$REPO"/database/migrations/*.sql | sort); do
-  case "$(basename "$f")" in 20261121_*|20261122_*) continue ;; esac
+  case "$(basename "$f")" in 20261121_*|20261122_*|20261123_*) continue ;; esac
   $P -1 -f "$f" "$DB" >/dev/null 2>"$W/err" || { echo "PRIOR_MIGRATION = FAIL $(basename "$f")"; head -3 "$W/err"; exit 1; }
   n=$((n + 1))
 done
@@ -73,7 +73,7 @@ for e in "${SEQ[@]}"; do
     echo "source $k: $name @ ${sha:0:7} sha256 $(shasum -a 256 "$W/m$k.sql" | cut -c1-12)"
   fi
 done
-[ "$(printf '%s\n' "${SEQ[@]}" | cut -d: -f2 | cut -c1-13 | sort -u | wc -l | tr -d ' ')" = "5" ] || { echo "MIGRATION_PREFIX_COLLISION = YES"; exit 1; }
+[ "$(printf '%s\n' "${SEQ[@]}" | cut -d: -f2 | cut -c1-13 | sort -u | wc -l | tr -d ' ')" = "${#SEQ[@]}" ] || { echo "MIGRATION_PREFIX_COLLISION = YES"; exit 1; }
 echo "MIGRATION_PREFIXES_DISTINCT = OK   applied in: $ORDER"
 
 objects() { Q "SELECT string_agg(x, ',' ORDER BY x) FROM (SELECT 't:' || tablename AS x FROM pg_tables WHERE schemaname = 'public' UNION ALL SELECT 'v:' || viewname FROM pg_views WHERE schemaname = 'public' UNION ALL SELECT 'c:' || conrelid::regclass || '.' || conname FROM pg_constraint WHERE connamespace = 'public'::regnamespace UNION ALL SELECT 'i:' || indexname FROM pg_indexes WHERE schemaname = 'public' UNION ALL SELECT 'col:' || table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = 'public') s"; }

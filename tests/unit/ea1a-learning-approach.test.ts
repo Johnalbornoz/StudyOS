@@ -500,7 +500,7 @@ describe('locked rulings', () => {
     // merged onto the stage-convergence line, which carries the three shared-foundation migrations (20261120_*); the adaptation and question-factory lanes still add none
     // + QF V5.1 (20261121_1100): the one migration that persists construct cores, applicability and instance lineage. It adds no learning-approach column.
     // + Track B: the Student's scheduled assessments (20261121_1000) and curriculum convergence (20261122_1000, _1100); none adds a learning-approach column.
-    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([90, '20261122_1200_qf52_exam_bank_certification_coverage.sql']); // + QF V5.2 (20261122_1200): Exam Bank only; no learning-approach column
+    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([91, '20261123_1000_exam_bank_core_derived_authorship.sql']); // + QF V5.2 (20261122_1200): Exam Bank only; no learning-approach column
     expect(migrations.filter((f) => /canonical_concepts\s+ADD COLUMN|learning_approach|stem_plus/i.test(read(`database/migrations/${f}`)))).toEqual([]);
     for (const d of [APPROACH_DIR, ADAPTATION_DIR, FAMILIES_DIR]) for (const f of walk(d)) {
       expect(f.endsWith('.sql')).toBe(false);

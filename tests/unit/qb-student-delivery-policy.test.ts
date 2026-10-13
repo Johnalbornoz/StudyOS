@@ -88,7 +88,7 @@ describe('every Student-facing selector uses the one rule', () => {
   // applied to each through `isEligible` with the STUDENT audience -- asserted in b2-readiness-architecture.
   // CURR-PAA: curriculum/item-traceability.service reads which objective an item version has, to say whether it hangs
   // from the same Domain as the item's Topic. It reads no item content and delivers nothing.
-  const NON_STUDENT = /curriculum\/item-traceability\.service\.ts$|question-bank\/(review|review-admin|reviewer-qualification|item-attribution|admin|bank|factory|calibration|health|demand)\.service\.ts$|apply-vertical-config\.service\.ts$|assessment\/item-bank\.service\.ts$|assessment-foundation\/question-coverage\.service\.ts$|assessment-blueprint\/assessment-blueprint\.service\.ts$/;
+  const NON_STUDENT = /curriculum\/item-traceability\.service\.ts$|question-bank\/(review|review-admin|reviewer-qualification|item-attribution|admin|bank|factory|calibration|health|demand)\.service\.ts$|apply-vertical-config\.service\.ts$|assessment\/item-bank\.service\.ts$|assessment-foundation\/question-coverage\.service\.ts$|assessment-blueprint\/assessment-blueprint\.service\.ts$|exam-bank\/publication\.service\.ts$/; // + the Exam Bank publication: a governed loader that writes bank rows, never a Student reader
   const readers = SRC.filter((f) => /FROM approved_items|JOIN approved_items/.test(read(f)) && !NON_STUDENT.test(f));
 
   it('8 / 9 / 10 / 12. the Student readers are exactly: practice & dynamic sourcing, exam instances (practice, diagnostic, mocks), the full-mock guard', () => {

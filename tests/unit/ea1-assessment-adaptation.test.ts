@@ -1358,10 +1358,13 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     // QF V5.1: `src/lib/assessment-instance` is the composition layer over these modules (construct core -> adapter ->
     // instance). It is the one consumer added; it is pure except its repository, and it is wired to no route or service.
     const INSTANCE_DIR = 'src/lib/assessment-instance';
-    expect(walk('src').filter((f) => !f.startsWith(INSTANCE_DIR) && /assessment-instance/.test(read(f)))).toEqual([]);
+    // Track B: the governed Exam Bank publication (src/lib/exam-bank) is the one consumer -- a loader, not a Student runtime
+    expect(walk('src').filter((f) => !f.startsWith(INSTANCE_DIR) && /assessment-instance/.test(read(f))).sort()).toEqual(['src/lib/exam-bank/bank-projection.ts', 'src/lib/exam-bank/publication-plan.ts', 'src/lib/exam-bank/publication.service.ts']);
     const importers = walk('src').filter((f) => !f.startsWith(ADAPTATION_DIR) && !f.startsWith(FAMILIES_DIR) && !f.startsWith(INSTANCE_DIR) && /assessment-adaptation|question-bank\/task-families/.test(read(f))).sort();
     // QB-R2D adds three Production OS modules of the specification-driven path. Same direction (production -> adaptation), still pure, still no route, service or table.
     expect(importers).toEqual([
+      // Track B: the Exam Bank publication plan hashes with the same canonical hash (pure; no route, service or table of its own)
+      'src/lib/exam-bank/publication-plan.ts',
       'src/lib/exam-core/question-bank/production/generation-contract.ts', 'src/lib/exam-core/question-bank/production/generator/generate-candidates.ts',
       'src/lib/exam-core/question-bank/production/generator/specification-generation-v2.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation-v3.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation-v4.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation.ts', 'src/lib/exam-core/question-bank/production/specification-candidate.ts',
       // QB-R2F adds generator version 3 and validators revision 4 (both read the item demand policy); same direction, still pure
@@ -1376,7 +1379,7 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     expect(migrations.filter((f) => NEW_SCHEMA.test(f) || NEW_SCHEMA.test(read(`database/migrations/${f}`)))).toEqual(['20261121_1100_qf51_construct_core_lineage.sql']);
     // 82 files up to QB-R1C, plus the three of the L10 shared-foundation batch (20261120_*), which name nothing of this phase (asserted above).
     // 85 + the Student's scheduled assessments (20261121_1000) + QF V5.1 (20261121_1100) + curriculum convergence (20261122_1000, _1100).
-    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([90, '20261122_1200_qf52_exam_bank_certification_coverage.sql']); // + QF V5.2 (20261122_1200), the Exam Bank certification model
+    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([91, '20261123_1000_exam_bank_core_derived_authorship.sql']); // + QF V5.2 (20261122_1200), the Exam Bank certification model
   });
 
   it('B3 is not implemented here: no evidence engine, no evidence path, no second evidence writer', () => {

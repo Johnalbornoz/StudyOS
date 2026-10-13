@@ -229,6 +229,8 @@ describe('B5-D answers in progress', () => {
       '20261122_1100_canonical_concept_reviewed_aliases.sql',
       // QF V5.2: Exam Bank certification / coverage / supply authority -- no response model
       '20261122_1200_qf52_exam_bank_certification_coverage.sql',
+      // Exam Bank publication: who authors a core-derived bank version (one function replaced; no response model)
+      '20261123_1000_exam_bank_core_derived_authorship.sql',
     ]);
   });
 

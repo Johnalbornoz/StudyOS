@@ -69,8 +69,10 @@ describe('no shared supply', () => {
     expect(consumers).toEqual([]);
   });
 
-  it('the Exam Bank is not wired to a Student runtime yet: nothing outside it imports it (exam delivery will be the ONLY importer)', () => {
+  it('outside the Exam Bank, only its governed publication imports it: no Student runtime reads the certification artefacts', () => {
     const importers = walk('src').filter((f) => !f.startsWith('src/lib/assessment-instance/') && /@\/lib\/assessment-instance|\.\.\/assessment-instance/.test(code(f)));
-    expect(importers).toEqual([]);
+    // the loader that publishes certified instances as Exam Bank rows; the Exam Core then reads those ROWS, never the artefacts
+    expect(importers.sort()).toEqual(['src/lib/exam-bank/bank-projection.ts', 'src/lib/exam-bank/publication-plan.ts', 'src/lib/exam-bank/publication.service.ts']);
+    for (const f of importers) expect(code(f), f).not.toMatch(/ai-runtime|quiz-generation\.service|learning-item-supply|question_bank_candidates|assessment-supply\/learning/);
   });
 });
