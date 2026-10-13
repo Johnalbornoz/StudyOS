@@ -111,3 +111,23 @@ Decisions applied in code: a key is not an explanation (projection 2: `explanati
 | Exam runtime on the clone (service level) | 35/35: practice READY from certified supply (12 governed positions, frozen, scored, `EXAM_ASSESSMENT` evidence on the item's own concept, exposure recorded, second attempt repeats none, 0 provider calls); reduced-mock engine runs for the Matemáticas component; the catalogue does not offer a PAA mock; challenge not offered (no calibrated difficulty); full mock does not assemble. |
 
 Authenticated browser E2E on the new host is pending the operator's sign-in.
+
+## Preview authenticated E2E (2026-10-13, signed-in Student, `study-9znz4dfn5`, SHA `b44686c`)
+
+Test data was left in place as history, on the candidate's own database.
+
+| Step | Result |
+|---|---|
+| Learning | PASS. A 5-question learn check was generated on start; the first answer was graded correct. (Left unfinished.) |
+| Timed AD_HOC, existing items | PASS. 2 concepts, advanced, 30-minute limit: the setup showed `2 preguntas · ~8 min`, started, 100%, evidence in both concepts. Before the fix this was `TIME_CANNOT_BE_ESTIMATED`. |
+| Timed AD_HOC, generated | PASS. 2 concepts with nothing at that difficulty, 30-minute limit: "Prepararemos tus preguntas cuando empieces", about a minute of generation, 2 frozen questions, 100%, evidence in both. |
+| Scheduled AD_HOC | PASS. Refused before its moment ("Este examen todavía no puede empezar"), started when due, 100%, evidence. A first scheduled run was submitted blank because the test tooling did not register a radio selection; it is in the history as an unanswered attempt. |
+| Exam Prep page | Exam Practice available; both mocks unavailable; Challenge unavailable with "Todavía no podemos garantizar que sea más difícil que el examen real". |
+| PAA Math Exam Practice | 12 governed positions (3 álgebra, 3 aritmética, 3 geometría, 2 datos, 1 probabilidad), all Certified Exam Bank items with eligible instances, frozen snapshot, answered in the exam UI, completed, result 10/12, exposure recorded for the 12, 11 evidence rows `EXAM_ASSESSMENT`, 0 question-generation calls. |
+
+Two defects found and fixed (SHA `bbcfd56`, deployed as `https://study-qjzfv6nyy-study-so.vercel.app`, `dpl_DNXchNrRrZdUZcCi7wRoBNwWAKX1`, same database):
+
+1. **The catalogue deep link did not open.** `/dashboard/exams?node=paa.practice.matematicas` showed the generic chooser, because the page checked the persisted readiness and not the bank-derived one. In the run above the attempt was created through the same APIs the launcher calls. Fixed; not yet re-checked in a browser.
+2. **A correct fraction scored 0.** The math editor sends `\frac83` for `8/3`; the math engine could not read TeX shorthand, so the answer went to review with 0 marks (one of the two misses in the 10/12; the other was a deliberately wrong answer). Fixed with tests; not yet re-checked in a browser.
+
+Not changed, for a decision: the result page shows "Contenido de práctica (DEV), no oficial" (the exam version's own content label in its configuration) and each item says "Práctica generada por StudyUs" (the label of every non-official origin). Both are inexact for certified, StudyUs-authored items.
