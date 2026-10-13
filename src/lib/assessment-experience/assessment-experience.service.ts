@@ -15,6 +15,8 @@ import { evaluateExamVersionReadiness, solveLearningForStudent } from '@/lib/ass
 import { PRACTICE_DEPTHS, type PracticeDepth } from '@/lib/assessment-blueprint/policy/practice-depth';
 import type { BlueprintSolution } from '@/lib/assessment-blueprint/result';
 import type { AssessmentLaunchRequest } from './launch';
+import { certifiedSupplySql } from '@/lib/exam-bank/delivery-scope';
+import { lifecycleSqlFor } from '@/lib/exam-core/question-bank/lifecycle';
 import { db } from '@/lib/db';
 import { readFrozenAssessment } from '@/lib/assessment-execution/frozen-assessment';
 import { loadDraftAnswers } from '@/lib/assessment-execution/assessment-draft.service';
@@ -135,13 +137,15 @@ export interface ExamAvailability {
  */
 /**
  * Does this exam version hold deliverable content whose difficulty is CALIBRATED against the real exam (a difficulty
- * index)? A challenge is defined by that index; a 1-5 item difficulty is not a calibration. Read-only; a failed read is "no".
+ * index)? A challenge is defined by that index; a 1-5 item difficulty is not a calibration. Only what a Student may be
+ * delivered counts (the one delivery rule: never a fixture, never a withdrawn item). Read-only; a failed read is "no".
  */
 export async function examVersionHasCalibratedDifficulty(examVersionId: string): Promise<boolean> {
   try {
     const r = await db.query(
       `SELECT EXISTS (SELECT 1 FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id AND qi.current_version_id = ai.id
-                       WHERE qi.exam_version_id = $1 AND ai.status = 'PUBLISHED' AND (ai.difficulty_index IS NOT NULL OR ai.content ? 'difficultyIndex')) AS calibrated`,
+                       WHERE qi.exam_version_id = $1 AND ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('PRACTICE', undefined, 'STUDENT')} AND ${certifiedSupplySql('ai')}
+                         AND (ai.difficulty_index IS NOT NULL OR ai.content ? 'difficultyIndex')) AS calibrated`,
       [examVersionId]);
     return r.rows[0]?.calibrated === true;
   } catch {
