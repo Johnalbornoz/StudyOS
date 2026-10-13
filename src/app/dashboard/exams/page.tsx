@@ -13,6 +13,8 @@ import { ExamCatalogBrowser } from './ExamCatalogBrowser';
 import { InstanceCard } from './InstanceCard';
 import { PreparationChooser } from '../exam-prep/PreparationChooser';
 import { loadPickerData } from '@/lib/exam-core/objectives/picker';
+import { readinessMode } from '@/lib/exam-core/question-bank/capability-overlay.service';
+import { resolveExamLevel } from '@/lib/exam-core/catalog/structure.service';
 
 /**
  * Objective first: without a deep link the page asks "¿Para qué examen quieres
@@ -35,9 +37,15 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
 
   const instances = await Promise.all((await listExamInstances(studentId)).map(toInstanceView));
   // Deep link to one selectable exam level (validated: it must exist and be selectable).
-  const initialNode = node && /^[a-z0-9._-]{1,120}$/.test(node)
-    ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes n WHERE node_key = $1 AND status = 'ACTIVE' AND ${selectableSql('n', 'STUDENT')}`, [node, locale])).rows[0] ?? null)
+  // Track B: under ENFORCE the readiness of an entry comes from the bank-health snapshot (the same authority the
+  // level and instance APIs use: resolveExamLevel), so an entry the Certified Exam Bank made ready opens here too.
+  const validNode = node && /^[a-z0-9._-]{1,120}$/.test(node) ? node : null;
+  const persisted = validNode
+    ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes n WHERE node_key = $1 AND status = 'ACTIVE' AND ${selectableSql('n', 'STUDENT')}`, [validNode, locale])).rows[0] ?? null)
     : null;
+  const initialNode = persisted ?? (validNode && readinessMode() === 'ENFORCE' && (await resolveExamLevel(validNode, locale).catch(() => null))
+    ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes n WHERE node_key = $1 AND status = 'ACTIVE'`, [validNode, locale])).rows[0] ?? null)
+    : null);
   const picker = initialNode ? null : await loadPickerData(studentId, locale);
   // The AICE Diploma planner is offered only where it applies: eligible for this Student, or a plan they already have.
   const showAicePlanner = initialNode

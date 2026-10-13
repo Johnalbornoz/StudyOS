@@ -70,6 +70,10 @@ export function latexToInfix(input: string): string {
   // Innermost-first, repeated until stable, so \frac{\sqrt{2}}{2} and nested powers resolve.
   for (let pass = 0; pass < 30; pass++) {
     const before = s;
+    // TeX shorthand: an argument written without braces is ONE token (a digit or a letter). The math editor emits it
+    // for single-digit fractions: \frac83 is \frac{8}{3}, \frac1{12} is \frac{1}{12}, \sqrt2 is \sqrt{2}.
+    s = s.replace(/\\([dt]?frac)\s*(\{[^{}]*\}|[0-9a-zA-Z])\s*(\{[^{}]*\}|[0-9a-zA-Z])/g, (_m, f, x, y) => `\\${f}${String(x).startsWith('{') ? x : `{${x}}`}${String(y).startsWith('{') ? y : `{${y}}`}`);
+    s = s.replace(/\\sqrt\s*([0-9a-zA-Z])/g, (_m, x) => `\\sqrt{${x}}`);
     s = s.replace(/(\d+)\s*\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/, (_m, w, a, b) => `(${w}+(${a})/(${b}))`);
     s = s.replace(/\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/, (_m, a, b) => `((${a})/(${b}))`);
     s = s.replace(/\\sqrt\s*\[([^\]]*)\]\s*\{([^{}]*)\}/, (_m, n, a) => `nthRoot((${a}),(${n}))`);
