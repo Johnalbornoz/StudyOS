@@ -133,6 +133,30 @@ async function main() {
       } else check('S3  the scheduled exam is generated', false, ready.reason);
     }
 
+    /* ------------------------------------------------ T: AD_HOC with a time limit ------------------------------------------------ */
+    // HIGH difficulty over two concepts: nothing of that difficulty exists yet, so the timed assessment is generated in full first
+    const timedRequest = { subjectId, learnerConceptIds: [concepts[0].learner, concepts[1].learner], depth: 'BALANCED' as const, availableMinutes: 30, difficultyBand: 'HIGH' as const };
+    const timedSelection = { intent: 'AD_HOC_CONCEPT_EXAM' as const, depth: timedRequest.depth, canonicalConceptIds: [], learnerConceptIds: timedRequest.learnerConceptIds, availableMinutes: 30, difficultyBand: timedRequest.difficultyBand };
+    const timed0 = await adHocExamReadiness(S, timedRequest, asOf(), { enabled: true });
+    check('T1  a timed own exam with nothing generated yet is not refused for its time: it is generated first', !timed0.ok && timed0.reason === 'ASSESSMENT_NOT_GENERATED_YET', timed0.ok ? 'already ready' : timed0.reason);
+    const timedSupply = await ensureGeneratedSupply({ studentId: S, request: timedSelection, asOf: asOf() });
+    const timed1 = await adHocExamReadiness(S, timedRequest, asOf(), { enabled: true });
+    check('T2  the complete timed assessment is generated and fits the limit (never TIME_CANNOT_BE_ESTIMATED)', timedSupply.status === 'GENERATED' && timed1.ok, `${timedSupply.status} items=${timedSupply.generated} unmet=${timedSupply.unmetCanonicalConceptIds.length}${timed1.ok ? '' : ' ' + timed1.reason}`);
+    if (timed1.ok) {
+      const exam = await startLearningAssessment({ studentId: S, request: { ...timedSelection, canonicalConceptIds: timed1.canonicalConceptIds, learnerConceptIds: timed1.learnerConceptIds }, asOf: asOf(), language: 'es', scope: { subjectId: timed1.subjectId, learnerConceptByCanonical: timed1.learnerConceptByCanonical } });
+      check('T3  the timed assessment starts frozen', exam.ok, exam.ok ? `${exam.questions} questions` : exam.reason);
+      if (exam.ok) {
+        const snap = (await one(`SELECT assessment_snapshot AS snap FROM quiz_sessions WHERE id = $1`, [exam.record.id])).snap;
+        const planned = snap.items.reduce((sum: number, i: any) => sum + (i.estimatedSeconds ?? 0), 0);
+        check('T4  every frozen item states its planned time, and the whole assessment is within the 30 minute limit', snap.items.length > 0 && snap.items.every((i: any) => typeof i.estimatedSeconds === 'number' && i.estimatedSeconds > 0 && i.question.store === 'LEARNING_ITEM_CACHE') && planned <= 30 * 60, `${snap.items.length} items, ${planned}s planned of 1800s`);
+        const gen0 = await generationEvents(S);
+        const done = await complete(exam.record.id);
+        check('T5  completed; NO question generation during the attempt', done.ok && (await generationEvents(S)) === gen0, done.ok ? '' : done.reason);
+        const ev = await evidenceOf(concepts[0].learner);
+        check('T6  evidence is INTERNAL_ASSESSMENT for the Student\'s own concept', ev.length > 0 && ev.some((e: any) => e.metadata?.assessment?.supply?.family === 'INTERNAL_ASSESSMENT'), `${ev.length} rows`);
+      }
+    }
+
     /* ------------------------------------------------ X: the Exam Bank is untouched ------------------------------------------------ */
     const bankAfter = await examBank();
     check('X1  Learning / Internal Assessment generation wrote NO Exam Bank inventory and queued NO job', JSON.stringify(bankBefore) === JSON.stringify(bankAfter), JSON.stringify(bankAfter));
