@@ -4,6 +4,7 @@
  */
 import { db } from '@/lib/db';
 import { studentAudienceDefinitionSql } from '@/lib/exam-core/audience';
+import { certifiedSupplySql } from '@/lib/exam-bank/delivery-scope';
 import { lifecycleSqlFor } from '@/lib/exam-core/question-bank/lifecycle';
 import { getExamVersion } from './exam-definition.service';
 import { getBlueprintForVersion, listObjectiveTargets } from './blueprint.service';
@@ -42,9 +43,9 @@ export async function canFullMockBeOffered(examVersionId: string): Promise<FullM
       `SELECT
          EXISTS(SELECT 1 FROM objective_concept_mappings WHERE learning_objective_id = $1 AND status = 'PUBLISHED') AS has_concept,
          EXISTS(SELECT 1 FROM objective_skill_mappings WHERE learning_objective_id = $1 AND status = 'PUBLISHED') AS has_skill,
-         EXISTS(SELECT 1 FROM approved_items ai WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED'
+         EXISTS(SELECT 1 FROM approved_items ai WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED' AND ${certifiedSupplySql('ai')}
                   AND (${lifecycleSqlFor('PRACTICE', undefined, 'STUDENT')} OR EXISTS (SELECT 1 FROM exam_definitions d WHERE d.id = $2 AND NOT ${studentAudienceDefinitionSql('d')}))) AS has_bank_items,
-         EXISTS(SELECT 1 FROM approved_items ai WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED'
+         EXISTS(SELECT 1 FROM approved_items ai WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED' AND ${certifiedSupplySql('ai')}
                   AND (${lifecycleSqlFor('FULL_MOCK', undefined, 'STUDENT')} OR EXISTS (SELECT 1 FROM exam_definitions d WHERE d.id = $2 AND NOT ${studentAudienceDefinitionSql('d')}))) AS has_mock_items,
          EXISTS(SELECT 1 FROM exam_definitions d WHERE d.id = $2 AND NOT ${studentAudienceDefinitionSql('d')}) AS technical`,
       // QB-0: a Student exam's bank never counts DEV fixtures; a technical / internal exam is an engine demo (fixtures count).

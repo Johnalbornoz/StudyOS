@@ -7,6 +7,7 @@
  * read the latest snapshot row -- never recompute coverage on Start.
  */
 import { constraintsFromJson, itemDimensionValues } from '../slot-constraints';
+import { certifiedSupplySql } from '@/lib/exam-bank/delivery-scope';
 import { db } from '@/lib/db';
 import { examItemFromApproved, examItemMarks } from '../items';
 import { ComponentDefinitionSchema } from '../component-definition';
@@ -117,7 +118,7 @@ export async function loadVersionHealthInputs(examVersionId: string): Promise<Ve
           `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.status, ai.bank_lifecycle_status, ai.difficulty_index, ai.template_fingerprint, ai.semantic_fingerprint,
                   ai.content_origin, ai.calibration_confidence, ai.bank_item_id, ai.usage_eligibility, ai.exam_alignment, ai.validated_difficulty, qi.provenance, qi.retired_at, qi.current_version_id
              FROM approved_items ai LEFT JOIN question_bank_items qi ON qi.id = ai.bank_item_id
-            WHERE ai.learning_objective_id = ANY($1::uuid[])`,
+            WHERE ai.learning_objective_id = ANY($1::uuid[]) AND ${certifiedSupplySql('ai')}`,
           [objectiveIds]
         )
       ).rows

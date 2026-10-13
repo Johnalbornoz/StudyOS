@@ -33,6 +33,7 @@ import { getObjectiveTarget } from '@/lib/assessment/blueprint.service';
 import { listComponentsForVersion } from '@/lib/assessment/component.service';
 import { recordSimulationItemResponse } from './scoring.service';
 import { sourceExamItem, type ItemUnavailableReason } from '@/lib/exam-core/item-sourcing.service';
+import { certifiedItemsNoLongerEligible } from '@/lib/exam-bank/delivery-scope';
 import { findAnswerKeyLeak, toExamClientItem, type ExamClientItem } from '@/lib/exam-core/items';
 import { structuredAnswerProblem } from '@/lib/exam-core/item-grading';
 import { portfolioAnswerProblem } from '@/lib/exam-core/submissions/submission.service';
@@ -353,6 +354,15 @@ export async function getNextSimulationItem(actorUserId: string, attemptId: stri
       }
       nav.items[String(index)] = state;
       write = true;
+    } else if (state.status === 'DELIVERED' && state.item?.exam.approvedItemId) {
+      // Track B: a held item is checked again at every retrieval. A Certified Exam Bank item that stopped being
+      // eligible before it was answered is withdrawn; nothing is generated in its place.
+      const stale = await certifiedItemsNoLongerEligible([state.item.exam.approvedItemId]);
+      if (stale.length > 0) {
+        state = { status: 'UNAVAILABLE', unavailableReason: 'CERTIFIED_ITEM_NO_LONGER_ELIGIBLE', ctx: state.ctx };
+        nav.items[String(index)] = state;
+        write = true;
+      }
     }
 
     const view = contextView(loaded, nowMs);

@@ -25,10 +25,12 @@ import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/studen
 import { generatePracticeQuestions } from '@/services/quiz-generation.service';
 import { ComponentDefinitionSchema, componentDefinitionForAI } from './component-definition';
 import { examItemFromApproved, examItemFromGenerated, examItemMarks, validateExamItemStructure, type ExamItem } from './items';
+import { certifiedSupplySql } from '@/lib/exam-bank/delivery-scope';
 import { lifecycleSqlFor } from './question-bank/lifecycle';
 import { contentAudienceFor, examAudienceOf, type ContentAudience } from './audience';
 
-export type ItemUnavailableReason = 'NO_CURRICULUM_MAPPING' | 'CONCEPT_NOT_MATCHED' | 'NO_ITEM_GENERATED';
+/** CERTIFIED_ITEM_NO_LONGER_ELIGIBLE: a held Certified Exam Bank item stopped being eligible (revoked, quarantined, retired) before it was answered. */
+export type ItemUnavailableReason = 'NO_CURRICULUM_MAPPING' | 'CONCEPT_NOT_MATCHED' | 'NO_ITEM_GENERATED' | 'CERTIFIED_ITEM_NO_LONGER_ELIGIBLE';
 
 export interface ItemSourcingTarget {
   learningObjectiveId: string;
@@ -62,7 +64,7 @@ export async function selectApprovedBankItem(params: {
             EXISTS (SELECT 1 FROM exam_item_usage u WHERE u.approved_item_id = ai.id AND u.student_id = $4::uuid) AS seen,
             (SELECT count(DISTINCT u.student_id) FROM exam_item_usage u WHERE u.approved_item_id = ai.id)::int AS exposure
        FROM approved_items ai
-      WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('PRACTICE', undefined, params.contentAudience ?? 'STUDENT')}
+      WHERE ai.learning_objective_id = $1 AND ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('PRACTICE', undefined, params.contentAudience ?? 'STUDENT')} AND ${certifiedSupplySql('ai')}
         AND ($2::text IS NULL OR ai.question_type = $2)
         AND NOT (ai.id = ANY($3::uuid[]))`,
     [params.target.learningObjectiveId, params.target.questionType, params.excludeApprovedItemIds, params.studentId ?? null]

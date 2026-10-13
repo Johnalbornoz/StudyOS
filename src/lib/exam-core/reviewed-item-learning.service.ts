@@ -15,6 +15,7 @@
 import { db, type DbExecutor } from '@/lib/db';
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { examItemFromApproved } from './items';
+import { certifiedSupplySql } from '@/lib/exam-bank/delivery-scope';
 import { lifecycleSqlFor } from './question-bank/lifecycle';
 
 export interface ReviewedItemRow {
@@ -37,7 +38,7 @@ export async function loadReviewedLearningQuestions(approvedItemIds: readonly st
   const out = new Map<string, GeneratedQuestion>();
   if (approvedItemIds.length === 0) return out;
   const r = await client.query(
-    `SELECT ai.id, ai.learning_objective_id, ai.content FROM approved_items ai WHERE ai.id = ANY($1::uuid[]) AND ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('PRACTICE', undefined, 'STUDENT')}`,
+    `SELECT ai.id, ai.learning_objective_id, ai.content FROM approved_items ai WHERE ai.id = ANY($1::uuid[]) AND ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('PRACTICE', undefined, 'STUDENT')} AND ${certifiedSupplySql('ai')}`,
     [[...new Set(approvedItemIds)]]
   );
   for (const row of r.rows as ReviewedItemRow[]) {

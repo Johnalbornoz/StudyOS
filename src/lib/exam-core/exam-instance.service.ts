@@ -30,6 +30,7 @@ import { orderTargetsBySection } from '@/lib/simulation/plan.service';
 import { startSimulationAttempt, abandonSimulationAttempt, getSimulationAttempt } from '@/lib/simulation/attempt.service';
 import { createStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import { examItemFromApproved, examItemMarks } from './items';
+import { certifiedItemsNoLongerEligible, certifiedSupplySql } from '@/lib/exam-bank/delivery-scope';
 import { lifecycleSqlFor } from './question-bank/lifecycle';
 import { contentAudienceFor, examAudienceOf, studentAudienceDefinitionSql, type ContentAudience } from './audience';
 import { assessmentSemanticsOf, componentCapabilities } from './fidelity';
@@ -87,7 +88,9 @@ export class ExamInstanceError extends Error {
       | 'MODE_NOT_AVAILABLE'
       | 'COMPONENT_NOT_MOCKABLE'
       // B1-E: a MOCK whose form cannot be verified as a complete (or known-reduced) official form does not start.
-      | 'FIDELITY_NOT_VERIFIABLE',
+      | 'FIDELITY_NOT_VERIFIABLE'
+      // Track B: a Certified Exam Bank item of the frozen form is no longer eligible (revoked, quarantined, retired): the form does not start.
+      | 'EXAM_CONTENT_NO_LONGER_ELIGIBLE',
     detail?: string
   ) {
     super(detail ? `${code}: ${detail}` : code);
@@ -180,7 +183,7 @@ export async function formInputs(examVersionId: string, componentIds: string[], 
   // A Student instance never draws a DEV fixture; only an in-process TECHNICAL_DEMO instance may.
   const poolRows = await db.query(
     `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.difficulty_index, ai.template_fingerprint, ai.semantic_fingerprint, ai.content_origin
-       FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ai.learning_objective_id = ANY($1::uuid[]) AND ${lifecycleSqlFor(use, undefined, audience)}`,
+       FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ai.learning_objective_id = ANY($1::uuid[]) AND ${lifecycleSqlFor(use, undefined, audience)} AND ${certifiedSupplySql('ai')}`,
     [objectiveIds]
   );
   const pool: PoolItem[] = [];
@@ -495,6 +498,9 @@ export async function startExamInstance(instanceId: string, params: { language: 
   if (open.rows[0]) throw new ExamInstanceError('ATTEMPT_IN_PROGRESS', open.rows[0].id);
 
   const form = instance.form ?? (await freezeForm(instance));
+  // Track B: an item is never trusted from the moment its form was frozen. Each certified item is checked again, now.
+  const stale = await certifiedItemsNoLongerEligible(form.slots.map((s) => s.approvedItemId).filter((id): id is string => !!id));
+  if (stale.length > 0) throw new ExamInstanceError('EXAM_CONTENT_NO_LONGER_ELIGIBLE', `${stale.length}/${form.slots.length} items of the frozen form`);
   // B1-E: the stored attempt type is derived here, and only here, from the instance mode and -- for a MOCK --
   // the verified fidelity of its frozen form. Nothing is started for a MOCK of unknown fidelity.
   const decision = await instanceAttemptDecision(instance, form);

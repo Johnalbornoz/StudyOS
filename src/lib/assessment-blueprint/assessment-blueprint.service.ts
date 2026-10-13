@@ -5,6 +5,7 @@
  * Nothing here writes: no evidence, no mastery, no attempt, no assessment. Nothing here is called by a
  * route or by an existing selector -- B2 certifies the engine; enabling it at runtime is a later decision.
  */
+import { certifiedSupplySql } from '@/lib/exam-bank/delivery-scope';
 import { db, type DbExecutor } from '@/lib/db';
 import { loadQuestionCoverage, reviewedExamBankCoverageProvider } from '@/lib/assessment-foundation/question-coverage.service';
 import { coveredConceptIds, type QuestionCoverage } from '@/lib/assessment-foundation/question-coverage';
@@ -163,7 +164,7 @@ export async function solveLearningForStudent(studentId: string, request: Learni
 export async function evaluateExamVersionReadiness(examVersionId: string, client: DbExecutor = db): Promise<FeasibilityReport> {
   const [objectives, items, policy] = await Promise.all([
     client.query(`SELECT DISTINCT t.learning_objective_id FROM blueprint_objective_targets t JOIN assessment_blueprints b ON b.id = t.blueprint_id WHERE b.exam_version_id = $1 AND b.purpose IS NULL ORDER BY 1`, [examVersionId]),
-    client.query(`SELECT ai.id FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.exam_version_id = $1 AND qi.current_version_id = ai.id ORDER BY ai.id`, [examVersionId]),
+    client.query(`SELECT ai.id FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.exam_version_id = $1 AND qi.current_version_id = ai.id AND ${certifiedSupplySql('ai')} ORDER BY ai.id`, [examVersionId]),
     loadEvidenceCountPolicy(client),
   ]);
   const coverages = await loadQuestionCoverage(items.rows.map((r: any) => ({ store: 'REVIEWED_EXAM_BANK' as const, id: r.id as string })));
