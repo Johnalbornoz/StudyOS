@@ -163,7 +163,9 @@ describe('E12: one deterministic migration chain', () => {
       // + QF V5.1 (20261121_1100): construct cores, applicability, adapters, renderers, item-instance lineage. Additive; existing items become LEGACY by column default.
       '20261121_1100_qf51_construct_core_lineage.sql',
       // + Curriculum convergence: Learn curriculum provenance and reviewed concept aliases (20261122_1000 / _1100), additive.
-      '20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql']);
+      '20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql',
+      // + QF V5.2 (20261122_1200): Exam Bank certification, coverage, supply authority. Additive.
+      '20261122_1200_qf52_exam_bank_certification_coverage.sql']);
     expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);
   });
 });

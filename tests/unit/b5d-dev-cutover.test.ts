@@ -227,6 +227,8 @@ describe('B5-D answers in progress', () => {
       '20261122_1000_learner_concept_curriculum_provenance.sql',
       // reviewed concept aliases (one new table, one mapping method; no response model)
       '20261122_1100_canonical_concept_reviewed_aliases.sql',
+      // QF V5.2: Exam Bank certification / coverage / supply authority -- no response model
+      '20261122_1200_qf52_exam_bank_certification_coverage.sql',
     ]);
   });
 

@@ -27,7 +27,10 @@ import {
 import { benchmark } from '../../scripts/operations/qf-v5/human50-benchmark';
 import { testNewSystem } from './qf51-fixtures';
 
+import { createHash } from 'crypto';
 const ROOT = process.cwd();
+/** The QF V5.2 migration as frozen in the QF V5.2 EXAM BANK SOURCE proposal: promoted without a byte changed. */
+const QF52_MIGRATION_SHA256 = '7f25c749eed2a9b8e44891169ad97abaa8c6d3f84862e88aca752f62ea036d6a';
 const read = (rel: string): string => readFileSync(join(ROOT, rel), 'utf8');
 const filesUnder = (rel: string): string[] => readdirSync(join(ROOT, rel), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? filesUnder(`${rel}/${d.name}`) : d.name.endsWith('.ts') ? [`${rel}/${d.name}`] : []));
 const PRODUCTION_FILES = [...filesUnder('src/lib/assessment-instance/v52'), ...filesUnder('src/lib/assessment-instance/library')];
@@ -623,11 +626,12 @@ describe('V5.2 / the run -- artefacts are what the sources produce, and say what
   });
   it('one proposal, in the next free slot (intent 91), outside database/migrations, inserting no row', () => {
     const name = '20261122_1200_qf52_exam_bank_certification_coverage.sql';
-    expect(readdirSync(join(ROOT, 'docs/exams/question-factory/v52/proposed'))).toEqual([name]);
+    expect(existsSync(join(ROOT, 'docs/exams/question-factory/v52/proposed'))).toBe(false);
+    expect(createHash('sha256').update(read(`database/migrations/${name}`)).digest('hex')).toBe(QF52_MIGRATION_SHA256);
     expect(existsSync(join(ROOT, 'docs/exams/question-factory/step4b/proposed'))).toBe(false);
-    // Track B: the only 20261122 migrations are the two of the curriculum line; the proposal is not among them
-    expect(readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.startsWith('20261122')).sort()).toEqual(['20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql']);
-    const sql = read(`docs/exams/question-factory/v52/proposed/${name}`);
+    // Track B: proven on throwaway Postgres in both apply orders (scripts/track-b-exam-bank-migration-proof.sh), then promoted, byte-identical, to the next free slot
+    expect(readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.startsWith('20261122')).sort()).toEqual(['20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql', '20261122_1200_qf52_exam_bank_certification_coverage.sql']);
+    const sql = read(`database/migrations/${name}`);
     // 20261122_1100 belongs to the reviewed-aliases migration of the curriculum line: the proposal does not take it
     expect(sql).toMatch(/91\s+20261122_1200_qf52_exam_bank_certification_coverage\.sql/); expect(sql).toMatch(/90\s+20261122_1100_canonical_concept_reviewed_aliases\.sql/);
     expect(sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')).not.toMatch(/\bINSERT\s+INTO\b|\bDROP\s+(TABLE|COLUMN)\b/i);

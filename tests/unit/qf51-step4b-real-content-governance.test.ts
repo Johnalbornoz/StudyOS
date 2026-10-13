@@ -26,7 +26,10 @@ import { methodNeutralRubric, QUADRATIC_SOLVE_STRATEGY, QUADRATIC_SUPPORTED_REAS
 import { mathPocFamilyOf } from '@/lib/exam-core/question-bank/task-families/math-poc-families';
 import { mathPocFamilyEa1aOf } from '@/lib/exam-core/question-bank/task-families/math-poc-families-ea1a';
 
+import { createHash } from 'crypto';
 const ROOT = process.cwd();
+/** The QF V5.2 migration as frozen in the QF V5.2 EXAM BANK SOURCE proposal: promoted without a byte changed. */
+const QF52_MIGRATION_SHA256 = '7f25c749eed2a9b8e44891169ad97abaa8c6d3f84862e88aca752f62ea036d6a';
 const BANDS = ['FOUNDATIONAL', 'STANDARD', 'CHALLENGE'] as const;
 const read = (rel: string): string => readFileSync(join(ROOT, rel), 'utf8');
 const pilot = preparePilotInstances();
@@ -475,10 +478,11 @@ describe('Step 4B / what this step did NOT do', () => {
     // one proposal for the intent: the Step 4B file was renamed and extended into the V5.2 one
     const name = '20261122_1200_qf52_exam_bank_certification_coverage.sql';
     expect(existsSync(join(ROOT, 'docs/exams/question-factory/step4b/proposed'))).toBe(false);
-    expect(readdirSync(join(ROOT, 'docs/exams/question-factory/v52/proposed'))).toEqual([name]);
-    // Track B: the only 20261122 migrations are the two of the curriculum line; the proposal is not among them
-    expect(readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.startsWith('20261122')).sort()).toEqual(['20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql']);
-    const sql = read(`docs/exams/question-factory/v52/proposed/${name}`).split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+    expect(existsSync(join(ROOT, 'docs/exams/question-factory/v52/proposed'))).toBe(false);
+    expect(createHash('sha256').update(read(`database/migrations/${name}`)).digest('hex')).toBe(QF52_MIGRATION_SHA256);
+    // Track B: proven on throwaway Postgres in both apply orders (scripts/track-b-exam-bank-migration-proof.sh), then promoted, byte-identical, to the next free slot
+    expect(readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.startsWith('20261122')).sort()).toEqual(['20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql', '20261122_1200_qf52_exam_bank_certification_coverage.sql']);
+    const sql = read(`database/migrations/${name}`).split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
     expect(sql).not.toMatch(/\bINSERT\s+INTO\b/i);
     expect(sql).not.toMatch(/\bDROP\s+(TABLE|COLUMN)\b/i);
     // the per-item review rule is kept: the replaced guard still raises the same refusal
@@ -529,8 +533,8 @@ describe('Step 4B / recorded decisions -- the reviewer\'s eleven approvals, offl
     expect(file).toMatchObject({ storage: 'OFFLINE_FILE_ONLY', persistedInAnyDatabase: false });
     // the slice as shipped still reads no record: nothing is certified until records are persisted and instances materialised
     expect(pilot.instances.every((i) => !i.studentEligible)).toBe(true);
-    // Track B: the only 20261122 migrations are the two of the curriculum line; the proposal is not among them
-    expect(readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.startsWith('20261122')).sort()).toEqual(['20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql']);
+    // Track B: proven on throwaway Postgres in both apply orders (scripts/track-b-exam-bank-migration-proof.sh), then promoted, byte-identical, to the next free slot
+    expect(readdirSync(join(ROOT, 'database/migrations')).filter((f) => f.startsWith('20261122')).sort()).toEqual(['20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql', '20261122_1200_qf52_exam_bank_certification_coverage.sql']);
     for (const c of PILOT_CORES) expect(c.lifecycle).toBe('UNDER_REVIEW');
   });
   it('read with these records, all 27 instances inherit their certification: 6 LOW, 6 MEDIUM, 6 HIGH supply candidates', () => {
