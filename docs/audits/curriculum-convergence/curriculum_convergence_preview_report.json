@@ -1,6 +1,6 @@
 {
  "db": "53d158d5811e7ee0",
- "mode": "APPLIED",
+ "mode": "AUDIT_ONLY",
  "nodeTypes": {
   "before": {
    "DOMAIN": 17,
@@ -29,110 +29,19 @@
    "TOPIC": 84
   }
  },
- "paa": {
-  "created": {
-   "sections": 0,
-   "domains": 0,
-   "topics": 0
-  },
-  "existing": {
-   "sections": 4,
-   "domains": 17,
-   "topics": 84
-  },
-  "state": {
-   "sections": 4,
-   "domains": 17,
-   "topics": 84,
-   "topicsByAuthority": {
-    "OFFICIAL": 83,
-    "STUDYUS_POLICY": 1
-   }
-  },
-  "objectivesMoved": 0
+ "paa": "SKIPPED",
+ "paaCertifiedConcepts": {
+  "expected": 61,
+  "before": 61,
+  "after": 61,
+  "created": [],
+  "labelsWritten": 0,
+  "mappingsPublished": 0,
+  "mappingsRetired": 0,
+  "mappingsAlreadyRetired": 0
  },
- "aice": {
-  "created": 0,
-  "existing": 89,
-  "structures": [
-   {
-    "syllabusCode": "9702",
-    "level": "AS",
-    "structureVersionId": "dd89989e-804e-456e-ad48-3ad19676758a",
-    "topicsBefore": 12,
-    "topicsAfter": 12,
-    "created": 0,
-    "existing": 12
-   },
-   {
-    "syllabusCode": "9702",
-    "level": "A",
-    "structureVersionId": "2ba44c2e-95fb-49f8-b995-e39c4d95167b",
-    "topicsBefore": 27,
-    "topicsAfter": 27,
-    "created": 0,
-    "existing": 27
-   },
-   {
-    "syllabusCode": "9700",
-    "level": "AS",
-    "structureVersionId": "5e3868a2-cf6b-48d9-bb44-73275a9e144c",
-    "topicsBefore": 12,
-    "topicsAfter": 12,
-    "created": 0,
-    "existing": 12
-   },
-   {
-    "syllabusCode": "9700",
-    "level": "A",
-    "structureVersionId": "4d49e51b-7008-4716-81f3-3bf5308572be",
-    "topicsBefore": 21,
-    "topicsAfter": 21,
-    "created": 0,
-    "existing": 21
-   },
-   {
-    "syllabusCode": "9708",
-    "level": "AS",
-    "structureVersionId": "2502887b-d96b-499f-ba1b-460789756a6a",
-    "topicsBefore": 6,
-    "topicsAfter": 6,
-    "created": 0,
-    "existing": 6
-   },
-   {
-    "syllabusCode": "9708",
-    "level": "A",
-    "structureVersionId": "11dc4079-c716-4b0b-b446-4269cbdf6bed",
-    "topicsBefore": 11,
-    "topicsAfter": 11,
-    "created": 0,
-    "existing": 11
-   }
-  ],
-  "sourceGaps": [
-   {
-    "syllabusCode": "9709",
-    "status": "CURRICULUM_DATA_NOT_READY",
-    "gap": "the governed source lists 6 of 7 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
-   },
-   {
-    "syllabusCode": "9701",
-    "status": "CURRICULUM_DATA_NOT_READY",
-    "gap": "the governed source lists 8 of 10 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
-   },
-   {
-    "syllabusCode": "9239",
-    "status": "CURRICULUM_DATA_NOT_READY",
-    "gap": "the governed source lists 3 of 3 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
-   },
-   {
-    "syllabusCode": "9093",
-    "status": "CURRICULUM_DATA_NOT_READY",
-    "gap": "the governed source lists 4 of 4 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
-   }
-  ]
- },
+ "aliases": "SKIPPED",
+ "aice": "SKIPPED",
  "canonicalSubjects": {
   "unmappedBefore": 48,
   "mapped": [],
@@ -197,16 +106,22 @@
     "detail": "structural-only, non-academic component or legacy / retired versions"
    },
    {
+    "gate": "INVALID_CONCEPT_MAPPINGS",
+    "kind": "REVIEW",
+    "count": 1,
+    "detail": "academic subjects with a PUBLISHED mapping into a canonical subject other than their own (reviewed cross-subject content; listed, not changed)"
+   },
+   {
+    "gate": "LEARN_PROVENANCE",
+    "kind": "INFO",
+    "count": 1,
+    "detail": "Learn concepts with a recorded curriculum lineage"
+   },
+   {
     "gate": "STUDENT_CURRICULUM_NOT_READY",
     "kind": "NOT_READY_FAIL_CLOSED",
     "count": 1,
     "detail": "academic subjects Students selected whose curriculum is not loaded: Learn shows it as not ready, never another curriculum"
-   },
-   {
-    "gate": "UNRESOLVED_STUDENT_CONCEPTS",
-    "kind": "VALID_NOT_APPLICABLE",
-    "count": 1,
-    "detail": "personal concepts: the catalogue holds no canonical concept with that label in that subject (nothing to resolve to; none is fabricated)"
    }
   ]
  },

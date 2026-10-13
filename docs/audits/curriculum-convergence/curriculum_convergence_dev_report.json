@@ -6,7 +6,7 @@
    "DOMAIN": 17,
    "EXAM_SECTION": 282,
    "SECTION": 4,
-   "TOPIC": 85
+   "TOPIC": 174
   },
   "after": {
    "DOMAIN": 17,
@@ -51,63 +51,80 @@
   },
   "objectivesMoved": 0
  },
+ "paaCertifiedConcepts": {
+  "expected": 61,
+  "before": 61,
+  "after": 61,
+  "created": [],
+  "labelsWritten": 0,
+  "mappingsPublished": 0,
+  "mappingsRetired": 0,
+  "mappingsAlreadyRetired": 5
+ },
+ "aliases": {
+  "created": [
+   "Matemáticas / \"Exponenciación\" -> math.num.powers-scientific-notation"
+  ],
+  "existing": [],
+  "problems": []
+ },
  "aice": {
-  "created": 89,
-  "existing": 0,
+  "created": 0,
+  "existing": 89,
   "structures": [
    {
     "syllabusCode": "9702",
     "level": "AS",
     "structureVersionId": "fc72b53d-6699-4e72-bc45-ba78fc377969",
-    "topicsBefore": 0,
+    "topicsBefore": 12,
     "topicsAfter": 12,
-    "created": 12,
-    "existing": 0
+    "created": 0,
+    "existing": 12
    },
    {
     "syllabusCode": "9702",
     "level": "A",
     "structureVersionId": "41b2a471-ce0e-4824-9f4c-3c77ee34e78e",
-    "topicsBefore": 0,
+    "topicsBefore": 27,
     "topicsAfter": 27,
-    "created": 27,
-    "existing": 0
+    "created": 0,
+    "existing": 27
    },
    {
     "syllabusCode": "9700",
     "level": "AS",
     "structureVersionId": "2ed1f8c0-1601-4d96-9893-999508f8cf42",
-    "topicsBefore": 0,
+    "topicsBefore": 12,
     "topicsAfter": 12,
-    "created": 12,
-    "existing": 0
+    "created": 0,
+    "existing": 12
    },
    {
     "syllabusCode": "9700",
     "level": "A",
     "structureVersionId": "af41e290-8aa6-4517-87a6-b9b0c450fc6f",
-    "topicsBefore": 0,
+    "topicsBefore": 21,
     "topicsAfter": 21,
-    "created": 21,
-    "existing": 0
+    "created": 0,
+    "existing": 21
    },
    {
     "syllabusCode": "9708",
     "level": "AS",
     "structureVersionId": "df1e2af9-2d61-42d5-8524-ed75528c5465",
-    "topicsBefore": 0,
+    "topicsBefore": 6,
     "topicsAfter": 6,
-    "created": 6,
-    "existing": 0
+    "created": 0,
+    "existing": 6
    },
    {
     "syllabusCode": "9708",
     "level": "A",
     "structureVersionId": "90d6162d-822d-40fc-9331-f35421d45835",
-    "topicsBefore": 0,
+    "topicsBefore": 11,
     "topicsAfter": 11,
-    "created": 11,
-    "existing": 0
+    "created": 0,
+    "existing": 11
    }
   ],
   "sourceGaps": [
@@ -134,18 +151,13 @@
   ]
  },
  "canonicalSubjects": {
-  "unmappedBefore": 56,
-  "mapped": [
-   "PAA · Inglés -> English (MAPPING_EVIDENCE)",
-   "PAA · Lectura -> Lectura crítica (MAPPING_EVIDENCE)",
-   "PISA · Lectura -> Lectura crítica (MAPPING_EVIDENCE)"
-  ],
+  "unmappedBefore": 53,
+  "mapped": [],
   "unmappedAfter": 53,
   "classificationBefore": {
    "NEEDS_HUMAN_DECISION": 48,
    "NOT_APPLICABLE": 2,
-   "DUPLICATE_LEGACY": 3,
-   "MAPPABLE_DETERMINISTICALLY": 3
+   "DUPLICATE_LEGACY": 3
   },
   "classificationAfter": {
    "NEEDS_HUMAN_DECISION": 48,
@@ -164,7 +176,7 @@
   }
  },
  "gates": {
-  "brokenBefore": 3,
+  "brokenBefore": 0,
   "brokenAfter": 0,
   "findings": [
    {

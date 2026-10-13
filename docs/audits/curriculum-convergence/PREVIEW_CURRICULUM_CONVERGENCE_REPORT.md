@@ -128,3 +128,81 @@ Backup before the Preview write: `studyos-dev-data/preview-curriculum-convergenc
 - `preparation.service.ts` still picks, inside the Student's chosen exam objective, the exam version with the most
   practice-ready sections. It never crosses subjects; it was left as is and should be reviewed.
 - Neon project / branch names were not readable from this session (endpoint and fingerprint are recorded).
+
+---
+
+# Addendum — B7 closed, new immutable Preview (2026-10-12, second block)
+
+Code SHA `8739353`. Deployment `https://study-cyg8iahbk-study-so.vercel.app` (`dpl_A4y3CN8RFAwZKrqo59HQcFHHWGoJ`),
+`/api/version` = `8739353`, DB ledger 88 = 87 files + baseline, 0 pending, 0 drift.
+The earlier candidate `c1d04f9` (`study-hvhhswhob`) is superseded: closing B7 needed code (alias table, resolver),
+so the SHA changed. Stage alias not touched by this work (it still serves `055a096`, moved externally).
+
+## 1. Certified PAA concept catalogue
+
+Source: the Q1-C.1 catalogue already in the repository (`dev-learning-catalog.ts`, `objective-learning-links.ts`,
+`canonical-concept-labels.ts`); stable ids from `PAA_F_DATA_FOUNDATION.md`, now also data in
+`src/lib/curriculum/paa/paa-certified-concepts.ts` (61 rows, compared with the record by a test).
+`canonical_concepts` has no stable-id column (F-ARCH): a certified concept is found by canonical subject + name.
+
+| | Preview before | Preview after | DEV (F-DATA record, 2026-10-10) |
+|---|---|---|---|
+| Certified concepts present | 28 / 61 | 61 / 61 | 61 / 61 |
+| Canonical concepts | 135 | 168 (+33) | 135 → 168 (+33) |
+| Labels written | — | 80 (66 new + 14 updated) | 66 inserted, 14 updated |
+| PAA objective → concept links published | — | +36 | +36 pairs |
+| Replaced links retired | — | 5 | 5 |
+| Published mappings | 313 | 344 | — |
+
+Same writers, same values as the DEV steps, restricted to `paa.*` objective codes. Throwaway: the catalogue was
+unloaded (41 concepts, 40 mappings) and reloaded by the runner; concepts, PAA links and aliases identical to the
+seeded state; second run creates nothing. DEV: loader is a no-op (61 / 61 already).
+
+## 2. Reviewed alias
+
+No alias mechanism existed. Added migration `20261122_1100`: table `canonical_concept_aliases` (concept, canonical
+subject, language, label, stable id, rationale, review reference, reviewed at, version, status; one ACTIVE alias per
+subject + label; immutable except retirement), `mapping_method` value `REVIEWED_ALIAS`, and
+`concept_catalog_mapping.resolved_alias_id`.
+
+Alias created: `Exponenciación` (es, Matemáticas) → `math.num.powers-scientific-notation`
+(Matemáticas / "Potencias, exponentes enteros y notación científica"), version 1, review reference: John Albornoz,
+product decision 2026-10-12. Governed list: `src/lib/catalog/reviewed-concept-aliases.ts`.
+
+## 3. Resolution policy
+
+`catalog-resolution.ts`: inside the canonical subject with the Student subject's name — canonical name (A), else one
+reviewed alias (B), else UNRESOLVED; several candidates are AMBIGUOUS. Equality only. The integrity gate now reports
+`BROKEN_RESOLUTION` (the catalogue resolves the label and the row is still UNRESOLVED) apart from `PERSONAL_UNMAPPED`.
+
+Proven with the real services (throwaway and DEV, 43/43): "Exponenciación" in Matemáticas → the certified concept by
+`REVIEWED_ALIAS`; an unrelated label, a similar label ("Exponenciacion y potencias") and the same label in another
+subject (Física) do not resolve.
+
+## 4. Real Preview Student
+
+`scripts/operations/curriculum-reresolve-student-concepts.ts`, dry run then `--write`:
+`UNRESOLVED 1 → 0`. Concept `87f1210f…` is `MATCHED` by `REVIEWED_ALIAS` to "Potencias, exponentes enteros y notación
+científica", with lineage PAA · Matemáticas · V2.1 PAA revisada · node "Matemáticas" (EXAM_SECTION) · objective
+`paa.mat.aritmetica`. The step verified that students, subjects, concepts, labels, mastery, plan entries and selected
+subjects were unchanged. A second run changes nothing.
+
+A second `students` row (`4e3271b8…`) appeared on Preview during this block; it was not created by this work.
+
+## 5. Invariants re-run on Preview
+
+Integrity gates: 0 broken. Read-only scenarios 24/24 (11 subjects without mappings never replaced by a richer one;
+the Student resolves only to a subject they explicitly have). PAA nodes SECTION 4 / DOMAIN 17 / TOPIC 84 /
+EXAM_SECTION 4; Cambridge TOPIC 89; IB 0 (`CURRICULUM_DATA_NOT_READY`). Unmapped academic subjects 48, all classified.
+
+## Validation
+
+563 test files / 10210 tests PASS · typecheck clean · build OK · `git diff --check` clean · ephemeral certification
+PASS (incl. rollback and re-apply of both migrations) · provider calls 0.
+
+Backup before this block's Preview write:
+`studyos-dev-data/preview-curriculum-convergence-b7-backup-20261013T003534Z.sql`; restore point 2026-10-13T00:35:47Z.
+
+## Still open
+
+Authenticated Preview smoke on `study-cyg8iahbk`: no Student session in the browser; sign-in is an operator step.

@@ -1,18 +1,18 @@
 system,subject,level,structure_version,topics_before,topics_after,objectives,concept_mappings,unresolved_source_gaps
-Cambridge AICE Diploma,Biology,A Level,9700 A Level,0,21,11,11,topic -> objective / concept association: not in the governed source
-Cambridge AICE Diploma,Biology,AS Level,9700 AS Level,0,12,6,6,topic -> objective / concept association: not in the governed source
+Cambridge AICE Diploma,Biology,A Level,9700 A Level,21,21,11,11,topic -> objective / concept association: not in the governed source
+Cambridge AICE Diploma,Biology,AS Level,9700 AS Level,12,12,6,6,topic -> objective / concept association: not in the governed source
 Cambridge AICE Diploma,Chemistry,A Level,9701 A Level,0,0,11,11,"the governed source lists 8 of 10 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
 Cambridge AICE Diploma,Chemistry,AS Level,9701 AS Level,0,0,6,6,"the governed source lists 8 of 10 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
-Cambridge AICE Diploma,Economics,A Level,9708 A Level,0,11,12,12,topic -> objective / concept association: not in the governed source
-Cambridge AICE Diploma,Economics,AS Level,9708 AS Level,0,6,6,6,topic -> objective / concept association: not in the governed source
+Cambridge AICE Diploma,Economics,A Level,9708 A Level,11,11,12,12,topic -> objective / concept association: not in the governed source
+Cambridge AICE Diploma,Economics,AS Level,9708 AS Level,6,6,6,6,topic -> objective / concept association: not in the governed source
 Cambridge AICE Diploma,English Language,A Level,9093 A Level,0,0,8,8,"the governed source lists 4 of 4 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
 Cambridge AICE Diploma,English Language,AS Level,9093 AS Level,0,0,4,4,"the governed source lists 4 of 4 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
 Cambridge AICE Diploma,Global Perspectives & Research,A Level,9239 A Level,0,0,6,6,"the governed source lists 3 of 3 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
 Cambridge AICE Diploma,Global Perspectives & Research,AS Level,9239 AS Level,0,0,5,5,"the governed source lists 3 of 3 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
 Cambridge AICE Diploma,Mathematics,A Level,9709 A Level,0,0,17,17,"the governed source lists 6 of 7 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
 Cambridge AICE Diploma,Mathematics,AS Level,9709 AS Level,0,0,14,14,"the governed source lists 6 of 7 entries as compound text (a paper / section with its topics inside one string), not at topic granularity"
-Cambridge AICE Diploma,Physics,A Level,9702 A Level,0,27,11,12,topic -> objective / concept association: not in the governed source
-Cambridge AICE Diploma,Physics,AS Level,9702 AS Level,0,12,6,7,topic -> objective / concept association: not in the governed source
+Cambridge AICE Diploma,Physics,A Level,9702 A Level,27,27,11,12,topic -> objective / concept association: not in the governed source
+Cambridge AICE Diploma,Physics,AS Level,9702 AS Level,12,12,6,7,topic -> objective / concept association: not in the governed source
 Cambridge Advanced,English General Paper,AS Level,DEV-CERT v1,0,0,1,0,CURRICULUM_DATA_NOT_READY: no governed Topic source for this syllabus
 Cambridge Advanced,Mathematics,AS Level,DEV-CERT v1,0,0,2,0,CURRICULUM_DATA_NOT_READY: no governed Topic source for this syllabus
 Cambridge IGCSE,Mathematics (0580),Extended,V2 0580 2025-2027,0,0,8,0,CURRICULUM_DATA_NOT_READY: no governed Topic source for this syllabus

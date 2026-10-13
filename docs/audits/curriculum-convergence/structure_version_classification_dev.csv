@@ -1,18 +1,18 @@
 programme,subject,level,version,status,config_key,nodes,topics_before,topics_after,objectives,concept_mappings,classification,structure_version_id
-Cambridge AICE Diploma,Biology,A Level,9700 A Level,PUBLISHED,v2.aice.9700-a,26,0,21,11,11,HAS_CONCEPT_MAPPINGS,af41e290-8aa6-4517-87a6-b9b0c450fc6f
-Cambridge AICE Diploma,Biology,AS Level,9700 AS Level,PUBLISHED,v2.aice.9700-as,15,0,12,6,6,HAS_CONCEPT_MAPPINGS,2ed1f8c0-1601-4d96-9893-999508f8cf42
+Cambridge AICE Diploma,Biology,A Level,9700 A Level,PUBLISHED,v2.aice.9700-a,26,21,21,11,11,HAS_CONCEPT_MAPPINGS,af41e290-8aa6-4517-87a6-b9b0c450fc6f
+Cambridge AICE Diploma,Biology,AS Level,9700 AS Level,PUBLISHED,v2.aice.9700-as,15,12,12,6,6,HAS_CONCEPT_MAPPINGS,2ed1f8c0-1601-4d96-9893-999508f8cf42
 Cambridge AICE Diploma,Chemistry,A Level,9701 A Level,PUBLISHED,v2.aice.9701-a,5,0,0,11,11,HAS_CONCEPT_MAPPINGS,5ce39925-3420-477e-a58d-1c30e4249011
 Cambridge AICE Diploma,Chemistry,AS Level,9701 AS Level,PUBLISHED,v2.aice.9701-as,3,0,0,6,6,HAS_CONCEPT_MAPPINGS,08e666c2-9f3a-4a3d-a29e-09dda005ef42
-Cambridge AICE Diploma,Economics,A Level,9708 A Level,PUBLISHED,v2.aice.9708-a,15,0,11,12,12,HAS_CONCEPT_MAPPINGS,90d6162d-822d-40fc-9331-f35421d45835
-Cambridge AICE Diploma,Economics,AS Level,9708 AS Level,PUBLISHED,v2.aice.9708-as,8,0,6,6,6,HAS_CONCEPT_MAPPINGS,df1e2af9-2d61-42d5-8524-ed75528c5465
+Cambridge AICE Diploma,Economics,A Level,9708 A Level,PUBLISHED,v2.aice.9708-a,15,11,11,12,12,HAS_CONCEPT_MAPPINGS,90d6162d-822d-40fc-9331-f35421d45835
+Cambridge AICE Diploma,Economics,AS Level,9708 AS Level,PUBLISHED,v2.aice.9708-as,8,6,6,6,6,HAS_CONCEPT_MAPPINGS,df1e2af9-2d61-42d5-8524-ed75528c5465
 Cambridge AICE Diploma,English Language,A Level,9093 A Level,PUBLISHED,v2.aice.9093-a,4,0,0,8,8,HAS_CONCEPT_MAPPINGS,4563e033-b022-4719-a31b-d98f5f7544f5
 Cambridge AICE Diploma,English Language,AS Level,9093 AS Level,PUBLISHED,v2.aice.9093-as,2,0,0,4,4,HAS_CONCEPT_MAPPINGS,eb3e9802-26f5-4956-a4ed-5598f050df46
 Cambridge AICE Diploma,Global Perspectives & Research,A Level,9239 A Level,PUBLISHED,v2.aice.9239-a,4,0,0,6,6,HAS_CONCEPT_MAPPINGS,c25a463e-de32-4d7d-b712-ecb972119c3a
 Cambridge AICE Diploma,Global Perspectives & Research,AS Level,9239 AS Level,PUBLISHED,v2.aice.9239-as,3,0,0,5,5,HAS_CONCEPT_MAPPINGS,a4be23e2-fe0c-4e80-aa80-c02b7d40c503
 Cambridge AICE Diploma,Mathematics,A Level,9709 A Level,PUBLISHED,v2.aice.9709-a,5,0,0,17,17,HAS_CONCEPT_MAPPINGS,d80cd553-128d-4712-94c5-4f8c9a932f84
 Cambridge AICE Diploma,Mathematics,AS Level,9709 AS Level,PUBLISHED,v2.aice.9709-as,4,0,0,14,14,HAS_CONCEPT_MAPPINGS,e18b4510-24bf-4a36-98f0-145911bcfe24
-Cambridge AICE Diploma,Physics,A Level,9702 A Level,PUBLISHED,v2.aice.9702-a,32,0,27,11,12,HAS_CONCEPT_MAPPINGS,41b2a471-ce0e-4824-9f4c-3c77ee34e78e
-Cambridge AICE Diploma,Physics,AS Level,9702 AS Level,PUBLISHED,v2.aice.9702-as,15,0,12,6,7,HAS_CONCEPT_MAPPINGS,fc72b53d-6699-4e72-bc45-ba78fc377969
+Cambridge AICE Diploma,Physics,A Level,9702 A Level,PUBLISHED,v2.aice.9702-a,32,27,27,11,12,HAS_CONCEPT_MAPPINGS,41b2a471-ce0e-4824-9f4c-3c77ee34e78e
+Cambridge AICE Diploma,Physics,AS Level,9702 AS Level,PUBLISHED,v2.aice.9702-as,15,12,12,6,7,HAS_CONCEPT_MAPPINGS,fc72b53d-6699-4e72-bc45-ba78fc377969
 Cambridge Advanced,English General Paper,AS Level,DEV-CERT v1,PUBLISHED,dev-cert.aice.as-english-general-paper,1,0,0,1,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,b67b8e33-8582-4a36-9323-41db7c7c5aeb
 Cambridge Advanced,Mathematics,AS Level,DEV-CERT v1,PUBLISHED,dev-cert.aice.as-math,1,0,0,2,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,5f182fcc-04da-4cef-ab3f-99739e7e6cd5
 Cambridge IGCSE,Mathematics (0580),Extended,V2 0580 2025-2027,PUBLISHED,v2.cambridge.0580-extended,2,0,0,8,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,bd24ee83-77a6-4f28-a66c-d178ccc3f4cb
