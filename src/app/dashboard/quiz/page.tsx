@@ -49,6 +49,7 @@ import { resolveResultMilestone } from '@/lib/experience/result-milestone';
 import { isMathCapableContext } from '@/lib/lx/math-response-contract';
 import { deserializeResponseDocument, isEmptyResponseDocument, toGraderText } from '@/lib/lx/response-document';
 import { InlineAlert } from '@/components/ui/InlineAlert';
+import { studentRuntimeMayGenerateQuestions } from '@/lib/student-runtime/question-supply-policy';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SessionHeader } from '@/components/learning/SessionHeader';
 import {
@@ -1707,7 +1708,7 @@ function QuizPageContent() {
             onChange={(e) => setMaxQuestions(Number(e.target.value))}
             style={{ width: '100%' }}
           />
-          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>{t['quiz.maxQuestionsHint']}</p>
+          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>{t[studentRuntimeMayGenerateQuestions(quizMode) ? 'quiz.maxQuestionsHint' : 'quiz.maxQuestionsHintExam']}</p>
 
           {allowsTopicSelection && subjectConcepts.length > 0 && (
             <div style={{ marginTop: 'var(--space-6)' }}>

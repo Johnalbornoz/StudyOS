@@ -344,7 +344,7 @@ export type MessageKey =
   | 'cognitive.resultCorrect' | 'cognitive.resultPartial' | 'cognitive.resultIncorrect'
   // Phase 7 Step 7F1: transfer-scoped, non-verdict copy for a not-correct stretch attempt.
   | 'cognitive.transferResultIncorrect' | 'cognitive.transferAttemptNote'
-  | 'quiz.maxQuestionsLabel' | 'quiz.maxQuestionsHint' | 'quiz.startQuiz'
+  | 'quiz.maxQuestionsLabel' | 'quiz.maxQuestionsHint' | 'quiz.maxQuestionsHintExam' | 'quiz.startQuiz'
   | 'quiz.selectAllThatApply' | 'quiz.typeAnswer' | 'quiz.matchInstructions' | 'quiz.orderInstructions' | 'quiz.classifyInstructions'
   | 'multimodal.readAloud' | 'multimodal.stopReading' | 'multimodal.speakAnswer' | 'multimodal.stopRecording'
   | 'multimodal.reviewTranscript' | 'multimodal.useThisAnswer' | 'multimodal.recordAgain' | 'multimodal.discard'
@@ -2443,6 +2443,7 @@ const es: Messages = {
   'cognitive.transferAttemptNote': 'Aplicar una idea en una situación desconocida es difícil: este intento se trata de ese salto y no cambia lo que ya has demostrado que sabes sobre el concepto.',
   'quiz.maxQuestionsLabel': 'Máximo de preguntas',
   'quiz.maxQuestionsHint': 'La IA decide cuántas preguntas generar según el contenido disponible, sin superar este máximo.',
+  'quiz.maxQuestionsHintExam': 'Este simulacro usa solo preguntas certificadas del examen. Nunca tendrá más preguntas que este máximo.',
   'quiz.startQuiz': 'Comenzar',
   'quiz.selectAllThatApply': 'Selecciona todas las que apliquen',
   'quiz.typeAnswer': 'Escribe tu respuesta…',
@@ -4713,6 +4714,7 @@ const en: Messages = {
   'cognitive.transferAttemptNote': 'Applying an idea in an unfamiliar situation is hard — this attempt is about that stretch, and it doesn’t change what you’ve already shown you know about the concept.',
   'quiz.maxQuestionsLabel': 'Maximum questions',
   'quiz.maxQuestionsHint': 'The AI decides how many questions to generate based on the available content, never exceeding this maximum.',
+  'quiz.maxQuestionsHintExam': 'This simulation uses only certified exam questions. It will never have more questions than this maximum.',
   'quiz.startQuiz': 'Start',
   'quiz.selectAllThatApply': 'Select all that apply',
   'quiz.typeAnswer': 'Type your answer…',
@@ -6983,6 +6985,7 @@ const de: Messages = {
   'cognitive.transferAttemptNote': 'Eine Idee in einer unbekannten Situation anzuwenden ist schwer – bei diesem Versuch geht es um genau diesen Schritt, und er ändert nichts daran, was du beim Konzept selbst bereits gezeigt hast.',
   'quiz.maxQuestionsLabel': 'Maximale Anzahl Fragen',
   'quiz.maxQuestionsHint': 'Die KI entscheidet je nach verfügbarem Inhalt, wie viele Fragen sie erstellt, ohne dieses Maximum zu überschreiten.',
+  'quiz.maxQuestionsHintExam': 'Diese Simulation verwendet nur zertifizierte Prüfungsfragen. Sie enthält nie mehr Fragen als dieses Maximum.',
   'quiz.startQuiz': 'Starten',
   'quiz.selectAllThatApply': 'Wähle alle zutreffenden aus',
   'quiz.typeAnswer': 'Gib deine Antwort ein…',
@@ -9253,6 +9256,7 @@ const fr: Messages = {
   'cognitive.transferAttemptNote': 'Appliquer une idée dans une situation inconnue est difficile : cette tentative porte sur cet effort, et elle ne change rien à ce que tu as déjà démontré sur le concept lui-même.',
   'quiz.maxQuestionsLabel': 'Nombre maximum de questions',
   'quiz.maxQuestionsHint': "L'IA décide du nombre de questions à générer selon le contenu disponible, sans dépasser ce maximum.",
+  'quiz.maxQuestionsHintExam': 'Cette simulation utilise uniquement des questions d\'examen certifiées. Elle ne dépassera jamais ce maximum.',
   'quiz.startQuiz': 'Commencer',
   'quiz.selectAllThatApply': 'Sélectionnez toutes les réponses applicables',
   'quiz.typeAnswer': 'Tapez votre réponse…',
@@ -11523,6 +11527,7 @@ const pt: Messages = {
   'cognitive.transferAttemptNote': 'Aplicar uma ideia em uma situação desconhecida é difícil — esta tentativa é sobre esse salto e não muda o que você já mostrou que sabe sobre o conceito.',
   'quiz.maxQuestionsLabel': 'Máximo de perguntas',
   'quiz.maxQuestionsHint': 'A IA decide quantas perguntas gerar de acordo com o conteúdo disponível, sem ultrapassar este máximo.',
+  'quiz.maxQuestionsHintExam': 'Este simulado usa apenas perguntas certificadas do exame. Nunca terá mais perguntas do que este máximo.',
   'quiz.startQuiz': 'Começar',
   'quiz.selectAllThatApply': 'Selecione todas as que se aplicam',
   'quiz.typeAnswer': 'Digite sua resposta…',
