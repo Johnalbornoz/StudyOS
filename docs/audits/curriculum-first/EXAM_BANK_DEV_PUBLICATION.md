@@ -93,3 +93,21 @@ Four resolved rows in `assessment_envelope_incidents` (the simulated incident of
 3. Deploy with `EXAM_BANK_DELIVERY_SCOPE=PILOT_PREVIEW` and `QUESTION_BANK_READINESS_MODE=ENFORCE`.
 
 The code at this tip must not be deployed against a database without migration `20261121_1100`: the exam readers name its columns.
+
+## Preview candidate (2026-10-13, after the five decisions were approved)
+
+Decisions applied in code: a key is not an explanation (projection 2: `explanationStatus: NONE`, empty text); the generation lineage and the publication certification are two records, both kept; a challenge is offered only where Student-deliverable content has calibrated difficulty. DEV was brought to projection 2 by superseding the 296 earlier versions (a version is never rewritten); a further apply wrote 0 rows.
+
+| | |
+|---|---|
+| Database | `neondb_trackb_exam`, a new database on the Preview Neon endpoint, cloned by `pg_dump` from the Preview database (which was only read). Fingerprint `4c249c68e0627b9f`. Row counts identical to the source at clone time. |
+| Fallback's database | Unchanged: ledger 89, no QF table, 410 bank versions, 75 evidence rows, before and after. |
+| Ledger | 89 before, 92 after (the three DEV-proven migrations, through the real runner). |
+| Loader | dry run 1,967 planned and none kept; apply 1,967; second apply 0; 0 conflicts. |
+| Provenance | 11 recorded human decisions; 7 human-certified objects; 17 automated; 0 automated decisions attributed to a person. |
+| Supply | 326 certified instances persisted; 296 Exam Bank items materialised; 296 runtime-eligible in PILOT_PREVIEW; 0 in PRODUCTION. Renderable certified capacity (what the envelopes can render, not the bank's size): 822. |
+| IB | 30 instances CERTIFIED_NOT_DELIVERABLE: constructed response / rubric scoring is not supported by Exam Core. Kept certified, not materialised, not downgraded. |
+| Deployment | `https://study-9znz4dfn5-study-so.vercel.app` (`dpl_3h5cHGKeP8F9AJVF9VkypSZqopt3`), SHA `b44686c`, with `EXAM_BANK_DELIVERY_SCOPE=PILOT_PREVIEW`, `QUESTION_BANK_READINESS_MODE=ENFORCE`, bound to the clone. `/api/version` and the database diagnostics confirm SHA, database and ledger 92. |
+| Exam runtime on the clone (service level) | 35/35: practice READY from certified supply (12 governed positions, frozen, scored, `EXAM_ASSESSMENT` evidence on the item's own concept, exposure recorded, second attempt repeats none, 0 provider calls); reduced-mock engine runs for the Matemáticas component; the catalogue does not offer a PAA mock; challenge not offered (no calibrated difficulty); full mock does not assemble. |
+
+Authenticated browser E2E on the new host is pending the operator's sign-in.
