@@ -118,7 +118,8 @@ export function singleSetupView(solution: BlueprintSolution): AssessmentSetupVie
 /* Exam attempt options (B1 semantics)                                  */
 /* ------------------------------------------------------------------ */
 
-export type ExamOptionReason = 'CONTENT_NOT_READY' | 'FIDELITY_NOT_VERIFIED' | 'OFFICIAL_DIFFICULTY_NOT_MET';
+/** DIFFICULTY_NOT_CALIBRATED: a challenge is harder than the real exam by a CALIBRATED difficulty; content with no calibrated difficulty cannot be offered as one. */
+export type ExamOptionReason = 'CONTENT_NOT_READY' | 'FIDELITY_NOT_VERIFIED' | 'OFFICIAL_DIFFICULTY_NOT_MET' | 'DIFFICULTY_NOT_CALIBRATED';
 
 export interface ExamAttemptOption {
   /** The B1 attempt type this option would be stored as. Never a catch-all. */
@@ -140,6 +141,8 @@ export function examAttemptOptions(facts: {
   difficultyBandMet: boolean | null;
   /** Student-eligible reviewed questions exist for practice at all. */
   practiceContentAvailable: boolean;
+  /** Deliverable content with a calibrated difficulty exists. false = a challenge is not offered, whatever the practice content. Absent = not evaluated (the earlier behaviour). */
+  challengeDifficultyCalibrated?: boolean;
 }): ExamAttemptOption[] {
   const contentReady = facts.officialForm?.status === 'READY';
   const mock = (wanted: 'FULL_MOCK' | 'REDUCED_MOCK'): ExamAttemptOption => {
@@ -151,7 +154,8 @@ export function examAttemptOptions(facts: {
     return { type: wanted, available: false, reason: 'FIDELITY_NOT_VERIFIED' };
   };
   const practice = (type: 'EXAM_PRACTICE' | 'EXAM_CHALLENGE'): ExamAttemptOption => ({ type, available: facts.practiceContentAvailable, reason: facts.practiceContentAvailable ? null : 'CONTENT_NOT_READY' });
-  return [practice('EXAM_PRACTICE'), mock('REDUCED_MOCK'), mock('FULL_MOCK'), practice('EXAM_CHALLENGE')];
+  const challenge: ExamAttemptOption = facts.practiceContentAvailable && facts.challengeDifficultyCalibrated === false ? { type: 'EXAM_CHALLENGE', available: false, reason: 'DIFFICULTY_NOT_CALIBRATED' } : practice('EXAM_CHALLENGE');
+  return [practice('EXAM_PRACTICE'), mock('REDUCED_MOCK'), mock('FULL_MOCK'), challenge];
 }
 
 /* ------------------------------------------------------------------ */

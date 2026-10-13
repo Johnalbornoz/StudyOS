@@ -170,7 +170,10 @@ export const ApprovedItemContentSchema = z.object({
   correctAnswer: z.string().min(1).max(4000),
   acceptableAnswers: z.array(z.string().min(1).max(500)).optional(),
   numericTolerance: z.number().min(0).optional(),
-  explanation: z.string().min(1).max(4000),
+  /** A solution / explanation for the learner. NOT the answer key: an item with no certified explanation carries none (`explanationStatus: 'NONE'`, empty text). */
+  explanation: z.string().max(4000),
+  /** NONE: this item has no certified explanation. Absent = the explanation above is the item's explanation (and must not be empty). */
+  explanationStatus: z.enum(['CERTIFIED', 'NONE']).optional(),
   difficulty: z.number().int().min(1).max(5),
   marks: z.number().positive().max(100).default(1),
   commandTerm: z.string().max(60).optional(),
@@ -245,6 +248,8 @@ export function examItemFromApproved(row: { id: string; learning_objective_id: s
   const parsed = ApprovedItemContentSchema.safeParse(row.content);
   if (!parsed.success) return null;
   const c = parsed.data;
+  // an empty explanation is valid only when the content says, explicitly, that it has none
+  if (c.explanation.trim().length === 0 && c.explanationStatus !== 'NONE') return null;
   const item: ExamItem = {
     id: row.id,
     conceptId: '',

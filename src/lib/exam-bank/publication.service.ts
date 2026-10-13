@@ -54,7 +54,7 @@ export interface PublicationReport {
   inserted: Record<WrittenTable, number>;
   insertedTotal: number;
   skipped: Record<string, number>;
-  materialized: { planned: number; inserted: number; skipped: number; byObjective: Record<string, number> };
+  materialized: { planned: number; inserted: number; skipped: number; superseded: number; byObjective: Record<string, number> };
   blocked: BlockedRow[];
   conflicts: string[];
   verification: Record<string, number | string | boolean>;
@@ -322,24 +322,54 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
       if (!parsed.success || !examItemFromApproved({ id: i.instanceId, learning_objective_id: target.objectiveId, content })) throw new PublicationRefused([`BANK_CONTENT_IS_NOT_DELIVERABLE:${i.instanceId}:${parsed.success ? 'structure' : parsed.error.issues[0]?.message}`]);
       if (bankContentIssues(content, i).length > 0) throw new PublicationRefused([`BANK_CONTENT_IS_NOT_ITS_INSTANCE:${i.instanceId}:${bankContentIssues(content, i).join(',')}`]);
       const hash = contentHash(content);
-      const held = await one<{ id: string; item_instance_id: string | null; lineage_class: string; provenance: string; current_hash: string | null; version_id: string | null }>(c,
-        `SELECT qi.id, qi.item_instance_id, qi.lineage_class, qi.provenance, ai.content_hash AS current_hash, ai.id AS version_id FROM question_bank_items qi LEFT JOIN approved_items ai ON ai.id = qi.current_version_id WHERE qi.learning_objective_id = $1 AND qi.item_key = $2`,
+      const held = await one<{ id: string; item_instance_id: string | null; lineage_class: string; provenance: string; current_hash: string | null; version_id: string | null; projection: string | null; digest: string | null; lifecycle: string | null }>(c,
+        `SELECT qi.id, qi.item_instance_id, qi.lineage_class, qi.provenance, ai.content_hash AS current_hash, ai.id AS version_id, ai.content->'certified'->>'projection' AS projection, ai.content->'lineage'->>'digest' AS digest, ai.bank_lifecycle_status AS lifecycle FROM question_bank_items qi LEFT JOIN approved_items ai ON ai.id = qi.current_version_id WHERE qi.learning_objective_id = $1 AND qi.item_key = $2`,
         [target.objectiveId, content.key]);
+      const fp = itemFingerprints(parsed.data);
+      /**
+       * One version of the bank item: stored not yet in use, given its right and its concept, then made ACTIVE -- the
+       * database decides on that transition whether it may be. The validation report keeps two facts apart:
+       *   generation   what the renderer recorded when it rendered the instance (its own certification state THEN);
+       *   publication  the certification this publication rests on, recorded NOW by the loader.
+       */
+      const publishVersion = async (itemId: string, versionNumber: number, supersedes: string | null): Promise<string> => {
+        const validation = {
+          kind: 'INHERITED_DETERMINISTIC_CERTIFICATION', projection: BANK_PROJECTION_VERSION, itemInstanceId: i.instanceId, lineageDigest: i.lineageHash,
+          generation: { certificationVersion: i.lineage.certificationVersion, seed: i.seed, rendererVersion: i.rendererVersion, note: 'the renderer\'s own record at rendering time; immutable; part of the lineage digest' },
+          publication: { coreCertificationVersion: p.certificationVersion, instanceCertificationState: i.certificationState, certificationMode: i.certificationMode, policyVersion: i.policyVersion, policyHash: i.policyHash, batch: plan.batchId, note: 'recorded when the instance was published; it did not exist when the instance was rendered' },
+        };
+        const version = await one<{ id: string }>(c,
+          `INSERT INTO approved_items (learning_objective_id, question_type, content, created_by, status, published_at, content_origin, semantic_fingerprint, template_fingerprint, reasoning_fingerprint, stimulus_fingerprint,
+                                       bank_item_id, version_number, bank_lifecycle_status, content_hash, target_difficulty, calibration_confidence, lifecycle_updated_at, usage_eligibility, exam_alignment, validation_report, supersedes_version_id)
+           VALUES ($1, $2, $3::jsonb, $4, 'APPROVED', NULL, 'AUTHORED', $5, $6, $7, $8, $9, $10, 'VALIDATED', $11, $12, 'INSUFFICIENT_DATA', now(), $13::text[], $14, $15::jsonb, $16) RETURNING id`,
+          [target.objectiveId, content.type, JSON.stringify(content), author, fp.semantic, fp.template, fp.reasoning, fp.stimulus, itemId, versionNumber, hash, content.difficulty, [...CORE_DERIVED_USAGE], CORE_DERIVED_ALIGNMENT, JSON.stringify(validation), supersedes]);
+        await ensureRights(version!.id, p);
+        await attribute(version!.id, conceptId);
+        if (supersedes) {
+          // the earlier version is kept as history, out of use: what an attempt saw is never rewritten
+          await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'SUPERSEDED', status = 'RETIRED' WHERE id = $1`, [supersedes]);
+          await lifecycleEvent(itemId, supersedes, 'ACTIVE', 'SUPERSEDED', `REPLACED_BY_PROJECTION_${BANK_PROJECTION_VERSION}`, p);
+        }
+        await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'ACTIVE', status = 'PUBLISHED', published_at = now() WHERE id = $1`, [version!.id]);
+        await c.query(`UPDATE question_bank_items SET current_version_id = $2, updated_at = now() WHERE id = $1`, [itemId, version!.id]);
+        await lifecycleEvent(itemId, version!.id, null, 'ACTIVE', 'CERTIFIED_INSTANCE_MATERIALIZED', p);
+        return version!.id;
+      };
       if (held) {
-        if (held.item_instance_id !== instanceRowId.get(i.instanceId) || held.lineage_class !== 'CORE_DERIVED' || held.provenance !== 'STUDYUS_AUTHORED' || held.current_hash !== hash) conflict('EXAM_BANK_ROW', `${content.key}`, 'a bank item of this key exists that is not this instance');
+        if (held.item_instance_id !== instanceRowId.get(i.instanceId) || held.lineage_class !== 'CORE_DERIVED' || held.provenance !== 'STUDYUS_AUTHORED' || held.digest !== i.lineageHash) conflict('EXAM_BANK_ROW', `${content.key}`, 'a bank item of this key exists that is not this instance');
+        if (held.current_hash !== hash) {
+          // the SAME instance under an earlier projection: a new version supersedes it. Anything else is a conflict.
+          if (!held.projection || held.projection === BANK_PROJECTION_VERSION || held.lifecycle !== 'ACTIVE') conflict('EXAM_BANK_ROW', `${content.key}`, `the current version differs and is not an earlier projection in use (${held.projection ?? 'no projection'}, ${held.lifecycle})`);
+          const next = Number((await one<{ n: string }>(c, `SELECT COALESCE(max(version_number), 0) AS n FROM approved_items WHERE bank_item_id = $1`, [held.id]))!.n) + 1;
+          await publishVersion(held.id, next, held.version_id);
+          report.materialized.superseded += 1;
+          continue;
+        }
         await ensureRights(held.version_id!, p);
         const attributed = (await c.query(`SELECT canonical_concept_id, role FROM question_bank_item_concepts WHERE approved_item_id = $1`, [held.version_id])).rows;
         if (attributed.some((a) => a.role === 'PRIMARY' && a.canonical_concept_id !== conceptId)) conflict('EXAM_BANK_ATTRIBUTION', content.key, 'the version is attributed to another concept than its instance');
-        if (attributed.some((a) => a.role === 'PRIMARY')) skip('conceptAttributions');
-        else {
-          // a version published before attribution was part of the publication: taken out of use, attributed, returned to use
-          const st = await one<{ bank_lifecycle_status: string }>(c, `SELECT bank_lifecycle_status FROM approved_items WHERE id = $1`, [held.version_id]);
-          if (st?.bank_lifecycle_status !== 'ACTIVE') conflict('EXAM_BANK_ROW', content.key, `the version is ${st?.bank_lifecycle_status}, not ACTIVE`);
-          await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'REVIEW_REQUIRED', status = 'IN_REVIEW' WHERE id = $1`, [held.version_id]);
-          await attribute(held.version_id!, conceptId);
-          await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'ACTIVE', status = 'PUBLISHED' WHERE id = $1`, [held.version_id]);
-          await lifecycleEvent(held.id, held.version_id!, 'ACTIVE', 'ACTIVE', 'CERTIFIED_CONCEPT_ATTRIBUTION_RECORDED', p);
-        }
+        if (!attributed.some((a) => a.role === 'PRIMARY')) conflict('EXAM_BANK_ATTRIBUTION', content.key, 'the version in use states no primary concept');
+        skip('conceptAttributions');
         report.materialized.skipped += 1;
         continue;
       }
@@ -348,19 +378,7 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
         `INSERT INTO question_bank_items (item_key, exam_version_id, assessment_component_id, learning_objective_id, cell_key, provenance, language, lineage_class, item_instance_id)
          VALUES ($1, $2, $3, $4, $5, 'STUDYUS_AUTHORED', $6, 'CORE_DERIVED', $7) RETURNING id`,
         [content.key, target.examVersionId, target.componentId, target.objectiveId, `${section.sectionKey}|${section.objectiveCode}|*|*-*|*`, i.language, instanceRowId.get(i.instanceId)]);
-      const fp = itemFingerprints(parsed.data);
-      const version = await one<{ id: string }>(c,
-        `INSERT INTO approved_items (learning_objective_id, question_type, content, created_by, status, published_at, content_origin, semantic_fingerprint, template_fingerprint, reasoning_fingerprint, stimulus_fingerprint,
-                                     bank_item_id, version_number, bank_lifecycle_status, content_hash, target_difficulty, calibration_confidence, lifecycle_updated_at, usage_eligibility, exam_alignment, validation_report)
-         VALUES ($1, $2, $3::jsonb, $4, 'APPROVED', NULL, 'AUTHORED', $5, $6, $7, $8, $9, 1, 'VALIDATED', $10, $11, 'INSUFFICIENT_DATA', now(), $12::text[], $13, $14::jsonb) RETURNING id`,
-        [target.objectiveId, content.type, JSON.stringify(content), author, fp.semantic, fp.template, fp.reasoning, fp.stimulus, item!.id, hash, content.difficulty, [...CORE_DERIVED_USAGE], CORE_DERIVED_ALIGNMENT,
-          JSON.stringify({ kind: 'INHERITED_DETERMINISTIC_CERTIFICATION', projection: BANK_PROJECTION_VERSION, policyVersion: i.policyVersion, policyHash: i.policyHash, certificationState: i.certificationState, itemInstanceId: i.instanceId, lineageDigest: i.lineageHash })]);
-      await c.query(`UPDATE question_bank_items SET current_version_id = $2, updated_at = now() WHERE id = $1`, [item!.id, version!.id]);
-      await ensureRights(version!.id, p);
-      // the concept is stated before the version is in use; then the database decides, on the transition, whether it may be ACTIVE
-      await attribute(version!.id, conceptId);
-      await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'ACTIVE', status = 'PUBLISHED', published_at = now() WHERE id = $1`, [version!.id]);
-      await lifecycleEvent(item!.id, version!.id, null, 'ACTIVE', 'CERTIFIED_INSTANCE_MATERIALIZED', p);
+      await publishVersion(item!.id, 1, null);
       report.materialized.inserted += 1;
       report.materialized.byObjective[section.objectiveCode] = (report.materialized.byObjective[section.objectiveCode] ?? 0) + 1;
     }
@@ -391,6 +409,8 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
   v.bankRowsWithoutAnEstablishedRight = await n(`SELECT count(*) AS n FROM question_bank_items qi WHERE qi.lineage_class = 'CORE_DERIVED' AND NOT EXISTS (SELECT 1 FROM question_bank_content_rights r WHERE r.content_type = 'ITEM_VERSION' AND r.content_id = qi.current_version_id AND r.superseded_at IS NULL AND r.reuse_rights = 'STUDYUS_OWNED')`);
   v.bankRowsWithoutTheirCertifiedConcept = await n(`SELECT count(*) AS n FROM question_bank_items qi WHERE qi.lineage_class = 'CORE_DERIVED' AND (SELECT count(*) FROM question_bank_item_concepts ic WHERE ic.approved_item_id = qi.current_version_id AND ic.role = 'PRIMARY') <> 1`);
   v.bankRowsNotActive = await n(`SELECT count(*) AS n FROM question_bank_items qi JOIN approved_items ai ON ai.id = qi.current_version_id WHERE qi.lineage_class = 'CORE_DERIVED' AND (ai.bank_lifecycle_status <> 'ACTIVE' OR ai.status <> 'PUBLISHED')`);
+  v.bankRowsPresentingTheKeyAsAnExplanation = await n(`SELECT count(*) AS n FROM question_bank_items qi JOIN approved_items ai ON ai.id = qi.current_version_id WHERE qi.lineage_class = 'CORE_DERIVED' AND (ai.content->>'explanationStatus' IS DISTINCT FROM 'NONE' OR length(coalesce(ai.content->>'explanation', '')) > 0)`);
+  v.bankRowsWithoutTheirGenerationLineage = await n(`SELECT count(*) AS n FROM question_bank_items qi JOIN approved_items ai ON ai.id = qi.current_version_id JOIN assessment_item_instances i ON i.id = qi.item_instance_id WHERE qi.lineage_class = 'CORE_DERIVED' AND (ai.content->'certified'->'generationLineage'->>'seed' IS DISTINCT FROM i.seed OR ai.validation_report->'generation'->>'certificationVersion' IS NULL OR ai.validation_report->'publication'->>'coreCertificationVersion' IS DISTINCT FROM i.certification_version)`);
   v.effectiveExamCapacity = await n(`SELECT count(DISTINCT i.recognition_id) AS n FROM question_bank_items qi JOIN approved_items ai ON ai.id = qi.current_version_id AND ai.status = 'PUBLISHED' AND ai.bank_lifecycle_status = 'ACTIVE' JOIN student_eligible_item_instances i ON i.id = qi.item_instance_id WHERE qi.lineage_class = 'CORE_DERIVED' AND qi.retired_at IS NULL AND $1 = ANY (i.eligibility_scopes)`, [plan.scope]);
   v.duplicateInstanceDigests = await n(`SELECT count(*) AS n FROM (SELECT certification_digest FROM assessment_item_instances GROUP BY 1 HAVING count(*) > 1) d`);
   v.duplicateBankRows = await n(`SELECT count(*) AS n FROM (SELECT item_instance_id, learning_objective_id FROM question_bank_items WHERE lineage_class = 'CORE_DERIVED' GROUP BY 1, 2 HAVING count(*) > 1) d`);
@@ -410,7 +430,7 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
 /** Checks the publication is sound. Any reason: the transaction is rolled back. */
 function verificationFailures(plan: PublicationPlan, v: PublicationReport['verification']): string[] {
   const reasons: string[] = [];
-  const zero = ['automatedDecisionsAttributedToAPerson', 'humanCertifiedWithoutARecordedDecision', 'eligibleInstancesProduction', 'instancesNotInheritedDeterministic', 'orphanBankRows', 'bankRowsNotTheirInstance', 'bankRowsAuthoredByAPerson', 'bankRowsWithoutAnEstablishedRight', 'bankRowsWithoutTheirCertifiedConcept', 'bankRowsNotActive', 'duplicateInstanceDigests', 'duplicateBankRows', 'duplicateHumanDecisions', 'duplicateObjectCertifications'];
+  const zero = ['automatedDecisionsAttributedToAPerson', 'humanCertifiedWithoutARecordedDecision', 'eligibleInstancesProduction', 'instancesNotInheritedDeterministic', 'orphanBankRows', 'bankRowsNotTheirInstance', 'bankRowsAuthoredByAPerson', 'bankRowsWithoutAnEstablishedRight', 'bankRowsWithoutTheirCertifiedConcept', 'bankRowsNotActive', 'bankRowsPresentingTheKeyAsAnExplanation', 'bankRowsWithoutTheirGenerationLineage', 'duplicateInstanceDigests', 'duplicateBankRows', 'duplicateHumanDecisions', 'duplicateObjectCertifications'];
   for (const k of zero) if (Number(v[k]) !== 0) reasons.push(`${k}=${v[k]}`);
   if (Number(v.humanDecisions) !== plan.humanDecisions.length) reasons.push(`humanDecisions=${v.humanDecisions} (the recorded file has ${plan.humanDecisions.length})`);
   if (Number(v.eligibleInstancesInScope) !== plan.instances.length || Number(v.certifiedInstances) !== plan.instances.length) reasons.push(`instances persisted ${v.certifiedInstances}, eligible ${v.eligibleInstancesInScope}, planned ${plan.instances.length}`);
@@ -424,7 +444,7 @@ function verificationFailures(plan: PublicationPlan, v: PublicationReport['verif
  */
 export async function runPublication(client: PoolClient, plan: PublicationPlan, opts: { apply: boolean }): Promise<PublicationReport> {
   const empty = Object.fromEntries(WRITTEN_TABLES.map((t) => [t, 0])) as Record<WrittenTable, number>;
-  const report: PublicationReport = { mode: opts.apply ? 'APPLY' : 'DRY_RUN', committed: false, planHash: plan.planHash, planned: planCounts(plan), inserted: empty, insertedTotal: 0, skipped: {}, materialized: { planned: 0, inserted: 0, skipped: 0, byObjective: {} }, blocked: [...plan.blocked], conflicts: [], verification: {} };
+  const report: PublicationReport = { mode: opts.apply ? 'APPLY' : 'DRY_RUN', committed: false, planHash: plan.planHash, planned: planCounts(plan), inserted: empty, insertedTotal: 0, skipped: {}, materialized: { planned: 0, inserted: 0, skipped: 0, superseded: 0, byObjective: {} }, blocked: [...plan.blocked], conflicts: [], verification: {} };
   if (plan.preflight.length > 0) throw new PublicationRefused(plan.preflight);
   await client.query('BEGIN');
   try {

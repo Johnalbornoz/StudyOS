@@ -269,8 +269,12 @@ describe('B5-D exam preparation availability', () => {
   });
 
   it('eligible content opens practice only; a mock is never offered on a content count', async () => {
-    const a = await examAvailabilityForVersion('ev-1', report(40));
+    const a = await examAvailabilityForVersion('ev-1', report(40), async () => true);
     expect(a.options.filter((o) => o.available).map((o) => o.type)).toEqual(['EXAM_PRACTICE', 'EXAM_CHALLENGE']);
+    // Track B: a challenge is harder than the real exam by a CALIBRATED difficulty. Content with none opens practice, not a challenge.
+    const uncalibrated = await examAvailabilityForVersion('ev-1', report(40), async () => false);
+    expect(uncalibrated.options.filter((o) => o.available).map((o) => o.type)).toEqual(['EXAM_PRACTICE']);
+    expect(uncalibrated.options.find((o) => o.type === 'EXAM_CHALLENGE')).toEqual({ type: 'EXAM_CHALLENGE', available: false, reason: 'DIFFICULTY_NOT_CALIBRATED' });
     expect(a.options.filter((o) => /MOCK/.test(o.type)).every((o) => !o.available && o.reason === 'CONTENT_NOT_READY')).toBe(true);
   });
 

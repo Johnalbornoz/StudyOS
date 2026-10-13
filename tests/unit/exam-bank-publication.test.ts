@@ -118,7 +118,23 @@ describe('the bank projection: a copy of the instance the Exam Core can deliver 
       // what the database compares: the lineage digest and the difficulty
       expect([content.lineage.digest, content.difficulty]).toEqual([p.instance.lineageHash, p.instance.itemDifficulty]);
       expect([content.contentStatus, content.contentOrigin, content.certified.itemType]).toEqual(['ORIGINAL', 'AUTHORED', 'EXAM_BANK_ITEM']);
+      // an answer key is not an explanation: the version carries the key in its key fields and states that it has no explanation
+      expect([content.explanation, content.explanationStatus, content.correctAnswer]).toEqual(['', 'NONE', p.instance.key.answers[0]]);
+      // A. the generation lineage is kept whole, with the certification state the renderer recorded THEN -- never rewritten to the publication's
+      expect(content.certified.generationLineage).toEqual(p.instance.lineage);
+      expect(content.certified.generationLineage.certificationVersion).toBe('UNCERTIFIED-DEV-TEST');
+      expect(p.certificationVersion).toMatch(/^HUMAN50_POLICY_V1:(HUMAN_CERTIFIED|AUTOMATED_CERTIFIED_PILOT)$/);
     }
+  });
+
+  it('an empty explanation is deliverable only when the content says it has none; the result view then shows no explanation', () => {
+    const content = bankContentOf(numeric[0].instance);
+    expect(examItemFromApproved({ id: 'x', learning_objective_id: 'lo', content })!.explanation).toBe('');
+    const { explanationStatus: _none, ...unlabelled } = content;
+    void _none;
+    expect(examItemFromApproved({ id: 'x', learning_objective_id: 'lo', content: unlabelled })).toBeNull();
+    expect(read('src/app/dashboard/exam-prep/attempt/[attemptId]/result/page.tsx')).toMatch(/\{r\.explanation && </);
+    expect(read('src/lib/exam-bank/bank-projection.ts')).not.toMatch(/ANSWER_LABEL|'Respuesta'|'Answer'/);
   });
 
   it('an edited version is not its instance', () => {

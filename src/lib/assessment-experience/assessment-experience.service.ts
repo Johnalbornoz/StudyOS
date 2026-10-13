@@ -133,13 +133,29 @@ export interface ExamAvailability {
  * establish, so a mock is never offered from here on content counts alone. A failed read is "unavailable",
  * never a crash and never an optimistic default.
  */
-export async function examAvailabilityForVersion(examVersionId: string | null, evaluate: typeof evaluateExamVersionReadiness = evaluateExamVersionReadiness): Promise<ExamAvailability> {
+/**
+ * Does this exam version hold deliverable content whose difficulty is CALIBRATED against the real exam (a difficulty
+ * index)? A challenge is defined by that index; a 1-5 item difficulty is not a calibration. Read-only; a failed read is "no".
+ */
+export async function examVersionHasCalibratedDifficulty(examVersionId: string): Promise<boolean> {
+  try {
+    const r = await db.query(
+      `SELECT EXISTS (SELECT 1 FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id AND qi.current_version_id = ai.id
+                       WHERE qi.exam_version_id = $1 AND ai.status = 'PUBLISHED' AND (ai.difficulty_index IS NOT NULL OR ai.content ? 'difficultyIndex')) AS calibrated`,
+      [examVersionId]);
+    return r.rows[0]?.calibrated === true;
+  } catch {
+    return false;
+  }
+}
+
+export async function examAvailabilityForVersion(examVersionId: string | null, evaluate: typeof evaluateExamVersionReadiness = evaluateExamVersionReadiness, calibrated: (examVersionId: string) => Promise<boolean> = examVersionHasCalibratedDifficulty): Promise<ExamAvailability> {
   const none = (evaluated: boolean, eligibleQuestions = 0): ExamAvailability => ({ options: examAttemptOptions({ officialForm: null, fidelity: null, difficultyBandMet: null, practiceContentAvailable: false }), eligibleQuestions, evaluated });
   if (!examVersionId) return none(false);
   try {
     const report = await evaluate(examVersionId);
     if (report.eligibleQuestions === 0) return none(true);
-    return { options: examAttemptOptions({ officialForm: null, fidelity: null, difficultyBandMet: null, practiceContentAvailable: true }), eligibleQuestions: report.eligibleQuestions, evaluated: true };
+    return { options: examAttemptOptions({ officialForm: null, fidelity: null, difficultyBandMet: null, practiceContentAvailable: true, challengeDifficultyCalibrated: await calibrated(examVersionId) }), eligibleQuestions: report.eligibleQuestions, evaluated: true };
   } catch {
     return none(false);
   }
