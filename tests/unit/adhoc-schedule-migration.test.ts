@@ -23,8 +23,8 @@ const table = (name: string) => {
 describe('migration 20261121_1000: one additive file, the new tail', () => {
   it('is the only migration after the L10 batch: ledger 86 -> 87', () => {
     const files = readdirSync(DIR).filter((f) => f.endsWith('.sql')).sort();
-    // the first file after the L10 batch; the curriculum-convergence files (20261122_*) come after it
-    expect(files.filter((f) => f >= '20261121' && f < '20261122')).toEqual([FILE]);
+    // the first file after the L10 batch; QF V5.1 (20261121_1100) and the curriculum-convergence files (20261122_*) come after it
+    expect(files.filter((f) => f >= '20261121' && f < '20261122')).toEqual([FILE, '20261121_1100_qf51_construct_core_lineage.sql']);
     // 85 governed files + the baseline row = ledger 86 before this file
     expect(files.indexOf(FILE)).toBe(85);
   });

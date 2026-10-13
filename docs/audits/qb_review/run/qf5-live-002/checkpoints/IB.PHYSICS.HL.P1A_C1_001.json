@@ -1,0 +1,42 @@
+{
+  "runId": "qf5-live-002",
+  "batchId": "IB.PHYSICS.HL.P1A:C1:001",
+  "phase": "C1",
+  "profileId": "IB.PHYSICS.HL.P1A",
+  "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.2.0",
+  "cumulativeSpendUsd": 6.480765,
+  "timestamp": "2026-10-12T12:43:48.952Z",
+  "candidateIds": [
+    "v2.ib.physics-hl/p1a/phy.p1a.fields#0/004#0",
+    "v2.ib.physics-hl/p1a/phy.p1a.fields#0/004#1",
+    "v2.ib.physics-hl/p1a/phy.p1a.motion#0/004#0",
+    "v2.ib.physics-hl/p1a/phy.p1a.motion#0/004#1",
+    "v2.ib.physics-hl/p1a/phy.p1a.fields#0/001#0",
+    "v2.ib.physics-hl/p1a/phy.p1a.fields#0/001#1"
+  ],
+  "decisions": {
+    "v2.ib.physics-hl/p1a/phy.p1a.fields#0/004#1": "AUTO_REJECT",
+    "v2.ib.physics-hl/p1a/phy.p1a.motion#0/004#1": "AUTO_REJECT",
+    "v2.ib.physics-hl/p1a/phy.p1a.fields#0/001#1": "AUTO_REJECT"
+  },
+  "metrics": {
+    "rawGenerated": 6,
+    "structuralPass": 5,
+    "answerPass": 3,
+    "constructPass": 2,
+    "difficultyMatch": 0,
+    "autoApproved": 0,
+    "humanReview": 0,
+    "autoRejected": 3,
+    "specifications": 3,
+    "firstAttemptPass": 0,
+    "regenerated": 3,
+    "specificationIssues": 3,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 1,
+    "humanReviewRate": 0,
+    "rejectionRate": 1
+  },
+  "hash": "706b563ada00d57e9d9b3891bc46f8e1fcb95eda3da5f08d32ae71e311857c1a"
+}

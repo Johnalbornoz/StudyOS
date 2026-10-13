@@ -1,0 +1,62 @@
+{
+  "kind": "QB_CANARY_250_SPEND_PROJECTION",
+  "basis": "ASSUMED prices; a projection, not an invoice and not a quotation",
+  "assumptions": {
+    "generationCharactersPerInputToken": {
+      "value": 3.7,
+      "source": "MEASURED: QB-R2D and QB-R2E ledgers, same provider and prompt kind (3.6 to 3.8)"
+    },
+    "generationOutputTokensPerCall": {
+      "value": 1308,
+      "source": "MEASURED: mean of the 26 QB-R2E calls (largest 1,675), reasoning tokens included"
+    },
+    "generationCandidateRate": {
+      "value": 0.85,
+      "source": "MEASURED on 20 adaptations only: 22 candidates from 26 calls in QB-R2E. A reviewer call is made for candidates only."
+    },
+    "reviewCharactersPerInputToken": {
+      "value": 2.8,
+      "source": "ASSUMED, NOT MEASURED: the reviewer model's tokenizer is another one; its vendor says it uses up to about 1.35 times the tokens of earlier tokenizers"
+    },
+    "reviewOutputTokensPerCall": {
+      "value": 800,
+      "source": "ASSUMED, NOT MEASURED: a structured answer of ten short reasons and a worked solution of at most 120 words, thinking off. The reviewer has never been called; this is the least certain number of the projection."
+    }
+  },
+  "caps": {
+    "cumulative": 30,
+    "generationPhase": 19
+  },
+  "projection": {
+    "priorUsd": 3.0051349999999992,
+    "capUsd": 30,
+    "generation": {
+      "calls": 250,
+      "promptCharacters": {
+        "min": 11552,
+        "max": 18550,
+        "mean": 14105
+      },
+      "expectedUsd": 14.575243243243248,
+      "worstCaseUsd": 23.17805999999999
+    },
+    "review": {
+      "expectedCalls": 213,
+      "maxCalls": 250,
+      "promptCharacters": {
+        "min": 8854,
+        "max": 11927,
+        "mean": 10384,
+        "measuredOn": "the 22 stored QB-R2E candidates (size measurement only)"
+      },
+      "expectedUsd": 9.061628571428573,
+      "worstCaseUsd": 19.455
+    },
+    "expectedCumulativeUsd": 26.642006814671817,
+    "worstCaseCumulativeUsd": 45.63819499999999,
+    "expectedHeadroomUsd": 3.3579931853281835,
+    "expectedFits": true,
+    "worstCaseFits": false,
+    "reviewsAffordableAtWorstCaseAfterExpectedGeneration": 159
+  }
+}

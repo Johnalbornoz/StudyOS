@@ -298,8 +298,9 @@ describe('B2 architecture', () => {
     // 20261110_1800 (assessment snapshot column) comes from the B5 line; it sorts between the eight and the curriculum link.
     // + L10 shared-foundation schema batch (20261120_1000..1200): parent relationships, enrolment history and the persona index only; none touches a B2 table.
     // + 20261121_1000: the Student's own scheduled assessments (two new tables); it touches no B2 table either.
-    expect(migrations.filter((f) => f >= '20261110_1800')).toEqual(['20261110_1800_assessment_snapshot.sql', '20261111_1000_qb_item_curriculum_nodes.sql', '20261112_1000_qb_review_requires_primary_attribution.sql', '20261120_1000_sf7_parent_relationship_lifecycle.sql', '20261120_1100_cr_l9_02_enrollment_history.sql', '20261120_1200_sf10_single_persona_constraint.sql', '20261121_1000_student_scheduled_assessments.sql', '20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql']);
+    // + QF V5.1 (20261121_1100): construct cores, applicability, adapters, instance lineage -- additive, touches no B2 table
     // + Curriculum convergence (20261122_1000 / _1100): Learn curriculum provenance and reviewed aliases; neither touches a B2 table.
+    expect(migrations.filter((f) => f >= '20261110_1800')).toEqual(['20261110_1800_assessment_snapshot.sql', '20261111_1000_qb_item_curriculum_nodes.sql', '20261112_1000_qb_review_requires_primary_attribution.sql', '20261120_1000_sf7_parent_relationship_lifecycle.sql', '20261120_1100_cr_l9_02_enrollment_history.sql', '20261120_1200_sf10_single_persona_constraint.sql', '20261121_1000_student_scheduled_assessments.sql', '20261121_1100_qf51_construct_core_lineage.sql', '20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql']);
   });
 
   it('the B1 authorities are consumed, not redefined', () => {

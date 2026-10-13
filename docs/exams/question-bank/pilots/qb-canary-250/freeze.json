@@ -1,0 +1,422 @@
+{
+  "kind": "QB_CANARY_250_FREEZE",
+  "about": "sha256 of every source file that decides what the canary asks, parses, scores, reviews, classifies, samples and spends, of the evidence it reads, and of its manifest of 250 slots. Written before any provider call. The run refuses to call a provider unless the working tree matches this manifest and the freeze commit.",
+  "entryFiles": [
+    "src/lib/exam-core/question-bank/production/specification-validators-r4.ts",
+    "src/lib/exam-core/question-bank/production/generator/specification-generation-v3.ts",
+    "scripts/operations/qb-canary-250/manifest.ts",
+    "scripts/operations/qb-canary-250/evidence.ts",
+    "scripts/operations/qb-canary-250/pipeline.ts",
+    "scripts/operations/qb-canary-250/reviewer.ts",
+    "scripts/operations/qb-canary-250/budget.ts",
+    "scripts/operations/qb-canary-250/run-log.ts",
+    "scripts/operations/qb-canary-250/runner.ts",
+    "scripts/operations/qb-canary-250/report.ts",
+    "scripts/operations/qb-canary-250/sample.ts",
+    "scripts/operations/qb-canary-250/calibration.ts",
+    "scripts/operations/qb-canary-250/projection.ts",
+    "scripts/operations/qb-canary-250/reviewer-transport.ts",
+    "scripts/operations/qb-canary-250/freeze.ts",
+    "scripts/operations/qb-canary-250/run.ts"
+  ],
+  "files": [
+    {
+      "path": "scripts/operations/qb-canary-250/budget.ts",
+      "sha256": "8ce864bae2590ade70973b413435d18f68bcf2a0cb4449dabc7f779851458dea"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/calibration.ts",
+      "sha256": "e89e06c0e83388bb1276e6e7a80196c4154b9352009a354dd23f5b4cd8383d31"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/evidence.ts",
+      "sha256": "c64b1f577fddc97282966c5b68e9a2294e9d9313a1dfd55a9ff5a9e5e3e1113b"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/freeze.ts",
+      "sha256": "4618019792899a280371b61096e763f1e5b5885c062e5df602822ffc99fd4b8c"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/manifest.ts",
+      "sha256": "9052eb97a1f4612a9dce1cfba23f95a811c25229670472101427b4afdbf30815"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/pipeline.ts",
+      "sha256": "4948ff0f36fb11bfcb92ed9133e6e88267995b6355b7bf98369d9a945eb6e0e5"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/projection.ts",
+      "sha256": "d962755af210b9e209ac1ab5435377fcee703c2642bbd4fb12f90289e9dc3aa3"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/report.ts",
+      "sha256": "7a634086361068998de29827d69e2559b938b2828de6f5585ca2629df3be07f7"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/reviewer-transport.ts",
+      "sha256": "839753ac21f69b94223f5718c50eef0372bbb8097fc5f93def551f7a02720b22"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/reviewer.ts",
+      "sha256": "3765cce6372bd69354b16f2a373f6af7a7e83024caedf8b8f5383c1c5923e5ad"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/run-log.ts",
+      "sha256": "7e01646ba233c387b5c5d3170904abf2bf89b6f6b53576f74b82f87143c54bce"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/run.ts",
+      "sha256": "ad9194f541a2632731506f2073cb552ce3fb951dfbb028a714ab5c19a3e279e9"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/runner.ts",
+      "sha256": "c892a16f6689da5fcbc2025caf7e24bda64e8cd3b0b92954a4be235d1636bef0"
+    },
+    {
+      "path": "scripts/operations/qb-canary-250/sample.ts",
+      "sha256": "4e12e92922daeb52248a23dffb4dea198b8092e4d575dea416216f7df02f9be9"
+    },
+    {
+      "path": "scripts/operations/qb-r2d/budget.ts",
+      "sha256": "e08b9fb2e322af2fa5df4b93cf79c03c6e7697a1aac268d1cc8d2bafba07f193"
+    },
+    {
+      "path": "scripts/operations/qb-r2d/live-provider.ts",
+      "sha256": "20d224f4af636e543b3dcb9278b30ccb8c072e741b4143c5ab29eb1d0a81b0cb"
+    },
+    {
+      "path": "scripts/operations/qb-r2d/prior-corpus.ts",
+      "sha256": "81fa5ccd4664bb1970b10f290a890faba491bc233be12c7a662d9fd804e72ff5"
+    },
+    {
+      "path": "scripts/operations/qb-r2d/selection.ts",
+      "sha256": "da4a5e263e8e54ca23d77d1fcbce393ddd431325045545a0ce693c7f53428696"
+    },
+    {
+      "path": "scripts/operations/qb-r2d/stored-selection.ts",
+      "sha256": "2ea13a998a67be00faafcdf30dde8966293e5cf0264ec80f765270da84ded0a3"
+    },
+    {
+      "path": "scripts/operations/qb-r2e/budget.ts",
+      "sha256": "79cac39cbf5b7e1f13bfc2b089231e0f3748cdd6a4dd256306e26dfb5f05df73"
+    },
+    {
+      "path": "scripts/operations/qb-r2e/gates.ts",
+      "sha256": "b7fd756091c51235ef933fbce6733a3226808c91cf872fd0bf6c8fa86be1bbd6"
+    },
+    {
+      "path": "scripts/operations/qb-r2e/live-provider.ts",
+      "sha256": "348a9c3da06891505c9a63f1a661d2fe37ceda1d39df1803c62a782be0daebde"
+    },
+    {
+      "path": "scripts/operations/qb-r2e/selection.ts",
+      "sha256": "12ab0f9a4991d407fbff46ba14223368ee49d068a71a97081025a77122ff57c1"
+    },
+    {
+      "path": "scripts/operations/qb-r2f/evidence.ts",
+      "sha256": "41a2d2927eee38caad6a8bcc8f364d0f0cbd5a2c4d938a9053f97d3e92b1907b"
+    },
+    {
+      "path": "scripts/operations/qb-r2f/selection.ts",
+      "sha256": "bb7d05c7be2c2e86564b80daa5def7b1c0287ddacfa4be15aa1f4467204350ba"
+    },
+    {
+      "path": "src/lib/ai/model-routing.ts",
+      "sha256": "41934d00e8e332c7f452e984d46103cd24935cf210f2cb26f0be764f05150672"
+    },
+    {
+      "path": "src/lib/ai/pricing.ts",
+      "sha256": "25ac7e771681068ac78865895335fe9252fd1a320ed0379e064ce59f0fa8b7af"
+    },
+    {
+      "path": "src/lib/ai/types.ts",
+      "sha256": "087e64be4778c85bccaa3bae53ab18e25b5cecc670e6c69099976efe69921774"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/adapt.ts",
+      "sha256": "0d746aa10d551e8dd4cf327ef97d1e27c298f51ead2b70661045df69b7033bcb"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/adaptation-specification.ts",
+      "sha256": "c7ff2be64e56d930767adbb67e2bc8c5fed6426cea5a858d89858a4590bab220"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/assessment-applicability.ts",
+      "sha256": "dac49b817b97426eb44133d1077b8f437436d6255047b4bbc662faad719cf2ac"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/assessment-system-profile.ts",
+      "sha256": "00af5a614d2b0dc244201bd44e0cf156c66c3324ee3e35e5a2ebb3629515785a"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/canonical-hash.ts",
+      "sha256": "21392e456f2106c19424c58689a8b76c0d71b67cfa50382bbad8eadec8f7e240"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/discipline-policy.ts",
+      "sha256": "b5259ad2b280bc8640f95527e2e342f457984a3245a8a47efd5874b0dd179702"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/instance-lineage.ts",
+      "sha256": "87af55b75970e93678fa6b3b0c14d01c52b2b49a741a543452cb64a3efa733c9"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/item-demand-policy.ts",
+      "sha256": "86784bcf5d50b9e14b5d41d1f01bc726a3544ca19b89c286a5f718af17633f61"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/learning-approach-poc.ts",
+      "sha256": "62d845e321d98accbe83a0ba4f27579dbdcc58e5574e11b15a89ceaeea0eb57d"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/math-poc-applicability.ts",
+      "sha256": "b9059a4a9037a63c44675874684c0a5eea33cb1e419b57aa3ee445a8fa72c921"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/math-poc-matrix.ts",
+      "sha256": "25d625da3b10aae0c79d30c47b6e24330e286c62e9c3b374fc89422746d7ffe4"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/school-stem-performance.ts",
+      "sha256": "fa6979aa6476196e24e4f655aace281d09fd0b20d2a057065df68ec39069e3a0"
+    },
+    {
+      "path": "src/lib/assessment-adaptation/system-profiles.ts",
+      "sha256": "3d44112ec25f29d3c7cd1c49f429407c7b538a66cf0c3c24eac2245a6c43f315"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/answer-normalization.ts",
+      "sha256": "f1650f813caa9e9448baff7e05221571c39019e899934ca0103a02d26c4eb21f"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/expression-evaluator.ts",
+      "sha256": "835379f4f120c2aee193f23707a1538908eaa9f11241bd8aad786b4a96712f04"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/generation-contract.ts",
+      "sha256": "eba3f9e83d11ebf041b73bca93f30a00a5fcda61e1895ab4e2643b717bcbb161"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/generator/provider.ts",
+      "sha256": "923f62383e1ee5a0764fbed57c9896232c2cb4bccdd88fbaa42afd4c6a2aad60"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/generator/specification-generation-v2.ts",
+      "sha256": "857633f74672ed8b1e350fa4990516de5480fa517a9d889de40617a66a9611a3"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/generator/specification-generation-v3.ts",
+      "sha256": "b3776e77a9cfea2b47df551af8c9da48f1103b4ef775b7c24cc07643fa9e0af3"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/math-construct-registry.ts",
+      "sha256": "2a09d7a207b7049feb47b7920d5b604c0de0a2cb0602e366d9ad5ae892972ed0"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/originality-gate.ts",
+      "sha256": "dad85689c27425abfb7a2e1f07f7d63668cf46376c7b1aa7d72b6c4ace4bcefe"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/reference-pack.ts",
+      "sha256": "f0ed3b0866cba84b4182098558c21faaeee2d75f0b036305c21595013f5c3a24"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/requirement-cell.ts",
+      "sha256": "c87a77276e3e9be0e3034ef9f2eb5c78f0d74d4c415b1c321cc3405baaac9cc9"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/specification-candidate.ts",
+      "sha256": "f359a52926df26da4ce9f7762a97f255d5148c958c4040cecba160acb57bb06b"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/specification-validators-r3.ts",
+      "sha256": "9084c3722bc016e1f42269d82690b4af9a60c9dd9fd2338403d7f337c054ece3"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/specification-validators-r4.ts",
+      "sha256": "30aa1b89f1318d54a5ced04e176a773166286de5b3998da51cc1eeef76b5e920"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/specification-validators.ts",
+      "sha256": "563b8c51ba35c0ebff31bc2d627e53d55cb7e56d6a86d243c61b96eabff614fd"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/stimulus-spec.ts",
+      "sha256": "3c97573681ac14037f094efd5d854737bff7e545868603cd77bf01d62aed6be6"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/structural-validation.ts",
+      "sha256": "7023e891c2d5e52c5b085e2d896c91f0de60ecc19bce2101d287a7822801749a"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/production/validated-candidate.ts",
+      "sha256": "56e94990cecfde26b414efa2d8b339c13871803225b6fb63d6d1f6642428a5fa"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/task-families/family-demand.ts",
+      "sha256": "e0a7ca18ca673b282c35de02a30c48ef0d58d40e22798aed0e94dd7a074fa125"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/task-families/index.ts",
+      "sha256": "7abb78ebd706b8fda95f0a8aeb5fe226683c5647638b721b29feaa8b4660ae46"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/task-families/math-poc-families-ea1a.ts",
+      "sha256": "f94a57082198a7969ebbe38b96b5d07d5cf4955dedd25c935ce5e2f71ebb756e"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/task-families/math-poc-families.ts",
+      "sha256": "1ed4cdd2bfc2b5a3a722fce7fb26c1fbfa849b2b06e1ab790c5b5f7f3783e2c0"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/task-families/math-problem.ts",
+      "sha256": "407b4dff061ab715247534f03e79725fcd45ccf647d9bfc783635baa257dcc4f"
+    },
+    {
+      "path": "src/lib/exam-core/question-bank/task-families/task-family.ts",
+      "sha256": "541b6535a060c2d3c3dbd7724c951f3ad9249480ce806a8885598e6becdd06e4"
+    },
+    {
+      "path": "src/lib/exam-core/taxonomy.ts",
+      "sha256": "0588b7466c689b27a57d71ba252e8bcfe7e376f60e577431a35eaf1a09b419d7"
+    },
+    {
+      "path": "src/lib/learning-approach/institution-configuration.ts",
+      "sha256": "18c8d7c6a96a4b42ea35c9c4994df2d7e1e67e5ebc113f96c101b9537573702a"
+    },
+    {
+      "path": "src/lib/learning-approach/learning-approach-profile.ts",
+      "sha256": "1b750575d40d2983b61095f234a38720f3bb07b1a06677c64597a640b3013887"
+    }
+  ],
+  "dataFiles": [
+    {
+      "path": "docs/exams/question-bank/pilots/qb-r2d/generated-batch.json",
+      "sha256": "c26bc7c2001af0b20aafa6f4ac9837ce14056671459a63e5680199ef6fdc54dc"
+    },
+    {
+      "path": "docs/exams/question-bank/pilots/qb-r2d/spend-ledger.json",
+      "sha256": "995ac87af78b5be4b3d983080dd43fb7ca502e605e03711ae88cb957258e0cfd"
+    },
+    {
+      "path": "docs/exams/question-bank/pilots/qb-r2d/selection.json",
+      "sha256": "ad779a950e046bb21c4556f496c74679165bd9df985e1415889d672067d7d740"
+    },
+    {
+      "path": "docs/exams/question-bank/pilots/qb-r2d/specifications.json",
+      "sha256": "c82f63461a7cdb00db3680c739f97178ddeff2e6eed79a2e841c1dfef98ea32f"
+    },
+    {
+      "path": "docs/exams/question-bank/pilots/qb-r2e/generated-batch.json",
+      "sha256": "d2241825858080dba5999fdf9d82ed0a6a0bb647a3c9ff9b84cbbdc2ebe8c6f5"
+    },
+    {
+      "path": "docs/exams/question-bank/pilots/qb-r2e/spend-ledger.json",
+      "sha256": "a4a59cc84505d52aeb7e02387504c76cb02f1289c0bcc4a99f535d487a88433b"
+    },
+    {
+      "path": "docs/exams/question-bank/pilots/qb-r2b/pilot-batch.json",
+      "sha256": "a547bfeeebd776afa6c0db45f26257caa884046362961a04df8ae2984cbd8fd2"
+    },
+    {
+      "path": "docs/exams/question-bank/pilots/qb-r2c/pilot-v2-batch.json",
+      "sha256": "14e32edd91b3389f16e124c2053bff01a1e6f95e5ec6d46ce8968eacba7f9fb5"
+    },
+    {
+      "path": "docs/exams/question-bank/pilots/qb-canary-250/manifest.json",
+      "sha256": "d0ddefb71acb36640705b0ca00fc926e01b1dcf2e10b26d782b182655e7ca0ac"
+    }
+  ],
+  "runParameters": {
+    "slots": 250,
+    "manifest": {
+      "id": "qb-canary-250-manifest",
+      "version": "1"
+    },
+    "MAX_AUTOMATIC_REGENERATIONS": 0,
+    "retries": 0,
+    "generator": {
+      "provider": "openai",
+      "endpoint": "chat completions",
+      "model": "gpt-5.6-luna",
+      "responseMode": "STRICT_JSON_SCHEMA",
+      "reasoningEffort": "low",
+      "maxOutputTokens": 2150,
+      "gateway": "BYPASSED_NO_GOVERNANCE_ROW_WRITTEN"
+    },
+    "reviewer": {
+      "provider": "anthropic",
+      "endpoint": "messages",
+      "apiVersion": "2023-06-01",
+      "model": "claude-sonnet-5-5",
+      "thinking": {
+        "type": "between_tools"
+      },
+      "effort": "medium",
+      "responseMode": "STRICT_JSON_SCHEMA (output_config.format)",
+      "fallbacks": "NONE",
+      "retries": 0,
+      "gateway": "BYPASSED_NO_GOVERNANCE_ROW_WRITTEN",
+      "maxOutputTokens": 1600
+    },
+    "versions": {
+      "generator": {
+        "harness": {
+          "id": "studyus-specification-generation-harness",
+          "version": "3"
+        },
+        "slotGuidance": {
+          "id": "qb-canary-250-slot-guidance",
+          "version": "1"
+        }
+      },
+      "validators": {
+        "revision": 4
+      },
+      "reviewer": {
+        "id": "studyus-ai-item-reviewer",
+        "version": "1",
+        "promptVersion": "1",
+        "schemaVersion": "1",
+        "redactionVersion": "1",
+        "decisionPolicyVersion": "1"
+      }
+    },
+    "decisionPolicy": {
+      "id": "studyus-ai-review-decision-policy",
+      "version": "1"
+    },
+    "sampleProcedure": {
+      "id": "studyus-human-calibration-sample-procedure",
+      "version": "1"
+    },
+    "calibrationSet": {
+      "kind": "STUDYUS_HUMAN_CALIBRATION_SET",
+      "version": "1",
+      "defectClassVocabulary": "1",
+      "severityVocabulary": "1"
+    },
+    "spend": {
+      "cumulativeCapUsdAssumed": 30,
+      "generationPhaseCapUsdAssumed": 19,
+      "generatorPriceBasis": {
+        "id": "qb-r2d-guard-price",
+        "label": "ASSUMED",
+        "source": "QB-R2D lane assumption, deliberately above the repository's configured price of its most expensive routed model; not a vendor quotation",
+        "inputPerMillionUsd": 5,
+        "outputPerMillionUsd": 30
+      },
+      "reviewerPriceBasis": {
+        "id": "qb-canary-250-reviewer-assumed-price",
+        "label": "ASSUMED",
+        "source": "Canary assumption: the floor set by the orchestrator (the generator's assumed basis). The repository price table does not price this model. Not a vendor quotation and not an invoice; close to, not far above, the vendor list price.",
+        "inputPerMillionUsd": 5,
+        "outputPerMillionUsd": 30
+      }
+    },
+    "maxConcurrency": 4,
+    "consecutiveTransportFailuresThatHalt": 5,
+    "supersedes": "R2F_20_ITEM_RUN = SUPERSEDED_BY_QUESTION_FACTORY_CANARY_250"
+  },
+  "manifestHash": "51baba1bbecf12f399b997b65e525e0db169fa12ccca8e21f855cd360c7d2191"
+}

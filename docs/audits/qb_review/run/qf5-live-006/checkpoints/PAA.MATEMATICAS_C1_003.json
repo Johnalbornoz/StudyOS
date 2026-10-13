@@ -1,0 +1,37 @@
+{
+  "runId": "qf5-live-006",
+  "batchId": "PAA.MATEMATICAS:C1:003",
+  "phase": "C1",
+  "profileId": "PAA.MATEMATICAS",
+  "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.4.0",
+  "cumulativeSpendUsd": 2.33157,
+  "timestamp": "2026-10-12T13:14:55.929Z",
+  "candidateIds": [
+    "v2.paa/matematicas/paa.mat.aritmetica#0/001#0",
+    "v2.paa/matematicas/paa.mat.datos#0/001#0"
+  ],
+  "decisions": {
+    "v2.paa/matematicas/paa.mat.aritmetica#0/001#0": "HUMAN_REVIEW",
+    "v2.paa/matematicas/paa.mat.datos#0/001#0": "HUMAN_REVIEW"
+  },
+  "metrics": {
+    "rawGenerated": 2,
+    "structuralPass": 2,
+    "answerPass": 2,
+    "constructPass": 1,
+    "difficultyMatch": 1,
+    "autoApproved": 0,
+    "humanReview": 2,
+    "autoRejected": 0,
+    "specifications": 2,
+    "firstAttemptPass": 0,
+    "regenerated": 0,
+    "specificationIssues": 0,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 0,
+    "humanReviewRate": 1,
+    "rejectionRate": 0
+  },
+  "hash": "e977aab5740090ae2a57ad7f1d1800f49706b5f4fc5d883ce0543be42374c384"
+}

@@ -24,6 +24,8 @@ describe('the series', () => {
     const first = all.indexOf(batch[0]);
     expect(all.slice(first, first + 3)).toEqual(batch);
     expect(first).toBe(82); // 82 before L10 + 3: with the baseline row, the ledger goes 83 -> 86
+    // the batch is still the last three before the 20261121 lines (scheduled assessments, QF V5.1)
+    expect(all.filter((f) => f < '20261121').slice(-3)).toEqual(batch);
   });
 
   it('every file documents its rollback and deletes only its own ledger row', () => {

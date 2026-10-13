@@ -1,0 +1,704 @@
+REVIEW_ID,EXAM_FAMILY,QUALIFICATION,SUBJECT,LEVEL,PAPER_COMPONENT,INTENDED_TIER,PRIMARY_CONCEPT,BLUEPRINT_OBJECTIVE,RESPONSE_FORMAT,MARKS,COMMAND_TERM,STIMULUS,QUESTION,OPTIONS,EXPECTED_ANSWER,EXPLANATION,MARK_SCHEME,ANSWER_CORRECT,CONSTRUCT_FIT,EXAM_AUTHENTICITY,DIFFICULTY_ACTUAL,BLUEPRINT_FIT,PRIMARY_CONCEPT_CLEAR,LEARNER_TEXT_CLEAR,PROVENANCE_OK,FINAL_HUMAN_DECISION,REASON
+HC-001,IB,IB Diploma Programme,Mathematics: analysis and approaches,HL,P1,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)","aahl.p1.algebra -- Number and algebra: logarithms, exponents, sequences and series.",SHORT_RESPONSE,7,solve,,"Solve, for real x, the equation
+
+log₂(Σ(n=0 to ∞) 2^(-nx)) = x − 1.
+
+Give an exact answer and show sufficient working to justify the convergence of the series.",,x = log₂3,"For the series to converge, its common ratio 2^(-x) must satisfy |2^(-x)| < 1. Since 2^(-x) is positive, this gives x > 0.
+
+The series is therefore geometric, so
+
+Σ(n=0 to ∞) 2^(-nx) = 1/(1 − 2^(-x)).
+
+Hence
+
+log₂(1/(1 − 2^(-x))) = x − 1.
+
+Let y = 2^x. Since x > 0, y > 1. Then 2^(-x) = 1/y, and the equation becomes
+
+log₂(y/(y − 1)) = x − 1 = log₂(2^(x−1)) = log₂(y/2).
+
+Since log₂ is one-to-one,
+
+y/(y − 1) = y/2.
+
+As y > 1, y is non-zero, so
+
+2y = y(y − 1)
+2 = y − 1
+y = 3.
+
+Therefore 2^x = 3, giving
+
+x = log₂3.
+
+This value is positive, so the series converges and the solution is valid.","[1] States that convergence requires |2^(-x)| < 1 and hence x > 0.
+[1] Recognizes and evaluates the infinite geometric series as 1/(1 − 2^(-x)).
+[1] Substitutes the sum into the given equation to obtain log₂(1/(1 − 2^(-x))) = x − 1.
+[1] Introduces y = 2^x, with y > 1, and rewrites the equation as log₂(y/(y − 1)) = log₂(y/2).
+[1] Uses the one-to-one property of logarithms to obtain y/(y − 1) = y/2.
+[1] Solves the resulting equation to obtain y = 3.
+[1] Concludes x = log₂3 and verifies that this value satisfies the convergence restriction.",,,,,,,,,,
+HC-002,PISA,PISA,Ciencias,,SCIENCE,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",pisa.sci.evaluate.epistemic -- Evaluar y diseñar la investigación científica · conocimiento epistémico (cómo se justifica el conocimiento científico).,NUMERIC_ENTRY,1,,"Una investigadora quiere comprobar si una pintura reflectante reduce la temperatura interior de un aula. Durante cinco días, a la misma hora, comparó un aula con la pintura (A) con otra aula semejante sin pintura (B). Antes de comenzar, estableció que solo usaría una comparación diaria si la diferencia entre las temperaturas exteriores junto a las dos aulas era de 1,0 °C o menos; así se evita atribuir a la pintura una diferencia causada por el ambiente exterior.
+
+| Día | Exterior junto a A (°C) | Exterior junto a B (°C) | Interior A con pintura (°C) | Interior B sin pintura (°C) |
+|---|---:|---:|---:|---:|
+| 1 | 31,0 | 30,2 | 25,4 | 27,6 |
+| 2 | 29,5 | 28,9 | 24,8 | 26,4 |
+| 3 | 30,1 | 31,4 | 25,3 | 27,2 |
+| 4 | 27,8 | 27,0 | 23,9 | 25,5 |
+| 5 | 26,2 | 27,4 | 23,6 | 25,6 |
+
+La reducción de temperatura de un día se calcula como la temperatura del aula B menos la del aula A.","Según la regla establecida antes de recoger los datos, ¿cuál es la reducción media de temperatura, en °C, que puede atribuirse a la pintura? Escribe solo el valor numérico.",,1.8,"Primero se incluyen solo los días en que la diferencia de temperatura exterior es como máximo 1,0 °C. Son válidos los días 1, 2 y 4; los días 3 y 5 se excluyen porque sus diferencias son 1,3 °C y 1,2 °C.
+
+Las reducciones válidas son: día 1, 27,6 − 25,4 = 2,2 °C; día 2, 26,4 − 24,8 = 1,6 °C; día 4, 25,5 − 23,9 = 1,6 °C. La media es (2,2 + 1,6 + 1,6) / 3 = 1,8 °C.","[1] Escribe 1,8 (°C), tras usar únicamente los días 1, 2 y 4 y calcular la media de sus reducciones.",,,,,,,,,,
+HC-003,ICFES,Saber 11,Matemáticas,,Matemáticas,FOUNDATIONAL,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.formulacion -- Formulación y ejecución: plantea e implementa estrategias para resolver problemas.,SELECTED_RESPONSE,1,,"Una organización juvenil necesita contratar un servicio de internet móvil para compartirlo durante un mes. La empresa ofrece estos planes:
+
+| Plan | Cargo fijo mensual | Costo por cada GB consumido |
+|---|---:|---:|
+| A | $12.000 | $1.000 |
+| B | $4.000 | $1.400 |
+
+El costo mensual de cada plan se obtiene sumando el cargo fijo y el costo de los gigabytes consumidos.",¿Cuántos gigabytes se deben consumir en un mes para que el costo total sea igual con los dos planes?,"A. 10 GB
+B. 20 GB
+C. 30 GB
+D. 40 GB",B. 20 GB,"Si x representa la cantidad de gigabytes consumidos, los costos son:
+
+Plan A: 12.000 + 1.000x
+Plan B: 4.000 + 1.400x
+
+Para que sean iguales:
+12.000 + 1.000x = 4.000 + 1.400x
+
+La diferencia entre los cargos fijos es $8.000 y la diferencia entre los costos por GB es $400. Por tanto:
+
+x = 8.000 / 400 = 20
+
+Se deben consumir 20 GB.",,,,,,,,,,,
+HC-004,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.interpretacion -- Interpretación y representación: comprende y transforma información cuantitativa y esquemática.,SELECTED_RESPONSE,1,,"Una biblioteca organizó dos talleres de lectura. La tabla muestra cuántas personas se inscribieron, qué porcentaje asistió y qué fracción de quienes asistieron completó el taller.
+
+| Taller | Personas inscritas | Porcentaje que asistió | Fracción de asistentes que completó |
+|---|---:|---:|---:|
+| A | 72 | 75% | 2/3 |
+| B | 80 | 75% | 3/4 |","¿Cuántas personas completaron el taller A y cuántas completaron el taller B, respectivamente?","A. 36 personas y 45 personas.
+B. 54 personas y 60 personas.
+C. 48 personas y 60 personas.
+D. 36 personas y 60 personas.",A. 36 personas y 45 personas.,"En el taller A asistió el 75% de 72 personas: 72 × 75/100 = 54. De esas 54 personas, completaron el taller 2/3: 54 × 2/3 = 36.
+
+En el taller B asistió el 75% de 80 personas: 80 × 75/100 = 60. De esas 60 personas, completaron el taller 3/4: 60 × 3/4 = 45.
+
+Por lo tanto, la opción correcta es A.",,,,,,,,,,,
+HC-005,ICFES,Saber 11,Matemáticas,,Matemáticas,FOUNDATIONAL,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"En una campaña escolar de reciclaje se registró la cantidad de botellas recolectadas en dos semanas.
+
+| Semana | Botellas recolectadas |
+|---|---:|
+| 1 | 240 |
+| 2 | 300 |
+
+Un estudiante afirma: «La cantidad recolectada aumentó 20%, porque el aumento fue de 60 botellas y 60/300 = 0,20».",¿Cuál opción evalúa correctamente el procedimiento del estudiante?,"A. El procedimiento es correcto, porque 60 botellas corresponden al 20% de las recolectadas en la semana 2.
+B. El procedimiento es incorrecto, porque el aumento debe compararse con las 240 botellas de la semana 1; por tanto, fue de 25%.
+C. El procedimiento es incorrecto, porque el aumento porcentual fue de 60%, que es la diferencia entre las cantidades registradas.
+D. El procedimiento es correcto, porque 300/240 = 1,25 y ese resultado representa un aumento de 1,25%.","B. El procedimiento es incorrecto, porque el aumento debe compararse con las 240 botellas de la semana 1; por tanto, fue de 25%.","La cantidad aumentó en 300 - 240 = 60 botellas. Para calcular el porcentaje de aumento, la diferencia se compara con la cantidad inicial, que es 240, no con la cantidad final. Entonces, el aumento porcentual es 60/240 = 0,25 = 25%. Por tanto, el procedimiento del estudiante es incorrecto y la opción B es la única que lo evalúa correctamente.",,,,,,,,,,,
+HC-006,PAA,PAA,Matemáticas,,MATEMATICAS,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)","paa.mat.geometria -- Geometría: ángulos, Pitágoras, áreas, semejanza.",NUMERIC_ENTRY,1,,"Para diseñar un refuerzo triangular, se utiliza el triángulo rectángulo ABC, cuyo ángulo recto está en A. Desde A se traza la perpendicular AD al lado BC, con D sobre BC. Se sabe que BD = 9 cm y DC = 16 cm. En el lado AB se ubica el punto E de modo que AE = AD. El segmento ED divide el triángulo ABC en el cuadrilátero AECD y el triángulo BED.",¿Qué fracción del área del triángulo ABC representa el área del cuadrilátero AECD? Escribe la fracción simplificada.,,116/125,"Como AD es la altura relativa a la hipotenusa, los triángulos ABD, ADC y ABC son semejantes. De esa semejanza se obtiene AD² = BD·DC, por lo que AD² = 9·16 = 144 y AD = 12 cm. También AB² = BD·BC. Como BC = 9 + 16 = 25 cm, AB² = 9·25 = 225 y AB = 15 cm.
+
+Puesto que AE = AD, AE = 12 cm; entonces BE = AB − AE = 15 − 12 = 3 cm. Los triángulos BED y BAD tienen la misma altura desde D hasta AB, así que sus áreas están en la razón BE:BA = 3:15 = 1:5. Además, los triángulos ABD y ABC tienen la misma altura desde A hasta BC, por lo que sus áreas están en la razón BD:BC = 9:25. Por tanto, el área de BED representa (1/5)(9/25) = 9/125 del área de ABC.
+
+El cuadrilátero AECD es la parte restante del triángulo ABC, así que su fracción del área es 1 − 9/125 = 116/125.",[1] Obtiene correctamente que la fracción del área del cuadrilátero AECD respecto del área de ABC es 116/125.,,,,,,,,,,
+HC-007,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.interpretacion -- Interpretación y representación: comprende y transforma información cuantitativa y esquemática.,SELECTED_RESPONSE,1,,"Una alcaldía evalúa una campaña de recolección de residuos en cuatro barrios. Para cada periodo, registra la meta de recolección y la cantidad efectivamente recolectada. La coordinación define el avance como el aumento del porcentaje de cumplimiento, calculado así: (cantidad recolectada ÷ meta) × 100.
+
+| Barrio | Periodo 1: meta (kg) | Periodo 1: recolectado (kg) | Periodo 2: meta (kg) | Periodo 2: recolectado (kg) |
+|---|---:|---:|---:|---:|
+| A | 200 | 160 | 240 | 216 |
+| B | 100 | 80 | 120 | 102 |
+| C | 300 | 240 | 330 | 297 |
+| D | 400 | 320 | 500 | 425 |",¿Qué barrios presentan el mayor avance según la definición de la coordinación?,"A. Los barrios A y C, porque su cumplimiento aumentó 10 puntos porcentuales.
+B. El barrio C, porque recolectó 57 kg más, frente a los 56 kg adicionales del barrio A.
+C. El barrio A, porque su cantidad recolectada aumentó 35 %, frente al 23,75 % del barrio C.
+D. Los barrios B y D, porque su cumplimiento aumentó 5 puntos porcentuales.","A. Los barrios A y C, porque su cumplimiento aumentó 10 puntos porcentuales.","Se calcula el porcentaje de cumplimiento en cada periodo y luego se compara su aumento.
+
+Barrio A: 160/200 = 80 % y 216/240 = 90 %. El aumento es de 10 puntos porcentuales.
+Barrio B: 80/100 = 80 % y 102/120 = 85 %. El aumento es de 5 puntos porcentuales.
+Barrio C: 240/300 = 80 % y 297/330 = 90 %. El aumento es de 10 puntos porcentuales.
+Barrio D: 320/400 = 80 % y 425/500 = 85 %. El aumento es de 5 puntos porcentuales.
+
+El mayor aumento es de 10 puntos porcentuales, y se presenta en los barrios A y C. Por tanto, la opción correcta es A.",,,,,,,,,,,
+HC-008,PAA,PAA,Matemáticas,,MATEMATICAS,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)","paa.mat.aritmetica -- Aritmética: razón, proporción, porcentaje, teoría de números.",SELECTED_RESPONSE,1,,"En una jornada de orientación universitaria, 2/7 de las personas asistentes llegaron en transporte público. De las demás personas, 2/5 llegaron caminando y el resto llegó en vehículo particular. Hubo 22 personas más en vehículo particular que en transporte público.",¿Cuántas personas asistieron en total a la jornada?,"A. 70 personas
+B. 110 personas
+C. 154 personas
+D. 770 personas",C. 154 personas,"Si el total de asistentes es n, la fracción que llegó en transporte público es 2/7. Por tanto, queda 5/7 del total. De ese grupo, 2/5 caminó, así que la fracción que llegó en vehículo particular es (5/7)*(1-2/5) = (5/7)*(3/5) = 3/7. La diferencia entre quienes llegaron en vehículo particular y quienes llegaron en transporte público es 3/7 - 2/7 = 1/7 del total. Como esa diferencia es de 22 personas, n/7 = 22 y n = 154. La respuesta correcta es C.",,,,,,,,,,,
+HC-009,PAA,PAA,Matemáticas,,MATEMATICAS,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)","paa.mat.algebra -- Álgebra: ecuaciones, sistemas, funciones, variación.",NUMERIC_ENTRY,1,,"Una empresa de mensajería cobra una cuota de preparación y el mismo importe por cada kilómetro recorrido. En dos envíos se registraron estos cobros:
+
+| Distancia recorrida | Cobro total |
+|---|---:|
+| 3 km | 89 pesos |
+| 7 km | 141 pesos |
+
+Otra empresa no cobra cuota de preparación y cobra 17 pesos por cada kilómetro recorrido.","¿A qué distancia, en kilómetros, los cobros totales de ambas empresas son iguales?",,12.5,"Entre los dos registros de la primera empresa, el cobro aumenta 141 − 89 = 52 pesos cuando la distancia aumenta 7 − 3 = 4 km. Por tanto, el importe por kilómetro es 52/4 = 13 pesos.
+
+En un envío de 3 km, esos kilómetros representan 3 × 13 = 39 pesos, así que la cuota de preparación es 89 − 39 = 50 pesos. El cobro de la primera empresa para una distancia d es, entonces, 50 + 13d, mientras que el de la segunda es 17d.
+
+Al igualarlos: 50 + 13d = 17d, de donde 50 = 4d y d = 12.5. La distancia es 12.5 km.",[1] Registra 12.5 km como la distancia en la que los cobros son iguales.,,,,,,,,,,
+HC-010,ICFES,Saber 11,Matemáticas,,Matemáticas,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"Una biblioteca registró, antes y después de una campaña de lectura, el número de personas inscritas y el número de préstamos realizados en cada sede.
+
+| Sede | Antes: personas inscritas | Antes: personas que pidieron préstamo | Después: personas inscritas | Después: personas que pidieron préstamo |
+|---|---:|---:|---:|---:|
+| Norte | 120 | 30 | 180 | 54 |
+| Sur | 80 | 24 | 70 | 21 |
+
+Un estudiante afirma: «La proporción total de personas que pidieron préstamo aumentó 5 puntos porcentuales, porque en la sede Norte pasó de 25% a 30% y en la sede Sur se mantuvo en 30%; por tanto, basta considerar el cambio de la sede Norte».",¿Cuál de las siguientes opciones evalúa correctamente el procedimiento del estudiante?,"A. La afirmación es válida, porque el aumento de 5 puntos porcentuales en la sede Norte representa el cambio de toda la biblioteca.
+B. La afirmación no es válida, porque la proporción total pasó de 54/200 = 27% a 75/250 = 30%, es decir, aumentó 3 puntos porcentuales.
+C. La afirmación no es válida, porque los préstamos aumentaron en 21 y las inscripciones en 50; por tanto, la proporción total aumentó 21/50 = 42%.
+D. La afirmación no es válida, porque el promedio de las proporciones de las sedes pasó de (25% + 30%)/2 = 27,5% a (30% + 30%)/2 = 30%, un aumento de 2,5 puntos porcentuales.","B. La afirmación no es válida, porque la proporción total pasó de 54/200 = 27% a 75/250 = 30%, es decir, aumentó 3 puntos porcentuales.","Para hallar la proporción total no se deben promediar directamente las proporciones de las sedes ni usar solo el cambio de una sede. Primero se suman los préstamos y las personas inscritas en cada momento. Antes de la campaña hubo 30 + 24 = 54 préstamos entre 120 + 80 = 200 personas, de modo que la proporción total fue 54/200 = 27%. Después hubo 54 + 21 = 75 préstamos entre 180 + 70 = 250 personas, de modo que la proporción total fue 75/250 = 30%. La diferencia es 30% - 27% = 3 puntos porcentuales, no 5. Por eso, la opción B refuta correctamente el procedimiento: considera los tamaños de las dos sedes y compara las proporciones totales.",,,,,,,,,,,
+HC-011,PISA,PISA,Matemáticas,,MATHEMATICS,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)","pisa.espacio.emplear -- Espacio y forma (Space and shape) · Emplear conceptos, hechos y procedimientos.",SHORT_RESPONSE,1,,"En un plano a escala 1:250 aparece un recinto para plantas medicinales. Su contorno está formado por un rectángulo de 6 cm de largo y 4 cm de ancho, con un semicírculo exterior cuyo diámetro coincide con uno de los lados de 6 cm. El lado recto de 6 cm que queda frente al semicírculo coincide completamente con un muro del patio. En uno de los lados de 4 cm hay una entrada de 1 cm de ancho. Se colocará un borde alrededor de todos los límites del recinto, excepto junto al muro y en la entrada. Usa π = 3,14.",¿Cuántos metros de borde se necesitan? Escribe tu respuesta.,,"41,05 m","El lado de 6 cm que coincide con el muro no necesita borde, y la entrada de 1 cm tampoco. De los lados rectos solo se cuentan 4 + 4 - 1 = 7 cm. El semicírculo sustituye al otro lado de 6 cm; su arco mide 3,14*6/2 = 9,42 cm. En el plano se necesitan 7 + 9,42 = 16,42 cm de borde. Como la escala es 1:250, cada centímetro representa 2,5 m: 16,42*2,5 = 41,05 m.","[1] Calcula correctamente el borde real, excluyendo el muro y la entrada e incluyendo el arco del semicírculo: 41,05 m (se acepta 41,1 m por redondeo).",,,,,,,,,,
+HC-012,ICFES,Saber 11,Matemáticas,,Matemáticas,FOUNDATIONAL,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"En una huerta escolar, un rectángulo de 5 m de largo y 4 m de ancho se ampliará. El largo aumentará 20 % y el ancho aumentará 10 %. Un estudiante afirma: «El área aumentará 30 %, porque se suman los porcentajes de aumento de las dos dimensiones».",¿Cuál opción evalúa correctamente la afirmación del estudiante sobre el porcentaje de aumento del área?,"A. Es válida: el área aumenta 30 %, porque se suman los porcentajes de las dimensiones.
+B. No es válida: el área aumenta 32 %, porque se multiplican los factores 1,20 y 1,10.
+C. No es válida: el área aumenta 20 %, porque solo el cambio del largo determina el área.
+D. No es válida: el área aumenta 10 %, porque solo el cambio del ancho determina el área.","B. No es válida: el área aumenta 32 %, porque se multiplican los factores 1,20 y 1,10.","El área inicial es 5 × 4 = 20 m². Después de los aumentos, el largo es 5 × 1,20 = 6 m y el ancho es 4 × 1,10 = 4,4 m. Por tanto, el área nueva es 6 × 4,4 = 26,4 m². El aumento es 26,4 − 20 = 6,4 m², que corresponde a 6,4/20 = 0,32, es decir, 32 %. También puede verse directamente que el área se multiplica por 1,20 × 1,10 = 1,32. La afirmación del estudiante no es válida porque sumar los porcentajes ignora que el segundo aumento se aplica a una dimensión que ya cambió.",,,,,,,,,,,
+HC-013,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"Una asociación escolar necesita contratar un servicio de impresión. El plan A cobra una tarifa fija mensual de $18.000 y $120 por cada página impresa. El plan B cobra una tarifa fija mensual de $30.000 y $80 por cada página. Se estima que cada mes se imprimirán entre 400 y 700 páginas.
+
+Un estudiante afirma: «El plan A es más conveniente porque su tarifa fija mensual es menor».",¿Cuál argumento permite evaluar correctamente la afirmación del estudiante?,"A. La afirmación es válida, porque para 600 páginas el plan A cuesta $90.000 y el plan B $78.000; por tanto, el plan A es más barato.
+B. La afirmación se refuta, porque los costos son iguales con 300 páginas y, entre 400 y 700 páginas, el plan B resulta más barato que el plan A.
+C. La afirmación es válida, porque la tarifa fija del plan A es menor y esa diferencia determina cuál plan conviene, sin importar cuántas páginas se impriman.
+D. La afirmación se refuta, porque el punto de igualdad se obtiene dividiendo $12.000 entre $120 + $80, lo que da 60 páginas; después de esa cantidad, el plan A es más barato.","B. La afirmación se refuta, porque los costos son iguales con 300 páginas y, entre 400 y 700 páginas, el plan B resulta más barato que el plan A.","Si se imprimen x páginas, el costo del plan A es 18.000 + 120x y el del plan B es 30.000 + 80x.
+
+Para hallar cuándo cuestan lo mismo:
+18.000 + 120x = 30.000 + 80x
+40x = 12.000
+x = 300.
+
+A partir de 300 páginas, cada página adicional aumenta $120 en el plan A y solo $80 en el plan B, por lo que el plan B pasa a ser más barato. Como la cantidad estimada está entre 400 y 700 páginas, el plan B es más conveniente en todo ese intervalo. Por ejemplo, con 400 páginas, A cuesta $66.000 y B $62.000; con 700 páginas, A cuesta $102.000 y B $86.000. Por tanto, la afirmación del estudiante se refuta y la opción B es la correcta.",,,,,,,,,,,
+HC-014,PAA,PAA,Lectura,,LECTURA,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",paa.lect.evidencia -- Evidencias que validan inferencias; relación entre ideas y entre textos.,SELECTED_RESPONSE,1,,"Texto 1
+
+El ayuntamiento instaló un carril exclusivo para autobuses en la avenida Norte. Una semana después, la portavoz municipal declaró: «La medida ha reducido el congestionamiento de la zona».
+
+Texto 2
+
+Un informe comparó los diez días hábiles anteriores y posteriores a la instalación, durante las mismas horas. En la avenida Norte, el promedio diario de vehículos bajó de 1.200 a 980 y el tiempo promedio de recorrido pasó de 14 a 11 minutos. En la calle Limón, paralela a la avenida, el promedio de vehículos subió de 600 a 690 y el recorrido pasó de 8 a 10 minutos. El informe no incluyó las demás calles de la zona y señaló que no podía determinar si los cambios se debían exclusivamente al nuevo carril.",¿Cuál de las siguientes inferencias está mejor respaldada por ambos textos?,"A. El carril mejoró el tránsito de toda la zona, porque en la avenida Norte disminuyeron los vehículos y el tiempo de recorrido.
+B. El carril trasladó todo el congestionamiento a la calle Limón, porque allí aumentaron los vehículos y el tiempo de recorrido.
+C. La avenida Norte registró una mejora, pero los datos no bastan para afirmar que mejoró toda la zona; parte del tránsito pudo desplazarse a la calle Limón.
+D. El carril no produjo ningún beneficio, porque el aumento del tránsito en la calle Limón demuestra que la medida fracasó.","C. La avenida Norte registró una mejora, pero los datos no bastan para afirmar que mejoró toda la zona; parte del tránsito pudo desplazarse a la calle Limón.","En la avenida Norte disminuyeron tanto el número de vehículos como el tiempo de recorrido, de modo que allí se observó una mejora. Sin embargo, en la calle Limón ocurrieron cambios desfavorables y el informe no examinó las demás calles. Por eso, no es válido extender el resultado de una avenida a toda la zona. El aumento en la calle Limón permite considerar que parte del tránsito pudo haberse desplazado allí, pero no demuestra que todo se haya trasladado. Además, el informe advierte que no puede atribuir los cambios exclusivamente al carril. La inferencia de la opción C conserva esas limitaciones y no convierte una posibilidad en una certeza.",,,,,,,,,,,
+HC-015,PISA,PISA,Ciencias,,SCIENCE,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",pisa.sci.evaluate.epistemic -- Evaluar y diseñar la investigación científica · conocimiento epistémico (cómo se justifica el conocimiento científico).,SELECTED_RESPONSE,1,,"Un grupo de estudiantes quiere explicar por qué el agua de dos depósitos situados en una azotea puede calentarse de manera diferente. Investiga si el color del recipiente influye en el calentamiento del agua.
+
+Usan recipientes negros, blancos y plateados del mismo material y tamaño, con 500 mL de agua en cada uno. Colocan los recipientes bajo la misma lámpara durante 20 minutos. La posición de cada color se cambia cada 5 minutos y repiten la prueba tres veces. En cada prueba registran la temperatura inicial y la temperatura final.
+
+| Color del recipiente | Prueba 1: inicial → final (°C) | Prueba 2: inicial → final (°C) | Prueba 3: inicial → final (°C) |
+|---|---:|---:|---:|
+| Negro | 18 → 31 | 19 → 32 | 18 → 30 |
+| Blanco | 18 → 25 | 19 → 26 | 18 → 25 |
+| Plateado | 19 → 24 | 18 → 23 | 19 → 25 |",¿Qué conclusión está mejor justificada por el diseño de la investigación y los datos?,"A. El recipiente negro siempre calentará más el agua, porque terminó con la temperatura más alta.
+B. En estas condiciones, el recipiente negro produjo el mayor aumento de temperatura y la diferencia se puede atribuir principalmente al color.
+C. El recipiente blanco calentó más el agua que los otros, porque alcanzó temperaturas finales mayores que el plateado.
+D. No se puede comparar el efecto del color, porque las temperaturas iniciales no fueron exactamente iguales.","B. En estas condiciones, el recipiente negro produjo el mayor aumento de temperatura y la diferencia se puede atribuir principalmente al color.","Para comparar el calentamiento hay que calcular el aumento de temperatura, no solo la temperatura final. Los aumentos del recipiente negro fueron 13, 13 y 12 °C, con un promedio aproximado de 12,7 °C. Los del blanco fueron 7, 7 y 7 °C, y los del plateado fueron 5, 5 y 6 °C. Por tanto, el negro produjo el mayor aumento en las tres pruebas. Como los recipientes eran iguales, la cantidad de agua y el tiempo fueron los mismos, se repitió la prueba y se cambiaron las posiciones, la diferencia se puede atribuir principalmente al color en las condiciones investigadas. La opción B expresa una conclusión respaldada sin extenderla a todas las situaciones.",,,,,,,,,,,
+HC-016,PAA,PAA,Lectura,,LECTURA,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",paa.lect.evidencia -- Evidencias que validan inferencias; relación entre ideas y entre textos.,SELECTED_RESPONSE,1,,"Texto 1
+
+El ayuntamiento plantó 120 árboles nativos en tres colonias que un mapa térmico había señalado como especialmente calurosas. Doce meses después, 103 árboles seguían vivos, lo que el informe municipal describió como una supervivencia aproximada del 86 %. Durante los primeros cuatro meses, las cuadrillas los regaron una vez por semana. El informe también recogió que varios vecinos percibían más sombra en algunas calles.
+
+Texto 2
+
+El Observatorio Ambiental revisó el informe y señaló que la supervivencia de los árboles muestra que la plantación y el mantenimiento iniciales funcionaron en buena medida, pero no demuestra que las colonias se hayan enfriado. Para sostener esa conclusión harían falta mediciones de temperatura antes y después, además de comparaciones con calles semejantes sin árboles nuevos. El Observatorio añadió que las entrevistas no permiten separar el efecto de los árboles del de toldos u otras formas de sombra.",¿Cuál conclusión está mejor respaldada por ambos textos?,"A. El programa redujo la temperatura de las colonias porque la mayoría de los árboles sobrevivió.
+B. Los árboles se adaptaron al calor sin depender del mantenimiento, pues eran especies nativas.
+C. La mayoría de los árboles sobrevivió el primer año, pero aún no se puede atribuir al programa un enfriamiento de las colonias.
+D. Los testimonios vecinales confirman el enfriamiento, aunque no existan mediciones comparables.","C. La mayoría de los árboles sobrevivió el primer año, pero aún no se puede atribuir al programa un enfriamiento de las colonias.","El Texto 1 informa que 103 de los 120 árboles seguían vivos después de doce meses y que recibieron riego durante los primeros cuatro meses; por tanto, sí respalda que la mayoría sobrevivió durante el primer año bajo esas condiciones de mantenimiento. El Texto 2 aclara que ese resultado no basta para demostrar una disminución de la temperatura y especifica que se necesitarían mediciones comparables. Por eso, la conclusión de C relaciona correctamente el resultado comprobado con el límite de la evidencia. A y D convierten indicios insuficientes en una prueba de enfriamiento, mientras que B ignora el riego y atribuye la supervivencia a una adaptación no demostrada.",,,,,,,,,,,
+HC-017,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"Una empresa ofrece dos planes mensuales de datos para una tableta. Cada plan incluye los primeros 10 GB y cobra por cada GB adicional:
+
+| Plan | Precio por los primeros 10 GB | Precio por cada GB adicional |
+|---|---:|---:|
+| P | $32.000 | $2.000 |
+| Q | $20.000 | $3.000 |
+
+Una estudiante compara los planes para un consumo de 16 GB. Calcula que el plan P cuesta $44.000 y el plan Q cuesta $38.000. Luego afirma: «Como Q es más barato para 16 GB, Q resulta más barato para cualquier consumo mayor que 10 GB».
+
+Se considera que el consumo puede ser un número entero de GB.",¿Cuál opción evalúa correctamente la afirmación de la estudiante?,"A. Es válida, porque Q cuesta $38.000 para 16 GB y, al aumentar el consumo, seguirá siendo más barato que P.
+B. Es válida, porque Q tiene el menor precio inicial y, por tanto, siempre conserva la ventaja sobre P.
+C. No es válida, porque Q es más barato hasta 22 GB; para 25 GB, P cuesta $62.000 y Q cuesta $65.000.
+D. No es válida, porque los planes cuestan lo mismo a 20 GB; después de ese consumo, Q vuelve a ser más barato.","C. No es válida, porque Q es más barato hasta 22 GB; para 25 GB, P cuesta $62.000 y Q cuesta $65.000.","El costo del plan P para un consumo x mayor que 10 GB es 32.000 + 2.000(x − 10), y el del plan Q es 20.000 + 3.000(x − 10).
+
+Para encontrar cuándo cuestan lo mismo, se igualan las expresiones:
+32.000 + 2.000(x − 10) = 20.000 + 3.000(x − 10).
+
+Al simplificar, 12.000 = 1.000(x − 10), de modo que x = 22. Por tanto, Q es más barato entre más de 10 GB y 22 GB, pero para consumos mayores que 22 GB, P es más barato porque cobra menos por cada GB adicional.
+
+Por ejemplo, para 25 GB, P cuesta 32.000 + 15(2.000) = $62.000 y Q cuesta 20.000 + 15(3.000) = $65.000. Así que la afirmación no es válida. La opción correcta es C.",,,,,,,,,,,
+HC-018,ICFES,Saber 11,Matemáticas,,Matemáticas,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"Una institución aplicó una prueba de participación en una campaña ambiental. Se consideró correcta la respuesta de cada estudiante que entregó el material solicitado. El director comparó los resultados antes y después de cambiar la distribución de estudiantes entre las dos jornadas.
+
+| Momento | Jornada | Estudiantes | Respuestas correctas |
+|---|---|---:|---:|
+| Antes | Mañana | 100 | 50 |
+| Antes | Tarde | 300 | 270 |
+| Después | Mañana | 300 | 180 |
+| Después | Tarde | 200 | 190 |
+
+El director afirma: «La participación total mejoró, porque la proporción de respuestas correctas aumentó en cada jornada»",¿Cuál evaluación de la afirmación del director es correcta?,"A. Se valida, porque el promedio de las proporciones pasó de (50% + 90%)/2 = 70% a (60% + 95%)/2 = 77,5%.
+B. Se refuta, porque la proporción total pasó de 320/400 = 80% a 370/500 = 74%, aunque aumentó en cada jornada.
+C. Se valida, porque el número total de respuestas correctas pasó de 320 a 370, lo que demuestra mayor participación.
+D. Se valida, porque los aumentos de 10 puntos y 5 puntos en las jornadas producen un aumento total de 15 puntos.","B. Se refuta, porque la proporción total pasó de 320/400 = 80% a 370/500 = 74%, aunque aumentó en cada jornada.","En la jornada de la mañana, la proporción aumentó de 50/100 = 50% a 180/300 = 60%. En la jornada de la tarde, aumentó de 270/300 = 90% a 190/200 = 95%.
+
+Sin embargo, para obtener la proporción total no se deben promediar las proporciones de las jornadas, porque las jornadas tienen cantidades diferentes de estudiantes. Se deben sumar los estudiantes con respuestas correctas y dividir entre el total de estudiantes.
+
+Antes, la proporción total era (50 + 270)/(100 + 300) = 320/400 = 80%.
+Después, era (180 + 190)/(300 + 200) = 370/500 = 74%.
+
+Por tanto, aunque cada jornada mejoró por separado, la proporción total disminuyó. La afirmación del director se refuta mediante el procedimiento descrito en la opción B.",,,,,,,,,,,
+HC-019,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"El comité ambiental de un colegio compara el consumo promedio diario de agua. Antes de una campaña de ahorro, el consumo era de 1.200 L por día. Durante la primera etapa de la campaña, el consumo disminuyó 25%. Durante la segunda etapa, aumentó 20% con respecto al consumo promedio de la primera etapa. Un estudiante afirma: «Al finalizar la segunda etapa, el consumo volvió a ser de 1.200 L por día, porque una disminución del 25% y un aumento del 20% casi se compensan».",¿Cuál de las siguientes argumentaciones evalúa correctamente la afirmación del estudiante?,"A. Es válida, porque una disminución del 25% y un aumento del 20% se compensan al actuar sobre el mismo valor inicial; por tanto, quedan 1.200 L.
+B. Es falsa, porque primero quedan 900 L y el aumento corresponde a 180 L; por tanto, terminan en 1.080 L, que son 120 L menos.
+C. Es falsa, porque el cambio porcentual total es una reducción del 5%; por tanto, quedan 1.140 L.
+D. Es falsa, porque las dos variaciones deben sumarse como una reducción del 45%; por tanto, quedan 660 L.","B. Es falsa, porque primero quedan 900 L y el aumento corresponde a 180 L; por tanto, terminan en 1.080 L, que son 120 L menos.","La disminución del 25% se calcula sobre los 1.200 L iniciales: 1.200 × 25/100 = 300 L. Después de la primera etapa quedan 1.200 - 300 = 900 L. El aumento del 20% de la segunda etapa se calcula sobre esos 900 L, no sobre los 1.200 L iniciales: 900 × 20/100 = 180 L. Por tanto, el consumo final es 900 + 180 = 1.080 L. Como 1.080 L es 120 L menos que 1.200 L, la afirmación es falsa. La argumentación de la opción B es la correcta.",,,,,,,,,,,
+HC-020,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"Una entidad revisó la proporción de solicitudes aprobadas en dos tipos de trámite, A y B, durante dos periodos.
+
+| Periodo | Tipo de trámite | Solicitudes aprobadas | Total de solicitudes |
+|---|---|---:|---:|
+| Inicial | A | 90 | 100 |
+| Inicial | B | 1 | 100 |
+| Final | A | 91 | 100 |
+| Final | B | 20 | 1000 |
+
+El coordinador afirmó: «La proporción total de solicitudes aprobadas aumentó, porque aumentó la proporción de aprobadas tanto en el trámite A como en el trámite B».",¿Cuál evaluación de la afirmación del coordinador es correcta?,"A. Es válida, porque la proporción del trámite A pasó de 90% a 91% y la del trámite B pasó de 1% a 2%.
+B. Es válida, porque el número total de solicitudes aprobadas pasó de 91 a 111.
+C. No es válida, porque la proporción total pasó de 91/200 = 45,5% a 111/1100 ≈ 10,1%.
+D. Es válida, porque el promedio de las proporciones de los dos trámites pasó de 45,5% a 46,5%.","C. No es válida, porque la proporción total pasó de 91/200 = 45,5% a 111/1100 ≈ 10,1%.","En el periodo inicial hubo 90 + 1 = 91 solicitudes aprobadas de un total de 100 + 100 = 200. Por tanto, la proporción total fue 91/200 = 45,5%.
+
+En el periodo final hubo 91 + 20 = 111 solicitudes aprobadas de un total de 100 + 1000 = 1100. Por tanto, la proporción total fue 111/1100 ≈ 10,1%.
+
+Aunque la proporción aumentó en cada tipo de trámite por separado, el número de solicitudes del trámite B, cuya proporción de aprobación es menor, aumentó mucho más. Por eso, la proporción total disminuyó. La afirmación del coordinador no es válida y la opción correcta es C.",,,,,,,,,,,
+HC-021,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"Una empresa de transporte registra, durante una mañana, los siguientes datos:
+
+| Servicio | Pasajeros | Tarifa por pasajero |
+|---|---:|---:|
+| Regular | 40 | $2.400 |
+| Expreso | 20 | $3.000 |
+
+Para calcular la tarifa promedio pagada por pasajero, una estudiante propone promediar las dos tarifas así: (2.400 + 3.000) / 2 = $2.700. Ella justifica que se deben contar por igual los dos servicios.",¿Cuál opción evalúa correctamente el procedimiento de la estudiante?,"A. Es válido, porque cada tarifa corresponde a un servicio y el promedio de las tarifas es $2.700.
+B. No es válido, porque se debe dividir el recaudo total entre todos los pasajeros; la tarifa promedio es $2.600.
+C. No es válido, porque se debe dividir el recaudo total entre los dos servicios; el resultado es $78.000.
+D. No es válido, porque se deben intercambiar las tarifas de los servicios al ponderar; el promedio es $2.800.","B. No es válido, porque se debe dividir el recaudo total entre todos los pasajeros; la tarifa promedio es $2.600.","La tarifa promedio por pasajero debe calcularse usando como denominador el número total de pasajeros, porque no todos los servicios tienen la misma cantidad de pasajeros.
+
+El recaudo del servicio regular es 40 × $2.400 = $96.000 y el del servicio expreso es 20 × $3.000 = $60.000. Por tanto, el recaudo total es $156.000 y el número total de pasajeros es 40 + 20 = 60.
+
+La tarifa promedio es $156.000 / 60 = $2.600. Por eso, el procedimiento de la estudiante no es válido: promedia las tarifas sin tener en cuenta que el servicio regular tiene el doble de pasajeros que el expreso. La opción B es la única que evalúa correctamente el procedimiento y el resultado.",,,,,,,,,,,
+HC-022,AICE,Cambridge International AS & A Level,Mathematics (9709),AS / A Level,"Pure Mathematics (Papers 1, 2, 3)",CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)","aice.9709.p1.quadratics -- Pure 1 · Quadratics (completing the square, discriminant).",SHORT_RESPONSE,5,show that,,Show that the equation x² − (a + 6)x + 3a + 10 = 0 has two distinct roots both lying strictly between 1 and 5 if and only if −5/2 < a < −2 or 2 < a < 5/2.,,−5/2 < a < −2 or 2 < a < 5/2,"Let f(x) = x² − (a + 6)x + 3a + 10.
+
+If both roots lie strictly between 1 and 5, then f(1) > 0 and f(5) > 0. These give
+f(1) = 2a + 5 > 0, so a > −5/2,
+and
+f(5) = 5 − 2a > 0, so a < 5/2.
+
+The roots must also be distinct and real, so the discriminant is positive:
+(a + 6)² − 4(3a + 10) = a² − 4 > 0.
+Hence a < −2 or a > 2.
+Combining these conditions gives
+−5/2 < a < −2 or 2 < a < 5/2.
+
+Conversely, suppose −5/2 < a < −2 or 2 < a < 5/2. Then f(1) > 0, f(5) > 0 and a² − 4 > 0. Also, the axis of symmetry is x = (a + 6)/2, which lies between 1 and 5 for both of these intervals of values of a.
+
+Completing the square,
+f(x) = (x − (a + 6)/2)² − (a² − 4)/4.
+Thus the two roots are
+x = (a + 6)/2 ± √(a² − 4)/2.
+Since f(1) > 0 and the axis lies to the right of 1, the smaller root is greater than 1. Since f(5) > 0 and the axis lies to the left of 5, the larger root is less than 5. Also, a² − 4 > 0 makes the roots distinct. Therefore both roots lie strictly between 1 and 5.","[1] Uses the endpoint conditions for roots strictly between 1 and 5 to obtain f(1) = 2a + 5 > 0 and f(5) = 5 − 2a > 0, hence −5/2 < a < 5/2.
+[1] Calculates the discriminant as a² − 4 and explains that distinct real roots require a² − 4 > 0, hence a < −2 or a > 2.
+[1] Combines the inequalities correctly to obtain −5/2 < a < −2 or 2 < a < 5/2.
+[1] For the converse, establishes that the axis x = (a + 6)/2 lies between 1 and 5 for the stated values of a.
+[1] Completes the square or otherwise uses the vertex and endpoint signs to prove that the two distinct roots lie strictly between 1 and 5.",,,,,,,,,,
+HC-023,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.interpretacion -- Interpretación y representación: comprende y transforma información cuantitativa y esquemática.,SELECTED_RESPONSE,1,,"La biblioteca de un colegio compara los préstamos de libros de ficción y de no ficción realizados durante dos semanas.
+
+| Tipo de libro | Semana 1 | Semana 2 |
+|---|---:|---:|
+| Ficción | 120 | 150 |
+| No ficción | 80 | 50 |
+| Total de préstamos | 200 | 200 |",¿Cuál afirmación representa correctamente el cambio en los préstamos de libros de ficción entre las dos semanas?,"A. Los préstamos de ficción aumentaron en 30 y su participación pasó de 60 % a 75 %.
+B. Los préstamos de ficción aumentaron en 30 y su participación pasó de 60 % a 70 %.
+C. Los préstamos de ficción disminuyeron en 30 y su participación pasó de 75 % a 60 %.
+D. Los préstamos de ficción aumentaron en 15 y su participación pasó de 60 % a 75 %.",A. Los préstamos de ficción aumentaron en 30 y su participación pasó de 60 % a 75 %.,"En la semana 1 hubo 120 préstamos de ficción de un total de 200. Su participación fue 120/200 = 60 %.
+
+En la semana 2 hubo 150 préstamos de ficción de un total de 200. Su participación fue 150/200 = 75 %.
+
+La cantidad de préstamos aumentó en 150 - 120 = 30, y la participación aumentó de 60 % a 75 %. Por tanto, la afirmación correcta es la opción A.",,,,,,,,,,,
+HC-024,PAA,PAA,Matemáticas,,MATEMATICAS,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)","paa.mat.datos -- Análisis de datos: media, mediana, dispersión, tablas.",SELECTED_RESPONSE,1,,"Una clínica registró, en ocho turnos comparables, el tiempo de espera de pacientes antes y después de cambiar su sistema de asignación de citas.
+
+| Turno | Antes (minutos) | Después (minutos) |
+|---|---:|---:|
+| 1 | 20 | 17 |
+| 2 | 25 | 22 |
+| 3 | 30 | 27 |
+| 4 | 35 | 32 |
+| 5 | 25 | 22 |
+| 6 | 30 | 27 |
+| 7 | 35 | 32 |
+| 8 | 20 | 17 |",¿Cuál afirmación es necesariamente verdadera al comparar los tiempos de espera antes y después del cambio?,"A. La media y la mediana disminuyeron 3 minutos, y el rango permaneció igual.
+B. La media disminuyó 3 minutos, la mediana permaneció igual y el rango permaneció igual.
+C. La media permaneció igual, la mediana disminuyó 3 minutos y el rango permaneció igual.
+D. La media y la mediana disminuyeron 3 minutos, y el rango disminuyó 3 minutos.","A. La media y la mediana disminuyeron 3 minutos, y el rango permaneció igual.","En cada turno, el tiempo después del cambio es 3 minutos menor que el tiempo antes. Por tanto, al ordenar los datos, todos los valores disminuyen en 3 minutos.
+
+Antes, los datos ordenados son 20, 20, 25, 25, 30, 30, 35, 35. Su media es 220/8 = 27.5 y su mediana es (25 + 30)/2 = 27.5. Después, los datos ordenados son 17, 17, 22, 22, 27, 27, 32, 32. Su media es 196/8 = 24.5 y su mediana es (22 + 27)/2 = 24.5. Ambas disminuyen 3 minutos.
+
+El rango antes es 35 - 20 = 15 minutos y después es 32 - 17 = 15 minutos. Al restar la misma cantidad a todos los datos, el rango no cambia. Por lo tanto, la afirmación correcta es la A.",,,,,,,,,,,
+HC-025,PISA,PISA,Matemáticas,,MATHEMATICS,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",pisa.cambio.formular -- Cambio y relaciones (Change and relationships) · Formular situaciones matemáticamente.,SELECTED_RESPONSE,1,,"Un huerto comunitario recoge agua de lluvia en un depósito. A las 8:00, el depósito contiene 360 L. Durante cada intervalo, los cambios son los siguientes:
+
+| Intervalo | Agua que entra por lluvia | Agua usada por las plantas | Agua que extrae la bomba |
+|---|---:|---:|---:|
+| 8:00–8:30 | 12 L/min | 5 L/min | 0 L/min |
+| 8:30–8:50 | 0 L/min | 5 L/min | 9 L/min |
+
+El depósito no rebosa y la bomba empieza a funcionar exactamente a las 8:30.",¿Cuál de los siguientes cálculos representa el volumen de agua que hay en el depósito a las 8:50?,"A. 360 + (12 − 5) × 30 − (5 + 9) × 20 = 290 L
+B. 360 + (12 − 5) × 30 − 9 × 20 = 390 L
+C. 360 + 12 × 30 − (5 + 9) × 20 = 440 L
+D. 360 + (12 − 5) × 30 − (9 − 5) × 20 = 490 L",A. 360 + (12 − 5) × 30 − (5 + 9) × 20 = 290 L,"Entre las 8:00 y las 8:30, entran 12 L/min y se usan 5 L/min, así que el aumento neto es de 7 L/min durante 30 minutos: 7 × 30 = 210 L. Por tanto, a las 8:30 hay 360 + 210 = 570 L.
+
+Entre las 8:30 y las 8:50 no entra agua de lluvia. Se usan 5 L/min y la bomba extrae 9 L/min, por lo que salen 14 L/min durante 20 minutos: 14 × 20 = 280 L. Quedan 570 − 280 = 290 L. Por eso la opción correcta es A.",,,,,,,,,,,
+HC-026,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.formulacion -- Formulación y ejecución: plantea e implementa estrategias para resolver problemas.,SELECTED_RESPONSE,1,,"Una institución educativa compara dos planes mensuales de internet para el próximo mes.
+
+| Plan | Cargo fijo mensual | Cargo por cada GB utilizado |
+|---|---:|---:|
+| A | $20.000 | $500 |
+| B | $8.000 | $800 |
+
+Durante el mes actual, la institución utilizó internet para las actividades registradas en la tabla.
+
+| Actividad | Consumo actual |
+|---|---:|
+| Videos educativos | 12 GB |
+| Plataforma de tareas | 8 GB |
+
+Para el próximo mes, se estima que el consumo de videos educativos disminuirá en 1/4 y el de la plataforma de tareas aumentará en 1/2.","¿Qué plan debe escoger la institución para que el costo total del próximo mes sea menor, y cuál será ese costo?","A. Plan A, $30.500
+B. Plan B, $24.800
+C. Plan B, $23.200
+D. Plan B, $28.000","B. Plan B, $24.800","El consumo de videos educativos será 12 × (1 - 1/4) = 9 GB. El consumo de la plataforma será 8 × (1 + 1/2) = 12 GB. Por tanto, el consumo total previsto es 9 + 12 = 21 GB.
+
+Con el plan A, el costo sería 20.000 + 500 × 21 = $30.500.
+Con el plan B, el costo sería 8.000 + 800 × 21 = $24.800.
+
+Como $24.800 es menor que $30.500, la institución debe escoger el plan B. La respuesta correcta es B.",,,,,,,,,,,
+HC-027,IB,IB Diploma Programme,Mathematics: analysis and approaches,HL,P1,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",aahl.p1.calculus -- Calculus: differentiation and integration without technology.,SHORT_RESPONSE,7,find,,"A curve C passes through the point (0, 0) and has derivative f′(x) = 3x² − 3, where y = f(x) is the equation of C. Find the exact area enclosed by C and the tangent to C at its local maximum.",,27/4,"Since f′(x) = 3x² − 3, integrating gives
+f(x) = x³ − 3x + C.
+
+The point (0, 0) lies on C, so C = 0. Therefore
+f(x) = x³ − 3x.
+
+The stationary points satisfy
+f′(x) = 0
+3x² − 3 = 0,
+so x = −1 or x = 1.
+
+Since f′(x) changes from positive to negative at x = −1, the local maximum is at x = −1. Its y-coordinate is
+f(−1) = (−1)³ − 3(−1) = 2.
+
+The tangent at the local maximum is therefore y = 2.
+
+The intersections of C with this tangent satisfy
+x³ − 3x = 2,
+so
+x³ − 3x − 2 = 0
+(x + 1)²(x − 2) = 0.
+
+Thus the enclosed region lies between x = −1 and x = 2. On this interval, the tangent is above C, so the area is
+∫ from −1 to 2 [2 − (x³ − 3x)] dx
+= [2x − x⁴/4 + 3x²/2] from −1 to 2
+= 6 − (−3/4)
+= 27/4.","[1] Integrates f′(x) to obtain f(x) = x³ − 3x + C.
+[1] Uses the point (0, 0) to obtain f(x) = x³ − 3x.
+[2] Finds the stationary points and identifies x = −1 as the local maximum, with maximum value 2.
+[1] Finds the tangent at the local maximum as y = 2 and finds the other intersection with the curve at x = 2.
+[1] Sets up the enclosed area as ∫ from −1 to 2 [2 − (x³ − 3x)] dx, with the correct order of subtraction.
+[1] Evaluates the definite integral to obtain the exact area 27/4.",,,,,,,,,,
+HC-028,PAA,PAA,Matemáticas,,MATEMATICAS,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)","paa.mat.aritmetica -- Aritmética: razón, proporción, porcentaje, teoría de números.",NUMERIC_ENTRY,1,,"Al inicio de una campaña de recaudación, las aportaciones en efectivo y las aportaciones electrónicas estaban en razón 2:3. Antes del cierre, se devolvió el 20% de lo recaudado en efectivo y se recibieron 24 pesos adicionales mediante aportaciones electrónicas. Al cierre, la razón entre lo recaudado en efectivo y lo recaudado electrónicamente era 1:2.",¿Cuál era el total recaudado al inicio de la campaña? Escribe solo el número.,,600,"Representa las aportaciones iniciales como 2k en efectivo y 3k electrónicamente; por tanto, el total inicial era 5k. Después de devolver el 20% del efectivo, queda el 80%, es decir, (4/5)(2k)=8k/5. Las aportaciones electrónicas finales son 3k+24. Como la razón final efectivo:electrónico es 1:2, la cantidad electrónica final debe ser el doble de la efectiva: 3k+24=2(8k/5). Entonces 24=16k/5−3k=k/5, de donde k=120. El total inicial era 5k=600 pesos.",[1] Determina correctamente que el total recaudado al inicio era 600 pesos.,,,,,,,,,,
+HC-029,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"En un programa de reciclaje se registró la cantidad recolectada y el número de hogares participantes durante dos meses.
+
+| Mes | Hogares participantes | Material recolectado (kg) |
+|---|---:|---:|
+| Abril | 80 | 240 |
+| Junio | 120 | 330 |
+
+La coordinadora afirmó: «La cantidad recolectada por hogar aumentó exactamente 10% entre abril y junio, porque en junio se recolectaron más kilogramos que en abril».",¿Cuál argumento evalúa correctamente la afirmación de la coordinadora?,"A. Es verdadera, porque la cantidad total recolectada aumentó en 90 kg.
+B. Es falsa, porque se pasó de 3 kg a 2,75 kg por hogar, una disminución aproximada de 8,33%.
+C. Es verdadera, porque los hogares aumentaron 50% y el material recolectado aumentó 37,5%.
+D. Es falsa, porque la cantidad por hogar disminuyó 0,25 kg, es decir, 25%.","B. Es falsa, porque se pasó de 3 kg a 2,75 kg por hogar, una disminución aproximada de 8,33%.","En abril, la cantidad recolectada por hogar fue 240/80 = 3 kg. En junio fue 330/120 = 2,75 kg. Por tanto, la cantidad por hogar no aumentó, sino que disminuyó 0,25 kg. Para expresar esta disminución como porcentaje se compara con el valor inicial: 0,25/3 × 100 ≈ 8,33%. Así, la afirmación es falsa y la opción B es la única que calcula la cantidad por hogar y usa correctamente el valor inicial para hallar el porcentaje.",,,,,,,,,,,
+HC-030,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"Para decidir si amplía el horario de la biblioteca, un colegio encuestó a estudiantes de sus dos turnos. Los resultados fueron:
+
+| Turno | Estudiantes encuestados | Apoyan la ampliación | Porcentaje que apoya |
+|---|---:|---:|---:|
+| Mañana | 80 | 52 | 65% |
+| Tarde | 40 | 20 | 50% |
+
+En un informe se afirma: «El apoyo del turno de la mañana es 15% mayor que el del turno de la tarde, porque 65% − 50% = 15%». En el informe, «15% mayor» pretende expresar un aumento porcentual relativo, no una diferencia en puntos porcentuales.",¿Cuál evaluación de la afirmación del informe es correcta?,"A. Es válida, porque restar los dos porcentajes permite obtener directamente el aumento porcentual relativo: 15%.
+B. No es válida, porque la diferencia es de 15 puntos porcentuales y el aumento relativo es 30%, calculado sobre el 50% del turno de la tarde.
+C. Es válida, porque 65% / 50% = 1,3; por tanto, el apoyo de la mañana es 130% mayor.
+D. No es válida, porque el aumento relativo es 23,1%, obtenido al dividir la diferencia de 15% entre el 65% del turno de la mañana.","B. No es válida, porque la diferencia es de 15 puntos porcentuales y el aumento relativo es 30%, calculado sobre el 50% del turno de la tarde.","La resta 65% − 50% = 15% representa una diferencia de 15 puntos porcentuales, no un aumento porcentual relativo. Para calcular el aumento relativo se compara la diferencia con el valor inicial, que es el porcentaje del turno de la tarde: (65% − 50%) / 50% = 15% / 50% = 0,30 = 30%. Por tanto, la afirmación del informe no es válida: el aumento relativo es 30%.",,,,,,,,,,,
+HC-031,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"Una empresa de transporte encuestó a personas de dos barrios para decidir si debe ampliar una ruta. La tabla muestra el barrio, el número de personas encuestadas y el porcentaje que está a favor de la ampliación.
+
+| Barrio | Personas encuestadas | Porcentaje a favor |
+|---|---:|---:|
+| Norte | 80 | 60% |
+| Sur | 40 | 30% |
+
+Una estudiante afirma: «Para hallar el porcentaje total a favor, basta con promediar los dos porcentajes: (60% + 30%)/2 = 45%».",¿Cuál de las siguientes evaluaciones de la afirmación de la estudiante es correcta?,"A. Es válida, porque los dos barrios deben tener el mismo peso al calcular un promedio de porcentajes; el resultado es 45%.
+B. No es válida, porque los porcentajes deben ponderarse por la cantidad encuestada; el porcentaje total es 60/120 = 50%.
+C. No es válida, porque al combinar porcentajes se deben sumar directamente; el porcentaje total es 60% + 30% = 90%.
+D. Es válida, porque 60% y 30% representan 60 y 30 personas, respectivamente; el porcentaje total es 90/120 = 75%.","B. No es válida, porque los porcentajes deben ponderarse por la cantidad encuestada; el porcentaje total es 60/120 = 50%.","La cantidad de personas a favor en el barrio Norte es 0,60 × 80 = 48. En el barrio Sur es 0,30 × 40 = 12. Por tanto, hay 48 + 12 = 60 personas a favor de un total de 80 + 40 = 120 encuestadas. El porcentaje total es 60/120 = 50%. La afirmación de la estudiante no es válida porque da el mismo peso a ambos porcentajes, aunque los tamaños de las muestras son diferentes. Por eso, la opción correcta es B.",,,,,,,,,,,
+HC-032,ICFES,Saber 11,Matemáticas,,Matemáticas,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.formulacion -- Formulación y ejecución: plantea e implementa estrategias para resolver problemas.,SELECTED_RESPONSE,1,,"Una biblioteca debe enviar cajas de libros y compara estas dos tarifas para un mismo trayecto:
+
+- Servicio A: cobra una tarifa fija de $18.000 y $450 por cada caja.
+- Servicio B: cobra $900 por cada una de las primeras 20 cajas. Por cada caja adicional a esas 20, cobra $500.
+
+La biblioteca solo puede enviar un número entero de cajas y desea escoger el servicio A únicamente cuando su costo sea estrictamente menor que el del servicio B.",¿Cuál es el primer número de cajas para el que la biblioteca debe escoger el servicio A?,"A. 20 cajas
+B. 21 cajas
+C. 200 cajas
+D. 201 cajas",D. 201 cajas,"Sea n el número de cajas.
+
+Para el servicio A, el costo es 18.000 + 450n.
+
+Si n es mayor que 20, el costo del servicio B es 20·900 + (n − 20)·500, que equivale a 8.000 + 500n. Como se busca el primer valor para el que A sea estrictamente más barato, se plantea:
+
+18.000 + 450n < 8.000 + 500n
+10.000 < 50n
+200 < n.
+
+Por tanto, el menor número entero de cajas que cumple la desigualdad es 201. Además, para n ≤ 20, el servicio A no resulta más barato, pues en ese intervalo se compara 18.000 + 450n con 900n y la desigualdad a favor de A exigiría n > 40, algo imposible en ese intervalo. La respuesta es 201 cajas.",,,,,,,,,,,
+HC-033,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.formulacion -- Formulación y ejecución: plantea e implementa estrategias para resolver problemas.,SELECTED_RESPONSE,1,,"Un centro cultural debe instalar al menos 25 lámparas iguales. El proveedor ofrece estas opciones:
+
+| Opción de compra | Cantidad de lámparas | Precio |
+|---|---:|---:|
+| Una caja | 6 lámparas | $48.000 |
+| Una lámpara suelta | 1 lámpara | $9.000 |
+
+El centro dispone de un presupuesto máximo de $210.000. Todas las lámparas compradas se pueden utilizar.","¿Cuál estrategia permite instalar al menos 25 lámparas, respetar el presupuesto y gastar la menor cantidad posible?","A. Comprar 4 cajas y 1 lámpara suelta, para gastar $201.000.
+B. Comprar 3 cajas y 7 lámparas sueltas, para gastar $207.000.
+C. Comprar 4 cajas, para gastar $192.000.
+D. Comprar 5 cajas, para gastar $240.000.","A. Comprar 4 cajas y 1 lámpara suelta, para gastar $201.000.","Se compara cuántas cajas pueden comprarse y cuántas lámparas sueltas se necesitarían para llegar a 25. Con 4 cajas se obtienen 24 lámparas, por lo que se necesita 1 lámpara suelta. El costo es 4*48.000 + 9.000 = 201.000 pesos, y se usan 25 lámparas. Con 3 cajas se necesitan 7 lámparas sueltas y el costo es 207.000 pesos, mayor que 201.000. Con 5 cajas se supera el presupuesto, y con 4 cajas solamente no se alcanza la cantidad requerida. Por tanto, la estrategia de menor costo que cumple las dos condiciones es comprar 4 cajas y 1 lámpara suelta.",,,,,,,,,,,
+HC-034,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"En una institución educativa se registró la cantidad total de residuos producidos y la cantidad de residuos enviados a reciclaje, antes y después de una campaña ambiental.
+
+| Momento | Residuos totales | Residuos enviados a reciclaje |
+|---|---:|---:|
+| Antes de la campaña | 240 kg | 72 kg |
+| Después de la campaña | 180 kg | 63 kg |
+
+Un estudiante calcula que 72/240 = 30% y que 63/180 = 35%. Luego afirma: «La cantidad de residuos enviados a reciclaje aumentó después de la campaña, porque 35% es mayor que 30%».",¿Cuál revisión identifica correctamente si el procedimiento del estudiante permite afirmar que aumentó la cantidad de residuos enviados a reciclaje?,"A. Es válido: como 35% es mayor que 30%, la cantidad de residuos reciclados también aumentó.
+B. No es válido: la cantidad pasó de 72 kg a 63 kg, aunque su proporción dentro del total aumentó.
+C. Es válido: el aumento de 5 puntos porcentuales equivale a un aumento de 5 kg reciclados.
+D. No es válido: al disminuir el total de residuos, la cantidad reciclada necesariamente debe disminuir en la misma proporción.","B. No es válido: la cantidad pasó de 72 kg a 63 kg, aunque su proporción dentro del total aumentó.","El estudiante compara proporciones, no cantidades absolutas. Antes de la campaña se enviaron a reciclaje 72 kg y después se enviaron 63 kg. Por tanto, la cantidad disminuyó en 9 kg.
+
+Los porcentajes sí están bien calculados: 72/240 = 0,30 = 30% y 63/180 = 0,35 = 35%. Esto significa que aumentó la proporción de residuos enviados a reciclaje, pero no la cantidad de kilogramos. Por eso, la afirmación del estudiante no es válida y la revisión correcta es la opción B.",,,,,,,,,,,
+HC-035,PISA,PISA,Matemáticas,,MATHEMATICS,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)",pisa.cantidad.formular -- Cantidad (Quantity) · Formular situaciones matemáticamente (Formulating situations mathematically).,SHORT_RESPONSE,1,,"En un huerto escolar se usa un depósito para recoger agua de lluvia. En el fondo hay 12 litros que la bomba no puede extraer. El indicador del depósito muestra el porcentaje de agua de la parte que sí puede extraerse, no el porcentaje de toda el agua del depósito.
+
+| Momento | Información |
+|---|---|
+| 08:00 | El indicador marca 35 % |
+| Entre 08:00 y 10:00 | Entran 18 litros de lluvia; no se extrae agua |
+| 10:00 | El indicador marca 50 % |
+| Entre 10:00 y 14:00 | La bomba extrae 27 litros; no entra más agua |","¿Cuántos litros de agua hay en total en el depósito a las 14:00, incluidos los 12 litros que la bomba no puede extraer? Escribe tu respuesta y muestra cómo la obtuviste.",,45 litros,"Los 18 litros hacen que el indicador suba de 35 % a 50 %, es decir, 15 % de la parte extraíble. Por tanto, la capacidad de esa parte es 18 ÷ 0,15 = 120 litros. A las 10:00 hay 50 % de 120 = 60 litros extraíbles. Después de extraer 27 litros quedan 33 litros extraíbles. Sumando los 12 litros que no puede extraer la bomba, a las 14:00 hay 33 + 12 = 45 litros.","[1] Responde 45 litros y relaciona correctamente el aumento del 15 % con los 18 litros para obtener la capacidad extraíble, antes de añadir los 12 litros de reserva.",,,,,,,,,,
+HC-036,IB,IB Diploma Programme,Mathematics: analysis and approaches,HL,P1,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)",aahl.p1.extended -- Extended response: multi-step analysis across topics.,SHORT_RESPONSE,9,show that,,"Let P(x) = x³ − 3x − 1. Show that the equation P(x) = 0 has exactly three distinct real solutions, and that these solutions are 2cos(π/9), 2cos(5π/9) and 2cos(7π/9). If the solutions are r₁, r₂ and r₃, show also that r₁ + r₂ + r₃ = 0 and r₁r₂r₃ = 1.",,"The equation has exactly three distinct real solutions: 2cos(π/9), 2cos(5π/9) and 2cos(7π/9). Their sum is 0 and their product is 1.","P′(x) = 3x² − 3 = 3(x − 1)(x + 1). Hence P is increasing on (−∞, −1) and (1, ∞), and decreasing on (−1, 1).
+
+P(−1) = 1 and P(1) = −3. Also, P(x) → −∞ as x → −∞ and P(x) → ∞ as x → ∞. Therefore, by the intermediate value theorem, there is one root in each of the intervals (−∞, −1), (−1, 1) and (1, ∞). The monotonicity on each interval shows that there can be no more than one root in each interval. Thus P(x) = 0 has exactly three real roots.
+
+Using cos(3θ) = 4cos³θ − 3cosθ, put x = 2cosθ. Then
+P(x) = 8cos³θ − 6cosθ − 1 = 2cos(3θ) − 1.
+
+For θ = π/9, 5π/9 and 7π/9, the values of 3θ are π/3, 5π/3 and 7π/3 respectively. In each case cos(3θ) = 1/2, so P(2cosθ) = 0. The three angles lie in [0, π] and are distinct; since cosθ is strictly decreasing on [0, π], the corresponding three values of x are distinct. As there are exactly three real roots, they are therefore 2cos(π/9), 2cos(5π/9) and 2cos(7π/9).
+
+Factoring P using its roots gives
+P(x) = (x − r₁)(x − r₂)(x − r₃)
+= x³ − (r₁ + r₂ + r₃)x² + (r₁r₂ + r₁r₃ + r₂r₃)x − r₁r₂r₃.
+
+Comparing this with x³ − 3x − 1 gives r₁ + r₂ + r₃ = 0 and −r₁r₂r₃ = −1, so r₁r₂r₃ = 1.","[2] Differentiates P correctly and uses the sign of P′ to establish the required monotonicity intervals.
+[1] Uses P(−1) = 1, P(1) = −3 and the end behaviour of P to establish a root in each of the three intervals.
+[1] Uses the monotonicity to justify that there is at most one root in each interval, hence exactly three real roots.
+[2] Uses x = 2cosθ and cos(3θ) = 4cos³θ − 3cosθ to obtain P(2cosθ) = 2cos(3θ) − 1, and verifies the three stated angles.
+[1] Justifies that the three resulting values are distinct and, together with the root count, are all the real roots.
+[1] Compares the x² coefficient after factoring P to show that r₁ + r₂ + r₃ = 0.
+[1] Compares the constant term after factoring P to show that r₁r₂r₃ = 1.",,,,,,,,,,
+HC-037,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"En una factura de energía, el valor total se calcula sumando un cargo fijo, igual en cada periodo, y un valor proporcional al consumo. La empresa mantiene ambos valores constantes durante los periodos de la tabla.
+
+| Periodo | Consumo | Valor total |
+|---|---:|---:|
+| Abril | 120 kWh | $54.000 |
+| Mayo | 180 kWh | $72.000 |
+
+En junio, el consumo registrado fue de 150 kWh.",¿Cuál de las siguientes propuestas calcula correctamente el valor total de la factura de junio?,"A. Será de $45.000, porque 60 kWh cuestan $18.000 y, por tanto, cada kWh cuesta $300; luego se multiplica 150 por $300.
+B. Será de $63.000, porque 60 kWh cuestan $18.000, cada kWh cuesta $300, el cargo fijo es de $18.000 y se suma ese cargo a 150 × $300.
+C. Será de $67.500, porque en abril cada kWh costó en promedio $450 y se multiplica ese promedio por los 150 kWh de junio.
+D. Será de $60.000, porque 150 kWh representan 5/6 del consumo de mayo y se multiplica $72.000 por 5/6.","B. Será de $63.000, porque 60 kWh cuestan $18.000, cada kWh cuesta $300, el cargo fijo es de $18.000 y se suma ese cargo a 150 × $300.","La diferencia entre los consumos de abril y mayo es 180 kWh - 120 kWh = 60 kWh. La diferencia entre los valores totales es $72.000 - $54.000 = $18.000. Como el cargo fijo no cambia, esa diferencia corresponde al costo de 60 kWh. Por tanto, el valor por kWh es $18.000 / 60 = $300.
+
+El cargo fijo se obtiene con la factura de abril: $54.000 - 120 × $300 = $54.000 - $36.000 = $18.000. Entonces, para junio, el valor total es $18.000 + 150 × $300 = $18.000 + $45.000 = $63.000. La propuesta correcta es la B.",,,,,,,,,,,
+HC-038,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.formulacion -- Formulación y ejecución: plantea e implementa estrategias para resolver problemas.,SELECTED_RESPONSE,1,,"Una cocina comunitaria compara dos proveedores de cilindros de gas. La compra mensual estará entre 5 y 10 cilindros.
+
+| Proveedor | Cobro fijo mensual | Precio por cilindro | Condición adicional |
+|---|---:|---:|---|
+| P | $12.000 | $78.000 | No tiene descuento |
+| Q | $0 | $84.000 | Descuento fijo de $30.000 en la factura si compra 5 o más cilindros |
+
+El cobro fijo de P se paga una sola vez al mes, independientemente de la cantidad de cilindros.","¿Cuál clasificación indica qué proveedor tiene el menor costo, o si hay empate, para cada cantidad de cilindros entre 5 y 10?","A. Q para 5 y 6; empate en 7; P para 8, 9 y 10.
+B. P para 5; Q para 6; empate en 7; P para 8, 9 y 10.
+C. Q para 5 y 6; P para 7, 8, 9 y 10.
+D. Q para 5, 6 y 7; P para 8, 9 y 10.","A. Q para 5 y 6; empate en 7; P para 8, 9 y 10.","Si n es la cantidad de cilindros, el costo mensual de P es 12.000 + 78.000n. Para las cantidades consideradas, Q aplica el descuento, por lo que su costo es 84.000n - 30.000.
+
+Al comparar:
+
+n = 5: P cuesta $402.000 y Q $390.000; conviene Q.
+n = 6: P cuesta $480.000 y Q $474.000; conviene Q.
+n = 7: ambos cuestan $558.000; hay empate.
+
+Cada cilindro adicional aumenta el costo de P en $78.000 y el de Q en $84.000. Por tanto, después del empate, Q aumenta $6.000 más por cilindro y P resulta más económico para 8, 9 y 10 cilindros. La clasificación correcta es la de la opción A.",,,,,,,,,,,
+HC-039,ICFES,Saber 11,Matemáticas,,Matemáticas,FOUNDATIONAL,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"En dos ediciones de una campaña escolar de donación de libros se registraron estos datos:
+
+| Edición | Estudiantes invitados | Estudiantes participantes |
+|---|---:|---:|
+| 2024 | 80 | 32 |
+| 2025 | 120 | 42 |
+
+Una estudiante afirma: «El porcentaje de participación aumentó 10 puntos porcentuales en 2025, porque participaron 10 estudiantes más que en 2024».",¿Cuál opción evalúa correctamente el procedimiento de la estudiante?,"A. Es válida, porque hubo 10 participantes más y eso equivale a 10 puntos porcentuales.
+B. No es válida, porque 32/80 = 40% y 42/120 = 35%; por tanto, bajó 5 puntos porcentuales.
+C. Es válida, porque el número de participantes creció 10/32 = 31,25%, que supera el 10%.
+D. No es válida, porque 42/80 = 52,5%; por tanto, bajó 12,5 puntos porcentuales.","B. No es válida, porque 32/80 = 40% y 42/120 = 35%; por tanto, bajó 5 puntos porcentuales.","Para hallar el porcentaje de participación se debe dividir el número de participantes entre el número de estudiantes invitados en la misma edición. En 2024, 32/80 = 0,40 = 40%. En 2025, 42/120 = 0,35 = 35%. Por tanto, el porcentaje no aumentó: disminuyó 40% - 35% = 5 puntos porcentuales. La opción B evalúa correctamente la afirmación.",,,,,,,,,,,
+HC-040,PISA,PISA,Ciencias,,SCIENCE,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)",pisa.sci.evaluate.procedural -- Evaluar y diseñar la investigación científica (Evaluate and design scientific enquiry) · conocimiento procedimental.,SHORT_RESPONSE,1,,"Un grupo de estudiantes quiere averiguar si el color de la luz de una lámpara LED influye en el crecimiento de plantas de albahaca. Colocaron 12 plantas bajo una lámpara azul y otras 12 bajo una lámpara blanca durante 14 días. Usaron el mismo tipo de tierra y dieron la misma cantidad de agua a todas las plantas, pero cada lámpara permaneció en un estante distinto.
+
+Al finalizar, calcularon la altura media de las plantas y registraron las condiciones de cada estante.
+
+| Tipo de luz | Intensidad medida | Temperatura media | Altura media final |
+|---|---:|---:|---:|
+| Azul | 420 unidades | 28,1 °C | 18,4 cm |
+| Blanca | 760 unidades | 23,0 °C | 15,9 cm |
+
+La lámpara azul y la blanca no se cambiaron de estante durante el experimento.",¿Qué cambio concreto deberían hacer en una nueva investigación para decidir si la diferencia de altura se debe al color de la luz y no a las otras diferencias entre los estantes? Explica por qué ese cambio permite una conclusión más segura.,,"No se puede atribuir todavía la mayor altura al color, porque también cambiaron la intensidad de la luz y la temperatura. Deberían mantener iguales esas dos condiciones y alternar aleatoriamente las lámparas y las plantas entre los estantes; así las diferencias de altura podrían relacionarse con el color de la luz.","La investigación mezcla el efecto del color con el de la intensidad luminosa y la temperatura: las plantas con luz azul recibieron menos luz medida, pero estuvieron a mayor temperatura y en un estante diferente. Por tanto, la mayor altura no demuestra que el color causara el crecimiento. En una nueva prueba deben igualar la intensidad y la temperatura, y distribuir o alternar aleatoriamente las lámparas y las plantas entre los estantes. Así se controlan las explicaciones alternativas y una diferencia persistente de crecimiento puede atribuirse con mayor seguridad al color.","[1] Reconoce que la intensidad luminosa y la temperatura están confundidas con el color, y propone controlarlas en una nueva prueba (por ejemplo, igualándolas y alternando aleatoriamente la posición de lámparas y plantas) para poder atribuir una diferencia de crecimiento al color.",,,,,,,,,,
+HC-041,CAMBRIDGE,Cambridge IGCSE,Mathematics (0580),Extended,Paper 4 (calculator),CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)",cie.p4.structured -- Structured multi-step question in context.,SHORT_RESPONSE,5,calculate,"A triangular garden has side lengths 18 m, 23 m and 27 m. The angle between the 18 m side and the 23 m side is angle BAC, so that the side opposite angle BAC is 27 m. A circular pond is built inside the garden and touches all three sides of the garden. Give non-integer answers correct to 3 significant figures.","(a) Calculate angle BAC.
+
+(b) Calculate the area of the triangular garden.
+
+(c) Calculate the percentage of the garden's area that is not covered by the pond.",,(a) 81.4°; (b) 205 m²; (c) 44.4%,"(a) Using the cosine rule,
+cos BAC = (18² + 23² − 27²)/(2 × 18 × 23)
+= 124/828.
+Therefore BAC = cos⁻¹(124/828) = 81.4°.
+
+(b) Area of the garden = 1/2 × 18 × 23 × sin 81.387...
+= 204.666... m²
+= 205 m² to 3 significant figures.
+
+(c) Let r be the radius of the pond. Since the pond touches all three sides, the garden can be split into three triangles with height r. Therefore
+204.666... = 1/2 × r × (18 + 23 + 27).
+So r = 2 × 204.666.../68 = 6.01958... m.
+
+Area of pond = πr² = π × 6.01958...² = 113.837... m².
+
+Percentage not covered by the pond
+= (204.666... − 113.837...)/204.666... × 100
+= 44.379...%
+= 44.4%.","[1] Uses the cosine rule correctly to form cos BAC = (18² + 23² − 27²)/(2 × 18 × 23).
+[1] Calculates BAC as 81.4° to an appropriate degree of accuracy.
+[1] Uses the calculated angle to find the triangular area as 1/2 × 18 × 23 × sin BAC.
+[1] Obtains the triangular area as 205 m² to 3 significant figures.
+[1] Uses the fact that the pond touches all three sides to find r = 2A/(18 + 23 + 27), then calculates the pond area and the percentage not covered as 44.4%.",,,,,,,,,,
+HC-042,PISA,PISA,Ciencias,,SCIENCE,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",pisa.sci.evaluate.procedural -- Evaluar y diseñar la investigación científica (Evaluate and design scientific enquiry) · conocimiento procedimental.,SELECTED_RESPONSE,1,,"En una ciudad se están instalando marquesinas de autobús con una lámina transparente sobre el techo. El fabricante afirma que la lámina mantiene más fresco el interior al reducir el calentamiento causado por la luz solar.
+
+Un grupo de estudiantes quiere comprobar esta afirmación con dos modelos idénticos de una marquesina. Cada modelo tiene un termómetro en el interior. Disponen de una lámpara halógena fija, una lámina transparente, un cronómetro y una habitación cuya temperatura se mantiene constante. La lámpara calienta más el lado de la mesa que está más cerca de ella.",¿Qué procedimiento proporcionaría la evidencia más sólida para determinar si la lámina reduce el calentamiento del modelo?,"A. Colocar un modelo con lámina y otro sin lámina bajo la lámpara durante 20 minutos, medir la temperatura final una vez y comparar los resultados.
+B. Colocar ambos modelos a igual distancia de la lámpara, poner la lámina solo en uno, medir el aumento de temperatura durante 20 minutos, intercambiar sus posiciones a los 10 minutos y repetir la prueba cinco veces.
+C. Colocar ambos modelos bajo la lámpara, poner la lámina solo en uno y aumentar también la ventilación de ese modelo para imitar mejor una marquesina real; después comparar sus temperaturas finales.
+D. Medir durante 20 minutos un modelo sin lámina y, al día siguiente, medir el mismo modelo con lámina, usando la temperatura final de cada día como comparación.","B. Colocar ambos modelos a igual distancia de la lámpara, poner la lámina solo en uno, medir el aumento de temperatura durante 20 minutos, intercambiar sus posiciones a los 10 minutos y repetir la prueba cinco veces.","La opción B cambia principalmente una variable: la presencia de la lámina. Los dos modelos se prueban al mismo tiempo y se mide el aumento de temperatura, por lo que se comparan cambios equivalentes aunque no comiencen exactamente a la misma temperatura. Intercambiar las posiciones evita que el lado más cercano a la lámpara favorezca siempre al mismo modelo, y repetir la prueba permite comprobar si el resultado es consistente. Las demás opciones introducen una diferencia no controlada, no repiten la medición o confunden el efecto de la lámina con el de otra variable.",,,,,,,,,,,
+HC-043,PAA,PAA,Matemáticas,,MATEMATICAS,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)","paa.mat.algebra -- Álgebra: ecuaciones, sistemas, funciones, variación.",SELECTED_RESPONSE,1,,"Una imprenta cobra por cada pedido un cargo fijo de preparación, igual para todos los pedidos, además de un cargo por cada página. Un pedido de 10 páginas cuesta 34 pesos y uno de 25 páginas cuesta 49 pesos.",¿Cuántos pesos se ahorrarían al imprimir 40 páginas en un solo pedido en lugar de imprimirlas en dos pedidos de 20 páginas cada uno?,"A. 0 pesos
+B. 15 pesos
+C. 24 pesos
+D. 48 pesos",C. 24 pesos,"La diferencia entre un pedido de 25 páginas y uno de 10 páginas es de 15 páginas y de 15 pesos. Por tanto, cada página cuesta 1 peso. En el pedido de 10 páginas, las páginas cuestan 10 pesos, así que el cargo fijo de preparación es 34 - 10 = 24 pesos. Un pedido de 40 páginas cuesta 24 + 40 = 64 pesos. Cada pedido de 20 páginas cuesta 24 + 20 = 44 pesos, por lo que dos pedidos cuestan 88 pesos. El ahorro es 88 - 64 = 24 pesos.",,,,,,,,,,,
+HC-044,ICFES,Saber 11,Matemáticas,,Matemáticas,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"Una alcaldía comparó dos convocatorias para asignar un subsidio de transporte. Para analizar si una convocatoria fue más efectiva, registró cuántas personas de cada grupo recibieron el subsidio.
+
+| Convocatoria | Grupo | Solicitudes | Subsidios asignados |
+|---|---|---:|---:|
+| X | Mujeres | 30 | 18 |
+| X | Hombres | 10 | 9 |
+| Y | Mujeres | 40 | 20 |
+| Y | Hombres | 60 | 48 |
+
+Un estudiante afirma: «La convocatoria X fue más efectiva que la Y, porque asignó una proporción mayor de subsidios tanto entre las mujeres como entre los hombres; por lo tanto, también tuvo una proporción mayor al considerar todas las solicitudes»",¿Cuál evaluación de la afirmación del estudiante es correcta?,"A. Es incorrecta: aunque X supera a Y en cada grupo, X asignó 27 de 40 subsidios (67,5 %) y Y asignó 68 de 100 (68 %); por tanto, Y tuvo la mayor proporción total.
+B. Es correcta: como X supera a Y en cada grupo, necesariamente también supera a Y al reunir todas las solicitudes, sin importar cuántas haya en cada grupo.
+C. Es incorrecta: basta comparar las cantidades asignadas, pues X entregó 27 subsidios y Y entregó 68; por tanto, Y tuvo la mayor proporción total.
+D. Es correcta: al promediar las proporciones de cada grupo, X obtiene 75 % y Y obtiene 65 %; por tanto, X tuvo la mayor proporción total.","A. Es incorrecta: aunque X supera a Y en cada grupo, X asignó 27 de 40 subsidios (67,5 %) y Y asignó 68 de 100 (68 %); por tanto, Y tuvo la mayor proporción total.","En X, entre las mujeres se asignaron 18/30 = 60 % de los subsidios y entre los hombres 9/10 = 90 %. En Y, las proporciones correspondientes son 20/40 = 50 % y 48/60 = 80 %. Por eso, X sí supera a Y dentro de cada grupo.
+
+Sin embargo, la proporción total debe calcularse usando todos los subsidios asignados y todas las solicitudes, no comparando únicamente los grupos por separado ni promediando sus porcentajes. En X se asignaron 18 + 9 = 27 subsidios de 30 + 10 = 40 solicitudes, es decir, 27/40 = 67,5 %. En Y se asignaron 20 + 48 = 68 subsidios de 40 + 60 = 100 solicitudes, es decir, 68 %.
+
+Así, la conclusión del estudiante no se sigue de sus comparaciones por grupo: Y tuvo una proporción total ligeramente mayor. La opción correcta es A.",,,,,,,,,,,
+HC-045,ICFES,Saber 11,Matemáticas,,Matemáticas,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.argumentacion -- Argumentación: valida procedimientos y estrategias matemáticas.,SELECTED_RESPONSE,1,,"En una institución educativa se registró cuántos estudiantes compraron fruta en dos días de una campaña de alimentación saludable.
+
+| Día | Estudiantes que compraron fruta | Total de estudiantes atendidos |
+|---|---:|---:|
+| Lunes | 28 | 80 |
+| Viernes | 35 | 100 |
+
+Un estudiante afirma: «El viernes aumentó la proporción de estudiantes que compraron fruta, porque 35 es mayor que 28».",¿Cuál evaluación de la afirmación del estudiante es correcta?,"A. Es válida, porque la cantidad aumentó en 7 y, por tanto, la proporción aumentó en 7 puntos porcentuales.
+B. No es válida, porque en ambos días la proporción fue 35%; aumentó la cantidad, pero no la proporción.
+C. No es válida, porque al cambiar el total de estudiantes ya no es posible comparar las proporciones de los dos días.
+D. Es válida, porque 35/100 es mayor que 28/80 y, por tanto, la proporción del viernes fue mayor.","B. No es válida, porque en ambos días la proporción fue 35%; aumentó la cantidad, pero no la proporción.","Para comparar proporciones se debe dividir la cantidad de estudiantes que compraron fruta entre el total atendido en cada día.
+
+El lunes, la proporción fue 28/80 = 0,35, es decir, 35%.
+El viernes, la proporción fue 35/100 = 0,35, es decir, 35%.
+
+Por tanto, las proporciones fueron iguales. Aunque el viernes compraron fruta 7 estudiantes más, también se atendieron 20 estudiantes más, de modo que la proporción no aumentó. La evaluación correcta es la opción B.",,,,,,,,,,,
+HC-046,ICFES,Saber 11,Matemáticas,,Matemáticas,FOUNDATIONAL,"not attributed yet (the blueprint bucket carries an objective, no concept id)",saber.formulacion -- Formulación y ejecución: plantea e implementa estrategias para resolver problemas.,SELECTED_RESPONSE,1,,"Una empresa ofrece dos planes mensuales de internet para hogares. En ambos planes, x representa la cantidad de gigabytes (GB) adicionales consumidos durante el mes.
+
+| Plan | Cargo fijo mensual | Costo por cada GB adicional |
+|---|---:|---:|
+| Básico | $18.000 | $1.500 |
+| Flexible | $10.000 | $2.000 |",¿Cuál ecuación permite determinar el consumo x para el cual el costo mensual es igual en los dos planes?,"A. 18.000 + 1.500x = 10.000 + 2.000x
+B. 18.000x + 1.500 = 10.000x + 2.000
+C. 18.000 + 2.000x = 10.000 + 1.500x
+D. 18.000 + 1.500 + x = 10.000 + 2.000 + x",A. 18.000 + 1.500x = 10.000 + 2.000x,"El costo de cada plan se obtiene sumando el cargo fijo y el costo de cada GB adicional multiplicado por x. Por tanto, el costo del plan Básico es 18.000 + 1.500x y el del plan Flexible es 10.000 + 2.000x. Para hallar cuándo son iguales, se igualan estas expresiones: 18.000 + 1.500x = 10.000 + 2.000x. La opción correcta es A.",,,,,,,,,,,
+HC-047,IB,IB Diploma Programme,Mathematics: analysis and approaches,HL,P1,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)","aahl.p1.functions -- Functions: rational functions, inverses, quadratics and inequalities.",SHORT_RESPONSE,9,find,"The function f is defined by f(x) = (x + 1)/(x − 2), with domain x > 2. Let f⁻¹ denote its inverse function.","Find, in exact form, the solution set of f(x) + f⁻¹(x) ≤ 5. Show sufficient working to justify the domain used.",,"x ∈ [3 + √10/2, ∞)","Let y = (x + 1)/(x − 2). Then yx − 2y = x + 1, so x(y − 1) = 2y + 1 and therefore f⁻¹(x) = (2x + 1)/(x − 1).
+
+Since f(x) = 1 + 3/(x − 2) and x > 2, the range of f is x > 1. Thus f⁻¹ has domain x > 1. For f(x) + f⁻¹(x) to be defined, x must satisfy both x > 2 and x > 1, so x > 2.
+
+For x > 2, both x − 2 and x − 1 are positive. Hence
+f(x) + f⁻¹(x) = (x + 1)/(x − 2) + (2x + 1)/(x − 1)
+= ((x + 1)(x − 1) + (2x + 1)(x − 2))/((x − 2)(x − 1))
+= (3x² − 3x − 3)/((x − 2)(x − 1)).
+
+Therefore,
+(3x² − 3x − 3)/((x − 2)(x − 1)) ≤ 5.
+
+Because the denominator is positive for x > 2,
+3x² − 3x − 3 ≤ 5(x − 2)(x − 1),
+so
+2x² − 12x + 13 ≥ 0.
+
+The roots are
+x = (12 ± √40)/4 = 3 ± √10/2.
+Since the quadratic has positive leading coefficient,
+ x ≤ 3 − √10/2 or x ≥ 3 + √10/2.
+
+Intersecting this with x > 2 gives
+x ∈ [3 + √10/2, ∞).","[1] Rearranges y = (x + 1)/(x − 2) to obtain f⁻¹(x) = (2x + 1)/(x − 1).
+[1] Identifies that the range of f, and hence the domain of f⁻¹, is x > 1.
+[1] Determines the common domain of f(x) + f⁻¹(x) as x > 2.
+[1] Combines the two rational expressions over the common denominator (x − 2)(x − 1).
+[1] Simplifies the numerator to 3x² − 3x − 3.
+[1] Uses the positivity of (x − 2)(x − 1) for x > 2 to obtain 2x² − 12x + 13 ≥ 0.
+[1] Finds the critical values x = 3 − √10/2 and x = 3 + √10/2.
+[1] Selects the correct intervals for the quadratic inequality: x ≤ 3 − √10/2 or x ≥ 3 + √10/2.
+[1] Intersects with x > 2 and states the exact solution set x ∈ [3 + √10/2, ∞).",,,,,,,,,,
+HC-048,PISA,PISA,Ciencias,,SCIENCE,CHALLENGE,"not attributed yet (the blueprint bucket carries an objective, no concept id)",pisa.sci.explain.earth -- Explicar fenómenos científicamente · conocimiento de contenido: sistemas de la Tierra y el espacio.,SHORT_RESPONSE,1,,"Una isla volcánica tiene una cordillera que cruza de norte a sur. Los vientos dominantes llegan desde el oeste y atraviesan la cordillera hacia el este.
+
+Durante un año se registraron estos datos:
+
+| Zona de la isla | Precipitación anual | Observaciones frecuentes |
+|---|---:|---|
+| Ladera occidental, cerca del mar | 2.400 mm | Nubes bajas y vegetación muy abundante |
+| Cumbre | 8 °C de temperatura media | Nubes que llegan desde el oeste |
+| Ladera oriental, cerca del mar | 320 mm | Cielo despejado y vegetación escasa |
+
+En ambas laderas, la distancia al mar y la latitud son prácticamente iguales.",Explica por qué la ladera oriental recibe mucha menos precipitación que la ladera occidental. Relaciona tu explicación con el movimiento del aire y con los datos de la tabla. Responde en una o dos frases.,,"El aire húmedo del oeste asciende por la cordillera, se enfría y forma nubes que producen lluvia en la ladera occidental. Después, el aire desciende por la ladera oriental más seco y se calienta, por lo que allí se forman menos nubes y cae mucha menos lluvia.","Los vientos llevan aire húmedo desde el mar hacia la ladera occidental. Al verse obligado a ascender por la cordillera, el aire se enfría; el vapor de agua se condensa, forma nubes y produce gran parte de la lluvia observada en esa ladera. Cuando el aire desciende por la ladera oriental ya ha perdido mucha humedad y se calienta, de modo que se forman menos nubes y la precipitación es mucho menor. Esto explica conjuntamente la diferencia de 2.400 mm frente a 320 mm, las nubes de la cumbre y la vegetación más escasa del este.","[1] Explica que el aire húmedo asciende por la ladera occidental, se enfría y precipita allí, y que al descender por la ladera oriental, más seco y cálido, produce mucha menos precipitación; relaciona esta cadena con los datos de la tabla.",,,,,,,,,,
+HC-049,PAA,PAA,Lectura,,LECTURA,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)","paa.lect.explicitas -- Ideas explícitas: datos, detalles, tesis, resumen.",SELECTED_RESPONSE,1,,"Durante seis semanas de 2024, la biblioteca municipal colocó cerca de la entrada una mesa con libros de divulgación científica y un letrero que invitaba a hojearlos. En ese periodo, los préstamos de esos títulos aumentaron 35 % respecto de las seis semanas anteriores; el total de préstamos de la biblioteca aumentó 4 %.
+
+De las 42 personas entrevistadas al salir, 29 dijeron que la nueva ubicación les había hecho notar libros que antes no veían. Sin embargo, las entrevistas se realizaron únicamente entre quienes visitaron la biblioteca. Además, durante las mismas seis semanas, varias escuelas cercanas organizaron una campaña para recomendar lecturas científicas. El informe concluye que conviene repetir la experiencia en otras sucursales y comparar los resultados con un periodo en que no haya una campaña semejante.",¿Cuál conclusión está mejor respaldada por la información del texto?,"A. La nueva ubicación probablemente ayudó a visibilizar algunos títulos, pero no permite atribuirle por sí sola el aumento total.
+B. La nueva ubicación fue la causa principal del aumento total, porque los préstamos científicos crecieron más que los demás.
+C. La campaña escolar tuvo poca influencia, porque la mayoría de las personas entrevistadas mencionó la ubicación.
+D. La nueva ubicación benefició a la mayoría de los residentes, porque 29 de 42 entrevistados la consideraron útil.","A. La nueva ubicación probablemente ayudó a visibilizar algunos títulos, pero no permite atribuirle por sí sola el aumento total.","La opción A es la mejor respaldada. El aumento de los préstamos de los títulos colocados cerca de la entrada y las respuestas de 29 visitantes sugieren que la ubicación pudo hacerlos más visibles. Sin embargo, la campaña escolar ocurrió al mismo tiempo, por lo que no se puede atribuir todo el aumento únicamente a la mesa. Además, como solo se entrevistó a visitantes, las respuestas no representan necesariamente a todos los residentes. Por eso, A combina la inferencia apoyada por los datos con la limitación que el informe reconoce.",,,,,,,,,,,
+HC-050,PISA,PISA,Matemáticas,,MATHEMATICS,STANDARD,"not attributed yet (the blueprint bucket carries an objective, no concept id)",pisa.cambio.razonar -- Cambio y relaciones (Change and relationships) · Razonamiento matemático.,SELECTED_RESPONSE,1,,"Un centro juvenil quiere informar sobre unas becas a estudiantes de la zona. Necesita que, al terminar el cuarto día, el aviso haya llegado a por lo menos 500 estudiantes diferentes. No se cuenta dos veces a un estudiante alcanzado en días distintos.
+
+El equipo puede elegir uno de estos planes. En ambos, el número indicado para el primer día es el de estudiantes nuevos alcanzados ese día.
+
+| Plan | Primer día | Cómo cambia el número de estudiantes nuevos cada día |
+|---|---:|---|
+| A | 64 | Aumenta en 20 respecto del día anterior |
+| B | 64 | Es 3/2 del número del día anterior |
+
+",¿Qué plan debe elegir el centro para alcanzar su objetivo al terminar el cuarto día?,"A. El plan A: 144 estudiantes; no alcanza el objetivo.
+B. El plan A: 376 estudiantes; no alcanza el objetivo.
+C. El plan B: 520 estudiantes; sí alcanza el objetivo.
+D. El plan B: 384 estudiantes; no alcanza el objetivo.",C. El plan B: 520 estudiantes; sí alcanza el objetivo.,"Hay que sumar los estudiantes nuevos de los cuatro días, porque no se cuenta solo el número del cuarto día.
+
+En el plan A se alcanzan 64, 84, 104 y 124 estudiantes por día. El total es 64 + 84 + 104 + 124 = 376, que es menor que 500.
+
+En el plan B se alcanzan 64, 96, 144 y 216 estudiantes por día, ya que cada número es 3/2 del anterior. El total es 64 + 96 + 144 + 216 = 520, que es al menos 500. Por tanto, debe elegir el plan B.",,,,,,,,,,,

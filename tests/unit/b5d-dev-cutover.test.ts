@@ -221,6 +221,8 @@ describe('B5-D answers in progress', () => {
       '20261120_1200_sf10_single_persona_constraint.sql',
       // + the Student's own scheduled assessments (ad-hoc exam): two new tables, nothing of the response model
       '20261121_1000_student_scheduled_assessments.sql',
+      // QF V5.1: construct cores and instance lineage -- no response model
+      '20261121_1100_qf51_construct_core_lineage.sql',
       // curriculum convergence: Learn curriculum provenance (one new table; no response model)
       '20261122_1000_learner_concept_curriculum_provenance.sql',
       // reviewed concept aliases (one new table, one mapping method; no response model)

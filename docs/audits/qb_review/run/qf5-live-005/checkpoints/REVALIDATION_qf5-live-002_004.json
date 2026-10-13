@@ -1,0 +1,49 @@
+{
+  "runId": "qf5-live-005",
+  "batchId": "REVALIDATION:qf5-live-002:004",
+  "phase": "C1",
+  "profileId": "REVALIDATION",
+  "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.3.0",
+  "cumulativeSpendUsd": 2.02704,
+  "timestamp": "2026-10-12T13:00:13.319Z",
+  "candidateIds": [
+    "v2.ib.physics-hl/p1a/phy.p1a.fields#0/004#1",
+    "v2.ib.physics-hl/p1a/phy.p1a.motion#0/004#1",
+    "v2.paa/lectura/paa.lect.evidencia#0/001#0",
+    "v2.paa/lectura/paa.lect.evidencia#0/004#1",
+    "v2.paa/lectura/paa.lect.explicitas#0/001#0",
+    "v2.paa/lectura/paa.lect.explicitas#0/004#1",
+    "v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/001#0",
+    "v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/004#0"
+  ],
+  "decisions": {
+    "v2.ib.physics-hl/p1a/phy.p1a.fields#0/004#1": "AUTO_REJECT",
+    "v2.ib.physics-hl/p1a/phy.p1a.motion#0/004#1": "AUTO_REJECT",
+    "v2.paa/lectura/paa.lect.evidencia#0/001#0": "AUTO_APPROVE",
+    "v2.paa/lectura/paa.lect.evidencia#0/004#1": "AUTO_REJECT",
+    "v2.paa/lectura/paa.lect.explicitas#0/001#0": "AUTO_APPROVE",
+    "v2.paa/lectura/paa.lect.explicitas#0/004#1": "HUMAN_REVIEW",
+    "v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/001#0": "AUTO_APPROVE",
+    "v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/004#0": "HUMAN_REVIEW"
+  },
+  "metrics": {
+    "rawGenerated": 8,
+    "structuralPass": 8,
+    "answerPass": 8,
+    "constructPass": 6,
+    "difficultyMatch": 3,
+    "autoApproved": 3,
+    "humanReview": 2,
+    "autoRejected": 3,
+    "specifications": 8,
+    "firstAttemptPass": 3,
+    "regenerated": 0,
+    "specificationIssues": 0,
+    "firstAttemptPassRate": 0.375,
+    "regenerationRate": 0,
+    "humanReviewRate": 0.25,
+    "rejectionRate": 0.375
+  },
+  "hash": "9f7d667fa4a83e1bcc90e389688a1fffb5237447abaaac48843934f692dc8021"
+}

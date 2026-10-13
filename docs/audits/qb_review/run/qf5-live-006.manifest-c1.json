@@ -1,0 +1,10 @@
+[
+  { "profileId": "ICFES.SABER11.MATEMATICAS", "count": 6, "phase": "C1" },
+  { "profileId": "PAA.MATEMATICAS", "count": 6, "phase": "C1" },
+  { "profileId": "PISA.MATHEMATICS", "count": 5, "phase": "C1" },
+  { "profileId": "IB.MATH_AA.HL.P1", "count": 5, "phase": "C1" },
+  { "profileId": "CAMBRIDGE.0580.EXTENDED.P4", "count": 5, "phase": "C1" },
+  { "profileId": "AICE.9709.PURE", "count": 5, "phase": "C1" },
+  { "profileId": "PISA.SCIENCE", "count": 2, "phase": "C1" },
+  { "profileId": "PAA.LECTURA", "count": 2, "phase": "C1" }
+]

@@ -1,0 +1,42 @@
+{
+  "runId": "qf5-live-002",
+  "batchId": "PISA.MATHEMATICS:C1:001",
+  "phase": "C1",
+  "profileId": "PISA.MATHEMATICS",
+  "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.2.0",
+  "cumulativeSpendUsd": 2.520935,
+  "timestamp": "2026-10-12T12:24:42.097Z",
+  "candidateIds": [
+    "v2.pisa.2022/math/pisa.cambio.formular#0/004#0",
+    "v2.pisa.2022/math/pisa.cambio.formular#0/004#1",
+    "v2.pisa.2022/math/pisa.cambio.razonar#0/004#0",
+    "v2.pisa.2022/math/pisa.cambio.razonar#0/004#1",
+    "v2.pisa.2022/math/pisa.cantidad.emplear#0/004#0",
+    "v2.pisa.2022/math/pisa.cantidad.emplear#0/004#1"
+  ],
+  "decisions": {
+    "v2.pisa.2022/math/pisa.cambio.formular#0/004#1": "AUTO_REJECT",
+    "v2.pisa.2022/math/pisa.cambio.razonar#0/004#1": "AUTO_REJECT",
+    "v2.pisa.2022/math/pisa.cantidad.emplear#0/004#1": "AUTO_REJECT"
+  },
+  "metrics": {
+    "rawGenerated": 6,
+    "structuralPass": 6,
+    "answerPass": 1,
+    "constructPass": 3,
+    "difficultyMatch": 1,
+    "autoApproved": 0,
+    "humanReview": 0,
+    "autoRejected": 3,
+    "specifications": 3,
+    "firstAttemptPass": 0,
+    "regenerated": 3,
+    "specificationIssues": 3,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 1,
+    "humanReviewRate": 0,
+    "rejectionRate": 1
+  },
+  "hash": "eae01136e7abb03a268d398bd325d81a1c405403e28b60bf73e112166e9c6d63"
+}

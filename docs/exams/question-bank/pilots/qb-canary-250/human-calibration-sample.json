@@ -1,0 +1,653 @@
+{
+  "kind": "QB_CANARY_250_HUMAN_CALIBRATION_SAMPLE",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- RIGHTS_NOT_ESTABLISHED -- AUTOMATED VALIDATION AND AI REVIEW ONLY, NO HUMAN REVIEW",
+  "freeze": {
+    "freezeCommitSha": "f445e7afa89cffd69865fd3f9dbf9d98bdddb1f9",
+    "manifestHash": "51baba1bbecf12f399b997b65e525e0db169fa12ccca8e21f855cd360c7d2191"
+  },
+  "run": {
+    "runId": "qb-canary-250-20261011205000",
+    "startedAt": "2026-10-11T20:50:00.030Z"
+  },
+  "versions": {
+    "generator": {
+      "harness": {
+        "id": "studyus-specification-generation-harness",
+        "version": "3"
+      },
+      "slotGuidance": {
+        "id": "qb-canary-250-slot-guidance",
+        "version": "1"
+      }
+    },
+    "validators": {
+      "revision": 4
+    },
+    "reviewer": {
+      "id": "studyus-ai-item-reviewer",
+      "version": "1",
+      "promptVersion": "1",
+      "schemaVersion": "1",
+      "redactionVersion": "1",
+      "decisionPolicyVersion": "1"
+    }
+  },
+  "status": "PROPOSED",
+  "procedure": {
+    "id": "studyus-human-calibration-sample-procedure",
+    "version": "1"
+  },
+  "bounds": {
+    "disagreementMax": 20,
+    "uncertainMax": 15,
+    "reviewerFailureMax": 5,
+    "blindApproved": {
+      "min": 6,
+      "max": 15
+    },
+    "overRejection": {
+      "min": 4,
+      "max": 12
+    },
+    "perSystemMin": 4,
+    "perHigherRiskSystemMin": 6,
+    "perResponseTypeMin": 5
+  },
+  "entries": [
+    {
+      "slotId": "c250-001",
+      "system": "PAA",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 7
+    },
+    {
+      "slotId": "c250-003",
+      "system": "PISA",
+      "responseType": "NUMERIC_ENTRY",
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 5
+    },
+    {
+      "slotId": "c250-005",
+      "system": "IB",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 9
+    },
+    {
+      "slotId": "c250-007",
+      "system": "SCHOOL_STEM_PERFORMANCE",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 9
+    },
+    {
+      "slotId": "c250-010",
+      "system": "PISA",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 4
+    },
+    {
+      "slotId": "c250-011",
+      "system": "ICFES",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 3
+    },
+    {
+      "slotId": "c250-013",
+      "system": "PAA",
+      "responseType": "NUMERIC_ENTRY",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 8
+    },
+    {
+      "slotId": "c250-014",
+      "system": "CAMBRIDGE",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 10
+    },
+    {
+      "slotId": "c250-016",
+      "system": "IB",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "blind": true,
+      "uncertaintyScore": 17
+    },
+    {
+      "slotId": "c250-023",
+      "system": "IB",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "ACADEMIC_CORRECTNESS=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 10
+    },
+    {
+      "slotId": "c250-032",
+      "system": "PISA",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "blind": true,
+      "uncertaintyScore": 12
+    },
+    {
+      "slotId": "c250-033",
+      "system": "IB",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 8
+    },
+    {
+      "slotId": "c250-037",
+      "system": "PAA",
+      "responseType": "NUMERIC_ENTRY",
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "blind": true,
+      "uncertaintyScore": 0
+    },
+    {
+      "slotId": "c250-048",
+      "system": "PAA",
+      "responseType": "NUMERIC_ENTRY",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 5
+    },
+    {
+      "slotId": "c250-076",
+      "system": "CAMBRIDGE",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 9
+    },
+    {
+      "slotId": "c250-077",
+      "system": "PISA",
+      "responseType": "NUMERIC_ENTRY",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 4
+    },
+    {
+      "slotId": "c250-079",
+      "system": "ICFES",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 5
+    },
+    {
+      "slotId": "c250-082",
+      "system": "PISA",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 6
+    },
+    {
+      "slotId": "c250-087",
+      "system": "PAA",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 4
+    },
+    {
+      "slotId": "c250-090",
+      "system": "ICFES",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 6
+    },
+    {
+      "slotId": "c250-093",
+      "system": "PISA",
+      "responseType": "NUMERIC_ENTRY",
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "blind": true,
+      "uncertaintyScore": 0
+    },
+    {
+      "slotId": "c250-099",
+      "system": "CAMBRIDGE",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 9
+    },
+    {
+      "slotId": "c250-107",
+      "system": "SCHOOL_STEM_PERFORMANCE",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN+PROFILE_FIDELITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 9
+    },
+    {
+      "slotId": "c250-111",
+      "system": "ICFES",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 3
+    },
+    {
+      "slotId": "c250-128",
+      "system": "SCHOOL_STEM_PERFORMANCE",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "blind": true,
+      "uncertaintyScore": 10
+    },
+    {
+      "slotId": "c250-132",
+      "system": "PISA",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 4
+    },
+    {
+      "slotId": "c250-138",
+      "system": "CAMBRIDGE",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "blind": true,
+      "uncertaintyScore": 1
+    },
+    {
+      "slotId": "c250-147",
+      "system": "ICFES",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "blind": true,
+      "uncertaintyScore": 0
+    },
+    {
+      "slotId": "c250-154",
+      "system": "ICFES",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "UNCERTAIN",
+          "detail": "CONSTRUCT_VALIDITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 4
+    },
+    {
+      "slotId": "c250-186",
+      "system": "SCHOOL_STEM_PERFORMANCE",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 9
+    },
+    {
+      "slotId": "c250-187",
+      "system": "PAA",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "blind": true,
+      "uncertaintyScore": 0
+    },
+    {
+      "slotId": "c250-194",
+      "system": "IB",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 10
+    },
+    {
+      "slotId": "c250-205",
+      "system": "IB",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        },
+        {
+          "reason": "UNCERTAIN",
+          "detail": "ACADEMIC_CORRECTNESS=CONCERN+CONSTRUCT_VALIDITY=CONCERN"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 13
+    },
+    {
+      "slotId": "c250-211",
+      "system": "ICFES",
+      "responseType": "SELECTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "REVIEWER_FAIL_VALIDATOR_STRICT_PASS"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 5
+    },
+    {
+      "slotId": "c250-214",
+      "system": "CAMBRIDGE",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "DISAGREEMENT",
+          "detail": "VALIDATOR_FAIL_REVIEWER_PASS"
+        }
+      ],
+      "blind": false,
+      "uncertaintyScore": 9
+    },
+    {
+      "slotId": "c250-226",
+      "system": "CAMBRIDGE",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "OVER_REJECTION_CHECK",
+          "detail": "rejected by R1; one of 28 rejected"
+        }
+      ],
+      "blind": true,
+      "uncertaintyScore": 14
+    },
+    {
+      "slotId": "c250-233",
+      "system": "IB",
+      "responseType": "CONSTRUCTED_RESPONSE",
+      "reasons": [
+        {
+          "reason": "BLIND_AUDIT_APPROVED",
+          "detail": "one of 25 approved"
+        }
+      ],
+      "blind": true,
+      "uncertaintyScore": 2
+    }
+  ],
+  "packetOrder": [
+    "c250-079",
+    "c250-048",
+    "c250-076",
+    "c250-214",
+    "c250-032",
+    "c250-023",
+    "c250-099",
+    "c250-211",
+    "c250-033",
+    "c250-205",
+    "c250-082",
+    "c250-194",
+    "c250-007",
+    "c250-013",
+    "c250-087",
+    "c250-226",
+    "c250-187",
+    "c250-138",
+    "c250-001",
+    "c250-005",
+    "c250-011",
+    "c250-077",
+    "c250-090",
+    "c250-016",
+    "c250-003",
+    "c250-107",
+    "c250-186",
+    "c250-037",
+    "c250-147",
+    "c250-010",
+    "c250-128",
+    "c250-233",
+    "c250-154",
+    "c250-014",
+    "c250-111",
+    "c250-132",
+    "c250-093"
+  ],
+  "counts": {
+    "total": 37,
+    "blind": 10,
+    "byReason": {
+      "BLIND_AUDIT_APPROVED": 6,
+      "DISAGREEMENT": 20,
+      "OVER_REJECTION_CHECK": 6,
+      "UNCERTAIN": 15
+    },
+    "bySystem": {
+      "CAMBRIDGE": 6,
+      "IB": 7,
+      "ICFES": 7,
+      "PAA": 6,
+      "PISA": 7,
+      "SCHOOL_STEM_PERFORMANCE": 4
+    },
+    "byResponseType": {
+      "CONSTRUCTED_RESPONSE": 17,
+      "NUMERIC_ENTRY": 6,
+      "SELECTED_RESPONSE": 14
+    },
+    "byAi": {
+      "APPROVED": 6,
+      "NEEDS_HUMAN_REVIEW": 22,
+      "REJECTED": 9
+    }
+  },
+  "population": {
+    "APPROVED": 25,
+    "NEEDS_HUMAN_REVIEW": 157,
+    "NOT_REVIEWED": 11,
+    "REJECTED": 28
+  },
+  "shortfalls": []
+}

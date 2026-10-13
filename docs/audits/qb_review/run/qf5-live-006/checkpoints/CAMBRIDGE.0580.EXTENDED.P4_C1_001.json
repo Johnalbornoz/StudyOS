@@ -1,0 +1,38 @@
+{
+  "runId": "qf5-live-006",
+  "batchId": "CAMBRIDGE.0580.EXTENDED.P4:C1:001",
+  "phase": "C1",
+  "profileId": "CAMBRIDGE.0580.EXTENDED.P4",
+  "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.4.0",
+  "cumulativeSpendUsd": 4.030565,
+  "timestamp": "2026-10-12T13:22:45.376Z",
+  "candidateIds": [
+    "v2.cambridge.0580-extended/p4/cie.p4.structured#0/004#0",
+    "v2.cambridge.0580-extended/p4/cie.p4.structured#0/004#1",
+    "v2.cambridge.0580-extended/p4/cie.p4.functions#0/001#0"
+  ],
+  "decisions": {
+    "v2.cambridge.0580-extended/p4/cie.p4.structured#0/004#1": "HUMAN_REVIEW",
+    "v2.cambridge.0580-extended/p4/cie.p4.functions#0/001#0": "AUTO_REJECT"
+  },
+  "metrics": {
+    "rawGenerated": 3,
+    "structuralPass": 3,
+    "answerPass": 3,
+    "constructPass": 1,
+    "difficultyMatch": 2,
+    "autoApproved": 0,
+    "humanReview": 1,
+    "autoRejected": 1,
+    "specifications": 2,
+    "firstAttemptPass": 0,
+    "regenerated": 1,
+    "specificationIssues": 0,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 0.5,
+    "humanReviewRate": 0.5,
+    "rejectionRate": 0.5
+  },
+  "hash": "248a09fd69941720ed39352fe8fa2d372ac88e80cccac19596ed806ffbcc2573"
+}

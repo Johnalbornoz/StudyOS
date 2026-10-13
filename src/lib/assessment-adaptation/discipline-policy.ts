@@ -37,6 +37,11 @@ export type NumericProfile = (typeof NUMERIC_PROFILES)[number];
 const depthMeaning = z.strictObject({ workingShown: z.boolean(), justificationRequired: z.boolean(), meaning: STATEMENT });
 const toolMeaning = z.strictObject({ numericProfile: z.enum(NUMERIC_PROFILES), meaning: STATEMENT });
 
+export const MARK_POINT_KINDS = ['METHOD', 'ACCURACY', 'REASONING'] as const;
+export const MARK_SCORING_KINDS = ['SINGLE_KEYED_UNIT', 'SINGLE_CODED_UNIT', 'MARKED_PARTS'] as const;
+const range = z.strictObject({ min: z.number().int().min(1).max(30), max: z.number().int().min(1).max(30) }).refine((r) => r.min <= r.max, 'RANGE_INVERTED');
+const markMeaning = z.strictObject({ scoredAs: z.enum(MARK_SCORING_KINDS), total: range, parts: range.nullable(), meaning: STATEMENT });
+
 export const DisciplineAdaptationPolicySchema = z
   .strictObject({
     v: z.literal(DISCIPLINE_POLICY_CONTRACT_VERSION),
@@ -62,6 +67,17 @@ export const DisciplineAdaptationPolicySchema = z
     /** Command terms that suit a task, by the FIRST action of its evidence target, most suitable first. Used only against a profile's own vocabulary. */
     commandTermByLeadAction: z.record(z.enum(EVIDENCE_ACTIONS), z.array(z.string().trim().min(2).max(60)).min(1)),
     distractors: z.strictObject({ source: z.literal('FAMILY_MISCONCEPTION_MODELS'), meaning: STATEMENT }),
+    /**
+     * QB-R2E. What each mark structure means for ONE instance: how it is scored, the range its total may take and
+     * how many parts it may have. No assessment system in the repository records a total for a single question, so
+     * these ranges are StudyUs policy and are cited as such; an OFFICIAL per-question total, once recorded in a
+     * profile, would take precedence.
+     */
+    marks: z.strictObject({
+      ONE_MARK_PER_ITEM: markMeaning, MULTI_MARK_PARTS: markMeaning, CODED_CREDIT: markMeaning,
+      /** The kinds of mark point a marked part may carry. StudyUs's neutral names, not a board's notation. */
+      markPointKinds: z.array(z.enum(MARK_POINT_KINDS)).min(1),
+    }),
   })
   .superRefine((p, ctx) => {
     // the three invariants are not optional: a policy that drops one is not a policy of this architecture
@@ -87,7 +103,7 @@ export const policyRuleId = (policy: Pick<DisciplineAdaptationPolicy, 'policyId'
 export const MATHEMATICS_ADAPTATION_POLICY: DisciplineAdaptationPolicy = {
   v: DISCIPLINE_POLICY_CONTRACT_VERSION,
   policyId: 'studyus.adaptation.mathematics',
-  version: '0.1.0-provisional',
+  version: '0.2.0-provisional',
   discipline: 'MATHEMATICS',
   familyTypes: ['MATH_PROBLEM'],
   authority: 'STUDYUS_POLICY',
@@ -119,4 +135,10 @@ export const MATHEMATICS_ADAPTATION_POLICY: DisciplineAdaptationPolicy = {
     JUSTIFY: ['show that', 'hence'],
   },
   distractors: { source: 'FAMILY_MISCONCEPTION_MODELS', meaning: 'Each wrong option of a selected response is the result one modelled error of the family produces. A wrong option that no modelled error produces is not written.' },
+  marks: {
+    ONE_MARK_PER_ITEM: { scoredAs: 'SINGLE_KEYED_UNIT', total: { min: 1, max: 1 }, parts: null, meaning: 'One keyed answer, one mark. No parts and no mark scheme.' },
+    CODED_CREDIT: { scoredAs: 'SINGLE_CODED_UNIT', total: { min: 1, max: 1 }, parts: null, meaning: 'One scored unit, coded as full, partial or no credit. It carries credit levels, not marks per step.' },
+    MULTI_MARK_PARTS: { scoredAs: 'MARKED_PARTS', total: { min: 2, max: 8 }, parts: { min: 1, max: 4 }, meaning: 'One or more parts, each with its marks and its mark points. The range is a StudyUs working rule for a single question, not a figure of any examination.' },
+    markPointKinds: ['METHOD', 'ACCURACY', 'REASONING'],
+  },
 };

@@ -47,7 +47,15 @@ const ID = z.string().trim().min(1).max(200);
 const SHORT = z.string().trim().min(3).max(400);
 const STATEMENT = z.string().trim().min(10).max(700);
 
-export const RULE_AUTHORITIES = ['OFFICIAL', 'STUDYUS_POLICY'] as const;
+/**
+ * Who says a rule is what it is. Three authorities that are never confusable:
+ *   OFFICIAL            the assessment system itself, as a source the repository records. Needs source lineage.
+ *   STUDYUS_POLICY      StudyUs's working assumption. Provisional.
+ *   INSTITUTION_POLICY  (EA-1A) a school's own rule for its own assessment. It names the institution that set it,
+ *                       cites no official source, and exists only in a profile whose basis is INSTITUTION_POLICY:
+ *                       it can never sit in the profile of an exam system, and it is never official curriculum.
+ */
+export const RULE_AUTHORITIES = ['OFFICIAL', 'STUDYUS_POLICY', 'INSTITUTION_POLICY'] as const;
 export type RuleAuthorityKind = (typeof RULE_AUTHORITIES)[number];
 
 /** Where an OFFICIAL fact comes from: the registered source, and the place in the repository that records the fact. */
@@ -61,6 +69,8 @@ export const SourceLineageSchema = z.strictObject({
 export const RuleAuthoritySchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('OFFICIAL'), sources: z.array(SourceLineageSchema).min(1) }),
   z.strictObject({ kind: z.literal('STUDYUS_POLICY'), provisional: z.literal(true), assumption: STATEMENT }),
+  // provenance of an institution's rule: WHO set it. No `sources`: an institution's decision is not an official source.
+  z.strictObject({ kind: z.literal('INSTITUTION_POLICY'), institutionKey: ID, statement: STATEMENT }),
 ]);
 export type RuleAuthority = z.infer<typeof RuleAuthoritySchema>;
 
@@ -88,7 +98,9 @@ export const PROFILE_STATUSES = ['PROVISIONAL_ILLUSTRATIVE', 'CERTIFIED'] as con
  *   STUDYUS_POLICY_ONLY    the repository records no sourced fact for it: it may hold no OFFICIAL rule and cites nothing.
  * Neither is a certification, and an inference is never promoted to OFFICIAL under either.
  */
-export const SPECIFICATION_BASES = ['MIXED_AUTHORITY', 'STUDYUS_POLICY_ONLY'] as const;
+export const SPECIFICATION_BASES = ['MIXED_AUTHORITY', 'STUDYUS_POLICY_ONLY', 'INSTITUTION_POLICY'] as const;
+/** Bases under which no rule may be OFFICIAL and nothing is cited. INSTITUTION_POLICY (EA-1A): a school's own assessment; StudyUs and institution policy only. */
+const UNSOURCED_BASES: ReadonlySet<string> = new Set(['STUDYUS_POLICY_ONLY', 'INSTITUTION_POLICY']);
 
 const unique = <T>(list: readonly T[]): boolean => new Set(list).size === list.length;
 
@@ -136,6 +148,51 @@ export function ruleConsistencyIssues(r: ProfileRules): Array<{ dimension: keyof
   return out;
 }
 
+/**
+ * EA-1A (D1) -- the AUTHORITATIVE VERSION a rule belongs to, as a typed binding. Official rules are facts of one
+ * concrete, versioned thing; what kind of thing differs by system, and no kind is faked into another:
+ *   EXAM_VERSION                 a version of an exam configuration (PAA, IB, Icfes)
+ *   SYLLABUS_VERSION             a version of a syllabus (Cambridge 9709): bound to the syllabus record itself --
+ *                                no exam-version record is invented for it
+ *   FRAMEWORK_VERSION            a version of an assessment framework (PISA)
+ *   INSTITUTION_POLICY_VERSION   a version of an institution's own assessment policy; never the binding of an OFFICIAL rule
+ * It always states: the target's type, its identity, its version, and where that comes from (provenance).
+ */
+export const AUTHORITY_BINDING_TARGET_TYPES = ['EXAM_VERSION', 'SYLLABUS_VERSION', 'FRAMEWORK_VERSION', 'INSTITUTION_POLICY_VERSION'] as const;
+export type AuthorityBindingTargetType = (typeof AUTHORITY_BINDING_TARGET_TYPES)[number];
+export const AuthorityVersionBindingSchema = z
+  .strictObject({
+    targetType: z.enum(AUTHORITY_BINDING_TARGET_TYPES),
+    /** The identity of the target as the repository records it: a configuration key, a syllabus code, a framework key, an institution's policy key. */
+    targetIdentity: ID,
+    /** The version of the target the rules were read from, as recorded. */
+    version: ID,
+    /** The component inside that version (a section, a paper); null when the binding is of the whole target. */
+    componentKey: ID.nullable(),
+    provenance: z.discriminatedUnion('kind', [
+      /** A published authority: the registered source(s) of the version, and where the repository records the version. */
+      z.strictObject({ kind: z.literal('AUTHORITATIVE_SOURCE'), sourceKeys: z.array(ID).min(1), recordedIn: SHORT }),
+      /** An institution: who it is. It cites no official source. */
+      z.strictObject({ kind: z.literal('INSTITUTION'), institutionKey: ID, recordedIn: SHORT }),
+    ]),
+  })
+  .superRefine((b, ctx) => {
+    if ((b.targetType === 'INSTITUTION_POLICY_VERSION') !== (b.provenance.kind === 'INSTITUTION')) ctx.addIssue({ code: 'custom', path: ['provenance'], message: 'BINDING_PROVENANCE_DOES_NOT_MATCH_TARGET_TYPE' });
+  });
+export type AuthorityVersionBinding = z.infer<typeof AuthorityVersionBindingSchema>;
+/** What an OFFICIAL rule needs of the object that holds it: an authoritative (non-institution) binding whose sources include the rule's. */
+function officialBindingIssues(binding: AuthorityVersionBinding | null | undefined, rules: Partial<ProfileRules>, ctx: z.RefinementCtx, path: string): void {
+  const official = PROFILE_RULE_DIMENSIONS.filter((d) => rules[d]?.authority.kind === 'OFFICIAL');
+  if (official.length === 0) return;
+  if (!binding) { ctx.addIssue({ code: 'custom', path: ['versionBinding'], message: 'OFFICIAL_RULE_NEEDS_A_VERSION_BINDING' }); return; }
+  if (binding.provenance.kind !== 'AUTHORITATIVE_SOURCE') { ctx.addIssue({ code: 'custom', path: ['versionBinding'], message: 'OFFICIAL_RULE_NEEDS_AN_AUTHORITATIVE_BINDING' }); return; }
+  const bound = new Set(binding.provenance.sourceKeys);
+  for (const d of official) {
+    const a = rules[d]!.authority;
+    if (a.kind === 'OFFICIAL' && a.sources.some((x) => !bound.has(x.sourceKey))) ctx.addIssue({ code: 'custom', path: [path, d, 'authority', 'sources'], message: 'OFFICIAL_SOURCE_IS_NOT_OF_THE_BOUND_VERSION' });
+  }
+}
+
 const SpecificationSchema = z.strictObject({
   basis: z.enum(SPECIFICATION_BASES),
   /** The repository records the OFFICIAL rules of THIS object were read from. */
@@ -151,7 +208,9 @@ function authorityIssues(p: { status: string; certification: unknown; specificat
   const official = present.filter((d) => rules[d]!.authority.kind === 'OFFICIAL');
   if ((p.status === 'CERTIFIED') !== (p.certification !== null)) ctx.addIssue({ code: 'custom', path: ['certification'], message: p.certification === null ? 'CERTIFIED_NEEDS_A_CERTIFICATION' : 'CERTIFICATION_ONLY_FOR_A_CERTIFIED_PROFILE' });
   // no sourced fact in the repository => nothing may be called official, and nothing is cited
-  if (p.specification.basis === 'STUDYUS_POLICY_ONLY' && (official.length > 0 || p.specification.records.length > 0)) ctx.addIssue({ code: 'custom', path: ['specification'], message: 'STUDYUS_POLICY_ONLY_HOLDS_NO_OFFICIAL_RULE' });
+  if (UNSOURCED_BASES.has(p.specification.basis) && (official.length > 0 || p.specification.records.length > 0)) ctx.addIssue({ code: 'custom', path: ['specification'], message: `${p.specification.basis}_HOLDS_NO_OFFICIAL_RULE` });
+  // an institution's rule lives only in an institution's profile: never beside the rules of an exam system
+  if (p.specification.basis !== 'INSTITUTION_POLICY' && present.some((d) => rules[d]!.authority.kind === 'INSTITUTION_POLICY')) ctx.addIssue({ code: 'custom', path: [path], message: 'INSTITUTION_RULE_ONLY_IN_AN_INSTITUTION_PROFILE' });
   if (p.specification.basis === 'MIXED_AUTHORITY' && p.specification.records.length === 0) ctx.addIssue({ code: 'custom', path: ['specification', 'records'], message: 'MIXED_AUTHORITY_NEEDS_A_RECORD' });
   const declared = new Set(p.specification.records.flatMap((x) => x.sourceKeys));
   for (const d of official) {
@@ -177,12 +236,20 @@ export const AssessmentSystemProfileSchema = z
      * must target a concrete component (see `adapt.ts`, COMPONENT_REQUIRED).
      */
     componentDependentDimensions: z.array(DIMENSION),
+    /**
+     * EA-1A (D1), OPTIONAL: the authoritative version the system-level OFFICIAL rules belong to. Required when the
+     * system profile holds any OFFICIAL rule; absent otherwise (an absent member, so a profile with none is unchanged).
+     */
+    versionBinding: AuthorityVersionBindingSchema.optional(),
     /** The common rules. For a component-dependent dimension the rule here is the system-level fallback used by generic practice only. */
     rules: ProfileRulesSchema,
   })
   .superRefine((p, ctx) => {
     authorityIssues(p, p.rules, ctx, 'rules');
+    officialBindingIssues(p.versionBinding, p.rules, ctx, 'rules');
     for (const i of ruleConsistencyIssues(p.rules)) ctx.addIssue({ code: 'custom', path: ['rules', i.dimension], message: i.message });
+    // an institution's assessment is not an exam system of the taxonomy and never claims to be one
+    if (p.specification.basis === 'INSTITUTION_POLICY' && p.examFamilyCode !== null) ctx.addIssue({ code: 'custom', path: ['examFamilyCode'], message: 'INSTITUTION_ASSESSMENT_IS_NOT_AN_EXAM_FAMILY' });
     if (!unique(p.componentDependentDimensions)) ctx.addIssue({ code: 'custom', path: ['componentDependentDimensions'], message: 'DIMENSION_LISTED_TWICE' });
     // a fact that differs by component is not a fact of the system: the system-level fallback of such a dimension is never OFFICIAL
     for (const d of p.componentDependentDimensions) if (p.rules[d].authority.kind === 'OFFICIAL') ctx.addIssue({ code: 'custom', path: ['rules', d, 'authority'], message: 'COMPONENT_DEPENDENT_FALLBACK_IS_NOT_OFFICIAL' });
@@ -204,11 +271,24 @@ export const AssessmentComponentProfileSchema = z
     status: z.enum(PROFILE_STATUSES),
     certification: CertificationSchema,
     specification: SpecificationSchema,
+    /**
+     * EA-1A (locked; typed by D1): a component profile is VERSION-AWARE. Official rules belong to a concrete, versioned
+     * authoritative target, so the profile names it -- target type, identity, version, provenance -- exactly as the
+     * repository records it. A component with an OFFICIAL override and no authoritative binding is refused. null only
+     * for a component that states no official fact.
+     */
+    versionBinding: AuthorityVersionBindingSchema.nullable(),
+    /**
+     * An OPTIONAL stable key of the component across versions ("PAA Matemáticas" over the years), for continuity
+     * of reporting only. It never replaces the version binding: no rule is read through it.
+     */
+    semanticComponentKey: z.string().regex(/^[a-z0-9]+([.-][a-z0-9]+)*$/).nullable(),
     /** Whole rules, each with its own authority. A dimension that is absent is inherited from the system. */
     overrides: ProfileRulesSchema.partial(),
   })
   .superRefine((c, ctx) => {
     authorityIssues(c, c.overrides, ctx, 'overrides');
+    officialBindingIssues(c.versionBinding, c.overrides, ctx, 'overrides');
     if (!c.componentId.startsWith(`${c.systemProfileId}.`)) ctx.addIssue({ code: 'custom', path: ['componentId'], message: 'COMPONENT_ID_IS_NOT_UNDER_ITS_SYSTEM' });
     const ids = PROFILE_RULE_DIMENSIONS.flatMap((d) => (c.overrides[d] ? [c.overrides[d]!.ruleId] : []));
     if (!unique(ids)) ctx.addIssue({ code: 'custom', path: ['overrides'], message: 'RULE_ID_LISTED_TWICE' });
@@ -223,8 +303,8 @@ export function validateAssessmentSystemProfile(input: unknown): { ok: true; pro
 export type RuleOrigin = 'SYSTEM' | 'COMPONENT';
 /** The rules in force for a target: the system's, with the component's overrides, and where each one came from. */
 export interface ResolvedProfile {
-  system: Pick<AssessmentSystemProfile, 'profileId' | 'version' | 'status' | 'examFamilyCode'>;
-  component: Pick<AssessmentComponentProfile, 'componentId' | 'version' | 'status' | 'localSubject'> | null;
+  system: Pick<AssessmentSystemProfile, 'profileId' | 'version' | 'status' | 'examFamilyCode'> & { versionBinding?: AuthorityVersionBinding };
+  component: Pick<AssessmentComponentProfile, 'componentId' | 'version' | 'status' | 'localSubject' | 'versionBinding'> | null;
   rules: ProfileRules;
   ruleOrigin: Record<keyof ProfileRules, RuleOrigin>;
   componentDependentDimensions: Array<keyof ProfileRules>;
@@ -244,7 +324,7 @@ export function resolveProfile(systemInput: unknown, componentInput?: unknown): 
   if (!sys.success) return { ok: false, issue: 'SYSTEM_PROFILE_INVALID', details: sys.error.issues.slice(0, 4).map((i) => `${i.path.join('.')}: ${i.message}`) };
   const system = sys.data;
   const origin = Object.fromEntries(PROFILE_RULE_DIMENSIONS.map((d) => [d, 'SYSTEM'])) as Record<keyof ProfileRules, RuleOrigin>;
-  const head = { profileId: system.profileId, version: system.version, status: system.status, examFamilyCode: system.examFamilyCode };
+  const head = { profileId: system.profileId, version: system.version, status: system.status, examFamilyCode: system.examFamilyCode, ...(system.versionBinding ? { versionBinding: system.versionBinding } : {}) };
   if (componentInput === undefined || componentInput === null) return { ok: true, system, component: null, resolved: { system: head, component: null, rules: system.rules, ruleOrigin: origin, componentDependentDimensions: [...system.componentDependentDimensions], unsettledDimensions: [...system.componentDependentDimensions] } };
   const comp = AssessmentComponentProfileSchema.safeParse(componentInput);
   if (!comp.success) return { ok: false, issue: 'COMPONENT_PROFILE_INVALID', details: comp.error.issues.slice(0, 4).map((i) => `${i.path.join('.')}: ${i.message}`) };
@@ -257,11 +337,26 @@ export function resolveProfile(systemInput: unknown, componentInput?: unknown): 
   for (const d of overridden) { rules[d] = component.overrides[d]; origin[d] = 'COMPONENT'; }
   const inconsistent = ruleConsistencyIssues(rules as ProfileRules);
   if (inconsistent.length > 0) return { ok: false, issue: 'RESOLVED_RULES_INCONSISTENT', details: inconsistent.map((i) => `${i.dimension}: ${i.message}`) };
-  return { ok: true, system, component, resolved: { system: head, component: { componentId: component.componentId, version: component.version, status: component.status, localSubject: component.localSubject }, rules: rules as ProfileRules, ruleOrigin: origin, componentDependentDimensions: [...system.componentDependentDimensions], unsettledDimensions: [] } };
+  return { ok: true, system, component, resolved: { system: head, component: { componentId: component.componentId, version: component.version, status: component.status, localSubject: component.localSubject, versionBinding: component.versionBinding ? { ...component.versionBinding } : null }, rules: rules as ProfileRules, ruleOrigin: origin, componentDependentDimensions: [...system.componentDependentDimensions], unsettledDimensions: [] } };
 }
 
-/** Which rules in force are official and which are StudyUs's assumption. The honest summary of a profile or of a resolved target. */
-export function authorityBreakdown(profile: { rules: ProfileRules }): { official: Array<keyof ProfileRules>; studyusPolicy: Array<keyof ProfileRules> } {
-  const official = PROFILE_RULE_DIMENSIONS.filter((d) => profile.rules[d].authority.kind === 'OFFICIAL');
-  return { official, studyusPolicy: PROFILE_RULE_DIMENSIONS.filter((d) => !official.includes(d)) };
+/** Which rules in force are official, which are StudyUs's assumption and which are an institution's. The honest summary of a profile or of a resolved target. */
+export function authorityBreakdown(profile: { rules: ProfileRules }): { official: Array<keyof ProfileRules>; studyusPolicy: Array<keyof ProfileRules>; institutionPolicy: Array<keyof ProfileRules> } {
+  const of = (kind: RuleAuthorityKind) => PROFILE_RULE_DIMENSIONS.filter((d) => profile.rules[d].authority.kind === kind);
+  return { official: of('OFFICIAL'), studyusPolicy: of('STUDYUS_POLICY'), institutionPolicy: of('INSTITUTION_POLICY') };
+}
+/** May a profile version feed evidence-bearing content? Only a CERTIFIED one (EA-1A, locked): a provisional or illustrative profile generates DEV_TEST_CONTENT only. */
+export const profileMayFeedEvidenceBearingContent = (p: { status: string }): boolean => p.status === 'CERTIFIED';
+
+/**
+ * EA-1A (D5) -- which ASSESSMENT SYSTEM an exam family of the taxonomy is assessed by. Every family is its own
+ * system except AICE: AICE is a programme / qualification CONTEXT of the Cambridge system (it reuses every
+ * Cambridge structure), not a separate question-generation profile. There is no AICE profile and Cambridge task
+ * generation is not duplicated for it; content for an AICE exam family resolves to the CAMBRIDGE system, and the
+ * qualification context is kept.
+ */
+export const QUALIFICATION_CONTEXT_OF_EXAM_FAMILY: Readonly<Partial<Record<(typeof EXAM_FAMILIES)[number], (typeof EXAM_FAMILIES)[number]>>> = { AICE: 'CAMBRIDGE' };
+export function assessmentSystemOfExamFamily(examFamilyCode: string): { systemExamFamily: string; qualificationContext: string | null } {
+  const system = (QUALIFICATION_CONTEXT_OF_EXAM_FAMILY as Record<string, string | undefined>)[examFamilyCode];
+  return system ? { systemExamFamily: system, qualificationContext: examFamilyCode } : { systemExamFamily: examFamilyCode, qualificationContext: null };
 }

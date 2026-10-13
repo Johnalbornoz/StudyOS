@@ -1,8 +1,11 @@
-# EA-1A — Adaptation Layer Persistence Design
+# AUXILIARY DRAFT — adaptation-layer persistence sketch
 
-> **Scope was inferred.** The user refers to "EA-1A as already specified" and limits it to architecture and persistence design with no migration. No EA-1A brief reached this session. This document is written under that stated assumption: it is the implementation-ready persistence design for the adaptation layer of EA-1 and nothing else. If the real EA-1A brief asks for more or for something different, this document is the part to correct.
->
-> **Nothing here exists in a database.** No SQL file, no migration, no table. Every `CREATE` below is a sketch in a design document. It was written by reading `database/migrations/` (82 files, last `20261112_1000`) and was not run against any database.
+> **AUXILIARY DRAFT — NOT EA-1A, NOT CERTIFIED.**
+> - This document is **not** the EA-1A deliverable. Its scope was **inferred** when no EA-1A brief had been received, and it was rejected as EA-1A.
+> - Nothing in it is certified, reviewed or approved. **Its tables must not be implemented.**
+> - It predates the LearningApproachProfile layer and the locked policy rulings (certified profiles for evidence-bearing content, version-bound component profiles, no dev-test content in protected mock pools, `INSTITUTION_POLICY` authority, deferred ingestion of dev-test content), and is wrong wherever it disagrees with them.
+> - It is **superseded by the persistence section of the real EA-1A document**, `EA1A_LEARNING_APPROACH_PROFILES_AND_STEM_PLUS.md`, which revisits every table below.
+> - It is kept only as the working sketch that revision started from. No SQL file and no migration was ever created from it; every `CREATE` below is prose in a design note, read from `database/migrations/` and never run.
 
 Companion: `EA1_TRANSVERSAL_ASSESSMENT_ADAPTATION_ARCHITECTURE.md` (the domain model and the decisions of 2026-10-11).
 

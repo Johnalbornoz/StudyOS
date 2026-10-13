@@ -1,0 +1,40 @@
+{
+  "runId": "qf5-live-002",
+  "batchId": "IB.MATH_AA.HL.P1:C1:002",
+  "phase": "C1",
+  "profileId": "IB.MATH_AA.HL.P1",
+  "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.2.0",
+  "cumulativeSpendUsd": 3.573295,
+  "timestamp": "2026-10-12T12:30:02.241Z",
+  "candidateIds": [
+    "v2.ib.math-aa-hl/p1/aahl.p1.algebra#0/001#0",
+    "v2.ib.math-aa-hl/p1/aahl.p1.calculus#0/001#0",
+    "v2.ib.math-aa-hl/p1/aahl.p1.extended#0/001#0",
+    "v2.ib.math-aa-hl/p1/aahl.p1.extended#0/001#1"
+  ],
+  "decisions": {
+    "v2.ib.math-aa-hl/p1/aahl.p1.algebra#0/001#0": "AUTO_REJECT",
+    "v2.ib.math-aa-hl/p1/aahl.p1.calculus#0/001#0": "AUTO_APPROVE",
+    "v2.ib.math-aa-hl/p1/aahl.p1.extended#0/001#1": "AUTO_REJECT"
+  },
+  "metrics": {
+    "rawGenerated": 4,
+    "structuralPass": 2,
+    "answerPass": 1,
+    "constructPass": 2,
+    "difficultyMatch": 2,
+    "autoApproved": 1,
+    "humanReview": 0,
+    "autoRejected": 2,
+    "specifications": 3,
+    "firstAttemptPass": 1,
+    "regenerated": 1,
+    "specificationIssues": 1,
+    "firstAttemptPassRate": 0.3333,
+    "regenerationRate": 0.3333,
+    "humanReviewRate": 0,
+    "rejectionRate": 0.6667
+  },
+  "hash": "5ebc962e664d365ed604f4d1f854c21102a19bbd192489d137a2ee5df90948ba"
+}

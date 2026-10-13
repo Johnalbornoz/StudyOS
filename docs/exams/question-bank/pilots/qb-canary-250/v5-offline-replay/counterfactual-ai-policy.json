@@ -1,0 +1,33 @@
+{
+  "kind": "QB_POST_CANARY_COUNTERFACTUAL_POLICY",
+  "label": "COUNTERFACTUAL -- IN-SAMPLE -- NOT EVIDENCE. What the Canary's frozen decision policy WOULD classify if it were given revision-5 gates and the same frozen AI reviews. The Canary's classifications are unchanged and remain the Canary's result.",
+  "mapping": "Revision-5 gates are put into the policy's revision-4 shape: KEY_CONTRADICTED -> FAILED; INDEPENDENTLY_VERIFIED -> MACHINE_VERIFIED; every other key class -> HUMAN_REVIEW_REQUIRED; MATERIAL_DUPLICATE -> a failed originality gate; profile = the hard channel.",
+  "reviewed": 210,
+  "canaryAsRecorded": {
+    "APPROVED": 25,
+    "NEEDS_HUMAN_REVIEW": 157,
+    "REJECTED": 28
+  },
+  "withRevision5Gates": {
+    "APPROVED": 40,
+    "NEEDS_HUMAN_REVIEW": 150,
+    "REJECTED": 20
+  },
+  "transitions": {
+    "APPROVED -> APPROVED": 25,
+    "NEEDS_HUMAN_REVIEW -> APPROVED": 15,
+    "NEEDS_HUMAN_REVIEW -> NEEDS_HUMAN_REVIEW": 142,
+    "REJECTED -> NEEDS_HUMAN_REVIEW": 8,
+    "REJECTED -> REJECTED": 20
+  },
+  "rules": {
+    "R1": 7,
+    "R2": 8,
+    "R5": 19,
+    "R5+R9": 4,
+    "R6": 128,
+    "R6+R9": 1,
+    "R7": 3,
+    "R8": 40
+  }
+}

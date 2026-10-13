@@ -1,0 +1,773 @@
+{
+  "kind": "QB_R2D_RECORDED_LIVE_RESPONSES",
+  "label": "LIVE PROVIDER RESPONSES -- raw model text as returned -- EPHEMERAL, NOT INGESTED, DEV_TEST_CONTENT",
+  "run": {
+    "runId": "qb-r2d-20261011180507",
+    "startedAt": "2026-10-11T18:05:07.868Z",
+    "provider": "live:openai:chat-completions",
+    "requestedModel": "gpt-5.6-luna",
+    "requestedBy": "qb-r2d-lane",
+    "reasoningEffort": "low",
+    "maxOutputTokens": 6000,
+    "gateway": "BYPASSED_NO_GOVERNANCE_ROW_WRITTEN"
+  },
+  "regenerations": [
+    {
+      "selectionKey": "03.linear-model.ib-p2",
+      "attempt": 2,
+      "reason": "Attempt 1 failed STRUCTURAL: part b declares a QUANTITY target and carries no numeric key."
+    },
+    {
+      "selectionKey": "04.linear-model.cambridge-p1",
+      "attempt": 2,
+      "reason": "Attempt 1 failed STRUCTURAL: parts b and c declare QUANTITY targets and carry no numeric key."
+    },
+    {
+      "selectionKey": "09.quadratic-factorising.paa",
+      "attempt": 2,
+      "reason": "Attempt 1 failed CONSTRUCT_PRESERVATION: the equation is given already factorised."
+    },
+    {
+      "selectionKey": "10.quadratic-factorising.ib-p1",
+      "attempt": 2,
+      "reason": "Attempt 1 refused by the harness: RESPONSE_REPEATS_FIXED_INSTRUCTION."
+    },
+    {
+      "selectionKey": "11.quadratic-optimum.ib-p2",
+      "attempt": 2,
+      "reason": "Attempt 1 refused by the harness: RESPONSE_REPEATS_FIXED_INSTRUCTION."
+    },
+    {
+      "selectionKey": "12.probability-single-event.icfes",
+      "attempt": 2,
+      "reason": "Attempt 1 failed STRUCTURAL: two options state the same number (1/3 and 3/9)."
+    },
+    {
+      "selectionKey": "13.probability-compare.cambridge-p1",
+      "attempt": 2,
+      "reason": "Attempt 1 refused by the harness: RESPONSE_REPEATS_FIXED_INSTRUCTION."
+    },
+    {
+      "selectionKey": "14.data-judge-claim.paa",
+      "attempt": 2,
+      "reason": "Attempt 1 refused by the harness: PROVIDER_RESPONSE_SCHEMA_INVALID on both tries (rationale missing)."
+    },
+    {
+      "selectionKey": "15.data-relative-change.ib-p2",
+      "attempt": 2,
+      "reason": "Attempt 1 failed STRUCTURAL: the parameter symbols vi and vj appear in the item text."
+    },
+    {
+      "selectionKey": "17.approach.school.stem-plus",
+      "attempt": 2,
+      "reason": "Attempt 1 failed STRUCTURAL: fixed instruction repeated, a QUANTITY target without a numeric key, evidence-action code words in the prompts."
+    },
+    {
+      "selectionKey": "20.approach.pisa.stem-plus",
+      "attempt": 2,
+      "reason": "Attempt 1 failed STRUCTURAL: the answer-check expression is a comparison and does not evaluate."
+    }
+  ],
+  "responses": [
+    {
+      "promptHash": "92e53ce770201a514dc2dd73e8d03f9344259109cf013c8d7719517683f74706",
+      "unitKey": "12.probability-single-event.icfes#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsCz11Mz0XNw8v5ZIEnpc0wqXBwP",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:05:08.253Z",
+      "usage": {
+        "inputTokens": 2155,
+        "outputTokens": 628,
+        "reasoningTokens": 246,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"En una caja hay 12 fichas, de las cuales 3 son verdes. Se extrae una ficha al azar y todas las fichas tienen la misma probabilidad de ser extraídas. ¿Cuál es la probabilidad de extraer una ficha verde?\",\"context\":{\"kind\":\"PERSONAL\",\"description\":\"Una persona selecciona una ficha de una caja para identificar el color obtenido.\"},\"declaredModel\":{\"construct\":\"CLASSICAL_PROBABILITY_SINGLE_DRAW\",\"parameters\":{\"n\":12,\"k\":3}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"1/3\"},{\"id\":\"B\",\"text\":\"1/4\"},{\"id\":\"C\",\"text\":\"3/4\"},{\"id\":\"D\",\"text\":\"3/9\"}],\"answerKey\":\"B\",\"distractors\":{\"A\":{\"misconceptionModelId\":\"categories\",\"rationale\":\"Usa una cantidad de categorías o grupos en lugar de contar todas las fichas posibles.\"},\"C\":{\"misconceptionModelId\":\"complement\",\"rationale\":\"Calcula la probabilidad de no obtener una ficha verde, que es el evento complementario.\"},\"D\":{\"misconceptionModelId\":\"odds\",\"rationale\":\"Expresa las fichas favorables frente a las desfavorables, no frente al total de resultados posibles.\"}},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"PROBABILITY\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"3/12\"}},\"numeric\":null,\"constructed\":null,\"credit\":null,\"rationale\":\"La probabilidad clásica se obtiene dividiendo los 3 resultados favorables entre los 12 resultados posibles: 3/12, que equivale a 1/4.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "4235d9f3c4472ed735acd7f149fde46bf9c6806150ac67debaad4bcd484cd087",
+      "unitKey": "01.linear-model.paa#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsDFqiwDWLDrIe9hkg2YFOcMwi7w",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:05:24.838Z",
+      "usage": {
+        "inputTokens": 2226,
+        "outputTokens": 726,
+        "reasoningTokens": 229,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Una aplicación de transporte cobra una tarifa inicial de 120 euros y añade 8 euros por cada kilómetro recorrido. Si x representa los kilómetros y y el costo total en euros, ¿cuál opción formula correctamente la relación y interpreta sus parámetros?\",\"context\":{\"kind\":\"PERSONAL\",\"description\":\"Costo de un viaje según la distancia recorrida.\"},\"declaredModel\":{\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":{\"b\":120,\"m\":8,\"x\":5}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"y = 8x + 120; 8 representa el costo adicional por cada kilómetro y 120 representa el costo inicial.\"},{\"id\":\"B\",\"text\":\"y = 120x + 8; 120 representa el costo adicional por cada kilómetro y 8 representa el costo inicial.\"},{\"id\":\"C\",\"text\":\"y = 8x; 8 representa el costo total inicial y no hay costo fijo antes de recorrer kilómetros.\"},{\"id\":\"D\",\"text\":\"y = 120 - 8x; 120 representa el costo inicial y el costo disminuye 8 euros por cada kilómetro.\"}],\"answerKey\":\"A\",\"distractors\":{\"B\":{\"misconceptionModelId\":\"swapped-parameters\",\"rationale\":\"Intercambia la tarifa inicial y la tasa por kilómetro.\"},\"C\":{\"misconceptionModelId\":\"no-start\",\"rationale\":\"Omite la tarifa fija de 120 euros al comenzar.\"},\"D\":{\"misconceptionModelId\":\"slope-as-total\",\"rationale\":\"Usa la tasa como disminución y no como aumento.\"}},\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"La respuesta debe formular la relación y explicar verbalmente el significado de la pendiente y del intercepto.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"La selección combina una ecuación con interpretaciones verbales.\"}},\"numeric\":null,\"constructed\":null,\"credit\":null,\"rationale\":\"La cantidad inicial es b = 120 y el cambio constante por kilómetro es m = 8; por ello, la relación es y = 8x + 120. La pendiente representa la tarifa por kilómetro y el intercepto representa el costo inicial.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "e2fd91f1e1e5f4cf3f811fc9433f271bb469ab7533a5296ae731b1203111d1f6",
+      "unitKey": "02.linear-model.ib-p1#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsDOmk06HZJoDB6zXsyWaRfJTvkp",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:05:33.506Z",
+      "usage": {
+        "inputTokens": 2281,
+        "outputTokens": 1055,
+        "reasoningTokens": 458,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"A scientific culture starts with 240 cells and gains 12 cells each hour. Let x be the number of hours after the start and let y be the number of cells. Find a linear relation for y in terms of x, and state what the slope and intercept mean in this situation.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"A culture starts with a fixed number of cells and increases by a constant number of cells each hour.\"},\"declaredModel\":{\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":{\"b\":240,\"m\":12,\"x\":15}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Find the linear relation between y and x.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the constant-rate linear form y = mx + b.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Substitutes the given rate and starting value to obtain y = 12x + 240.\"}],\"finalAnswer\":\"y = 12x + 240\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The answer is a formulated linear relation rather than a single construct-vocabulary quantity.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"Equation-form equivalence requires symbolic comparison.\"}},{\"label\":\"b\",\"prompt\":\"Find what the slope and the intercept mean in this situation.\",\"marks\":2,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"States that the slope 12 is the increase of 12 cells per hour.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"States that the intercept 240 is the starting number of cells when x = 0.\"}],\"finalAnswer\":\"The slope is 12 cells per hour, so the culture gains 12 cells each hour. The intercept is 240 cells, so the culture starts with 240 cells.\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The answer interprets the rate and starting value in words.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"Meaning expressed in natural language cannot be evaluated arithmetically.\"}}],\"totalMarks\":4,\"workingOutline\":[\"Identify the constant rate as m = 12 and the starting value as b = 240.\",\"Substitute these values into y = mx + b.\",\"Interpret m as the change in cells per hour.\",\"Interpret b as the number of cells at the start, when x = 0.\"]},\"credit\":null,\"rationale\":\"The item requires formulation of a linear model with a fixed starting value and constant rate, followed by interpretation of both the slope and intercept.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "c43e79f02b8592cf9833cd9e77dcb36bce2e8bec4491f3391b575e617f70a3c6",
+      "unitKey": "03.linear-model.ib-p2#a1",
+      "try": 1,
+      "status": "MALFORMED",
+      "malformedCode": "PROVIDER_RESPONSE_SCHEMA_INVALID",
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsDayCigiajtESjBWNNP0qoZlt9c",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:05:45.320Z",
+      "usage": {
+        "inputTokens": 2274,
+        "outputTokens": 1063,
+        "reasoningTokens": 395,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"A chemical solution is stored at an initial temperature of 120 K. During a controlled cooling process, its temperature decreases by 3.5 K for each minute. Let x be the time in minutes and y be the temperature in kelvin. Find the linear model for the temperature and use it to determine the temperature after 20 minutes.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"A chemical solution starts at 120 K and cools at a constant rate of 3.5 K per minute.\"},\"declaredModel\":{\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":{\"b\":120,\"m\":-3.5,\"x\":20}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Find the linear relation between y and x, and state what its slope and intercept mean in this situation.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the fixed-start, constant-rate structure y = mx + b with m = -3.5 and b = 120.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"States that the slope means the temperature decreases by 3.5 K per minute and the intercept means the initial temperature is 120 K.\"}],\"finalAnswer\":\"y = -3.5x + 120; the slope is a decrease of 3.5 K per minute, and the intercept is the initial temperature of 120 K.\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The answer requires an equation and interpretations of its slope and intercept.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"An equation together with verbal interpretations must be checked.\"}},{\"label\":\"b\",\"prompt\":\"Find the temperature of the solution when x = 20.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Substitutes x = 20 into y = -3.5x + 120.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains y = 50 K.\"}],\"finalAnswer\":\"50 K\",\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"50\",\"equivalentFormsAllowed\":[\"50.0\"]},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"VALUE_AT_X\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"-3.5*20+120\"}}],\"totalMarks\":4,\"workingOutline\":[\"Identify the starting value as b = 120 and the constant rate of change as m = -3.5.\",\"Substitute these values into y = mx + b to obtain y = -3.5x + 120.\",\"Explain the meanings of the slope and intercept in the cooling situation.\",\"Substitute x = 20 and evaluate y = -3.5*20 + 120 = 50.\"]},\"credit\":null,\"rationale\":\"The item requires formulation of a fixed-start constant-rate linear model, interpretation of both model parameters, and evaluation at a specified time.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[\"math.fun.linear-functions-lines\"]}}"
+    },
+    {
+      "promptHash": "c43e79f02b8592cf9833cd9e77dcb36bce2e8bec4491f3391b575e617f70a3c6",
+      "unitKey": "03.linear-model.ib-p2#a1",
+      "try": 2,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsDlbp5V7SGRJjsJUTe3DTQpawRZ",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:05:56.446Z",
+      "usage": {
+        "inputTokens": 2274,
+        "outputTokens": 989,
+        "reasoningTokens": 311,
+        "cachedInputTokens": 2271
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"A laboratory culture contains 240 millilitres of nutrient solution at time 0 minutes. Its volume decreases by 3.5 millilitres each minute. Let x be the time in minutes and y be the volume in millilitres.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"The volume of nutrient solution in a laboratory culture starts at 240 millilitres and decreases at a constant rate of 3.5 millilitres per minute.\"},\"declaredModel\":{\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":{\"b\":240,\"m\":-3.5,\"x\":18}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Find a linear relation between y and x that models the volume of nutrient solution.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Represents the constant rate and starting value in the form y = m * x + b.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains y = -3.5x + 240.\"}],\"finalAnswer\":\"y = -3.5x + 240\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response is an algebraic relation rather than one quantity named in the construct vocabulary.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"Checking the complete algebraic relation requires symbolic comparison.\"}},{\"label\":\"b\",\"prompt\":\"Find the volume when x = 18, and state what the slope and the intercept mean in this situation.\",\"marks\":3,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Substitutes x = 18 into y = -3.5x + 240.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Calculates y = 177 millilitres.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Explains that the slope means the volume decreases by 3.5 millilitres per minute and the intercept means the starting volume is 240 millilitres.\"}],\"finalAnswer\":\"At x = 18, y = 177 millilitres. The slope means the volume decreases by 3.5 millilitres per minute, and the intercept means the starting volume is 240 millilitres.\",\"numericKey\":null,\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"VALUE_AT_X\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"-3.5*18+240\"}}],\"totalMarks\":5,\"workingOutline\":[\"Identify the starting value as b = 240 and the constant rate as m = -3.5.\",\"Substitute these values into y = m * x + b to formulate the model.\",\"Substitute x = 18 into the model and evaluate the volume.\",\"Interpret the coefficient of x as the constant rate of change and the constant term as the starting value.\"]},\"credit\":null,\"rationale\":\"The item requires formulation of a linear model with a fixed starting value and constant rate, followed by interpretation of the model's slope and intercept.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "d1c48d9cf01d0a3379b415aebf081887d585d541013065c472a4a9f6568e03ff",
+      "unitKey": "04.linear-model.cambridge-p1#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsDvXB1tGR3Pipf9Kxd6ZStN6gYz",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:06:06.713Z",
+      "usage": {
+        "inputTokens": 2281,
+        "outputTokens": 1212,
+        "reasoningTokens": 499,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"A culture contains 120 mg of a substance at time 0 hours. Its mass decreases by 3.5 mg for every hour that passes. Work out a linear model for the mass y mg after x hours, and interpret the rate and the starting value.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"The mass of a substance in a laboratory culture decreases at a constant rate over time.\"},\"declaredModel\":{\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":{\"b\":120,\"m\":-3.5,\"x\":8}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Work out a linear relation between y and x for the mass of the substance.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the fixed-start constant-rate form y = m * x + b and substitutes the stated starting value and rate.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains y = -3.5x + 120, or an algebraically equivalent relation.\"}],\"finalAnswer\":\"y = -3.5x + 120\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The keyed answer is a linear relation rather than one quantity named in the construct vocabulary.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The response is an algebraic equation and requires symbolic equivalence checking.\"}},{\"label\":\"b\",\"prompt\":\"Work out what the slope -3.5 means in this situation.\",\"marks\":1,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"States that the mass decreases by 3.5 mg for each additional hour, or equivalently changes at a rate of -3.5 mg per hour.\"}],\"finalAnswer\":\"The mass decreases by 3.5 mg per hour.\",\"numericKey\":null,\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"RATE\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The answer requires interpreting the sign and units of the rate in context.\"}},{\"label\":\"c\",\"prompt\":\"Work out what the intercept 120 means in this situation.\",\"marks\":1,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"States that the mass is 120 mg when x = 0, so 120 mg is the starting mass.\"}],\"finalAnswer\":\"The starting mass is 120 mg.\",\"numericKey\":null,\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"START_VALUE\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The answer requires interpreting the intercept as the starting value in context.\"}}],\"totalMarks\":4,\"workingOutline\":[\"Identify the starting value as b = 120 and the constant rate of change as m = -3.5.\",\"Substitute these values into y = m * x + b to obtain y = -3.5x + 120.\",\"Interpret the negative slope as a decrease of 3.5 mg per hour.\",\"Interpret the intercept as the mass at time 0, namely 120 mg.\"]},\"credit\":null,\"rationale\":\"The item requires the learner to formulate a fixed-start constant-rate linear model and interpret both its slope and intercept in a scientific context.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "572d0c3a71f00dc7f6c65866b00ef37eceecb3dd4cac059547776b5fefedb084",
+      "unitKey": "05.linear-model.pisa#a1",
+      "try": 1,
+      "status": "MALFORMED",
+      "malformedCode": "PROVIDER_RESPONSE_SCHEMA_INVALID",
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsE7FCM3pHHwqCfXGRKSm8w6sRS1",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:06:18.916Z",
+      "usage": {
+        "inputTokens": 2254,
+        "outputTokens": 1107,
+        "reasoningTokens": 397,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":{\"parts\":[{\"label\":\"contexto\",\"partKind\":\"TEXT\",\"text\":\"Una aplicación de transporte cobra una tarifa inicial fija y una cantidad constante por cada kilómetro recorrido.\"}],\"structured\":{\"v\":1,\"tables\":[{\"tableKey\":\"tarifa\",\"title\":\"Tarifa según la distancia\",\"columns\":[{\"key\":\"distancia\",\"label\":\"Distancia recorrida\",\"type\":\"NUMBER\",\"unit\":\"km\"},{\"key\":\"tarifa\",\"label\":\"Tarifa\",\"type\":\"NUMBER\",\"unit\":\"pesos\"}],\"rows\":[[0,120],[1,128],[2,136],[3,144],[4,152],[5,160]]}],\"dataSets\":[],\"charts\":[{\"chartKey\":\"grafica_tarifa\",\"chartType\":\"LINE\",\"title\":\"Tarifa según la distancia\",\"xLabel\":\"Distancia recorrida (km)\",\"yLabel\":\"Tarifa (pesos)\",\"source\":{\"kind\":\"TABLE\",\"tableKey\":\"tarifa\",\"xColumn\":\"distancia\",\"valueColumns\":[\"tarifa\"]}}],\"figures\":[]}},\"item\":{\"stem\":\"La aplicación muestra los datos de la tabla y la gráfica. Para una distancia de 5 km, ¿qué relación lineal representa la situación y qué significan sus parámetros?\",\"context\":{\"kind\":\"PERSONAL\",\"description\":\"Una persona usa una aplicación de transporte para calcular el costo de un recorrido.\"},\"declaredModel\":{\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":{\"b\":120,\"m\":8,\"x\":5}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"La relación es y = 8 * x + 120; 8 representa el aumento de la tarifa por cada kilómetro y 120 representa la tarifa inicial.\"},{\"id\":\"B\",\"text\":\"La relación es y = 120 * x + 8; 120 representa el aumento de la tarifa por cada kilómetro y 8 representa la tarifa inicial.\"},{\"id\":\"C\",\"text\":\"La relación es y = 8 * x; 8 representa la tarifa inicial y no hay una tarifa fija antes del recorrido.\"},{\"id\":\"D\",\"text\":\"La relación es y = 160 * x + 120; 160 representa el aumento de la tarifa por cada kilómetro y 120 representa la tarifa inicial.\"}],\"answerKey\":\"A\",\"distractors\":{\"B\":{\"misconceptionModelId\":\"swapped-parameters\",\"rationale\":\"Intercambia la tarifa inicial de 120 con la tasa constante de 8.\"},\"C\":{\"misconceptionModelId\":\"no-start\",\"rationale\":\"Omite la tarifa inicial de 120, aunque la tabla muestra una tarifa cuando la distancia es 0.\"},\"D\":{\"misconceptionModelId\":\"slope-as-total\",\"rationale\":\"Usa el costo total de 160 como si fuera el aumento por cada kilómetro.\"}},\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"La respuesta seleccionada formula la relación lineal e interpreta verbalmente la pendiente y el intercepto.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"La respuesta exige seleccionar una relación y sus interpretaciones, no calcular una única expresión numérica.\"}},\"numeric\":null,\"constructed\":null,\"credit\":null,\"usesStimulusValues\":[0,1,2,3,4,5,120,128,136,144,152,160],\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "572d0c3a71f00dc7f6c65866b00ef37eceecb3dd4cac059547776b5fefedb084",
+      "unitKey": "05.linear-model.pisa#a1",
+      "try": 2,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsEIZdsXcTIDkJY70pwclIiFbegz",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:06:29.509Z",
+      "usage": {
+        "inputTokens": 2254,
+        "outputTokens": 1068,
+        "reasoningTokens": 317,
+        "cachedInputTokens": 2251
+      },
+      "rawText": "{\"stimulus\":{\"parts\":[{\"label\":\"a\",\"partKind\":\"TEXT\",\"text\":\"Una aplicación de transporte cobra una tarifa fija al iniciar el viaje y una cantidad constante por cada kilómetro recorrido.\"}],\"structured\":{\"v\":1,\"tables\":[{\"tableKey\":\"tabla_tarifa\",\"title\":\"Distancia y precio del viaje\",\"columns\":[{\"key\":\"distancia\",\"label\":\"Distancia recorrida\",\"type\":\"NUMBER\",\"unit\":\"km\"},{\"key\":\"precio\",\"label\":\"Precio total\",\"type\":\"NUMBER\",\"unit\":\"€\"}],\"rows\":[[0,4.5],[5,13.5],[8,18.9]]}],\"dataSets\":[],\"charts\":[],\"figures\":[]}},\"item\":{\"stem\":\"La tabla muestra el precio de un viaje según la distancia recorrida. ¿Qué opción formula correctamente la relación entre la distancia x y el precio y, e interpreta el coeficiente de x y el término independiente?\",\"context\":{\"kind\":\"PERSONAL\",\"description\":\"Planificar y comprobar el precio de un viaje en una aplicación de transporte.\"},\"declaredModel\":{\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":{\"b\":4.5,\"m\":1.8,\"x\":5}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"y = 4.5x + 1.8; 4.5 es el precio por cada kilómetro y 1.8 es la tarifa inicial.\"},{\"id\":\"B\",\"text\":\"y = 1.8x + 4.5; 1.8 es el precio por cada kilómetro y 4.5 es la tarifa inicial.\"},{\"id\":\"C\",\"text\":\"y = 1.8x; 1.8 es el precio total inicial y no hay una tarifa fija de inicio.\"},{\"id\":\"D\",\"text\":\"y = 13.5x + 4.5; 13.5 es el precio por cada kilómetro y 4.5 es la tarifa inicial.\"}],\"answerKey\":\"B\",\"distractors\":{\"A\":{\"misconceptionModelId\":\"swapped-parameters\",\"rationale\":\"Intercambia la tarifa inicial y el precio por kilómetro.\"},\"C\":{\"misconceptionModelId\":\"no-start\",\"rationale\":\"Omite la tarifa fija que se paga al comenzar el viaje.\"},\"D\":{\"misconceptionModelId\":\"slope-as-total\",\"rationale\":\"Usa el precio total de 5 kilómetros como si fuera la tarifa constante.\"}},\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"La respuesta correcta formula la relación y da significado contextual a la pendiente y al intercepto.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"La respuesta exige seleccionar una formulación e interpretación verbal.\"}},\"numeric\":null,\"constructed\":null,\"credit\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Selecciona la opción que formula correctamente el modelo lineal e interpreta sus dos parámetros.\"},{\"code\":\"NO_CREDIT\",\"description\":\"Selecciona una opción que intercambia, omite o interpreta incorrectamente los parámetros del modelo.\"}],\"rationale\":\"La tarifa inicial es 4.5, por lo que corresponde al intercepto b. El precio aumenta 1.8 por cada kilómetro, por lo que corresponde a la pendiente m. Así, el modelo es y = 1.8x + 4.5; para x = 5 produce 13.5, como muestra la tabla.\",\"usesStimulusValues\":[0,4.5,5,13.5,8,18.9],\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "388ab778ea74232e770adaa5151777912fc5091a5e3467f58e1032c159c97658",
+      "unitKey": "06.linear-model.icfes#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsESlZDXEVT1ciu5H7LYDLMxtHD0",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:06:40.533Z",
+      "usage": {
+        "inputTokens": 2253,
+        "outputTokens": 1050,
+        "reasoningTokens": 512,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Una persona tiene 120 pesos ahorrados al comenzar y agrega 15 pesos cada semana. ¿Cuál opción representa correctamente la situación y explica el significado de sus parámetros?\",\"context\":{\"kind\":\"PERSONAL\",\"description\":\"Ahorro semanal de una persona.\"},\"declaredModel\":{\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":{\"b\":120,\"m\":15,\"x\":4}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"La relación es y = 15x + 120; 15 representa la cantidad de pesos que se agregan cada semana y 120 representa el ahorro inicial.\"},{\"id\":\"B\",\"text\":\"La relación es y = 120x + 15; 120 representa la cantidad de pesos que se agregan cada semana y 15 representa el ahorro inicial.\"},{\"id\":\"C\",\"text\":\"La relación es y = 15x; 15 representa la cantidad de pesos que se agregan cada semana y no se considera el ahorro inicial de 120 pesos.\"},{\"id\":\"D\",\"text\":\"La relación es y = 60x + 120; 60 representa la cantidad total de pesos agregados durante 4 semanas y 120 representa el ahorro inicial.\"}],\"answerKey\":\"A\",\"distractors\":{\"B\":{\"misconceptionModelId\":\"swapped-parameters\",\"rationale\":\"Intercambia el valor inicial y la tasa semanal; 120 es el inicio y 15 es el cambio por semana.\"},\"C\":{\"misconceptionModelId\":\"no-start\",\"rationale\":\"Omite el valor inicial de 120, por lo que la relación no representa el ahorro al comenzar.\"},\"D\":{\"misconceptionModelId\":\"slope-as-total\",\"rationale\":\"Usa 60, el aumento acumulado en 4 semanas, como si fuera la tasa constante por cada semana.\"}},\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"La respuesta exige seleccionar una formulación e interpretación completa, no una única cantidad del vocabulario.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"La opción seleccionada contiene texto interpretativo además de una ecuación.\"}},\"numeric\":null,\"constructed\":null,\"credit\":null,\"rationale\":\"La situación tiene un valor inicial fijo de 120 y aumenta 15 por cada semana. Por tanto, el modelo es y = 15x + 120: la pendiente es la tasa semanal y el intercepto es el valor inicial.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "a5201a473ed0b6b85494ac5edda97b836602810690e06bed1e687f1140619190",
+      "unitKey": "07.proportion-missing-value.paa#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsEdSH4gndbqbpiau7Yn7l6KXbfp",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:06:51.489Z",
+      "usage": {
+        "inputTokens": 2168,
+        "outputTokens": 729,
+        "reasoningTokens": 210,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\n  \"stimulus\": null,\n  \"item\": {\n    \"stem\": \"En la proporción directa 12 / 84 = 18 / x, ¿cuál es el valor de x?\",\n    \"context\": {\n      \"kind\": \"ABSTRACT\",\n      \"description\": \"Relación numérica abstracta entre dos cantidades directamente proporcionales.\"\n    },\n    \"declaredModel\": {\n      \"construct\": \"DIRECT_PROPORTION_MISSING_VALUE\",\n      \"parameters\": {\n        \"a\": 12,\n        \"b\": 84,\n        \"c\": 18\n      }\n    },\n    \"selected\": {\n      \"options\": [\n        {\n          \"id\": \"A\",\n          \"text\": \"126\"\n        },\n        {\n          \"id\": \"B\",\n          \"text\": \"102\"\n        },\n        {\n          \"id\": \"C\",\n          \"text\": \"2.57\"\n        },\n        {\n          \"id\": \"D\",\n          \"text\": \"56\"\n        }\n      ],\n      \"answerKey\": \"A\",\n      \"distractors\": {\n        \"B\": {\n          \"misconceptionModelId\": \"additive\",\n          \"rationale\": \"Suma 84 y 18 en lugar de conservar la razón constante entre las cantidades.\"\n        },\n        \"C\": {\n          \"misconceptionModelId\": \"inverted\",\n          \"rationale\": \"Invierte la relación y calcula 12 × 18 / 84, que no corresponde a x = 84 × 18 / 12.\"\n        },\n        \"D\": {\n          \"misconceptionModelId\": \"wrong-pair\",\n          \"rationale\": \"Forma la combinación incorrecta 12 × 84 / 18 y no despeja el cuarto valor de la proporción.\"\n        }\n      },\n      \"target\": {\n        \"kind\": \"QUANTITY\",\n        \"quantity\": \"MISSING_VALUE\"\n      },\n      \"answerCheck\": {\n        \"kind\": \"ARITHMETIC_EXPRESSION\",\n        \"expression\": \"84*18/12\"\n      }\n    },\n    \"numeric\": null,\n    \"constructed\": null,\n    \"credit\": null,\n    \"rationale\": \"Para mantener constante la razón, se despeja x: x = 84 × 18 / 12 = 126.\",\n    \"usesStimulusValues\": null,\n    \"proposedSupportingConceptStableIds\": []\n  }\n}"
+    },
+    {
+      "promptHash": "73975325eb27b85b0e72a5d570d4afb225d3b44c7f711c4a5051a6e24025d50a",
+      "unitKey": "08.proportion-rate-comparison.pisa#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsElAKiIz3e7MdmBaeX8jc0jpW9g",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:06:58.220Z",
+      "usage": {
+        "inputTokens": 2421,
+        "outputTokens": 1006,
+        "reasoningTokens": 355,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"En una tienda, la opción 1 cuesta 20 euros y ofrece 50 unidades del producto. La opción 2 cuesta 30 euros y ofrece 60 unidades. ¿Qué opción ofrece más unidades por euro y por cuánto supera su tasa a la de la otra opción?\",\"context\":{\"kind\":\"PERSONAL\",\"description\":\"Comparación de dos opciones de compra en una tienda para decidir cuál ofrece mejor valor por euro.\"},\"declaredModel\":{\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":{\"p1\":20,\"q1\":50,\"p2\":30,\"q2\":60}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"La opción 1: 50/20 = 2.5 unidades por euro; supera a la opción 2, cuya tasa es 60/30 = 2, por 0.5 unidades por euro.\"},{\"id\":\"B\",\"text\":\"La opción 2, porque ofrece 60 unidades, que son 10 más que la opción 1.\"},{\"id\":\"C\",\"text\":\"La opción 2: 30/60 = 0.5 euros por unidad, una tasa mayor que 20/50 = 0.4 euros por unidad.\"},{\"id\":\"D\",\"text\":\"La opción 1, porque la diferencia entre las cantidades ofrecidas es 50 - 30 = 20.\"}],\"answerKey\":\"A\",\"distractors\":{\"B\":{\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Compara únicamente las cantidades ofrecidas e ignora el coste de cada opción.\"},\"C\":{\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Invierte la relación cantidad-precio y además compara euros por unidad como si fueran unidades por euro.\"},\"D\":{\"misconceptionModelId\":\"difference\",\"rationale\":\"Usa una resta entre cantidades que no representa una tasa común por unidad de coste.\"}},\"target\":{\"kind\":\"COMPARISON\",\"left\":\"50 / 20\",\"operator\":\">\",\"right\":\"60 / 30\",\"holds\":true,\"verdict\":\"OPTION_1; diferencia entre tasas = 0.5 unidades por euro\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"50/20-60/30\"}},\"numeric\":null,\"constructed\":null,\"credit\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Selecciona la opción A, que forma ambas tasas unitarias, identifica la opción 1 y calcula la diferencia de 0.5 unidades por euro.\"},{\"code\":\"PARTIAL_CREDIT\",\"description\":\"No aplicable en este formato de respuesta seleccionada.\"},{\"code\":\"NO_CREDIT\",\"description\":\"Selecciona una opción distinta de A o no proporciona una comparación válida de las tasas unitarias.\"}],\"rationale\":\"La comparación correcta requiere calcular 50/20 = 2.5 y 60/30 = 2; por tanto, la opción 1 tiene la tasa mayor y la diferencia es 0.5 unidades por euro.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "4677d8951c6a75ecd88ae62d88e5aadf3bf0c0b75fc605d73f04b8299cbc7a79",
+      "unitKey": "09.quadratic-factorising.paa#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsEvBOjTXkp43FJ8FkOhpHho2UgA",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:07:08.715Z",
+      "usage": {
+        "inputTokens": 2320,
+        "outputTokens": 487,
+        "reasoningTokens": 264,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Resuelve la ecuación 2(x+3.5)(x-4)=0 y escribe el mayor de sus dos valores de x.\",\"context\":{\"kind\":\"ABSTRACT\",\"description\":\"Ecuación cuadrática sin contexto aplicado.\"},\"declaredModel\":{\"construct\":\"QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING\",\"parameters\":{\"a\":2,\"r1\":-3.5,\"r2\":4}},\"selected\":null,\"numeric\":{\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"4\",\"equivalentFormsAllowed\":true},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"GREATER_ROOT\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"4\"}},\"constructed\":null,\"credit\":null,\"rationale\":\"Al igualar cada factor a cero, se obtienen x=-3.5 y x=4; por tanto, el mayor valor es 4.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "1593423bd733509f7d97727222946d03932f9e2a0e6104c74d0d53faa48dabb4",
+      "unitKey": "10.quadratic-factorising.ib-p1#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsF0qxyJno0ACIFlGA0CDSH8U0d2",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:07:14.244Z",
+      "usage": {
+        "inputTokens": 2380,
+        "outputTokens": 1005,
+        "reasoningTokens": 431,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Solve the equation 2x^2 - 5x - 3 = 0 by bringing it to standard form and factorising it. Show your working.\",\"context\":{\"kind\":\"ABSTRACT\",\"description\":\"An algebraic quadratic equation with rational roots.\"},\"declaredModel\":{\"construct\":\"QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING\",\"parameters\":{\"a\":2,\"r1\":3,\"r2\":-0.5}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Write the equation in standard form and factorise the quadratic expression.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Writes the equation in standard form as 2x^2 - 5x - 3 = 0.\"},{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Factorises the left-hand side correctly as (2x + 1)(x - 3).\"}],\"finalAnswer\":\"(2x + 1)(x - 3) = 0\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response requires the correct factorised equation.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The factorised expression must be checked symbolically.\"}},{\"label\":\"b\",\"prompt\":\"Solve the factorised equation to find both values of x.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the zero-product property to set each factor equal to zero.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains both solutions x = 3 and x = -0.5.\"}],\"finalAnswer\":\"x = 3 or x = -0.5\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response contains two roots rather than one keyed quantity.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"Two algebraic solutions must be checked together.\"}}],\"totalMarks\":4,\"workingOutline\":[\"Rewrite the equation in standard form if necessary.\",\"Find a factorisation of 2x^2 - 5x - 3.\",\"Set each factor equal to zero using the zero-product property.\",\"Solve the two resulting linear equations and state both roots.\"]},\"credit\":null,\"rationale\":\"The equation is built with a=2, r1=3, and r2=-0.5, giving b=-5 and c=-3. Factorising produces (2x + 1)(x - 3), so both rational roots can be read from the factors.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "84f29d77f26ec3def8fcae15bbf2c15355adac63f17469ba3a13db2e9735caae",
+      "unitKey": "11.quadratic-optimum.ib-p2#a1",
+      "try": 1,
+      "status": "MALFORMED",
+      "malformedCode": "PROVIDER_RESPONSE_SCHEMA_INVALID",
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsFAMfyHJUToR4K71hJRr3pSCBnt",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:07:24.288Z",
+      "usage": {
+        "inputTokens": 2428,
+        "outputTokens": 1425,
+        "reasoningTokens": 335,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\n  \"stimulus\": null,\n  \"item\": {\n    \"stem\": \"A model for the output Q units of a process is Q = (20 + 2x)(50 - x), where x is a free measure satisfying 0 <= x <= 50. Find the quadratic expression for Q, then find the value of x that gives the maximum output and the maximum output itself. State what your answers mean in this situation.\",\n    \"context\": {\n      \"kind\": \"SCIENTIFIC\",\n      \"description\": \"A mathematical model represents the output of a process as the product of two linear factors.\"\n    },\n    \"declaredModel\": {\n      \"construct\": \"QUADRATIC_MODEL_VERTEX_OPTIMUM\",\n      \"parameters\": {\n        \"p\": 20,\n        \"q\": 2,\n        \"r\": 50,\n        \"s\": 1\n      }\n    },\n    \"selected\": null,\n    \"numeric\": null,\n    \"constructed\": {\n      \"parts\": [\n        {\n          \"label\": \"a\",\n          \"prompt\": \"Find the quadratic expression for Q in terms of x.\",\n          \"marks\": 2,\n          \"markScheme\": [\n            {\n              \"kind\": \"METHOD\",\n              \"marks\": 1,\n              \"criterion\": \"Expands the product of the two linear factors correctly.\"\n            },\n            {\n              \"kind\": \"ACCURACY\",\n              \"marks\": 1,\n              \"criterion\": \"Obtains Q = -2x^2 + 80x + 1000.\"\n            }\n          ],\n          \"finalAnswer\": \"Q = -2x^2 + 80x + 1000\",\n          \"numericKey\": null,\n          \"target\": {\n            \"kind\": \"NOT_MACHINE_CHECKABLE\",\n            \"reason\": \"The response is an algebraic quadratic expression rather than one named numerical quantity.\"\n          },\n          \"answerCheck\": {\n            \"kind\": \"NOT_COMPUTABLE\",\n            \"reason\": \"Equivalent expanded or factored algebraic forms are acceptable.\"\n          }\n        },\n        {\n          \"label\": \"b\",\n          \"prompt\": \"Find the value of x at which Q is maximized.\",\n          \"marks\": 3,\n          \"markScheme\": [\n            {\n              \"kind\": \"METHOD\",\n              \"marks\": 2,\n              \"criterion\": \"Uses the vertex of the quadratic, for example x = -b/(2a), with a = -2 and b = 80.\"\n            },\n            {\n              \"kind\": \"ACCURACY\",\n              \"marks\": 1,\n              \"criterion\": \"Obtains x = 20.\"\n            }\n          ],\n          \"finalAnswer\": \"x = 20\",\n          \"numericKey\": {\n            \"kind\": \"NUMERIC\",\n            \"value\": \"20\",\n            \"equivalentFormsAllowed\": true\n          },\n          \"target\": {\n            \"kind\": \"QUANTITY\",\n            \"quantity\": \"MEASURE_AT_OPTIMUM\"\n          },\n          \"answerCheck\": {\n            \"kind\": \"ARITHMETIC_EXPRESSION\",\n            \"expression\": \"80/(2*2)\"\n          }\n        },\n        {\n          \"label\": \"c\",\n          \"prompt\": \"Find the maximum value of Q and state the meaning of both optimal answers in the situation.\",\n          \"marks\": 3,\n          \"markScheme\": [\n            {\n              \"kind\": \"METHOD\",\n              \"marks\": 1,\n              \"criterion\": \"Substitutes x = 20 into the model or evaluates the two factors at x = 20.\"\n            },\n            {\n              \"kind\": \"ACCURACY\",\n              \"marks\": 1,\n              \"criterion\": \"Obtains Q = 1800.\"\n            },\n            {\n              \"kind\": \"REASONING\",\n              \"marks\": 1,\n              \"criterion\": \"States that choosing x = 20 gives the greatest possible output, which is 1800 units.\"\n            }\n          ],\n          \"finalAnswer\": \"The maximum output is Q = 1800 units, reached when x = 20.\",\n          \"numericKey\": {\n            \"kind\": \"NUMERIC\",\n            \"value\": \"1800\",\n            \"equivalentFormsAllowed\": true\n          },\n          \"target\": {\n            \"kind\": \"QUANTITY\",\n            \"quantity\": \"OPTIMAL_VALUE\"\n          },\n          \"answerCheck\": {\n            \"kind\": \"ARITHMETIC_EXPRESSION\",\n            \"expression\": \"(20+2*20)*(50-20)\"\n          }\n        }\n      ],\n      \"totalMarks\": 8,\n      \"workingOutline\": [\n        \"Expand Q = (20 + 2x)(50 - x) to obtain the quadratic expression.\",\n        \"Use the vertex formula for the quadratic to find the maximizing value x = 20.\",\n        \"Substitute x = 20 into the original model to calculate Q = 1800.\",\n        \"Interpret x = 20 as the optimal free measure and Q = 1800 as the maximum output.\"\n      ]\n    },\n    \"credit\": null,\n    \"rationale\": null,\n    \"usesStimulusValues\": null,\n    \"proposedSupportingConceptStableIds\": []\n  }\n}"
+    },
+    {
+      "promptHash": "84f29d77f26ec3def8fcae15bbf2c15355adac63f17469ba3a13db2e9735caae",
+      "unitKey": "11.quadratic-optimum.ib-p2#a1",
+      "try": 2,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsFNRU5Fi8a9FSo7hnOq98ECEHRH",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:07:36.817Z",
+      "usage": {
+        "inputTokens": 2428,
+        "outputTokens": 1286,
+        "reasoningTokens": 338,
+        "cachedInputTokens": 2425
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"A laboratory model describes a quantity Q produced when a free measure x is chosen. The two contributing factors are 20 + 4x and 100 - 2x, so both factors must remain positive. The situation allows 0 <= x <= 50. Show your working.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"A laboratory model in which a quantity is the product of two positive linear factors depending on a free measure x.\"},\"declaredModel\":{\"construct\":\"QUADRATIC_MODEL_VERTEX_OPTIMUM\",\"parameters\":{\"p\":20,\"q\":4,\"r\":100,\"s\":2,\"xv\":22.5,\"Qv\":6050}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Formulate Q as a quadratic function of x by using the two linear factors in the model.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Identifies the quantity as the product of the two linear factors, Q=(20+4x)(100-2x).\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Correctly expands to Q=-8x^2+360x+2000.\"}],\"finalAnswer\":\"Q=(20+4x)(100-2x)=-8x^2+360x+2000\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The target is formulation of the quadratic model, which is not one of the named numerical quantities.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The response is an algebraic model rather than a single arithmetic expression.\"}},{\"label\":\"b\",\"prompt\":\"Find the value of x at which Q is largest, and find the corresponding maximum value of Q.\",\"marks\":4,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the vertex of the quadratic, for example x=-b/(2a) for Q=-8x^2+360x+2000.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains x=22.5.\"},{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Substitutes x=22.5 into the model, or evaluates the two factors at this value.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains Q=6050.\"}],\"finalAnswer\":\"x=22.5 and Q=6050\",\"numericKey\":null,\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"OPTIMAL_VALUE\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"(20+4*22.5)*(100-2*22.5)\"}},{\"label\":\"c\",\"prompt\":\"Interpret your results in the terms of the situation: state the optimal measure and the optimal quantity, and confirm that both linear factors are positive at this measure.\",\"marks\":3,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"States that the optimal measure is x=22.5.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"States that the optimal quantity is Q=6050.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Confirms that the factors are 110 and 55, so both are positive at the optimum.\"}],\"finalAnswer\":\"The quantity is largest when x=22.5, giving Q=6050; the factors are 110 and 55, both positive.\",\"numericKey\":null,\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"MEASURE_AT_OPTIMUM\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"(20+4*22.5)*(100-2*22.5)\"}}],\"totalMarks\":9,\"workingOutline\":[\"Write Q=(20+4x)(100-2x).\",\"Expand to obtain Q=-8x^2+360x+2000.\",\"Use the vertex formula x=-b/(2a) to find x=22.5.\",\"Substitute x=22.5 to obtain Q=6050.\",\"Evaluate the factors as 110 and 55 and interpret the result in context.\"]},\"credit\":null,\"rationale\":\"The item requires formulation of a product of two linear expressions, solution by the vertex of the resulting quadratic, and interpretation of both the optimal measure and optimal value. The vertex lies inside the allowed interval and both factors are positive there.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "f36b138fa3c366fcca3fff273baac634981521a50d25a40ffafff8f1a7595271",
+      "unitKey": "13.probability-compare.cambridge-p1#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsFY8M0FRXgvsw6KBx9V1TJOVUPF",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:07:48.527Z",
+      "usage": {
+        "inputTokens": 2456,
+        "outputTokens": 1333,
+        "reasoningTokens": 495,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"A game offers two options for winning a prize. In option 1, 14 of 40 equally likely outcomes are wins. In option 2, 30 of 75 equally likely outcomes are wins. A player claims that option 2 gives the better chance of winning. Show your working.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"Comparing winning chances in two options with equally likely outcomes.\"},\"declaredModel\":{\"construct\":\"COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES\",\"parameters\":{\"n1\":40,\"k1\":14,\"n2\":75,\"k2\":30}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Work out the event being considered and the sample space for each option, then express the probability of winning for each option as a fraction.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Identifies winning outcomes as the event and identifies the total outcomes as the sample space for both options.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"States the probabilities as P1 = 14/40 and P2 = 30/75.\"}],\"finalAnswer\":\"Event: winning the prize. Sample spaces: 40 outcomes for option 1 and 75 outcomes for option 2; P1 = 14/40 and P2 = 30/75.\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response identifies events and sample spaces and formulates two probability expressions.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"Event and sample-space descriptions require language evaluation.\"}},{\"label\":\"b\",\"prompt\":\"Work out the probability of winning for each option as a decimal.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Divides the favourable-outcome count by the total-outcome count for each option.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains P1 = 0.35 and P2 = 0.4.\"}],\"finalAnswer\":\"P1 = 0.35 and P2 = 0.4.\",\"numericKey\":null,\"target\":{\"kind\":\"COMPARISON\",\"left\":\"14/40\",\"operator\":\"<\",\"right\":\"30/75\",\"holds\":true,\"verdict\":\"option 2 has the higher probability\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"14/40\"}},{\"label\":\"c\",\"prompt\":\"Work out whether the player's claim is true or false. State which option gives the better chance of winning.\",\"marks\":1,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Compares 0.35 with 0.4 and concludes that the claim is true because option 2 has the higher probability.\"}],\"finalAnswer\":\"The claim is true. Option 2 gives the better chance of winning.\",\"numericKey\":null,\"target\":{\"kind\":\"VERDICT\",\"verdict\":\"OPTION_WITH_HIGHER_PROBABILITY\",\"value\":\"OPTION_2\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The answer requires a categorical judgement based on the comparison.\"}}],\"totalMarks\":5,\"workingOutline\":[\"Identify winning outcomes as the event and total outcomes as the sample space for each option.\",\"Form the probabilities 14/40 and 30/75.\",\"Calculate the probabilities as 0.35 and 0.4.\",\"Compare the two values and conclude that option 2 gives the better chance, so the claim is true.\"]},\"credit\":null,\"rationale\":\"The item requires the response to formulate the two classical probability models, compute both probabilities, and evaluate the claim by comparing them. The counts differ in both options, so the counts alone do not determine the answer, and the probability difference is 0.05.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[\"math.prob.probability\"]}}"
+    },
+    {
+      "promptHash": "2d7b9b92adbd885d6c9d22e2588f24ef63f97dbb787ea65a388e8cbed81c7994",
+      "unitKey": "14.data-judge-claim.paa#a1",
+      "try": 1,
+      "status": "MALFORMED",
+      "malformedCode": "PROVIDER_RESPONSE_SCHEMA_INVALID",
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsFlYcujfKc7Xve0a8iEJ1DyRhL3",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:08:01.150Z",
+      "usage": {
+        "inputTokens": 2204,
+        "outputTokens": 733,
+        "reasoningTokens": 185,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":{\"parts\":[{\"label\":\"a\",\"partKind\":\"TEXT\",\"text\":\"La tabla muestra cuántas personas eligieron cada actividad en una encuesta.\"}],\"structured\":{\"v\":1,\"tables\":[{\"tableKey\":\"actividades\",\"title\":\"Actividades elegidas\",\"columns\":[{\"key\":\"actividad\",\"label\":\"Actividad\",\"type\":\"TEXT\",\"unit\":null},{\"key\":\"personas\",\"label\":\"Personas\",\"type\":\"NUMBER\",\"unit\":\"personas\"}],\"rows\":[[\"Leer\",12],[\"Escuchar música\",8],[\"Practicar deporte\",15],[\"Ver películas\",10],[\"Jugar videojuegos\",5]]}],\"dataSets\":[],\"charts\":[],\"figures\":[]}},\"item\":{\"stem\":\"Una persona afirma: «Practicar deporte hace que las personas elijan menos jugar videojuegos». ¿Cómo debe evaluarse esta afirmación usando únicamente la tabla?\",\"context\":{\"kind\":\"PERSONAL\",\"description\":\"Interpretación de resultados de una encuesta sobre actividades personales.\"},\"declaredModel\":{\"construct\":\"CLAIM_EVALUATION_AGAINST_A_DATA_DISPLAY\",\"parameters\":{\"categories\":5}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"Está respaldada, porque 15 personas eligieron practicar deporte y solo 5 eligieron jugar videojuegos.\"},{\"id\":\"B\",\"text\":\"Está contradicha, porque practicar deporte fue más elegido que jugar videojuegos.\"},{\"id\":\"C\",\"text\":\"No se puede decidir con la tabla, porque muestra elecciones pero no demuestra que una actividad cause la otra.\"},{\"id\":\"D\",\"text\":\"Está respaldada, porque la mayoría de las personas eligió practicar deporte.\"}],\"answerKey\":\"C\",\"distractors\":{\"A\":{\"misconceptionModelId\":\"association-as-cause\",\"rationale\":\"Confunde una diferencia entre cantidades observadas con una relación causal.\"},\"B\":{\"misconceptionModelId\":\"scale-ignored\",\"rationale\":\"Ignora el significado de la afirmación y trata una mayor cantidad como contradicción causal.\"},\"D\":{\"misconceptionModelId\":\"plurality-as-majority\",\"rationale\":\"Confunde la categoría más frecuente con una mayoría y además infiere causalidad.\"}},\"target\":{\"kind\":\"VERDICT\",\"verdict\":\"CLAIM_VERDICT\",\"value\":\"NOT_DECIDABLE\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"El veredicto se determina interpretando la afirmación causal y el alcance de la tabla.\"}},\"numeric\":null,\"constructed\":null,\"credit\":null,\"usesStimulusValues\":[12,8,15,10,5],\"proposedSupportingConceptStableIds\":[\"math.stat.data-representation\"]}}"
+    },
+    {
+      "promptHash": "2d7b9b92adbd885d6c9d22e2588f24ef63f97dbb787ea65a388e8cbed81c7994",
+      "unitKey": "14.data-judge-claim.paa#a1",
+      "try": 2,
+      "status": "MALFORMED",
+      "malformedCode": "PROVIDER_RESPONSE_SCHEMA_INVALID",
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsFtgMOKztSGHNDfDwG2IjbT1Esp",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:08:08.810Z",
+      "usage": {
+        "inputTokens": 2204,
+        "outputTokens": 1170,
+        "reasoningTokens": 512,
+        "cachedInputTokens": 2201
+      },
+      "rawText": "{\"stimulus\":{\"parts\":[{\"label\":\"a\",\"partKind\":\"TEXT\",\"text\":\"En una encuesta se registró la bebida elegida por 45 personas. La encuesta no fue un experimento y no preguntó por las razones de cada elección.\"}],\"structured\":{\"v\":1,\"tables\":[{\"tableKey\":\"bebidas\",\"title\":\"Bebida elegida por las personas encuestadas\",\"columns\":[{\"key\":\"bebida\",\"label\":\"Bebida\",\"type\":\"TEXT\",\"unit\":null},{\"key\":\"personas\",\"label\":\"Número de personas\",\"type\":\"NUMBER\",\"unit\":\"personas\"}],\"rows\":[[\"Té\",\"18\"],[\"Café\",\"12\"],[\"Jugo\",\"10\"],[\"Agua\",\"5\"]]}],\"dataSets\":[],\"charts\":[{\"chartKey\":\"grafico_bebidas\",\"chartType\":\"BAR\",\"title\":\"Bebida elegida por las personas encuestadas\",\"xLabel\":\"Bebida\",\"yLabel\":\"Número de personas\",\"source\":{\"kind\":\"TABLE\",\"tableKey\":\"bebidas\",\"xColumn\":\"bebida\",\"valueColumns\":[\"personas\"]}}],\"figures\":[]}},\"item\":{\"stem\":\"Una persona afirma: «Las personas que eligieron té lo hicieron porque el té les da energía». ¿Qué veredicto corresponde a esta afirmación según la tabla y el gráfico?\",\"context\":{\"kind\":\"PERSONAL\",\"description\":\"Interpretación de resultados de una encuesta sobre bebidas elegidas.\"},\"declaredModel\":{\"construct\":\"CLAIM_EVALUATION_AGAINST_A_DATA_DISPLAY\",\"parameters\":{\"categories\":4}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"SUPPORTED: la afirmación está respaldada por los datos.\"},{\"id\":\"B\",\"text\":\"CONTRADICTED: la afirmación es contradicha por los datos.\"},{\"id\":\"C\",\"text\":\"SUPPORTED: la afirmación está respaldada porque el té es la opción más frecuente.\"},{\"id\":\"D\",\"text\":\"NOT_DECIDABLE: los datos no permiten decidir si esa fue la causa.\"}],\"answerKey\":\"D\",\"distractors\":{\"A\":{\"misconceptionModelId\":\"association-as-cause\",\"rationale\":\"Confunde que una bebida tenga muchas elecciones con demostrar que una característica de la bebida causó esas elecciones.\"},\"B\":{\"misconceptionModelId\":\"scale-ignored\",\"rationale\":\"Trata la posición o el tamaño visual de las barras como evidencia de una causa, aunque la escala solo representa cantidades observadas.\"},\"C\":{\"misconceptionModelId\":\"plurality-as-majority\",\"rationale\":\"Confunde ser la categoría más frecuente con constituir una mayoría y, además, usa esa frecuencia para justificar una causa no registrada.\"}},\"target\":{\"kind\":\"VERDICT\",\"verdict\":\"CLAIM_VERDICT\",\"value\":\"NOT_DECIDABLE\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"El veredicto se determina interpretando si el registro observacional contiene evidencia de causalidad.\"}},\"numeric\":null,\"constructed\":null,\"credit\":null,\"usesStimulusValues\":[18,12,10,5],\"proposedSupportingConceptStableIds\":[\"math.stat.data-representation\"]}}"
+    },
+    {
+      "promptHash": "6aff589624d03331dbf7a9c4e6ae058ff179e27f4bab5de78cdff6560eed2d9e",
+      "unitKey": "15.data-relative-change.ib-p2#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsG5CZ9IgYdTSiS96Q4tuTfbfzXW",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:08:21.056Z",
+      "usage": {
+        "inputTokens": 2293,
+        "outputTokens": 1072,
+        "reasoningTokens": 512,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":{\"parts\":[],\"structured\":{\"v\":1,\"tables\":[{\"tableKey\":\"regional_bird_counts\",\"title\":\"Bird counts recorded in four wetlands\",\"columns\":[{\"key\":\"wetland\",\"label\":\"Wetland\",\"type\":\"TEXT\",\"unit\":null},{\"key\":\"count\",\"label\":\"Number of birds\",\"type\":\"NUMBER\",\"unit\":\"birds\"}],\"rows\":[[\"North Marsh\",248],[\"East Lagoon\",317],[\"South Pool\",405],[\"West Fen\",196]]}],\"dataSets\":[],\"charts\":[],\"figures\":[]}},\"item\":{\"stem\":\"Using the table, write down the relative percentage change in the number of birds from North Marsh to East Lagoon. Give your answer correct to 1 decimal place.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"Bird counts from four wetlands are compared using a tabulated data set.\"},\"declaredModel\":{\"construct\":\"RELATIVE_CHANGE_OR_SHARE_FROM_TABULATED_VALUES\",\"parameters\":{\"vi\":248,\"vj\":317}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Write down the values used for vi and vj, then calculate the relative percentage change from North Marsh to East Lagoon.\",\"marks\":3,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Identifies vi = 248 and vj = 317 from the table and uses the relative-change structure 100 × (vj − vi) / vi.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Substitutes 248 and 317 correctly and obtains an unrounded result of approximately 27.8226.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Rounds the result correctly to 27.8%.\"}],\"finalAnswer\":\"27.8%\",\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"27.8\",\"equivalentFormsAllowed\":true,\"decimalPlaces\":1},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"RELATIVE_CHANGE_PERCENT\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"100*(317-248)/248\"}}],\"totalMarks\":3,\"workingOutline\":[\"Locate the North Marsh and East Lagoon values in the table: vi = 248 and vj = 317.\",\"Use the relative-change calculation 100*(vj-vi)/vi.\",\"Evaluate 100*(317-248)/248 and round the result to 1 decimal place.\"]},\"credit\":null,\"rationale\":\"The response must interpret the table to locate the two relevant values and compute a relative change that is not explicitly shown.\",\"usesStimulusValues\":[248,317],\"proposedSupportingConceptStableIds\":[\"math.stat.data-representation\"]}}"
+    },
+    {
+      "promptHash": "ee7e8866fdf89fd6633c8c61c709533ee1ad7e7c5ecda2208bd90db8f5108e51",
+      "unitKey": "16.approach.school.standard#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsGGWwLU7C3EaJbd1YCuhU14rvaa",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:08:32.224Z",
+      "usage": {
+        "inputTokens": 2386,
+        "outputTokens": 1183,
+        "reasoningTokens": 512,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Una cooperativa compara dos opciones para distribuir alimentos. La opción 1 entrega 20 cajas por cada 8 horas de trabajo, mientras que la opción 2 entrega 33 cajas por cada 15 horas. ¿Cuál opción ofrece la mayor cantidad de cajas por hora y por cuánto supera a la otra?\",\"context\":{\"kind\":\"SOCIETAL\",\"description\":\"Comparación de la productividad de dos opciones de distribución de alimentos.\"},\"declaredModel\":{\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":{\"p1\":8,\"q1\":20,\"p2\":15,\"q2\":33}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"La opción 1: 20/8 = 2.5 cajas por hora y 33/15 = 2.2 cajas por hora; la opción 1 supera a la opción 2 por 0.3 cajas por hora.\"},{\"id\":\"B\",\"text\":\"La opción 2, porque entrega 33 cajas y la opción 1 solo entrega 20 cajas.\"},{\"id\":\"C\",\"text\":\"La opción 2: al calcular horas por caja, 15/33 es mayor que 8/20, por lo que la opción 2 tiene la mejor tasa.\"},{\"id\":\"D\",\"text\":\"La opción 2, porque la diferencia entre las cantidades entregadas es 33 - 20 = 13 cajas.\"}],\"answerKey\":\"A\",\"distractors\":{\"B\":{\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Compara únicamente las cantidades entregadas e ignora las horas necesarias en cada opción.\"},\"C\":{\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Invierte la tasa solicitada y compara horas por caja en lugar de cajas por hora.\"},\"D\":{\"misconceptionModelId\":\"difference\",\"rationale\":\"Usa la diferencia entre las cantidades totales, que no permite comparar rendimientos con tiempos distintos.\"}},\"target\":{\"kind\":\"COMPARISON\",\"left\":\"20/8\",\"operator\":\">\",\"right\":\"33/15\",\"holds\":true,\"verdict\":\"OPTION_1 ofrece 0.3 cajas por hora más que OPTION_2\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"20/8-33/15\"}},\"numeric\":null,\"constructed\":null,\"credit\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Selecciona la opción que forma ambas tasas unitarias, identifica correctamente la opción superior y calcula la diferencia de 0.3 cajas por hora.\"},{\"code\":\"PARTIAL_CREDIT\",\"description\":\"No aplicable a una respuesta seleccionada única.\"},{\"code\":\"NO_CREDIT\",\"description\":\"Selecciona una opción basada en una cantidad aislada, una tasa invertida o una diferencia sin ajustar por el tiempo.\"}],\"rationale\":\"La comparación adecuada es la cantidad entregada por cada hora: 20/8 = 2.5 y 33/15 = 2.2. Por tanto, la opción 1 es mejor y la diferencia entre las tasas es 0.3 cajas por hora.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "ba49ecf4152ffaf7d0acfe372ed4ac6dd7613d7e7e327eea13d81e9f7bf0edbc",
+      "unitKey": "17.approach.school.stem-plus#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsGSiHmLGddBgySboNzDhUVP9BVZ",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:08:43.854Z",
+      "usage": {
+        "inputTokens": 2770,
+        "outputTokens": 1484,
+        "reasoningTokens": 351,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Una cooperativa vecinal compara dos planes de transporte para sus entregas. El plan 1 cuesta 12 euros y permite realizar 30 entregas. El plan 2 cuesta 20 euros y permite realizar 44 entregas. Compara los planes mediante la cantidad de entregas por euro, muestra tu procedimiento y justifica cuál ofrece mejor rendimiento y por cuánto.\",\"context\":{\"kind\":\"SOCIETAL\",\"description\":\"Una cooperativa vecinal debe elegir entre dos planes de transporte con distintos costes y cantidades de entregas.\"},\"declaredModel\":{\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":{\"p1\":12,\"q1\":30,\"p2\":20,\"q2\":44}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"FORMULA las dos tasas unitarias que deben compararse, indicando qué representa cada una.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Formula r1 = q1 / p1 y r2 = q2 / p2.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Indica que cada tasa representa el número de entregas por euro para el plan correspondiente.\"}],\"finalAnswer\":\"r1 = 30/12 y r2 = 44/20; ambas expresan entregas por euro.\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"La respuesta exige formular las dos tasas y explicar el significado de la cantidad comparada.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"La respuesta combina expresiones y una explicación de sus unidades.\"}},{\"label\":\"b\",\"prompt\":\"SOLVE las dos tasas unitarias y calcula la diferencia entre ellas.\",\"marks\":3,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Calcula correctamente r1 = 30/12 y r2 = 44/20.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtiene r1 = 2.5 y r2 = 2.2, ambas en entregas por euro.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Calcula correctamente la diferencia 2.5 - 2.2 = 0.3.\"}],\"finalAnswer\":\"r1 = 2.5 entregas por euro, r2 = 2.2 entregas por euro y d = 0.3 entregas por euro.\",\"numericKey\":null,\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"UNIT_RATE_DIFFERENCE\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"30/12-44/20\"}},{\"label\":\"c\",\"prompt\":\"INTERPRET el resultado: indica qué plan favorece la comparación y por cuánto supera su tasa unitaria a la del otro plan. Justifica tu decisión con las tasas calculadas.\",\"marks\":2,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Concluye que el plan 1 es mejor porque su tasa unitaria es mayor que la del plan 2.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Comunica que el plan 1 supera al plan 2 en 0.3 entregas por euro y relaciona la conclusión con las dos tasas.\"}],\"finalAnswer\":\"Favorece al plan 1, porque 2.5 > 2.2; su tasa supera a la del plan 2 en 0.3 entregas por euro.\",\"numericKey\":null,\"target\":{\"kind\":\"COMPARISON\",\"left\":\"30/12\",\"operator\":\">\",\"right\":\"44/20\",\"holds\":true,\"verdict\":\"OPTION_WITH_HIGHER_UNIT_RATE: OPTION_1\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"30/12-44/20\"}}],\"totalMarks\":7,\"workingOutline\":[\"Identificar el coste como la cantidad de entrada y las entregas como el retorno de cada plan.\",\"Formar las tasas unitarias dividiendo entregas entre euros: r1 = 30/12 y r2 = 44/20.\",\"Calcular r1 = 2.5 y r2 = 2.2 entregas por euro.\",\"Restar las tasas para obtener d = 0.3 entregas por euro.\",\"Comparar las tasas, elegir el plan 1 y justificar que su rendimiento es mayor por 0.3 entregas por euro.\"]},\"credit\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Formula ambas tasas unitarias, calcula correctamente las dos tasas y su diferencia, e interpreta justificadamente que el plan 1 ofrece el mayor rendimiento por 0.3 entregas por euro.\"},{\"code\":\"PARTIAL_CREDIT\",\"description\":\"Muestra un método proporcional pertinente y obtiene parte de las tasas o de la comparación, pero contiene un error de cálculo, unidades incompletas o una interpretación insuficientemente justificada.\"},{\"code\":\"NO_CREDIT\",\"description\":\"No forma tasas unitarias comparables o no proporciona un procedimiento y una conclusión relacionados con el rendimiento por euro.\"}],\"rationale\":\"La situación requiere comparar dos opciones con costes y retornos distintos mediante tasas unitarias. El plan con mayor cantidad total no es automáticamente mejor, por lo que la decisión exige formular, calcular e interpretar la proporcionalidad.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "2ba8cd7ca11ad2e2f1387521b91fec302423957798a373acc763fa25410cd9b3",
+      "unitKey": "18.approach.paa.standard#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsGg8sXZ6jNDG4XP7compri7lgEP",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:08:58.371Z",
+      "usage": {
+        "inputTokens": 2400,
+        "outputTokens": 812,
+        "reasoningTokens": 244,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Una tienda ofrece dos planes. El plan 1 cuesta 8 euros y entrega 12 unidades. El plan 2 cuesta 10 euros y entrega 14 unidades. ¿Qué comparación de proporcionalidad es correcta?\",\"context\":{\"kind\":\"PERSONAL\",\"description\":\"Comparación de dos planes de compra según las unidades recibidas por cada euro pagado.\"},\"declaredModel\":{\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":{\"p1\":8,\"q1\":12,\"p2\":10,\"q2\":14}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"El plan 1 es mejor: entrega 12 unidades frente a 14, y la diferencia entre las cantidades entregadas es 2 unidades.\"},{\"id\":\"B\",\"text\":\"El plan 2 es mejor porque entrega más unidades: 14 frente a 12.\"},{\"id\":\"C\",\"text\":\"El plan 1 es mejor porque entrega 1,5 unidades por euro, mientras que el plan 2 entrega 1,4; por tanto, favorece al plan 1 por 0,1 unidades por euro.\"},{\"id\":\"D\",\"text\":\"El plan 2 es mejor porque su tasa inversa es mayor: 10/14 es mayor que 8/12.\"}],\"answerKey\":\"C\",\"distractors\":{\"A\":{\"misconceptionModelId\":\"difference\",\"rationale\":\"Compara únicamente la diferencia entre las cantidades entregadas y no calcula cuánto se recibe por cada euro.\"},\"B\":{\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Supone que la opción con mayor cantidad entregada es mejor, sin considerar que también tiene un costo diferente.\"},\"D\":{\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Usa la razón invertida costo entre unidades y además interpreta incorrectamente cuál de esas razones indica mayor rendimiento.\"}},\"target\":{\"kind\":\"VERDICT\",\"verdict\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"value\":\"OPTION_1\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"La respuesta correcta se verifica mediante la comparación de tasas descrita en la opción.\"}},\"numeric\":null,\"constructed\":null,\"credit\":null,\"rationale\":\"El plan 1 tiene una tasa unitaria de 12/8 = 1,5 unidades por euro. El plan 2 tiene una tasa unitaria de 14/10 = 1,4 unidades por euro. Como 1,5 - 1,4 = 0,1, el plan 1 favorece al comprador por 0,1 unidades por euro.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "ce3d173e7c7d5b21dd7f78da5b973a17be9d81fc05138835bd9732f5461d01b0",
+      "unitKey": "19.approach.paa.stem-plus#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsGondSZ2AhsDsiWaxeaRMpnBfNK",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:09:06.643Z",
+      "usage": {
+        "inputTokens": 2740,
+        "outputTokens": 1021,
+        "reasoningTokens": 442,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Una cooperativa compara dos opciones de inversión. La opción 1 requiere 8 unidades monetarias y devuelve 20 unidades de beneficio. La opción 2 requiere 15 unidades monetarias y devuelve 33 unidades de beneficio. ¿Qué opción ofrece la mayor tasa de beneficio por unidad monetaria y por cuánto supera a la otra?\",\"context\":{\"kind\":\"SOCIETAL\",\"description\":\"Comparación de dos opciones de inversión de una cooperativa.\"},\"declaredModel\":{\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":{\"p1\":8,\"q1\":20,\"p2\":15,\"q2\":33}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"La opción 1, porque 20/8 = 2.5 y 33/15 = 2.2; la supera por 0.3 unidades de beneficio por unidad monetaria.\"},{\"id\":\"B\",\"text\":\"La opción 2, porque devuelve 33 unidades de beneficio, mientras que la opción 1 devuelve 20; la supera por 13 unidades.\"},{\"id\":\"C\",\"text\":\"La opción 2, porque su tasa invertida es 15/33, menor que 8/20; la supera por aproximadamente 0.05.\"},{\"id\":\"D\",\"text\":\"La opción 2, porque la diferencia entre beneficio y costo es 18, frente a 12 para la opción 1; la supera por 6 unidades.\"}],\"answerKey\":\"A\",\"distractors\":{\"B\":{\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Compara solo las cantidades devueltas y no las ajusta por la inversión requerida.\"},\"C\":{\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Invierte la tasa y compara costo por unidad de beneficio en lugar de beneficio por unidad monetaria.\"},\"D\":{\"misconceptionModelId\":\"difference\",\"rationale\":\"Usa una resta entre beneficio y costo, que no representa una tasa común de comparación.\"}},\"target\":{\"kind\":\"VERDICT\",\"verdict\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"value\":\"OPTION_1\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"20/8-33/15\"}},\"numeric\":null,\"constructed\":null,\"credit\":null,\"rationale\":\"La tasa de la opción 1 es 20/8 = 2.5, y la de la opción 2 es 33/15 = 2.2. Por tanto, la opción 1 tiene la tasa mayor y la diferencia entre ambas tasas es 2.5 - 2.2 = 0.3.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "c6e5149288b991ba6796669c332340f25c42008517323af66c19b34b1076b432",
+      "unitKey": "20.approach.pisa.stem-plus#a1",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsGzGGjHdC7OVs6MRK70QdpB6a7A",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:09:16.739Z",
+      "usage": {
+        "inputTokens": 2757,
+        "outputTokens": 1100,
+        "reasoningTokens": 408,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Una cooperativa vecinal compara dos planes para distribuir agua potable durante una campaña. El plan 1 requiere transportar 120 litros y permite entregar 18 litros útiles por cada recorrido. El plan 2 requiere transportar 80 litros y permite entregar 14.4 litros útiles por cada recorrido. Considerando la cantidad entregada por cada litro transportado, ¿qué opción es correcta?\",\"context\":{\"kind\":\"SOCIETAL\",\"description\":\"Una cooperativa vecinal debe elegir el plan de distribución que aprovecha mejor cada litro transportado, aunque el plan con mayor cantidad total entregada no sea necesariamente el más eficiente.\"},\"declaredModel\":{\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":{\"p1\":120,\"q1\":18,\"p2\":80,\"q2\":14.4}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"El plan 1 es mejor porque entrega más litros en total: 18 frente a 14.4.\"},{\"id\":\"B\",\"text\":\"El plan 1 es mejor: entrega aproximadamente 0.15 litros por litro transportado, mientras que el plan 2 entrega aproximadamente 0.13.\"},{\"id\":\"C\",\"text\":\"El plan 2 es mejor porque la diferencia entre lo transportado y lo entregado es menor: 65.6 litros frente a 102 litros.\"},{\"id\":\"D\",\"text\":\"El plan 2 es mejor: entrega 0.18 litros por litro transportado, frente a 0.15 del plan 1; la diferencia es 0.03 litros por litro transportado.\"}],\"answerKey\":\"D\",\"distractors\":{\"A\":{\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Compara solamente las cantidades entregadas y omite la cantidad transportada.\"},\"B\":{\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Invierte la razón y además calcula incorrectamente la tasa del plan 2.\"},\"C\":{\"misconceptionModelId\":\"difference\",\"rationale\":\"Resta las cantidades de cada plan en lugar de formar tasas unitarias comparables.\"}},\"target\":{\"kind\":\"VERDICT\",\"verdict\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"value\":\"OPTION_2\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"14.4/80>18/120\"}},\"numeric\":null,\"constructed\":null,\"credit\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Selecciona la opción D, que formula y compara ambas tasas unitarias, identifica el plan 2 como mejor e interpreta correctamente la diferencia de 0.03 litros por litro transportado.\"},{\"code\":\"PARTIAL_CREDIT\",\"description\":\"No aplicable en este formato de respuesta seleccionada.\"},{\"code\":\"NO_CREDIT\",\"description\":\"Selecciona una opción distinta de D o no responde.\"}],\"rationale\":\"La tasa unitaria del plan 1 es 18/120=0.15. La del plan 2 es 14.4/80=0.18. Como 0.18 es mayor que 0.15, el plan 2 favorece la distribución y la diferencia entre las tasas es 0.03 litros por litro transportado.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "5399d09111aecf764acb1877442689250d5a8acbea2447f5cf50cd9fb73cc8ea",
+      "unitKey": "03.linear-model.ib-p2#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsNZEOzA4dj2ekzLMDAtlzzCPrQK",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:16:04.824Z",
+      "usage": {
+        "inputTokens": 2274,
+        "outputTokens": 1226,
+        "reasoningTokens": 423,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"A laboratory tank contains 240 litres of solution at time 0 minutes. Its volume decreases by 3.5 litres each minute. Let V be the volume, in litres, after t minutes. Find the relationship between V and t, find the volume after 20 minutes, and state what the rate and starting value mean in this situation.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"A laboratory tank contains a solution whose volume changes at a constant rate.\"},\"declaredModel\":{\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":{\"b\":240,\"m\":-3.5,\"x\":20}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Find a linear relationship between V and t.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the fixed starting value as the intercept and the constant change per minute as the coefficient of t.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"States V = -3.5t + 240, or an algebraically equivalent relationship.\"}],\"finalAnswer\":\"V = -3.5t + 240\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The keyed response is an algebraic relationship rather than a single construct-vocabulary quantity.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"An algebraic relationship must be checked for its slope and intercept.\"}},{\"label\":\"b\",\"prompt\":\"Find the volume when t = 20.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Substitutes t = 20 into the linear relationship.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Calculates V = 170 litres.\"}],\"finalAnswer\":\"170 litres\",\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"170\",\"equivalentFormsAllowed\":true},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"VALUE_AT_X\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"-3.5*20+240\"}},{\"label\":\"c\",\"prompt\":\"State what the rate and the starting value mean in this situation.\",\"marks\":2,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Explains that the rate -3.5 means the volume decreases by 3.5 litres for every 1 minute.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Explains that the starting value 240 means the tank contains 240 litres when t = 0.\"}],\"finalAnswer\":\"The rate is -3.5 litres per minute, meaning that the volume decreases by 3.5 litres each minute. The starting value is 240 litres, meaning that the tank contains 240 litres at time 0.\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response interprets the rate and starting value in words.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The required interpretation is expressed in context-dependent words.\"}}],\"totalMarks\":6,\"workingOutline\":[\"Identify the fixed starting value as b = 240.\",\"Identify the constant rate of change as m = -3.5.\",\"Formulate V = mt + b, giving V = -3.5t + 240.\",\"Substitute t = 20 and calculate V = 170.\",\"Interpret the negative rate as a decrease of 3.5 litres per minute and the intercept as 240 litres at time 0.\"]},\"credit\":null,\"rationale\":\"The item requires formulation of a linear model and interpretation of both its slope and intercept for a quantity with a fixed starting value and constant rate of change.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "49de6545ddf1a68efd145895b69ad0e603d3e469058e332a787357cf5c771734",
+      "unitKey": "04.linear-model.cambridge-p1#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsNlW9rwvZYO9tIBH6AKQT3sxrQf",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:16:17.557Z",
+      "usage": {
+        "inputTokens": 2281,
+        "outputTokens": 1095,
+        "reasoningTokens": 346,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"A laboratory stores a chemical solution in a container. The solution has a mass of 120 grams initially and its mass decreases at a constant rate of 7.5 grams per minute. Let x be the number of minutes after storage begins and let y be the mass of the solution, in grams. Show your working.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"A chemical solution loses mass at a constant rate during laboratory storage.\"},\"declaredModel\":{\"construct\":\"LINEAR_MODEL_FIXED_START_CONSTANT_RATE\",\"parameters\":{\"b\":120,\"m\":-7.5,\"x\":8}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Work out a linear equation relating y to x.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the fixed-start constant-rate form y = m * x + b.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains y = -7.5x + 120.\"}],\"finalAnswer\":\"y = -7.5x + 120\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The keyed response is a linear relation rather than one quantity named by the construct vocabulary.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The response is an equation and cannot be checked as a single arithmetic expression.\"}},{\"label\":\"b\",\"prompt\":\"Work out the mass of the solution after 8 minutes.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Substitutes x = 8 into the linear model.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Calculates the mass as 60 grams.\"}],\"finalAnswer\":\"60 grams\",\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"60\",\"equivalentFormsAllowed\":true},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"VALUE_AT_X\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"120-7.5*8\"}},{\"label\":\"c\",\"prompt\":\"Work out what the gradient and the y-intercept mean in this situation.\",\"marks\":2,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Explains that the gradient -7.5 represents a decrease of 7.5 grams per minute.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Explains that the y-intercept 120 represents the initial mass of 120 grams.\"}],\"finalAnswer\":\"The gradient means that the mass decreases by 7.5 grams per minute. The y-intercept means that the initial mass is 120 grams.\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response interprets the rate and starting value in context.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"The response requires interpretation of model parameters in context.\"}}],\"totalMarks\":6,\"workingOutline\":[\"Identify the starting value as b = 120 and the constant rate as m = -7.5.\",\"Substitute these values into y = m * x + b to form the model.\",\"Substitute x = 8 and calculate the corresponding value of y.\",\"Interpret m as the change in mass per minute and b as the mass when x = 0.\"]},\"credit\":null,\"rationale\":\"The item requires formulation of a fixed-start constant-rate linear model and interpretation of both its slope and intercept.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "85675a01426d618b2dba5fe96c380db649ca86346eceafb6923a4ca78d5804a4",
+      "unitKey": "09.quadratic-factorising.paa#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsNxyaXFOLLFRupKWW3IZdpfO8kv",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:16:28.429Z",
+      "usage": {
+        "inputTokens": 2320,
+        "outputTokens": 683,
+        "reasoningTokens": 414,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Resuelve mediante factorización la ecuación 4x^2 + 4x - 15 = 0. Escribe como respuesta únicamente la raíz mayor.\",\"context\":{\"kind\":\"ABSTRACT\",\"description\":\"Ecuación cuadrática sin contexto aplicado.\"},\"declaredModel\":{\"construct\":\"QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING\",\"parameters\":{\"a\":4,\"r1\":-2.5,\"r2\":1.5}},\"selected\":null,\"numeric\":{\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"1.5\",\"equivalentFormsAllowed\":true},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"GREATER_ROOT\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"(-4+sqrt(4^2-4*4*(-15)))/(2*4)\"}},\"constructed\":null,\"credit\":null,\"rationale\":\"La factorización es (2x-3)(2x+5)=0; las raíces son 1.5 y -2.5, por lo que la raíz mayor es 1.5.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[\"math.alg.quadratics\"]}}"
+    },
+    {
+      "promptHash": "e27a98dde2f8b02616bdfe903c3c44921619bfcbe7ed04cce7c0b2d0ae58c750",
+      "unitKey": "10.quadratic-factorising.ib-p1#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsO597tfvzZzCp5DwfVLD1oWhmqf",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:16:37.240Z",
+      "usage": {
+        "inputTokens": 2380,
+        "outputTokens": 997,
+        "reasoningTokens": 420,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Consider the quadratic equation generated with parameters a = 2, r1 = 3 and r2 = -1: 2x^2 - 4x - 6 = 0. Solve the equation by factorising.\",\"context\":{\"kind\":\"ABSTRACT\",\"description\":\"An algebraic quadratic equation with rational roots; no calculator is permitted.\"},\"declaredModel\":{\"construct\":\"QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING\",\"parameters\":{\"a\":2,\"r1\":3,\"r2\":-1}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Bring the equation to standard form if necessary and factorise it completely.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Obtains a correct common factorisation of the quadratic expression.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Writes the equation correctly as 2(x - 3)(x + 1) = 0.\"}],\"finalAnswer\":\"2(x - 3)(x + 1) = 0\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The keyed response is a factorised algebraic equation rather than a quantity named in the construct vocabulary.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"Checking a factorised equation requires symbolic algebra rather than a single arithmetic expression.\"}},{\"label\":\"b\",\"prompt\":\"Solve the factorised equation and give both values of x.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Sets each linear factor equal to zero.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains both roots x = 3 and x = -1.\"}],\"finalAnswer\":\"x = 3 or x = -1\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response contains two roots, so it is not one numeric keyed answer.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"Checking two symbolic root statements is not represented by one arithmetic expression.\"}}],\"totalMarks\":4,\"workingOutline\":[\"Rewrite the quadratic equation in standard form if needed.\",\"Factorise the quadratic as 2(x - 3)(x + 1) = 0.\",\"Set x - 3 = 0 and x + 1 = 0.\",\"Read the two solutions as x = 3 and x = -1.\"]},\"credit\":null,\"rationale\":\"The item requires algebraic reasoning to factorise a quadratic equation and then read both rational roots from its linear factors.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "65167cb7ba045fa4c40b77ba65ffff0d07deecb8a436fa0cd67ee172ca59737f",
+      "unitKey": "11.quadratic-optimum.ib-p2#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsOGWxLA2G1FeOlC6QnIXACbSaDo",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:16:48.169Z",
+      "usage": {
+        "inputTokens": 2428,
+        "outputTokens": 1454,
+        "reasoningTokens": 471,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"In a scientific model, a quantity Q depends on a free measure x, where 0 ≤ x ≤ 50. The model is the product of two linear factors: one factor starts at 20 and increases by 4 for each unit of x, while the other starts at 100 and decreases by 2 for each unit of x. Find the quadratic model and the value of x that makes Q as large as possible. State the maximum value of Q in the terms of the model.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"A modelled quantity is the product of two positive linear factors depending on a free measure x.\"},\"declaredModel\":{\"construct\":\"QUADRATIC_MODEL_VERTEX_OPTIMUM\",\"parameters\":{\"p\":20,\"q\":4,\"r\":100,\"s\":2}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Find Q as a quadratic function of x.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Forms the product Q = (20 + 4x)(100 - 2x).\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Expands correctly to Q = -8x^2 + 360x + 2000.\"}],\"finalAnswer\":\"Q = -8x^2 + 360x + 2000\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The target is the correctly formulated quadratic model rather than a single construct-vocabulary quantity.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"An algebraic model is required, not one numerical expression.\"}},{\"label\":\"b\",\"prompt\":\"Find the value of x at which Q is largest.\",\"marks\":3,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the vertex coordinate for the quadratic, or equivalently calculates xv = (4 × 100 − 20 × 2) / (2 × 4 × 2).\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Calculates the vertex measure as x = 22.5.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Recognises that the quadratic has a negative leading coefficient, so its vertex gives the maximum within 0 ≤ x ≤ 50.\"}],\"finalAnswer\":\"x = 22.5\",\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"22.5\",\"equivalentFormsAllowed\":true,\"decimalPlaces\":1},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"MEASURE_AT_OPTIMUM\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"(4*100-20*2)/(2*4*2)\"}},{\"label\":\"c\",\"prompt\":\"Find the maximum value of Q and interpret both optimal results in the situation.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Substitutes x = 22.5 into Q = (20 + 4x)(100 − 2x), giving (20 + 4 × 22.5)(100 − 2 × 22.5).\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Finds Q = 6050 and states that the quantity is largest when x = 22.5.\"}],\"finalAnswer\":\"The maximum value is Q = 6050, achieved when x = 22.5.\",\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"6050\",\"equivalentFormsAllowed\":true},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"OPTIMAL_VALUE\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"(20+4*22.5)*(100-2*22.5)\"}}],\"totalMarks\":7,\"workingOutline\":[\"Write the model as Q = (20 + 4x)(100 − 2x).\",\"Expand to obtain Q = −8x^2 + 360x + 2000.\",\"Use the vertex formula to calculate x = 22.5.\",\"Because the coefficient of x^2 is negative and 22.5 lies in the allowed interval, this vertex gives the maximum.\",\"Substitute x = 22.5 into the product model to obtain Q = 6050.\",\"Interpret x = 22.5 as the optimal free measure and Q = 6050 as the maximum modelled quantity.\"]},\"credit\":null,\"rationale\":\"The item requires formulation of the product as a quadratic, solution by the vertex, and interpretation of both the optimal measure and optimal value.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[\"math.alg.quadratics\"]}}"
+    },
+    {
+      "promptHash": "485ebe27fda8ab988ee3e45533e03df69c52d9a31fb7fd1dce3c5e66bf7dd0cb",
+      "unitKey": "12.probability-single-event.icfes#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsOVGzvJmDOUWAz1QmQ1sf0Wre25",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:17:02.346Z",
+      "usage": {
+        "inputTokens": 2155,
+        "outputTokens": 879,
+        "reasoningTokens": 300,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\n  \"stimulus\": null,\n  \"item\": {\n    \"stem\": \"Una bolsa contiene 12 fichas, de las cuales 3 son verdes. Si se extrae una ficha al azar y todas las fichas tienen la misma probabilidad de ser extraídas, ¿cuál es la probabilidad de extraer una ficha verde?\",\n    \"context\": {\n      \"kind\": \"PERSONAL\",\n      \"description\": \"Una persona extrae una ficha de una bolsa para conocer la probabilidad de obtener una ficha verde.\"\n    },\n    \"declaredModel\": {\n      \"construct\": \"CLASSICAL_PROBABILITY_SINGLE_DRAW\",\n      \"parameters\": {\n        \"n\": 12,\n        \"k\": 3\n      }\n    },\n    \"selected\": {\n      \"options\": [\n        {\n          \"id\": \"A\",\n          \"text\": \"1/4\"\n        },\n        {\n          \"id\": \"B\",\n          \"text\": \"1/3\"\n        },\n        {\n          \"id\": \"C\",\n          \"text\": \"3/4\"\n        },\n        {\n          \"id\": \"D\",\n          \"text\": \"1/12\"\n        }\n      ],\n      \"answerKey\": \"A\",\n      \"distractors\": {\n        \"B\": {\n          \"misconceptionModelId\": \"odds\",\n          \"rationale\": \"Usa las fichas no verdes como denominador y calcula 3/(12-3), que corresponde a las probabilidades relativas, no a la probabilidad clásica del evento.\"\n        },\n        \"C\": {\n          \"misconceptionModelId\": \"complement\",\n          \"rationale\": \"Calcula la probabilidad del complemento, es decir, de no obtener una ficha verde: 1-3/12=3/4.\"\n        },\n        \"D\": {\n          \"misconceptionModelId\": \"categories\",\n          \"rationale\": \"Toma una sola ficha favorable como si fuera el evento completo y divide 1 entre el total, ignorando que hay 3 fichas verdes.\"\n        }\n      },\n      \"target\": {\n        \"kind\": \"QUANTITY\",\n        \"quantity\": \"PROBABILITY\"\n      },\n      \"answerCheck\": {\n        \"kind\": \"ARITHMETIC_EXPRESSION\",\n        \"expression\": \"3/12\"\n      }\n    },\n    \"numeric\": null,\n    \"constructed\": null,\n    \"credit\": null,\n    \"rationale\": \"La probabilidad clásica se obtiene dividiendo el número de resultados favorables entre el número total de resultados igualmente probables: P=3/12=1/4.\",\n    \"usesStimulusValues\": null,\n    \"proposedSupportingConceptStableIds\": []\n  }\n}"
+    },
+    {
+      "promptHash": "168b870132ecfb87e2a5b4aedb2a930c12277fc47fcc3b7508ebafec067f2cc6",
+      "unitKey": "13.probability-compare.cambridge-p1#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsOeLjOYzMSgHvVWZ4dsf4yM3VWm",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:17:11.858Z",
+      "usage": {
+        "inputTokens": 2456,
+        "outputTokens": 1345,
+        "reasoningTokens": 458,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"A laboratory technician compares two types of test strip for detecting a chemical. With option 1, the stated result was obtained in 18 of 40 tests. With option 2, the stated result was obtained in 23 of 60 tests. A colleague claims that option 2 gives the better chance of obtaining the stated result. Work out the probabilities and decide whether the claim is correct.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"Comparing the chances of obtaining a stated result using two laboratory test-strip options.\"},\"declaredModel\":{\"construct\":\"COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES\",\"parameters\":{\"n1\":40,\"k1\":18,\"n2\":60,\"k2\":23}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"State the event being considered and the sample space for each option.\",\"marks\":2,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Identifies the event as obtaining the stated test result.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Identifies the sample spaces as the 40 tests for option 1 and the 60 tests for option 2.\"}],\"finalAnswer\":\"The event is obtaining the stated test result. The sample space is the 40 tests for option 1 and the 60 tests for option 2.\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response must identify the event and both sample spaces in words.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"This response requires checking the stated event and sample spaces.\"}},{\"label\":\"b\",\"prompt\":\"Work out the probability of obtaining the stated result with option 1.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the favourable count divided by the total count to form P1 = 18/40.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains P1 = 0.45.\"}],\"finalAnswer\":\"P1 = 18/40 = 0.45\",\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"0.45\",\"equivalentFormsAllowed\":true,\"decimalPlaces\":2},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"PROBABILITY_1\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"18/40\"}},{\"label\":\"c\",\"prompt\":\"Work out the probability of obtaining the stated result with option 2 and evaluate the colleague's claim.\",\"marks\":3,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the favourable count divided by the total count to form P2 = 23/60.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains P2 = 0.3833... or an equivalent value.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Compares 0.45 with 0.3833... and concludes that option 1 has the higher probability, so the claim is false.\"}],\"finalAnswer\":\"P2 = 23/60 = 0.3833... . Since 0.45 > 0.3833..., option 1 gives the better chance, so the claim is false.\",\"numericKey\":null,\"target\":{\"kind\":\"COMPARISON\",\"left\":\"18/40\",\"operator\":\">\",\"right\":\"23/60\",\"holds\":true,\"verdict\":\"OPTION_1\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"18/40>23/60\"}}],\"totalMarks\":7,\"workingOutline\":[\"Identify obtaining the stated result as the event and use all tests for each option as the relevant sample space.\",\"For each option, divide the number of tests producing the stated result by the total number of tests.\",\"Compare the two probabilities and identify the option with the larger probability.\",\"State whether the colleague's claim is true or false.\"]},\"credit\":null,\"rationale\":\"The item requires identification of each event and sample space, calculation of both classical probabilities, and a justified comparison to evaluate the claim.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "eb7322c6a3a5ace83203c40d25a77ab0280ea19a410f28bda823edd9777ac979",
+      "unitKey": "14.data-judge-claim.paa#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsOruPqoRwLlOeUJcSEwDbAzdU8z",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:17:24.953Z",
+      "usage": {
+        "inputTokens": 2204,
+        "outputTokens": 1412,
+        "reasoningTokens": 855,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":{\"parts\":[{\"label\":\"tabla1\",\"partKind\":\"TEXT\",\"text\":\"La tabla muestra el número de personas que eligieron cada categoría.\"}],\"structured\":{\"v\":1,\"tables\":[{\"tableKey\":\"elecciones\",\"title\":\"Elecciones por categoría\",\"columns\":[{\"key\":\"categoria\",\"label\":\"Categoría\",\"type\":\"TEXT\",\"unit\":null},{\"key\":\"personas\",\"label\":\"Número de personas\",\"type\":\"NUMBER\",\"unit\":\"personas\"}],\"rows\":[[\"Norte\",6],[\"Sur\",3],[\"Este\",1],[\"Oeste\",0]]}],\"dataSets\":[],\"charts\":[],\"figures\":[]}},\"item\":{\"stem\":\"Una persona afirma: «La categoría Norte causó que 6 personas la eligieran». ¿Qué se puede concluir a partir de la tabla?\",\"context\":{\"kind\":\"PERSONAL\",\"description\":\"Interpretación de las elecciones de un grupo de personas entre cuatro categorías.\"},\"declaredModel\":{\"construct\":\"CLAIM_EVALUATION_AGAINST_A_DATA_DISPLAY\",\"parameters\":{\"categories\":4}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"La afirmación está respaldada por la tabla.\"},{\"id\":\"B\",\"text\":\"La afirmación está contradicha por la tabla.\"},{\"id\":\"C\",\"text\":\"No se puede determinar a partir de la tabla.\"},{\"id\":\"D\",\"text\":\"La afirmación está respaldada porque Norte fue la categoría más elegida.\"}],\"answerKey\":\"C\",\"distractors\":{\"A\":{\"misconceptionModelId\":\"association-as-cause\",\"rationale\":\"Confunde que Norte tenga el valor más alto con demostrar que causó las elecciones.\"},\"B\":{\"misconceptionModelId\":\"scale-ignored\",\"rationale\":\"Interpreta indebidamente la diferencia entre los valores como evidencia contra la afirmación causal.\"},\"D\":{\"misconceptionModelId\":\"plurality-as-majority\",\"rationale\":\"Confunde ser la categoría más elegida con demostrar una causa.\"}},\"target\":{\"kind\":\"VERDICT\",\"verdict\":\"CLAIM_VERDICT\",\"value\":\"NOT_DECIDABLE\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"La respuesta es una categoría de veredicto, no un resultado numérico.\"}},\"numeric\":null,\"constructed\":null,\"credit\":null,\"rationale\":\"La tabla muestra cuántas personas eligieron cada categoría, pero no contiene información sobre causas ni describe un experimento. Por eso no permite decidir si Norte causó las elecciones.\",\"usesStimulusValues\":[6,3,1,0],\"proposedSupportingConceptStableIds\":[\"math.stat.data-representation\"]}}"
+    },
+    {
+      "promptHash": "c70529ac820e06142214fe72a7719ba5b4a56c283d30c5d3b7a61cda234bc884",
+      "unitKey": "15.data-relative-change.ib-p2#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsP6i0XImkT79sqpLQaqgs0epQOb",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:17:40.155Z",
+      "usage": {
+        "inputTokens": 2293,
+        "outputTokens": 1185,
+        "reasoningTokens": 512,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":{\"parts\":[],\"structured\":{\"v\":1,\"tables\":[{\"tableKey\":\"annual_output\",\"title\":\"Annual production of four scientific instruments\",\"columns\":[{\"key\":\"instrument\",\"label\":\"Instrument\",\"type\":\"TEXT\",\"unit\":null},{\"key\":\"production\",\"label\":\"Annual production\",\"type\":\"NUMBER\",\"unit\":\"units\"}],\"rows\":[[\"Alpha sensor\",18450],[\"Beta sensor\",23760],[\"Gamma sensor\",31500],[\"Delta sensor\",14280]]}],\"dataSets\":[],\"charts\":[],\"figures\":[]}},\"item\":{\"stem\":\"The table shows the annual production of four scientific instruments. Write down the two production values needed to determine the percentage increase from Alpha sensor to Beta sensor. Then write down the percentage increase, correct to 1 decimal place.\",\"context\":{\"kind\":\"SCIENTIFIC\",\"description\":\"Annual production data for scientific instruments.\"},\"declaredModel\":{\"construct\":\"RELATIVE_CHANGE_OR_SHARE_FROM_TABULATED_VALUES\",\"parameters\":{\"vi\":18450,\"vj\":23760}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Write down the values of vi and vj for the percentage increase from Alpha sensor to Beta sensor.\",\"marks\":1,\"markScheme\":[{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Identifies vi = 18450 and vj = 23760 from the table.\"}],\"finalAnswer\":\"vi = 18450, vj = 23760\",\"numericKey\":null,\"target\":{\"kind\":\"NOT_MACHINE_CHECKABLE\",\"reason\":\"The response contains two identified table values rather than one construct quantity.\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"This response contains two separately identified table values.\"}},{\"label\":\"b\",\"prompt\":\"Write down the percentage increase from vi to vj, correct to 1 decimal place.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Uses the relative-change calculation 100 × (vj − vi) / vi with the identified values.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtains 28.8% correct to 1 decimal place.\"}],\"finalAnswer\":\"28.8%\",\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"28.8\",\"equivalentFormsAllowed\":true,\"decimalPlaces\":1},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"RELATIVE_CHANGE_PERCENT\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"100*(23760-18450)/18450\"}}],\"totalMarks\":3,\"workingOutline\":[\"Read vi = 18450 and vj = 23760 from the table.\",\"Subtract vi from vj to find the increase: 23760 - 18450 = 5310.\",\"Divide the increase by vi and multiply by 100: 100*5310/18450.\",\"Round the result to 1 decimal place to obtain 28.8%.\" ]},\"credit\":null,\"rationale\":\"The item requires interpretation of the tabulated values and computation of a relative percentage change using multi-digit realistic data.\",\"usesStimulusValues\":[18450,23760],\"proposedSupportingConceptStableIds\":[\"math.stat.data-representation\"]}}"
+    },
+    {
+      "promptHash": "c94d021d54ceb2ad4d6c55fd3b089f3a2fb16a9723517fffcd2413130ca3a180",
+      "unitKey": "17.approach.school.stem-plus#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsPJ8NIkmJ2eDy8yiz8og4D09mo3",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:17:53.044Z",
+      "usage": {
+        "inputTokens": 2770,
+        "outputTokens": 1478,
+        "reasoningTokens": 374,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Un ayuntamiento compara dos programas de reciclaje. En el programa 1, una inversión de 240 euros permite recoger 18 toneladas de residuos. En el programa 2, una inversión de 160 euros permite recoger 14.4 toneladas. Compara los programas mediante la cantidad de toneladas recogidas por cada euro e indica cuál conviene más y por cuánto supera al otro. Explica tu razonamiento.\",\"context\":{\"kind\":\"SOCIETAL\",\"description\":\"Comparación de dos programas municipales de reciclaje según toneladas recogidas por euro invertido.\"},\"declaredModel\":{\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":{\"p1\":240,\"q1\":18,\"p2\":160,\"q2\":14.4}},\"selected\":null,\"numeric\":null,\"constructed\":{\"parts\":[{\"label\":\"a\",\"prompt\":\"Calcula la tasa unitaria del programa 1, expresada en toneladas por euro.\",\"marks\":2,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Formula la tasa unitaria como r1 = q1 / p1 y sustituye p1 = 240 y q1 = 18.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtiene correctamente r1 = 0.075 toneladas por euro.\"}],\"finalAnswer\":\"0.075 toneladas por euro\",\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"0.075\",\"equivalentFormsAllowed\":true,\"decimalPlaces\":3},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"UNIT_RATE_1\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"18/240\"}},{\"label\":\"b\",\"prompt\":\"Calcula la tasa unitaria del programa 2 y determina cuánto difieren las dos tasas unitarias.\",\"marks\":3,\"markScheme\":[{\"kind\":\"METHOD\",\"marks\":1,\"criterion\":\"Formula r2 = q2 / p2 y calcula la diferencia absoluta entre las dos tasas.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Obtiene r2 = 0.09 toneladas por euro y una diferencia de 0.015 toneladas por euro.\"},{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Relaciona la diferencia con la comparación de rendimientos por euro, no con la diferencia entre las cantidades totales.\"}],\"finalAnswer\":\"La tasa del programa 2 es 0.09 toneladas por euro y la diferencia entre las tasas es 0.015 toneladas por euro.\",\"numericKey\":{\"kind\":\"NUMERIC\",\"value\":\"0.015\",\"equivalentFormsAllowed\":true,\"decimalPlaces\":3},\"target\":{\"kind\":\"QUANTITY\",\"quantity\":\"UNIT_RATE_DIFFERENCE\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"14.4/160-18/240\"}},{\"label\":\"c\",\"prompt\":\"Interpreta la comparación: indica qué programa ofrece el mayor rendimiento por euro y justifica tu decisión con las tasas calculadas.\",\"marks\":2,\"markScheme\":[{\"kind\":\"REASONING\",\"marks\":1,\"criterion\":\"Compara explícitamente 0.09 con 0.075 y reconoce que 0.09 es mayor.\"},{\"kind\":\"ACCURACY\",\"marks\":1,\"criterion\":\"Concluye correctamente que el programa 2 es la opción favorecida por la comparación de tasas unitarias.\"}],\"finalAnswer\":\"Conviene el programa 2, porque recoge 0.09 toneladas por euro frente a 0.075 toneladas por euro del programa 1; supera al programa 1 en 0.015 toneladas por euro.\",\"numericKey\":null,\"target\":{\"kind\":\"VERDICT\",\"verdict\":\"OPTION_WITH_HIGHER_UNIT_RATE\",\"value\":\"OPTION_2\"},\"answerCheck\":{\"kind\":\"NOT_COMPUTABLE\",\"reason\":\"La respuesta requiere interpretar la comparación de tasas y expresar una decisión contextual.\"}}],\"totalMarks\":7,\"workingOutline\":[\"Identificar en cada programa la cantidad invertida como p y las toneladas recogidas como q.\",\"Formar las tasas unitarias mediante r1 = q1 / p1 y r2 = q2 / p2.\",\"Calcular r1 = 18/240 = 0.075 y r2 = 14.4/160 = 0.09.\",\"Restar las tasas para hallar la diferencia: 0.09 - 0.075 = 0.015.\",\"Interpretar la tasa mayor: el programa 2 recoge más toneladas por cada euro invertido.\"]},\"credit\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Formula ambas tasas unitarias, calcula correctamente la diferencia y justifica que el programa 2 es superior por su mayor rendimiento por euro.\"},{\"code\":\"PARTIAL_CREDIT\",\"description\":\"Muestra un método proporcional pertinente y obtiene parte de las tasas o identifica correctamente el programa superior, pero contiene un error de cálculo o una justificación incompleta.\"},{\"code\":\"NO_CREDIT\",\"description\":\"No forma tasas unitarias pertinentes, compara únicamente cantidades totales o no ofrece un razonamiento relacionado con el rendimiento por euro.\"}],\"rationale\":\"La tarea exige modelar una situación social mediante tasas unitarias, comparar rendimientos con unidades comunes y justificar una decisión a partir de la diferencia calculada.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    },
+    {
+      "promptHash": "4cd51859f6a281b88f4fe2a5ec623ebea54cea428022d012282ac645c947beef",
+      "unitKey": "20.approach.pisa.stem-plus#a2",
+      "try": 1,
+      "status": "WELL_FORMED",
+      "malformedCode": null,
+      "provider": "live:openai:chat-completions",
+      "requestedModel": "gpt-5.6-luna",
+      "servedModel": "gpt-5.6-luna",
+      "responseId": "chatcmpl-EXsPZHOYieVu8RP3sJ06AhRCCy8dM",
+      "finishReason": "stop",
+      "recordedAt": "2026-10-11T18:18:08.781Z",
+      "usage": {
+        "inputTokens": 2757,
+        "outputTokens": 1367,
+        "reasoningTokens": 657,
+        "cachedInputTokens": 0
+      },
+      "rawText": "{\"stimulus\":null,\"item\":{\"stem\":\"Una ciudad compara dos programas de recuperación de alimentos para decidir cuál devuelve más paquetes por cada euro invertido. El programa 1 usa 100 euros y devuelve 24 paquetes. El programa 2 usa 80 euros y devuelve 20 paquetes. ¿Qué opción expresa correctamente la comparación de las tasas unitarias?\",\"context\":{\"kind\":\"SOCIETAL\",\"description\":\"Una ciudad debe elegir entre dos programas de recuperación de alimentos con distintos costes y cantidades de paquetes devueltos.\"},\"declaredModel\":{\"construct\":\"UNIT_RATE_COMPARISON_OF_TWO_OPTIONS\",\"parameters\":{\"p1\":100,\"q1\":24,\"p2\":80,\"q2\":20}},\"selected\":{\"options\":[{\"id\":\"A\",\"text\":\"El programa 1 es mejor porque devuelve 24 paquetes, mientras que el programa 2 devuelve 20 paquetes; la diferencia es de 4 paquetes.\"},{\"id\":\"B\",\"text\":\"El programa 1 es mejor porque su coste por paquete es aproximadamente 4.167 euros, frente a 4 euros del programa 2.\"},{\"id\":\"C\",\"text\":\"El programa 1 es mejor por una diferencia de 20, obtenida al restar los costes de 100 euros y 80 euros.\"},{\"id\":\"D\",\"text\":\"El programa 2 es mejor: devuelve 0.25 paquetes por euro, frente a 0.24 paquetes por euro del programa 1, una diferencia de 0.01 paquetes por euro.\"}],\"answerKey\":\"D\",\"distractors\":{\"A\":{\"misconceptionModelId\":\"one-quantity\",\"rationale\":\"Compara solamente las cantidades devueltas y no las relaciona con los costes de cada programa.\"},\"B\":{\"misconceptionModelId\":\"inverted-rate\",\"rationale\":\"Calcula coste por paquete, la tasa invertida, en vez de paquetes devueltos por euro invertido.\"},\"C\":{\"misconceptionModelId\":\"difference\",\"rationale\":\"Resta los costes y trata esa diferencia sin unidades de tasa como evidencia de qué programa es mejor.\"}},\"target\":{\"kind\":\"COMPARISON\",\"left\":\"20/80\",\"operator\":\">\",\"right\":\"24/100\",\"holds\":true,\"verdict\":\"OPTION_2\"},\"answerCheck\":{\"kind\":\"ARITHMETIC_EXPRESSION\",\"expression\":\"20/80-24/100\"}},\"numeric\":null,\"constructed\":null,\"credit\":[{\"code\":\"FULL_CREDIT\",\"description\":\"Selecciona la opción que formula y compara correctamente las dos tasas unitarias e interpreta cuál programa favorece la comparación y por cuánto.\"},{\"code\":\"PARTIAL_CREDIT\",\"description\":\"No aplicable en este ítem de opción múltiple de una sola unidad puntuada.\"},{\"code\":\"NO_CREDIT\",\"description\":\"Selecciona una opción que compara una sola cantidad, invierte la tasa o usa una diferencia que no representa una tasa unitaria.\"}],\"rationale\":\"La tasa unitaria del programa 1 es r1 = 24/100 = 0.24 paquetes por euro. La del programa 2 es r2 = 20/80 = 0.25 paquetes por euro. Como 0.25 es mayor que 0.24, el programa 2 favorece la comparación por 0.01 paquetes por euro.\",\"usesStimulusValues\":null,\"proposedSupportingConceptStableIds\":[]}}"
+    }
+  ]
+}
