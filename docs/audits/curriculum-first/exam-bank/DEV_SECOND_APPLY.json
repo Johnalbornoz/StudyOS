@@ -1,0 +1,283 @@
+{
+  "target": "DEV",
+  "fingerprint": "2a29b99ee14a22b4",
+  "mode": "APPLY",
+  "committed": true,
+  "planHash": "a9906fa3342f6f6f59acd808d23125bc8923b08e6060ac410f857d5edeadc693",
+  "planned": {
+    "policies": 1,
+    "systems": 2,
+    "reviewerQualifications": 3,
+    "humanDecisions": 11,
+    "humanCertifiedObjects": 7,
+    "automatedCertifiedObjects": 17,
+    "cores": 10,
+    "adapters": 2,
+    "renderers": 10,
+    "envelopes": 10,
+    "blueprints": 2,
+    "blueprintBuckets": 6,
+    "applicability": 11,
+    "batchCells": 33,
+    "certifiedInstances": 326,
+    "blocked": 0
+  },
+  "inserted": {
+    "assessment_certification_policies": 0,
+    "assessment_systems": 0,
+    "assessment_system_versions": 0,
+    "assessment_system_nodes": 0,
+    "assessment_reviewer_qualifications": 0,
+    "assessment_certifications": 0,
+    "assessment_object_certifications": 0,
+    "assessment_construct_cores": 0,
+    "assessment_adapters": 0,
+    "assessment_instance_renderers": 0,
+    "assessment_renderer_envelopes": 0,
+    "assessment_blueprint_classifications": 0,
+    "assessment_blueprint_buckets": 0,
+    "assessment_construct_core_applicability": 0,
+    "assessment_certification_batches": 0,
+    "assessment_certification_batch_cells": 0,
+    "assessment_item_instances": 0,
+    "question_bank_items": 0,
+    "approved_items": 0,
+    "question_bank_lifecycle_events": 0,
+    "assessment_coverage_snapshots": 0
+  },
+  "insertedTotal": 0,
+  "skipped": {
+    "policy": 1,
+    "reviewerQualifications": 3,
+    "humanDecisions": 11,
+    "adapters": 2,
+    "cores": 10,
+    "renderers": 10,
+    "envelopes": 10,
+    "blueprints": 2,
+    "blueprintBuckets": 6,
+    "objectCertifications": 24,
+    "adapterTransitions": 2,
+    "coreTransitions": 10,
+    "rendererTransitions": 10,
+    "applicability": 11,
+    "batch": 1,
+    "batchCells": 33,
+    "certifiedInstances": 326,
+    "coverageSnapshots": 1
+  },
+  "materialized": {
+    "planned": 296,
+    "inserted": 0,
+    "skipped": 296,
+    "byObjective": {}
+  },
+  "blocked": [
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "24b6a571e7259f94dc1597e2d17130855654749cd11d525b55abadd1c2533448",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "ac62d11ef4df1e826cded184fb6cc05ad6eceaac87bf1f7fe3e042fb402e34c4",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "efd7ad50b382b75c0366cf678f78d054b99e2de8048611538176d21ee9ea97e8",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "0f93e3bd1a4a8cdde8f0a52b5601a457a10f88701fa09658e8096cc5fcb23210",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "19af757a10fa0a55e6c918aca8acaa9210ab732f0cf767a57b1a55050bb2151f",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "d00e4f8be5cf295b3922f941d3246368b507491fca31ea684f75950c87e56320",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "4bb71003ae97ab8ce723997b59a8321a7fb53f460cc2490fbfbe322d8df96b76",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "b4c55939e396db5d68b2395ec5b55bbd40bbb3e9aca5884a9fb761eb59f2be82",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "79908f0d633fe58787c407e46a24fa26e29f5542cf63d52269219b581e957528",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "4f3ef5b38813a2b1037db7fd017d2f9235d368af85b089d9f0c5de22d72c05bb",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "28e9b9af506033b7eb631c7ee73c6f209631b4362f51ff3eeae8f984c2fca201",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "d3c8d7eed3db778dff4abdb62899760796294aaae9b3b075351ee4ccc75e8304",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "d30d48406c321cb09b4bd43f893cf80ffa172ad96652aaabec471d278e3cb703",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "3b45234b1ba72c085b546b93ad90fea4a1ea750aa2cba952f16dd3b25a9cb839",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "1352ad417c74c0785b6eb03c885cb9a3995c585bff8920774cdd4a6a660583cf",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "1a80dbf769ccffab5919247648fa6de1148309afa4992ab33600b7ff7a277092",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "d6cbc9c23dcfc862546b20529f9ee8577621658f6fc5f0f0d82a8e6030bbcd8b",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "21b072e36e77f683dad08c14ab302ea928dfedb7d2baa1a30f1522de76518311",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "b4a7bf4025fe57f1e9075253e344cab3f44654ff95589651458145eada5ccba4",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "3ec11d1b7e8588f5d86a9f152355669bc4845660f316828e914f75c2d6022342",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "129c0e1d6330d3beeab52b19d0af486e7ae6431e3e998de2fd9a625740aaefd9",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "428bcf0c5ba62a7ebdebcbed5429352d674df6b3fbe4d2fb5c77c501367162e0",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "55dbc92ed7641fb045f81883dc28c80124190a3dfee70c454fba13a0dee84fc1",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "cfee2a0b41c605f48d9caae590ea901c5c6341c99f161f6ee12c897164aafeee",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "5a3da8e842ed9939035a5b28f5a265d6972690b5c0e3b6abe27469182c2e24ba",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "396a92d3750b3b64956a420ab80a921925e724ad7a3075707526b96e8974c4a4",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "63c30e2c22bfc23adc8ec2d0c6147d0b67ddca38b077efc6e902dba810ee2f59",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "6348ed03bcbebd1d36761dfbb892d1f2f4f4c420a5cfa5c92ae7e60c2797ff4e",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "c600169d810a5556b111dd4ca7d931f2e4d6c34dfbd60a31dc98e211cf2461de",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    },
+    {
+      "kind": "EXAM_BANK_ROW",
+      "identity": "9c6058bd4d2d14053d8a510eff03f2bf38a4b530e4a247bd6486bf93a2269705",
+      "reason": "RESPONSE_IS_MARKED_ON_WORKING",
+      "detail": "IB.MATH_AA_HL.P1 SHORT_RESPONSE: stays a certified instance with no bank row"
+    }
+  ],
+  "conflicts": [],
+  "verification": {
+    "certifiedCores": 10,
+    "humanCertifiedCores": 2,
+    "automatedCertifiedCores": 8,
+    "certifiedAdapters": 2,
+    "certifiedRenderers": 10,
+    "humanDecisions": 11,
+    "humanCertifiedObjects": 7,
+    "automatedCertifiedObjects": 17,
+    "automatedDecisionsAttributedToAPerson": 0,
+    "humanCertifiedWithoutARecordedDecision": 0,
+    "certifiedInstances": 326,
+    "eligibleInstancesInScope": 326,
+    "eligibleInstancesProduction": 0,
+    "instancesNotInheritedDeterministic": 0,
+    "materializedExamItems": 296,
+    "orphanBankRows": 0,
+    "bankRowsNotTheirInstance": 0,
+    "bankRowsAuthoredByAPerson": 0,
+    "effectiveExamCapacity": 296,
+    "duplicateInstanceDigests": 0,
+    "duplicateBankRows": 0,
+    "duplicateHumanDecisions": 0,
+    "duplicateObjectCertifications": 0
+  }
+}
