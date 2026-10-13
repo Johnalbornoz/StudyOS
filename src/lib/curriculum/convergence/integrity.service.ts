@@ -116,12 +116,20 @@ export async function runCurriculumIntegrityGates(client: DbExecutor): Promise<{
     `SELECT cs.name AS subject_name, lower(trim(cc.name)) AS label FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id AND cs.status = 'ACTIVE' WHERE cc.status = 'ACTIVE'
      UNION SELECT cs.name, lower(trim(l.label)) FROM canonical_concept_localizations l JOIN canonical_concepts cc ON cc.id = l.canonical_concept_id AND cc.status = 'ACTIVE' JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id AND cs.status = 'ACTIVE'`
   )).rows as Array<{ subject_name: string; label: string }>;
+  // Resolution policy (catalog-resolution.ts): the SAME-NAMED canonical subject, by canonical name (A) or reviewed alias (B).
+  const sameSubject = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  const names = (await client.query(`SELECT cs.name AS subject_name, lower(trim(cc.name)) AS label FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id`)).rows as Array<{ subject_name: string; label: string }>;
+  const aliases = (await hasTable(client, 'canonical_concept_aliases'))
+    ? ((await client.query(`SELECT cs.name AS subject_name, a.normalized_label AS label FROM canonical_concept_aliases a JOIN canonical_subjects cs ON cs.id = a.canonical_subject_id WHERE a.status = 'ACTIVE'`)).rows as Array<{ subject_name: string; label: string }>)
+    : [];
+  const resolvable = unresolved.filter((u) => u.status === 'UNRESOLVED' && u.labels.some((l) => [...names, ...aliases].some((x) => sameSubject(x.subject_name, u.subject_name) && x.label === l)));
+  // Localized catalogue labels are not a resolution ground; a Student label that equals one is listed for a reviewer.
   const keyOf = (name: string) => catalogSubjectByName(name)?.key ?? `name:${name.trim().toLowerCase()}`;
-  const catalogue = new Set(canonical.map((x) => `${keyOf(x.subject_name)}|${x.label}`));
-  const resolvable = unresolved.filter((u) => u.labels.some((l) => catalogue.has(`${keyOf(u.subject_name)}|${l}`)));
-  add('UNRESOLVED_STUDENT_CONCEPTS', 'BROKEN', resolvable.filter((u) => u.status === 'UNRESOLVED').length, 'a canonical concept with the same label exists in the same subject and the Student concept is still UNRESOLVED', resolvable.map((u) => u.learner_concept_id));
-  add('UNRESOLVED_STUDENT_CONCEPTS', 'REVIEW', unresolved.filter((u) => u.status !== 'UNRESOLVED').length, 'AMBIGUOUS / PROPOSED correspondences waiting for a reviewer');
-  add('UNRESOLVED_STUDENT_CONCEPTS', 'VALID_NOT_APPLICABLE', unresolved.filter((u) => u.status === 'UNRESOLVED').length - resolvable.filter((u) => u.status === 'UNRESOLVED').length, 'personal concepts: the catalogue holds no canonical concept with that label in that subject (nothing to resolve to; none is fabricated)');
+  const localized = new Set(canonical.map((x) => `${keyOf(x.subject_name)}|${x.label}`));
+  const reviewable = unresolved.filter((u) => u.status === 'UNRESOLVED' && !resolvable.includes(u) && u.labels.some((l) => localized.has(`${keyOf(u.subject_name)}|${l}`)));
+  add('UNRESOLVED_STUDENT_CONCEPTS', 'BROKEN', resolvable.length, 'BROKEN_RESOLUTION: the catalogue resolves this label (canonical name or reviewed alias of the same subject) and the Student concept is still UNRESOLVED', resolvable.map((u) => u.learner_concept_id));
+  add('UNRESOLVED_STUDENT_CONCEPTS', 'REVIEW', unresolved.filter((u) => u.status !== 'UNRESOLVED').length + reviewable.length, 'AMBIGUOUS / PROPOSED correspondences, and labels equal to a localized catalogue label, waiting for a reviewer');
+  add('UNRESOLVED_STUDENT_CONCEPTS', 'VALID_NOT_APPLICABLE', unresolved.filter((u) => u.status === 'UNRESOLVED').length - resolvable.length - reviewable.length, 'PERSONAL_UNMAPPED: no canonical name and no reviewed alias carries this label in this subject (nothing to resolve to; none is fabricated)');
 
   return { findings, broken: findings.filter((f) => f.kind === 'BROKEN').reduce((a, f) => a + f.count, 0) };
 }

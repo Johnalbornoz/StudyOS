@@ -9,6 +9,7 @@
  *   1. getMappingForConcept (existence check)
  *   2. concept -> subject name lookup
  *   3. concept -> label lookup
+ *   3b. reviewed alias lookup (ground B; before the transaction)
  *   4. client.query('BEGIN')
  *   5. client.query(gen_random_uuid())
  *   6. candidate search
@@ -47,6 +48,7 @@ describe('ensureCatalogMapping -- zero/one/many candidate handling', () => {
       .mockResolvedValueOnce({ rows: [] }) // 1. getMappingForConcept: none yet
       .mockResolvedValueOnce({ rows: [{ subject_name: 'Mathematics' }] }) // 2. concept -> subject
       .mockResolvedValueOnce({ rows: [{ label: 'Some Unmatched Concept' }] }) // 3. label lookup
+      .mockResolvedValueOnce({ rows: [] }) // 3b. reviewed alias lookup (ground B): none
       .mockResolvedValueOnce({ rows: [] }) // 4. BEGIN
       .mockResolvedValueOnce({ rows: [{ id: 'new-mapping-id' }] }) // 5. gen_random_uuid()
       .mockResolvedValueOnce({ rows: [] }) // 6. candidate search -- zero results
@@ -59,7 +61,7 @@ describe('ensureCatalogMapping -- zero/one/many candidate handling', () => {
     const result = await ensureCatalogMapping('c2');
     expect(result.status).toBe('UNRESOLVED');
     expect(result.canonicalConceptId).toBeNull();
-    expect(queryMock).toHaveBeenCalledTimes(9);
+    expect(queryMock).toHaveBeenCalledTimes(10);
   });
 
   it('exactly one candidate -> MATCHED, records the candidate for audit', async () => {
@@ -67,6 +69,7 @@ describe('ensureCatalogMapping -- zero/one/many candidate handling', () => {
       .mockResolvedValueOnce({ rows: [] }) // 1. no existing mapping
       .mockResolvedValueOnce({ rows: [{ subject_name: 'Mathematics' }] }) // 2.
       .mockResolvedValueOnce({ rows: [{ label: 'Linear Functions' }] }) // 3.
+      .mockResolvedValueOnce({ rows: [] }) // 3b. reviewed alias lookup (ground B): none
       .mockResolvedValueOnce({ rows: [] }) // 4. BEGIN
       .mockResolvedValueOnce({ rows: [{ id: 'new-mapping-id' }] }) // 5. gen_random_uuid
       .mockResolvedValueOnce({ rows: [{ id: 'canonical-linear-functions' }] }) // 6. exactly 1 candidate
@@ -90,6 +93,7 @@ describe('ensureCatalogMapping -- zero/one/many candidate handling', () => {
       .mockResolvedValueOnce({ rows: [] }) // 1.
       .mockResolvedValueOnce({ rows: [{ subject_name: 'Mathematics' }] }) // 2.
       .mockResolvedValueOnce({ rows: [{ label: 'Derivative Rules' }] }) // 3.
+      .mockResolvedValueOnce({ rows: [] }) // 3b. reviewed alias lookup (ground B): none
       .mockResolvedValueOnce({ rows: [] }) // 4. BEGIN
       .mockResolvedValueOnce({ rows: [{ id: 'new-mapping-id' }] }) // 5. gen_random_uuid
       .mockResolvedValueOnce({ rows: [{ id: 'candidate-sl' }, { id: 'candidate-hl' }] }) // 6. 2 candidates -- same name, different scope
@@ -113,6 +117,7 @@ describe('ensureCatalogMapping -- zero/one/many candidate handling', () => {
       .mockResolvedValueOnce({ rows: [] }) // 1.
       .mockResolvedValueOnce({ rows: [{ subject_name: 'Mathematics' }] }) // 2.
       .mockResolvedValueOnce({ rows: [{ label: 'Whatever' }] }) // 3.
+      .mockResolvedValueOnce({ rows: [] }) // 3b. reviewed alias lookup (ground B): none
       .mockResolvedValueOnce({ rows: [] }) // 4. BEGIN
       .mockResolvedValueOnce({ rows: [{ id: 'new-mapping-id' }] }) // 5. gen_random_uuid
       .mockResolvedValueOnce({ rows: [] }) // 6. zero candidates
@@ -121,6 +126,26 @@ describe('ensureCatalogMapping -- zero/one/many candidate handling', () => {
     await expect(ensureCatalogMapping('c5')).rejects.toThrow('db exploded');
     const rollbackCall = queryMock.mock.calls.find((c) => c[0] === 'ROLLBACK');
     expect(rollbackCall).toBeTruthy();
+  });
+  it('zero canonical names and ONE reviewed alias of the subject -> MATCHED by REVIEWED_ALIAS, the alias recorded', async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [] }) // 1. no existing mapping
+      .mockResolvedValueOnce({ rows: [{ subject_name: 'Matemáticas' }] }) // 2.
+      .mockResolvedValueOnce({ rows: [{ label: 'Exponenciación' }] }) // 3.
+      .mockResolvedValueOnce({ rows: [{ alias_id: 'alias-exp', canonical_concept_id: 'cc-powers' }] }) // 3b. the reviewed alias
+      .mockResolvedValueOnce({ rows: [] }) // 4. BEGIN
+      .mockResolvedValueOnce({ rows: [{ id: 'new-mapping-id' }] }) // 5. gen_random_uuid
+      .mockResolvedValueOnce({ rows: [] }) // 6. candidate search by canonical name -- zero results
+      .mockResolvedValueOnce({ rows: [] }) // 7. INSERT mapping MATCHED / REVIEWED_ALIAS
+      .mockResolvedValueOnce({ rows: [] }) // 8. INSERT candidate audit row
+      .mockResolvedValueOnce({ rows: [] }) // 9. COMMIT
+      .mockResolvedValueOnce({ rows: [{ id: 'new-mapping-id', learner_concept_id: 'c9', canonical_concept_id: 'cc-powers', status: 'MATCHED', mapping_method: 'REVIEWED_ALIAS', reviewed_by: null, reviewed_at: null }] });
+    const result = await ensureCatalogMapping('c9');
+    expect(result).toMatchObject({ status: 'MATCHED', canonicalConceptId: 'cc-powers', mappingMethod: 'REVIEWED_ALIAS' });
+    const insert = queryMock.mock.calls.find((c) => /INSERT INTO concept_catalog_mapping \(id, learner_concept_id, canonical_concept_id, status, mapping_method, resolved_alias_id\)/.test(String(c[0])))!;
+    expect(insert[1]).toEqual(['new-mapping-id', 'c9', 'cc-powers', 'alias-exp']);
+    // the alias lookup names the Student's own subject and the exact label: no other subject, no similar label
+    expect(queryMock.mock.calls[3][1]).toEqual(['Matemáticas', 'Exponenciación']);
   });
 });
 

@@ -9,6 +9,10 @@
  *     5  the lineage is verified (a false one is refused) and immutable
  *     6  the concept is grouped under its curriculum, not in the unassigned bucket ("Sin clasificar")
  *     7  a concept typed by the Student stays unassigned (nothing is inferred)
+ *   reviewed alias (B7):
+ *     A1 "Exponenciación" in Matemáticas -> math.num.powers-scientific-notation through the reviewed alias
+ *     A2 an unrelated label does not resolve; the same label in another subject does not resolve
+ *     A3 an UNRESOLVED concept is re-resolved once the alias exists, and gets its lineage where the Student's curriculum maps it
  *
  * Write mode: ephemeral (127.0.0.1) or DEV only. Fixtures (`ccc-<run>`) are removed at the end and the row
  * counts are compared with the start.
@@ -49,6 +53,8 @@ async function main() {
   const { enrollCanonicalConcept } = await import('@/lib/learning-plan/personal-plan.service');
   const { runCurriculumIntegrityGates } = await import('@/lib/curriculum/convergence/integrity.service');
   const { catalogSubject } = await import('@/lib/experience/subject-catalog');
+  const { ensureCatalogMapping, reresolveUnresolvedCatalogMapping } = await import('@/lib/catalog/mapping.service');
+  const { paaCertifiedConceptByStableId } = await import('@/lib/curriculum/paa/paa-certified-concepts');
 
   const one = async (sql: string, p: unknown[] = []) => (await db.query(sql, p)).rows[0];
   const rejects = async (fn: () => Promise<unknown>, code: string) => fn().then(() => false, (e: any) => String(e?.message ?? e).includes(code));
@@ -107,7 +113,7 @@ async function main() {
       `SELECT (SELECT count(*) FROM students)::int AS students, (SELECT count(*) FROM profiles)::int AS profiles, (SELECT count(*) FROM student_profiles)::int AS student_profiles, (SELECT count(*) FROM subjects)::int AS subjects, (SELECT count(*) FROM concepts)::int AS concepts,
               (SELECT count(*) FROM academic_subjects)::int AS academic_subjects, (SELECT count(*) FROM structure_versions)::int AS versions, (SELECT count(*) FROM structure_nodes)::int AS nodes,
               (SELECT count(*) FROM learner_concept_curriculum_provenance)::int AS provenance, (SELECT count(*) FROM student_plan_entries)::int AS plan_entries,
-              (SELECT count(*) FROM concept_catalog_mapping)::int AS learner_mappings, (SELECT count(*) FROM student_academic_subjects)::int AS student_subjects, (SELECT count(*) FROM mastery_records)::int AS mastery`
+              (SELECT count(*) FROM concept_catalog_mapping)::int AS learner_mappings, (SELECT count(*) FROM concept_catalog_mapping_candidates)::int AS mapping_candidates, (SELECT count(*) FROM student_academic_subjects)::int AS student_subjects, (SELECT count(*) FROM mastery_records)::int AS mastery`
     );
     const start = await counts();
     const students: string[] = [];
@@ -196,6 +202,55 @@ async function main() {
         check(`${tag} 6 the added concept is under its curriculum, not unassigned`, placed.includes(enrolled.learnerConceptId) && !grouped.unassigned.some((x) => x.id === enrolled.learnerConceptId) && grouped.curriculumTopics[0]?.id === `curriculum:${B.version_id}`, `${grouped.curriculumTopics.map((t) => `${t.name} > ${t.subtopics.map((s) => s.name).join(' | ')}`).join(' ; ')}`.slice(0, 200));
         check(`${tag} 7 a concept typed by the Student stays unassigned`, grouped.unassigned.length === 1 && grouped.unassigned[0].id === typed);
       }
+
+      // ---------------------------------------------------------------- reviewed alias (B7)
+      {
+        const target = paaCertifiedConceptByStableId('math.num.powers-scientific-notation')!;
+        const cc = await one(`SELECT cc.id FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id WHERE cs.name = $1 AND cc.name = $2 AND cc.status = 'ACTIVE'`, [target.canonicalSubject, target.canonicalName]);
+        const alias = await one(`SELECT a.id FROM canonical_concept_aliases a WHERE a.status = 'ACTIVE' AND a.normalized_label = 'exponenciación' AND a.canonical_concept_id = $1`, [cc?.id ?? null]);
+        check('ALIAS 0 the certified concept and its reviewed alias exist', !!cc && !!alias, `${target.stableId} = ${target.canonicalSubject} / ${target.canonicalName}`);
+        if (cc && alias) {
+          const mk = async (tag: string) => {
+            const S = (await one(`INSERT INTO students (clerk_id, email, name, language) VALUES ($1, $2, 'ccc cert', 'es') RETURNING id`, [`ccc-${RUN}-${tag}`, `ccc-${RUN}-${tag}@convergence.test`])).id as string;
+            students.push(S);
+            await db.query(`INSERT INTO profiles (id, user_type, full_name) VALUES ($1, 'student', 'ccc cert')`, [S]);
+            await db.query(`INSERT INTO student_profiles (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`, [S]);
+            return S;
+          };
+          const typed = async (S: string, subjectName: string, label: string) => {
+            const subject = ((await one(`SELECT id FROM subjects WHERE student_id = $1 AND name = $2`, [S, subjectName])) ?? (await one(`INSERT INTO subjects (student_id, name, status) VALUES ($1, $2, 'active') RETURNING id`, [S, subjectName]))).id as string;
+            const concept = (await one(`INSERT INTO concepts (subject_id, canonical_id) VALUES ($1, $2) RETURNING id`, [subject, `CCC_${randomBytes(4).toString('hex').toUpperCase()}`])).id as string;
+            await db.query(`INSERT INTO concept_localizations (concept_id, language, label) VALUES ($1, 'es', $2)`, [concept, label]);
+            return concept;
+          };
+          const S1 = await mk('alias1');
+          const m1 = await ensureCatalogMapping(await typed(S1, 'Matemáticas', 'Exponenciación'));
+          check('ALIAS A1 "Exponenciación" (Matemáticas) -> math.num.powers-scientific-notation by REVIEWED_ALIAS', m1.status === 'MATCHED' && m1.canonicalConceptId === cc.id && m1.mappingMethod === 'REVIEWED_ALIAS', `${m1.status} ${m1.mappingMethod}`);
+          const m1row = await one(`SELECT resolved_alias_id FROM concept_catalog_mapping WHERE id = $1`, [m1.id]);
+          check('ALIAS A1b the mapping records which alias resolved it', m1row?.resolved_alias_id === alias.id);
+          const m2 = await ensureCatalogMapping(await typed(S1, 'Matemáticas', `ccc etiqueta sin relación ${RUN}`));
+          check('ALIAS A2a an unrelated label does not resolve', m2.status === 'UNRESOLVED' && m2.canonicalConceptId === null);
+          const m3 = await ensureCatalogMapping(await typed(S1, 'Física', 'Exponenciación'));
+          check('ALIAS A2b the same label in another subject does not resolve (no cross-subject)', m3.status === 'UNRESOLVED' && m3.canonicalConceptId === null);
+          const m4 = await ensureCatalogMapping(await typed(S1, 'Matemáticas', 'Exponenciacion y potencias'));
+          check('ALIAS A2c a similar label does not resolve (no similarity)', m4.status === 'UNRESOLVED');
+          // An existing UNRESOLVED row (the alias did not exist when the concept was created) is re-resolved.
+          const S2 = await mk('alias2');
+          const paaMath = await one(`SELECT a.id FROM academic_subjects a JOIN structure_versions sv ON sv.academic_subject_id = a.id AND sv.status = 'PUBLISHED' AND sv.source_locator = 'exam-vertical-config:v2.paa' WHERE a.name = 'Matemáticas'`);
+          if (paaMath) await db.query(`INSERT INTO student_academic_subjects (student_id, academic_subject_id) VALUES ($1, $2)`, [S2, paaMath.id]);
+          const c5 = await typed(S2, 'Matemáticas', 'Exponenciación');
+          await db.query(`INSERT INTO concept_catalog_mapping (learner_concept_id, canonical_concept_id, status, mapping_method) VALUES ($1, NULL, 'UNRESOLVED', NULL)`, [c5]);
+          const r5 = await reresolveUnresolvedCatalogMapping(c5);
+          check('ALIAS A3a an UNRESOLVED concept is re-resolved through the alias', r5.changed && r5.after === 'MATCHED' && r5.resolution?.method === 'REVIEWED_ALIAS' && r5.resolution.canonicalConceptId === cc.id);
+          const again = await reresolveUnresolvedCatalogMapping(c5);
+          check('ALIAS A3b a resolved row is never touched again', !again.changed && again.before === 'MATCHED');
+          const lineage = await deriveCurriculumProvenance(S2, cc.id);
+          if (paaMath) {
+            const recorded = lineage ? await (await import('@/lib/learning-plan/curriculum-provenance.service')).recordCurriculumProvenance(db, c5, cc.id, lineage, null) : false;
+            check('ALIAS A3c the resolved concept gets its lineage from the Student\'s own PAA curriculum', !!lineage && lineage.academicSubjectId === paaMath.id && recorded, lineage ? 'academic subject + structure version + node + objective' : 'no lineage');
+          } else check('ALIAS A3c lineage (skipped: PAA Matemáticas has no PUBLISHED version in this database)', lineage === null);
+        }
+      }
       const gates = await runCurriculumIntegrityGates(db);
       const provenanceBroken = gates.findings.filter((f) => f.gate === 'LEARN_PROVENANCE' && f.kind === 'BROKEN').reduce((a, f) => a + f.count, 0);
       check('GATES Learn provenance has no broken lineage', provenanceBroken === 0, `${gates.findings.find((f) => f.gate === 'LEARN_PROVENANCE' && f.kind === 'INFO')?.count ?? 0} recorded`);
@@ -207,6 +262,7 @@ async function main() {
         await db.query(`DELETE FROM student_concept_sources WHERE student_id = $1`, [S]);
         await db.query(`DELETE FROM student_plan_entries WHERE student_id = $1`, [S]);
         await db.query(`DELETE FROM learner_concept_curriculum_provenance WHERE learner_concept_id = ANY($1::uuid[])`, [concepts]);
+        await db.query(`DELETE FROM concept_catalog_mapping_candidates WHERE mapping_id IN (SELECT id FROM concept_catalog_mapping WHERE learner_concept_id = ANY($1::uuid[]))`, [concepts]);
         await db.query(`DELETE FROM concept_catalog_mapping WHERE learner_concept_id = ANY($1::uuid[])`, [concepts]);
         await db.query(`DELETE FROM mastery_records WHERE student_id = $1`, [S]);
         await db.query(`DELETE FROM concept_localizations WHERE concept_id = ANY($1::uuid[])`, [concepts]);

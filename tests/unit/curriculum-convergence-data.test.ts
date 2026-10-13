@@ -109,7 +109,7 @@ describe('the operator tools are guarded', () => {
     expect(runner).toMatch(/if \(!ephemeral && !\(\(fp === DEV \|\| fp === PREVIEW\) && process\.env\.CURRICULUM_CONVERGENCE_FP === fp\)\)/);
     expect(runner).toMatch(/applyPaaCurriculumHierarchy\(exec, \{ reparentObjectives: false \}\)/);
     expect(runner).toMatch(/if \(write && !auditOnly && problems\.length === 0\) \{\s+await client\.query\('COMMIT'\)/);
-    expect(runner).toMatch(/'objective_placement', 'mappings', 'assessment_nodes', 'canonical_concepts', 'learner_concepts', 'learner_subjects', 'learner_mappings', 'student_subjects'/);
+    expect(runner).toMatch(/'objective_placement', 'mappings_outside_paa', 'assessment_nodes', 'canonical_concepts_outside_certified', 'learner_concepts', 'learner_subjects', 'learner_mappings', 'student_subjects'/);
     expect(runner).not.toMatch(/6671e7382d808d06/); // Production fingerprint is nowhere allowed
   });
   it('scenarios: Preview is read-only, and no AI provider key survives into the services', () => {
@@ -120,5 +120,106 @@ describe('the operator tools are guarded', () => {
   });
   it('the integrity gates only read', () => {
     expect(code('src/lib/curriculum/convergence/integrity.service.ts')).not.toMatch(/\b(UPDATE|DELETE FROM|INSERT INTO) /);
+  });
+});
+
+import { decideCatalogResolution } from '@/lib/catalog/catalog-resolution';
+import { REVIEWED_CONCEPT_ALIASES } from '@/lib/catalog/reviewed-concept-aliases';
+import { classifyConceptIdentity, isUsableForAssessmentPlanning } from '@/lib/catalog/concept-identity';
+import { PAA_CERTIFIED_CONCEPTS, RETIRED_PAA_OBJECTIVE_LINKS, paaCertifiedConceptByStableId } from '@/lib/curriculum/paa/paa-certified-concepts';
+import { PAA_CONCEPT_DEMAND } from '@/lib/exam-core/question-bank/production/paa-backlog-data';
+import { DEV_CANONICAL_CONCEPTS } from '@/lib/exam-core/catalog/dev-learning-catalog';
+import { allLearningLinks } from '@/lib/exam-core/catalog/objective-learning-links';
+import { CANONICAL_CONCEPT_LABELS } from '@/lib/learning-plan/canonical-concept-labels';
+
+describe('the certified PAA concept catalogue is the governed one (61 concepts, stable ids)', () => {
+  it('is the "Stable identifiers" table of the F-DATA record, row by row', () => {
+    const doc = read('docs/exams/question-bank/PAA_F_DATA_FOUNDATION.md');
+    const rows = [...doc.slice(doc.indexOf('## Stable identifiers')).matchAll(/^\| `([^`]+)` \| ([^|]+) \| ([^|]+?) \/ (.+?) \| [^|]+ \|$/gm)].map((m) => ({ stableId: m[1], officialDomain: m[2].trim(), canonicalSubject: m[3].trim(), canonicalName: m[4].trim().replace(/^'|'$/g, '') }));
+    expect(rows).toHaveLength(61);
+    expect(PAA_CERTIFIED_CONCEPTS).toEqual(rows);
+  });
+  it('one row per stable id and per canonical concept; the ids are exactly the certified demand', () => {
+    expect(new Set(PAA_CERTIFIED_CONCEPTS.map((c) => c.stableId)).size).toBe(61);
+    expect(new Set(PAA_CERTIFIED_CONCEPTS.map((c) => `${c.canonicalSubject}/${c.canonicalName}`)).size).toBe(61);
+    expect([...new Set(PAA_CONCEPT_DEMAND.map((d) => d.conceptStableId))].sort()).toEqual(PAA_CERTIFIED_CONCEPTS.map((c) => c.stableId).sort());
+  });
+  it('every certified concept is in the reviewed catalogue file with governed es / en labels (nothing is generated)', () => {
+    const catalogue = new Set(DEV_CANONICAL_CONCEPTS.map((c) => `${c.subject}/${c.name}`));
+    for (const c of PAA_CERTIFIED_CONCEPTS) {
+      expect(catalogue.has(`${c.canonicalSubject}/${c.canonicalName}`), c.stableId).toBe(true);
+      expect(CANONICAL_CONCEPT_LABELS[c.canonicalName], c.stableId).toHaveLength(2);
+    }
+  });
+  it('the reviewed PAA links point at certified concepts; the one exception is the historical cohesion objective', () => {
+    const certified = new Set(PAA_CERTIFIED_CONCEPTS.map((c) => `${c.canonicalSubject}/${c.canonicalName}`));
+    const outside = Object.entries(allLearningLinks()).filter(([code]) => code.startsWith('paa.')).flatMap(([code, l]) => (l.concepts ?? []).filter((c) => !certified.has(`${c.subject}/${c.name}`)).map((c) => `${code} -> ${c.subject}/${c.name}`));
+    expect(outside).toEqual(['paa.red.cohesion -> Redacción/Cohesión y conectores']);
+  });
+  it('the retired links are the closed list of the F-DATA step', () => {
+    const script = read('scripts/operations/q1-f-data-paa-retire-mappings.ts');
+    expect(RETIRED_PAA_OBJECTIVE_LINKS).toHaveLength(5);
+    for (const l of RETIRED_PAA_OBJECTIVE_LINKS) expect(script).toContain(`{ code: '${l.code}', subject: '${l.subject}', concept: '${l.concept}', replacedBy: '${l.replacedBy}'`);
+  });
+  it('the loader is PAA-only, creates no canonical subject and deletes nothing', () => {
+    const service = code('src/lib/curriculum/paa/paa-certified-catalog.service.ts');
+    expect(service).toMatch(/if \(!code\.startsWith\('paa\.'\)\) continue;/);
+    expect(service).not.toMatch(/DELETE FROM|INSERT INTO canonical_subjects|ensureCanonicalSubject/);
+    expect(service).toMatch(/b\.purpose IS NULL/);
+  });
+});
+
+describe('a Student label resolves by canonical name or reviewed alias, and by nothing else', () => {
+  const alias = { aliasId: 'alias-exp', canonicalConceptId: 'cc-powers' };
+
+  it('"Exponenciación" -> math.num.powers-scientific-notation is a reviewed, recorded decision', () => {
+    const a = REVIEWED_CONCEPT_ALIASES.find((x) => x.label === 'Exponenciación')!;
+    expect(a).toMatchObject({ language: 'es', stableConceptId: 'math.num.powers-scientific-notation', canonicalSubject: 'Matemáticas', version: 1 });
+    const target = paaCertifiedConceptByStableId(a.stableConceptId!)!;
+    expect([target.canonicalSubject, target.canonicalName]).toEqual([a.canonicalSubject, a.canonicalName]);
+    expect(a.rationale.length).toBeGreaterThan(20);
+    expect(a.reviewReference).toMatch(/2026-10-12/);
+    // every alias names a certified target by subject + name, and no label is listed twice for a subject
+    expect(new Set(REVIEWED_CONCEPT_ALIASES.map((x) => `${x.canonicalSubject}|${x.label.trim().toLowerCase()}`)).size).toBe(REVIEWED_CONCEPT_ALIASES.length);
+  });
+  it('the alias resolves the label; an unrelated label does not', () => {
+    expect(decideCatalogResolution([], [alias])).toEqual({ status: 'MATCHED', canonicalConceptId: 'cc-powers', method: 'REVIEWED_ALIAS', aliasId: 'alias-exp', candidates: ['cc-powers'] });
+    expect(decideCatalogResolution([], [])).toEqual({ status: 'UNRESOLVED', canonicalConceptId: null, method: null, aliasId: null, candidates: [] });
+  });
+  it('the canonical name decides first; several candidates are ambiguous, never picked', () => {
+    expect(decideCatalogResolution(['cc-exact'], [alias])).toMatchObject({ status: 'MATCHED', canonicalConceptId: 'cc-exact', method: 'EXACT_LABEL_MATCH', aliasId: null });
+    expect(decideCatalogResolution(['cc-1', 'cc-2'], []).status).toBe('AMBIGUOUS');
+    expect(decideCatalogResolution([], [alias, { aliasId: 'other', canonicalConceptId: 'cc-other' }]).status).toBe('AMBIGUOUS');
+  });
+  it('the lookups stay inside the same-named canonical subject and use equality only', () => {
+    const service = code('src/lib/catalog/mapping.service.ts');
+    const sql = service.slice(service.indexOf('const ALIAS_SQL'), service.indexOf('async function reviewedAliasesFor'));
+    expect(sql).toMatch(/a\.status = 'ACTIVE' AND lower\(trim\(cs\.name\)\) = lower\(trim\(\$1\)\) AND a\.normalized_label = lower\(btrim\(\$2\)\)/);
+    for (const f of ['src/lib/catalog/mapping.service.ts', 'src/lib/catalog/catalog-resolution.ts', 'src/lib/catalog/concept-alias.service.ts']) {
+      expect(code(f), f).not.toMatch(/ILIKE|\bLIKE\b|similarity|levenshtein|embedding|<->|char_length|ORDER BY\s+count/i);
+    }
+    // re-resolution only ever changes an UNRESOLVED row
+    expect(service).toMatch(/WHERE id = \$1 AND status = 'UNRESOLVED'/);
+    expect(service).toMatch(/if \(!row \|\| row\.status !== 'UNRESOLVED'\) return/);
+  });
+  it('a concept resolved by a reviewed alias is a canonical identity (reviewed), usable like a reviewer-confirmed one', () => {
+    const identity = classifyConceptIdentity({ learnerConceptId: 'k', conceptKey: 'EXPONENCIACION_QQAIHJ', mappingStatus: 'MATCHED', canonicalConceptId: 'cc-powers', mappingMethod: 'REVIEWED_ALIAS', reviewed: false });
+    expect(identity).toMatchObject({ status: 'CANONICAL', basis: 'REVIEWED' });
+    expect(isUsableForAssessmentPlanning(identity)).toBe(true);
+  });
+  it('the alias table is reviewed, provenanced, versioned and immutable; one ACTIVE alias per subject + label', () => {
+    const migration = read('database/migrations/20261122_1100_canonical_concept_reviewed_aliases.sql');
+    for (const col of ['rationale text NOT NULL', 'review_reference text NOT NULL', 'reviewed_at timestamptz NOT NULL', 'version integer NOT NULL', 'stable_concept_id text', "status text NOT NULL DEFAULT 'ACTIVE'"]) expect(migration).toContain(col);
+    expect(migration).toMatch(/CREATE UNIQUE INDEX canonical_concept_aliases_one_active_label ON public\.canonical_concept_aliases \(canonical_subject_id, normalized_label\) WHERE status = 'ACTIVE'/);
+    for (const guard of ['CANONICAL_CONCEPT_ALIAS_IMMUTABLE', 'CANONICAL_CONCEPT_ALIAS_SUBJECT_MISMATCH', 'CANONICAL_CONCEPT_ALIAS_SHADOWS_CANONICAL_NAME']) expect(migration).toContain(guard);
+    expect(migration).toMatch(/'PLAN_ENROLLMENT', 'REVIEWED_ALIAS'\)/);
+    expect(migration).toMatch(/CHECK \(\(mapping_method = 'REVIEWED_ALIAS'\) = \(resolved_alias_id IS NOT NULL\)\)/);
+  });
+  it('the re-resolution operator step is guarded, dry by default and verifies that nothing else of a Student changes', () => {
+    const script = read('scripts/operations/curriculum-reresolve-student-concepts.ts');
+    expect(script).toMatch(/process\.env\.CURRICULUM_CONVERGENCE_FP === fp/);
+    expect(script).toMatch(/if \(write && problems\.length === 0\) \{\s+await client\.query\('COMMIT'\)/);
+    expect(script).toMatch(/UNEXPECTED_CHANGE outside the resolved mappings/);
+    expect(script.indexOf('delete process.env[k]')).toBeLessThan(script.indexOf("await import('@/lib/db')"));
   });
 });

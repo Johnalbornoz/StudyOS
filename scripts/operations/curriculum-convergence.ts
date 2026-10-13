@@ -1,7 +1,8 @@
 /**
  * Curriculum convergence -- governed, idempotent catalogue remediation + integrity gates (operator step).
  *
- *   1. PAA: the certified Section / Domain / Topic hierarchy (applyPaaCurriculumHierarchy; no objective is moved)
+ *   1. PAA: the certified Section / Domain / Topic hierarchy (applyPaaCurriculumHierarchy; no objective is moved),
+ *      the certified concept catalogue (61 concepts, labels, reviewed objective links) and the reviewed concept aliases
  *   2. Cambridge AS & A Level: the syllabus Topic layer where the governed source is at topic granularity
  *   3. academic subjects: the canonical subject where it is a stated fact (mapping evidence / identical name)
  *   4. integrity gates (read-only) + the classification of everything that stays unmapped
@@ -23,6 +24,9 @@ import { applyAiceTopicHierarchy, readAiceTopicHierarchy } from '@/lib/curriculu
 import { aiceSyllabiWithoutTopicLayer } from '@/lib/curriculum/aice/aice-topic-hierarchy';
 import { applyDeterministicCanonicalSubjects, auditStructureVersions, auditUnmappedAcademicSubjects } from '@/lib/curriculum/convergence/coverage.service';
 import { runCurriculumIntegrityGates } from '@/lib/curriculum/convergence/integrity.service';
+import { applyPaaCertifiedCatalog, readPaaCertifiedCatalog, type PaaCertifiedCatalogLedger } from '@/lib/curriculum/paa/paa-certified-catalog.service';
+import { PAA_CERTIFIED_CONCEPTS } from '@/lib/curriculum/paa/paa-certified-concepts';
+import { applyReviewedConceptAliases, type AliasLedger } from '@/lib/catalog/concept-alias.service';
 
 const DEV = '2a29b99ee14a22b4';
 const PREVIEW = '53d158d5811e7ee0';
@@ -55,13 +59,17 @@ async function main() {
     const fixed = async () => (await client.query(
       `SELECT (SELECT count(*) FROM learning_objectives)::int AS objectives,
               md5(COALESCE((SELECT string_agg(id::text || structure_node_id::text || status, ',' ORDER BY id) FROM learning_objectives), '')) AS objective_placement,
-              md5(COALESCE((SELECT string_agg(id::text || status || learning_objective_id::text || canonical_concept_id::text, ',' ORDER BY id) FROM objective_concept_mappings), '')) AS mappings,
+              md5(COALESCE((SELECT string_agg(m.id::text || m.status || m.learning_objective_id::text || m.canonical_concept_id::text, ',' ORDER BY m.id) FROM objective_concept_mappings m JOIN learning_objectives lo ON lo.id = m.learning_objective_id WHERE lo.code IS NULL OR lo.code NOT LIKE 'paa.%'), '')) AS mappings_outside_paa,
+              (SELECT count(*) FROM objective_concept_mappings WHERE status = 'PUBLISHED')::int AS published_mappings,
               md5(COALESCE((SELECT string_agg(id::text || structure_version_id::text || COALESCE(parent_id::text, '') || node_type || source_label || status, ',' ORDER BY id) FROM structure_nodes WHERE node_type IN ('EXAM_SECTION', 'PAPER', 'COMPONENT')), '')) AS assessment_nodes,
-              md5(COALESCE((SELECT string_agg(id::text || canonical_subject_id::text || name || status, ',' ORDER BY id) FROM canonical_concepts), '')) AS canonical_concepts,
+              md5(COALESCE((SELECT string_agg(cc.id::text || cc.canonical_subject_id::text || cc.name || cc.status, ',' ORDER BY cc.id) FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id
+                             WHERE NOT (lower(cs.name) || '/' || lower(cc.name) = ANY($1::text[]))), '')) AS canonical_concepts_outside_certified,
+              (SELECT count(*) FROM canonical_concepts)::int AS canonical_concepts,
               (SELECT count(*) FROM concepts)::int AS learner_concepts, (SELECT count(*) FROM subjects)::int AS learner_subjects,
               md5(COALESCE((SELECT string_agg(id::text || learner_concept_id::text || status || COALESCE(canonical_concept_id::text, ''), ',' ORDER BY id) FROM concept_catalog_mapping), '')) AS learner_mappings,
               (SELECT count(*) FROM student_academic_subjects)::int AS student_subjects, (SELECT count(*) FROM structure_nodes)::int AS nodes,
-              (SELECT count(*) FROM academic_subjects WHERE canonical_subject_id IS NULL)::int AS unmapped_subjects`
+              (SELECT count(*) FROM academic_subjects WHERE canonical_subject_id IS NULL)::int AS unmapped_subjects`,
+      [PAA_CERTIFIED_CONCEPTS.map((c) => `${c.canonicalSubject}/${c.canonicalName}`.toLowerCase())]
     )).rows[0];
 
     const before = { fixed: await fixed(), nodeTypes: await nodeTypes(), paaNodeTypes: await nodeTypes(PAA_WHERE), gates: await runCurriculumIntegrityGates(exec) };
@@ -69,6 +77,9 @@ async function main() {
     const versionsBefore = await auditStructureVersions(exec);
 
     let paa: unknown = 'SKIPPED';
+    let paaCatalog: PaaCertifiedCatalogLedger | null = null;
+    let aliasLedger: AliasLedger | null = null;
+    const certifiedBefore = await readPaaCertifiedCatalog(exec);
     let aice: Awaited<ReturnType<typeof applyAiceTopicHierarchy>> | null = null;
     let mapped: Awaited<ReturnType<typeof applyDeterministicCanonicalSubjects>>['mapped'] = [];
     if (!auditOnly) {
@@ -78,6 +89,11 @@ async function main() {
         if (state.sections !== PAA_SECTIONS.length || state.domains !== PAA_DOMAINS.length || state.topics !== PAA_TOPICS.length) problems.push(`PAA hierarchy is ${state.sections}/${state.domains}/${state.topics}, certified ${PAA_SECTIONS.length}/${PAA_DOMAINS.length}/${PAA_TOPICS.length}`);
         problems.push(...state.problems.map((p) => `PAA ${p}`));
         paa = { created: ledger.created, existing: ledger.existing, state: { sections: state.sections, domains: state.domains, topics: state.topics, topicsByAuthority: state.topicsByAuthority }, objectivesMoved: ledger.objectives.filter((o) => o.placement === 'MOVED_TO_DOMAIN').length };
+        // The certified concept catalogue and the reviewed aliases belong to the same PAA structure.
+        paaCatalog = await applyPaaCertifiedCatalog(exec);
+        problems.push(...paaCatalog.problems.map((p) => `PAA_CATALOG ${p}`));
+        aliasLedger = await applyReviewedConceptAliases(exec);
+        problems.push(...aliasLedger.problems.map((p) => `ALIAS ${p}`));
       } catch (e) {
         // A database without the PAA exam configuration has no PAA structure to complete: reported, never created here.
         if (e instanceof PaaHierarchyError && e.code === 'STRUCTURE_VERSIONS_NOT_FOUND') paa = { skipped: e.message };
@@ -89,15 +105,19 @@ async function main() {
     }
 
     const after = { fixed: await fixed(), nodeTypes: await nodeTypes(), paaNodeTypes: await nodeTypes(PAA_WHERE), gates: await runCurriculumIntegrityGates(exec) };
+    const certifiedAfter = await readPaaCertifiedCatalog(exec);
+    const readPaaCertifiedCatalogSafe = async () => certifiedAfter;
     const unmappedAfter = await auditUnmappedAcademicSubjects(exec);
     const versionsAfter = await auditStructureVersions(exec);
 
     // What this run must never change.
-    for (const k of ['objectives', 'objective_placement', 'mappings', 'assessment_nodes', 'canonical_concepts', 'learner_concepts', 'learner_subjects', 'learner_mappings', 'student_subjects'] as const) {
+    for (const k of ['objectives', 'objective_placement', 'mappings_outside_paa', 'assessment_nodes', 'canonical_concepts_outside_certified', 'learner_concepts', 'learner_subjects', 'learner_mappings', 'student_subjects'] as const) {
       if (before.fixed[k] !== after.fixed[k]) problems.push(`UNEXPECTED_CHANGE ${k}`);
     }
     const createdNodes = (paa && typeof paa === 'object' && 'created' in paa ? Object.values((paa as any).created as Record<string, number>).reduce((a, b) => a + b, 0) : 0) + (aice?.created ?? 0);
     if (after.fixed.nodes - before.fixed.nodes !== createdNodes) problems.push(`structure nodes changed by ${after.fixed.nodes - before.fixed.nodes}, expected ${createdNodes}`);
+    if (after.fixed.canonical_concepts - before.fixed.canonical_concepts !== (paaCatalog?.conceptsCreated.length ?? 0)) problems.push(`canonical concepts changed by ${after.fixed.canonical_concepts - before.fixed.canonical_concepts}, expected ${paaCatalog?.conceptsCreated.length ?? 0}`);
+    if (after.fixed.published_mappings - before.fixed.published_mappings !== (paaCatalog ? paaCatalog.mappingsPublished - paaCatalog.mappingsRetired : 0)) problems.push(`published mappings changed by ${after.fixed.published_mappings - before.fixed.published_mappings}, expected ${paaCatalog ? paaCatalog.mappingsPublished - paaCatalog.mappingsRetired : 0}`);
     if (before.fixed.unmapped_subjects - after.fixed.unmapped_subjects !== mapped.length) problems.push(`unmapped academic subjects changed by ${before.fixed.unmapped_subjects - after.fixed.unmapped_subjects}, expected ${mapped.length}`);
     // Structural gates must hold after the run (unresolved Student concepts and not-applied mappings are reported, not created here).
     for (const f of after.gates.findings) if (f.kind === 'BROKEN' && f.count > 0 && f.gate !== 'UNRESOLVED_STUDENT_CONCEPTS' && !(auditOnly && f.gate === 'ACADEMIC_SUBJECT_CANONICAL_MAPPING')) problems.push(`GATE ${f.gate}: ${f.count} ${f.detail}`);
@@ -114,7 +134,10 @@ async function main() {
     const report = {
       db: fp, mode: committed ? 'APPLIED' : auditOnly ? 'AUDIT_ONLY' : problems.length ? 'ABORTED (rolled back)' : 'DRY_RUN (rolled back)',
       nodeTypes: { before: before.nodeTypes, after: after.nodeTypes }, paaNodeTypes: { before: before.paaNodeTypes, after: after.paaNodeTypes },
-      paa, aice: aice ? { created: aice.created, existing: aice.existing, structures: aice.structures, sourceGaps: aiceSyllabiWithoutTopicLayer() } : 'SKIPPED',
+      paa,
+      paaCertifiedConcepts: { expected: PAA_CERTIFIED_CONCEPTS.length, before: certifiedBefore.present, after: (await readPaaCertifiedCatalogSafe()).present, created: paaCatalog?.conceptsCreated ?? [], labelsWritten: paaCatalog?.labelsWritten ?? 0, mappingsPublished: paaCatalog?.mappingsPublished ?? 0, mappingsRetired: paaCatalog?.mappingsRetired ?? 0, mappingsAlreadyRetired: paaCatalog?.mappingsAlreadyRetired ?? 0 },
+      aliases: aliasLedger ?? 'SKIPPED',
+      aice: aice ? { created: aice.created, existing: aice.existing, structures: aice.structures, sourceGaps: aiceSyllabiWithoutTopicLayer() } : 'SKIPPED',
       canonicalSubjects: { unmappedBefore: unmappedBefore.length, mapped: mapped.map((m) => `${m.programme} · ${m.name} -> ${m.canonicalSubject} (${m.basis})`), unmappedAfter: unmappedAfter.length, classificationBefore: tally(unmappedBefore), classificationAfter: tally(unmappedAfter) },
       structureVersions: { zeroMappingBefore: zero(versionsBefore).length, zeroMappingAfter: zero(versionsAfter).length, classificationAfter: tally(zero(versionsAfter)) },
       gates: { brokenBefore: before.gates.broken, brokenAfter: after.gates.broken, findings: after.gates.findings.filter((f) => f.count > 0) },

@@ -20,6 +20,7 @@ PORT="${PGPORT_CERT:-54396}"
 PGDATA="$WORKDIR/pgdata"
 DB=curriculum_convergence_cert
 MIGRATION="20261122_1000"
+MIGRATION2="20261122_1100"
 export LC_ALL=C
 unset ANTHROPIC_API_KEY OPENAI_API_KEY
 
@@ -52,7 +53,7 @@ SUM=$(shasum -a 256 "$REPO_ROOT/database/baseline/STUDYUS_BASELINE_2026_08.sql" 
 export DATABASE_URL="postgresql://postgres@127.0.0.1:$PORT/$DB"
 FP=$(node -e "const u=new URL(process.env.DATABASE_URL);console.log(require('crypto').createHash('sha256').update(u.hostname+'|'+u.pathname.slice(1)).digest('hex').slice(0,16))")
 
-convergence() { (cd "$REPO_ROOT" && "${TSX[@]}" scripts/operations/curriculum-convergence.ts "$@" | node -e "const o=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log([o.mode,'paa='+JSON.stringify(o.paa.created??o.paa),'aice_created='+o.aice.created,'aice_existing='+o.aice.existing,'subjects_mapped='+o.canonicalSubjects.mapped.length,'unmapped='+o.canonicalSubjects.unmappedBefore+'->'+o.canonicalSubjects.unmappedAfter,'zero_mapping_versions='+o.structureVersions.zeroMappingBefore+'->'+o.structureVersions.zeroMappingAfter,'paa_types='+JSON.stringify(o.paaNodeTypes.after),'broken='+o.gates.brokenBefore+'->'+o.gates.brokenAfter,'problems='+o.problems.length].join('  '))"); }
+convergence() { (cd "$REPO_ROOT" && "${TSX[@]}" scripts/operations/curriculum-convergence.ts "$@" | node -e "const o=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log([o.mode,'paa='+JSON.stringify(o.paa.created??o.paa),'certified='+o.paaCertifiedConcepts.before+'->'+o.paaCertifiedConcepts.after+'/'+o.paaCertifiedConcepts.expected,'concepts_created='+o.paaCertifiedConcepts.created.length,'maps=+'+o.paaCertifiedConcepts.mappingsPublished+'/-'+o.paaCertifiedConcepts.mappingsRetired,'aliases='+JSON.stringify(o.aliases.created?[o.aliases.created.length,o.aliases.existing.length]:o.aliases),'aice_created='+o.aice.created,'aice_existing='+o.aice.existing,'subjects_mapped='+o.canonicalSubjects.mapped.length,'unmapped='+o.canonicalSubjects.unmappedBefore+'->'+o.canonicalSubjects.unmappedAfter,'zero_mapping_versions='+o.structureVersions.zeroMappingBefore+'->'+o.structureVersions.zeroMappingAfter,'paa_types='+JSON.stringify(o.paaNodeTypes.after),'broken='+o.gates.brokenBefore+'->'+o.gates.brokenAfter,'problems='+JSON.stringify(o.problems)].join('  '))"); }
 snapshot() {
   "${PSQL[@]}" -tA "$DB" <<'SQL'
 SELECT 'nodes=' || count(*) || ' md5=' || md5(string_agg(id::text || node_type || coalesce(code, '') || source_label || coalesce(parent_id::text, '') || status, ',' ORDER BY id)) FROM structure_nodes;
@@ -60,6 +61,7 @@ SELECT 'objectives=' || count(*) || ' md5=' || md5(string_agg(id::text || struct
 SELECT 'mappings=' || count(*) || ' md5=' || md5(string_agg(id::text || learning_objective_id::text || canonical_concept_id::text || status, ',' ORDER BY id)) FROM objective_concept_mappings;
 SELECT 'academic_subjects=' || count(*) || ' md5=' || md5(string_agg(id::text || coalesce(canonical_subject_id::text, ''), ',' ORDER BY id)) FROM academic_subjects;
 SELECT 'canonical_concepts=' || count(*) FROM canonical_concepts;
+SELECT 'aliases=' || count(*) FROM canonical_concept_aliases;
 SQL
 }
 
@@ -73,7 +75,7 @@ echo "--- [1] chain up to 20261120_1200 ($(ls "$PRE/database/migrations" | wc -l
 "${PSQL[@]}" -c "INSERT INTO users (clerk_id, email, is_system) VALUES ('system:cert-editor', NULL, true), ('system:cert-reviewer', NULL, true) ON CONFLICT (clerk_id) DO NOTHING" "$DB"
 (cd "$REPO_ROOT" && TRACK_B_ALLOW_EPHEMERAL="$FP" "${TSX[@]}" scripts/operations/track-b-v2-apply.ts --write 2>&1 | tail -1 | cut -c1-160)
 (cd "$REPO_ROOT" && TRACK_B_ALLOW_EPHEMERAL="$FP" "${TSX[@]}" scripts/operations/track-b-v2-learning-catalog.ts --write 2>&1 | tail -1 | cut -c1-160)
-echo "--- [2] governed runner: $MIGRATION on populated data"
+echo "--- [2] governed runner: $MIGRATION + $MIGRATION2 on populated data"
 (cd "$REPO_ROOT" && "${TSX[@]}" scripts/db-migrate.ts 2>&1 | tail -1)
 (cd "$REPO_ROOT" && "${TSX[@]}" scripts/db-status.ts 2>&1 | tail -1)
 snapshot > "$WORKDIR/before"
@@ -97,11 +99,38 @@ SELECT 'cross_subject_canonical_writes=' || count(*) FROM academic_subjects a WH
   SELECT 1 FROM structure_versions sv JOIN structure_nodes n ON n.structure_version_id = sv.id JOIN learning_objectives lo ON lo.structure_node_id = n.id JOIN objective_concept_mappings m ON m.learning_objective_id = lo.id AND m.status = 'PUBLISHED'
     JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id WHERE sv.academic_subject_id = a.id AND sv.status = 'PUBLISHED' AND cc.canonical_subject_id = a.canonical_subject_id);
 SQL
+echo "--- [3a] certified PAA catalogue LOAD: unload it (the state of a database that never had it), load it again, compare"
+catalogue() {
+  "${PSQL[@]}" -tA "$DB" <<'SQL'
+SELECT 'paa_links=' || count(*) || ' md5=' || md5(string_agg(lo.code || '|' || cs.name || '|' || cc.name || '|' || m.status || '|' || m.relation_type, ',' ORDER BY lo.code, cs.name, cc.name, m.status)) FROM objective_concept_mappings m JOIN learning_objectives lo ON lo.id = m.learning_objective_id AND lo.code LIKE 'paa.%' JOIN canonical_concepts cc ON cc.id = m.canonical_concept_id JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id;
+SELECT 'concepts=' || count(*) || ' md5=' || md5(string_agg(cs.name || '|' || cc.name || '|' || cc.status, ',' ORDER BY cs.name, cc.name)) FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id;
+SELECT 'labels=' || count(*) || ' md5=' || md5(string_agg(cc.name || '|' || l.language || '|' || l.label, ',' ORDER BY cc.name, l.language)) FROM canonical_concept_localizations l JOIN canonical_concepts cc ON cc.id = l.canonical_concept_id;
+SELECT 'aliases=' || count(*) FROM canonical_concept_aliases WHERE status = 'ACTIVE';
+SQL
+}
+"${PSQL[@]}" -tAc "SELECT 'labels_seeded=' || count(*) FROM canonical_concept_localizations" "$DB"
+catalogue > "$WORKDIR/catalogue-loaded"
+(cd "$REPO_ROOT" && "${TSX[@]}" scripts/operations/curriculum-convergence-cert-unload.ts)
+catalogue | sed -n '1,2p'
+convergence --write
+catalogue > "$WORKDIR/catalogue-reloaded"
+diff <(grep -v '^labels=' "$WORKDIR/catalogue-loaded") <(grep -v '^labels=' "$WORKDIR/catalogue-reloaded") && echo "catalogue_reloaded_identical_to_seeded=YES (concepts, PAA links, aliases)"
+convergence --write
+catalogue | diff - "$WORKDIR/catalogue-reloaded" >/dev/null && echo "reload_is_idempotent=YES"
+echo "--- [3b] re-resolution of UNRESOLVED Student concepts (none exist here: nothing to do, nothing changed)"
+(cd "$REPO_ROOT" && "${TSX[@]}" scripts/operations/curriculum-reresolve-student-concepts.ts --write | node -e "const o=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(o.mode,'unresolved='+o.unresolvedBefore+'->'+o.unresolvedAfter,'problems='+o.problems.length)")
 echo "--- [4] runtime scenarios (real services; fixtures removed)"
 (cd "$REPO_ROOT" && "${TSX[@]}" scripts/operations/curriculum-convergence-scenarios.ts)
 snapshot | diff - "$WORKDIR/after" >/dev/null && echo "scenarios_left_no_trace=YES"
 echo "--- [5] rollback of $MIGRATION (documented), then re-apply"
 "${PSQL[@]}" "$DB" <<SQL
+DELETE FROM public.canonical_concept_aliases;
+ALTER TABLE public.concept_catalog_mapping DROP COLUMN resolved_alias_id;
+ALTER TABLE public.concept_catalog_mapping DROP CONSTRAINT concept_catalog_mapping_method_check;
+ALTER TABLE public.concept_catalog_mapping ADD CONSTRAINT concept_catalog_mapping_method_check CHECK (mapping_method IS NULL OR mapping_method IN ('EXACT_LABEL_MATCH', 'MANUAL_REVIEW', 'SEED_FIXTURE', 'TEACHER_ASSIGNMENT', 'PLAN_ENROLLMENT'));
+DROP TABLE public.canonical_concept_aliases;
+DROP FUNCTION public.canonical_concept_alias_guard();
+DELETE FROM schema_migrations WHERE version = '$MIGRATION2';
 DROP TABLE public.learner_concept_curriculum_provenance;
 DROP FUNCTION public.learner_concept_curriculum_provenance_guard();
 DELETE FROM schema_migrations WHERE version = '$MIGRATION';

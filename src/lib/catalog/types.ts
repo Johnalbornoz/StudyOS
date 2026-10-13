@@ -14,7 +14,7 @@ export type ContextCode = 'FAMILIAR' | 'ALTERED' | 'REAL_WORLD' | 'UNFAMILIAR' |
 
 export type MappingStatus = 'MATCHED' | 'PROPOSED' | 'AMBIGUOUS' | 'UNRESOLVED';
 
-export type MappingMethod = 'EXACT_LABEL_MATCH' | 'MANUAL_REVIEW' | 'SEED_FIXTURE';
+export type MappingMethod = 'EXACT_LABEL_MATCH' | 'MANUAL_REVIEW' | 'SEED_FIXTURE' | 'TEACHER_ASSIGNMENT' | 'PLAN_ENROLLMENT' | 'REVIEWED_ALIAS';
 
 export interface CanonicalSubject {
   id: string;

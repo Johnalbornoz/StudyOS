@@ -159,7 +159,9 @@ describe('E12: one deterministic migration chain', () => {
       //   Additive except one constraint replaced by a partial index (1100).
       ...['20261120_1000_sf7_parent_relationship_lifecycle.sql', '20261120_1100_cr_l9_02_enrollment_history.sql', '20261120_1200_sf10_single_persona_constraint.sql',
       // + Curriculum convergence: Learn curriculum provenance (20261122_1000), additive (one new table).
-      '20261122_1000_learner_concept_curriculum_provenance.sql']]);
+      '20261122_1000_learner_concept_curriculum_provenance.sql',
+      // + Curriculum convergence: reviewed canonical concept aliases (20261122_1100), additive.
+      '20261122_1100_canonical_concept_reviewed_aliases.sql']]);
     expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);
   });
 });

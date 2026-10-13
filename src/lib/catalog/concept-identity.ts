@@ -15,8 +15,8 @@
  * curriculum coverage. Nothing here manufactures a link to raise coverage.
  */
 
-/** `concept_catalog_mapping.mapping_method` values (20260922 + 20261018_1300 / _1400). */
-export type MappingMethod = 'EXACT_LABEL_MATCH' | 'MANUAL_REVIEW' | 'SEED_FIXTURE' | 'TEACHER_ASSIGNMENT' | 'PLAN_ENROLLMENT';
+/** `concept_catalog_mapping.mapping_method` values (20260922 + 20261018_1300 / _1400 + 20261122_1100). */
+export type MappingMethod = 'EXACT_LABEL_MATCH' | 'MANUAL_REVIEW' | 'SEED_FIXTURE' | 'TEACHER_ASSIGNMENT' | 'PLAN_ENROLLMENT' | 'REVIEWED_ALIAS';
 
 /** Why a link is canonical. */
 export type CanonicalLinkBasis =
@@ -63,7 +63,9 @@ export function classifyConceptIdentity(f: ConceptLinkFacts): ConceptIdentity {
     return { status: 'UNRESOLVED', learnerConceptId: f.learnerConceptId, canonicalConceptId: null, mappingStatus: f.mappingStatus === null || f.mappingStatus === 'MATCHED' ? 'NO_MAPPING_ROW' : f.mappingStatus };
   }
   const base = { learnerConceptId: f.learnerConceptId, canonicalConceptId: f.canonicalConceptId };
-  if (f.reviewed || f.mappingMethod === 'MANUAL_REVIEW') return { status: 'CANONICAL', ...base, basis: 'REVIEWED' };
+  // MANUAL_REVIEW: a reviewer confirmed this row. REVIEWED_ALIAS: a reviewer stated that this label means this concept
+  // (canonical_concept_aliases, 20261122_1100) -- reviewed either way, never a similarity.
+  if (f.reviewed || f.mappingMethod === 'MANUAL_REVIEW' || f.mappingMethod === 'REVIEWED_ALIAS') return { status: 'CANONICAL', ...base, basis: 'REVIEWED' };
   if (f.mappingMethod === 'PLAN_ENROLLMENT' || f.mappingMethod === 'TEACHER_ASSIGNMENT') return { status: 'CANONICAL', ...base, basis: 'CREATED_FROM_CANONICAL' };
   // The key was written when the concept was created from the catalogue: a fact, whatever method the row carries.
   if (keyNamesCanonicalConcept(f.conceptKey, f.canonicalConceptId)) return { status: 'CANONICAL', ...base, basis: 'CREATED_FROM_CANONICAL' };

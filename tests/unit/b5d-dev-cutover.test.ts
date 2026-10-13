@@ -221,6 +221,8 @@ describe('B5-D answers in progress', () => {
       '20261120_1200_sf10_single_persona_constraint.sql',
       // curriculum convergence: Learn curriculum provenance (one new table; no response model)
       '20261122_1000_learner_concept_curriculum_provenance.sql',
+      // reviewed concept aliases (one new table, one mapping method; no response model)
+      '20261122_1100_canonical_concept_reviewed_aliases.sql',
     ]);
   });
 
