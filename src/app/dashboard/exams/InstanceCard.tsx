@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { EXAM_FAMILY_OWNER } from '@/lib/exam-core/exam-family-owner';
 import { ExamDeleteMenu, type ExamDeleteKind } from './ExamDeleteMenu';
 
 type L = Record<string, string>;
@@ -21,6 +22,7 @@ export interface InstanceView {
   timingMode: string;
   status: 'DRAFT' | 'READY' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED' | 'DELETED';
   exam: { definitionName: string; family: string; versionLabel: string };
+  contentCertified?: boolean;
   components: Array<{ id: string; name: string }>;
   form: null | {
     fidelity: 'FULL' | 'REDUCED';
@@ -137,7 +139,9 @@ export function InstanceCard({ instance: initial, labels: l, language, highlight
           )}
         </div>
       )}
-      <p className="ui-hint">{fmt(l['exv2.origin.notice'], { framework: l[`exv2.family.${instance.exam.family}`] ?? instance.exam.family })}</p>
+      <p className="ui-hint">{instance.contentCertified
+        ? fmt(l['exv2.origin.noticeCertified'], { owner: EXAM_FAMILY_OWNER[instance.exam.family] ?? l[`exv2.family.${instance.exam.family}`] ?? instance.exam.family })
+        : fmt(l['exv2.origin.notice'], { framework: l[`exv2.family.${instance.exam.family}`] ?? instance.exam.family })}</p>
 
       <div className="xr-next-actions">
         {instance.status === 'READY' && (

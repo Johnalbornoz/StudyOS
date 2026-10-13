@@ -613,6 +613,8 @@ export interface ExamInstanceView {
   timingMode: TimingMode;
   status: InstanceStatus;
   exam: { definitionName: string; family: string; versionLabel: string };
+  /** Every deliverable item of the instance's components is a certified StudyUs Exam Bank item. Presentation only. */
+  contentCertified: boolean;
   components: Array<{ id: string; name: string }>;
   form: null | {
     fidelity: 'FULL' | 'REDUCED';
@@ -646,8 +648,15 @@ export async function toInstanceView(instance: ExamInstance): Promise<ExamInstan
   const scored = instance.status === 'COMPLETED' && instance.simulationAttemptId
     ? (await db.query(`SELECT r.raw_score, r.max_score FROM simulation_attempts sa JOIN exam_attempt_results r ON r.exam_attempt_id = sa.exam_attempt_id WHERE sa.id = $1 AND r.status = 'SCORED'`, [instance.simulationAttemptId])).rows[0]
     : null;
+  // presentation only: is the bank of these components made of certified Exam Bank items (and of nothing else a Student can be delivered)?
+  const bank = (await db.query(
+    `SELECT count(*) FILTER (WHERE qi.lineage_class = 'CORE_DERIVED')::int AS certified, count(*) FILTER (WHERE qi.lineage_class <> 'CORE_DERIVED' AND qi.provenance <> 'FIXTURE')::int AS other
+       FROM question_bank_items qi JOIN approved_items ai ON ai.id = qi.current_version_id AND ai.status = 'PUBLISHED'
+      WHERE qi.assessment_component_id = ANY($1::uuid[]) AND qi.retired_at IS NULL`, [instance.componentIds]).catch(() => ({ rows: [] as any[] }))).rows[0];
+  const contentCertified = !!bank && Number(bank.certified) > 0 && Number(bank.other) === 0;
   const f = instance.form;
   return {
+    contentCertified,
     id: instance.id,
     mode: instance.mode,
     rigor: instance.rigor,

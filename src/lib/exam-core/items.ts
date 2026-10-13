@@ -182,6 +182,8 @@ export const ApprovedItemContentSchema = z.object({
   parts: z.array(ExamItemPartSchema).min(1).max(12).optional(),
   // ---- V2 (all optional: V1 items stay valid) ----
   contentOrigin: z.enum(CONTENT_ORIGINS).optional(),
+  /** Present on a bank version that is the projection of a certified item instance (Exam Bank publication). Presentation reads only that it exists. */
+  certified: z.object({ projection: z.string() }).passthrough().optional(),
   scoringStrategy: z.enum(SCORING_STRATEGIES).optional(),
   /** Answer is entered with the math editor and graded by the equivalence engine. */
   math: MathKeySchema.optional(),
@@ -212,6 +214,8 @@ export interface ExamItemMeta {
   commandTerm: string | null;
   // ---- V2 ----
   contentOrigin?: ContentOrigin;
+  /** The item is a certified StudyUs Exam Bank item (the projection of a certified instance). Presentation only: provenance lives in the bank. */
+  studyusCertified?: boolean;
   scoringStrategy?: ScoringStrategyKind;
   math?: MathKeyContent | null;
   method?: MethodKey | null;
@@ -278,6 +282,7 @@ export function examItemFromApproved(row: { id: string; learning_objective_id: s
       numericTolerance: c.numericTolerance ?? null,
       commandTerm: c.commandTerm ?? null,
       contentOrigin: contentOriginOf(c),
+      studyusCertified: c.certified !== undefined,
       scoringStrategy: c.scoringStrategy,
       math: c.math ?? null,
       method: c.method ?? null,
@@ -436,7 +441,9 @@ export interface ExamClientPart {
 }
 
 /** Content-origin label shown on every non-official item (section 47). */
-export function contentOriginLabelKey(origin: ContentOrigin | undefined): 'exv2.origin.official' | 'exv2.origin.licensed' | 'exv2.origin.generated' | 'exv2.origin.fixture' {
+export function contentOriginLabelKey(origin: ContentOrigin | undefined, studyusCertified = false): 'exv2.origin.official' | 'exv2.origin.licensed' | 'exv2.origin.generated' | 'exv2.origin.fixture' | 'exv2.origin.certified' {
+  // a certified Exam Bank item says what matters about it: it is certified by StudyUs (and never that it is official)
+  if (studyusCertified && origin !== 'OFFICIAL' && origin !== 'LICENSED' && origin !== 'FIXTURE') return 'exv2.origin.certified';
   switch (origin) {
     case 'OFFICIAL':
       return 'exv2.origin.official';
@@ -480,7 +487,7 @@ export function toExamClientItem(item: ExamItem, index: number) {
     unitRequired: e.math?.units?.required ? true : undefined,
     showWorking: e.method ? true : undefined,
     calculator: e.calculator ?? undefined,
-    originLabel: contentOriginLabelKey(e.contentOrigin),
+    originLabel: contentOriginLabelKey(e.contentOrigin, e.studyusCertified === true),
     rubricCriteria: (e.portfolio?.rubric ?? e.rubric)?.criteria.map((c) => ({ id: c.id, name: c.name, maxMarks: c.maxMarks })),
     portfolioRequirements: e.portfolio
       ? {

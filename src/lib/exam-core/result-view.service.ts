@@ -152,6 +152,8 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
 
   const meta = await db.query(
     `SELECT d.id AS definition_id, d.name AS definition_name, d.exam_family, v.version_label, v.exam_year, v.exam_session, v.navigation_rules->>'contentStatus' AS content_status, ea.status AS exam_status,
+            -- every answered item of this attempt is a certified Exam Bank item: the label says so (presentation only)
+            (SELECT count(*) > 0 AND bool_and(COALESCE(qi.lineage_class, 'LEGACY') = 'CORE_DERIVED') FROM exam_attempt_item_responses r LEFT JOIN approved_items ai ON ai.id = r.approved_item_id LEFT JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE r.exam_attempt_id = ea.id) AS studyus_certified,
             v.navigation_rules->'reporting' AS reporting, ea.started_at, ea.completed_at
        FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id
        JOIN exam_attempts ea ON ea.id = $2
@@ -281,7 +283,7 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
           ).catch(() => ({ rows: [] as any[] }))
         ).rows.map((r: any) => ({ admissionContext: r.admission_context, sectionsConsidered: r.sections_considered }))
       : [],
-    exam: { definitionName: m.definition_name ?? '', family: m.exam_family ?? '', versionLabel: m.version_label ?? '', examYear: m.exam_year ?? null, examSession: m.exam_session ?? null, contentStatus: m.content_status ?? null },
+    exam: { definitionName: m.definition_name ?? '', family: m.exam_family ?? '', versionLabel: m.version_label ?? '', examYear: m.exam_year ?? null, examSession: m.exam_session ?? null, contentStatus: m.studyus_certified === true ? 'STUDYUS_CERTIFIED' : m.content_status ?? null },
     result,
     objectives,
     review,
