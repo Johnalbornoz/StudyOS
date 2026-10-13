@@ -1,5 +1,11 @@
 /**
- * QF V5.1 -- the ONE Student supply policy (closes OE-015). Pure.
+ * QF V5.1 -- the supply policy of the CERTIFIED EXAM BANK (closes OE-015). Pure.
+ *
+ * SCOPE (Track B, 2026-10-13): this policy governs STANDARDIZED EXAM supply only. It was written as "the one
+ * Student supply policy"; that reading is obsolete. Ordinary Learning and Internal Assessment (AD_HOC included)
+ * have their own supply -- generated for the Student, see lib/assessment-supply/supply-boundary -- and never pass
+ * through this module. "Per-Student generated inventory is never eligible" below means: never eligible AS AN
+ * EXAM BANK ITEM. It says nothing about whether a Student may learn from it.
  *
  * A Student's runtime is supplied by exactly two things:
  *   1. an instance rendered on demand from a CERTIFIED core + CERTIFIED adapter + SUPPORTED (or satisfied
