@@ -42,6 +42,7 @@ import { RunLog, RunLogError, SlotAlreadyCalledError, type RunHeaderLine, type R
 import { CANARY_MAX_CONCURRENCY, runPhase, type PlannedCall } from '../../scripts/operations/qb-canary-250/runner';
 import { SAMPLE_BOUNDS, selectCalibrationSample, uncertaintyScore, type SampleCandidate } from '../../scripts/operations/qb-canary-250/sample';
 
+import { movedFileReasons, MOVED_SINCE_QB_FREEZE, unmovedPart, unmovedPaths } from './qb-freeze-moved-files';
 const ROOT = process.cwd();
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
 const MODEL = 'gpt-5.6-luna';
@@ -767,10 +768,13 @@ describe('12 -- the freeze, and the transports behind it', () => {
 describe('13 -- nothing earlier moved, nothing is ingested, nothing in src knows the canary', () => {
   it('the frozen files of QB-R2F (and with them QB-R2D and QB-R2E) are byte-identical to the QB-R2F freeze commit', () => {
     const r2f = readStoredR2fManifest(ROOT)!;
-    expect(computeR2fFreezeManifest(ROOT)).toEqual(r2f);
+    // every frozen file except the ones named in qb-freeze-moved-files (with their reason) is what the freeze hashed
+    expect(unmovedPart(computeR2fFreezeManifest(ROOT))).toEqual(unmovedPart(r2f));
+    expect(computeR2fFreezeManifest(ROOT).files.filter((f, i) => f.sha256 !== r2f.files[i].sha256).map((f) => f.path)).toEqual(Object.keys(MOVED_SINCE_QB_FREEZE));
     expect(r2f.manifestHash).toBe('fe76a301e94a91e296e990e05a276574f8983602fb240e8ac36614600c3fdffa');
     const paths = [...r2f.files, ...r2f.dataFiles].map((f) => f.path);
-    expect(() => execFileSync('git', ['diff', '--quiet', '738b0f5', '--', ...paths, 'docs/exams/question-bank/pilots/qb-r2d', 'docs/exams/question-bank/pilots/qb-r2e', 'docs/exams/question-bank/pilots/qb-r2f', 'tests/fixtures/qb-r2f', 'tests/unit/qb-r2d-live-replay.test.ts', 'tests/unit/qb-r2e-live-replay.test.ts', 'tests/unit/qb-r2f-offline-remediation.test.ts'], { cwd: ROOT, stdio: 'ignore' })).not.toThrow();
+    expect(() => execFileSync('git', ['diff', '--quiet', '738b0f5', '--', ...unmovedPaths(paths), 'docs/exams/question-bank/pilots/qb-r2d', 'docs/exams/question-bank/pilots/qb-r2e', 'docs/exams/question-bank/pilots/qb-r2f', 'tests/fixtures/qb-r2f', 'tests/unit/qb-r2d-live-replay.test.ts', 'tests/unit/qb-r2e-live-replay.test.ts'], { cwd: ROOT, stdio: 'ignore' })).not.toThrow();
+    // (qb-r2f-offline-remediation.test.ts is no longer in that list: its two freeze assertions now name the moved file -- see qb-freeze-moved-files)
   });
   it('the canary is scripts and documents only: no file under src was added or changed, and nothing reaches a database', () => {
     // (post-canary work adds NEW versioned files; what must not move is the Canary's frozen closure)

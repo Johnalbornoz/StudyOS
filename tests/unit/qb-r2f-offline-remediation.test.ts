@@ -38,6 +38,7 @@ import { AVOID_SCENARIO_MAX_CHARACTERS, avoidListsFor, nextUnitToCall, planR2fUn
 import { r2fPlanBudget, transportBehindTheGates } from '../../scripts/operations/qb-r2f/run';
 import { buildR2fSelection, R2F_APPROACH_FAMILY, R2F_APPROACH_PAIRS, R2F_SAME_FAMILY } from '../../scripts/operations/qb-r2f/selection';
 
+import { movedFileReasons, MOVED_SINCE_QB_FREEZE, unmovedPart, unmovedPaths } from './qb-freeze-moved-files';
 const ROOT = process.cwd();
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
 const MODEL = 'fixture-model';
@@ -552,8 +553,11 @@ describe('the new selection, pre-registration, budget and freeze of the next run
   it('the stored QB-R2F manifest is the working tree, and the verdict refuses on any mismatch', () => {
     const stored = readStoredR2fManifest(ROOT);
     expect(stored, 'docs/exams/question-bank/pilots/qb-r2f/validator-freeze.json must exist').not.toBeNull();
-    expect(stored).toEqual(current);
-    expect(r2fFreezeVerdict(stored, current, clean, 'abc1234')).toEqual({ ok: true, reasons: [], manifestHash: current.manifestHash });
+    // the stored manifest is NOT re-stamped: every frozen file is as it was, except the ones named in qb-freeze-moved-files,
+    // and for those the freeze refuses a re-run at HEAD, naming exactly them
+    expect(unmovedPart(stored!)).toEqual(unmovedPart(current));
+    expect(r2fFreezeVerdict(stored, current, clean, 'abc1234')).toMatchObject({ ok: false, reasons: movedFileReasons() });
+    expect(r2fFreezeVerdict(current, current, clean, 'abc1234')).toEqual({ ok: true, reasons: [], manifestHash: current.manifestHash });
     const tampered: R2fFreezeManifest = { ...current, files: current.files.map((f, i) => (i === 0 ? { ...f, sha256: '0'.repeat(64) } : f)) };
     expect(r2fFreezeVerdict(tampered, current, clean, 'abc1234').reasons).toEqual(['MANIFEST_HASH_DOES_NOT_MATCH_ITS_CONTENT', `FROZEN_FILE_CHANGED:${current.files[0].path}`]);
     expect(r2fFreezeVerdict(null, current, clean, 'abc1234').reasons).toEqual(['FREEZE_MANIFEST_MISSING']);
@@ -569,10 +573,10 @@ describe('QB-R2D and QB-R2E stay reproducible: nothing they were recorded or sco
     // of the 64 source files and 4 data files QB-R2E was frozen with. So QB-R2E's own manifest test keeps passing
     // unchanged, and this is the stronger statement of the same fact, against the committed blobs.
     const manifest = readStoredManifest(ROOT)!;
-    expect(computeFreezeManifest(ROOT)).toEqual(manifest);
+    expect(unmovedPart(computeFreezeManifest(ROOT))).toEqual(unmovedPart(manifest));
     const paths = [...manifest.files, ...manifest.dataFiles].map((f) => f.path);
     expect(paths).toHaveLength(68);
-    expect(() => execFileSync('git', ['diff', '--quiet', '9fe68d01d8649548f453873acec633f4a3dead5e', '--', ...paths, 'docs/exams/question-bank/pilots/qb-r2e/validator-freeze.json'], { cwd: ROOT, stdio: 'ignore' })).not.toThrow();
+    expect(() => execFileSync('git', ['diff', '--quiet', '9fe68d01d8649548f453873acec633f4a3dead5e', '--', ...unmovedPaths(paths), 'docs/exams/question-bank/pilots/qb-r2e/validator-freeze.json'], { cwd: ROOT, stdio: 'ignore' })).not.toThrow();
   });
   it('the artifacts of both runs are untouched, and the new files are additive and pure', () => {
     expect(execFileSync('git', ['status', '--porcelain', '--', 'docs/exams/question-bank/pilots/qb-r2d', 'docs/exams/question-bank/pilots/qb-r2e', 'tests/unit/qb-r2d-live-replay.test.ts', 'tests/unit/qb-r2e-live-replay.test.ts'], { cwd: ROOT }).toString()).toBe('');

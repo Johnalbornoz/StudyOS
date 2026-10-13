@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { coverageOfLearningCacheItem, coverageOfReviewedBankItem, type LearningCacheItemRow, type QuestionCoverage } from '@/lib/assessment-foundation/question-coverage';
-import { nominalResponseSeconds } from '@/lib/assessment-foundation/nominal-response-time';
+import { nominalResponseSeconds, withNominalResponseTime } from '@/lib/assessment-foundation/nominal-response-time';
 import type { ConceptIdentity } from '@/lib/catalog/concept-identity';
 import { projectEvidenceNeeds, solveLearningBlueprint, type EvidenceCountPolicy } from '@/lib/assessment-blueprint';
 import { freezeAssessment } from '@/lib/assessment-execution';
@@ -21,7 +21,7 @@ const POLICY: EvidenceCountPolicy = { version: 1, minimumEvidenceCount: 3, minim
 const AS_OF = '2026-10-13T12:00:00.000Z';
 const canonical = (canonicalConceptId: string): ConceptIdentity => ({ status: 'CANONICAL', learnerConceptId: `lc-${canonicalConceptId}`, canonicalConceptId, basis: 'CREATED_FROM_CANONICAL' });
 const generated = (id: string, concept: string, over: Partial<LearningCacheItemRow> = {}): QuestionCoverage =>
-  coverageOfLearningCacheItem({ candidateId: id, studentId: STUDENT, learnerConceptId: `lc-${concept}`, activityType: 'PROVE', questionType: 'step_by_step', difficulty: 5, language: 'es', validationStatus: 'VALIDATED', identity: canonical(concept), ...over });
+  withNominalResponseTime(coverageOfLearningCacheItem({ candidateId: id, studentId: STUDENT, learnerConceptId: `lc-${concept}`, activityType: 'PROVE', questionType: 'step_by_step', difficulty: 5, language: 'es', validationStatus: 'VALIDATED', identity: canonical(concept), ...over }));
 const solve = (concepts: string[], pool: QuestionCoverage[], availableMinutes: number | null, depth: 'QUICK' | 'BALANCED' | 'DEEP' = 'BALANCED') =>
   solveLearningBlueprint({ policy: { studentId: STUDENT, intent: AD_HOC_EXAM_INTENT, depth, canonicalConceptIds: concepts, needs: projectEvidenceNeeds(concepts, [], POLICY, AS_OF), availableMinutes }, coverages: pool, asOf: AS_OF });
 
@@ -48,14 +48,20 @@ describe('nominal response time of a generated item', () => {
     expect(nominalResponseSeconds('multiple_choice', 9)).toBeNull();
   });
 
-  it('belongs to generated items only: a Certified Exam Bank item never reads it', () => {
-    const coverage = readFileSync(join(process.cwd(), 'src/lib/assessment-foundation/question-coverage.ts'), 'utf-8');
-    expect(coverage.match(/nominalResponseSeconds\(/g)).toHaveLength(1);
-    const reviewed = coverage.slice(coverage.indexOf('export function coverageOfReviewedBankItem'), coverage.indexOf('export function coverageOfLearningCacheItem'));
-    expect(reviewed).not.toContain('nominalResponseSeconds');
-    expect(reviewed).toContain('estimatedSeconds: UNKNOWN');
-    const policy = readFileSync(join(process.cwd(), 'src/lib/assessment-foundation/nominal-response-time.ts'), 'utf-8');
-    expect(policy).not.toMatch(/exam-core|question-bank|approved_items/);
+  it('belongs to generated items only: it is applied where the Student\'s own items are loaded, and a Certified Exam Bank item never reads it', () => {
+    const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
+    // the coverage projection itself is unchanged: both stores project an unknown duration
+    expect(read('src/lib/assessment-foundation/question-coverage.ts')).not.toContain('nominal');
+    expect(coverageOfLearningCacheItem({ candidateId: 'x', studentId: STUDENT, learnerConceptId: 'lc', activityType: 'PRACTICE', questionType: 'multiple_choice', difficulty: 3, language: 'es', validationStatus: 'VALIDATED', identity: canonical('K1') }).estimatedSeconds).toEqual({ state: 'UNKNOWN' });
+    // one application, in the loader of the learning item cache
+    const service = read('src/lib/assessment-foundation/question-coverage.service.ts');
+    expect(service.match(/withNominalResponseTime\(/g)).toHaveLength(1);
+    expect(service).toMatch(/withNominalResponseTime\(coverageOfLearningCacheItem\(/);
+    // a coverage of any other store is returned untouched
+    const bankLike = { ...generated('b', 'K1'), ref: { store: 'REVIEWED_EXAM_BANK' as const, id: 'b' }, estimatedSeconds: { state: 'UNKNOWN' as const } };
+    expect(withNominalResponseTime(bankLike)).toBe(bankLike);
+    expect(read('src/lib/assessment-foundation/nominal-response-time.ts')).not.toMatch(/exam-core|question-bank|approved_items/);
+    expect(generated('g', 'K1', { questionType: 'multiple_choice', difficulty: 3 }).estimatedSeconds).toEqual({ state: 'KNOWN', value: 60 });
     void coverageOfReviewedBankItem;
   });
 });

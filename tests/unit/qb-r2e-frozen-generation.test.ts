@@ -35,6 +35,7 @@ import { planUnit, plannedFirstAttempts, QB_R2E_BATCH_KEY, r2eMalformedCodeOf, r
 import { loadEvidence, transportBehindTheFreeze } from '../../scripts/operations/qb-r2e/run';
 import { buildR2eSelection, R2E_APPROACH_PAIRS, R2E_PROOF_FAMILY } from '../../scripts/operations/qb-r2e/selection';
 
+import { movedFileReasons, MOVED_SINCE_QB_FREEZE, unmovedPart, unmovedPaths } from './qb-freeze-moved-files';
 const ROOT = process.cwd();
 const MODEL = 'fixture-model';
 const NOW = '2026-10-12T09:00:00.000Z';
@@ -664,8 +665,12 @@ describe('the VALIDATOR FREEZE', () => {
   it('THE STORED MANIFEST IS THE WORKING TREE: validator-freeze.json hashes every frozen file as it is now', () => {
     const stored = readStoredManifest(ROOT);
     expect(stored, 'docs/exams/question-bank/pilots/qb-r2e/validator-freeze.json must exist').not.toBeNull();
-    expect(stored).toEqual(current);
-    expect(freezeVerdict(stored, current, clean, 'abc1234')).toEqual({ ok: true, reasons: [], manifestHash: current.manifestHash });
+    // the stored manifest is NOT re-stamped. Every frozen file is as it was, except the ones named (with their reason) in
+    // qb-freeze-moved-files -- and for those the freeze refuses a re-run at HEAD, naming exactly them.
+    expect(unmovedPart(stored!)).toEqual(unmovedPart(current));
+    expect(freezeVerdict(stored, current, clean, 'abc1234')).toMatchObject({ ok: false, reasons: movedFileReasons() });
+    expect(Object.keys(MOVED_SINCE_QB_FREEZE)).toEqual(['src/lib/catalog/concept-identity.ts']);
+    expect(freezeVerdict(current, current, clean, 'abc1234')).toEqual({ ok: true, reasons: [], manifestHash: current.manifestHash });
   });
   it('REFUSES, naming every reason: a changed file, a file outside the freeze, a missing manifest or commit, a dirty or untracked tree', () => {
     const tampered: FreezeManifest = { ...current, files: current.files.map((f, i) => (i === 0 ? { ...f, sha256: '0'.repeat(64) } : f)) };

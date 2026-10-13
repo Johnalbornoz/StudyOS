@@ -9,6 +9,7 @@
 import { db, type DbExecutor } from '@/lib/db';
 import { resolveConceptIdentities } from '@/lib/catalog/concept-identity.service';
 import type { ObjectiveConceptRelation } from '@/lib/curriculum/curriculum-scope';
+import { withNominalResponseTime } from './nominal-response-time';
 import { coverageOfLearningCacheItem, coverageOfReviewedBankItem, REUSE_RIGHTS, type QuestionCoverage, type QuestionRef, type QuestionStore, type ReuseRights, type ReviewedBankItemRow, type RightsRecord } from './question-coverage';
 
 export interface QuestionCoverageProvider {
@@ -182,8 +183,9 @@ export function learningItemCacheCoverageProvider(client: DbExecutor = db): Ques
       );
       // Canonical resolution goes through the explicit learner-concept link only.
       const identities = await resolveConceptIdentities(items.rows.map((r: any) => r.concept_id as string), client);
+      // a generated item states its planned time here (nominal-response-time): a time limit can then be fitted to it
       return items.rows.map((r: any) =>
-        coverageOfLearningCacheItem({
+        withNominalResponseTime(coverageOfLearningCacheItem({
           candidateId: r.id,
           studentId: r.student_id,
           learnerConceptId: r.concept_id,
@@ -193,7 +195,7 @@ export function learningItemCacheCoverageProvider(client: DbExecutor = db): Ques
           language: r.language ?? null,
           validationStatus: r.validation_status,
           identity: identities.get(r.concept_id) ?? null,
-        })
+        }))
       );
     },
   };
