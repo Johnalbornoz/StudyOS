@@ -1,4 +1,8 @@
-# Step 4B / QF V5.2 uncommitted work — scope classification (2026-10-13)
+# QF V5.2 EXAM BANK SOURCE — scope classification (2026-10-13)
+
+Official designation of the frozen worktree below: **QF V5.2 EXAM BANK SOURCE**, status COMPLETE_OFFLINE / FROZEN.
+It is not Track B. Its code is imported into Track B later, after Learning + Internal Assessment P0 is green in DEV
+and Preview; this table is the import guide.
 
 Worktree `studyos-qf-step4b` (`feat/qf-step4b-real-content-governance` @ `53abc42`), 2 modified + 13 untracked paths.
 Read only: nothing in that worktree was changed by this block.
@@ -18,4 +22,4 @@ Read only: nothing in that worktree was changed by this block.
 | `v52/coverage.ts` — concept demand units `PRACTICE`, `AD_HOC_QUICK/BALANCED/DEEP`, `SCHEDULED_AD_HOC` | OBSOLETE_UNIVERSAL_SUPPLY_ASSUMPTION | coverage measures exam content: keep `EXAM_PRACTICE`, `REDUCED_MOCK`, `FULL_MOCK`, `CHALLENGE`, blueprint buckets |
 | `docs/.../QF52_COVERAGE.json`, `QF52_CERTIFIED_SUPPLY.json`, `QF52_REPORT.md` figures that count Practice / AD_HOC demand | OBSOLETE_UNIVERSAL_SUPPLY_ASSUMPTION | regenerate after the re-scope |
 
-Not done here: the re-scope itself. That worktree holds another line's uncommitted work.
+Not done here: the import and the re-scope. The frozen source was read, not changed.

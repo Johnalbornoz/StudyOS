@@ -1,4 +1,6 @@
-# Curriculum-first learning — implementation report (2026-10-13)
+# TRACK B — Architecture Correction: Curriculum-First Learning + Independent Assessment + Exam Question Bank
+
+Implementation report (2026-10-13). Track B is the single active Pilot Convergence development line.
 
 Branch `feat/curriculum-first-learning` (worktree `studyos-curriculum-first`), cut from the certified curriculum
 convergence line (`9007a0a`, Preview `8739353`) and merging the ad hoc assessment line (`557707f`).
@@ -66,6 +68,6 @@ class `LEARNING`; an own exam over two concepts generated 4 items before the att
 - A concept the Student typed that has no canonical link still cannot be assessed in the canonical runtime
   ("Algunos temas todavía no están listos"); generation needs the canonical identity.
 - `quiz_sessions.delivery_source` still says `BANK` for sessions built from the Student's own items (historical name).
-- Step 4B / V5.2 re-scope is classified, not applied (`STEP4B_V52_SCOPE_CLASSIFICATION.md`).
+- QF V5.2 EXAM BANK SOURCE (worktree `studyos-qf-step4b`, COMPLETE_OFFLINE / FROZEN) is classified, not imported (`STEP4B_V52_SCOPE_CLASSIFICATION.md`). It is imported into Track B after Learning + Internal Assessment P0 is green in DEV and Preview.
 - Learning and the Question Factory still share the platform limiter `ai_global_limits`; budgets are separate only in logging.
 - Home / navigation (Phase 19) was not redesigned.

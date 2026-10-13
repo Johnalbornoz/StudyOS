@@ -1,6 +1,7 @@
 # Curriculum-first learning, internal assessment and the exam question bank
 
-Status: authoritative (2026-10-13). Code: `src/lib/assessment-supply/`.
+Status: authoritative (2026-10-13). This is the architecture of TRACK B, the single active Pilot Convergence line.
+Code: `src/lib/assessment-supply/`.
 
 ## The model
 
