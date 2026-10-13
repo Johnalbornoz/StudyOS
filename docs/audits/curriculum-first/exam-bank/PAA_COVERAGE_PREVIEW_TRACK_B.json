@@ -1,0 +1,317 @@
+[
+  {
+    "examVersionId": "4babb748-5943-409b-9fd4-0c967bcb503c",
+    "scope": "PILOT_PREVIEW",
+    "positions": 36,
+    "covered": 12,
+    "readiness": {
+      "structure": true,
+      "practice": {
+        "ready": false,
+        "reasons": [
+          "Lectura · paa.lect.evidencia: 0/1 (faltan 1)",
+          "Lectura · paa.lect.explicitas: 0/1 (faltan 1)",
+          "Lectura · paa.lect.graficos: 0/1 (faltan 1)",
+          "Lectura · paa.lect.inferencia: 0/1 (faltan 1)",
+          "Lectura · paa.lect.literario: 0/1 (faltan 1)",
+          "Lectura · paa.lect.vocabulario: 0/1 (faltan 1)",
+          "Redacción · paa.red.adicion: 0/1 (faltan 1)",
+          "Redacción · paa.red.cohesion: 0/1 (faltan 1)",
+          "Redacción · paa.red.elision: 0/1 (faltan 1)",
+          "Redacción · paa.red.generalizacion: 0/1 (faltan 1)",
+          "Redacción · paa.red.integracion: 0/1 (faltan 1)",
+          "Redacción · paa.red.particularizacion: 0/1 (faltan 1)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.lectura: 0/1 (faltan 1)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.lenguaje: 0/1 (faltan 1)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.redaccion: 0/1 (faltan 1)"
+        ]
+      },
+      "reducedMock": {
+        "ready": false,
+        "reasons": [
+          "Lectura · paa.lect.evidencia: 0/1 (faltan 1)",
+          "Lectura · paa.lect.explicitas: 0/2 (faltan 2)",
+          "Lectura · paa.lect.graficos: 0/1 (faltan 1)",
+          "Lectura · paa.lect.inferencia: 0/2 (faltan 2)",
+          "Lectura · paa.lect.literario: 0/2 (faltan 2)",
+          "Lectura · paa.lect.vocabulario: 0/2 (faltan 2)",
+          "Redacción · paa.red.adicion: 0/1 (faltan 1)",
+          "Redacción · paa.red.cohesion: 0/1 (faltan 1)",
+          "Redacción · paa.red.elision: 0/1 (faltan 1)",
+          "Redacción · paa.red.generalizacion: 0/1 (faltan 1)",
+          "Redacción · paa.red.integracion: 0/1 (faltan 1)",
+          "Redacción · paa.red.particularizacion: 0/1 (faltan 1)",
+          "Matemáticas · paa.mat.algebra: 0/3 (faltan 3)",
+          "Matemáticas · paa.mat.aritmetica: 0/3 (faltan 3)",
+          "Matemáticas · paa.mat.datos: 0/2 (faltan 2)",
+          "Matemáticas · paa.mat.geometria: 0/3 (faltan 3)",
+          "Matemáticas · paa.mat.probabilidad: 0/1 (faltan 1)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.lectura: 0/3 (faltan 3)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.lenguaje: 0/3 (faltan 3)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.redaccion: 0/2 (faltan 2)"
+        ]
+      },
+      "fullMock": {
+        "ready": false,
+        "bankAssembles": false,
+        "deliverable": false,
+        "reasons": [
+          "Lectura · paa.lect.evidencia: 0/4 (faltan 4)",
+          "Lectura · paa.lect.explicitas: 0/9 (faltan 9)",
+          "Lectura · paa.lect.graficos: 0/5 (faltan 5)",
+          "Lectura · paa.lect.inferencia: 0/9 (faltan 9)",
+          "Lectura · paa.lect.literario: 0/9 (faltan 9)",
+          "Lectura · paa.lect.vocabulario: 0/9 (faltan 9)",
+          "Redacción · paa.red.adicion: 0/4 (faltan 4)",
+          "Redacción · paa.red.cohesion: 0/4 (faltan 4)",
+          "Redacción · paa.red.elision: 0/5 (faltan 5)",
+          "Redacción · paa.red.generalizacion: 0/4 (faltan 4)",
+          "Redacción · paa.red.integracion: 0/4 (faltan 4)",
+          "Redacción · paa.red.particularizacion: 0/4 (faltan 4)",
+          "Matemáticas · paa.mat.algebra: 0/14 (faltan 14)",
+          "Matemáticas · paa.mat.aritmetica: 0/14 (faltan 14)",
+          "Matemáticas · paa.mat.datos: 0/9 (faltan 9)",
+          "Matemáticas · paa.mat.geometria: 0/14 (faltan 14)",
+          "Matemáticas · paa.mat.probabilidad: 0/4 (faltan 4)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.lectura: 0/19 (faltan 19)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.lenguaje: 0/19 (faltan 19)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.redaccion: 0/12 (faltan 12)"
+        ]
+      },
+      "fullMockCalibrated": {
+        "ready": false,
+        "reasons": [
+          "FULL_MOCK_READY = NO",
+          "Lectura · paa.lect.evidencia: 0/4 (faltan 4)",
+          "Lectura · paa.lect.explicitas: 0/9 (faltan 9)",
+          "Lectura · paa.lect.graficos: 0/5 (faltan 5)",
+          "Lectura · paa.lect.inferencia: 0/9 (faltan 9)",
+          "Lectura · paa.lect.literario: 0/9 (faltan 9)",
+          "Lectura · paa.lect.vocabulario: 0/9 (faltan 9)",
+          "Redacción · paa.red.adicion: 0/4 (faltan 4)",
+          "Redacción · paa.red.cohesion: 0/4 (faltan 4)",
+          "Redacción · paa.red.elision: 0/5 (faltan 5)",
+          "Redacción · paa.red.generalizacion: 0/4 (faltan 4)",
+          "Redacción · paa.red.integracion: 0/4 (faltan 4)",
+          "Redacción · paa.red.particularizacion: 0/4 (faltan 4)",
+          "Matemáticas · paa.mat.algebra: 0/14 (faltan 14)",
+          "Matemáticas · paa.mat.aritmetica: 0/14 (faltan 14)",
+          "Matemáticas · paa.mat.datos: 0/9 (faltan 9)",
+          "Matemáticas · paa.mat.geometria: 0/14 (faltan 14)",
+          "Matemáticas · paa.mat.probabilidad: 0/4 (faltan 4)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.lectura: 0/19 (faltan 19)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.lenguaje: 0/19 (faltan 19)",
+          "Inglés como lengua extranjera (ESLAT) · paa.ing.redaccion: 0/12 (faltan 12)"
+        ]
+      },
+      "formCapacity": {
+        "reduced": 0,
+        "full": 0
+      }
+    },
+    "components": [
+      {
+        "sectionKey": "lectura",
+        "officialItemCount": 45,
+        "reducedPositions": 10,
+        "positionsCovered": 0,
+        "cells": 6,
+        "cellsCovered": 0,
+        "eligibleItems": 0,
+        "practice": false,
+        "reducedAssembles": false,
+        "fullAssembles": false,
+        "formCapacityProbed": 0,
+        "disjointForms": 0,
+        "missing": [
+          {
+            "objective": "paa.lect.evidencia",
+            "positions": 1,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.lect.explicitas",
+            "positions": 2,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.lect.graficos",
+            "positions": 1,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.lect.inferencia",
+            "positions": 2,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.lect.literario",
+            "positions": 2,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.lect.vocabulario",
+            "positions": 2,
+            "eligible": 0
+          }
+        ]
+      },
+      {
+        "sectionKey": "redaccion",
+        "officialItemCount": 25,
+        "reducedPositions": 6,
+        "positionsCovered": 0,
+        "cells": 6,
+        "cellsCovered": 0,
+        "eligibleItems": 0,
+        "practice": false,
+        "reducedAssembles": false,
+        "fullAssembles": false,
+        "formCapacityProbed": 0,
+        "disjointForms": 0,
+        "missing": [
+          {
+            "objective": "paa.red.adicion",
+            "positions": 1,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.red.cohesion",
+            "positions": 1,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.red.elision",
+            "positions": 1,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.red.generalizacion",
+            "positions": 1,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.red.integracion",
+            "positions": 1,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.red.particularizacion",
+            "positions": 1,
+            "eligible": 0
+          }
+        ]
+      },
+      {
+        "sectionKey": "matematicas",
+        "officialItemCount": 55,
+        "reducedPositions": 12,
+        "positionsCovered": 12,
+        "cells": 5,
+        "cellsCovered": 5,
+        "eligibleItems": 296,
+        "practice": true,
+        "reducedAssembles": true,
+        "fullAssembles": false,
+        "formCapacityProbed": 5,
+        "disjointForms": 13,
+        "missing": []
+      },
+      {
+        "sectionKey": "ingles",
+        "officialItemCount": 50,
+        "reducedPositions": 8,
+        "positionsCovered": 0,
+        "cells": 3,
+        "cellsCovered": 0,
+        "eligibleItems": 0,
+        "practice": false,
+        "reducedAssembles": false,
+        "fullAssembles": false,
+        "formCapacityProbed": 0,
+        "disjointForms": 0,
+        "missing": [
+          {
+            "objective": "paa.ing.lectura",
+            "positions": 3,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.ing.lenguaje",
+            "positions": 3,
+            "eligible": 0
+          },
+          {
+            "objective": "paa.ing.redaccion",
+            "positions": 2,
+            "eligible": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "examVersionId": "56a95947-327e-4171-b328-affe58484c3f",
+    "scope": "PILOT_PREVIEW",
+    "positions": 1,
+    "covered": 0,
+    "readiness": {
+      "structure": true,
+      "practice": {
+        "ready": false,
+        "reasons": [
+          "Mathematics · null: 0/1 (faltan 1)"
+        ]
+      },
+      "reducedMock": {
+        "ready": false,
+        "reasons": [
+          "Mathematics · null: 0/1 (faltan 1)"
+        ]
+      },
+      "fullMock": {
+        "ready": false,
+        "bankAssembles": false,
+        "deliverable": false,
+        "reasons": [
+          "1fc151d4-eb3b-41cc-a23e-dbf911aef424: longitud oficial no publicada",
+          "Mathematics · null: 0/1 (faltan 1)"
+        ]
+      },
+      "fullMockCalibrated": {
+        "ready": false,
+        "reasons": [
+          "FULL_MOCK_READY = NO",
+          "Mathematics · null: 0/1 (faltan 1)"
+        ]
+      },
+      "formCapacity": {
+        "reduced": 0,
+        "full": 0
+      }
+    },
+    "components": [
+      {
+        "sectionKey": "1fc151d4-eb3b-41cc-a23e-dbf911aef424",
+        "officialItemCount": null,
+        "reducedPositions": 1,
+        "positionsCovered": 0,
+        "cells": 1,
+        "cellsCovered": 0,
+        "eligibleItems": 0,
+        "practice": false,
+        "reducedAssembles": false,
+        "fullAssembles": false,
+        "formCapacityProbed": 0,
+        "disjointForms": 0,
+        "missing": [
+          {
+            "objective": null,
+            "positions": 1,
+            "eligible": 0
+          }
+        ]
+      }
+    ]
+  }
+]
