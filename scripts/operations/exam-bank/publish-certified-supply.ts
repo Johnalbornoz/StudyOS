@@ -84,6 +84,20 @@ async function main(): Promise<number> {
     console.log('CONFLICTS', report.conflicts.length);
     console.log('VERIFICATION', JSON.stringify(report.verification));
     if (out) writeFileSync(out, `${JSON.stringify({ target, fingerprint: fp, ...report }, null, 2)}\n`);
+    // The catalogue's readiness is a stored bank-health snapshot, never recomputed on a Student request: it is
+    // refreshed here, after a committed publication, for every exam version that now holds certified rows.
+    if (report.committed) {
+      // The snapshot is computed in the delivery scope of the environment being published to (DEV and a throwaway
+      // database are pilot environments). A deployment reads it with its own EXAM_BANK_DELIVERY_SCOPE: one that is
+      // not told it is a pilot still delivers none of this supply, whatever the snapshot says.
+      process.env.EXAM_BANK_DELIVERY_SCOPE = plan.scope;
+      const { refreshVersionHealth } = await import('@/lib/exam-core/question-bank/health.service');
+      const versions = (await db.query(`SELECT DISTINCT exam_version_id FROM question_bank_items WHERE lineage_class = 'CORE_DERIVED' AND exam_version_id IS NOT NULL ORDER BY 1`)).rows.map((r: { exam_version_id: string }) => r.exam_version_id);
+      for (const v of versions) {
+        const h = await refreshVersionHealth(v);
+        console.log(`BANK HEALTH SNAPSHOT (scope ${plan.scope}) ${v}: ${(h?.health.components ?? []).map((x) => `${x.sectionKey} practice=${x.practice} reduced=${x.reducedAssembles} full=${x.fullAssembles}`).join('; ')}`);
+      }
+    }
     return 0;
   } catch (error) {
     if (error instanceof PublicationConflict) console.error(`CONFLICT (nothing written): ${error.message}`);

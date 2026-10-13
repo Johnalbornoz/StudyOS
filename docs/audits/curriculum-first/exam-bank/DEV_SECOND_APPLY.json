@@ -42,6 +42,8 @@
     "assessment_item_instances": 0,
     "question_bank_items": 0,
     "approved_items": 0,
+    "question_bank_content_rights": 0,
+    "question_bank_item_concepts": 0,
     "question_bank_lifecycle_events": 0,
     "assessment_coverage_snapshots": 0
   },
@@ -64,6 +66,8 @@
     "batch": 1,
     "batchCells": 33,
     "certifiedInstances": 326,
+    "contentRights": 296,
+    "conceptAttributions": 296,
     "coverageSnapshots": 1
   },
   "materialized": {
@@ -274,6 +278,9 @@
     "orphanBankRows": 0,
     "bankRowsNotTheirInstance": 0,
     "bankRowsAuthoredByAPerson": 0,
+    "bankRowsWithoutAnEstablishedRight": 0,
+    "bankRowsWithoutTheirCertifiedConcept": 0,
+    "bankRowsNotActive": 0,
     "effectiveExamCapacity": 296,
     "duplicateInstanceDigests": 0,
     "duplicateBankRows": 0,

@@ -70,7 +70,16 @@ describe('QB-R1B attribution writer -- one governed path', () => {
   it('nothing is attributed automatically: the writer reads no objective mapping, and nothing else writes attribution', () => {
     expect(svc).not.toMatch(/objective_concept_mappings|learning_objective/);
     const walk = (dir: string): string[] => readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith('.ts') || e.name.endsWith('.tsx') ? [`${dir}/${e.name}`] : []));
-    expect(walk('src').filter((f) => /(INSERT INTO|DELETE FROM|UPDATE) question_bank_item_concepts/.test(read(f)))).toEqual(['src/lib/exam-core/question-bank/item-attribution.service.ts']);
+    // Two governed writers, and no other:
+    //   - the reviewer path (this service): a qualified person attributes a reviewed item, audited;
+    //   - the Exam Bank publication (Track B): a CORE_DERIVED version copies the ONE primary concept its certified
+    //     instance was certified with, resolved through the certified concept catalogue, recorded by the technical
+    //     identity before the version is in use. It infers nothing either: no objective mapping is read.
+    expect(walk('src').filter((f) => /(INSERT INTO|DELETE FROM|UPDATE) question_bank_item_concepts/.test(read(f))).sort()).toEqual(['src/lib/exam-bank/publication.service.ts', 'src/lib/exam-core/question-bank/item-attribution.service.ts']);
+    const publication = read('src/lib/exam-bank/publication.service.ts');
+    expect(publication).not.toMatch(/objective_concept_mappings/);
+    expect(publication).toMatch(/paaCertifiedConceptByStableId\(stableId\)/);
+    expect(publication).toMatch(/INSERT INTO question_bank_item_concepts \(approved_item_id, canonical_concept_id, role, attributed_by\) VALUES \(\$1, \$2, 'PRIMARY', \$3\)`, \[versionId, conceptId, author\]/);
   });
 
   it('audited in the same transaction: who, before, after, why, and the qualification it was made under', () => {

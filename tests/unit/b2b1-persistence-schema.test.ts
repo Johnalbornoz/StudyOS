@@ -295,6 +295,8 @@ describe('B2-B1 blueprint variants and frozen forms', () => {
       'src/lib/assessment-blueprint/protected/persistence-errors.ts',
       'src/lib/assessment-foundation/question-coverage.service.ts',
       'src/lib/assessment-foundation/question-coverage.ts',
+      // Track B: the Exam Bank publication records the reuse right and the certified concept of each core-derived version
+      'src/lib/exam-bank/publication.service.ts',
       'src/lib/exam-core/question-bank/item-attribution.service.ts',
       'src/lib/exam-core/question-bank/reviewer-qualification.service.ts',
     ]);
