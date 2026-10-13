@@ -10,9 +10,9 @@
  *
  * WHERE IT MAY RUN. The target is named twice and both must agree with the connection:
  *   EXAM_BANK_PUBLICATION_FP=<fingerprint of host|database>     must equal the fingerprint of DATABASE_URL
- *   and the fingerprint must be one this script authorises: the DEV database, or a throwaway Postgres on
- *   127.0.0.1 / localhost. Preview, Stage and Production are not authorised here; promoting to another
- *   environment is a separate, deliberate change to AUTHORISED_TARGETS.
+ *   and the fingerprint must be one this script authorises: the DEV database, the Track B Preview candidate's own
+ *   database, or a throwaway Postgres on 127.0.0.1 / localhost. The shared Preview database (the fallback's), Stage
+ *   and Production are not authorised; promoting anywhere else is a separate, deliberate change to AUTHORISED_TARGETS.
  *
  *   EXAM_BANK_PUBLICATION_FP=2a29b99ee14a22b4 npx tsx --env-file=<dev env> scripts/operations/exam-bank/publish-certified-supply.ts [--apply]
  *
@@ -24,7 +24,12 @@ import { join } from 'path';
 
 const ROOT = process.cwd();
 /** Databases this script may write to, by fingerprint. A throwaway local Postgres is authorised by its host. */
-const AUTHORISED_TARGETS: Readonly<Record<string, string>> = { '2a29b99ee14a22b4': 'DEV' };
+const AUTHORISED_TARGETS: Readonly<Record<string, string>> = {
+  '2a29b99ee14a22b4': 'DEV',
+  // Authorised 2026-10-13: the Track B Preview candidate's OWN database (neondb_trackb_exam), a clone of the Preview
+  // database. The database of the known-good fallback (f1436f7) is a different one and is not a target.
+  '4c249c68e0627b9f': 'PREVIEW_TRACK_B',
+};
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 /** The artefacts the publication is computed from, pinned. A changed artefact is a different publication: it stops here. */
 const EXPECTED = {

@@ -74,6 +74,7 @@
     "planned": 296,
     "inserted": 0,
     "skipped": 296,
+    "superseded": 0,
     "byObjective": {}
   },
   "blocked": [
@@ -281,6 +282,8 @@
     "bankRowsWithoutAnEstablishedRight": 0,
     "bankRowsWithoutTheirCertifiedConcept": 0,
     "bankRowsNotActive": 0,
+    "bankRowsPresentingTheKeyAsAnExplanation": 0,
+    "bankRowsWithoutTheirGenerationLineage": 0,
     "effectiveExamCapacity": 296,
     "duplicateInstanceDigests": 0,
     "duplicateBankRows": 0,

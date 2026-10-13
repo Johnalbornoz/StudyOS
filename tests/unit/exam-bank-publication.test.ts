@@ -93,9 +93,10 @@ describe('the plan is derived from the artefacts, and only from them', () => {
     expect(cli).toContain(sha('src/lib/assessment-instance/pilot/step4b-pilot-slice.ts'));
     expect(cli).toContain(sha(FILE));
     expect(cli).toContain(HUMAN50_POLICY_HASH);
-    // dry run is the default; Preview, Stage and Production are not authorised targets
+    // dry run is the default
     expect(cli).toMatch(/const apply = process\.argv\.includes\('--apply'\)/);
-    expect(cli).toMatch(/AUTHORISED_TARGETS: Readonly<Record<string, string>> = \{ '2a29b99ee14a22b4': 'DEV' \}/);
+    // DEV, and the Track B Preview candidate's own database -- never the shared Preview database (the fallback's) or Production
+    expect([...cli.matchAll(/^  '([0-9a-f]{16})': '([A-Z_]+)',$/gm)].map((m) => `${m[1]}:${m[2]}`)).toEqual(['2a29b99ee14a22b4:DEV', '4c249c68e0627b9f:PREVIEW_TRACK_B']);
     expect(cli).not.toMatch(/53d158d5811e7ee0|6671e7382d808d06/);
   });
 });

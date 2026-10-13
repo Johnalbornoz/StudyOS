@@ -1,5 +1,5 @@
 /**
- * TRACK B -- the standardized exam runtime over the PERSISTED Certified Exam Bank. DEV only.
+ * TRACK B -- the standardized exam runtime over the PERSISTED Certified Exam Bank. DEV and the Track B Preview candidate's own database.
  *
  * Drives real attempts through the Exam Core services (the same ones the Student routes call) for PAA Matemáticas:
  *   P  Exam Practice       the catalogue entry, a PRACTICE instance, delivery, scoring, evidence
@@ -19,7 +19,8 @@ process.env.ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED = 'true';
 process.env.QUESTION_BANK_READINESS_MODE = 'ENFORCE';
 process.env.EXAM_BANK_DELIVERY_SCOPE = 'PILOT_PREVIEW';
 
-const DEV = '2a29b99ee14a22b4';
+/** Where this may run: DEV, and the Track B Preview candidate's own database (never the shared Preview database, never Production). */
+const TARGETS: Readonly<Record<string, string>> = { '2a29b99ee14a22b4': 'DEV', '4c249c68e0627b9f': 'PREVIEW_TRACK_B' };
 const RUN = randomBytes(3).toString('hex');
 const results: { id: string; ok: boolean }[] = [];
 const check = (id: string, ok: boolean, detail = ''): void => { results.push({ id, ok }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${id}${detail ? '  [' + detail + ']' : ''}`); };
@@ -27,7 +28,7 @@ const check = (id: string, ok: boolean, detail = ''): void => { results.push({ i
 async function main(): Promise<void> {
   const u = new URL(process.env.DATABASE_URL ?? '');
   const fp = createHash('sha256').update(u.hostname + '|' + u.pathname.slice(1)).digest('hex').slice(0, 16);
-  if (fp !== DEV || process.env.EXAM_BANK_PUBLICATION_FP !== fp) throw new Error(`REFUSING: database ${fp} (DEV only)`);
+  if (!TARGETS[fp] || process.env.EXAM_BANK_PUBLICATION_FP !== fp) throw new Error(`REFUSING: database ${fp} is not an authorised target`);
   const { db } = await import('@/lib/db');
   const { getOrCreateCanonicalUser } = await import('@/lib/identity/canonical-user.service');
   const { upsertStudentFromWebhook } = await import('@/lib/auth');
@@ -43,7 +44,7 @@ async function main(): Promise<void> {
   const { examBankDeliveryScope, certifiedSupplySql } = await import('@/lib/exam-bank/delivery-scope');
   const one = async (sql: string, p: unknown[] = []) => (await db.query(sql, p)).rows[0];
   const n = async (sql: string, p: unknown[] = []) => Number((await one(sql, p))?.n ?? 0);
-  console.log(`exam runtime scenarios -- db ${fp} -- run ${RUN} -- scope ${examBankDeliveryScope()}`);
+  console.log(`exam runtime scenarios -- ${TARGETS[fp]} db ${fp} -- run ${RUN} -- scope ${examBankDeliveryScope()}`);
 
   const paa = await one(`SELECT d.id AS definition_id, v.id AS version_id FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED' WHERE d.config_key = 'v2.paa'`);
   const math = await one(`SELECT id FROM assessment_components WHERE exam_version_id = $1 AND section_key = 'matematicas'`, [paa.version_id]);
@@ -118,7 +119,7 @@ async function main(): Promise<void> {
 
     /* ------------------------------------------------ P: Exam Practice ------------------------------------------------ */
     const cards = await examAvailabilityForVersion(paa.version_id);
-    check('P0  Exam Prep: exam practice is offered from the certified bank; a mock is not offered from here on content counts alone', cards.evaluated && cards.eligibleQuestions > 0 && cards.options.find((o: any) => o.type === 'EXAM_PRACTICE')?.available === true && cards.options.find((o: any) => o.type === 'FULL_MOCK')?.available !== true, `eligible ${cards.eligibleQuestions}; ${cards.options.map((o: any) => `${o.type}:${o.available}`).join(' ')}`);
+    check('P0  Exam Prep: exam practice is offered from the certified bank; a mock is not offered on content counts alone; a challenge is not offered without calibrated difficulty', cards.evaluated && cards.eligibleQuestions > 0 && cards.options.find((o: any) => o.type === 'EXAM_PRACTICE')?.available === true && cards.options.find((o: any) => o.type === 'FULL_MOCK')?.available !== true && cards.options.find((o: any) => o.type === 'EXAM_CHALLENGE')?.available === false && cards.options.find((o: any) => o.type === 'EXAM_CHALLENGE')?.reason === 'DIFFICULTY_NOT_CALIBRATED', `eligible ${cards.eligibleQuestions}; ${cards.options.map((o: any) => `${o.type}:${o.available}`).join(' ')}`);
     const level = await resolveExamLevel('paa.practice.matematicas', 'es');
     const comp = level?.components.find((c: any) => c.componentId === math.id) as any;
     check('P1  the catalogue offers PAA Matemáticas practice (readiness from the bank snapshot, ENFORCE)', !!level && level.modes.includes('PRACTICE') && !!comp, level ? `modes ${level.modes.join(',')}; component ${comp?.readiness}` : 'node not selectable');
