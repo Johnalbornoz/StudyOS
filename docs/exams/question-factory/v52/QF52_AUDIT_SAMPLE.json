@@ -1,0 +1,734 @@
+{
+  "kind": "QF52_AUDIT_SAMPLE",
+  "policy": {
+    "policyId": "qf52-audit",
+    "version": "1",
+    "status": "PROVISIONAL_UNTIL_OUT_OF_SAMPLE_EVIDENCE",
+    "newEnvelopeSamplePerBand": 3,
+    "stableEnvelopeSampleRate": 0.05,
+    "stableAfterCleanAudits": 20
+  },
+  "blind": true,
+  "items": [
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "79908f0d633fe58787c407e46a24fa26e29f5542cf63d52269219b581e957528",
+      "envelopeHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "coreId": "tf.math.quadratic.solve-rational-roots",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "2ed60b869214cf9fe94c888168835f33b6cbfe87aa896e0a5f4a0260246aa14a",
+      "envelopeHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "coreId": "tf.math.quadratic.solve-rational-roots",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "d00e4f8be5cf295b3922f941d3246368b507491fca31ea684f75950c87e56320",
+      "envelopeHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "coreId": "tf.math.quadratic.solve-rational-roots",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "28e9b9af506033b7eb631c7ee73c6f209631b4362f51ff3eeae8f984c2fca201",
+      "envelopeHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "coreId": "tf.math.quadratic.solve-rational-roots",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "1a80dbf769ccffab5919247648fa6de1148309afa4992ab33600b7ff7a277092",
+      "envelopeHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "coreId": "tf.math.quadratic.solve-rational-roots",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "3ec11d1b7e8588f5d86a9f152355669bc4845660f316828e914f75c2d6022342",
+      "envelopeHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "coreId": "tf.math.quadratic.solve-rational-roots",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "9c6058bd4d2d14053d8a510eff03f2bf38a4b530e4a247bd6486bf93a2269705",
+      "envelopeHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "coreId": "tf.math.quadratic.solve-rational-roots",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "cb746be0e1de690d2a631f3b522ff287b80f677e2018942938e515b2d29e7550",
+      "envelopeHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "coreId": "tf.math.quadratic.solve-rational-roots",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "741550e835fd80babb5db00c586f113a3b6f20dce52789fce4b938dfa56031db",
+      "envelopeHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "coreId": "tf.math.quadratic.solve-rational-roots",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "669644656aad4d27da8508ecc6b4df39e5b85debe08ffe3d28ceb0efdd5e9d7f",
+      "envelopeHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "coreId": "tf.math.proportion.missing-value",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "b844b061bf7792123c16d988a9d4b13b20e5990cfa381bd7081c6ea43a7f9ed6",
+      "envelopeHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "coreId": "tf.math.proportion.missing-value",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "3e58b6f8f536cd57a3a19f09a1288dfa20a86e9116949f058828baec7fa80399",
+      "envelopeHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "coreId": "tf.math.proportion.missing-value",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "34e052e567eec8529c999a0f1144c122c8a96cf3e620763afdeac9b9ece1680e",
+      "envelopeHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "coreId": "tf.math.proportion.missing-value",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "2631922f1aca9d362fa34ccf4af7baba4dd81574aeac1a836e18872b2438077a",
+      "envelopeHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "coreId": "tf.math.proportion.missing-value",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "736e7b43dab0634b393890611f59847ce5ec30382847e88a6d1833c921f3046a",
+      "envelopeHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "coreId": "tf.math.proportion.missing-value",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "ea9bb36f0acf76a133f1bc012cf985b0dc4c82fc7764d334e1462bc3fc2e8dbd",
+      "envelopeHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "coreId": "tf.math.proportion.missing-value",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "f810187028a40f7d70ed47152f21fb0caf994a54fa5b59ef165e11026f3e91c4",
+      "envelopeHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "coreId": "tf.math.proportion.missing-value",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "81248585d2c296c401d406c2f24b349e1aebe1bcb42e275297019b462d2596a3",
+      "envelopeHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "coreId": "tf.math.proportion.missing-value",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "48eb47b0d940f09564841617b3d427cd1e937df4eb34f0d9faa1d7d7df6a2a60",
+      "envelopeHash": "445797d39d6bdad24ee1b952e3e0e30ce1f660306d60ec013472b06ff1d10442",
+      "coreId": "tf.math.linear.line-through-two-points",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "2083c4b9c552edce3ba424a36de22b03e75255554658a23df984ccff66f1f22a",
+      "envelopeHash": "445797d39d6bdad24ee1b952e3e0e30ce1f660306d60ec013472b06ff1d10442",
+      "coreId": "tf.math.linear.line-through-two-points",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "16af2c2f7ebe06bf567115266bab817d611336e2a1b105ec01280b1db123432e",
+      "envelopeHash": "445797d39d6bdad24ee1b952e3e0e30ce1f660306d60ec013472b06ff1d10442",
+      "coreId": "tf.math.linear.line-through-two-points",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "a9a641cc5637009d36ef90c66c1016f8d6325c7f8e8e764ed06c455cdb65cb03",
+      "envelopeHash": "445797d39d6bdad24ee1b952e3e0e30ce1f660306d60ec013472b06ff1d10442",
+      "coreId": "tf.math.linear.line-through-two-points",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "45f0bdad7ffc5cd70856ad4a8a132502379225cb905bbcf38a617e264d7d1f5f",
+      "envelopeHash": "445797d39d6bdad24ee1b952e3e0e30ce1f660306d60ec013472b06ff1d10442",
+      "coreId": "tf.math.linear.line-through-two-points",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "689ca00a6472e548897995443f214a98a1ff010322e236c0d6c717e6c10a4bec",
+      "envelopeHash": "445797d39d6bdad24ee1b952e3e0e30ce1f660306d60ec013472b06ff1d10442",
+      "coreId": "tf.math.linear.line-through-two-points",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "2fbebee4f5d370b098af1fe1160e86d99568e140c778aa415cec9ab5c6f89d9f",
+      "envelopeHash": "445797d39d6bdad24ee1b952e3e0e30ce1f660306d60ec013472b06ff1d10442",
+      "coreId": "tf.math.linear.line-through-two-points",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "36b1b547c984d6c08daed912aa856b580e172f21e7993bfc6c53f8225f5fd948",
+      "envelopeHash": "445797d39d6bdad24ee1b952e3e0e30ce1f660306d60ec013472b06ff1d10442",
+      "coreId": "tf.math.linear.line-through-two-points",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "5b376d7e6194d143672a90b4ba0e450d391b827d0a6df65b9c11bb9a540c3ef5",
+      "envelopeHash": "445797d39d6bdad24ee1b952e3e0e30ce1f660306d60ec013472b06ff1d10442",
+      "coreId": "tf.math.linear.line-through-two-points",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "a42f65651493f06bef0b0ee6d15ed22bd2ee5fa1bbc9d12429831911e04bc4f9",
+      "envelopeHash": "dc33b197f0cd98ff34a967bb47c311eb316313c09029e99187296eaf972480ea",
+      "coreId": "tf.math.probability.single-event-equally-likely",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "0bd0c4ccf8cba99e17c3dff6b893e1ab76c212b8e4b0963f4fb2747383b75088",
+      "envelopeHash": "dc33b197f0cd98ff34a967bb47c311eb316313c09029e99187296eaf972480ea",
+      "coreId": "tf.math.probability.single-event-equally-likely",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "c9753c145defd77d596b81562b70f2d05530a998823c8957a3b18f869517510d",
+      "envelopeHash": "dc33b197f0cd98ff34a967bb47c311eb316313c09029e99187296eaf972480ea",
+      "coreId": "tf.math.probability.single-event-equally-likely",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "03b37db8d01ad74d4d12f0fc0ebf43033e7318757e497fd78f1604af0d82b4df",
+      "envelopeHash": "dc33b197f0cd98ff34a967bb47c311eb316313c09029e99187296eaf972480ea",
+      "coreId": "tf.math.probability.single-event-equally-likely",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "d9fc933ac12c1b3ba06b858d6d3ada7bf9b982519c84f79487e7a8751ab7ce46",
+      "envelopeHash": "dc33b197f0cd98ff34a967bb47c311eb316313c09029e99187296eaf972480ea",
+      "coreId": "tf.math.probability.single-event-equally-likely",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "d86d2e3f240955cdb6bbd85c3789d6a6e65580ae2bd6ae94e2e938e6013d7c8b",
+      "envelopeHash": "dc33b197f0cd98ff34a967bb47c311eb316313c09029e99187296eaf972480ea",
+      "coreId": "tf.math.probability.single-event-equally-likely",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "efd728f9f30d24e941b244e467973d70006fb447e3572ddde1e8edda8752ecf5",
+      "envelopeHash": "dc33b197f0cd98ff34a967bb47c311eb316313c09029e99187296eaf972480ea",
+      "coreId": "tf.math.probability.single-event-equally-likely",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "543977d089d5b485d62af98e10b31dd2e1dc35e75697f83a877548f25621aa0d",
+      "envelopeHash": "dc33b197f0cd98ff34a967bb47c311eb316313c09029e99187296eaf972480ea",
+      "coreId": "tf.math.probability.single-event-equally-likely",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "fbc9a4a7e21ac6855cfccff037f7b6fa8c846413172d6a3fad5bdf15373bf88d",
+      "envelopeHash": "dc33b197f0cd98ff34a967bb47c311eb316313c09029e99187296eaf972480ea",
+      "coreId": "tf.math.probability.single-event-equally-likely",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "4ecf91a3bf94a92b54e055e6c678fb6555cce0ca5ce208206293a3274fe7bec0",
+      "envelopeHash": "b17f92f1392b79a2a9e5b4d9a2d196cfe6c15439b1ab2c204dc3e4d89cb1f037",
+      "coreId": "tf.math.geometry.right-triangle-missing-side",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "c1169b57a44813b3e50651d4b55148f7e17c26c33d3a8ec2661b6cc0300786c5",
+      "envelopeHash": "b17f92f1392b79a2a9e5b4d9a2d196cfe6c15439b1ab2c204dc3e4d89cb1f037",
+      "coreId": "tf.math.geometry.right-triangle-missing-side",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "33b2c7c3997e2714a89013aebd8d2682ba689bc94403598442b77290345e74a7",
+      "envelopeHash": "b17f92f1392b79a2a9e5b4d9a2d196cfe6c15439b1ab2c204dc3e4d89cb1f037",
+      "coreId": "tf.math.geometry.right-triangle-missing-side",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "0cddebf0dfe9c785e6d93b87b4006c934735fa61a4063d5f1f038072799c4626",
+      "envelopeHash": "b17f92f1392b79a2a9e5b4d9a2d196cfe6c15439b1ab2c204dc3e4d89cb1f037",
+      "coreId": "tf.math.geometry.right-triangle-missing-side",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "7d047f5255553cdfd0a6414fa48284c2ce81292c68a2c3de06ebe7693a2406d6",
+      "envelopeHash": "b17f92f1392b79a2a9e5b4d9a2d196cfe6c15439b1ab2c204dc3e4d89cb1f037",
+      "coreId": "tf.math.geometry.right-triangle-missing-side",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "173209a7f627c4c7ccdd675a8905ae66d1973ee46d4535d3ac3264689e75b7d7",
+      "envelopeHash": "b17f92f1392b79a2a9e5b4d9a2d196cfe6c15439b1ab2c204dc3e4d89cb1f037",
+      "coreId": "tf.math.geometry.right-triangle-missing-side",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "bc3bb78f7c116a3ba49dda937591129d53242dfeff7b66bcc2b98079f4452601",
+      "envelopeHash": "b17f92f1392b79a2a9e5b4d9a2d196cfe6c15439b1ab2c204dc3e4d89cb1f037",
+      "coreId": "tf.math.geometry.right-triangle-missing-side",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "e50ff875de2f2bd80560e9803c947d0125ae2dff1573987286df3f5d3a2eab59",
+      "envelopeHash": "b17f92f1392b79a2a9e5b4d9a2d196cfe6c15439b1ab2c204dc3e4d89cb1f037",
+      "coreId": "tf.math.geometry.right-triangle-missing-side",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "8ef12b2defa544a0f4cdc2fafe5d62dad020997e32955914f13633982fe833c8",
+      "envelopeHash": "b17f92f1392b79a2a9e5b4d9a2d196cfe6c15439b1ab2c204dc3e4d89cb1f037",
+      "coreId": "tf.math.geometry.right-triangle-missing-side",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "af4648a0da9e8af82e95cd4426ba9d19b8defbb726704b8cef1d5769c835b03f",
+      "envelopeHash": "17429679d656a2f3588844f93b6a92df50b8541e80a384b931eab91e8cf9679d",
+      "coreId": "tf.math.statistics.mean-of-a-data-set",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "e5be131c112644919268fae7a22e6aead3b477235808434f743abcc960c7d471",
+      "envelopeHash": "17429679d656a2f3588844f93b6a92df50b8541e80a384b931eab91e8cf9679d",
+      "coreId": "tf.math.statistics.mean-of-a-data-set",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "a5ff440d869d5b8db7162261d6d98dbc985855cc4e93401183c3a1949a8f7195",
+      "envelopeHash": "17429679d656a2f3588844f93b6a92df50b8541e80a384b931eab91e8cf9679d",
+      "coreId": "tf.math.statistics.mean-of-a-data-set",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "a1d34824a38bf327975181c77502ed42c94400b3dc1b7776845e0a0ac1aa9720",
+      "envelopeHash": "17429679d656a2f3588844f93b6a92df50b8541e80a384b931eab91e8cf9679d",
+      "coreId": "tf.math.statistics.mean-of-a-data-set",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "1f64cd221988154a23c146f79b821abbcbba93749070115069da2d0c2256161e",
+      "envelopeHash": "17429679d656a2f3588844f93b6a92df50b8541e80a384b931eab91e8cf9679d",
+      "coreId": "tf.math.statistics.mean-of-a-data-set",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "2de909043e9e3af35d23f42195ffab58b358d2f19133dbc25060668b41244f66",
+      "envelopeHash": "17429679d656a2f3588844f93b6a92df50b8541e80a384b931eab91e8cf9679d",
+      "coreId": "tf.math.statistics.mean-of-a-data-set",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "b3ee7aa5f49dedc09ee2913900c6dc2ba8384616f366b0767ff1e6cf8f223e47",
+      "envelopeHash": "17429679d656a2f3588844f93b6a92df50b8541e80a384b931eab91e8cf9679d",
+      "coreId": "tf.math.statistics.mean-of-a-data-set",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "fd85b302b855c2f45807a6308eb27315e8e4d3d0b2f382dc974442f9914e599f",
+      "envelopeHash": "17429679d656a2f3588844f93b6a92df50b8541e80a384b931eab91e8cf9679d",
+      "coreId": "tf.math.statistics.mean-of-a-data-set",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "2b125959e531612a58ba72e0a7621c30a20816abaa2cc447e55970b2d4e34398",
+      "envelopeHash": "17429679d656a2f3588844f93b6a92df50b8541e80a384b931eab91e8cf9679d",
+      "coreId": "tf.math.statistics.mean-of-a-data-set",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "e91f1a1fe9defd8bd80878af6872a033682ccede5d62777dcddcc0980f7bc0fe",
+      "envelopeHash": "741f482f4626b7f87846868cb8b149e6638c0a78df3eac3f2141b72a4a32ccb6",
+      "coreId": "tf.math.percent.part-increase-original",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "a1803e5daddaf53b8c692d80a7775e98db5b036318f6be1144607d5e16121ad2",
+      "envelopeHash": "741f482f4626b7f87846868cb8b149e6638c0a78df3eac3f2141b72a4a32ccb6",
+      "coreId": "tf.math.percent.part-increase-original",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "e0fd0c5cb186f99471cedae2502bba06323bd9936bc400c5e9038362357a531e",
+      "envelopeHash": "741f482f4626b7f87846868cb8b149e6638c0a78df3eac3f2141b72a4a32ccb6",
+      "coreId": "tf.math.percent.part-increase-original",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "1826f592a676ee4408fea483bc04b37faf7f86833f83775679d581251088ea1c",
+      "envelopeHash": "741f482f4626b7f87846868cb8b149e6638c0a78df3eac3f2141b72a4a32ccb6",
+      "coreId": "tf.math.percent.part-increase-original",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "c76a29d69d9a1bda4b46dfa910a959e0665d234f735821aada82efc79ce6d49e",
+      "envelopeHash": "741f482f4626b7f87846868cb8b149e6638c0a78df3eac3f2141b72a4a32ccb6",
+      "coreId": "tf.math.percent.part-increase-original",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "e68fce4e2f57328bf61db3cc401ba8461003d6640c9f8fb26e475d11b941e82c",
+      "envelopeHash": "741f482f4626b7f87846868cb8b149e6638c0a78df3eac3f2141b72a4a32ccb6",
+      "coreId": "tf.math.percent.part-increase-original",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "670fde42e4637a2aed9f91a4064d8a3898ee93492ecb90c66396b56747d23d39",
+      "envelopeHash": "741f482f4626b7f87846868cb8b149e6638c0a78df3eac3f2141b72a4a32ccb6",
+      "coreId": "tf.math.percent.part-increase-original",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "5ab7a451881849def83914fd78e83202210100e880aeb452ad268011bbd94d8b",
+      "envelopeHash": "741f482f4626b7f87846868cb8b149e6638c0a78df3eac3f2141b72a4a32ccb6",
+      "coreId": "tf.math.percent.part-increase-original",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "81e6bd42e52162808435ffce51517159599abdca730b78454c5412e89482652d",
+      "envelopeHash": "741f482f4626b7f87846868cb8b149e6638c0a78df3eac3f2141b72a4a32ccb6",
+      "coreId": "tf.math.percent.part-increase-original",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "75899568c9cf2075303cfb5892294a9a68ab2af4c0da179c076f2728c809d69d",
+      "envelopeHash": "819de9fd5f4ad385fa858290233140525f11529369389c2111e4f781e6a1cab7",
+      "coreId": "tf.math.linear-equation.solve-one-unknown",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "2a01613cda36d4f13dff49237a09708b3e16c981e30a673e351ed6868015160a",
+      "envelopeHash": "819de9fd5f4ad385fa858290233140525f11529369389c2111e4f781e6a1cab7",
+      "coreId": "tf.math.linear-equation.solve-one-unknown",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "3d59b882607e3df510c723adb1678c6151bc4f3df30caa07942db13fe3502de0",
+      "envelopeHash": "819de9fd5f4ad385fa858290233140525f11529369389c2111e4f781e6a1cab7",
+      "coreId": "tf.math.linear-equation.solve-one-unknown",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "90aa10bc04718ec2be0a5dff27ffc286145d6b50f9d013647c84b114e9dc0719",
+      "envelopeHash": "819de9fd5f4ad385fa858290233140525f11529369389c2111e4f781e6a1cab7",
+      "coreId": "tf.math.linear-equation.solve-one-unknown",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "c09885603e6b9ff1b6fe3c4f02dd33d725a5e4caa6adcc60aeda0437fa083a3b",
+      "envelopeHash": "819de9fd5f4ad385fa858290233140525f11529369389c2111e4f781e6a1cab7",
+      "coreId": "tf.math.linear-equation.solve-one-unknown",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "f2516aec642276af1f2506406fa31aed82866a9d3d0c72405ef4857134a71657",
+      "envelopeHash": "819de9fd5f4ad385fa858290233140525f11529369389c2111e4f781e6a1cab7",
+      "coreId": "tf.math.linear-equation.solve-one-unknown",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "1fd7cf70beba1e8c9577d3125589c3336744246e69a6e3f38d63a97235a8386b",
+      "envelopeHash": "819de9fd5f4ad385fa858290233140525f11529369389c2111e4f781e6a1cab7",
+      "coreId": "tf.math.linear-equation.solve-one-unknown",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "0b78c5d02e6d9266ecf1aa0716a32aa287c5eb032533e71102c7c9c46f35ea8e",
+      "envelopeHash": "819de9fd5f4ad385fa858290233140525f11529369389c2111e4f781e6a1cab7",
+      "coreId": "tf.math.linear-equation.solve-one-unknown",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "f7dc8542825632ee8ee35add84735e2c54e28e2029f4cf2dd94631e01573259c",
+      "envelopeHash": "819de9fd5f4ad385fa858290233140525f11529369389c2111e4f781e6a1cab7",
+      "coreId": "tf.math.linear-equation.solve-one-unknown",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "fa18b3d32a87c00ed824401de57ec7bbf6074d7f16e50c38b895a4bbeb696c04",
+      "envelopeHash": "8135e87d7789e01ffcdb580b78395273a6d87cc753e81dae0d88f5d1c50ee57e",
+      "coreId": "tf.math.linear-system.solve-two-unknowns",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "9755e6f056b866be234c800c4565cd7ae0810813888a137cb154aceede5fb286",
+      "envelopeHash": "8135e87d7789e01ffcdb580b78395273a6d87cc753e81dae0d88f5d1c50ee57e",
+      "coreId": "tf.math.linear-system.solve-two-unknowns",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "70061195470cb7e2dfbec9eacf021a89cb6f0e82f2c2d9c4830b502ec7c9d06b",
+      "envelopeHash": "8135e87d7789e01ffcdb580b78395273a6d87cc753e81dae0d88f5d1c50ee57e",
+      "coreId": "tf.math.linear-system.solve-two-unknowns",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "a6708d12653c2ad1fc0fd24ebfcb2012ebf6378202a69ce1ae28cd5943b27853",
+      "envelopeHash": "8135e87d7789e01ffcdb580b78395273a6d87cc753e81dae0d88f5d1c50ee57e",
+      "coreId": "tf.math.linear-system.solve-two-unknowns",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "91815ad683446558a3bfc1f7e4aad31d10293955af3147413ce2ae0a0fb6f7c6",
+      "envelopeHash": "8135e87d7789e01ffcdb580b78395273a6d87cc753e81dae0d88f5d1c50ee57e",
+      "coreId": "tf.math.linear-system.solve-two-unknowns",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "eebb266781f3e861885d56ef69946d8b3f8902e3cc017580b8ecc639c959a453",
+      "envelopeHash": "8135e87d7789e01ffcdb580b78395273a6d87cc753e81dae0d88f5d1c50ee57e",
+      "coreId": "tf.math.linear-system.solve-two-unknowns",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "ec6d49694e9ef0d923440bae79a9e8a67c8c9b9994dfd91fb69e08f212c97e11",
+      "envelopeHash": "8135e87d7789e01ffcdb580b78395273a6d87cc753e81dae0d88f5d1c50ee57e",
+      "coreId": "tf.math.linear-system.solve-two-unknowns",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "01f78a5d5d34c986d3fef261d0ee4a1b5e56604bfa9314cb5460794ca6e6ea1c",
+      "envelopeHash": "8135e87d7789e01ffcdb580b78395273a6d87cc753e81dae0d88f5d1c50ee57e",
+      "coreId": "tf.math.linear-system.solve-two-unknowns",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "7752e6fd7afeeb763c33a2561ca1014bf7875633fde0299566759c2b83696816",
+      "envelopeHash": "8135e87d7789e01ffcdb580b78395273a6d87cc753e81dae0d88f5d1c50ee57e",
+      "coreId": "tf.math.linear-system.solve-two-unknowns",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "d5dd7dac42f47ad90025700be3953eb3abba10ee98db2465e105b5dd6a50c0bf",
+      "envelopeHash": "b2c2616810ea9b94e29d3808c483cb4daa270b98ca5d564933ace44308925b22",
+      "coreId": "tf.math.geometry.rectangle-area-perimeter",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "13ab4fea688cebc17da042e29a09b17a42e2f0575e9f2607a56d45cba9228836",
+      "envelopeHash": "b2c2616810ea9b94e29d3808c483cb4daa270b98ca5d564933ace44308925b22",
+      "coreId": "tf.math.geometry.rectangle-area-perimeter",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "1d0f9ed98a7af9e596b926b695dfd29c573172080c8aaee67a45ce78a9d50d5a",
+      "envelopeHash": "b2c2616810ea9b94e29d3808c483cb4daa270b98ca5d564933ace44308925b22",
+      "coreId": "tf.math.geometry.rectangle-area-perimeter",
+      "difficultyBand": "LOW",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "9e9e51fa3ffe0270a47f9668ad54ab0d3f76d291ec01e5d00a139384ac2b0dc4",
+      "envelopeHash": "b2c2616810ea9b94e29d3808c483cb4daa270b98ca5d564933ace44308925b22",
+      "coreId": "tf.math.geometry.rectangle-area-perimeter",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "e605b15113f7a7e1244eb4762e5f907ba763f9ca0a8a866c530fa350f103ef1e",
+      "envelopeHash": "b2c2616810ea9b94e29d3808c483cb4daa270b98ca5d564933ace44308925b22",
+      "coreId": "tf.math.geometry.rectangle-area-perimeter",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "2d1fefe03688f8973daf9978db88b75dd5dbdbd7e1140b1bad4e84ede530d56d",
+      "envelopeHash": "b2c2616810ea9b94e29d3808c483cb4daa270b98ca5d564933ace44308925b22",
+      "coreId": "tf.math.geometry.rectangle-area-perimeter",
+      "difficultyBand": "MEDIUM",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "09c2b472850ffa643c301f591c354544d20eca096d12aca7b2930e1c304d1a55",
+      "envelopeHash": "b2c2616810ea9b94e29d3808c483cb4daa270b98ca5d564933ace44308925b22",
+      "coreId": "tf.math.geometry.rectangle-area-perimeter",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "935818ceba723e0017330c2e6a1e1a4d2ae58a31ef27b1a7b11d6f9bdd2efad7",
+      "envelopeHash": "b2c2616810ea9b94e29d3808c483cb4daa270b98ca5d564933ace44308925b22",
+      "coreId": "tf.math.geometry.rectangle-area-perimeter",
+      "difficultyBand": "HIGH",
+      "blind": true
+    },
+    {
+      "stream": "NEW_ENVELOPE_INITIAL_AUDIT",
+      "instanceId": "75bb12c43508edd3db9571a5dacab01558d2d8f4512faaf5377fc56c8917e028",
+      "envelopeHash": "b2c2616810ea9b94e29d3808c483cb4daa270b98ca5d564933ace44308925b22",
+      "coreId": "tf.math.geometry.rectangle-area-perimeter",
+      "difficultyBand": "HIGH",
+      "blind": true
+    }
+  ]
+}

@@ -27,3 +27,8 @@ export * from './instance-validators';
 export * from './student-supply-policy';
 export * from './planning-unit';
 export * from './construct-core.repository';
+export * from './strategy-proportion-missing-value';
+export * from './renderer-envelope';
+export * from './certification';
+export * from './strategy-quadratic-solve';
+export * from './adapter-reconciliation';

@@ -1,0 +1,271 @@
+{
+  "kind": "STEP4B_CERTIFICATION_RECORDS",
+  "pilot": "step4b-pilot-1",
+  "storage": "OFFLINE_FILE_ONLY",
+  "persistedInAnyDatabase": false,
+  "authority": {
+    "reviewerId": "INTERNAL_PILOT_REVIEWER",
+    "reviewerName": "John Albornoz",
+    "authority": "INTERNAL_PILOT_REVIEWER",
+    "externalAccreditation": false,
+    "note": "An internal StudyUs certification authority for this pilot. Not an external academic accreditation."
+  },
+  "instruction": {
+    "receivedOn": "2026-10-13",
+    "verbatim": "Apruebo las 11 decisiones de Step 4B conforme a las recomendaciones: PAA blueprint REDUCED; IB blueprint REDUCED; quadratic core tf.math.quadratic.solve-rational-roots; proportion core 1.0.0-rc.2; adapters PAA e IB con 6 command terms gobernados para IB; ambos renderers; difficulty mapping 2/3/4; reviewer scopes; e inherited deterministic certification. Registra las decisiones con mi reviewer identity, timestamps, hashes y evidence references, sin",
+    "truncated": true,
+    "note": "The message ends at \"sin\". The restriction that followed was not received; it was not guessed. Nothing beyond recording these decisions offline was done."
+  },
+  "qualification": {
+    "v": 1,
+    "reviewerId": "INTERNAL_PILOT_REVIEWER",
+    "authority": "INTERNAL_PILOT_REVIEWER",
+    "scopes": [
+      {
+        "canonicalSubject": "Mathematics",
+        "systemId": "PAA"
+      },
+      {
+        "canonicalSubject": "Mathematics",
+        "systemId": "IB"
+      },
+      {
+        "canonicalSubject": "Matemáticas",
+        "systemId": "PAA"
+      }
+    ],
+    "grantedBy": "John Albornoz",
+    "grantedAt": "2026-10-13T12:10:59Z",
+    "revokedAt": null
+  },
+  "evidence": {
+    "packet": "STEP4B_HUMAN_REVIEW_PACKET.md",
+    "packetSha256": "d0d6f8e4bf6cfdbb37ae4db00e7083dc0f877c69e570c4f014ff506efc489f22",
+    "decisionsTemplate": "STEP4B_CERTIFICATION_DECISIONS.csv",
+    "decisionsTemplateSha256": "73e4f9370f81c1dfbdfb8beb3d29acb980604a47febd6e232c27cf8b4fb6a2c0",
+    "pilotInstances": "STEP4B_PILOT_INSTANCES.json",
+    "pilotInstancesSha256": "2850e5e428af5621ce564534afe5615905e528ae3b109dff8445d22893afaf6b"
+  },
+  "records": [
+    {
+      "decisionId": "D01",
+      "packetSection": "Blueprint PAA.MATEMATICAS",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Mathematics",
+          "systemId": "PAA"
+        },
+        "objectType": "BLUEPRINT_CLASSIFICATION",
+        "objectId": "v2.paa/matematicas",
+        "objectVersion": "step4b-pilot-1",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "221172b4d6456345fa485b4f355ea58fb7b47d787f48e48d5a81cbbaacba7c71",
+        "notes": "Blueprint classified REDUCED, with the bucket-to-concept links shown in the packet."
+      }
+    },
+    {
+      "decisionId": "D02",
+      "packetSection": "Blueprint IB.MATH_AA_HL.P1",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Mathematics",
+          "systemId": "IB"
+        },
+        "objectType": "BLUEPRINT_CLASSIFICATION",
+        "objectId": "v2.ib.math-aa-hl/p1",
+        "objectVersion": "step4b-pilot-1",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "417200c0761b691942d8ebe3b2491e97e87220e5e1d59a885be96e35ecc6b82d",
+        "notes": "Blueprint classified REDUCED, with the bucket-to-concept links shown in the packet."
+      }
+    },
+    {
+      "decisionId": "D03",
+      "packetSection": "Core tf.math.quadratic.solve-rational-roots",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Mathematics",
+          "systemId": "PAA"
+        },
+        "objectType": "CONSTRUCT_CORE",
+        "objectId": "tf.math.quadratic.solve-rational-roots",
+        "objectVersion": "1.0.0-rc.1",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "272f90a78b1ef155fa11251f952becde93b3ea7e53b14f82b5de9e56bfdaf3f8",
+        "notes": "Method-neutral quadratic core approved as shown."
+      }
+    },
+    {
+      "decisionId": "D04",
+      "packetSection": "Core tf.math.quadratic.solve-rational-roots",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Mathematics",
+          "systemId": "IB"
+        },
+        "objectType": "CONSTRUCT_CORE",
+        "objectId": "tf.math.quadratic.solve-rational-roots",
+        "objectVersion": "1.0.0-rc.1",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "272f90a78b1ef155fa11251f952becde93b3ea7e53b14f82b5de9e56bfdaf3f8",
+        "notes": "Method-neutral quadratic core approved as shown."
+      }
+    },
+    {
+      "decisionId": "D05",
+      "packetSection": "Core tf.math.quadratic.solve-rational-roots",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Mathematics",
+          "systemId": "PAA"
+        },
+        "objectType": "CORE_APPLICABILITY",
+        "objectId": "tf.math.quadratic.solve-rational-roots x PAA.MATEMATICAS",
+        "objectVersion": "1.0.0-rc.1",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "bfc2cfa79fdf6f2624573d6381140dedb3eae328bc5b58c3647b802e35b94eef",
+        "notes": "CONDITIONAL applicability to PAA (numeric entry only) approved with the quadratic core."
+      }
+    },
+    {
+      "decisionId": "D06",
+      "packetSection": "Core tf.math.proportion.missing-value",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Matemáticas",
+          "systemId": "PAA"
+        },
+        "objectType": "CONSTRUCT_CORE",
+        "objectId": "tf.math.proportion.missing-value",
+        "objectVersion": "1.0.0-rc.2",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "12c5621fc69540728789251e1a8c02aa9ac8b24429efde6d42f387a29a2d307b",
+        "notes": "Proportion core 1.0.0-rc.2 approved as shown."
+      }
+    },
+    {
+      "decisionId": "D07",
+      "packetSection": "Adapter PAA.MATEMATICAS",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Mathematics",
+          "systemId": "PAA"
+        },
+        "objectType": "ASSESSMENT_ADAPTER",
+        "objectId": "PAA.MATEMATICAS",
+        "objectVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "ff003ca66fdbbf94ad39696649cb7d7b811312336165a0c05d2ac4ace9d1b30d",
+        "notes": "Adapter approved as shown, every PROVISIONAL line confirmed as StudyUs policy for this version."
+      }
+    },
+    {
+      "decisionId": "D08",
+      "packetSection": "Adapter IB.MATH_AA_HL.P1",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Mathematics",
+          "systemId": "IB"
+        },
+        "objectType": "ASSESSMENT_ADAPTER",
+        "objectId": "IB.MATH_AA_HL.P1",
+        "objectVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "177c6035be157c5d1e5b9704da666dfe70b08492927e0e76c80c1a1c31c31200",
+        "notes": "Adapter approved with the governed set of 6 command terms; MULTI_PART read as item structure, MATH_EXPRESSION as response representation."
+      }
+    },
+    {
+      "decisionId": "D09",
+      "packetSection": "Renderer parametric.quadratic-solve@1.0.0",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Mathematics",
+          "systemId": "PAA"
+        },
+        "objectType": "RENDERER_ENVELOPE",
+        "objectId": "parametric.quadratic-solve@1.0.0",
+        "objectVersion": "1.0.0-rc.1",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+        "notes": "Renderer envelope approved with item difficulties FOUNDATIONAL 2 / STANDARD 3 / CHALLENGE 4."
+      }
+    },
+    {
+      "decisionId": "D10",
+      "packetSection": "Renderer parametric.quadratic-solve@1.0.0",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Mathematics",
+          "systemId": "IB"
+        },
+        "objectType": "RENDERER_ENVELOPE",
+        "objectId": "parametric.quadratic-solve@1.0.0",
+        "objectVersion": "1.0.0-rc.1",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+        "notes": "Renderer envelope approved with item difficulties FOUNDATIONAL 2 / STANDARD 3 / CHALLENGE 4."
+      }
+    },
+    {
+      "decisionId": "D11",
+      "packetSection": "Renderer parametric.proportion-missing-value@1.0.0",
+      "record": {
+        "v": 1,
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "authority": "INTERNAL_PILOT_REVIEWER",
+        "scope": {
+          "canonicalSubject": "Matemáticas",
+          "systemId": "PAA"
+        },
+        "objectType": "RENDERER_ENVELOPE",
+        "objectId": "parametric.proportion-missing-value@1.0.0",
+        "objectVersion": "1.0.0-rc.2",
+        "decision": "APPROVE",
+        "decidedAt": "2026-10-13T12:11:00Z",
+        "evidenceHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+        "notes": "Renderer envelope approved with item difficulties FOUNDATIONAL 2 / STANDARD 3 / CHALLENGE 4."
+      }
+    }
+  ]
+}

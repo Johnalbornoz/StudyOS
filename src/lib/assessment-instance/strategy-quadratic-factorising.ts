@@ -177,3 +177,16 @@ export function quadraticInstanceCapacity(band: Band, ranges: readonly Range[]):
   else if (ra.min <= 2 && ra.max >= 2) for (let i = 1; i <= hi - 1; i += 1) for (let j = 1; j <= -lo; j += 1) add(2, i + 0.5, -j, 'PRODUCT_TO_EXPAND');
   return seen.size;
 }
+
+/** Does a parameter set carry the lever settings of its band? Each setting that it misses is named. */
+export function quadraticBandIssues(band: string, p: Readonly<Record<string, number | string>>): string[] {
+  const a = Number(p.a); const r1 = Number(p.r1); const r2 = Number(p.r2);
+  const issues: string[] = [];
+  const need = (ok: boolean, miss: string) => { if (!ok) issues.push(miss); };
+  if (band === 'FOUNDATIONAL') { need(a === 1, 'LEADING_COEFFICIENT_IS_NOT_1'); need(Number.isInteger(r1) && Number.isInteger(r2) && r1 > 0 && r2 > 0, 'ROOTS_ARE_NOT_POSITIVE_INTEGERS'); need(p.presentation === 'STANDARD_FORM', 'NOT_IN_STANDARD_FORM'); }
+  else if (band === 'STANDARD') { need(a === 1, 'LEADING_COEFFICIENT_IS_NOT_1'); need(Number.isInteger(r1) && Number.isInteger(r2) && r1 * r2 < 0, 'ROOTS_ARE_NOT_INTEGERS_OF_OPPOSITE_SIGNS'); need(p.presentation === 'TERMS_ON_BOTH_SIDES', 'TERMS_ARE_NOT_ON_BOTH_SIDES'); }
+  else if (band === 'CHALLENGE') { need(a === 2, 'LEADING_COEFFICIENT_IS_NOT_2'); need(!Number.isInteger(r1) && Number.isInteger(r1 * 2) && r1 > 0 && Number.isInteger(r2) && r2 < 0, 'ROOTS_ARE_NOT_ONE_POSITIVE_HALF_AND_ONE_NEGATIVE_INTEGER'); need(p.presentation === 'PRODUCT_TO_EXPAND', 'NOT_A_PRODUCT_TO_EXPAND'); }
+  else issues.push(`UNKNOWN_BAND_${band}`);
+  need(r1 !== r2, 'REPEATED_ROOT'); need(Number(p.b) !== 0 && Number(p.c) !== 0, 'DEGENERATE_TRINOMIAL');
+  return issues;
+}

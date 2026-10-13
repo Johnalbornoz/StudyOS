@@ -1,0 +1,441 @@
+{
+  "kind": "QF52_OUT_OF_SAMPLE_SHADOW_SET",
+  "status": "FROZEN_BEFORE_ANY_HUMAN_REVIEW",
+  "policyVersion": "HUMAN50_POLICY_V1",
+  "policyHash": "445c7793e7e79a648f2372e508a0c3192037b3bfe52df4fd77915cf0cdcc0e3b",
+  "rules": [
+    "No item of this set is in Human-50.",
+    "No human label of this set exists; none may be used to change the policy.",
+    "It is an audit stream: Pilot supply does not wait for it.",
+    "A human review of it is recorded in a separate file and compared only with this frozen file."
+  ],
+  "items": 36,
+  "machine": {
+    "QUALITY_PASS": 2,
+    "QUALITY_REVIEW": 17,
+    "QUALITY_REJECT": 17
+  },
+  "setHash": "7e0a2debe11d2b96e48c1b0c1e5cb36dff60f5b3280330f7a4ae07fa14d3e2c8",
+  "candidates": [
+    {
+      "candidateId": "qf5-live-001:v2.saber11.math/math/saber.argumentacion#0/004#0",
+      "contentHash": "0d64b12a728c8d8c11aedf09547b6b08e49be2d0ee230b41a2af58d125125551",
+      "profileId": "ICFES.SABER11.MATEMATICAS",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-001:v2.saber11.math/math/saber.argumentacion#0/010#0",
+      "contentHash": "4eccf7da0b1f0dd4078b64730761d6f3a7adeffefc8a679b710c048584218816",
+      "profileId": "ICFES.SABER11.MATEMATICAS",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "CONSTRUCT_NOT_JUDGED",
+        "TIER_BORDERLINE",
+        "KEY_STATES_THE_RESULT",
+        "CONSTRUCT_NOT_NECESSARY",
+        "DIFFICULTY_IS_OF_THE_IDEAL_SOLUTION_ONLY"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-001:v2.saber11.math/math/saber.argumentacion#0/014#1",
+      "contentHash": "b82a0f303f6a002aedd2650d27b7b353069e4d384a75c2e5f5b554fdc2db3358",
+      "profileId": "ICFES.SABER11.MATEMATICAS",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "ANSWER_UNCONFIRMED",
+        "AMBIGUITY_FLAGGED",
+        "CONSTRUCT_NOT_JUDGED",
+        "TIER_NOT_JUDGED",
+        "KEY_STATES_THE_RESULT",
+        "KEY_EXPOSES_THE_WORKING",
+        "KEY_IS_THE_ONLY_OPTION_WITH_ITS_POLARITY",
+        "CONSTRUCT_NOT_NECESSARY",
+        "DIFFICULTY_IS_OF_THE_IDEAL_SOLUTION_ONLY"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9702-a/p1/aice.9702.p1.electricity#0/001#1",
+      "contentHash": "26c537ac06b6169573335f956c093736bdef7ab486c42028c8d97c778f22bb16",
+      "profileId": "AICE.9702.MCQ",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "STANDARD",
+      "machineQuality": "QUALITY_PASS",
+      "machineReasons": []
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9702-a/p1/aice.9702.p1.electricity#0/004#1",
+      "contentHash": "b33fee686f874658d360d74993ef16c03719897977cb2accaa474bc6f3bcfcba",
+      "profileId": "AICE.9702.MCQ",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9702-a/p1/aice.9702.p1.mechanics#0/004#1",
+      "contentHash": "3bbc1ce9170611b96e8c8ac7375a782e4b0ce40faa2a3e29e35ddb35e1d60f7f",
+      "profileId": "AICE.9702.MCQ",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9709-a/p1/aice.9709.p1.differentiation#0/001#1",
+      "contentHash": "feb99e9bc0964487e5d74e28ed606146cfd221ca1d33ae9d2a678f55c5d63adf",
+      "profileId": "AICE.9709.PURE",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "STANDARD",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9709-a/p1/aice.9709.p1.differentiation#0/004#1",
+      "contentHash": "2c343a90eda1fb8fec7655b917af6f3f16e61db5b8bb90472d0e725c378e2181",
+      "profileId": "AICE.9709.PURE",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "PROVENANCE_UNCLEAR",
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9709-a/p1/aice.9709.p1.integration#0/004#1",
+      "contentHash": "eeac94d82e42ecd4612eeb034795991be2e22f77d561ae479fb83423b2fb4cc1",
+      "profileId": "AICE.9709.PURE",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.cambridge.0580-extended/p4/cie.p4.functions#0/004#1",
+      "contentHash": "d292d979f0abd0bd6c1e816b364fb40a9281be33b92a772261904da0be0b3414",
+      "profileId": "CAMBRIDGE.0580.EXTENDED.P4",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.cambridge.0580-extended/p4/cie.p4.mensuration#0/004#1",
+      "contentHash": "464802ef37c2a2ee088c479ad884c45176dbb8135a6045f6bb6f21187e158177",
+      "profileId": "CAMBRIDGE.0580.EXTENDED.P4",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.cambridge.0580-extended/p4/cie.p4.statistics#0/004#1",
+      "contentHash": "2545ee43b54eaaf3cea203242932d58e6484275fcc5efdf0d7e5748e8debd689",
+      "profileId": "CAMBRIDGE.0580.EXTENDED.P4",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.math-aa-hl/p1/aahl.p1.algebra#0/004#1",
+      "contentHash": "0ee7685dcc1d8fd7d9bc8370ce7e39ebb412f47872cdf79bc6fae64dbb20e5e3",
+      "profileId": "IB.MATH_AA.HL.P1",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.math-aa-hl/p1/aahl.p1.calculus#0/004#0",
+      "contentHash": "31e19a1300fe4233f3e19d08494695bd441240e660b4d39962ab04ea52477e88",
+      "profileId": "IB.MATH_AA.HL.P1",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.math-aa-hl/p1/aahl.p1.extended#0/001#1",
+      "contentHash": "d47d8bd29086414bd53f222cb04dfbd72c35e0c3ec21775eb3d6caf7ada35d7d",
+      "profileId": "IB.MATH_AA.HL.P1",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "STANDARD",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.physics-hl/p1a/phy.p1a.fields#0/001#1",
+      "contentHash": "b071c3d0db0b66d9e23e1fa703a2e679b2692bf8fecb0ab51352a5f82df8f255",
+      "profileId": "IB.PHYSICS.HL.P1A",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "STANDARD",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "CONSTRUCT_WEAK"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.physics-hl/p1a/phy.p1a.fields#0/004#1",
+      "contentHash": "f91535495b269fd84e5f0ef36556d44cef9bd6fce155fe34ffa479314b183a5a",
+      "profileId": "IB.PHYSICS.HL.P1A",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.physics-hl/p1a/phy.p1a.motion#0/004#1",
+      "contentHash": "95de52a331fe8adcd93983894434a10bf8b8f1f82feb56f27e5c0951d0cc9b19",
+      "profileId": "IB.PHYSICS.HL.P1A",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.paa/lectura/paa.lect.evidencia#0/004#1",
+      "contentHash": "884dc89ed95f889bb4ac0e3d1edf4d9c28ca16e222b1f9205fcde141a8efc9ee",
+      "profileId": "PAA.LECTURA",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.paa/lectura/paa.lect.explicitas#0/004#1",
+      "contentHash": "fcac678a7deea8d37d40e848c76e92f3ed364aadd3c17b3c44b56e864e1422b5",
+      "profileId": "PAA.LECTURA",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.paa/matematicas/paa.mat.algebra#0/004#1",
+      "contentHash": "9bb62f8531a10a479b3041cfeaa1157f2fb0accaa63ea3e6716c60dd48779df0",
+      "profileId": "PAA.MATEMATICAS",
+      "format": "NUMERIC_ENTRY",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.paa/matematicas/paa.mat.aritmetica#0/004#1",
+      "contentHash": "f84e9ca33a64f90505b768be34d92fcf94510e0d9d6cc83ccd8c7d8aa2104326",
+      "profileId": "PAA.MATEMATICAS",
+      "format": "NUMERIC_ENTRY",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "CONSTRUCT_WEAK",
+        "TIER_BORDERLINE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.paa/matematicas/paa.mat.datos#0/004#1",
+      "contentHash": "72180d6b2bd7fc25f9a545d921a05642dea5582350a43add10063d9d1678a63a",
+      "profileId": "PAA.MATEMATICAS",
+      "format": "NUMERIC_ENTRY",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.pisa.2022/math/pisa.cambio.formular#0/004#1",
+      "contentHash": "6cf1d55b09572c5ed86ca12268fda29a11561570a60bd2b166c637b750790240",
+      "profileId": "PISA.MATHEMATICS",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_PASS",
+      "machineReasons": []
+    },
+    {
+      "candidateId": "qf5-live-002:v2.pisa.2022/math/pisa.cambio.razonar#0/004#1",
+      "contentHash": "42b324e467cf29b76a58091e6fbfa86760727f95ea150ee347912e7faf5cb911",
+      "profileId": "PISA.MATHEMATICS",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.pisa.2022/math/pisa.cantidad.emplear#0/004#1",
+      "contentHash": "ec78e2c7c5e58e438ade98ed27c85b955c3e9fa7eee1362ac7d363e1e30c1c10",
+      "profileId": "PISA.MATHEMATICS",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/004#0",
+      "contentHash": "e3ce9a6e2a5f6204e76d802cc25e48a00477834f129fee5765925834e607d27d",
+      "profileId": "PISA.SCIENCE",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.saber11.math/math/saber.argumentacion#0/004#1",
+      "contentHash": "58acf8907ebeef2fb73514c3a0d3a10531b4289705c108dd0f1ce1fca9988a4c",
+      "profileId": "ICFES.SABER11.MATEMATICAS",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE",
+        "KEY_STATES_THE_RESULT",
+        "KEY_EXPOSES_THE_WORKING",
+        "KEY_HAS_UNIQUE_PRECISION",
+        "CONSTRUCT_NOT_NECESSARY",
+        "DIFFICULTY_IS_OF_THE_IDEAL_SOLUTION_ONLY"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.saber11.math/math/saber.argumentacion#2/002#1",
+      "contentHash": "04a908d467922265d47d5f9558487c84440b5cd326667b07d3f1261fb3737365",
+      "profileId": "ICFES.SABER11.MATEMATICAS",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "TIER_BORDERLINE",
+        "KEY_STATES_THE_RESULT",
+        "KEY_EXPOSES_THE_WORKING",
+        "CONSTRUCT_NOT_NECESSARY",
+        "DIFFICULTY_IS_OF_THE_IDEAL_SOLUTION_ONLY"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.saber11.math/math/saber.formulacion#0/004#1",
+      "contentHash": "322f0e2322055d1c6f9cfaa84f55eb8cb70fc6afff2af99df0d5bda1d1c57169",
+      "profileId": "ICFES.SABER11.MATEMATICAS",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.aice.9709-a/p1/aice.9709.p1.series#0/004#0",
+      "contentHash": "e57627f0393d4359429811db49aa1698f86ef1ac46a6afd69dfc046c52f6b4d6",
+      "profileId": "AICE.9709.PURE",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "PROVENANCE_UNCLEAR"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.cambridge.0580-extended/p4/cie.p4.functions#0/001#0",
+      "contentHash": "993f5ab974a94360a23c4a0ed21400a7b50102939ecab8b69ecc2817d1879982",
+      "profileId": "CAMBRIDGE.0580.EXTENDED.P4",
+      "format": "SHORT_RESPONSE",
+      "intendedTier": "STANDARD",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "PROVENANCE_UNCLEAR"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.ib.math-aa-hl/p1/aahl.p1.algebra#0/003#1",
+      "contentHash": "fbe3fc359f388cc0347d37880db0824d315a6051fe1b32033a1bf6abca0d654b",
+      "profileId": "IB.MATH_AA.HL.P1",
+      "format": "MULTI_PART",
+      "intendedTier": "STANDARD",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "CONSTRUCT_FAIL",
+        "AUTHENTICITY_LOW"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.paa/lectura/paa.lect.graficos#0/004#1",
+      "contentHash": "2c34b0ad6e94899ca349f903771b9c3047c548a06ba107208b71a7765f244a8d",
+      "profileId": "PAA.LECTURA",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "CHALLENGE",
+      "machineQuality": "QUALITY_REJECT",
+      "machineReasons": [
+        "TIER_MISMATCH"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.pisa.2022/math/pisa.cambio.formular#0/002#1",
+      "contentHash": "326b4143f665df132a6938e91a0c5c85f7de07e9ad67e850457d25bb4ee0021d",
+      "profileId": "PISA.MATHEMATICS",
+      "format": "MULTI_SELECT",
+      "intendedTier": "FOUNDATIONAL",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "ANSWER_UNCONFIRMED",
+        "CONSTRUCT_NOT_JUDGED",
+        "TIER_NOT_JUDGED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.saber11.math/math/saber.formulacion#2/004#0",
+      "contentHash": "c7aa10fab867d80d31f79764fee99ca66269f93702e43d6541c3285a95710e6e",
+      "profileId": "ICFES.SABER11.MATEMATICAS",
+      "format": "SELECTED_RESPONSE",
+      "intendedTier": "FOUNDATIONAL",
+      "machineQuality": "QUALITY_REVIEW",
+      "machineReasons": [
+        "ANSWER_UNCONFIRMED",
+        "CONSTRUCT_NOT_JUDGED",
+        "TIER_NOT_JUDGED"
+      ]
+    }
+  ]
+}

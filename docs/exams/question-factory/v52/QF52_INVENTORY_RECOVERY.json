@@ -1,0 +1,6780 @@
+{
+  "kind": "QF52_INVENTORY_RECOVERY",
+  "policyVersion": "HUMAN50_POLICY_V1",
+  "sources": {
+    "HUMAN_50": 50,
+    "V5_UNSEEN": 36,
+    "CANARY": "250 slots (221 candidates)",
+    "DB_LEGACY": "NOT_PROCESSED: no shared database is read by this run",
+    "FIXTURE": 410
+  },
+  "totals": {
+    "RECOVER_AS_CORE_EVIDENCE": 0,
+    "RECOVER_AS_TEMPLATE_EVIDENCE": 40,
+    "RECOVER_AS_CERTIFIED_INSTANCE": 0,
+    "REVIEW_REQUIRED": 17,
+    "REJECT": 24,
+    "FIXTURE_ONLY": 410,
+    "RIGHTS_BLOCKED": 224,
+    "LINEAGE_BLOCKED": 2,
+    "DUPLICATE": 0,
+    "INPUT_ITEMS": 746,
+    "NORMALIZED": 717
+  },
+  "bySource": {
+    "HUMAN_50": {
+      "RECOVER_AS_TEMPLATE_EVIDENCE": 40,
+      "REJECT": 10
+    },
+    "V5_UNSEEN": {
+      "LINEAGE_BLOCKED": 2,
+      "REJECT": 14,
+      "REVIEW_REQUIRED": 17,
+      "RIGHTS_BLOCKED": 3
+    },
+    "CANARY": {
+      "RIGHTS_BLOCKED": 221
+    },
+    "FIXTURE": {
+      "FIXTURE_ONLY": 410
+    }
+  },
+  "decisions": [
+    {
+      "candidateId": "HC-001",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-002",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-003",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-004",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-005",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-006",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-007",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-008",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-009",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-010",
+      "source": "HUMAN_50",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_FOUND_A_DEFECT: the item as it stands is not used; a repaired item is a new item"
+      ]
+    },
+    {
+      "candidateId": "HC-011",
+      "source": "HUMAN_50",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_FOUND_A_DEFECT: the item as it stands is not used; a repaired item is a new item"
+      ]
+    },
+    {
+      "candidateId": "HC-012",
+      "source": "HUMAN_50",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_FOUND_A_DEFECT: the item as it stands is not used; a repaired item is a new item"
+      ]
+    },
+    {
+      "candidateId": "HC-013",
+      "source": "HUMAN_50",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_FOUND_A_DEFECT: the item as it stands is not used; a repaired item is a new item"
+      ]
+    },
+    {
+      "candidateId": "HC-014",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-015",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-016",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-017",
+      "source": "HUMAN_50",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_FOUND_A_DEFECT: the item as it stands is not used; a repaired item is a new item"
+      ]
+    },
+    {
+      "candidateId": "HC-018",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-019",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-020",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-021",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-022",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-023",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-024",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-025",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-026",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-027",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-028",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-029",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-030",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-031",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-032",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-033",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-034",
+      "source": "HUMAN_50",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_FOUND_A_DEFECT: the item as it stands is not used; a repaired item is a new item"
+      ]
+    },
+    {
+      "candidateId": "HC-035",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-036",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-037",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-038",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-039",
+      "source": "HUMAN_50",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_FOUND_A_DEFECT: the item as it stands is not used; a repaired item is a new item"
+      ]
+    },
+    {
+      "candidateId": "HC-040",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-041",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-042",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-043",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-044",
+      "source": "HUMAN_50",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_FOUND_A_DEFECT: the item as it stands is not used; a repaired item is a new item"
+      ]
+    },
+    {
+      "candidateId": "HC-045",
+      "source": "HUMAN_50",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_FOUND_A_DEFECT: the item as it stands is not used; a repaired item is a new item"
+      ]
+    },
+    {
+      "candidateId": "HC-046",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-047",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-048",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-049",
+      "source": "HUMAN_50",
+      "outcome": "RECOVER_AS_TEMPLATE_EVIDENCE",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_JUDGED_IT_READY",
+        "NO_CONCEPT_RECORDED: it shows how the component asks, not which construct"
+      ]
+    },
+    {
+      "candidateId": "HC-050",
+      "source": "HUMAN_50",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "A_PERSON_FOUND_A_DEFECT: the item as it stands is not used; a repaired item is a new item"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-001:v2.saber11.math/math/saber.argumentacion#0/004#0",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-001:v2.saber11.math/math/saber.argumentacion#0/010#0",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-001:v2.saber11.math/math/saber.argumentacion#0/014#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9702-a/p1/aice.9702.p1.electricity#0/001#1",
+      "source": "V5_UNSEEN",
+      "outcome": "LINEAGE_BLOCKED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "LEGACY_NO_CORE_LINEAGE",
+        "quality rules pass on the recorded signals; no person has judged it and it is an instance of no core"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9702-a/p1/aice.9702.p1.electricity#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9702-a/p1/aice.9702.p1.mechanics#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9709-a/p1/aice.9709.p1.differentiation#0/001#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9709-a/p1/aice.9709.p1.differentiation#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "Said to be generated, but no run record establishes it."
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.aice.9709-a/p1/aice.9709.p1.integration#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.cambridge.0580-extended/p4/cie.p4.functions#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.cambridge.0580-extended/p4/cie.p4.mensuration#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.cambridge.0580-extended/p4/cie.p4.statistics#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.math-aa-hl/p1/aahl.p1.algebra#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.math-aa-hl/p1/aahl.p1.calculus#0/004#0",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.math-aa-hl/p1/aahl.p1.extended#0/001#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.physics-hl/p1a/phy.p1a.fields#0/001#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.physics-hl/p1a/phy.p1a.fields#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.ib.physics-hl/p1a/phy.p1a.motion#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.paa/lectura/paa.lect.evidencia#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.paa/lectura/paa.lect.explicitas#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.paa/matematicas/paa.mat.algebra#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.paa/matematicas/paa.mat.aritmetica#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.paa/matematicas/paa.mat.datos#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.pisa.2022/math/pisa.cambio.formular#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "LINEAGE_BLOCKED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "LEGACY_NO_CORE_LINEAGE",
+        "quality rules pass on the recorded signals; no person has judged it and it is an instance of no core"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.pisa.2022/math/pisa.cambio.razonar#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.pisa.2022/math/pisa.cantidad.emplear#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/004#0",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.saber11.math/math/saber.argumentacion#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.saber11.math/math/saber.argumentacion#2/002#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-002:v2.saber11.math/math/saber.formulacion#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.aice.9709-a/p1/aice.9709.p1.series#0/004#0",
+      "source": "V5_UNSEEN",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "Said to be generated, but no run record establishes it."
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.cambridge.0580-extended/p4/cie.p4.functions#0/001#0",
+      "source": "V5_UNSEEN",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "Said to be generated, but no run record establishes it."
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.ib.math-aa-hl/p1/aahl.p1.algebra#0/003#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.paa/lectura/paa.lect.graficos#0/004#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REJECT",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_FAILED"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.pisa.2022/math/pisa.cambio.formular#0/002#1",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "qf5-live-006:v2.saber11.math/math/saber.formulacion#2/004#0",
+      "source": "V5_UNSEEN",
+      "outcome": "REVIEW_REQUIRED",
+      "rightsCategory": "STUDYUS_ORIGINAL_GENERATED",
+      "reasons": [
+        "QUALITY_RULE_NEEDS_A_PERSON",
+        "LEGACY_NO_CORE_LINEAGE"
+      ]
+    },
+    {
+      "candidateId": "canary:c250-001",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-003",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-004",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-005",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-006",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-007",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-008",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-009",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-010",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-011",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-012",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-013",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-014",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-015",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-016",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-017",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-018",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-019",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-020",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-021",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-022",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-023",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-024",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-025",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-026",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-027",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-029",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-030",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-032",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-033",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-034",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-035",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-036",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-037",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-038",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-039",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-040",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-041",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-043",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-044",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-045",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-046",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-047",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-048",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-049",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-050",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-051",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-052",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-053",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-054",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-055",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-056",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-057",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-058",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-059",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-060",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-061",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-062",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-063",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-064",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-065",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-066",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-067",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-068",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-069",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-070",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-071",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-073",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-074",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-075",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-076",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-077",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-078",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-079",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-080",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-082",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-084",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-085",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-086",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-087",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-088",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-089",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-090",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-091",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-092",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-093",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-094",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-096",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-097",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-098",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-099",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-100",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-101",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-102",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-103",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-104",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-105",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-106",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-107",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-108",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-109",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-110",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-111",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-112",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-113",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-114",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-115",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-116",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-117",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-118",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-119",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-120",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-121",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-122",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-124",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-125",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-126",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-127",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-128",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-129",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-130",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-131",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-132",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-133",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-134",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-135",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-137",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-138",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-139",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-140",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-141",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-142",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-143",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-144",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-145",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-146",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-147",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-148",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-149",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-150",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-151",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-153",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-154",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-155",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-156",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-158",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-159",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-160",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-161",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-162",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-163",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-164",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-165",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-166",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-167",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-168",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-169",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-170",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-172",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-173",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-174",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-175",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-176",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-177",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-183",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-184",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-185",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-186",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-187",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-191",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-193",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-194",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-196",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-199",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-200",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-201",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-203",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-204",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-205",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-206",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-207",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-208",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-209",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-210",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-211",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-212",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-213",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-214",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-215",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-216",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-217",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-218",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-219",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-220",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-221",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-222",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-223",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-224",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-225",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-226",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-228",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-229",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-230",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-231",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-232",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-233",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-234",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-235",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-237",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-238",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-240",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-241",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-242",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-243",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-244",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-245",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-246",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-247",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-248",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-249",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "canary:c250-250",
+      "source": "CANARY",
+      "outcome": "RIGHTS_BLOCKED",
+      "rightsCategory": "LEGACY_UNKNOWN",
+      "reasons": [
+        "RIGHTS_NOT_ESTABLISHED",
+        "The record of the source itself states that its rights are not established."
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p1.alg.log",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p1.alg.series",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p1.fn.rational",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p1.fn.quadratic",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p1.calc.product",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p1.calc.integral",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p1.calc.tangent",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p1.ext.xe",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p1.ext.geometric",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p2.stat.normal",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p2.stat.binomial",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p2.stat.mean",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p2.trig.cosine",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p2.trig.equation",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p2.ext.cooling",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p2.ext.bag",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p3.inv.powers",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-hl:aahl.p3.inv.ladder",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-sl:vasl.aip.light",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-sl:vasl.aip.place",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-sl:vasl.connections.portraits",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-sl:vasl.connections.landscape",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-sl:vasl.resolved.series",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-sl:vasl.resolved.dialogue",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-hl:vahl.aip.light",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-hl:vahl.aip.place",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-hl:vahl.project.public",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-hl:vahl.project.archive",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-hl:vahl.resolved.series",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.visual-arts-hl:vahl.resolved.dialogue",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.cant.form.descuento",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.cant.form.pintura",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.cant.empl.receta",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.cant.empl.cambio",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.inc.int.reciclaje",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.inc.int.encuesta",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.inc.raz.reciclaje",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.inc.raz.dados",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.camb.form.taxi",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.camb.form.ciclismo",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.camb.raz.taxi",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.camb.raz.planes",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.esp.empl.valla",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.esp.empl.parcelas",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.esp.int.mapa",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.esp.int.caja",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.inc.int.director",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.cam.raz.ahorro",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.cant.empl.encuesta",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.cam.form.ahorro",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.tren.salida",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.biblio.multa",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.biblio.tarde",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.agua.dato",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.tren.idea",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.agua.mayor",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.tren.inferir",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.deberes.acuerdo",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.deberes.credibilidad",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.agua.apoyo",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.tren.cita",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.agua.proposito",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.deberes.conflicto",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.r.deberes.decidir",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.solar.invierno",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.hielo",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.algas.causa",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.ensayo.defensas",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.sismo.causa",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.sismo.tsunami",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.algas.variable",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.ensayo.placebo",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.sismo.perros",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.solar.anios",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.algas.tendencia",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.ensayo.diferencia",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.pisa.2022:pisa.s.solar.total",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.int.tienda.max",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.int.tienda.moda",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.int.recta",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.int.plano",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.int.grafica",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.for.descuento",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.for.ecuacion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.for.pitagoras",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.for.probabilidad",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.for.tanque",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.for.promedio",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.arg.promedio",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.arg.error",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.arg.area",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.saber11.math:saber.arg.encuesta",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.abejas.vocab",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.cuento.vocab",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.abejas.explicita",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.doble.tesis2",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.abejas.inferencia",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.cuento.inferencia",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.abejas.evidencia",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.doble.relacion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.lluvia.grafico",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.lluvia.tendencia",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.cuento.figura",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.l.cuento.narrador",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.r.seg1.elision",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.r.seg2.elision",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.r.seg1.adicion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.r.seg2.generalizacion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.r.seg1.titulo",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.r.seg2.particular",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.r.seg1.conector",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.r.seg2.cohesion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.razon",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.porcentaje",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.fracciones.spr",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.mcm",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.ecuacion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.sistema.spr",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.funcion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.variacion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.angulos",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.pitagoras.spr",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.circulo",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.semejanza",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.mediana",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.media.spr",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.dispersion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.moneda",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.m.comite.spr",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.e.tense",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.e.preposition",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.e.vocab",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.e.comparative",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.e.main",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.e.inference",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.e.word",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.e.purpose",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.e.error",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.paa:paa.e.combine",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p2.num.fraction",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p2.num.standard",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p2.alg.simultaneous",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p2.alg.nth",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p2.geo.gradient",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p2.geo.polygon",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p2.str.quadratic",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p2.str.probability",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p4.stat.mean",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p4.stat.correlation",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p4.mens.sector",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p4.mens.angle",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p4.fn.composite",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p4.fn.quadratic",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p4.str.journey",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.cambridge.0580-extended:cie.p4.str.cylinder",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p1.alg.log",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p1.alg.series",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p1.fn.rational",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p1.fn.quadratic",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p1.calc.product",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p1.calc.integral",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p1.calc.tangent",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p1.ext.xe",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p1.ext.geometric",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p2.stat.normal",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p2.stat.binomial",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p2.stat.mean",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p2.trig.cosine",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p2.trig.equation",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p2.ext.cooling",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-aa-sl:aasl.p2.ext.bag",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-sl:ai.p1.compound",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-sl:ai.p1.error",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-sl:ai.p1.regression",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-sl:ai.p1.pearson",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-sl:ai.p1.linear-model",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-sl:ai.p2.cooling",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-sl:ai.p2.normal",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-hl:hl.ai.p1.compound",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-hl:hl.ai.p1.error",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-hl:hl.ai.p1.regression",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-hl:hl.ai.p1.pearson",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-hl:hl.ai.p1.linear-model",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-hl:hl.ai.p2.cooling",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-hl:hl.ai.p2.normal",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.math-ai-hl:hl.ai.p3.population",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.projectile",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.momentum",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.third-law",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.gas",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.latent",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.wave-speed",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.interference",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.parallel",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.field-strength",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.alpha",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1a.half-life",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1b.pendulum",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1b.heater",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p1b.ohm",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p2.collision",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p2.projectile",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p2.circuit",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-sl:physics-sl.p2.decay",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.projectile",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.momentum",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.third-law",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.gas",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.latent",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.wave-speed",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.interference",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.parallel",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.field-strength",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.alpha",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1a.half-life",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1b.pendulum",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1b.heater",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p1b.ohm",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p2.collision",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p2.projectile",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p2.circuit",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.physics-hl:physics-hl.p2.decay",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.moles",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.neutrons",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.empirical",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.vsepr",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.imf",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.functional",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.periodicity",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.exothermic",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.bonds",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.catalyst",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.lechatelier",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.ph",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1a.oxstate",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1b.titration",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p1b.calorimetry",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p2.combustion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p2.gas",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p2.kc",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-sl:chemistry-sl.p2.redox",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.moles",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.neutrons",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.empirical",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.vsepr",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.imf",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.functional",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.periodicity",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.exothermic",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.bonds",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.catalyst",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.lechatelier",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.ph",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1a.oxstate",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1b.titration",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1b.calorimetry",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p1b.rate",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p2.combustion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p2.gas",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p2.kc",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.chemistry-hl:chemistry-hl.p2.redox",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p1a.prokaryote",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p1a.dna-bonds",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p1a.surfactant",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p1a.enzyme",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p1a.energy-flow",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p1a.meiosis",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p1a.cross",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p1b.enzyme",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p1b.quadrat",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p2.osmosis",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p2.respiration",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p2.alveolus-essay",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-sl:biology-sl.p2.selection-essay",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p1a.prokaryote",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p1a.dna-bonds",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p1a.surfactant",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p1a.enzyme",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p1a.energy-flow",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p1a.meiosis",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p1a.cross",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p1b.enzyme",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p1b.quadrat",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p2.osmosis",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p2.respiration",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p2.alveolus-essay",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.ib.biology-hl:biology-hl.p2.selection-essay",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p1.square",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p1.binomial",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p1.stationary",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p1.definite",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p2.exponential",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p2.product",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p2.iteration",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p4.uniform",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p4.friction",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p4.fall",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p5.level",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p5.union",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p5.binomial",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-as:9709-as.p5.normal",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p1.square",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p1.binomial",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p1.stationary",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p1.definite",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p3.angle",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p3.product",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p3.separable",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p4.uniform",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p4.friction",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p4.fall",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p5.level",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p5.union",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p5.binomial",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p5.normal",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p6.poisson",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p6.variance",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9709-a:9709-a.p6.type1",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-as:9702-as.p1.si",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-as:9702-as.p1.vertical",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-as:9702-as.p1.parallel",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-as:9702-as.p2.car",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-as:9702-as.p2.wave",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-as:9702-as.p3.spring",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p1.si",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p1.vertical",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p1.parallel",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p2.car",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p2.wave",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p3.spring",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p4.circle",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p4.plates",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p4.capacitor",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p5.plan",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9702-a:9702-a.p5.power-law",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-as:9701-as.p1.neutrons",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-as:9701-as.p1.mass",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-as:9701-as.p1.bf3",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-as:9701-as.p2.magnesium",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-as:9701-as.p2.hess",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-as:9701-as.p3.titration",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p1.neutrons",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p1.mass",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p1.bf3",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p2.magnesium",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p2.hess",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p3.titration",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p4.kc",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p4.ecell",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p4.oxidation",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p5.plan",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9701-a:9701-a.p5.rate",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-as:9700-as.p1.mitochondrion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-as:9700-as.p1.peptide",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-as:9700-as.p1.inhibitor",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-as:9700-as.p2.magnification",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-as:9700-as.p2.surface",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-as:9700-as.p3.catalase",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p1.mitochondrion",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p1.peptide",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p1.inhibitor",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p2.magnification",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p2.surface",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p3.catalase",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p4.chisquared",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p4.rq",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p4.hardy",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p5.plan",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9700-a:9700-a.p5.means",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-as:9239-as.c1.q1",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-as:9239-as.c1.q2",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-as:9239-as.c1.q3",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-as:9239-as.c2.essay",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-as:9239-as.c3.project",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-a:9239-a.c1.q1",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-a:9239-a.c1.q2",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-a:9239-a.c1.q3",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-a:9239-a.c2.essay",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-a:9239-a.c3.project",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9239-a:9239-a.c4.report",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-as:9093-as.p1.directed",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-as:9093-as.p1.analysis",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-as:9093-as.p2.shorter",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-as:9093-as.p2.extended",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-a:9093-a.p1.directed",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-a:9093-a.p1.analysis",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-a:9093-a.p2.shorter",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-a:9093-a.p2.extended",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-a:9093-a.p3.change",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-a:9093-a.p3.acquisition",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-a:9093-a.p4.world",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9093-a:9093-a.p4.self",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-as:9708-as.p1.opportunity",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-as:9708-as.p1.ped",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-as:9708-as.p1.cpi",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-as:9708-as.p2.data",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-as:9708-as.p2.micro",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-as:9708-as.p2.macro",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p1.opportunity",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p1.ped",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p1.cpi",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p2.data",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p2.micro",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p2.macro",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p3.monopoly",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p3.externality",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p3.exchange",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p4.data",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p4.micro",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    },
+    {
+      "candidateId": "fixture:v2.aice.9708-a:9708-a.p4.macro",
+      "source": "FIXTURE",
+      "outcome": "FIXTURE_ONLY",
+      "rightsCategory": "FIXTURE_ONLY",
+      "reasons": [
+        "FIXTURE_CONTENT"
+      ]
+    }
+  ]
+}

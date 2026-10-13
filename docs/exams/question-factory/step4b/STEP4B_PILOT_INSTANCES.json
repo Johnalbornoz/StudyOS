@@ -1,0 +1,2708 @@
+{
+  "pilot": "step4b-pilot-1",
+  "status": "NOT_STUDENT_ELIGIBLE_PENDING_HUMAN_CERTIFICATION",
+  "rights": {
+    "status": "STUDYUS_OWNED",
+    "basis": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; contains no third-party expression."
+  },
+  "note": "Rendered locally and deterministically. In no database. Not Student-eligible: no certification record exists for any object these instances depend on.",
+  "counts": {
+    "total": 27,
+    "studentSupplyCandidates": 18,
+    "crossModelProof": 9,
+    "studentEligible": 0
+  },
+  "instances": [
+    {
+      "INSTANCE_ID": "step4b-pilot-1:e653aea8710788de",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.algebra#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/001",
+      "DIFFICULTY_1_TO_5": 2,
+      "DIFFICULTY_BAND": "LOW",
+      "PROMPT": "Si x² − 9x + 18 = 0, ¿cuál es la mayor de las soluciones de la ecuación?",
+      "ANSWER": [
+        "6"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "6"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 3,
+        "r2": 6,
+        "b": -9,
+        "c": 18,
+        "presentation": "STANDARD_FORM"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "0ab775f42f7fef9a45c071a15573c5fadfc78d2fd9c1b5c0c301e39472ef8f2d",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.algebra#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/001",
+        "parameterSetId": "d00e7f8354eb087f2ca47ec87a0bed4ba01ba02ffb31f16691cfcb2771c07e57",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "8dac4e5e0a8c119646215144cad7a207301f7cc73dbd575bdd83779790358673",
+      "LINEAGE_HASH": "e653aea8710788deb24d9f71a6b983ab4b1e452f8f8b16e61ff22cbab5b7ea0d",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED",
+        "CONDITIONAL_APPLICABILITY_NOT_APPROVED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:6fd386e606ccc6f2",
+      "ROLE": "CROSS_MODEL_PROOF",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "IB",
+      "ADAPTER_ID": "IB.MATH_AA_HL.P1",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/001",
+      "DIFFICULTY_1_TO_5": 2,
+      "DIFFICULTY_BAND": "LOW",
+      "PROMPT": "Solve the equation x² − 9x + 18 = 0. Show all necessary working. [3]",
+      "ANSWER": [
+        "3",
+        "6"
+      ],
+      "MARKS": 3,
+      "RESPONSE_FORMAT": "SHORT_RESPONSE",
+      "LANGUAGE": "en",
+      "RUBRIC": [
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x − 6) = 0; the quadratic formula; completing the square)."
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 3"
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 6"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "RUBRIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": [
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "3"
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "6"
+          }
+        ]
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 3,
+        "r2": 6,
+        "b": -9,
+        "c": 18,
+        "presentation": "STANDARD_FORM"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "7fde6ff23555b749825f510456f6d9a5fdef057d28cdd50ace2e969d29708ff7",
+        "assessmentSystemId": "IB",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "IB.MATH_AA_HL.P1",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/001",
+        "parameterSetId": "d00e7f8354eb087f2ca47ec87a0bed4ba01ba02ffb31f16691cfcb2771c07e57",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "9a257a71747580cca7a438a710365156f344d6219589f48d9f66b67866b49a35",
+      "LINEAGE_HASH": "6fd386e606ccc6f2f22d89b7b1ffc6b907197014f28fa1eb0b0343f8d66f5546",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:b38af07e4ca42447",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.algebra#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/002",
+      "DIFFICULTY_1_TO_5": 2,
+      "DIFFICULTY_BAND": "LOW",
+      "PROMPT": "Si x² − 10x + 24 = 0, ¿cuál es la mayor de las soluciones de la ecuación?",
+      "ANSWER": [
+        "6"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "6"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 4,
+        "r2": 6,
+        "b": -10,
+        "c": 24,
+        "presentation": "STANDARD_FORM"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "0ab775f42f7fef9a45c071a15573c5fadfc78d2fd9c1b5c0c301e39472ef8f2d",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.algebra#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/002",
+        "parameterSetId": "2c35fb44aff6725fd24dcb79dca0563bd2b6794f79dd37e300d8bc7424bd33e6",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "ce37789123a691e9b7806cde9ab3120032cd0b88f8e3672c8b066de93d7af27d",
+      "LINEAGE_HASH": "b38af07e4ca42447cfa053e01131d506830980db54da33008b4aef22be3e0151",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED",
+        "CONDITIONAL_APPLICABILITY_NOT_APPROVED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:2695450c10943c79",
+      "ROLE": "CROSS_MODEL_PROOF",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "IB",
+      "ADAPTER_ID": "IB.MATH_AA_HL.P1",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/002",
+      "DIFFICULTY_1_TO_5": 2,
+      "DIFFICULTY_BAND": "LOW",
+      "PROMPT": "Solve the equation x² − 10x + 24 = 0. Show all necessary working. [3]",
+      "ANSWER": [
+        "4",
+        "6"
+      ],
+      "MARKS": 3,
+      "RESPONSE_FORMAT": "SHORT_RESPONSE",
+      "LANGUAGE": "en",
+      "RUBRIC": [
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 4)(x − 6) = 0; the quadratic formula; completing the square)."
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 4"
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 6"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "RUBRIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": [
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "4"
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "6"
+          }
+        ]
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 4,
+        "r2": 6,
+        "b": -10,
+        "c": 24,
+        "presentation": "STANDARD_FORM"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "7fde6ff23555b749825f510456f6d9a5fdef057d28cdd50ace2e969d29708ff7",
+        "assessmentSystemId": "IB",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "IB.MATH_AA_HL.P1",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/002",
+        "parameterSetId": "2c35fb44aff6725fd24dcb79dca0563bd2b6794f79dd37e300d8bc7424bd33e6",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "923cc361c77a0fe0c89a82a8b34cdf3d14c34bc6e77b50fc964dc7aafe057ed1",
+      "LINEAGE_HASH": "2695450c10943c791e8511e53f1a6a26e3466e736543b9026b9dec71e0cdf84a",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:2d3fed8e8468e828",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.algebra#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/003",
+      "DIFFICULTY_1_TO_5": 2,
+      "DIFFICULTY_BAND": "LOW",
+      "PROMPT": "Si x² − 11x + 24 = 0, ¿cuál es la mayor de las soluciones de la ecuación?",
+      "ANSWER": [
+        "8"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "8"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 3,
+        "r2": 8,
+        "b": -11,
+        "c": 24,
+        "presentation": "STANDARD_FORM"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "0ab775f42f7fef9a45c071a15573c5fadfc78d2fd9c1b5c0c301e39472ef8f2d",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.algebra#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/003",
+        "parameterSetId": "632449d982a034c551bdbccc6115e029b7b286c0e3c5c20dba201379e3abfafe",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "510ccf802d962c2749b531aed79045eee8f039649c307570a89393eb70956e7f",
+      "LINEAGE_HASH": "2d3fed8e8468e8287b9df4ad2e93c33a606659e2d9c6960bc62222903864c71c",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED",
+        "CONDITIONAL_APPLICABILITY_NOT_APPROVED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:7a1702a2d0dff327",
+      "ROLE": "CROSS_MODEL_PROOF",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "IB",
+      "ADAPTER_ID": "IB.MATH_AA_HL.P1",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/003",
+      "DIFFICULTY_1_TO_5": 2,
+      "DIFFICULTY_BAND": "LOW",
+      "PROMPT": "Solve the equation x² − 11x + 24 = 0. Show all necessary working. [3]",
+      "ANSWER": [
+        "3",
+        "8"
+      ],
+      "MARKS": 3,
+      "RESPONSE_FORMAT": "SHORT_RESPONSE",
+      "LANGUAGE": "en",
+      "RUBRIC": [
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x − 8) = 0; the quadratic formula; completing the square)."
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 3"
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 8"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "RUBRIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": [
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "3"
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "8"
+          }
+        ]
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 3,
+        "r2": 8,
+        "b": -11,
+        "c": 24,
+        "presentation": "STANDARD_FORM"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "7fde6ff23555b749825f510456f6d9a5fdef057d28cdd50ace2e969d29708ff7",
+        "assessmentSystemId": "IB",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "IB.MATH_AA_HL.P1",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/foundational/003",
+        "parameterSetId": "632449d982a034c551bdbccc6115e029b7b286c0e3c5c20dba201379e3abfafe",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "08f66c24f50aa8fdd65b3a81919283093f3b452365555d625b981769dd3cb1cb",
+      "LINEAGE_HASH": "7a1702a2d0dff327c47b647da6eb0302fa29b6215c1c560952501b34ceef712c",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:6cc7c696a68396fb",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.algebra#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/standard/001",
+      "DIFFICULTY_1_TO_5": 3,
+      "DIFFICULTY_BAND": "MEDIUM",
+      "PROMPT": "Si x² = x + 72, ¿cuál es la mayor de las soluciones de la ecuación?",
+      "ANSWER": [
+        "9"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "9"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 9,
+        "r2": -8,
+        "b": -1,
+        "c": -72,
+        "presentation": "TERMS_ON_BOTH_SIDES"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "5d78356028c608f6dbbbf6b2cc2de97a5af757f37d6dcf24fcde8ccf91e891c1",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.algebra#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/standard/001",
+        "parameterSetId": "5fec671e5910aeb984ead0bb355fa11aa135c537823d5e892cdaddbc6a78ad7e",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "38789c68d37b0718962b895a7f4a99ce8ff8d12d695f32947c1ed8e91905a11d",
+      "LINEAGE_HASH": "6cc7c696a68396fb9596ca359a029d06966773a8e872d9bdde21cc5f544eba3c",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED",
+        "CONDITIONAL_APPLICABILITY_NOT_APPROVED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:1c575395a6eccc91",
+      "ROLE": "CROSS_MODEL_PROOF",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "IB",
+      "ADAPTER_ID": "IB.MATH_AA_HL.P1",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/standard/001",
+      "DIFFICULTY_1_TO_5": 3,
+      "DIFFICULTY_BAND": "MEDIUM",
+      "PROMPT": "Solve the equation x² = x + 72. Show all necessary working. [4]",
+      "ANSWER": [
+        "-8",
+        "9"
+      ],
+      "MARKS": 4,
+      "RESPONSE_FORMAT": "SHORT_RESPONSE",
+      "LANGUAGE": "en",
+      "RUBRIC": [
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Rearranges to x² − x − 72 = 0."
+        },
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 9)(x + 8) = 0; the quadratic formula; completing the square)."
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = -8"
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 9"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "RUBRIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": [
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "-8"
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "9"
+          }
+        ]
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 9,
+        "r2": -8,
+        "b": -1,
+        "c": -72,
+        "presentation": "TERMS_ON_BOTH_SIDES"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "267362668d85eefc527d8857ea4defa37311e05a1af4842783a81136b4a2609f",
+        "assessmentSystemId": "IB",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "IB.MATH_AA_HL.P1",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/standard/001",
+        "parameterSetId": "5fec671e5910aeb984ead0bb355fa11aa135c537823d5e892cdaddbc6a78ad7e",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "4b0ba813a7f9d83a4f1860c89df01b066d3f2f1c6de1f9cc229052069f4dd2dc",
+      "LINEAGE_HASH": "1c575395a6eccc91b49aafdf7e672ddcdf6cae0a0e270669ff63b35d1f75a4d8",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:e488b53c65a65b05",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.algebra#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/standard/002",
+      "DIFFICULTY_1_TO_5": 3,
+      "DIFFICULTY_BAND": "MEDIUM",
+      "PROMPT": "Si x² = 6x + 16, ¿cuál es la mayor de las soluciones de la ecuación?",
+      "ANSWER": [
+        "8"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "8"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 8,
+        "r2": -2,
+        "b": -6,
+        "c": -16,
+        "presentation": "TERMS_ON_BOTH_SIDES"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "5d78356028c608f6dbbbf6b2cc2de97a5af757f37d6dcf24fcde8ccf91e891c1",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.algebra#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/standard/002",
+        "parameterSetId": "1932c6931c59123986ecf3a950c6d96c2eb074f3c282c1e8f5fa38c5d3a01193",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "18be0d43b6ec3c9a5107e13056e1897a6806e1d1a2e3f5e1a15c5081c88060c7",
+      "LINEAGE_HASH": "e488b53c65a65b05e5de555e338c3afaa61508f6e485a8b714d95cf148b43c0a",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED",
+        "CONDITIONAL_APPLICABILITY_NOT_APPROVED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:57ae3f4024e3eb5e",
+      "ROLE": "CROSS_MODEL_PROOF",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "IB",
+      "ADAPTER_ID": "IB.MATH_AA_HL.P1",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/standard/002",
+      "DIFFICULTY_1_TO_5": 3,
+      "DIFFICULTY_BAND": "MEDIUM",
+      "PROMPT": "Solve the equation x² = 6x + 16. Show all necessary working. [4]",
+      "ANSWER": [
+        "-2",
+        "8"
+      ],
+      "MARKS": 4,
+      "RESPONSE_FORMAT": "SHORT_RESPONSE",
+      "LANGUAGE": "en",
+      "RUBRIC": [
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Rearranges to x² − 6x − 16 = 0."
+        },
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x + 2) = 0; the quadratic formula; completing the square)."
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = -2"
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 8"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "RUBRIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": [
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "-2"
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "8"
+          }
+        ]
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 8,
+        "r2": -2,
+        "b": -6,
+        "c": -16,
+        "presentation": "TERMS_ON_BOTH_SIDES"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "267362668d85eefc527d8857ea4defa37311e05a1af4842783a81136b4a2609f",
+        "assessmentSystemId": "IB",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "IB.MATH_AA_HL.P1",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/standard/002",
+        "parameterSetId": "1932c6931c59123986ecf3a950c6d96c2eb074f3c282c1e8f5fa38c5d3a01193",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "f9df1dbf04c9e02ffef3140c58dc400e4bb2e3fb179696844454024cf0a19250",
+      "LINEAGE_HASH": "57ae3f4024e3eb5e274694bed06971406c15ebc68adc4d38ca06b8cb93027903",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:a64d7172bd161831",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.algebra#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/standard/003",
+      "DIFFICULTY_1_TO_5": 3,
+      "DIFFICULTY_BAND": "MEDIUM",
+      "PROMPT": "Si x² = −3x + 18, ¿cuál es la mayor de las soluciones de la ecuación?",
+      "ANSWER": [
+        "3"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "3"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 3,
+        "r2": -6,
+        "b": 3,
+        "c": -18,
+        "presentation": "TERMS_ON_BOTH_SIDES"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "5d78356028c608f6dbbbf6b2cc2de97a5af757f37d6dcf24fcde8ccf91e891c1",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.algebra#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/standard/003",
+        "parameterSetId": "d50f0f658ece18436cd6df22c0db5846449dff060d4127ff546d2bb479c5145a",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "ebc1865d0da63e8ef0da6133b1d9ae77ecefe950d0a30c02d2c29b68b2c5fa44",
+      "LINEAGE_HASH": "a64d7172bd161831925f1319e1e13a58a22172b25ffc55095faf25966de6fb1b",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED",
+        "CONDITIONAL_APPLICABILITY_NOT_APPROVED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:97525939aae59253",
+      "ROLE": "CROSS_MODEL_PROOF",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "IB",
+      "ADAPTER_ID": "IB.MATH_AA_HL.P1",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/standard/003",
+      "DIFFICULTY_1_TO_5": 3,
+      "DIFFICULTY_BAND": "MEDIUM",
+      "PROMPT": "Solve the equation x² = −3x + 18. Show all necessary working. [4]",
+      "ANSWER": [
+        "-6",
+        "3"
+      ],
+      "MARKS": 4,
+      "RESPONSE_FORMAT": "SHORT_RESPONSE",
+      "LANGUAGE": "en",
+      "RUBRIC": [
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Rearranges to x² + 3x − 18 = 0."
+        },
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x + 6) = 0; the quadratic formula; completing the square)."
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = -6"
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 3"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "RUBRIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": [
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "-6"
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "3"
+          }
+        ]
+      },
+      "PARAMETER_SET": {
+        "a": 1,
+        "r1": 3,
+        "r2": -6,
+        "b": 3,
+        "c": -18,
+        "presentation": "TERMS_ON_BOTH_SIDES"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "267362668d85eefc527d8857ea4defa37311e05a1af4842783a81136b4a2609f",
+        "assessmentSystemId": "IB",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "IB.MATH_AA_HL.P1",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/standard/003",
+        "parameterSetId": "d50f0f658ece18436cd6df22c0db5846449dff060d4127ff546d2bb479c5145a",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "308dfa27a78282ff1f6c3ac27bab8b42039051e37aa1b6cfda7b0a2387991dcc",
+      "LINEAGE_HASH": "97525939aae59253ea44faa60a1f8ffd5110f648e0c769ce6a0e1bbdfa1320ba",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:22d77179963dfdef",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.algebra#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/001",
+      "DIFFICULTY_1_TO_5": 4,
+      "DIFFICULTY_BAND": "HIGH",
+      "PROMPT": "Si x(2x − 7) = 22, ¿cuál es la mayor de las soluciones de la ecuación?",
+      "ANSWER": [
+        "11/2"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "11/2"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 2,
+        "r1": 5.5,
+        "r2": -2,
+        "b": -7,
+        "c": -22,
+        "presentation": "PRODUCT_TO_EXPAND"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "550535a7c97eb86804e1b1f41b9585131fb3e354c73bfe110bc7901d94217b81",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.algebra#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/001",
+        "parameterSetId": "11a8bc06b8f1cde420bb9b7c765dcc5b7f2a6d14f9b23b89bb60683586d8a3e1",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "2f0ecd30c9f9d0af66e852f5cbb8aafc0a302d79334ba57f940ceb44d9d3a6c3",
+      "LINEAGE_HASH": "22d77179963dfdefcc7275a03387aeed54223fc5cf219b4e9699aae83f8205e7",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED",
+        "CONDITIONAL_APPLICABILITY_NOT_APPROVED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:9c1b540a7345bfef",
+      "ROLE": "CROSS_MODEL_PROOF",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "IB",
+      "ADAPTER_ID": "IB.MATH_AA_HL.P1",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/001",
+      "DIFFICULTY_1_TO_5": 4,
+      "DIFFICULTY_BAND": "HIGH",
+      "PROMPT": "Solve the equation x(2x − 7) = 22. Show all necessary working. [4]",
+      "ANSWER": [
+        "-2",
+        "11/2"
+      ],
+      "MARKS": 4,
+      "RESPONSE_FORMAT": "SHORT_RESPONSE",
+      "LANGUAGE": "en",
+      "RUBRIC": [
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Rearranges to 2x² − 7x − 22 = 0."
+        },
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 11)(x + 2) = 0; the quadratic formula; completing the square)."
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = -2"
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 11/2"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "RUBRIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": [
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "-2"
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "11/2"
+          }
+        ]
+      },
+      "PARAMETER_SET": {
+        "a": 2,
+        "r1": 5.5,
+        "r2": -2,
+        "b": -7,
+        "c": -22,
+        "presentation": "PRODUCT_TO_EXPAND"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "9ef93727f3dab117d6a6a85a0272087b7a5874cd5ae40e3c93564e05d3884c59",
+        "assessmentSystemId": "IB",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "IB.MATH_AA_HL.P1",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/001",
+        "parameterSetId": "11a8bc06b8f1cde420bb9b7c765dcc5b7f2a6d14f9b23b89bb60683586d8a3e1",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "bb663934f21a4787d18ddea64a4e9b6a8d2370ce22d0ef6b0bfb5ae008771c39",
+      "LINEAGE_HASH": "9c1b540a7345bfefd463c7270dbbcb6a96d385ee98d12da47d2fe345bf27240b",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:a93741e83c1f8087",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.algebra#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/002",
+      "DIFFICULTY_1_TO_5": 4,
+      "DIFFICULTY_BAND": "HIGH",
+      "PROMPT": "Si x(2x + 9) = 56, ¿cuál es la mayor de las soluciones de la ecuación?",
+      "ANSWER": [
+        "7/2"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "7/2"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 2,
+        "r1": 3.5,
+        "r2": -8,
+        "b": 9,
+        "c": -56,
+        "presentation": "PRODUCT_TO_EXPAND"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "550535a7c97eb86804e1b1f41b9585131fb3e354c73bfe110bc7901d94217b81",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.algebra#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/002",
+        "parameterSetId": "56350531342aee7506f3d8cafa2041da60e78edccf38e37f988bdb57212d12ad",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "f72496f75fc135ba37ea56e8c6757fcf642227f985b5792b228d89990431f938",
+      "LINEAGE_HASH": "a93741e83c1f8087f8d08a493304579be514c0995b18b6fd51312b48bb440229",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED",
+        "CONDITIONAL_APPLICABILITY_NOT_APPROVED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:d365316a3332c013",
+      "ROLE": "CROSS_MODEL_PROOF",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "IB",
+      "ADAPTER_ID": "IB.MATH_AA_HL.P1",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/002",
+      "DIFFICULTY_1_TO_5": 4,
+      "DIFFICULTY_BAND": "HIGH",
+      "PROMPT": "Solve the equation x(2x + 9) = 56. Show all necessary working. [4]",
+      "ANSWER": [
+        "-8",
+        "7/2"
+      ],
+      "MARKS": 4,
+      "RESPONSE_FORMAT": "SHORT_RESPONSE",
+      "LANGUAGE": "en",
+      "RUBRIC": [
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Rearranges to 2x² + 9x − 56 = 0."
+        },
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 7)(x + 8) = 0; the quadratic formula; completing the square)."
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = -8"
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 7/2"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "RUBRIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": [
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "-8"
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "7/2"
+          }
+        ]
+      },
+      "PARAMETER_SET": {
+        "a": 2,
+        "r1": 3.5,
+        "r2": -8,
+        "b": 9,
+        "c": -56,
+        "presentation": "PRODUCT_TO_EXPAND"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "9ef93727f3dab117d6a6a85a0272087b7a5874cd5ae40e3c93564e05d3884c59",
+        "assessmentSystemId": "IB",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "IB.MATH_AA_HL.P1",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/002",
+        "parameterSetId": "56350531342aee7506f3d8cafa2041da60e78edccf38e37f988bdb57212d12ad",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "106088abd9c337f8956df0ed6513b452cb26e0ee77fcd6963b98cb119079eaf2",
+      "LINEAGE_HASH": "d365316a3332c013d53b7aba1712e370e60cf02304510151a4d1cb580397fad0",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:a1f2a227d4e9ed68",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.algebra#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/003",
+      "DIFFICULTY_1_TO_5": 4,
+      "DIFFICULTY_BAND": "HIGH",
+      "PROMPT": "Si x(2x + 1) = 91, ¿cuál es la mayor de las soluciones de la ecuación?",
+      "ANSWER": [
+        "13/2"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "13/2"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 2,
+        "r1": 6.5,
+        "r2": -7,
+        "b": 1,
+        "c": -91,
+        "presentation": "PRODUCT_TO_EXPAND"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "550535a7c97eb86804e1b1f41b9585131fb3e354c73bfe110bc7901d94217b81",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.algebra#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/003",
+        "parameterSetId": "12206bad1e69315e105492d0d6bb22f94b83580cdaf224a28f229bbbebfc0413",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "73943d81e74ffbfb53a684fca6b50d9baf7e33ca98281dc91ed2fcd843ac113b",
+      "LINEAGE_HASH": "a1f2a227d4e9ed6834b75c4547e461a90353cf890344f69dbc7e36a4156cb179",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED",
+        "CONDITIONAL_APPLICABILITY_NOT_APPROVED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:1cda02a50553917d",
+      "ROLE": "CROSS_MODEL_PROOF",
+      "CORE_ID": "tf.math.quadratic.solve-rational-roots",
+      "CORE_VERSION": "1.0.0-rc.1",
+      "CONCEPT": "math.alg.quadratics",
+      "SYSTEM": "IB",
+      "ADAPTER_ID": "IB.MATH_AA_HL.P1",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.quadratic-solve@1.0.0",
+      "BLUEPRINT": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/003",
+      "DIFFICULTY_1_TO_5": 4,
+      "DIFFICULTY_BAND": "HIGH",
+      "PROMPT": "Solve the equation x(2x + 1) = 91. Show all necessary working. [4]",
+      "ANSWER": [
+        "-7",
+        "13/2"
+      ],
+      "MARKS": 4,
+      "RESPONSE_FORMAT": "SHORT_RESPONSE",
+      "LANGUAGE": "en",
+      "RUBRIC": [
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Rearranges to 2x² + x − 91 = 0."
+        },
+        {
+          "code": "M1",
+          "kind": "METHOD",
+          "marks": 1,
+          "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 13)(x + 7) = 0; the quadratic formula; completing the square)."
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = -7"
+        },
+        {
+          "code": "A1",
+          "kind": "ACCURACY",
+          "marks": 1,
+          "criterion": "x = 13/2"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "RUBRIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": [
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "M1",
+            "kind": "METHOD",
+            "marks": 1,
+            "answer": null
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "-7"
+          },
+          {
+            "code": "A1",
+            "kind": "ACCURACY",
+            "marks": 1,
+            "answer": "13/2"
+          }
+        ]
+      },
+      "PARAMETER_SET": {
+        "a": 2,
+        "r1": 6.5,
+        "r2": -7,
+        "b": 1,
+        "c": -91,
+        "presentation": "PRODUCT_TO_EXPAND"
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.quadratic.solve-rational-roots",
+        "constructFamilyVersion": "1.0.0-rc.1",
+        "primaryConceptId": "math.alg.quadratics",
+        "adaptationSpecificationId": "9ef93727f3dab117d6a6a85a0272087b7a5874cd5ae40e3c93564e05d3884c59",
+        "assessmentSystemId": "IB",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "IB.MATH_AA_HL.P1",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+        "seed": "step4b-pilot-1/quadratic.solve-rational-roots/challenge/003",
+        "parameterSetId": "12206bad1e69315e105492d0d6bb22f94b83580cdaf224a28f229bbbebfc0413",
+        "rendererVersion": "parametric.quadratic-solve@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "CONTENT_HASH": "a157bca6074a4de41a81b559fae60729c990e724fa4f156fe4430c87c1a6e8c0",
+      "LINEAGE_HASH": "1cda02a50553917deaa37bfacf4cadc70c151b54c1a0a0cc3a1de0bdc80e5639",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:ea060d3956e42fd8",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.proportion.missing-value",
+      "CORE_VERSION": "1.0.0-rc.2",
+      "CONCEPT": "math.num.ratio-proportion",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.proportion-missing-value@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.aritmetica#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/proportion.missing-value/foundational/001",
+      "DIFFICULTY_1_TO_5": 2,
+      "DIFFICULTY_BAND": "LOW",
+      "PROMPT": "Si 7 cuadernos iguales cuestan 15 pesos, ¿cuántos pesos cuestan 14 de esos cuadernos?",
+      "ANSWER": [
+        "30"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "30"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 7,
+        "b": 15,
+        "c": 14,
+        "x": 30,
+        "situation": "COST",
+        "statedC": 14
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.proportion.missing-value",
+        "constructFamilyVersion": "1.0.0-rc.2",
+        "primaryConceptId": "math.num.ratio-proportion",
+        "adaptationSpecificationId": "d7b4cc19a715465ec00f38fc595ea33d2fe20fafc09e55e50323ce7a64af84c6",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.aritmetica#0",
+        "seed": "step4b-pilot-1/proportion.missing-value/foundational/001",
+        "parameterSetId": "23f67931f7bdf57bd6360a18a357ad0fc26f60350c9736374133dd343d2c2d5b",
+        "rendererVersion": "parametric.proportion-missing-value@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "CONTENT_HASH": "472f406faf8effb31017cced95e2860b7cac96276a7a50ab925e4190e2d1a7b5",
+      "LINEAGE_HASH": "ea060d3956e42fd8b94d8abe2defcc404ac7c868416c90447ff7b204ac378174",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:dc05227630e6bed9",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.proportion.missing-value",
+      "CORE_VERSION": "1.0.0-rc.2",
+      "CONCEPT": "math.num.ratio-proportion",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.proportion-missing-value@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.aritmetica#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/proportion.missing-value/foundational/002",
+      "DIFFICULTY_1_TO_5": 2,
+      "DIFFICULTY_BAND": "LOW",
+      "PROMPT": "Si 7 cuadernos iguales cuestan 15 pesos, ¿cuántos pesos cuestan 28 de esos cuadernos?",
+      "ANSWER": [
+        "60"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "60"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 7,
+        "b": 15,
+        "c": 28,
+        "x": 60,
+        "situation": "COST",
+        "statedC": 28
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.proportion.missing-value",
+        "constructFamilyVersion": "1.0.0-rc.2",
+        "primaryConceptId": "math.num.ratio-proportion",
+        "adaptationSpecificationId": "d7b4cc19a715465ec00f38fc595ea33d2fe20fafc09e55e50323ce7a64af84c6",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.aritmetica#0",
+        "seed": "step4b-pilot-1/proportion.missing-value/foundational/002",
+        "parameterSetId": "9396f778232c31ed1aa720a1cee69ebfbc123e698b20b8fb3ea6374feb302917",
+        "rendererVersion": "parametric.proportion-missing-value@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "CONTENT_HASH": "80737c2bd87f873dd60a4e980081371c18a02c2a2d6d060d3c29505f247d7050",
+      "LINEAGE_HASH": "dc05227630e6bed914e224d07fc9789556531677c7e64ad46993be0a58fa4ffe",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:461ef6c1784bd180",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.proportion.missing-value",
+      "CORE_VERSION": "1.0.0-rc.2",
+      "CONCEPT": "math.num.ratio-proportion",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.proportion-missing-value@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.aritmetica#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/proportion.missing-value/foundational/003",
+      "DIFFICULTY_1_TO_5": 2,
+      "DIFFICULTY_BAND": "LOW",
+      "PROMPT": "Una llave vierte agua a ritmo constante: 27 litros en 12 minutos. ¿Cuántos litros vierte en 24 minutos?",
+      "ANSWER": [
+        "54"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "54"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 12,
+        "b": 27,
+        "c": 24,
+        "x": 54,
+        "situation": "FLOW_MINUTES",
+        "statedC": 24
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.proportion.missing-value",
+        "constructFamilyVersion": "1.0.0-rc.2",
+        "primaryConceptId": "math.num.ratio-proportion",
+        "adaptationSpecificationId": "d7b4cc19a715465ec00f38fc595ea33d2fe20fafc09e55e50323ce7a64af84c6",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.aritmetica#0",
+        "seed": "step4b-pilot-1/proportion.missing-value/foundational/003",
+        "parameterSetId": "6526ef7ef0c14bfc1b41dc004d056d2bf87503c5287b32e0dd29aff2de8a3995",
+        "rendererVersion": "parametric.proportion-missing-value@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "CONTENT_HASH": "5b47085b631617d248dadb270234d122c022f149c78ba449950cae2082245727",
+      "LINEAGE_HASH": "461ef6c1784bd18037bd249d271bbf22c7f03d9ad3424953d305e5b5eefa47aa",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:f9b618d4955eade4",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.proportion.missing-value",
+      "CORE_VERSION": "1.0.0-rc.2",
+      "CONCEPT": "math.num.ratio-proportion",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.proportion-missing-value@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.aritmetica#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/proportion.missing-value/standard/001",
+      "DIFFICULTY_1_TO_5": 3,
+      "DIFFICULTY_BAND": "MEDIUM",
+      "PROMPT": "Un sistema de riego consume agua a ritmo constante: 9 litros en 21 días. ¿Cuántos litros consume en 7 semanas?",
+      "ANSWER": [
+        "21"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "21"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 21,
+        "b": 9,
+        "c": 49,
+        "x": 21,
+        "situation": "USE_WEEKS",
+        "statedC": 7
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.proportion.missing-value",
+        "constructFamilyVersion": "1.0.0-rc.2",
+        "primaryConceptId": "math.num.ratio-proportion",
+        "adaptationSpecificationId": "807fbdcdbcb926f4f2ecb7b6044ebe05a78795f26e7eb9d702c61f9e8aec3374",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.aritmetica#0",
+        "seed": "step4b-pilot-1/proportion.missing-value/standard/001",
+        "parameterSetId": "dc2009abeb11aaa70c834ff0abff74e0f19d1163c97663cd228533a1fb170a6d",
+        "rendererVersion": "parametric.proportion-missing-value@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "CONTENT_HASH": "1f229204626ec804721210bbf2776d86ac76954043615271a66912536ad11af8",
+      "LINEAGE_HASH": "f9b618d4955eade4b14dde4f51ce7da39a8bcfb1ffea595ff9fca6623076d899",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:b0999c77341d86bb",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.proportion.missing-value",
+      "CORE_VERSION": "1.0.0-rc.2",
+      "CONCEPT": "math.num.ratio-proportion",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.proportion-missing-value@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.aritmetica#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/proportion.missing-value/standard/002",
+      "DIFFICULTY_1_TO_5": 3,
+      "DIFFICULTY_BAND": "MEDIUM",
+      "PROMPT": "Un sistema de riego consume agua a ritmo constante: 66 litros en 36 días. ¿Cuántos litros consume en 12 semanas?",
+      "ANSWER": [
+        "154"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "154"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 36,
+        "b": 66,
+        "c": 84,
+        "x": 154,
+        "situation": "USE_WEEKS",
+        "statedC": 12
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.proportion.missing-value",
+        "constructFamilyVersion": "1.0.0-rc.2",
+        "primaryConceptId": "math.num.ratio-proportion",
+        "adaptationSpecificationId": "807fbdcdbcb926f4f2ecb7b6044ebe05a78795f26e7eb9d702c61f9e8aec3374",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.aritmetica#0",
+        "seed": "step4b-pilot-1/proportion.missing-value/standard/002",
+        "parameterSetId": "5b69f080ba0c85f95bdada931380efb29c9a10871b3875175b6f86a20b17049a",
+        "rendererVersion": "parametric.proportion-missing-value@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "CONTENT_HASH": "c8a58e89dcf9aac53ca0a734537f357da6fd80a36f0ec383636468db79335102",
+      "LINEAGE_HASH": "b0999c77341d86bbf35dbcdb329c3f11742d4c0d00acbde6168e8fbdcf145843",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:c0beb4c0b8d92251",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.proportion.missing-value",
+      "CORE_VERSION": "1.0.0-rc.2",
+      "CONCEPT": "math.num.ratio-proportion",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.proportion-missing-value@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.aritmetica#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/proportion.missing-value/standard/003",
+      "DIFFICULTY_1_TO_5": 3,
+      "DIFFICULTY_BAND": "MEDIUM",
+      "PROMPT": "Una llave vierte agua a ritmo constante: 44 litros en 24 minutos. ¿Cuántos litros vierte en 1 hora?",
+      "ANSWER": [
+        "110"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "110"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 24,
+        "b": 44,
+        "c": 60,
+        "x": 110,
+        "situation": "FLOW_HOURS",
+        "statedC": 1
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.proportion.missing-value",
+        "constructFamilyVersion": "1.0.0-rc.2",
+        "primaryConceptId": "math.num.ratio-proportion",
+        "adaptationSpecificationId": "807fbdcdbcb926f4f2ecb7b6044ebe05a78795f26e7eb9d702c61f9e8aec3374",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.aritmetica#0",
+        "seed": "step4b-pilot-1/proportion.missing-value/standard/003",
+        "parameterSetId": "13865a8d561d9ec78c12c771c6e6d9850851709721b166817a4db65eb0a65a2d",
+        "rendererVersion": "parametric.proportion-missing-value@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "CONTENT_HASH": "9e84697a28c767e12ac20224d7a818796f90994371955f11a411c6af47a1f443",
+      "LINEAGE_HASH": "c0beb4c0b8d922512c22c4aa357d1c4258a50f922da73a79e0f5beaf6c46ca99",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:d77ee8e3372eb8cc",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.proportion.missing-value",
+      "CORE_VERSION": "1.0.0-rc.2",
+      "CONCEPT": "math.num.ratio-proportion",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.proportion-missing-value@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.aritmetica#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/proportion.missing-value/challenge/001",
+      "DIFFICULTY_1_TO_5": 4,
+      "DIFFICULTY_BAND": "HIGH",
+      "PROMPT": "Una llave vierte agua a ritmo constante: 105 litros en 56 minutos. ¿Cuántos litros vierte en 3 horas?",
+      "ANSWER": [
+        "337.5"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "337.5"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 56,
+        "b": 105,
+        "c": 180,
+        "x": 337.5,
+        "situation": "FLOW_HOURS",
+        "statedC": 3
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.proportion.missing-value",
+        "constructFamilyVersion": "1.0.0-rc.2",
+        "primaryConceptId": "math.num.ratio-proportion",
+        "adaptationSpecificationId": "c4d827ba40008cef9a01f6477d21480ab3cb23ed341f52e737cfe0d69a815d44",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.aritmetica#0",
+        "seed": "step4b-pilot-1/proportion.missing-value/challenge/001",
+        "parameterSetId": "da5c7e80e2befe1d686fbad8c2cb14dc4ddbd5df5122ad6fa3a7747f21af6183",
+        "rendererVersion": "parametric.proportion-missing-value@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "CONTENT_HASH": "d06189f9df96a936122bf84f1c7a7a5719088d0a043d5b047a1e79ad16f69655",
+      "LINEAGE_HASH": "d77ee8e3372eb8ccdfc23765404ac38a6ec078f8944e802d7fa971481a7913d6",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:c96f85edc75e2e4d",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.proportion.missing-value",
+      "CORE_VERSION": "1.0.0-rc.2",
+      "CONCEPT": "math.num.ratio-proportion",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.proportion-missing-value@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.aritmetica#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/proportion.missing-value/challenge/002",
+      "DIFFICULTY_1_TO_5": 4,
+      "DIFFICULTY_BAND": "HIGH",
+      "PROMPT": "Un sistema de riego consume agua a ritmo constante: 50 litros en 8 días. ¿Cuántos litros consume en 1 semana?",
+      "ANSWER": [
+        "43.75"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "43.75"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 8,
+        "b": 50,
+        "c": 7,
+        "x": 43.75,
+        "situation": "USE_WEEKS",
+        "statedC": 1
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.proportion.missing-value",
+        "constructFamilyVersion": "1.0.0-rc.2",
+        "primaryConceptId": "math.num.ratio-proportion",
+        "adaptationSpecificationId": "c4d827ba40008cef9a01f6477d21480ab3cb23ed341f52e737cfe0d69a815d44",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.aritmetica#0",
+        "seed": "step4b-pilot-1/proportion.missing-value/challenge/002",
+        "parameterSetId": "fecc928727c9888c6f2df63b6d9bca3c2be7e0ba3eaab865c9d908ea37884821",
+        "rendererVersion": "parametric.proportion-missing-value@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "CONTENT_HASH": "d180d17e430dcc501dd4ccdd2375ed30209500bd49bcb578713a3faf21791e03",
+      "LINEAGE_HASH": "c96f85edc75e2e4d59f3d5e6af6c75e24c680942b52659e530212b2e4349df00",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    },
+    {
+      "INSTANCE_ID": "step4b-pilot-1:ec29bf3497efe38e",
+      "ROLE": "STUDENT_SUPPLY_CANDIDATE",
+      "CORE_ID": "tf.math.proportion.missing-value",
+      "CORE_VERSION": "1.0.0-rc.2",
+      "CONCEPT": "math.num.ratio-proportion",
+      "SYSTEM": "PAA",
+      "ADAPTER_ID": "PAA.MATEMATICAS",
+      "ADAPTER_VERSION": "0.2.0-illustrative+0.4.0-illustrative",
+      "RENDERER_VERSION": "parametric.proportion-missing-value@1.0.0",
+      "BLUEPRINT": "v2.paa/matematicas/paa.mat.aritmetica#0",
+      "BLUEPRINT_CLASS_PROPOSED": "REDUCED",
+      "SEED": "step4b-pilot-1/proportion.missing-value/challenge/003",
+      "DIFFICULTY_1_TO_5": 4,
+      "DIFFICULTY_BAND": "HIGH",
+      "PROMPT": "Un sistema de riego consume agua a ritmo constante: 9 litros en 36 días. ¿Cuántos litros consume en 7 semanas?",
+      "ANSWER": [
+        "12.25"
+      ],
+      "MARKS": 1,
+      "RESPONSE_FORMAT": "NUMERIC_ENTRY",
+      "LANGUAGE": "es",
+      "RUBRIC": [
+        {
+          "code": "KEY",
+          "kind": "ANSWER",
+          "marks": 1,
+          "criterion": "12.25"
+        }
+      ],
+      "RESPONSE_POLICY": {
+        "kind": "NUMERIC",
+        "acceptedRepresentations": [
+          "INTEGER",
+          "DECIMAL",
+          "FRACTION"
+        ],
+        "decimalSeparators": [
+          ".",
+          ","
+        ],
+        "units": {
+          "accepted": [],
+          "required": false
+        },
+        "rounding": null,
+        "tolerance": null,
+        "symbolicEquivalence": false,
+        "partialCredit": []
+      },
+      "PARAMETER_SET": {
+        "a": 36,
+        "b": 9,
+        "c": 49,
+        "x": 12.25,
+        "situation": "USE_WEEKS",
+        "statedC": 7
+      },
+      "LINEAGE": {
+        "constructFamilyId": "tf.math.proportion.missing-value",
+        "constructFamilyVersion": "1.0.0-rc.2",
+        "primaryConceptId": "math.num.ratio-proportion",
+        "adaptationSpecificationId": "c4d827ba40008cef9a01f6477d21480ab3cb23ed341f52e737cfe0d69a815d44",
+        "assessmentSystemId": "PAA",
+        "assessmentSystemVersionId": "0-2-0-illustrative",
+        "assessmentAdapterId": "PAA.MATEMATICAS",
+        "assessmentAdapterVersion": "0.2.0-illustrative+0.4.0-illustrative",
+        "blueprintBucketId": "v2.paa/matematicas/paa.mat.aritmetica#0",
+        "seed": "step4b-pilot-1/proportion.missing-value/challenge/003",
+        "parameterSetId": "7676bb9a8865726f3c04dcdc667c6652f5fa55fb5bdb9a7cae0c2ac418be4368",
+        "rendererVersion": "parametric.proportion-missing-value@1.0.0",
+        "certificationVersion": "UNCERTIFIED-DEV-TEST"
+      },
+      "ENVELOPE_HASH": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "CONTENT_HASH": "054f50abd132eadb1c95c8f80978000f2f2945f06cc4cec0a6193ae85eed3394",
+      "LINEAGE_HASH": "ec29bf3497efe38e749bb34d460adaf0404127fa94a650f6d566286e1e31df58",
+      "INSIDE_ENVELOPE": true,
+      "CERTIFICATION_INHERITANCE_STATUS": "NOT_CERTIFIED",
+      "CERTIFICATION_BLOCKERS": [
+        "CORE_NOT_CERTIFIED",
+        "ADAPTER_NOT_CERTIFIED",
+        "RENDERER_ENVELOPE_NOT_CERTIFIED",
+        "BLUEPRINT_CLASSIFICATION_NOT_CERTIFIED"
+      ],
+      "STUDENT_ELIGIBLE": false
+    }
+  ]
+}
