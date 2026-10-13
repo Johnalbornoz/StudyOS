@@ -97,9 +97,13 @@ describe('B1 QuestionCoverage -- reviewed exam bank', () => {
     expect(c.examApplicability).toEqual({ state: 'UNKNOWN' });
   });
 
-  it('estimated time is UNKNOWN for every item today (no source records it)', () => {
+  it('estimated time: UNKNOWN for a reviewed bank item (no source records it); a generated item carries its nominal response time', () => {
     expect(coverageOfReviewedBankItem(reviewedRow()).estimatedSeconds.state).toBe('UNKNOWN');
-    expect(coverageOfLearningCacheItem(cacheRow()).estimatedSeconds.state).toBe('UNKNOWN');
+    expect(coverageOfLearningCacheItem(cacheRow({ questionType: 'multiple_choice', difficulty: 3 })).estimatedSeconds).toEqual({ state: 'KNOWN', value: 60 });
+    expect(coverageOfLearningCacheItem(cacheRow({ questionType: 'step_by_step', difficulty: 5 })).estimatedSeconds).toEqual({ state: 'KNOWN', value: 270 });
+    // no type or no difficulty recorded: nothing is assumed
+    expect(coverageOfLearningCacheItem(cacheRow({ questionType: null })).estimatedSeconds.state).toBe('UNKNOWN');
+    expect(coverageOfLearningCacheItem(cacheRow({ difficulty: null })).estimatedSeconds.state).toBe('UNKNOWN');
   });
 
   it('a version with no bank identity, or fixture content, is a FIXTURE -- never assumed to be real content', () => {

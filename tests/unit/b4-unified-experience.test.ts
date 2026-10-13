@@ -39,7 +39,7 @@ const canonical = (c: string): ConceptIdentity => ({ status: 'CANONICAL', learne
 
 function cached(id: string, concept: string, over: Partial<LearningCacheItemRow> = {}, also: Array<[string, 'PRIMARY' | 'SUPPORTING']> = [], seconds: number | null = null): QuestionCoverage {
   const c = coverageOfLearningCacheItem({ candidateId: id, studentId: STUDENT, learnerConceptId: `lc-${concept}`, activityType: 'PRACTICE', questionType: 'multiple_choice', difficulty: 3, language: 'es', validationStatus: 'VALIDATED', identity: canonical(concept), ...over });
-  return { ...c, concepts: [...c.concepts, ...also.map(([canonicalConceptId, role]) => ({ canonicalConceptId, role, basis: 'ITEM_ATTRIBUTION' as const }))], estimatedSeconds: seconds === null ? c.estimatedSeconds : { state: 'KNOWN', value: seconds } };
+  return { ...c, concepts: [...c.concepts, ...also.map(([canonicalConceptId, role]) => ({ canonicalConceptId, role, basis: 'ITEM_ATTRIBUTION' as const }))], estimatedSeconds: seconds === null ? { state: 'UNKNOWN' } : { state: 'KNOWN', value: seconds } };
 }
 function bank(id: string, objective: string, concepts: string[]): QuestionCoverage {
   return coverageOfReviewedBankItem({

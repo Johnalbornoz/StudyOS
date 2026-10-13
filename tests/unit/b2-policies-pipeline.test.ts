@@ -38,7 +38,8 @@ const canonical = (canonicalConceptId: string, learnerConceptId = `lc-${canonica
 /** A Student's validated cached learning question on one concept (PRIMARY), optionally also covering others. */
 function cached(id: string, concept: string, over: Partial<LearningCacheItemRow> = {}, also: Array<[string, 'PRIMARY' | 'SUPPORTING']> = []): QuestionCoverage {
   const c = coverageOfLearningCacheItem({ candidateId: id, studentId: STUDENT, learnerConceptId: `lc-${concept}`, activityType: 'PRACTICE', questionType: 'multiple_choice', difficulty: 3, language: 'es', validationStatus: 'VALIDATED', identity: canonical(concept), ...over });
-  return { ...c, concepts: [...c.concepts, ...also.map(([canonicalConceptId, role]) => ({ canonicalConceptId, role, basis: 'ITEM_ATTRIBUTION' as const }))] };
+  // these suites exercise the solver with an UNRECORDED duration (an item with no type or difficulty): stated here, not inherited from the nominal response time
+  return { ...c, estimatedSeconds: { state: 'UNKNOWN' }, concepts: [...c.concepts, ...also.map(([canonicalConceptId, role]) => ({ canonicalConceptId, role, basis: 'ITEM_ATTRIBUTION' as const }))] };
 }
 
 /** A reviewed, student-deliverable bank item of exam version ev-1. */

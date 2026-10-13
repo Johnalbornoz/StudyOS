@@ -29,6 +29,7 @@ import type { CurriculumScopeRef, ObjectiveConceptRelation } from '@/lib/curricu
 import { canonicalConceptIdForAssessment, type ConceptIdentity } from '@/lib/catalog/concept-identity';
 import type { EligibilityFacts } from '@/lib/exam-core/question-bank/lifecycle';
 import { known, knownOrUnknown, NOT_APPLICABLE, UNKNOWN, type Known } from './known';
+import { nominalResponseSeconds } from './nominal-response-time';
 
 export const QUESTION_COVERAGE_VERSION = 1 as const;
 
@@ -165,7 +166,7 @@ export interface QuestionCoverage {
   /** Item difficulty on the 1-5 scale both stores use. */
   difficulty: Known<number>;
   marks: Known<number>;
-  /** No source records an estimated time today. */
+  /** Reviewed bank: no source records it. Learning cache: the nominal response time of a generated item (a planning allowance, not a measurement). */
   estimatedSeconds: Known<number>;
   language: Known<string>;
   provenance: QuestionProvenance;
@@ -344,7 +345,7 @@ export function coverageOfLearningCacheItem(row: LearningCacheItemRow): Question
     questionType: knownOrUnknown(row.questionType),
     difficulty: knownOrUnknown(row.difficulty),
     marks: NOT_APPLICABLE,
-    estimatedSeconds: UNKNOWN,
+    estimatedSeconds: knownOrUnknown(nominalResponseSeconds(row.questionType, row.difficulty)),
     language: knownOrUnknown(row.language),
     provenance: 'GENERATED_UNREVIEWED',
     licensing: NOT_APPLICABLE,
