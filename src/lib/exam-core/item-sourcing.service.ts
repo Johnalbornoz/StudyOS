@@ -15,6 +15,7 @@
  *      then reported as unavailable -- never delivered, never graded, never
  *      evidence.
  */
+import { providerGenerationAllowed } from '@/lib/assessment-supply/supply-boundary';
 import { mayUseGeneratedFallback } from '@/lib/simulation/preparation-simulation';
 import { constraintMismatches, itemDimensionValues, type SlotConstraint } from './slot-constraints';
 import { createHash } from 'crypto';
@@ -189,12 +190,12 @@ export async function sourceExamItem(params: {
       .catch(() => undefined);
     return { outcome: 'READY', item: banked };
   }
-  // B1 (official mock boundary): an official-format attempt never receives content generated for the learner.
-  if (!(await generatedFallbackAllowed(params.attemptId))) {
-    console.log('[exam-core]', JSON.stringify({ at: 'generated_fallback_blocked_official_format', attemptId: params.attemptId }));
-    return { outcome: 'UNAVAILABLE', reason: 'NO_ITEM_GENERATED' };
-  }
-  return generateValidatedItem({ studentId: params.studentId, target: params.target, language: params.language });
+  // Revised OE-014 (lib/assessment-supply/supply-boundary): a STANDARDIZED EXAM attempt -- practice, reduced mock,
+  // full mock, challenge, official format or not -- is supplied by the Certified Exam Bank or it is NOT_READY.
+  // No provider is asked for an exam question while a Student is in an attempt. (`generateValidatedItem` stays
+  // for the governed, offline Factory workflows; no Student attempt reaches it.)
+  console.log('[exam-core]', JSON.stringify({ at: 'exam_bank_item_unavailable', attemptId: params.attemptId, objectiveId: params.target.learningObjectiveId, standardizedExamRuntimeGeneration: providerGenerationAllowed('STANDARDIZED_EXAM', 'DURING_ATTEMPT') }));
+  return { outcome: 'UNAVAILABLE', reason: 'NO_ITEM_GENERATED' };
 }
 
 /**

@@ -39,6 +39,8 @@ vi.mock('@/lib/assessment-execution/assessment-start.service', () => ({
 }));
 vi.mock('@/lib/assessment-execution/assessment-draft.service', () => ({ saveDraftAnswers: (...a: any[]) => h.saveDraft(...a) }));
 vi.mock('@/lib/assessment-execution/assessment-completion.service', () => ({ completeLearningAssessment: (...a: any[]) => h.complete(...a) }));
+// the Learning AI Engine: in these route tests nothing is short, so it generates nothing
+vi.mock('@/lib/assessment-supply/learning-item-supply.service', () => ({ ensureGeneratedSupply: async () => ({ status: 'SUFFICIENT', generated: 0, rounds: 0, unmetCanonicalConceptIds: [] }) }));
 vi.mock('@/lib/assessment-experience/assessment-supply.service', () => ({ requestSupplyForSession: (...a: any[]) => h.supply(...a) }));
 
 import { NextRequest } from 'next/server';

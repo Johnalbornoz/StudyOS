@@ -34,7 +34,8 @@ export function effortText(effort: EffortEstimate, t: T): string | null {
 
 function PreviewFacts({ preview, t }: { preview: AssessmentPreview; t: T }) {
   const effort = effortText(preview.effort, t);
-  const partial = preview.targets.covered < preview.targets.requested;
+  // prepared on start: every requested concept will be covered, so it is not a partial practice
+  const partial = preview.availability !== 'ON_DEMAND' && preview.targets.covered < preview.targets.requested;
   return (
     <span className="ax-facts">
       {preview.targets.requested > 0 && (
@@ -49,6 +50,8 @@ function PreviewFacts({ preview, t }: { preview: AssessmentPreview; t: T }) {
 export function AssessmentAvailability({ preview, t }: { preview: AssessmentPreview; t: T }) {
   if (preview.availability === 'AVAILABLE') return null;
   const tr = t as Record<string, string>;
+  // Learning never waits for inventory: its questions are prepared when the Student starts.
+  if (preview.availability === 'ON_DEMAND') return <InlineAlert tone="info" title={t['ax.avail.ON_DEMAND']} />;
   return (
     <InlineAlert
       tone={preview.availability === 'UNAVAILABLE' ? 'warning' : 'info'}
@@ -91,6 +94,7 @@ export function AssessmentSetup({
   const chosen = startable.find((o) => o.depth === selectedDepth) ?? startable.find((o) => o.depth === 'BALANCED') ?? startable[0] ?? null;
   const single = view.preview;
   const canStart = view.state !== 'UNAVAILABLE';
+  const onDemand = view.depthOptions.find((o) => o.preview.availability === 'ON_DEMAND') ?? null;
   return (
     <section className="card ax-setup" aria-labelledby="ax-setup-title" data-state={view.state}>
       <header>
@@ -115,7 +119,9 @@ export function AssessmentSetup({
         )}
         {single && single.canStart && <p className="ax-single"><PreviewFacts preview={single} t={t} /></p>}
         {single && <AssessmentAvailability preview={single} t={t} />}
-        {!single && view.state !== 'READY' && (
+        {/* Learning items are prepared when the Student starts: say so once, wherever a depth relies on it */}
+        {!single && onDemand && <AssessmentAvailability preview={onDemand.preview} t={t} />}
+        {!single && !onDemand && view.state !== 'READY' && (
           <AssessmentAvailability preview={(startable[0] ?? view.depthOptions[0])?.preview ?? { availability: 'UNAVAILABLE', effort: { questions: null, minutes: null }, targets: { requested: 0, covered: 0 }, limitations: [], canStart: false }} t={t} />
         )}
         <div className="xr-next-actions">

@@ -10,6 +10,10 @@
  * Intents map onto the existing activity semantics -- no new persisted activity type:
  *   CONCEPT_PRACTICE / TOPIC_PRACTICE / CUSTOM_CONCEPT_PRACTICE / MIXED_CUMULATIVE  -> PRACTICE
  *   MASTERY_CHECK                                                                   -> PROVE
+ *   AD_HOC_CONCEPT_EXAM (a Student's own partial exam over concepts they chose)     -> PROVE
+ *       Same activity as a mastery check: independent, no assistance, novel items. It is its own intent
+ *       so that the frozen assessment and the evidence it produces carry that provenance explicitly.
+ *       It is a LEARNING assessment: never an official paper, a mock or an institutional examination.
  *   RETENTION_CHECK                                                                 -> RETENTION_CHECK
  *   DIAGNOSTIC                                                                      -> one direct look at every concept
  */
@@ -23,8 +27,9 @@ import { targetKey } from '../solver/candidate';
 import type { TargetPlan, TargetRequirement } from '../solver/plan';
 import type { EvidenceNeed } from './evidence-requirement';
 import { DEPTH_PRESETS, depthRequirementFor, PRACTICE_DEPTH_POLICY_VERSION, type PracticeDepth } from './practice-depth';
+import { requestedDifficultyRange, type RequestedDifficultyBand } from '@/lib/exam-core/question-bank/requested-difficulty';
 
-export const LEARNING_INTENTS = ['CONCEPT_PRACTICE', 'TOPIC_PRACTICE', 'CUSTOM_CONCEPT_PRACTICE', 'DIAGNOSTIC', 'MASTERY_CHECK', 'RETENTION_CHECK', 'MIXED_CUMULATIVE'] as const;
+export const LEARNING_INTENTS = ['CONCEPT_PRACTICE', 'TOPIC_PRACTICE', 'CUSTOM_CONCEPT_PRACTICE', 'DIAGNOSTIC', 'MASTERY_CHECK', 'RETENTION_CHECK', 'MIXED_CUMULATIVE', 'AD_HOC_CONCEPT_EXAM'] as const;
 export type LearningIntent = (typeof LEARNING_INTENTS)[number];
 
 export const LEARNING_POLICY = { id: 'b2-learning', version: '1' } as const;
@@ -41,7 +46,7 @@ interface ActivitySemantics {
 
 /** Every value is read from the canonical pedagogical policy; none is restated. */
 export function activitySemanticsOf(intent: LearningIntent): ActivitySemantics {
-  if (intent === 'MASTERY_CHECK') return { activityType: 'PROVE', independence: CANONICAL_POLICY.prove.independenceRequired, difficulty: CANONICAL_POLICY.prove.difficulty, minimumScorePercent: CANONICAL_POLICY.prove.minimumScorePercent, noveltyRequired: false };
+  if (intent === 'MASTERY_CHECK' || intent === 'AD_HOC_CONCEPT_EXAM') return { activityType: 'PROVE', independence: CANONICAL_POLICY.prove.independenceRequired, difficulty: CANONICAL_POLICY.prove.difficulty, minimumScorePercent: CANONICAL_POLICY.prove.minimumScorePercent, noveltyRequired: false };
   if (intent === 'RETENTION_CHECK') return { activityType: 'RETENTION_CHECK', independence: CANONICAL_POLICY.retention.independenceRequired, difficulty: CANONICAL_POLICY.retention.difficulty, minimumScorePercent: CANONICAL_POLICY.retention.minimumScorePercent, noveltyRequired: CANONICAL_POLICY.retention.noveltyRequired };
   // A diagnostic looks, it does not train: no difficulty band is imposed and no pass bar exists.
   if (intent === 'DIAGNOSTIC') return { activityType: 'DIAGNOSTIC_CHECK', independence: true, difficulty: null, minimumScorePercent: null, noveltyRequired: false };
@@ -49,6 +54,20 @@ export function activitySemanticsOf(intent: LearningIntent): ActivitySemantics {
 }
 
 export type UnresolvedTarget = TargetPlan['unresolvedTargets'][number];
+
+/**
+ * Where a learning intent's questions come from (lib/assessment-supply/supply-boundary): every LEARNING and
+ * INTERNAL ASSESSMENT intent -- a Student's own partial exam included -- is assembled from the Student's own
+ * generated, validated items. None of them reads the Certified Exam Question Bank: that bank belongs to
+ * standardized exam preparation. A Student who has never practised is served by generating the assessment
+ * before it starts (learning-item-supply.service), never by borrowing exam content.
+ *
+ * `REVIEWED_EXAM_BANK` stays in the type: sessions frozen from it before this rule remain readable.
+ */
+export type LearningCandidateSource = 'LEARNING_ITEM_CACHE' | 'REVIEWED_EXAM_BANK';
+export function candidateSourceOf(_intent: LearningIntent): LearningCandidateSource {
+  return 'LEARNING_ITEM_CACHE';
+}
 
 /**
  * The canonical targets of a request, through the B1 identity rule only: a learner concept counts when its
@@ -85,6 +104,12 @@ export interface LearningPolicyInput {
   scope?: CurriculumScope | null;
   /** A hard limit the Student states. Honoured only against recorded durations. */
   availableMinutes?: number | null;
+  /**
+   * A difficulty the Student states (question-bank/requested-difficulty). Hard: only questions recorded in that band are
+   * selected; with too few of them the requirement is unmet -- it is never filled from another band.
+   * null / absent = not stated: the activity's canonical band stays a preference, as before.
+   */
+  difficultyBand?: RequestedDifficultyBand | null;
 }
 
 export interface LearningBlueprintPlan {
@@ -97,6 +122,8 @@ export interface LearningBlueprintPlan {
 export function buildLearningBlueprint(input: LearningPolicyInput): LearningBlueprintPlan {
   const semantics = activitySemanticsOf(input.intent);
   const preset = DEPTH_PRESETS[input.depth];
+  const requestedDifficulty = input.difficultyBand ? requestedDifficultyRange(input.difficultyBand) : null;
+  const preferredDifficulty = requestedDifficulty ?? semantics.difficulty;
   const unresolved: UnresolvedTarget[] = [...(input.unresolved ?? [])];
   const needByConcept = new Map(input.needs.map((n) => [n.canonicalConceptId, n]));
   const targets: TargetRequirement[] = [];
@@ -123,11 +150,12 @@ export function buildLearningBlueprint(input: LearningPolicyInput): LearningBlue
     // A concept reached only through an objective mapping (DERIVED) never satisfies a concept requirement.
     accept: { supporting: input.intent === 'DIAGNOSTIC' ? false : preset.acceptSupporting, derived: false },
     soft: {
-      difficulty: semantics.difficulty ? { min: semantics.difficulty.min, max: semantics.difficulty.max, target: null } : null,
+      difficulty: preferredDifficulty ? { min: preferredDifficulty.min, max: preferredDifficulty.max, target: null } : null,
       diversity: preset.diversity,
       avoidRecent: true,
     },
-    hard: { excludeRecent: semantics.noveltyRequired, maxSeconds: input.availableMinutes ? Math.round(input.availableMinutes * 60) : null },
+    // the key exists only when a difficulty was asked for: a plan without one is exactly what it always was
+    hard: { excludeRecent: semantics.noveltyRequired, maxSeconds: input.availableMinutes ? Math.round(input.availableMinutes * 60) : null, ...(requestedDifficulty ? { difficulty: requestedDifficulty } : {}) },
     unresolvedTargets: unresolved,
   };
 
@@ -148,7 +176,7 @@ export function buildLearningBlueprint(input: LearningPolicyInput): LearningBlue
       evidenceContract: `B2:${input.intent}:${input.depth}`,
       novelItemsRequired: semantics.noveltyRequired,
     },
-    difficulty: semantics.difficulty ? { min: semantics.difficulty.min, max: semantics.difficulty.max, target: null, reasonCode: 'CANONICAL_ACTIVITY_BAND' } : null,
+    difficulty: preferredDifficulty ? { min: preferredDifficulty.min, max: preferredDifficulty.max, target: null, reasonCode: requestedDifficulty ? `STUDENT_REQUESTED_BAND:${input.difficultyBand}` : 'CANONICAL_ACTIVITY_BAND' } : null,
     diversity: { questionTypes: [], maxPerTemplate: null },
     time: input.availableMinutes ? { availableMinutes: input.availableMinutes, officialMinutes: null } : null,
     exposure: { avoidSeenByStudent: true },

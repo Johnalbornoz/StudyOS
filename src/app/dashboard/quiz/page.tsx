@@ -573,8 +573,9 @@ function QuizPageContent() {
     <div className="ls" data-kind={activityKind}>
       <InlineAlert
         tone="info"
-        title={t['ax.avail.UNAVAILABLE']}
-        body={t['ax.limit.NOT_ENOUGH_QUESTIONS']}
+        // NOT_READY is a standardized-exam answer only (revised OE-014): certified exam content is still being
+        // prepared. Ordinary Learning never shows it -- its questions are generated on start.
+        title={t['ax.fail.EXAM_CONTENT']}
         actions={
           <Link href={subjectId && conceptId ? conceptMissionPath({ subjectId, conceptId }) : '/dashboard/today'} className="btn btn-primary">
             {subjectId && conceptId ? t['continuation.backToConcept'] : t['ax.cont.RETURN']}

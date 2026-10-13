@@ -19,6 +19,8 @@ import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-work
 
 /** A setup names a handful of concepts; a request is never allowed to fan out further than this. */
 export const MAX_SUPPLY_TARGETS = 5;
+/** The one intent that never triggers supply (ad-hoc-exam.ts: AD_HOC_EXAM_INTENT). */
+export const NO_SUPPLY_INTENT = 'AD_HOC_CONCEPT_EXAM';
 
 export interface SupplyDeps {
   schedule: typeof scheduleDeliveryReplenishment;
@@ -53,7 +55,8 @@ export async function requestAssessmentSupply(studentId: string, scope: SupplySc
 
 /** After a canonical completion: keep the concepts just practised supplied. Never part of the result. */
 export async function requestSupplyForSession(studentId: string, sessionId: string, overrides: Partial<SupplyDeps> = {}): Promise<string[]> {
-  const r = await db.query(`SELECT concept_ids FROM quiz_sessions WHERE id = $1 AND student_id = $2 AND assessment_snapshot IS NOT NULL`, [sessionId, studentId]);
+  // A Student's own partial exam uses only content that is already eligible: it never asks for more to be produced.
+  const r = await db.query(`SELECT concept_ids FROM quiz_sessions WHERE id = $1 AND student_id = $2 AND assessment_snapshot IS NOT NULL AND COALESCE(assessment_snapshot->>'intent', '') <> $3`, [sessionId, studentId, NO_SUPPLY_INTENT]);
   const ids = ((r.rows[0]?.concept_ids ?? []) as string[]).filter(Boolean);
   return ids.length > 0 ? requestAssessmentSupply(studentId, { learnerConceptIds: ids }, overrides) : [];
 }

@@ -328,6 +328,9 @@ async function selectConceptsForQuizMode(
     .slice(0, maxConcepts);
 }
 
+/** A submission re-asks the original question for verification; it does not ask a provider for a variant. */
+const SUBMISSION_GENERATES_VARIANTS: boolean = false;
+
 async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
   // CANON-R6-PERF-I1 -- instrumentation-only state. `validated` itself
   // is NOT hoisted/retyped (it stays a plain `const` inside the try
@@ -547,13 +550,13 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         });
       }
       emergencyLaunch = { lock: delivery.lock, input: deliveryInput, authorizationMs };
-      if (studentRuntimeMayGenerateQuestions()) console.warn('[activity-launch] EMERGENCY_GENERATION_STARTED', JSON.stringify({ activityType: deliveryActivityType, conceptId: validated.conceptId, bank: delivery.bank }));
+      if (studentRuntimeMayGenerateQuestions(validated.quizMode)) console.warn('[activity-launch] EMERGENCY_GENERATION_STARTED', JSON.stringify({ activityType: deliveryActivityType, conceptId: validated.conceptId, bank: delivery.bank }));
     }
 
-    // OE-014: a Student launch is supplied by certified content or it is not ready. Nothing below this line --
-    // every generator of this route -- runs for a Student request: no provider call, no legacy generation, and
-    // the launch lock taken for an "emergency" is released without one.
-    if (!studentRuntimeMayGenerateQuestions()) {
+    // Revised OE-014 (lib/assessment-supply/supply-boundary): a STANDARDIZED EXAM launch is supplied by certified
+    // content or it is NOT_READY -- no generator below this line runs for it, and the launch lock taken for an
+    // "emergency" is released. A LEARNING or INTERNAL ASSESSMENT launch may generate: this is an explicit POST.
+    if (!studentRuntimeMayGenerateQuestions(validated.quizMode)) {
       if (emergencyLaunch) await emergencyLaunch.lock.release().catch(() => {});
       console.warn('[activity-launch] NOT_READY', JSON.stringify({ quizMode: validated.quizMode, conceptId: validated.conceptId ?? null, reason: INSUFFICIENT_CERTIFIED_CONTENT.reason }));
       return NextResponse.json(INSUFFICIENT_CERTIFIED_CONTENT, { status: INSUFFICIENT_CERTIFIED_CONTENT_STATUS });
@@ -2248,9 +2251,10 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
             // call generateQuestionsForConcept directly for a verification
             // question, which would bypass the equivalence contract
             // entirely (the bug this fixes).
-            // OE-014: a submission never generates a question. The documented fallback below (re-ask the original
-            // question) is the only path for a Student request.
-            const variantResult = studentRuntimeMayGenerateQuestions() ? await generateQuestionVariant(originalQuestion, validated.studentId, quizSession.subjectId, language) : null;
+            // A submission never generates a question (unchanged by the revised OE-014: generation belongs to the
+            // explicit start of a Learning activity, not to grading). The documented fallback below (re-ask the
+            // original question) is the only path here.
+            const variantResult = SUBMISSION_GENERATES_VARIANTS ? await generateQuestionVariant(originalQuestion, validated.studentId, quizSession.subjectId, language) : null;
 
             let verificationQuestion: GeneratedQuestion;
             let variantEquivalenceConfidence: number | null;

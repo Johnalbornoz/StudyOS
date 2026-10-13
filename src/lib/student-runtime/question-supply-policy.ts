@@ -1,24 +1,28 @@
 /**
- * OE-014 -- where the questions of a Student's runtime come from.
+ * Student runtime question supply -- REVISED OE-014.
  *
- * A Student action (a page view, a quiz start, a submission, a completed assessment) may READ the certified
- * global Question Bank and may create its own attempt, session and evidence records. It never generates a
- * question, never calls a provider to write one and never queues inventory replenishment. When the certified
- * content cannot supply what was asked for, the answer is NOT_READY / INSUFFICIENT_CERTIFIED_CONTENT -- never a
- * fallback to generation. Replenishing the bank belongs to the Factory / Admin / offline governed workflows.
+ * The first OE-014 said "Student runtime may not generate questions". That was too broad: it made ordinary
+ * Learning depend on content nobody was producing. The rule is now the supply boundary
+ * (lib/assessment-supply/supply-boundary):
  *
- * This is a constant of the architecture, not a setting: it reads no environment variable and has no override.
+ *   LEARNING              a provider may generate, on an explicit command
+ *   INTERNAL_ASSESSMENT   a provider may generate before the attempt begins
+ *   STANDARDIZED_EXAM     a provider never generates: insufficient certified content is NOT_READY
  *
- * Pure.
+ * This module answers the one question the legacy quiz route asks -- "may THIS launch generate?" -- from the
+ * launch's own quiz mode. It reads no environment, no header and no cookie: a request cannot switch it.
  */
-export const STUDENT_RUNTIME_QUESTION_SUPPLIES = ['CERTIFIED_BANK_ONLY', 'LEGACY_GENERATION'] as const;
-export type StudentRuntimeQuestionSupply = (typeof STUDENT_RUNTIME_QUESTION_SUPPLIES)[number];
+import { providerGenerationAllowed, supplyFamilyOf, supplyIntentOfQuizMode } from '@/lib/assessment-supply/supply-boundary';
 
-export const STUDENT_RUNTIME_QUESTION_SUPPLY: StudentRuntimeQuestionSupply = 'CERTIFIED_BANK_ONLY';
+/** May a launch of this quiz mode ask a provider for its questions? An unknown mode may not (fail closed). */
+export function studentRuntimeMayGenerateQuestions(quizMode: string | null | undefined): boolean {
+  return providerGenerationAllowed(supplyFamilyOf(supplyIntentOfQuizMode(quizMode)), 'EXPLICIT_COMMAND');
+}
 
-/** May a Student-triggered request generate a question or ask for supply? Never, under CERTIFIED_BANK_ONLY. */
-export const studentRuntimeMayGenerateQuestions = (supply: StudentRuntimeQuestionSupply = STUDENT_RUNTIME_QUESTION_SUPPLY): boolean => supply === 'LEGACY_GENERATION';
-
-/** The one answer of a Student launch the certified content cannot supply. HTTP 409: the request is valid, the content is not there yet. */
+/** A standardized-exam launch that has no certified content to deliver. */
 export const INSUFFICIENT_CERTIFIED_CONTENT = { success: false, error: 'NOT_READY', reason: 'INSUFFICIENT_CERTIFIED_CONTENT' } as const;
-export const INSUFFICIENT_CERTIFIED_CONTENT_STATUS = 409 as const;
+export const INSUFFICIENT_CERTIFIED_CONTENT_STATUS = 409;
+
+/** A Learning / Internal Assessment launch whose generation did not produce usable questions: retryable, never "not enough questions in the bank". */
+export const LEARNING_GENERATION_FAILED = { success: false, error: 'LEARNING_GENERATION_FAILED', reason: 'LEARNING_GENERATION_FAILED', retryable: true } as const;
+export const LEARNING_GENERATION_FAILED_STATUS = 503;

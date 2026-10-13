@@ -92,7 +92,8 @@ describe('every Student-facing selector uses the one rule', () => {
   const readers = SRC.filter((f) => /FROM approved_items|JOIN approved_items/.test(read(f)) && !NON_STUDENT.test(f));
 
   it('8 / 9 / 10 / 12. the Student readers are exactly: practice & dynamic sourcing, exam instances (practice, diagnostic, mocks), the full-mock guard', () => {
-    expect(readers.sort()).toEqual(['src/lib/assessment/full-mock-guard.service.ts', 'src/lib/exam-core/exam-instance.service.ts', 'src/lib/exam-core/item-sourcing.service.ts']);
+    // + reviewed-item-learning.service: the content of reviewed items the Blueprint Core froze for a Student's own partial exam
+    expect(readers.sort()).toEqual(['src/lib/assessment/full-mock-guard.service.ts', 'src/lib/exam-core/exam-instance.service.ts', 'src/lib/exam-core/item-sourcing.service.ts', 'src/lib/exam-core/reviewed-item-learning.service.ts']);
   });
 
   it('each of them filters through lifecycleSqlFor (never a status / state list of its own)', () => {

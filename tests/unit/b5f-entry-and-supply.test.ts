@@ -143,7 +143,7 @@ describe('B5-F question supply requested by the canonical flow', () => {
     expect(read('src/services/activity-delivery-worker.service.ts')).toMatch(/enqueueGenerationJob\('PREPARE_INVENTORY', `prepare:\$\{target\.studentId\}:\$\{target\.conceptId\}`/);
   });
 
-  it('setup is read-only (OE-011); start never generates; completion is not delayed or changed by supply', () => {
+  it('setup is read-only (OE-011); the start queues no background supply (it generates inline only through the supply boundary -- revised OE-014); completion is not delayed or changed by supply', () => {
     const setup = read('src/app/dashboard/assessment/page.tsx');
     // OE-011: opening the setup never requests supply; what is offered is what the Blueprint Core found eligible now
     expect(setup).toContain('await learningSetupForStudent(');

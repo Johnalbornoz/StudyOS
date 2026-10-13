@@ -22,6 +22,7 @@ import { z } from 'zod';
 import { ASSESSMENT_FAMILIES, ASSESSMENT_PATHS, FAMILY_OF_PATH, type AssessmentPath } from '@/lib/assessment-foundation/families';
 import { QUESTION_STORES, questionRefKey, type QuestionCoverage, type QuestionRef } from '@/lib/assessment-foundation/question-coverage';
 import type { BlueprintSolution } from '@/lib/assessment-blueprint/result';
+import { meetsRequestedDifficulty, REQUESTED_DIFFICULTY_BANDS, type RequestedDifficultyBand } from '@/lib/exam-core/question-bank/requested-difficulty';
 
 export const FROZEN_ASSESSMENT_VERSION = 1 as const;
 
@@ -90,6 +91,23 @@ export const FrozenAssessmentSchema = z.strictObject({
     /** Identifies the learner evidence the policy read; the evidence itself is not copied. */
     learnerEvidence: z.strictObject({ digest: z.string().max(64), asOf: z.string().nullable() }).nullable(),
   }),
+  /**
+   * LEARNING, when the assessment was launched from ONE of the Student's Subjects (a Student's own partial
+   * exam): that Subject, and the Student's own concept IN THAT SUBJECT each canonical target stands for. A
+   * Student may hold the same canonical concept in more than one Subject; evidence of an attempt frozen with
+   * this scope goes to these concepts and to no other instance. Fixed by the server at the start, part of the
+   * digest. Absent on every other snapshot (and on every snapshot frozen before it existed): those attribute
+   * exactly as before.
+   */
+  learnerScope: z
+    .strictObject({ subjectId: ID, concepts: z.array(z.strictObject({ canonicalConceptId: ID, learnerConceptId: ID })).min(1) })
+    .optional(),
+  /**
+   * LEARNING, when the Student asked for a difficulty: the band every frozen question is recorded in. Fixed by
+   * the server at the start, part of the digest. Absent when none was asked for (and on every snapshot frozen
+   * before it existed).
+   */
+  difficultyBand: z.enum(REQUESTED_DIFFICULTY_BANDS).optional(),
 });
 
 export type FrozenAssessment = z.infer<typeof FrozenAssessmentSchema>;
@@ -131,9 +149,13 @@ export interface FreezeInput {
   contentAudience?: 'STUDENT' | 'TECHNICAL_DEMO';
   /** Exam families: the published fixed form the instance serves, when it serves one. */
   frozenForm?: { id: string | null; formHash: string } | null;
+  /** LEARNING launched from one Subject: the verified Subject and the Student's concept of it per canonical target. */
+  learnerScope?: { subjectId: string; learnerConceptByCanonical: Readonly<Record<string, string>> } | null;
+  /** LEARNING: the difficulty the Student asked for. The freeze refuses a selection that holds any question outside it. */
+  difficultyBand?: RequestedDifficultyBand | null;
 }
 
-export type FreezeRefusal = 'PATH_FAMILY_MISMATCH' | 'NOTHING_SELECTED' | 'OFFICIAL_FORM_INCOMPLETE' | 'EXAM_CONTEXT_REQUIRED' | 'ACTIVITY_REQUIRED' | 'COVERAGE_MISSING_FOR_SELECTED';
+export type FreezeRefusal = 'PATH_FAMILY_MISMATCH' | 'NOTHING_SELECTED' | 'OFFICIAL_FORM_INCOMPLETE' | 'EXAM_CONTEXT_REQUIRED' | 'ACTIVITY_REQUIRED' | 'COVERAGE_MISSING_FOR_SELECTED' | 'LEARNER_SCOPE_NOT_ALLOWED' | 'LEARNER_SCOPE_INCOMPLETE' | 'DIFFICULTY_NOT_ALLOWED' | 'DIFFICULTY_NOT_AS_REQUESTED';
 
 export class FreezeError extends Error {
   constructor(public readonly code: FreezeRefusal, detail = '') {
@@ -175,6 +197,22 @@ export function freezeAssessment(input: FreezeInput): FrozenAssessment {
   });
 
   const targets = solution.plan.mode === 'TARGETS' ? solution.plan.targets : [];
+  // A Subject scope names the Student's concept for EVERY concept the frozen questions assess, or it is not a scope.
+  let learnerScope: FrozenAssessment['learnerScope'];
+  if (input.learnerScope) {
+    if (solution.family !== 'LEARNING') throw new FreezeError('LEARNER_SCOPE_NOT_ALLOWED');
+    const assessed = [...new Set([...targets.filter((t) => t.kind === 'CONCEPT').map((t) => t.id), ...items.flatMap((i) => i.coverage.map((c) => c.canonicalConceptId))])].sort();
+    const missing = assessed.filter((id) => typeof input.learnerScope!.learnerConceptByCanonical[id] !== 'string');
+    if (missing.length > 0) throw new FreezeError('LEARNER_SCOPE_INCOMPLETE', missing.join(','));
+    learnerScope = { subjectId: input.learnerScope.subjectId, concepts: assessed.map((id) => ({ canonicalConceptId: id, learnerConceptId: input.learnerScope!.learnerConceptByCanonical[id] })) };
+  }
+  // A requested difficulty is a property of EVERY frozen question, checked here whatever selected them.
+  const difficultyBand = input.difficultyBand ?? null;
+  if (difficultyBand) {
+    if (solution.family !== 'LEARNING') throw new FreezeError('DIFFICULTY_NOT_ALLOWED');
+    const outside = items.filter((i) => !meetsRequestedDifficulty(difficultyBand, i.difficulty));
+    if (outside.length > 0) throw new FreezeError('DIFFICULTY_NOT_AS_REQUESTED', outside.map((i) => i.key).join(','));
+  }
   const content: Omit<FrozenAssessment, 'snapshotId'> = {
     v: FROZEN_ASSESSMENT_VERSION,
     createdAt: input.createdAt,
@@ -203,6 +241,9 @@ export function freezeAssessment(input: FreezeInput): FrozenAssessment {
       candidates: { count: solution.snapshot.candidates.count, digest: solution.snapshot.candidates.digest },
       learnerEvidence: solution.snapshot.learnerEvidence ? { digest: solution.snapshot.learnerEvidence.digest, asOf: solution.snapshot.learnerEvidence.asOf } : null,
     },
+    // last, and only when there is one: a snapshot without a scope is byte-for-byte what it always was
+    ...(learnerScope ? { learnerScope } : {}),
+    ...(difficultyBand ? { difficultyBand } : {}),
   };
   return FrozenAssessmentSchema.parse({ ...content, snapshotId: digestOf(content) });
 }

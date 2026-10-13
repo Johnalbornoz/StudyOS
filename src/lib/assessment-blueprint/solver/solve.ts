@@ -132,7 +132,10 @@ function solveTargets(plan: TargetPlan, input: readonly SolverCandidate[]): Solv
   const targets = [...plan.targets].sort((a, b) => byKey(a.targetKey, b.targetKey));
   const targetByKey = new Map<string, TargetRequirement>(targets.map((t) => [t.targetKey, t]));
   const relevant = (c: SolverCandidate) => c.coverage.some((x) => targetByKey.has(x.targetKey));
-  const allowed = pool.filter((c) => relevant(c) && !(plan.hard.excludeRecent && c.exposure.recent));
+  // A requested difficulty is verified against a recorded one (rounded, as the bank groups its 1-5 scale): unknown is never assumed to match.
+  const requestedDifficulty = plan.hard.difficulty ?? null;
+  const ofRequestedDifficulty = (c: SolverCandidate) => !requestedDifficulty || (c.difficulty !== null && Math.round(c.difficulty) >= requestedDifficulty.min && Math.round(c.difficulty) <= requestedDifficulty.max);
+  const allowed = pool.filter((c) => relevant(c) && !(plan.hard.excludeRecent && c.exposure.recent) && ofRequestedDifficulty(c));
 
   const selected: SolverCandidate[] = [];
   const order = new Map<string, number>();
@@ -250,6 +253,7 @@ function solveTargets(plan: TargetPlan, input: readonly SolverCandidate[]): Solv
     if (unused.some((c) => blockedByTime.has(c.key))) return 'TIME_BUDGET';
     if (unused.some((c) => blockedByUnknownDuration.has(c.key))) return 'DURATION_UNKNOWN';
     if (plan.hard.excludeRecent && unused.some((c) => c.exposure.recent)) return 'ONLY_RECENT_CANDIDATES';
+    if (unused.some((c) => !ofRequestedDifficulty(c))) return 'ONLY_OTHER_DIFFICULTY';
     return 'NOT_ENOUGH_CANDIDATES';
   };
   for (const t of targets) {

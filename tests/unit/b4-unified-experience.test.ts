@@ -105,8 +105,9 @@ describe('B4 setup view -- depth is a meaning, the numbers are the Blueprint Cor
   it('QUICK / BALANCED / DEEP show what the solver selected; nothing is multiplied', () => {
     const view = learningSetupView(byDepth(SCENARIO(), ['C1', 'C2', 'C4']));
     expect(view.state).toBe('READY');
-    expect(view.depthOptions.map((o) => [o.depth, o.preview.availability, o.preview.effort.questions, o.preview.effort.minutes, o.preview.canStart])).toEqual([['QUICK', 'AVAILABLE', 2, null, true], ['BALANCED', 'AVAILABLE', 4, null, true], ['DEEP', 'PARTIAL', 4, null, true]]);
-    expect(view.depthOptions[2].preview.limitations).toEqual(['NOT_ENOUGH_QUESTIONS']);
+    expect(view.depthOptions.map((o) => [o.depth, o.preview.availability, o.preview.effort.questions, o.preview.effort.minutes, o.preview.canStart])).toEqual([['QUICK', 'AVAILABLE', 2, null, true], ['BALANCED', 'AVAILABLE', 4, null, true], ['DEEP', 'ON_DEMAND', 4, null, true]]);
+    // supply boundary: what DEEP is short of is only items, and Learning items are prepared at the start -- not a limitation
+    expect(view.depthOptions[2].preview.limitations).toEqual([]);
     expect(view.depthOptions.every((o) => o.preview.targets.requested === 3 && o.preview.targets.covered === 3)).toBe(true);
     // the same depth on a different bank is a different number: the UI could not have computed it
     expect(previewOf(learn([cached('X', 'C1', {}, [['C2', 'PRIMARY'], ['C4', 'PRIMARY']])], ['C1', 'C2', 'C4'], 'QUICK')).effort.questions).toBe(1);
@@ -117,17 +118,20 @@ describe('B4 setup view -- depth is a meaning, the numbers are the Blueprint Cor
     expect(learningSetupView(byDepth(SCENARIO(), ['C1', 'C2', 'C4'])).depthOptions.every((o) => o.preview.effort.minutes === null)).toBe(true);
   });
 
-  it('insufficient coverage, unresolved scope and unverifiable time are governed states, not errors', () => {
+  it('Learning never waits for inventory: a concept with no items yet is startable (prepared on start); a time that cannot be verified is still a governed state', () => {
     const nothing = learningSetupView(byDepth([], ['C1']));
-    expect(nothing).toMatchObject({ state: 'UNAVAILABLE' });
-    expect(nothing.depthOptions.every((o) => !o.preview.canStart && o.preview.effort.questions === null && o.preview.limitations.join() === 'NOT_ENOUGH_QUESTIONS')).toBe(true);
+    // QUESTION_BANK_INVENTORY_REQUIRED_FOR_LEARNING = NO
+    expect(nothing).toMatchObject({ state: 'READY' });
+    expect(nothing.depthOptions.every((o) => o.preview.canStart && o.preview.availability === 'ON_DEMAND' && o.preview.effort.questions === null && o.preview.limitations.length === 0)).toBe(true);
     const partial = learningSetupView(byDepth([cached('a', 'C1')], ['C1', 'C2']));
-    expect(partial.state).toBe('PARTIAL');
-    expect(partial.depthOptions[0].preview).toMatchObject({ availability: 'PARTIAL', targets: { requested: 2, covered: 1 }, effort: { questions: 1 } });
+    expect(partial.state).toBe('READY');
+    expect(partial.depthOptions[0].preview).toMatchObject({ availability: 'ON_DEMAND', canStart: true, targets: { requested: 2, covered: 1 }, effort: { questions: 1 } });
     const timed = singleSetupView(learn(SCENARIO(), ['C1'], 'QUICK', 'CUSTOM_CONCEPT_PRACTICE', 10));
     expect(timed).toMatchObject({ state: 'UNAVAILABLE', preview: { limitations: ['TIME_CANNOT_BE_ESTIMATED'], canStart: false } });
     // internal causes never reach the view
     expect(JSON.stringify([nothing, partial, timed])).not.toMatch(/NO_ELIGIBLE_CANDIDATE|DURATION_UNKNOWN|UNRESOLVED_TARGET|INSUFFICIENT_COVERAGE|ONLY_WEAKER/);
+    // an official exam is never prepared on demand: its positions come from the Certified Exam Bank or it does not start
+    expect(JSON.stringify(timed)).not.toMatch(/ON_DEMAND/);
   });
 
   it('the setup read model asks the Blueprint Core per depth and resolves a curriculum node of any framework', async () => {
@@ -299,24 +303,28 @@ describe('B4 shared components', () => {
     expect(C.effortText({ questions: null, minutes: null }, t)).toBeNull();
   });
 
-  it('setup: partial and unavailable are learner-safe states; an unavailable practice has no start control', () => {
+  it('setup: Learning is startable without inventory (prepared on start); a truly unavailable setup has no start control', () => {
     const partial = html(createElement(C.AssessmentSetup, { view: learningSetupView(byDepth([cached('a', 'C1')], ['C1', 'C2'])), t, action: '/x', backHref: '/y' }));
-    expect(text(partial)).toContain('Podemos practicar parte de este tema.');
-    expect(text(partial)).toContain('Aún no tenemos suficientes preguntas para cubrirlo completo.');
-    expect(text(partial)).toContain('Cubre 1 de 2 conceptos');
-    const none = html(createElement(C.AssessmentSetup, { view: learningSetupView(byDepth([], ['C1'])), t, action: '/x', backHref: '/back' }));
-    // OE-009: an unavailable check of one concept is not a dead end -- the concept's own page is the primary way forward
-    const withConcept = html(createElement(C.AssessmentSetup, { view: learningSetupView(byDepth([], ['C1'])), t, action: '/x', backHref: '/back', conceptHref: '/dashboard/subjects/s1/concepts/c1' }));
-    expect(withConcept).toMatch(/<a[^>]*href="\/dashboard\/subjects\/s1\/concepts\/c1"[^>]*class="btn btn-primary"[^>]*>Ir al concepto<\/a>/);
-    expect(withConcept).toMatch(/<a[^>]*href="\/back"[^>]*class="btn btn-ghost"/);
-    expect(withConcept).not.toContain('type="submit"');
-    // a startable setup never shows it
+    const none = html(createElement(C.AssessmentSetup, { view: learningSetupView(byDepth([], ['C1'])), t, action: '/x', backHref: '/back', conceptHref: '/dashboard/subjects/s1/concepts/c1' }));
+    for (const page of [partial, none]) {
+      // ordinary Learning never says "not available" or "not enough questions": its questions are prepared when it starts
+      expect(text(page)).toContain('Prepararemos tus preguntas cuando empieces.');
+      expect(text(page)).not.toContain('Esta práctica todavía no está disponible.');
+      expect(text(page)).not.toContain('Aún no tenemos suficientes preguntas');
+      expect(page).toMatch(/<button[^>]*type="submit"/);
+      expect((page.match(/<input[^>]*type="radio"[^>]*>/g) ?? []).filter((r) => /disabled=""/.test(r))).toHaveLength(0);
+      expect(page).not.toContain('Ir al concepto');
+    }
+    expect(text(partial)).toContain('2 conceptos');
+    // truly unavailable (a time limit that cannot be verified): no start control, and the concept's own page is the way forward (OE-009)
+    const unavailable = html(createElement(C.AssessmentSetup, { view: singleSetupView(learn(SCENARIO(), ['C1'], 'QUICK', 'CUSTOM_CONCEPT_PRACTICE', 10)), t, action: '/x', backHref: '/back', conceptHref: '/dashboard/subjects/s1/concepts/c1' }));
+    expect(text(unavailable)).toContain('Esta práctica todavía no está disponible.');
+    expect(unavailable).not.toMatch(/<button[^>]*type="submit"/);
+    expect(unavailable).toMatch(/<a[^>]*href="\/dashboard\/subjects\/s1\/concepts\/c1"[^>]*class="btn btn-primary"[^>]*>Ir al concepto<\/a>/);
+    expect(unavailable).toMatch(/<a[^>]*href="\/back"[^>]*class="btn btn-ghost"/);
+    expect(unavailable).toMatch(/role="status"/);
+    // a startable setup never shows the concept link
     expect(html(createElement(C.AssessmentSetup, { view: setup(), t, action: '/x', backHref: '/y', conceptHref: '/dashboard/subjects/s1/concepts/c1' }))).not.toContain('Ir al concepto');
-    expect(text(none)).toContain('Esta práctica todavía no está disponible.');
-    expect(none).not.toMatch(/<button[^>]*type="submit"/);
-    expect((none.match(/<input[^>]*type="radio"[^>]*>/g) ?? []).filter((r) => /disabled=""/.test(r))).toHaveLength(3);
-    expect(none).toMatch(/<a href="\/back" class="btn btn-primary">Volver<\/a>/);
-    expect(none).toMatch(/role="status"/);
     expect(text(partial + none)).not.toMatch(RAW_CODES);
   });
 

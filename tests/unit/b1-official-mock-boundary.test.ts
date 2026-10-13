@@ -164,14 +164,14 @@ describe('B1 official mock boundary -- item sourcing', () => {
     expect(generatePracticeQuestionsMock).not.toHaveBeenCalled();
   });
 
-  it('a preparation simulation still reaches the existing generator path (behaviour preserved)', async () => {
+  it('revised OE-014: NO standardized exam attempt reaches the generator -- a preparation simulation without a certified item is unavailable', async () => {
     for (const row of [{ simulation_type: 'MINI_MOCK', instance_mode: null }, { simulation_type: 'TOPIC_EXAM', instance_mode: null }, { simulation_type: 'EXAM_PRACTICE', instance_mode: 'PRACTICE' }]) {
       attemptIs(row);
       bridgeMock.mockResolvedValue(null);
-      // the generator path is entered: it reports its own, pre-existing reason
-      expect(await source()).toEqual({ outcome: 'UNAVAILABLE', reason: 'NO_CURRICULUM_MAPPING' });
+      // the Certified Exam Bank had nothing: NOT_READY for this position, and the generator path is never entered
+      expect(await source()).toEqual({ outcome: 'UNAVAILABLE', reason: 'NO_ITEM_GENERATED' });
     }
-    expect(bridgeMock).toHaveBeenCalledTimes(3);
+    expect(bridgeMock).not.toHaveBeenCalled();
   });
 
   it('an attempt that cannot be read is treated as before B1 (only a positively identified official attempt is refused)', async () => {

@@ -26,6 +26,7 @@
  * Idempotency keys are derived here from server-side identifiers only (session id / attempt id + frozen
  * position). Nothing a client sends reaches a key, a source type or an evidence mode.
  */
+import { evidenceClassOf, supplyIntentOfLearningIntent, supplyProvenanceOf } from '@/lib/assessment-supply/supply-boundary';
 import type { LearningEvidence, EvidenceSourceType } from '@/lib/algorithms/mastery';
 import type { EvidenceApplicationIdentity } from '@/lib/algorithms/evidence-idempotency';
 import { aggregateEvidenceDifficulty } from '@/lib/lx/difficulty-contract';
@@ -219,13 +220,38 @@ export function learnerConceptByCanonical(identities: readonly ConceptIdentity[]
   return out;
 }
 
+/**
+ * The Student's instance of each canonical concept FOR THIS ATTEMPT.
+ *
+ * An attempt frozen with a Subject scope (a Student's own partial exam) is attributed to the concepts of that
+ * Subject named in the snapshot, and to nothing else: a concept the snapshot does not name has no instance
+ * here, even when the Student holds one in another Subject. Each named concept is still checked against what
+ * is true now -- it must be the Student's, canonically linked to that same canonical concept, and still in
+ * that Subject -- or it is not an instance (the response is then reported unresolved; it is never moved to
+ * another Subject).
+ *
+ * An attempt with no Subject scope resolves exactly as before.
+ */
+export function attemptLearnerConcepts(frozen: Pick<FrozenAssessment, 'learnerScope'>, learner: LearnerConcepts): Map<string, string> {
+  const scope = frozen.learnerScope;
+  if (!scope) return learnerConceptByCanonical(learner.identities);
+  const canonicalOf = new Map(learner.identities.map((i) => [i.learnerConceptId, canonicalConceptIdForAssessment(i)]));
+  const out = new Map<string, string>();
+  for (const c of scope.concepts) {
+    if (canonicalOf.get(c.learnerConceptId) !== c.canonicalConceptId) continue;
+    if (learner.subjectByLearnerConcept.get(c.learnerConceptId) !== scope.subjectId) continue;
+    out.set(c.canonicalConceptId, c.learnerConceptId);
+  }
+  return out;
+}
+
 const uniqSorted = (list: Iterable<string>) => [...new Set(list)].sort();
 
 export function planEvidence(frozen: FrozenAssessment, attempt: AttemptContext, responses: readonly ScoredResponse[], learner: LearnerConcepts): EvidencePlan {
   const isLearning = frozen.family === 'LEARNING';
   if (!isLearning && !(frozen.exam && attempt.examTargetId)) throw new Error('EXAM_SCOPE_REQUIRED');
   const examScope = !isLearning && frozen.exam && attempt.examTargetId ? { examTargetId: attempt.examTargetId, examVersionId: frozen.exam.examVersionId, examAttemptId: attempt.assessmentRef } : null;
-  const instances = learnerConceptByCanonical(learner.identities);
+  const instances = attemptLearnerConcepts(frozen, learner);
   const itemByKey = new Map(frozen.items.map((i) => [i.key, i]));
   const outcomes: AttributionOutcome[] = [];
   const base = (r: ScoredResponse, item: FrozenItem | null) => ({ itemKey: r.itemKey, question: item ? { ...item.question } : null, responseRef: r.responseRef ?? null });
@@ -285,7 +311,12 @@ export function planEvidence(frozen: FrozenAssessment, attempt: AttemptContext, 
   }
 
   /* ---- provenance shared by every event of this attempt ---- */
+  // Where the questions came from, on every evidence record (lib/assessment-supply/supply-boundary):
+  // LEARNING / INTERNAL_ASSESSMENT / EXAM_ASSESSMENT, with the item category and its one source.
+  const supplyIntent = frozen.family === 'LEARNING' ? supplyIntentOfLearningIntent(frozen.intent ?? '') : ('EXAM_PRACTICE' as const);
+  const supply = supplyIntent ? { ...supplyProvenanceOf(supplyIntent), evidenceClass: evidenceClassOf(supplyProvenanceOf(supplyIntent).family) } : null;
   const assessment = (sources: Credited[]) => ({
+    supply,
     snapshotId: frozen.snapshotId,
     family: frozen.family,
     path: frozen.path,

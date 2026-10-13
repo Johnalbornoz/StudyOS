@@ -33,8 +33,8 @@ export interface SetupDeps {
 
 const defaults: SetupDeps = { solve: solveLearningForStudent, loadScope: loadCurriculumScope };
 
-/** Intents with a depth choice. A diagnostic or a mastery / retention check has one shape, whatever the depth. */
-const DEPTH_INTENTS: ReadonlySet<string> = new Set(['CONCEPT_PRACTICE', 'TOPIC_PRACTICE', 'CUSTOM_CONCEPT_PRACTICE', 'MIXED_CUMULATIVE']);
+/** Intents with a depth choice. A diagnostic or a mastery / retention check has one shape, whatever the depth. A Student's own partial exam has a size. */
+const DEPTH_INTENTS: ReadonlySet<string> = new Set(['CONCEPT_PRACTICE', 'TOPIC_PRACTICE', 'CUSTOM_CONCEPT_PRACTICE', 'MIXED_CUMULATIVE', 'AD_HOC_CONCEPT_EXAM']);
 
 export async function learningSetupForStudent(studentId: string, request: Extract<AssessmentLaunchRequest, { family: 'LEARNING' }>, asOf: string, overrides: Partial<SetupDeps> = {}): Promise<LearningSetupResult> {
   const deps = { ...defaults, ...overrides };
@@ -50,7 +50,7 @@ export async function learningSetupForStudent(studentId: string, request: Extrac
   const depths: readonly PracticeDepth[] = DEPTH_INTENTS.has(request.intent) ? PRACTICE_DEPTHS : [request.depth];
   const byDepth: Partial<Record<PracticeDepth, BlueprintSolution>> = {};
   for (const depth of depths) {
-    const solved = await deps.solve(studentId, { intent: request.intent, depth, canonicalConceptIds, learnerConceptIds: request.scope.learnerConceptIds, availableMinutes: request.availableMinutes, asOf });
+    const solved = await deps.solve(studentId, { intent: request.intent, depth, canonicalConceptIds, learnerConceptIds: request.scope.learnerConceptIds, availableMinutes: request.availableMinutes, difficultyBand: request.intent === 'AD_HOC_CONCEPT_EXAM' ? request.difficultyBand : null, asOf });
     if (!solved.ok) return { ok: false, reason: 'CONTEXT_UNAVAILABLE' };
     byDepth[depth] = solved.solution;
   }

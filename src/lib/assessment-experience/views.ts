@@ -27,7 +27,11 @@ import type { PostAssessmentState } from '@/lib/assessment-execution/post-assess
 /* Setup                                                                */
 /* ------------------------------------------------------------------ */
 
-export type Availability = 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
+/**
+ * ON_DEMAND: a LEARNING / INTERNAL ASSESSMENT setup whose questions are prepared when the Student starts
+ * (lib/assessment-supply). It is startable: ordinary Learning never waits for inventory.
+ */
+export type Availability = 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE' | 'ON_DEMAND';
 
 /** Why an assessment is limited, in the Student's terms. Internal causes never leave this module. */
 export type LimitationCode = 'NOT_ENOUGH_QUESTIONS' | 'SOME_TOPICS_NOT_READY' | 'TIME_LIMIT_TOO_SHORT' | 'TIME_CANNOT_BE_ESTIMATED' | 'ONLY_RECENT_QUESTIONS';
@@ -41,7 +45,11 @@ const LIMITATION_OF_CAUSE: Record<UnmetCause, LimitationCode> = {
   TIME_BUDGET: 'TIME_LIMIT_TOO_SHORT',
   DURATION_UNKNOWN: 'TIME_CANNOT_BE_ESTIMATED',
   ONLY_RECENT_CANDIDATES: 'ONLY_RECENT_QUESTIONS',
+  ONLY_OTHER_DIFFICULTY: 'NOT_ENOUGH_QUESTIONS',
 };
+
+/** Unmet causes that more of the Student's own items resolve (the same set the supply service generates for). */
+const ON_DEMAND_CAUSES: ReadonlySet<UnmetCause> = new Set<UnmetCause>(['NO_ELIGIBLE_CANDIDATE', 'NOT_ENOUGH_CANDIDATES', 'ONLY_WEAKER_COVERAGE', 'ONLY_RECENT_CANDIDATES', 'ONLY_OTHER_DIFFICULTY']);
 
 export interface EffortEstimate {
   /** The size of the selected set. null = nothing selected. Never a multiplication. */
@@ -63,17 +71,20 @@ export interface AssessmentPreview {
 export function previewOf(solution: BlueprintSolution): AssessmentPreview {
   const { outcome, plan } = solution;
   const selected = outcome.selected.length;
-  const availability: Availability = selected === 0 ? 'UNAVAILABLE' : outcome.status === 'READY' ? 'AVAILABLE' : 'PARTIAL';
+  // LEARNING family: what is short only for lack of items is generated at the start (an explicit command), so the
+  // setup is startable. A target with no canonical identity, or a time limit, is not a supply matter.
+  const supplyOnly = solution.family === 'LEARNING' && plan.mode === 'TARGETS' && plan.targets.length > 0 && outcome.unmet.length > 0 && outcome.unmet.every((u) => ON_DEMAND_CAUSES.has(u.cause));
+  const availability: Availability = supplyOnly ? 'ON_DEMAND' : selected === 0 ? 'UNAVAILABLE' : outcome.status === 'READY' ? 'AVAILABLE' : 'PARTIAL';
   const requested = plan.mode === 'SLOTS' ? plan.slots.length : plan.targets.length + plan.unresolvedTargets.length;
   const covered = plan.mode === 'SLOTS' ? selected : new Set(outcome.selected.flatMap((s) => s.contributes.filter((c) => c.counted.length > 0).map((c) => c.targetKey))).size;
-  const limitations = [...new Set(outcome.unmet.map((u) => LIMITATION_OF_CAUSE[u.cause]))].sort();
+  const limitations = supplyOnly ? [] : [...new Set(outcome.unmet.map((u) => LIMITATION_OF_CAUSE[u.cause]))].sort();
   return {
     availability,
     effort: { questions: selected > 0 ? solution.result.estimate.items : null, minutes: selected > 0 ? solution.result.estimate.minutes : null },
     targets: { requested, covered },
     limitations,
     // An official form is all of its positions or it does not start (B1 / B2).
-    canStart: solution.family === 'OFFICIAL_EXAM' ? outcome.status === 'READY' : selected > 0,
+    canStart: solution.family === 'OFFICIAL_EXAM' ? outcome.status === 'READY' : supplyOnly || selected > 0,
   };
 }
 
@@ -95,12 +106,12 @@ export interface AssessmentSetupView {
 export function learningSetupView(byDepth: Readonly<Partial<Record<PracticeDepth, BlueprintSolution>>>): AssessmentSetupView {
   const depthOptions = PRACTICE_DEPTHS.filter((d) => byDepth[d]).map((depth) => ({ depth, preview: previewOf(byDepth[depth] as BlueprintSolution) }));
   const startable = depthOptions.filter((o) => o.preview.canStart);
-  return { family: 'LEARNING', depthOptions, preview: null, state: startable.length === 0 ? 'UNAVAILABLE' : startable.some((o) => o.preview.availability === 'AVAILABLE') ? 'READY' : 'PARTIAL' };
+  return { family: 'LEARNING', depthOptions, preview: null, state: startable.length === 0 ? 'UNAVAILABLE' : startable.some((o) => o.preview.availability === 'AVAILABLE' || o.preview.availability === 'ON_DEMAND') ? 'READY' : 'PARTIAL' };
 }
 
 export function singleSetupView(solution: BlueprintSolution): AssessmentSetupView {
   const preview = previewOf(solution);
-  return { family: solution.family, depthOptions: [], preview, state: !preview.canStart ? 'UNAVAILABLE' : preview.availability === 'AVAILABLE' ? 'READY' : 'PARTIAL' };
+  return { family: solution.family, depthOptions: [], preview, state: !preview.canStart ? 'UNAVAILABLE' : preview.availability === 'AVAILABLE' || preview.availability === 'ON_DEMAND' ? 'READY' : 'PARTIAL' };
 }
 
 /* ------------------------------------------------------------------ */

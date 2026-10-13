@@ -1261,8 +1261,8 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     const NEW_SCHEMA = /question_bank_task_famil|task_family_version|adaptation_specification|item_adaptation|assessment_system_profile|assessment_discipline_polic/i;
     expect(migrations.filter((f) => NEW_SCHEMA.test(f) || NEW_SCHEMA.test(read(`database/migrations/${f}`)))).toEqual([]);
     // 82 files up to QB-R1C, plus the three of the L10 shared-foundation batch (20261120_*), which name nothing of this phase (asserted above).
-    // + 1: curriculum convergence's Learn curriculum provenance (20261122_1000), which names nothing of this phase either.
-    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([87, '20261122_1100_canonical_concept_reviewed_aliases.sql']); // + reviewed concept aliases (20261122_1100)
+    // 85 + the Student's scheduled assessments (20261121_1000) + curriculum convergence (20261122_1000, _1100); none names anything of this phase.
+    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([88, '20261122_1100_canonical_concept_reviewed_aliases.sql']);
   });
 
   it('B3 is not implemented here: no evidence engine, no evidence path, no second evidence writer', () => {
