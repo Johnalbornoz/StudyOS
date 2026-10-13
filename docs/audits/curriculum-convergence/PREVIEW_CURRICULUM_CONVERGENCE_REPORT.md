@@ -203,6 +203,33 @@ PASS (incl. rollback and re-apply of both migrations) · provider calls 0.
 Backup before this block's Preview write:
 `studyos-dev-data/preview-curriculum-convergence-b7-backup-20261013T003534Z.sql`; restore point 2026-10-13T00:35:47Z.
 
-## Still open
 
-Authenticated Preview smoke on `study-cyg8iahbk`: no Student session in the browser; sign-in is an operator step.
+## Authenticated Preview smoke (2026-10-13) — PASS
+
+On `https://study-cyg8iahbk-study-so.vercel.app` (`8739353`), in the operator's signed-in browser session
+(Student `5860002b…`):
+
+| Step | Result |
+|---|---|
+| Student home (`/dashboard/today`) | loads; Matemáticas + active PAA preparation |
+| Learn (`/dashboard/learn`) | "Temas de tu currículo — PAA · Matemáticas", reason "Porque te preparas para este examen", 5 topics / 35 concepts |
+| Student's own concept | listed as "Potencias, exponentes enteros y notación científica" under its own topic (resolved, `REVIEWED_ALIAS`) |
+| Catalog → Add to Learn | "Teorema de Pitágoras" added from Geometría: `POST /api/student/plan` 201, row turns "Añadido" |
+| Provenance after the add | recorded by the UI call: PAA · Matemáticas · V2.1 PAA revisada · node "Matemáticas" · objective `paa.mat.geometria`; canonical link `PLAN_ENROLLMENT` |
+| Learn grouping | "PAA · Matemáticas → Teorema de Pitágoras"; no "Otros conceptos" bucket |
+| Subject page / route page | "PAA · Matemáticas → Geometría: ángulos, Pitágoras, áreas, semejanza → Teorema de Pitágoras"; no "Sin clasificar" |
+| Explore curriculum (PAA) | context PAA · Matemáticas (V2.1), "Según el examen que preparas"; chooser in name order |
+| Negative test in the UI | requested MCCEMS "Pensamiento Matemático" (no mappings): general catalogue with "Tu currículo de esta asignatura aún no está cargado; se muestra el catálogo general, no otro programa" |
+| IB | requested IB Economics HL (no mappings, AICE Economics richer): same not-ready notice, AICE not substituted |
+| Cambridge | Physics 9702 A Level: "Elegido por ti", concepts under their papers |
+| Console / page errors | none on any page |
+
+One network entry to note: a `HEAD /dashboard/today` returned 503 in the browser log. The application issues no HEAD
+request, and an unauthenticated HEAD to the same route answers 307 on this deployment, on `c1d04f9` and on the alias.
+Its origin was not identified.
+
+Cleanup: only the test concept (`74b86b94…`, "Teorema de Pitágoras") and the rows it created were removed (plan entry,
+source, 2 plan events, lineage, mapping, 2 labels, mastery row), dry run first. The Student's own concept, its
+mapping and its lineage are byte-identical before and after; row counts are back to the pre-smoke baseline.
+
+Not shown in the UI: Cambridge Topic nodes (they carry no concept link, so the catalogue lists concepts under papers).
