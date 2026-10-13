@@ -131,3 +131,18 @@ Two defects found and fixed (SHA `bbcfd56`, deployed as `https://study-qjzfv6nyy
 2. **A correct fraction scored 0.** The math editor sends `\frac83` for `8/3`; the math engine could not read TeX shorthand, so the answer went to review with 0 marks (one of the two misses in the 10/12; the other was a deliberately wrong answer). Fixed with tests; not yet re-checked in a browser.
 
 Not changed, for a decision: the result page shows "Contenido de práctica (DEV), no oficial" (the exam version's own content label in its configuration) and each item says "Práctica generada por StudyUs" (the label of every non-official origin). Both are inexact for certified, StudyUs-authored items.
+
+## Closing run of PAA Math Exam Practice (2026-10-13, `study-qjzfv6nyy`, SHA `bbcfd56`, signed-in Student)
+
+Both attempts were created and answered through the UI; nothing was cleaned.
+
+| Check | Result |
+|---|---|
+| Catalogue launch | PASS. Exam Prep, "Matemáticas" opened the launcher at `/dashboard/exams?node=paa.practice.matematicas`; "Crear examen" and "Empezar" created and started the attempt. |
+| Fraction through the math editor | PASS. The answer 7/2 was typed in the editor, which sent `\frac72`; it was graded CORRECT against the key `7/2` (1/1, no review). `\frac{15}{37}`, `\frac{9}{10}` and a decimal were also graded correct. |
+| First attempt (`bc949e9b`) | PASS. 12 certified items, frozen, 12/12, completed. |
+| Second attempt (`3248eebe`), from "Repetir con preguntas nuevas" | PASS. 12 certified items, 12/12, completed. |
+| No repeat | PASS. Across this Student's three practice attempts on this database (the earlier one included): 36 responses, 36 distinct items, 36 distinct recognition classes, 0 repeated. |
+| Evidence | PASS. 12 and 12 rows `EXAM_ASSESSMENT` / `EXAM_BANK_ITEM`; 0 rows of any other class for these attempts. |
+| Exposure memory | PASS. 12 of 12 items recorded for each attempt. |
+| Provider calls | 0 of any kind for this Student since the first attempt of this run started; Exam Bank row counts and generation jobs unchanged (706 / 706 / 19). |
