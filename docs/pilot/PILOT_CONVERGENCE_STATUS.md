@@ -6,7 +6,8 @@ Updated: 2026-10-13 · Branch `feat/curriculum-first-learning` · Target: Studen
 
 | Thing | Value |
 |---|---|
-| Certified Preview candidate | `https://study-qjzfv6nyy-study-so.vercel.app` · `dpl_DNXchNrRrZdUZcCi7wRoBNwWAKX1` · SHA `bbcfd56` · DB `neondb_trackb_exam` (fp `4c249c68e0627b9f`, ledger 92) |
+| Current Preview | `https://study-2unl99qzo-study-so.vercel.app` · `dpl_4jmbfQxXzjrPFN3HzRXuGoBZFfdB` · SHA `47af39b` · DB `neondb_trackb_exam` (fp `4c249c68e0627b9f`, ledger 92). Browser E2E run on its predecessor `f797bb5` (`study-853bgdk6a`); the three defects found there are fixed in `47af39b`, whose browser re-check is pending a sign-in. |
+| Previous certified candidate | `https://study-qjzfv6nyy-study-so.vercel.app` · SHA `bbcfd56` |
 | `preview.studyus.pro` | `dpl_2ewh74Jqp3ezTPj4spoZBKA6aCRq` · SHA `df3b864` (2026-10-04, 212 commits behind `bbcfd56`) · shared Preview DB. **Not the certified candidate. Not moved.** |
 | Fallback | `https://study-93bbo8o25-study-so.vercel.app` · SHA `f1436f7` · untouched |
 | Stage alias | `dpl_4DEWxaF2iurCB3GxRxDEb5Gadz9h` · untouched |
@@ -39,6 +40,13 @@ Missing buckets: `paa.lect.{evidencia 1, explicitas 2, graficos 1, inferencia 2,
 | Version copy | "Referencia: PAA revisada · Guía de estudio ©2021" (presentation only) | `docs/pilot/PAA_VERSION_AUDIT_2026-10-13.md` |
 
 Zero-cost recovery (final scan): Lectura 0 · Redacción 0 · Inglés 0. Paid generation is revoked; these three components stay NOT_READY.
+
+## Technical debt recorded
+
+- `PERSIST_GOVERNED_STRATEGIES_AS_FIRST_CLASS_DB_ENTITIES` — strategies live in a versioned code registry + certification digest + per-response grading detail (accepted for the pilot; no migration made).
+- The per-question clock runs from the first time a question is shown; with free navigation a revisit keeps counting from that first view.
+- "Comenzar" on the preparation page opens the generic exam chooser; the "Matemáticas" link opens the PAA Mathematics level directly.
+- No simulation is offered for PAA in the catalogue yet (Matemáticas alone does not make a mock), so the simulation guard is verified at service level only.
 
 ## Open decisions (owner: John)
 
