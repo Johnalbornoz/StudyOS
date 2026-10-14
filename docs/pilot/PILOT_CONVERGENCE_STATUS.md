@@ -1,3 +1,29 @@
+# PAA PILOT BASELINE — FROZEN (2026-10-13)
+
+| | |
+|---|---|
+| URL | `https://preview.studyus.pro` (alias → `study-bam8hvuf3-study-so.vercel.app`) |
+| SHA | `610d3c6` |
+| Database | `neondb_trackb_exam` (fp `4c249c68e0627b9f`), ledger 95, declared pilot environment |
+| Coverage | 36 / 36 (Matemáticas 296 · Lectura 32 · Redacción 15 · Inglés 20 certified items) |
+| State | PAA_READY_FOR_STUDENT = YES · Stage alias not moved · Production not touched |
+
+Frozen: no further PAA deploys, no change to the alias, Exam Bank content, PAA runtime, evidence model, readiness
+logic, Stage or Production. Student history is preserved.
+
+## Follow-ups (non-blocking, not started)
+
+- **PAA-FOLLOWUP-01** — Connect the stale "Simulacro reducido" card on the preparation page
+  (`CanonicalExamAvailability` → `examAvailabilityForVersion`, which passes `officialForm: null`) to the actual
+  governed blueprint / readiness evaluation. Today the card always says "No disponible todavía" while the catalogue
+  and "Actividades disponibles" on the same page offer the 36-position reduced mock.
+- **PAA-FOLLOWUP-02** — Redesign Exam Evidence so off-plan canonical concepts receive `EXAM_ASSESSMENT` evidence and
+  update Exam Readiness WITHOUT adding concepts to the Learning Plan (`student_plan_entries`), creating Learning
+  routes, updating Learning mastery or touching Knowledge State. It must also remediate the current Mathematics
+  behaviour, where exam evidence goes through the same mastery update as Learning (`updateMastery` /
+  `completeAssessmentEvidence`). Open points: audit of Learning readers that list learner concepts outside the
+  plan; a separate Exam Readiness store or flag; likely a migration for a new concept-source type.
+
 # Pilot Convergence Status — PAA P0
 
 Updated: 2026-10-13 · Branch `feat/curriculum-first-learning` · Target: Student practising full PAA before Sat 17 Oct 2026.
