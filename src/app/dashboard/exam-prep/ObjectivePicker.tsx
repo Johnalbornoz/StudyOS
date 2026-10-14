@@ -9,6 +9,7 @@
  * availability"). Search and filters narrow by name / framework / region only,
  * never by readiness. The detail of capabilities lives inside the preparation.
  */
+import { studentFacingExamReference } from '@/lib/exam-core/exam-family-owner';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { preparationBadgeKey, preparationBadgeLabelKey } from '@/lib/exam-core/objectives/capabilities';
@@ -214,7 +215,7 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
                 {frameworkReasons[f.key] ? <p className="ui-hint elig-reason">{frameworkReasons[f.key]}</p> : null}
                 <p className="ui-hint prep-fw-desc">{l[`prep.fwDesc.${f.key}`]}</p>
                 <p className="prep-fw-meta">
-                  {single ? (single.context.version ? `${l['prep.goal.version']}: ${single.context.version}` : '') : (l['prep.fw.options'] ?? '{n}').replace('{n}', String(list.length))}
+                  {single ? (single.context.version ? (() => { const ref = studentFacingExamReference(single.framework, single.context.version, l); return `${ref.governed ? (l['exv2.reference.label'] ?? 'Referencia') : l['prep.goal.version']}: ${ref.text}`; })() : '') : (l['prep.fw.options'] ?? '{n}').replace('{n}', String(list.length))}
                   {single ? <span className={`xr-pill prep-status prep-status--${badgeOf(single)}`} data-prep-badge={badgeOf(single)}>{l[preparationBadgeLabelKey(badgeOf(single))]}</span> : null}
                 </p>
                 {mine.length > 0 ? (

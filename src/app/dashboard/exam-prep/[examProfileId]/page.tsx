@@ -156,7 +156,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
           <PageIntro
             crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
             title={view.objective.label}
-            lead={[tr[`prep.fw.${view.objective.framework}`], view.objective.context.level, view.objective.context.version].filter(Boolean).join(' · ')}
+            lead={[tr[`prep.fw.${view.objective.framework}`], view.objective.context.level, view.objective.context.version ? studentFacingExamReference(view.objective.framework, view.objective.context.version, tr).text : null].filter(Boolean).join(' · ')}
             actions={
               <div className="ex-detail-actions">
                 <ProfileMenu profileId={profile.id} examName={view.objective.label} hasInProgress={!!view.openAttemptId} labels={profileMenuLabels} afterRemove="dashboard" />
@@ -205,7 +205,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
         <PageIntro
           crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
           title={shown.label}
-          lead={[tr[`prep.fw.${view.objective.framework}`], shown.level, view.objective.context.version].filter(Boolean).join(' · ')}
+          lead={[tr[`prep.fw.${view.objective.framework}`], shown.level, view.objective.context.version ? studentFacingExamReference(view.objective.framework, view.objective.context.version, tr).text : null].filter(Boolean).join(' · ')}
           actions={
             <div className="ex-detail-actions">
               <ProfileMenu profileId={profile.id} examName={shown.label} hasInProgress={!!view.openAttemptId} labels={profileMenuLabels} afterRemove="dashboard" />

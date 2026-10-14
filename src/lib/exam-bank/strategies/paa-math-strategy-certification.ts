@@ -39,12 +39,12 @@ export const PAA_MATH_STRATEGY_CERTIFICATION: Readonly<Record<string, { strategy
   },
   "strat.paa.mat.quadratic.factor": {
     "strategyVersion": 1,
-    "strategyDigest": "1599819f8eb3e78f07f92aec50ff0932de811916c912617614f3ad84d204ddb5",
+    "strategyDigest": "428b7d75359e18e96cfa67ce3279278906dc2e2f3287c155d605a0572e71a47e",
     "itemsProven": 10
   },
   "strat.paa.mat.quadratic.rearrange-factor": {
     "strategyVersion": 1,
-    "strategyDigest": "0a304a4dab26f7ad366684c8e9494573c9200f67617c20188318590f14b2f8b9",
+    "strategyDigest": "b7da25d955a240b94c710dcfac1a6ea4c691da8d73b293d8bfa93b3ecfe5ef99",
     "itemsProven": 10
   },
   "strat.paa.mat.quadratic.expand-formula": {

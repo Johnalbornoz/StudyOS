@@ -32,6 +32,8 @@ export interface ExamItemState {
   responseId?: string;
   unavailableReason?: ItemUnavailableReason;
   deliveredAt?: string;
+  /** When the item was FIRST SERVED to the Student (a frozen form holds every item from the start: `deliveredAt` is then the start of the attempt, not of the question). The per-question clock runs from here. */
+  shownAt?: string;
   /** Practice Coach: when the Student opened the item's speed strategy BEFORE answering. Its presence makes the response ASSISTED. */
   strategyRevealedAt?: string;
 }

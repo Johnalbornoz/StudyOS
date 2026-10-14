@@ -12,6 +12,7 @@
  * Never a dead end: a catalogue-only objective still shows what was chosen,
  * what is known about it and what StudyUs is preparing.
  */
+import { studentFacingExamReference } from '@/lib/exam-core/exam-family-owner';
 import Link from 'next/link';
 import type { PreparationView } from '@/lib/exam-core/objectives/preparation.service';
 import type { PlannedRequirement } from '@/lib/exam-core/objectives/preparation-plan';
@@ -139,7 +140,7 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
             {objective.context.groups.length ? <div><dt>{l['prep.goal.group']}</dt><dd>{(display.groups ?? objective.context.groups).join(' / ')}</dd></div> : null}
             {objective.context.subject ? <div><dt>{l['prep.goal.subject']}</dt><dd>{display.subject ?? objective.context.subject}{objective.context.syllabusCode && !objective.context.subject.includes(objective.context.syllabusCode) ? ` (${objective.context.syllabusCode})` : ''}</dd></div> : null}
             {objective.context.level ? <div><dt>{l['prep.goal.level']}</dt><dd>{display.level ?? objective.context.level}</dd></div> : null}
-            {objective.context.version ? <div><dt>{l['prep.goal.version']}</dt><dd>{objective.context.version}</dd></div> : null}
+            {objective.context.version ? (() => { const ref = studentFacingExamReference(objective.framework, objective.context.version, l); return <div><dt>{ref.governed ? (l['exv2.reference.label'] ?? 'Referencia') : l['prep.goal.version']}</dt><dd>{ref.text}</dd></div>; })() : null}
             {timing.session ? <div data-exam-session-fact><dt>{l['acp.goal.session']}</dt><dd>{timing.sessionLabel ?? l['acp.goal.session.pending']}</dd></div> : null}
             {timing.dateLine ? <div><dt>{l['acp.goal.examDate']}</dt><dd>{timing.dateLine}</dd></div> : null}
           </dl>

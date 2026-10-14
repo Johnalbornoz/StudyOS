@@ -85,6 +85,8 @@ describe('PAA Mathematics speed strategies', () => {
     const assisted = coachRecordOf(coach, { deliveredAt: new Date(t0).toISOString(), strategyRevealedAt: new Date(t0 + 20_000).toISOString() }, t0 + 50_000);
     expect(assisted).toMatchObject({ assisted: true, elapsedSeconds: 50, targetSeconds: 65, skipThresholdSeconds: 130, targetProvenance: 'OFFICIAL_DERIVED' });
     expect(assisted.strategy).toMatchObject({ strategyId: coach.strategy.strategyId, strategyDigest: coach.strategy.strategyDigest, itemCertificationState: 'INHERITED_DETERMINISTIC' });
+    // a frozen form holds every item from the start: the question's clock runs from when it was first SHOWN
+    expect(coachRecordOf(coach, { deliveredAt: new Date(t0 - 600_000).toISOString(), shownAt: new Date(t0).toISOString() }, t0 + 40_000).elapsedSeconds).toBe(40);
     const alone = coachRecordOf(coach, { deliveredAt: new Date(t0).toISOString() }, t0 + 90_000);
     expect(alone.assisted).toBe(false);
     expect(speedReviewOf(alone, coach.strategy, true)).toMatchObject({ correct: true, assisted: false, actualSeconds: 90, deltaSeconds: 25, verdict: 'RIGHT_BUT_SLOW' });
@@ -96,6 +98,7 @@ describe('PAA Mathematics speed strategies', () => {
     expect(resolution).toMatch(/if \(!isCoachedPractice\(nav\)\) throw new SimulationNavigationError\('STRATEGY_NOT_AVAILABLE_IN_SIMULATION'\)/);
     expect(resolution).toMatch(/if \(!isCoachedPractice\(nav\) \|\| state\.status !== 'DELIVERED' \|\| !state\.item\) return null/);
     expect(resolution).toMatch(/speedReview: feedbackAllowed && /);
+    expect(resolution).toMatch(/if \(state\.status === 'DELIVERED' && !state\.shownAt\) \{\s+state = \{ \.\.\.state, shownAt: new Date\(nowMs\)\.toISOString\(\) \};/);
     expect(read('src/lib/assessment-execution/assessment-exam.service.ts')).toMatch(/row\.assisted === true\) return \{ itemKey, responseRef: row\.id, status: 'ASSISTED', fraction: null \}/);
     expect(read('src/lib/assessment-execution/evidence-plan.ts')).toMatch(/r\.status === 'ASSISTED' \? 'ASSISTED_BY_STRATEGY'/);
     expect(read('src/lib/simulation/scoring.service.ts')).toMatch(/const bridge = params\.coach\?\.assisted === true \? null : await resolveActivityMetadataForObjective/);

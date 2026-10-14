@@ -39,10 +39,10 @@ export interface CoachRecord {
   v: 1; assisted: boolean; strategyRevealedAt: string | null; elapsedSeconds: number | null; targetSeconds: number; skipThresholdSeconds: number;
   targetProvenance: TimingProvenance; skipThresholdProvenance: TimingProvenance; strategy: InheritedStrategy;
 }
-export function coachRecordOf(coach: ItemCoach, state: { deliveredAt?: string; strategyRevealedAt?: string }, answeredAtMs: number): CoachRecord {
+export function coachRecordOf(coach: ItemCoach, state: { deliveredAt?: string; shownAt?: string; strategyRevealedAt?: string }, answeredAtMs: number): CoachRecord {
   const revealedMs = state.strategyRevealedAt ? new Date(state.strategyRevealedAt).getTime() : null;
   return {
-    v: 1, assisted: isAssisted({ strategyRevealedAtMs: revealedMs, answeredAtMs }), strategyRevealedAt: state.strategyRevealedAt ?? null, elapsedSeconds: secondsBetween(state.deliveredAt, answeredAtMs),
+    v: 1, assisted: isAssisted({ strategyRevealedAtMs: revealedMs, answeredAtMs }), strategyRevealedAt: state.strategyRevealedAt ?? null, elapsedSeconds: secondsBetween(state.shownAt ?? state.deliveredAt, answeredAtMs),
     targetSeconds: coach.timing.targetSeconds, skipThresholdSeconds: coach.timing.skipThresholdSeconds, targetProvenance: coach.timing.targetProvenance, skipThresholdProvenance: coach.timing.skipThresholdProvenance, strategy: coach.inherited,
   };
 }

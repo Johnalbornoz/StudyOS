@@ -379,6 +379,13 @@ export async function getNextSimulationItem(actorUserId: string, attemptId: stri
       }
     }
 
+    // the per-question clock starts when the question is first served, not when the form was frozen
+    if (state.status === 'DELIVERED' && !state.shownAt) {
+      state = { ...state, shownAt: new Date(nowMs).toISOString() };
+      nav.items[String(index)] = state;
+      write = true;
+    }
+
     const view = contextView(loaded, nowMs);
     if (state.status === 'UNAVAILABLE') {
       return { result: { outcome: 'ITEM_UNAVAILABLE', targetIndex: index, totalTargets, reason: state.unavailableReason ?? 'NO_ITEM_GENERATED', ...view }, write };
@@ -407,7 +414,8 @@ function coachViewOf(nav: ExamNavState, state: ExamItemState, nowMs: number): It
   if (!isCoachedPractice(nav) || state.status !== 'DELIVERED' || !state.item) return null;
   const coach = coachOfItem(state.item);
   if (!coach) return null;
-  const delivered = state.deliveredAt ? new Date(state.deliveredAt).getTime() : nowMs;
+  const shown = state.shownAt ?? state.deliveredAt;
+  const delivered = shown ? new Date(shown).getTime() : nowMs;
   return { timing: coach.timing, elapsedSeconds: Math.max(0, Math.round((nowMs - delivered) / 1000)), strategyAvailable: true, assisted: !!state.strategyRevealedAt, strategy: state.strategyRevealedAt ? strategyClientView(coach.strategy) : null };
 }
 
