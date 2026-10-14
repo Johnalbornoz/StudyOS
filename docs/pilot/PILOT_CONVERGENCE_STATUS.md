@@ -72,6 +72,17 @@ mutation, no migration.
   - **CF-IB-AAHL-01 dry run:** 0/300 accepted.
   - **First IB DEV form:** NOT_READY. Exact blocker: the CF candidates are NUMERIC_ENTRY, and the governed IB AA HL
     adapter does not offer NUMERIC_ENTRY.
+- 2026-10-14, fourth block, IB first delivery (`docs/audits/exam-bank/IB_FIRST_DELIVERY.md`).
+  - **ONE real IB item delivered end to end on DEV.**
+    - CF-IB-AAHL-01 quadratic minimum; IB `SHORT_RESPONSE` with answer marks; the adapter contract is unchanged.
+    - Path: projection 3 → Exam Bank row (batch `CF-IB-AAHL-01`, as an extension of the unchanged V5.2 plan
+      `a9906fa3…`) → frozen practice attempt → canonical scorer.
+    - Scores: "20,75" 4/4, "20.8" 0/4, "83/4" 4/4. 0 provider calls.
+    - PAA regression on DEV: 43/43.
+  - **IB concepts:** 10/10 source-backed at syllabus-area level; 1 governed; 7 StudyUs identities pending John's
+    decision (`IB_CONCEPT_IDENTITY_DECISIONS.csv`). That decision is the only blocker of P1 algebra / calculus and P2
+    statistics (6/9 projected).
+  - **No changes to PAA, Preview, Stage or Production.**
 
 # Pilot Convergence Status — PAA P0
 

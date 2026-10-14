@@ -33,7 +33,7 @@ export const READINESS_ADAPTER_VERSION = 'exam-bank-readiness-adapter-1';
 // ------------------------------------------------------------------------------------------------ formats
 export type AdapterResponseFormat =
   | 'SELECTED_RESPONSE' | 'MULTI_SELECT' | 'STRUCTURED_RESPONSE' | 'NUMERIC_ENTRY' | 'MATH_EXPRESSION' | 'MULTI_PART' | 'MULTI_PART_UNKEYED'
-  | 'SHORT_TEXT_KEYED' | 'FREE_TEXT_UNKEYED' | 'RUBRIC_ASSESSED' | 'PORTFOLIO' | 'UNKNOWN';
+  | 'SHORT_TEXT_KEYED' | 'FREE_TEXT_UNKEYED' | 'RUBRIC_ASSESSED' | 'PORTFOLIO' | 'SHORT_RESPONSE_KEYED' | 'UNKNOWN';
 
 /** The response format of a stored bank version, from its shape (the same precedence the Exam Core grader uses). */
 export function responseFormatOf(content: any): AdapterResponseFormat {
@@ -43,6 +43,8 @@ export function responseFormatOf(content: any): AdapterResponseFormat {
     const keyed = content.parts.every((p: any) => (p.answerFormat === 'math' ? !!p.math : p.answerFormat === 'text' ? Array.isArray(p.acceptableAnswers) && p.acceptableAnswers.length > 0 : true));
     return keyed ? 'MULTI_PART' : 'MULTI_PART_UNKEYED';
   }
+  // a certified version keeps the system's governed format: an IB SHORT_RESPONSE keyed by the canonical contract
+  if (content.itemType === 'SHORT_RESPONSE' && content.math?.responseContract) return 'SHORT_RESPONSE_KEYED';
   if (content.answerFormat === 'single_choice') return 'SELECTED_RESPONSE';
   if (content.answerFormat === 'multi_choice') return 'MULTI_SELECT';
   if (['matching', 'ordering', 'classification'].includes(content.answerFormat)) return 'STRUCTURED_RESPONSE';
@@ -58,8 +60,8 @@ export function responseFormatOf(content: any): AdapterResponseFormat {
  * content); PORTFOLIO needs a submission flow. They are therefore not scorable for readiness.
  */
 export const RUNTIME_CAPABILITIES: RuntimeCapabilities = {
-  renderableFormats: ['SELECTED_RESPONSE', 'MULTI_SELECT', 'STRUCTURED_RESPONSE', 'NUMERIC_ENTRY', 'MATH_EXPRESSION', 'MULTI_PART', 'MULTI_PART_UNKEYED', 'SHORT_TEXT_KEYED', 'FREE_TEXT_UNKEYED', 'RUBRIC_ASSESSED'],
-  scorableFormats: ['SELECTED_RESPONSE', 'MULTI_SELECT', 'STRUCTURED_RESPONSE', 'NUMERIC_ENTRY', 'MATH_EXPRESSION', 'MULTI_PART', 'SHORT_TEXT_KEYED'],
+  renderableFormats: ['SELECTED_RESPONSE', 'MULTI_SELECT', 'STRUCTURED_RESPONSE', 'NUMERIC_ENTRY', 'MATH_EXPRESSION', 'MULTI_PART', 'MULTI_PART_UNKEYED', 'SHORT_TEXT_KEYED', 'SHORT_RESPONSE_KEYED', 'FREE_TEXT_UNKEYED', 'RUBRIC_ASSESSED'],
+  scorableFormats: ['SELECTED_RESPONSE', 'MULTI_SELECT', 'STRUCTURED_RESPONSE', 'NUMERIC_ENTRY', 'MATH_EXPRESSION', 'MULTI_PART', 'SHORT_TEXT_KEYED', 'SHORT_RESPONSE_KEYED'],
   stimulusKinds: ['TEXT_PASSAGE'],
 };
 

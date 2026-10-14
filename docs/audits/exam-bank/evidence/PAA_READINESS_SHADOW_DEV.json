@@ -2,7 +2,7 @@
   "kind": "PAA_READINESS_SHADOW",
   "database": "DEV",
   "fingerprint": "2a29b99ee14a22b4",
-  "generatedAt": "2026-10-14T15:37:54.956Z",
+  "generatedAt": "2026-10-14T20:06:34.275Z",
   "adapter": "exam-bank-readiness-adapter-1",
   "engineVersion": "exam-bank-readiness-1",
   "configuration": {
@@ -479,29 +479,30 @@
       "p3"
     ],
     "cells": 8,
-    "versionsRead": 18,
+    "versionsRead": 19,
     "engine": {
       "practice:p1": {
-        "status": "NOT_READY",
-        "coveredPositions": 0,
+        "status": "PARTIAL",
+        "coveredPositions": 1,
         "requiredPositions": 5,
         "blockingReasons": [
           "BUCKET_UNCOVERED",
           "NOT_CERTIFIED",
           "LINEAGE_INCOMPLETE",
           "RIGHTS_NOT_CLEARED",
-          "LIFECYCLE_NOT_DELIVERABLE",
-          "NO_CERTIFIED_SUPPLY"
+          "LIFECYCLE_NOT_DELIVERABLE"
         ],
-        "certifiedItemCount": 0,
-        "runtimeEligibleItemCount": 0,
+        "certifiedItemCount": 1,
+        "runtimeEligibleItemCount": 1,
         "rowsByFormat": {
           "MULTI_PART": 4,
           "NUMERIC_ENTRY": 4,
-          "MATH_EXPRESSION": 1
+          "MATH_EXPRESSION": 1,
+          "SHORT_RESPONSE_KEYED": 1
         },
         "rowsByCertification": {
-          "LEGACY_UNGOVERNED": 9
+          "LEGACY_UNGOVERNED": 9,
+          "AUTOMATED_CERTIFIED_PILOT": 1
         }
       },
       "practice:p2": {
@@ -548,26 +549,27 @@
         }
       },
       "reducedMock": {
-        "status": "NOT_READY",
-        "coveredPositions": 0,
+        "status": "PARTIAL",
+        "coveredPositions": 1,
         "requiredPositions": 10,
         "blockingReasons": [
           "BUCKET_UNCOVERED",
           "NOT_CERTIFIED",
           "LINEAGE_INCOMPLETE",
           "RIGHTS_NOT_CLEARED",
-          "LIFECYCLE_NOT_DELIVERABLE",
-          "NO_CERTIFIED_SUPPLY"
+          "LIFECYCLE_NOT_DELIVERABLE"
         ],
-        "certifiedItemCount": 0,
-        "runtimeEligibleItemCount": 0,
+        "certifiedItemCount": 1,
+        "runtimeEligibleItemCount": 1,
         "rowsByFormat": {
           "MULTI_PART": 9,
           "NUMERIC_ENTRY": 8,
-          "MATH_EXPRESSION": 1
+          "MATH_EXPRESSION": 1,
+          "SHORT_RESPONSE_KEYED": 1
         },
         "rowsByCertification": {
-          "LEGACY_UNGOVERNED": 18
+          "LEGACY_UNGOVERNED": 18,
+          "AUTOMATED_CERTIFIED_PILOT": 1
         }
       }
     }
@@ -1083,7 +1085,7 @@
       "subject": "reducedMock gate",
       "current_status": "NOT_READY",
       "shadow_engine_status": "PARTIAL",
-      "current_reason": "snapshot qb-health-v2 2026-10-14T00:52:50.813Z",
+      "current_reason": "snapshot qb-health-v2 2026-10-14T19:47:29.993Z",
       "engine_reason_codes": [
         "BUCKET_UNCOVERED",
         "NOT_CERTIFIED",
@@ -1127,11 +1129,11 @@
       "responses": "0",
       "evidence": "0",
       "usage": "0",
-      "snapshots": "313",
+      "snapshots": "316",
       "plan_entries": "0",
       "nodes": "360978eb3eae4f62c15b7ca770273a1f",
-      "items": "74f613affa1b6496c7bfef62a9822bc5",
-      "instances": "19b7bd0f19349b697236a8d707af52b4"
+      "items": "128491f011568c816e016e2466d73e41",
+      "instances": "f94f051b157fd9aef8e25cff7c9a2ab7"
     },
     "stateAfter": {
       "ledger": "95",
@@ -1140,11 +1142,11 @@
       "responses": "0",
       "evidence": "0",
       "usage": "0",
-      "snapshots": "313",
+      "snapshots": "316",
       "plan_entries": "0",
       "nodes": "360978eb3eae4f62c15b7ca770273a1f",
-      "items": "74f613affa1b6496c7bfef62a9822bc5",
-      "instances": "19b7bd0f19349b697236a8d707af52b4"
+      "items": "128491f011568c816e016e2466d73e41",
+      "instances": "f94f051b157fd9aef8e25cff7c9a2ab7"
     },
     "unchanged": true
   }

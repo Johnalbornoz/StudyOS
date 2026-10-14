@@ -32,7 +32,10 @@ export const CF_DRY_RUN_VERSION = 'cf-package-dry-run-1';
 export type DryRunCheck = 'PACKAGE_HASH' | 'IDENTITY' | 'CONCEPT_GOVERNED' | 'BUCKET_CERTIFIED' | 'ADAPTER_GOVERNED' | 'FORMAT_OFFERED' | 'SCORING_POLICY' | 'LINEAGE_COMPLETE' | 'RIGHTS_PROVENANCE' | 'NOT_A_DUPLICATE' | 'PROJECTION';
 export const GOVERNANCE_CHECKS: readonly DryRunCheck[] = ['CONCEPT_GOVERNED', 'BUCKET_CERTIFIED', 'ADAPTER_GOVERNED', 'FORMAT_OFFERED'];
 export interface CandidateVerdict { candidateId: string; construct: string; bucketId: string; failed: { check: DryRunCheck; detail: string }[]; certificationEligible: boolean; accepted: boolean }
+/** The package's standing: content valid or not; what governance still needs; whether its format must be re-delivered. */
+export interface PackageStatus { content: 'CONTENT_VALID' | 'CONTENT_INVALID'; governance: 'GOVERNANCE_PASSED' | 'GOVERNANCE_PENDING'; format: 'FORMAT_COMPATIBLE' | 'FORMAT_REPROJECTION_REQUIRED' }
 export interface DryRunReport {
+  status: PackageStatus;
   version: string; batchId: string; packageSha256: string; expectedSha256: string; candidates: number; constructs: number;
   accepted: number; certificationEligible: number; failuresByCheck: Partial<Record<DryRunCheck, number>>;
   byConstruct: Array<{ construct: string; coreId: string; bucketId: string; conceptStableId: string; candidates: number; accepted: number; failedChecks: DryRunCheck[]; firstDetail: Partial<Record<DryRunCheck, string>> }>;
@@ -100,6 +103,24 @@ export function dryRunCfPackage(bytes: Buffer | string, expectedSha256: string, 
     for (const v of vs) for (const f of v.failed) if (!(f.check in firstDetail)) firstDetail[f.check] = f.detail;
     return { construct: k.construct, coreId: k.proposedCoreId, bucketId: cand?.lineage.bucketId ?? '', conceptStableId: k.concept?.stableId ?? '', candidates: vs.length, accepted: vs.filter((v) => v.accepted).length, failedChecks: [...new Set(vs.flatMap((v) => v.failed.map((f) => f.check)))].sort() as DryRunCheck[], firstDetail };
   });
-  const body = { version: CF_DRY_RUN_VERSION, batchId: pkg.batchId, packageSha256: sha, expectedSha256, candidates: verdicts.length, constructs: pkg.constructs.length, accepted: verdicts.filter((v) => v.accepted).length, certificationEligible: verdicts.filter((v) => v.certificationEligible).length, failuresByCheck, byConstruct, verdicts };
+  const contentChecks: DryRunCheck[] = ['PACKAGE_HASH', 'IDENTITY', 'SCORING_POLICY', 'LINEAGE_COMPLETE', 'RIGHTS_PROVENANCE', 'NOT_A_DUPLICATE', 'PROJECTION'];
+  const status: PackageStatus = {
+    content: contentChecks.some((k) => failuresByCheck[k]) ? 'CONTENT_INVALID' : 'CONTENT_VALID',
+    governance: failuresByCheck.CONCEPT_GOVERNED || failuresByCheck.BUCKET_CERTIFIED || failuresByCheck.ADAPTER_GOVERNED ? 'GOVERNANCE_PENDING' : 'GOVERNANCE_PASSED',
+    format: failuresByCheck.FORMAT_OFFERED ? 'FORMAT_REPROJECTION_REQUIRED' : 'FORMAT_COMPATIBLE',
+  };
+  const body = { status, version: CF_DRY_RUN_VERSION, batchId: pkg.batchId, packageSha256: sha, expectedSha256, candidates: verdicts.length, constructs: pkg.constructs.length, accepted: verdicts.filter((v) => v.accepted).length, certificationEligible: verdicts.filter((v) => v.certificationEligible).length, failuresByCheck, byConstruct, verdicts };
   return { ...body, reportDigest: createHash('sha256').update(JSON.stringify(body)).digest('hex') };
+}
+
+/**
+ * ACCEPTANCE of a Content Factory format revision: a revised candidate is accepted only if it is EXACTLY what the
+ * governed Track B renderer certifies from the same parameter set -- same wording, key, response policy, marks,
+ * rubric shape and format. Any difference is named; nothing is reconciled.
+ */
+export function revisionAcceptance(revised: any, certified: CertifiedInstance): { accepted: boolean; differences: string[] } {
+  const want = { prompt: certified.learner.prompt, key: certified.key.answers, policy: certified.responsePolicy, marks: certified.marks, format: certified.format, rubric: certified.rubric.map((r) => [r.kind, r.marks]) };
+  const got = { prompt: revised?.learner?.prompt, key: revised?.key?.answers, policy: revised?.responsePolicy, marks: revised?.learner?.marks, format: revised?.learner?.itemType, rubric: (revised?.rubric ?? []).map((r: any) => [r.kind, r.marks]) };
+  const differences = (Object.keys(want) as (keyof typeof want)[]).filter((k) => JSON.stringify(want[k]) !== JSON.stringify(got[k]));
+  return { accepted: differences.length === 0, differences };
 }

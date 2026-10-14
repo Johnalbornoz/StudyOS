@@ -18,6 +18,7 @@
  * (migrations 20261121_1100, 20261122_1200, 20261123_1000). The loader never disables, bypasses or re-creates one.
  */
 import type { PoolClient } from 'pg';
+import { mergedForPublication } from './publication-plan';
 import { contentHash } from '@/lib/exam-core/question-bank/bank.service';
 import { itemFingerprints } from '@/lib/exam-core/fingerprints';
 import { ApprovedItemContentSchema, examItemFromApproved } from '@/lib/exam-core/items';
@@ -85,7 +86,7 @@ export async function preflightDatabase(c: Q): Promise<string[]> {
   return reasons;
 }
 
-async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): Promise<void> {
+async function publish(c: Q, plan: ReturnType<typeof mergedForPublication>, report: PublicationReport): Promise<void> {
   const skip = (k: string, n = 1): void => { report.skipped[k] = (report.skipped[k] ?? 0) + n; };
   const conflict = (kind: string, identity: string, detail: string): never => { throw new PublicationConflict(kind, identity, detail); };
 
@@ -230,13 +231,15 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
   }
 
   // ---- the batch the instances come from (0 provider calls: the column refuses anything else)
-  const batch = await one<{ policy_hash: string; inputs_hash: string }>(c, `SELECT policy_hash, inputs_hash FROM assessment_certification_batches WHERE batch_id = $1`, [plan.batchId]);
-  if (batch && (batch.policy_hash !== plan.policy.policyHash || batch.inputs_hash !== plan.inputsHash)) conflict('CERTIFICATION_BATCH', plan.batchId, 'the stored batch was computed from other inputs');
-  if (batch) skip('batch');
-  else await c.query(`INSERT INTO assessment_certification_batches (batch_id, policy_hash, inputs_hash, status, provider_calls, finished_at) VALUES ($1, $2, $3, 'COMPLETE', 0, now())`, [plan.batchId, plan.policy.policyHash, plan.inputsHash]);
-  for (const cell of plan.cells) {
-    const r = await c.query(`INSERT INTO assessment_certification_batch_cells (batch_id, cell_id, status, attempted, certified, checkpoint) VALUES ($1, $2, 'DONE', $3, $4, '{}'::jsonb) ON CONFLICT (batch_id, cell_id) DO NOTHING`, [plan.batchId, cell.cellId, cell.attempted, cell.certified]);
-    if (r.rowCount === 0) skip('batchCells');
+  for (const pb of plan.batches) {
+    const batch = await one<{ policy_hash: string; inputs_hash: string }>(c, `SELECT policy_hash, inputs_hash FROM assessment_certification_batches WHERE batch_id = $1`, [pb.batchId]);
+    if (batch && (batch.policy_hash !== plan.policy.policyHash || batch.inputs_hash !== pb.inputsHash)) conflict('CERTIFICATION_BATCH', pb.batchId, 'the stored batch was computed from other inputs');
+    if (batch) skip('batch');
+    else await c.query(`INSERT INTO assessment_certification_batches (batch_id, policy_hash, inputs_hash, status, provider_calls, finished_at) VALUES ($1, $2, $3, 'COMPLETE', 0, now())`, [pb.batchId, plan.policy.policyHash, pb.inputsHash]);
+    for (const cell of pb.cells) {
+      const r = await c.query(`INSERT INTO assessment_certification_batch_cells (batch_id, cell_id, status, attempted, certified, checkpoint) VALUES ($1, $2, 'DONE', $3, $4, '{}'::jsonb) ON CONFLICT (batch_id, cell_id) DO NOTHING`, [pb.batchId, cell.cellId, cell.attempted, cell.certified]);
+      if (r.rowCount === 0) skip('batchCells');
+    }
   }
 
   // ---- certified item instances (INHERITED_DETERMINISTIC): the database re-decides each one on insert
@@ -299,7 +302,7 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
   };
   const lifecycleEvent = async (itemId: string, versionId: string, from: string | null, to: string, reason: string, i: PublicationPlan['instances'][number]): Promise<void> => {
     await c.query(`INSERT INTO question_bank_lifecycle_events (bank_item_id, approved_item_id, from_status, to_status, reason, actor_kind, actor_user_id, run_id, detail) VALUES ($1, $2, $3, $4, $5, 'SYSTEM', NULL, NULL, $6::jsonb)`,
-      [itemId, versionId, from, to, reason, JSON.stringify({ itemInstanceId: i.instance.instanceId, lineageDigest: i.instance.lineageHash, certification: 'INHERITED_DETERMINISTIC', policy: i.instance.policyVersion, batch: plan.batchId })]);
+      [itemId, versionId, from, to, reason, JSON.stringify({ itemInstanceId: i.instance.instanceId, lineageDigest: i.instance.lineageHash, certification: 'INHERITED_DETERMINISTIC', policy: i.instance.policyVersion, batch: i.batchId ?? plan.batchId })]);
   };
   /** The version's one PRIMARY concept: the certified instance's. Stated while the version is not yet in use; never changed afterwards. */
   const attribute = async (versionId: string, conceptId: string): Promise<void> => {
@@ -341,7 +344,7 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
         const validation = {
           kind: 'INHERITED_DETERMINISTIC_CERTIFICATION', projection: PROJECTION, itemInstanceId: i.instanceId, lineageDigest: i.lineageHash,
           generation: { certificationVersion: i.lineage.certificationVersion, seed: i.seed, rendererVersion: i.rendererVersion, note: 'the renderer\'s own record at rendering time; immutable; part of the lineage digest' },
-          publication: { coreCertificationVersion: p.certificationVersion, instanceCertificationState: i.certificationState, certificationMode: i.certificationMode, policyVersion: i.policyVersion, policyHash: i.policyHash, batch: plan.batchId, note: 'recorded when the instance was published; it did not exist when the instance was rendered' },
+          publication: { coreCertificationVersion: p.certificationVersion, instanceCertificationState: i.certificationState, certificationMode: i.certificationMode, policyVersion: i.policyVersion, policyHash: i.policyHash, batch: p.batchId ?? plan.batchId, note: 'recorded when the instance was published; it did not exist when the instance was rendered' },
         };
         const version = await one<{ id: string }>(c,
           `INSERT INTO approved_items (learning_objective_id, question_type, content, created_by, status, published_at, content_origin, semantic_fingerprint, template_fingerprint, reasoning_fingerprint, stimulus_fingerprint,
@@ -450,18 +453,19 @@ function verificationFailures(plan: PublicationPlan, v: PublicationReport['verif
 export async function runPublication(client: PoolClient, plan: PublicationPlan, opts: { apply: boolean }): Promise<PublicationReport> {
   const empty = Object.fromEntries(WRITTEN_TABLES.map((t) => [t, 0])) as Record<WrittenTable, number>;
   const report: PublicationReport = { mode: opts.apply ? 'APPLY' : 'DRY_RUN', committed: false, planHash: plan.planHash, planned: planCounts(plan), inserted: empty, insertedTotal: 0, skipped: {}, materialized: { planned: 0, inserted: 0, skipped: 0, superseded: 0, byObjective: {} }, blocked: [...plan.blocked], conflicts: [], verification: {} };
-  if (plan.preflight.length > 0) throw new PublicationRefused(plan.preflight);
+  const work = mergedForPublication(plan);
+  if (work.preflight.length > 0) throw new PublicationRefused(work.preflight);
   await client.query('BEGIN');
   try {
     await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [LOCK_KEY]);
     const database = await preflightDatabase(client);
     if (database.length > 0) throw new PublicationRefused(database);
     const before = await tableCounts(client);
-    await publish(client, plan, report);
+    await publish(client, work, report);
     const after = await tableCounts(client);
     for (const t of WRITTEN_TABLES) report.inserted[t] = after[t] - before[t];
     report.insertedTotal = Object.values(report.inserted).reduce((a, b) => a + b, 0);
-    const failures = verificationFailures(plan, report.verification);
+    const failures = verificationFailures(work, report.verification);
     if (failures.length > 0) throw new PublicationRefused(failures.map((f) => `VERIFICATION:${f}`));
     if (opts.apply) { await client.query('COMMIT'); report.committed = true; } else await client.query('ROLLBACK');
     return report;

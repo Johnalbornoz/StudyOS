@@ -7,7 +7,9 @@ import { join } from 'path';
 import { CF_IB_AAHL_01 } from '@/lib/assessment-instance/library/cf-ib-aahl-01';
 import { LIBRARY } from '@/lib/assessment-instance/library/catalogue';
 import { governLibrary } from '@/lib/assessment-instance/v52/library-batch';
-import { dryRunCfPackage } from '@/lib/exam-bank/cf-package-validation';
+import { dryRunCfPackage, revisionAcceptance } from '@/lib/exam-bank/cf-package-validation';
+import { CF_QUADRATIC_MINIMUM_ENTRY } from '@/lib/assessment-instance/library/cf-ib-aahl-01';
+import { certifyCell } from '@/lib/assessment-instance/v52/library-batch';
 
 const root = process.cwd();
 const bytes = readFileSync(join(root, 'docs/exams/content-factory/CF-IB-AAHL-01/CF-IB-AAHL-01_CANDIDATE_PACKAGE.json'));
@@ -40,5 +42,24 @@ describe('IB_PACKAGE_DRY_RUN', () => {
   it('the IB Paper 2 adapter is governed (automated pilot) but no governed blueprint uses it', () => {
     const p2 = governLibrary(undefined, LIBRARY).adapters.find((d) => d.objectId === 'IB.MATH_AA_HL.P2')!;
     expect(p2.state).toBe('AUTOMATED_CERTIFIED_PILOT');
+  });
+});
+
+describe('package status and the SHORT_RESPONSE revision acceptance', () => {
+  it('the 300-candidate package is CONTENT_VALID / GOVERNANCE_PENDING / FORMAT_REPROJECTION_REQUIRED', () => {
+    expect(report.status).toEqual({ content: 'CONTENT_VALID', governance: 'GOVERNANCE_PENDING', format: 'FORMAT_REPROJECTION_REQUIRED' });
+  });
+  it('a revised candidate is accepted only if it equals the governed render; any difference is named', () => {
+    const pkg = JSON.parse(bytes.toString()) as { candidates: any[] };
+    const cell = certifyCell(CF_QUADRATIC_MINIMUM_ENTRY, CF_QUADRATIC_MINIMUM_ENTRY.targets[0], 'CHALLENGE', 10, governLibrary(undefined, [...LIBRARY, CF_QUADRATIC_MINIMUM_ENTRY]), CF_IB_AAHL_01.batchId);
+    for (const i of cell.certified) {
+      const original = pkg.candidates.find((c) => i.seed.includes(c.candidateId));
+      // the delivered NUMERIC_ENTRY candidate differs only by its format and its rubric code shape
+      expect(revisionAcceptance(original, i).differences).toEqual(['format']);
+      // the expected revision: same content, IB SHORT_RESPONSE with answer marks
+      const revised = { ...original, learner: { ...original.learner, itemType: 'SHORT_RESPONSE' }, rubric: [{ code: `A${original.learner.marks}`, kind: 'ANSWER', marks: original.learner.marks, criterion: original.key.answers[0] }] };
+      expect(revisionAcceptance(revised, i)).toEqual({ accepted: true, differences: [] });
+      expect(revisionAcceptance({ ...revised, key: { answers: ['1'] } }, i)).toEqual({ accepted: false, differences: ['key'] });
+    }
   });
 });

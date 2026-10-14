@@ -10,10 +10,11 @@
  * `math.alg.quadratics`, bucket `v2.ib.math-aa-hl/p1/aahl.p1.functions#0`, human-certified D02). The other nine name
  * concepts that no governed source backs (`math.ib.*`, PROPOSED_NOT_GOVERNED) and buckets that are not certified.
  *
- * EVEN THAT ONE IS NOT ADOPTED into the live library: the package renders NUMERIC_ENTRY, and the governed IB AA HL P1
- * adapter offers MATH_EXPRESSION / SHORT_RESPONSE / EXTENDED_RESPONSE only. Composition refuses every candidate
- * (RESPONSE_FORMAT_NOT_ALLOWED). It is kept here as an EVALUATED entry (`CF_QUADRATIC_MINIMUM_ENTRY`), registered
- * nowhere, so the refusal is reproducible (docs/audits/exam-bank/IB_DELIVERY_BRIDGE.md).
+ * The package renders NUMERIC_ENTRY, which the governed IB AA HL P1 adapter does not offer. DECISION (John, 2026-10-14):
+ * the adapter contract is NOT widened; the construct is delivered in IB's governed SHORT_RESPONSE with answer marks.
+ * FIRST DELIVERY: ONE item (`CF_QUADRATIC_MINIMUM_FIRST_DELIVERY`) is registered in the live library. The Content
+ * Factory's formal SHORT_RESPONSE revision of the package is pending; when it arrives it must equal these renders
+ * (scripts/operations/exam-bank/cf-package-dry-run.ts). See docs/audits/exam-bank/IB_FIRST_DELIVERY.md.
  *
  * The construct code is the Content Factory's, copied unchanged (scripts/content-factory/ib-aahl-01/constructs.ts,
  * QUADRATIC_MINIMUM_VALUE and the helpers it uses). Nothing is authored here: the core family records what the
@@ -117,7 +118,7 @@ export const CORE_QUADRATIC_MINIMUM: ConstructCoreRecord = built.core;
 
 const parsed = RendererEnvelopeSchema.safeParse({
   v: 1, rendererVersion: QUADRATIC_MINIMUM_VALUE.rendererVersion, strategy: 'PARAMETRIC_DETERMINISTIC', construct: QUADRATIC_MINIMUM_VALUE.construct, constructFamilyId: CORE_QUADRATIC_MINIMUM.constructFamilyId, constructFamilyVersion: CORE_QUADRATIC_MINIMUM.familyVersion,
-  adapterIds: ['IB.MATH_AA_HL.P1'], languages: ['en'], responseFormats: ['NUMERIC_ENTRY'], commandTerms: [],
+  adapterIds: ['IB.MATH_AA_HL.P1'], languages: ['en'], responseFormats: ['SHORT_RESPONSE'], commandTerms: ['find'],
   parameterRanges: [{ symbol: 'a', min: 1, max: 4, step: 1 }, { symbol: 'b', min: -16, max: 16, step: 1 }, { symbol: 'c', min: 1, max: 40, step: 1 }],
   bands: [
     { planningBand: 'FOUNDATIONAL', itemDifficulty: 2, leverSettings: ['a = 1.', 'Integer vertex abscissa and integer minimum.'] },
@@ -135,10 +136,22 @@ export const REASONING_QUADRATIC_MINIMUM = {
 } as const;
 
 /** The seed of a package candidate: it names the candidate and the parameter set the renderer must use. */
+/** The package's marks per planning band (every CF-IB-AAHL-01 candidate: FOUNDATIONAL 2, STANDARD 3, CHALLENGE 4). */
+export const CF_MARKS_BY_BAND = { FOUNDATIONAL: 2, STANDARD: 3, CHALLENGE: 4 } as const;
 export const cfSeedOf = (candidateId: string, recognitionKey: string): string => `${CF_IB_AAHL_01.batchId}/${candidateId}@rk=${recognitionKey}`;
 
-/** The evaluated (NOT registered) library entry: what adoption would be, if the IB adapter offered its format. */
+/**
+ * The library entry, under the DECIDED format (2026-10-14, John): IB's governed SHORT_RESPONSE with answer marks. The
+ * IB adapter's response-format contract is unchanged. Every one of the 30 package candidates is re-rendered from its
+ * own parameter set; prompt, key and policy are the package's.
+ */
 export const CF_QUADRATIC_MINIMUM_ENTRY: LibraryEntry = {
-  core: CORE_QUADRATIC_MINIMUM, envelope: ENVELOPE_QUADRATIC_MINIMUM, construct: QUADRATIC_MINIMUM_VALUE as unknown as ParametricConstruct, strategy: parametricStrategy(QUADRATIC_MINIMUM_VALUE),
-  targets: [{ adapterId: 'IB.MATH_AA_HL.P1', language: 'en', responseFormat: 'NUMERIC_ENTRY' }], reasoning: REASONING_QUADRATIC_MINIMUM, challengeMechanisms: ['NON_OBVIOUS_STRATEGY'], origin: 'CF_PACKAGE', packageSeeds: CF_QUADRATIC_MINIMUM_SEEDS,
+  core: CORE_QUADRATIC_MINIMUM, envelope: ENVELOPE_QUADRATIC_MINIMUM, construct: QUADRATIC_MINIMUM_VALUE as unknown as ParametricConstruct, strategy: parametricStrategy(QUADRATIC_MINIMUM_VALUE, { format: 'SHORT_RESPONSE', marksByBand: CF_MARKS_BY_BAND }),
+  targets: [{ adapterId: 'IB.MATH_AA_HL.P1', language: 'en', responseFormat: 'SHORT_RESPONSE', commandTerm: 'find' }], reasoning: REASONING_QUADRATIC_MINIMUM, challengeMechanisms: ['NON_OBVIOUS_STRATEGY'], origin: 'CF_PACKAGE', packageSeeds: CF_QUADRATIC_MINIMUM_SEEDS,
+};
+/** FIRST DELIVERY milestone: ONE item (the CHALLENGE candidate d83e0133..., key 83/4) -- not a form. */
+export const CF_FIRST_DELIVERY_CANDIDATE = 'd83e013329d58eee';
+export const CF_QUADRATIC_MINIMUM_FIRST_DELIVERY: LibraryEntry = {
+  ...CF_QUADRATIC_MINIMUM_ENTRY,
+  packageSeeds: { CHALLENGE: (CF_QUADRATIC_MINIMUM_SEEDS.CHALLENGE ?? []).filter((s) => s.includes(`/${CF_FIRST_DELIVERY_CANDIDATE}`)) },
 };

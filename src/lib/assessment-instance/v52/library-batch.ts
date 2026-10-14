@@ -90,7 +90,8 @@ export function certifyCell(entry: LibraryEntry, target: LibraryTarget, planning
   const short = entry.core.constructFamilyId.split('.').slice(2).join('.');
   // A Content Factory package entry renders exactly the package's candidates (each seed names its parameter set);
   // every other entry draws its own seeds, as before.
-  const packaged = entry.packageSeeds?.[planningBand];
+  // a package entry renders only what the package holds: a band it has no candidate for renders nothing
+  const packaged = entry.packageSeeds ? entry.packageSeeds[planningBand] ?? [] : undefined;
   const seedAt = (n: number): string | undefined => (packaged ? packaged[n - 1] : `${batchId}/${short}/${target.adapterId}/${planningBand.toLowerCase()}/${String(n).padStart(4, '0')}`);
   const limit = packaged ? packaged.length : wanted * 40;
   for (let n = 1; (packaged || out.certified.length < wanted) && n <= limit; n += 1) {

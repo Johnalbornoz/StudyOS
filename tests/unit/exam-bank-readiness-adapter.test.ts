@@ -35,6 +35,7 @@ describe('response format and scoring capability', () => {
     expect(responseFormatOf({ answerFormat: 'text', parts: [{ answerFormat: 'text' }] })).toBe('MULTI_PART_UNKEYED');
     expect(responseFormatOf({ answerFormat: 'text', rubric: { kind: 'ANALYTIC' } })).toBe('RUBRIC_ASSESSED');
     expect(responseFormatOf({ answerFormat: 'text' })).toBe('FREE_TEXT_UNKEYED');
+    expect(responseFormatOf({ answerFormat: 'text', itemType: 'SHORT_RESPONSE', math: { kind: 'NUMBER', responseContract: { version: 'canonical-response-1' } } })).toBe('SHORT_RESPONSE_KEYED');
   });
   it('AI-assessed and unkeyed formats render but are not scorable for readiness', () => {
     for (const f of ['RUBRIC_ASSESSED', 'FREE_TEXT_UNKEYED', 'MULTI_PART_UNKEYED']) {

@@ -70,15 +70,29 @@ export function parameterSetsOf<P extends ParameterSet>(c: ParametricConstruct<P
   return byBand.get(band) as readonly P[];
 }
 
-/** The rendering strategy of a parametric construct: a numeric entry, one exact value, no stimulus. PROVISIONAL until certified. */
-export function parametricStrategy<P extends ParameterSet>(c: ParametricConstruct<P>): RenderingStrategy {
+/**
+ * The rendering strategy of a parametric construct: one exact value, no stimulus. PROVISIONAL until certified.
+ *
+ *   NUMERIC_ENTRY   (default; every existing entry)   the value only.
+ *   SHORT_RESPONSE  (`{ format: 'SHORT_RESPONSE' }`)  the governed constructed-response format of a system that has no
+ *                   numeric-entry format (IB): the Student writes the answer, which is ONE exact value judged by the
+ *                   canonical numeric contract; the marks are ANSWER marks (no method mark, working not assessed), so
+ *                   the item is not marked on working. The format classification is the system's; the scoring is the
+ *                   same deterministic contract.
+ */
+export function parametricStrategy<P extends ParameterSet>(c: ParametricConstruct<P>, opts: { format?: 'NUMERIC_ENTRY' | 'SHORT_RESPONSE'; marksByBand?: Readonly<Record<PlanningBand, number>> } = {}): RenderingStrategy {
+  const format = opts.format ?? 'NUMERIC_ENTRY';
   const render = (ctx: StrategyContext): StrategyResult => {
     const v = ctx.specification.variable;
     const language = c.languages.find((l) => l === v.language);
     if (!language) return { ok: false, code: 'LANGUAGE_NOT_CERTIFIED_FOR_THE_STRATEGY', detail: v.language };
-    if (v.responseFormat.format !== 'NUMERIC_ENTRY') return { ok: false, code: 'FORMAT_NOT_RENDERABLE', detail: v.responseFormat.format };
+    if (v.responseFormat.format !== format) return { ok: false, code: 'FORMAT_NOT_RENDERABLE', detail: v.responseFormat.format };
     if (!v.marks) return { ok: false, code: 'SPECIFICATION_HAS_NO_MARKS', detail: ctx.specification.specificationId };
     const band = v.difficulty.band as PlanningBand;
+    // marks: the construct's own per-band marks when it states them (within the specification's governed range), else the range's maximum (as before)
+    const stated = opts.marksByBand?.[band];
+    if (stated !== undefined && (stated < v.marks.total.min || stated > v.marks.total.max)) return { ok: false, code: 'MARKS_OUTSIDE_THE_SPECIFICATION', detail: `${stated} not in ${v.marks.total.min}..${v.marks.total.max}` };
+    const marks = stated ?? v.marks.total.max;
     const sets = PLANNING_BANDS.includes(band) ? parameterSetsOf(c, band) : [];
     if (sets.length === 0) return { ok: false, code: 'NO_VALID_PARAMETER_SET', detail: v.difficulty.band };
     // An explicit selection (`<seed>@rk=<recognitionKey>`, used to re-render a delivered package candidate) names the
@@ -93,9 +107,10 @@ export function parametricStrategy<P extends ParameterSet>(c: ParametricConstruc
     return {
       ok: true,
       output: {
-        learner: { language, itemType: 'NUMERIC_ENTRY', stimulus: null, prompt: c.present(p, language), parts: [], options: [], marks: v.marks.total.max, conditions: { calculator: v.toolPolicy.calculator, workingShown: false } },
+        learner: { language, itemType: format, stimulus: null, prompt: c.present(p, language), parts: [], options: [], marks, conditions: { calculator: v.toolPolicy.calculator, workingShown: false } },
         key: { answers: [answer], correctOption: null, distractorRationales: {}, distractorLineage: {} },
-        rubric: [{ code: 'KEY', kind: 'ANSWER', marks: v.marks.total.max, criterion: answer }],
+        // NUMERIC_ENTRY keeps its rubric exactly; a SHORT_RESPONSE states its answer marks as A marks
+        rubric: [{ code: format === 'SHORT_RESPONSE' ? `A${marks}` : 'KEY', kind: 'ANSWER', marks, criterion: answer }],
         responsePolicy: EXACT_NUMERIC_POLICY,
         parameterSet: { ...p },
       },

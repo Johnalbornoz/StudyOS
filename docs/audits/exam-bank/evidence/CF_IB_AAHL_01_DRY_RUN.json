@@ -1,4 +1,9 @@
 {
+  "status": {
+    "content": "CONTENT_VALID",
+    "governance": "GOVERNANCE_PENDING",
+    "format": "FORMAT_REPROJECTION_REQUIRED"
+  },
   "version": "cf-package-dry-run-1",
   "batchId": "CF-IB-AAHL-01",
   "packageSha256": "678741c9d6423e6e328847979bf8ca60358bcc944a2d42258f099604c6e659a8",
@@ -6252,12 +6257,12 @@
       "accepted": false
     }
   ],
-  "reportDigest": "944cb08aa80d22818774d465bcd78946044ee858ddfb0f8207236dfc9a652dbb",
+  "reportDigest": "f23844beefd50dec4e0028f83e07cd44558b1b36e37a7087e373a7bfab8d874d",
   "idempotency": {
     "runs": 2,
     "reportDigests": [
-      "944cb08aa80d22818774d465bcd78946044ee858ddfb0f8207236dfc9a652dbb",
-      "944cb08aa80d22818774d465bcd78946044ee858ddfb0f8207236dfc9a652dbb"
+      "f23844beefd50dec4e0028f83e07cd44558b1b36e37a7087e373a7bfab8d874d",
+      "f23844beefd50dec4e0028f83e07cd44558b1b36e37a7087e373a7bfab8d874d"
     ],
     "identical": true,
     "rowsWritten": 0,

@@ -21,7 +21,8 @@ import type { AssessmentAdapter } from '@/lib/assessment-instance/assessment-ada
 import type { CertificationRecord, ReviewerQualification } from '@/lib/assessment-instance/certification';
 import type { ConstructCoreRecord } from '@/lib/assessment-instance/construct-core';
 import type { CoreApplicabilityRecord } from '@/lib/assessment-instance/core-applicability';
-import { LIBRARY, LIBRARY_BLUEPRINTS, libraryApplicability, type LibraryBlueprint } from '@/lib/assessment-instance/library/catalogue';
+import { LIBRARY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSIONS, libraryApplicability, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
+import { CF_IB_AAHL_01 } from '@/lib/assessment-instance/library/cf-ib-aahl-01';
 import { pilotApplicabilityHash } from '@/lib/assessment-instance/pilot/step4b-pilot-slice';
 import { STUDYUS_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
 import { envelopeHashOf, instanceContentHashOf, type RendererEnvelope } from '@/lib/assessment-instance/renderer-envelope';
@@ -76,11 +77,15 @@ export interface PlannedInstance {
   rightsStatus: 'STUDYUS_OWNED';
   rightsBasis: string;
   materialized: MaterializedItem;
+  /** Set when a plan and its extensions are merged for publication: the batch the instance comes from. */
+  batchId?: string;
 }
 export interface BlockedRow { kind: string; identity: string; reason: string; detail: string }
 
 export interface PublicationPlan {
   v: 1;
+  /** Entries adopted after the V5.2 run: each a plan of its own (own batch, inputs and hash), published after this one. */
+  extensions?: PublicationPlan[];
   batchId: string;
   scope: EligibilityScope;
   policy: { policyHash: string; policyId: string; version: string; mayGrantScopes: string[]; policy: unknown };
@@ -113,6 +118,13 @@ export const coreCertificationVersionOf = (state: PlannedObjectCertification['st
  * A plan with a non-empty `preflight` must not be applied.
  */
 export function buildPublicationPlan(human: HumanDecisionsFile, scope: EligibilityScope = 'PILOT_PREVIEW'): PublicationPlan {
+  // The V5.2 plan is computed exactly as it always was (its hash and its counts are the ones its artefacts name);
+  // entries adopted later are an additive extension with a batch, inputs and hash of their own.
+  const base = planOfLibrary(human, scope, LIBRARY, PUBLICATION_BATCH_ID);
+  return LIBRARY_EXTENSIONS.length ? { ...base, extensions: [planOfLibrary(human, scope, LIBRARY_EXTENSIONS, CF_IB_AAHL_01.batchId)] } : base;
+}
+
+function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, library: readonly LibraryEntry[], batchId: string): PublicationPlan {
   const preflight: string[] = [];
   const blocked: BlockedRow[] = [];
   const registry = STUDYUS_ASSESSMENT_REGISTRY;
@@ -137,7 +149,7 @@ export function buildPublicationPlan(human: HumanDecisionsFile, scope: Eligibili
   const humanRecords = { records: records.map((r) => r.record), qualifications: [human.qualification] };
 
   // ---- governance of every object, as the library decides it
-  const governance: LibraryGovernance = governLibrary(humanRecords);
+  const governance: LibraryGovernance = governLibrary(humanRecords, library);
   const live: LiveGovernance = liveGovernanceOf(governance);
   /** The recorded decision a HUMAN_CERTIFIED object rests on: an approval of exactly this object at exactly this content. */
   const humanDecisionFor = (d: Pick<GovernanceDecision, 'objectType' | 'objectId' | 'objectVersion' | 'contentHash'>): PlannedHumanDecision | null =>
@@ -160,7 +172,7 @@ export function buildPublicationPlan(human: HumanDecisionsFile, scope: Eligibili
 
   const cores: PlannedCore[] = [];
   const renderers: PlannedRenderer[] = [];
-  for (const e of LIBRARY) {
+  for (const e of library) {
     const coreIdentity = `${e.core.constructFamilyId}@${e.core.familyVersion}`;
     const cd = decisionOf(governance.cores, e.core.constructFamilyId, e.core.familyVersion);
     const cc = cd ? certificationOf(cd) : null;
@@ -196,7 +208,7 @@ export function buildPublicationPlan(human: HumanDecisionsFile, scope: Eligibili
   }
 
   const applicability: PlannedApplicability[] = [];
-  for (const e of LIBRARY) for (const t of e.targets) {
+  for (const e of library) for (const t of e.targets) {
     const record = libraryApplicability(e.core, t.adapterId);
     const contentHash = pilotApplicabilityHash(record);
     const identity = `${e.core.constructFamilyId} x ${t.adapterId}`;
@@ -208,7 +220,7 @@ export function buildPublicationPlan(human: HumanDecisionsFile, scope: Eligibili
   }
 
   // ---- the certified instances: rendered and judged exactly as the QF V5.2 run does
-  const cellResults: CellResult[] = libraryCells().map((c) => certifyCell(c.entry, c.target, c.planningBand, PUBLICATION_PER_CELL, governance, PUBLICATION_BATCH_ID));
+  const cellResults: CellResult[] = libraryCells(library).map((c) => certifyCell(c.entry, c.target, c.planningBand, PUBLICATION_PER_CELL, governance, batchId));
   const instances: PlannedInstance[] = [];
   for (const cell of cellResults) {
     for (const n of cell.notCertified) blocked.push({ kind: 'ITEM_INSTANCE', identity: n.seed, reason: n.outcome, detail: n.reasons.join(', ') });
@@ -234,10 +246,10 @@ export function buildPublicationPlan(human: HumanDecisionsFile, scope: Eligibili
   }
   if (new Set(instances.map((x) => x.instance.lineageHash)).size !== instances.length) preflight.push('INSTANCE_LINEAGE_DIGESTS_NOT_UNIQUE');
 
-  const capacity = capacitySummary(LIBRARY.filter((e) => cores.some((c) => c.core.constructFamilyId === e.core.constructFamilyId)).flatMap((e) => envelopeCapacity(e)));
-  const inputsHash = sha256OfCanonicalJson({ policy: HUMAN50_POLICY_HASH, per: PUBLICATION_PER_CELL, batch: PUBLICATION_BATCH_ID, governance: [...governance.cores, ...governance.adapters, ...governance.envelopes, ...governance.blueprints].map((d) => [d.objectId, d.objectVersion, d.contentHash, d.state]) });
+  const capacity = capacitySummary(library.filter((e) => cores.some((c) => c.core.constructFamilyId === e.core.constructFamilyId)).flatMap((e) => envelopeCapacity(e)));
+  const inputsHash = sha256OfCanonicalJson({ policy: HUMAN50_POLICY_HASH, per: PUBLICATION_PER_CELL, batch: batchId, governance: [...governance.cores, ...governance.adapters, ...governance.envelopes, ...governance.blueprints].map((d) => [d.objectId, d.objectVersion, d.contentHash, d.state]) });
   const body = {
-    v: 1 as const, batchId: PUBLICATION_BATCH_ID, scope,
+    v: 1 as const, batchId, scope,
     policy: { policyHash: HUMAN50_POLICY_HASH, policyId: HUMAN50_POLICY_V1.policyId, version: HUMAN50_POLICY_V1.version, mayGrantScopes: [...HUMAN50_POLICY_V1.mayGrantScopes], policy: HUMAN50_POLICY_V1 },
     inputsHash, systems, qualifications, humanDecisions, cores, adapters, renderers, blueprints, applicability,
     cells: cellResults.map((c) => ({ cellId: c.cell, attempted: c.attempted, certified: c.certified.length })),
@@ -256,5 +268,29 @@ export function planCounts(plan: PublicationPlan): Record<string, number> {
     humanCertifiedObjects: objects.filter((o) => o.provenance === 'HUMAN').length, automatedCertifiedObjects: objects.filter((o) => o.provenance === 'AUTOMATED').length,
     cores: plan.cores.length, adapters: plan.adapters.length, renderers: plan.renderers.length, envelopes: plan.renderers.length, blueprints: plan.blueprints.length, blueprintBuckets: plan.blueprints.reduce((n, b) => n + b.buckets.length, 0),
     applicability: plan.applicability.length, batchCells: plan.cells.length, certifiedInstances: plan.instances.length, blocked: plan.blocked.length,
+  };
+}
+
+/**
+ * The plan and its extensions as ONE publication (one transaction): shared objects (systems, decisions, adapters,
+ * blueprints) once, each extension's own objects and instances added, every instance tagged with its batch.
+ */
+export function mergedForPublication(plan: PublicationPlan): PublicationPlan & { batches: { batchId: string; inputsHash: string; cells: PublicationPlan['cells'] }[] } {
+  const all = [plan, ...(plan.extensions ?? [])];
+  const uniq = <T>(xs: T[], key: (x: T) => string): T[] => { const seen = new Set<string>(); return xs.filter((x) => { const k = key(x); if (seen.has(k)) return false; seen.add(k); return true; }); };
+  return {
+    ...plan,
+    systems: uniq(all.flatMap((p) => p.systems), (x) => x),
+    qualifications: uniq(all.flatMap((p) => p.qualifications), (x) => JSON.stringify(x)),
+    humanDecisions: uniq(all.flatMap((p) => p.humanDecisions), (x) => x.decisionId),
+    adapters: uniq(all.flatMap((p) => p.adapters), (x) => `${x.adapter.adapterId}@${x.adapter.version}`),
+    cores: uniq(all.flatMap((p) => p.cores), (x) => `${x.core.constructFamilyId}@${x.core.familyVersion}`),
+    renderers: uniq(all.flatMap((p) => p.renderers), (x) => `${x.rendererVersion}|${x.envelopeHash}`),
+    blueprints: uniq(all.flatMap((p) => p.blueprints), (x) => `${x.blueprint.blueprintId}@${x.blueprint.classificationVersion}`),
+    applicability: uniq(all.flatMap((p) => p.applicability), (x) => `${x.coreId}@${x.coreVersion}|${x.record.componentId}`),
+    instances: all.flatMap((p) => p.instances.map((i) => ({ ...i, batchId: p.batchId }))),
+    blocked: all.flatMap((p) => p.blocked),
+    preflight: all.flatMap((p) => p.preflight),
+    batches: all.map((p) => ({ batchId: p.batchId, inputsHash: p.inputsHash, cells: p.cells })),
   };
 }

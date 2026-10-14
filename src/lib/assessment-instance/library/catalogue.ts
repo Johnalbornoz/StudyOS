@@ -28,6 +28,7 @@ import { QUADRATIC_SOLVE_STRATEGY } from '../strategy-quadratic-solve';
 import { DATA_SET_MEAN, LINE_SLOPE, PROPORTION_MISSING_VALUE, QUADRATIC_SOLVE, RIGHT_TRIANGLE, SINGLE_DRAW } from './constructs';
 import { LINEAR_EQUATION, LINEAR_SYSTEM, PERCENT, RECTANGLE } from './constructs-arithmetic-algebra-geometry';
 import { parametricStrategy, type ParametricConstruct, type PlanningBand } from './parametric';
+import { CF_QUADRATIC_MINIMUM_FIRST_DELIVERY } from './cf-ib-aahl-01';
 
 export const LIBRARY_VERSION = 'qf52-library-1' as const;
 const NEW_CORE_VERSION = '1.0.0-rc.1' as const;
@@ -232,7 +233,7 @@ export const LIBRARY_BLUEPRINT_IB: LibraryBlueprint = {
 export const LIBRARY_BLUEPRINTS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_PAA, LIBRARY_BLUEPRINT_IB];
 
 // ----------------------------------------------------------------------------------------------------- entries
-export interface LibraryTarget { adapterId: string; language: string; responseFormat: string }
+export interface LibraryTarget { adapterId: string; language: string; responseFormat: string; /** The command term the construct's wording uses, from the adapter's vocabulary. Absent = the policy's choice. */ commandTerm?: string }
 export interface LibraryEntry {
   core: ConstructCoreRecord;
   envelope: RendererEnvelope;
@@ -262,9 +263,16 @@ export const LIBRARY: readonly LibraryEntry[] = [
   entry(CORE_SYSTEM, ENVELOPE_SYSTEM, LINEAR_SYSTEM, parametricStrategy(LINEAR_SYSTEM), [PAA_TARGET], ['MULTI_STAGE_DEPENDENCY'], 'QF52_NEW'),
   entry(CORE_RECTANGLE, ENVELOPE_RECTANGLE, RECTANGLE, parametricStrategy(RECTANGLE), [PAA_TARGET], ['MULTI_STAGE_DEPENDENCY'], 'QF52_NEW'),
 ];
+/**
+ * Entries adopted AFTER the QF V5.2 run, published by the Exam Bank loader in a batch of their own. `LIBRARY` stays the
+ * archived V5.2 library exactly (its run and its artefacts are frozen); publication reads `PUBLICATION_LIBRARY`.
+ *   CF-IB-AAHL-01 first delivery: ONE certified item of the quadratic-minimum construct (IB SHORT_RESPONSE, answer marks).
+ */
+export const LIBRARY_EXTENSIONS: readonly LibraryEntry[] = [CF_QUADRATIC_MINIMUM_FIRST_DELIVERY];
+export const PUBLICATION_LIBRARY: readonly LibraryEntry[] = [...LIBRARY, ...LIBRARY_EXTENSIONS];
 export const libraryEntryOf = (constructFamilyId: string): LibraryEntry | null => LIBRARY.find((e) => e.core.constructFamilyId === constructFamilyId) ?? null;
 
-const renderer = createAssessmentInstanceRenderer(LIBRARY.map((e) => e.strategy));
+const renderer = createAssessmentInstanceRenderer(PUBLICATION_LIBRARY.map((e) => e.strategy));
 export const libraryApplicability = (core: ConstructCoreRecord, adapterId: string): CoreApplicabilityRecord => deriveCoreApplicability(core, { systemProfileId: adapterId.split('.')[0], componentId: adapterId }, LIBRARY_APPLICABILITY);
 export const libraryBucketOf = (core: ConstructCoreRecord, adapterId: string): { bucket: BlueprintBucketRef; blueprint: LibraryBlueprint } | null => {
   for (const blueprint of LIBRARY_BLUEPRINTS) { const hit = blueprint.adapterId === adapterId ? blueprint.buckets.find((b) => b.bucket.primaryConceptStableIds.includes(core.primaryConceptStableId)) : undefined; if (hit) return { bucket: hit.bucket, blueprint }; }
@@ -287,7 +295,7 @@ export function renderLibraryInstance(e: LibraryEntry, target: LibraryTarget, pl
   const applicability = libraryApplicability(e.core, target.adapterId);
   const spec = composeAssessmentSpecification({
     use: 'DEV_TEST', registry, core: e.core, adapter, system: pair.system, component: pair.component, coreApplicability: [applicability], applicabilityRegister: LIBRARY_APPLICABILITY, bucket: placed.bucket, disciplinePolicy: MATHEMATICS_ADAPTATION_POLICY,
-    request: { purpose: 'PRACTICE', difficultyBand: planningBand, language: target.language, contentUseClass: 'DEV_TEST_CONTENT', responseFormat: target.responseFormat },
+    request: { purpose: 'PRACTICE', difficultyBand: planningBand, language: target.language, contentUseClass: 'DEV_TEST_CONTENT', responseFormat: target.responseFormat, ...(target.commandTerm ? { commandTerm: target.commandTerm } : {}) },
   });
   if (!spec.ok) return { ok: false, code: spec.code, detail: spec.detail };
   const r = renderer.render({ use: 'DEV_TEST', registry, core: e.core, adapter, applicability: spec.applicability, specification: spec.specification, bucket: spec.bucket, seed });
