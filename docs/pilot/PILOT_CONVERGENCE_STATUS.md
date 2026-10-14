@@ -23,6 +23,30 @@ logic, Stage or Production. Student history is preserved.
   behaviour, where exam evidence goes through the same mastery update as Learning (`updateMastery` /
   `completeAssessmentEvidence`). Open points: audit of Learning readers that list learner concepts outside the
   plan; a separate Exam Readiness store or flag; likely a migration for a new concept-source type.
+  *Update 2026-10-14:* the target model (`docs/audits/exam-bank/EXAM_READINESS_SEPARATION_AUDIT.md` §4–5) keys exam
+  evidence by canonical concept and exam target, so **no new concept-source type is needed**. The plan is S1–S6,
+  with S3 (readers) before S4 (stop exam evidence from calling `updateMastery`). Not started.
+
+## Exam Bank hardening (generic, 2026-10-14) — PAA baseline unchanged
+
+Generic infrastructure built **outside** the PAA runtime. Nothing imports it from a PAA path. No deploy, no DB
+mutation, no migration.
+
+- Module `src/lib/exam-bank/readiness/`, pure:
+  - `bank-readiness.ts`: Readiness Engine, depth and repeatability metrics;
+  - `certification-state.ts`: certified ≠ deliverable;
+  - `exposure.ts`: exposure-aware form selection;
+  - `difficulty.ts`: governed calibration;
+  - `evidence-boundary.ts`: target model separating Knowledge State from Exam Readiness.
+- Tests: `tests/unit/exam-bank-readiness-engine.test.ts`, `tests/unit/exam-readiness-separation.test.ts`.
+- Docs in `docs/audits/exam-bank/`:
+  - `EXAM_READINESS_SEPARATION_AUDIT.md`;
+  - `EXAM_BANK_READINESS_ENGINE.md` (16 readiness disagreements; adoption plan R1–R4);
+  - `EXAM_BANK_LINEAGE_MODEL.md`;
+  - `SPEED_STRATEGY_PERSISTENCE_DESIGN.md`;
+  - `IB_CONSTRUCTED_RESPONSE_GAP.md`.
+- The readiness engine is not yet the single authority. Live consumers are rewired only after the freeze is lifted
+  (step R3 of the adoption plan).
 
 # Pilot Convergence Status — PAA P0
 
