@@ -148,6 +148,8 @@ export function assembleForm(params: {
   const usedTemplates = new Set<string>();
   const slots: FormSlot[] = [];
   let prevStimulus: string | null = null;
+  // stimuli this form already holds: a further item of one of them costs the Student no new reading
+  const usedStimuli = new Set<string>();
 
   for (const pos of [...params.positions].sort((a, b) => a.index - b.index)) {
     const candidates = params.pool.filter(
@@ -175,6 +177,7 @@ export function assembleForm(params: {
       if (u.globalExposure) c += 0.5 * Math.min(1, (u.globalExposure.get(it.id) ?? 0) / ceiling);
       if (u.peerExposure) c += 0.75 * Math.min(1, (u.peerExposure.get(it.id) ?? 0) / 3);
       if (prevStimulus && it.stimulusKey === prevStimulus) c -= 3;
+      else if (it.stimulusKey && usedStimuli.has(it.stimulusKey)) c -= 1.5;
       return c;
     };
     candidates.sort((a, b) => cost(a) - cost(b) || rank(params.seed, a.id).localeCompare(rank(params.seed, b.id)));
@@ -182,6 +185,7 @@ export function assembleForm(params: {
     usedIds.add(pick.id);
     if (pick.templateFingerprint) usedTemplates.add(pick.templateFingerprint);
     prevStimulus = pick.stimulusKey;
+    if (pick.stimulusKey) usedStimuli.add(pick.stimulusKey);
     slots.push({ index: pos.index, blueprintObjectiveTargetId: pos.blueprintObjectiveTargetId, assessmentComponentId: pos.assessmentComponentId, approvedItemId: pick.id, marks: pick.marks, difficultyIndex: pick.difficultyIndex ?? DEFAULT_INDEX, contentOrigin: pick.contentOrigin });
   }
 

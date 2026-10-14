@@ -11,10 +11,10 @@ import { examAvailabilityForVersion } from '@/lib/assessment-experience/assessme
  * authority: an available attempt links to the existing exam entry, never to a start of its own.
  * With the flag off this renders nothing.
  */
-export async function CanonicalExamAvailability({ examVersionId, t }: { examVersionId: string | null; t: ReturnType<typeof getMessages> }) {
+export async function CanonicalExamAvailability({ examVersionId, t, catalogNode = null }: { examVersionId: string | null; t: ReturnType<typeof getMessages>; /** The catalogue node of this preparation's exam: the entry opens the exam itself, not the generic chooser. */ catalogNode?: string | null }) {
   if (!isSnapshotExecutionEnabled()) return null;
   const availability = await examAvailabilityForVersion(examVersionId);
-  const entry = '/dashboard/exams';
+  const entry = catalogNode && /^[a-z0-9][a-z0-9._-]{0,119}$/.test(catalogNode) ? `/dashboard/exams?node=${encodeURIComponent(catalogNode)}` : '/dashboard/exams';
   return (
     <div data-testid="canonical-exam-availability" data-evaluated={availability.evaluated} data-eligible={availability.eligibleQuestions}>
       <ExamAttemptOptions options={availability.options} t={t} hrefs={{ EXAM_PRACTICE: entry, EXAM_CHALLENGE: entry, REDUCED_MOCK: entry, FULL_MOCK: entry }} />

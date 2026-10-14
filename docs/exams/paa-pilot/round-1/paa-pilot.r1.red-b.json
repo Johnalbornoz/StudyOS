@@ -1,0 +1,458 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r1.red-b",
+    "component": "redaccion",
+    "language": "es",
+    "stimulusKind": "SHORT_SOURCE_TEXT",
+    "stimulusBrief": "Párrafo ORIGINAL de 110 a 170 palabras sobre la visita a un observatorio astronómico, con las oraciones NUMERADAS así: (1) ... (2) ... hasta (6) u (8). Debe presentar varios casos particulares de una misma idea y una afirmación general que pueda concretarse con un ejemplo.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.red.generalizacion",
+        "conceptStableId": "write.generalization",
+        "difficulty": 3,
+        "focus": "qué oración general recoge mejor los casos particulares de varias oraciones numeradas"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.red.integracion",
+        "conceptStableId": "write.global-synthesis",
+        "difficulty": 3,
+        "focus": "qué título u oración resume mejor el párrafo completo"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.red.particularizacion",
+        "conceptStableId": "write.indirect-expression",
+        "difficulty": 3,
+        "focus": "qué ejemplo o detalle concreto ilustra mejor una afirmación general de una oración numerada"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Visita al observatorio",
+      "text": "(1) El sábado, un grupo de estudiantes visitó el Observatorio Cerro Claro para conocer el trabajo nocturno de sus investigadores. (2) Antes de abrir la cúpula, la astrónoma explicó que observar el cielo exige preparar instrumentos y registrar resultados con cuidado. (3) Una estudiante ajustó el enfoque del telescopio principal. (4) Otro visitante comparó una carta celeste con la posición de una estrella brillante. (5) Una técnica anotó los cambios de temperatura en una libreta. (6) Después, el grupo examinó una imagen de Júpiter y distinguió dos de sus lunas. (7) La guía respondió preguntas sobre las constelaciones visibles desde el cerro. (8) La visita mostró que la astronomía combina paciencia, colaboración y atención a los detalles.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué afirmación general recoge mejor los casos particulares presentados en las oraciones (3), (4) y (5)?",
+        "options": [
+          {
+            "text": "La observación astronómica reúne tareas diferentes que se complementan.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Las acciones de ajustar, comparar y anotar son tareas distintas que contribuyen al mismo trabajo de observación."
+          },
+          {
+            "text": "La observación astronómica depende de mirar planetas brillantes.",
+            "isKey": false,
+            "misconception": "REDUCE_GENERALIZATION_TO_ONE_DETAIL",
+            "rationale": "Resulta atractiva por la imagen de Júpiter, pero las oraciones indicadas tratan de preparación y registro, no de planetas."
+          },
+          {
+            "text": "La observación astronómica ocurre después de hacer preguntas.",
+            "isKey": false,
+            "misconception": "CONFUSES_SEQUENCE_WITH_GENERALIZATION",
+            "rationale": "Las preguntas aparecen en otra oración y no resumen las tareas particulares señaladas."
+          },
+          {
+            "text": "La observación astronómica requiere visitar cerros elevados.",
+            "isKey": false,
+            "misconception": "CONFUSES_SETTING_WITH_MAIN_IDEA",
+            "rationale": "El cerro es el lugar de la visita, pero no explica las acciones descritas en las oraciones (3), (4) y (5)."
+          }
+        ],
+        "evidenceQuote": "Una estudiante ajustó el enfoque del telescopio principal. (4) Otro visitante comparó una carta celeste con la posición de una estrella brillante."
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Cuál título resume mejor el párrafo completo?",
+        "options": [
+          {
+            "text": "Una visita para descubrir el trabajo astronómico",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El título abarca la visita, las tareas realizadas y el aprendizaje sobre cómo se desarrolla la astronomía."
+          },
+          {
+            "text": "El registro de temperatura durante una observación",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_MINOR_DETAIL",
+            "rationale": "La temperatura es un detalle específico de la visita, no el tema completo del párrafo."
+          },
+          {
+            "text": "Las lunas visibles alrededor de Júpiter",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_SINGLE_EVENT",
+            "rationale": "La observación de Júpiter es una actividad puntual dentro de una experiencia más amplia."
+          },
+          {
+            "text": "Las preguntas sobre constelaciones del cerro",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_CLOSING_DETAIL",
+            "rationale": "Las preguntas de la guía aparecen al final, pero no incluyen las demás actividades del grupo."
+          }
+        ],
+        "evidenceQuote": "La visita mostró que la astronomía combina paciencia, colaboración y atención a los detalles."
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Cuál detalle de la visita ilustra mejor la afirmación de la oración (2) sobre preparar instrumentos para observar el cielo?",
+        "options": [
+          {
+            "text": "Una estudiante ajustó el enfoque del telescopio principal.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Ajustar el enfoque prepara directamente un instrumento para realizar la observación."
+          },
+          {
+            "text": "Otro visitante comparó una carta celeste con una estrella.",
+            "isKey": false,
+            "misconception": "CONFUSES_SUPPORT_ACTIVITY_WITH_INSTRUMENT_PREPARATION",
+            "rationale": "Comparar una carta ayuda a identificar objetos celestes, pero no prepara un instrumento."
+          },
+          {
+            "text": "Una técnica anotó cambios de temperatura en una libreta.",
+            "isKey": false,
+            "misconception": "CONFUSES_RECORDING_WITH_INSTRUMENT_PREPARATION",
+            "rationale": "Anotar información corresponde al registro de resultados, no a la preparación del telescopio."
+          },
+          {
+            "text": "La guía respondió preguntas sobre constelaciones visibles.",
+            "isKey": false,
+            "misconception": "CONFUSES_EXPLANATION_WITH_INSTRUMENT_PREPARATION",
+            "rationale": "Responder preguntas es una actividad educativa, pero no acondiciona un instrumento de observación."
+          }
+        ],
+        "evidenceQuote": "Una estudiante ajustó el enfoque del telescopio principal."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "79fd76a0-65ee-4d3e-964f-b1adc6d9d52f",
+    "generatedAt": "2026-10-14T01:27:11.230Z",
+    "unitId": "paa-pilot.r1.red-b"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "4c991188-810f-4e78-bb90-cc1f72f7d343",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [
+              "C"
+            ],
+            "ambiguous": true,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "297dc164-e570-4563-b001-af072b435cd3",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.red-generalizacion.6955962f82a5",
+        "slot": "s1",
+        "objectiveCode": "paa.red.generalizacion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.generalizacion / write.generalization"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.dfcf3e77d341@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-integracion.d26bae658a54",
+        "slot": "s2",
+        "objectiveCode": "paa.red.integracion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.integracion / write.global-synthesis"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.dfcf3e77d341@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-particularizacion.34fb97e972c8",
+        "slot": "s3",
+        "objectiveCode": "paa.red.particularizacion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "SINGLE_DEFENSIBLE_ANSWER"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.particularizacion / write.indirect-expression"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.dfcf3e77d341@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": false,
+            "detail": "A:ambiguous other-defensible | B:"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

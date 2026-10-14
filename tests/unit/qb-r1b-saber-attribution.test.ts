@@ -75,7 +75,7 @@ describe('QB-R1B attribution writer -- one governed path', () => {
     //   - the Exam Bank publication (Track B): a CORE_DERIVED version copies the ONE primary concept its certified
     //     instance was certified with, resolved through the certified concept catalogue, recorded by the technical
     //     identity before the version is in use. It infers nothing either: no objective mapping is read.
-    expect(walk('src').filter((f) => /(INSERT INTO|DELETE FROM|UPDATE) question_bank_item_concepts/.test(read(f))).sort()).toEqual(['src/lib/exam-bank/publication.service.ts', 'src/lib/exam-core/question-bank/item-attribution.service.ts']);
+    expect(walk('src').filter((f) => /(INSERT INTO|DELETE FROM|UPDATE) question_bank_item_concepts/.test(read(f))).sort()).toEqual(['src/lib/exam-bank/pilot/paa-pilot-publication.service.ts', 'src/lib/exam-bank/publication.service.ts', 'src/lib/exam-core/question-bank/item-attribution.service.ts']); // + PAA pilot publication: the PRIMARY concept the item was generated and certified FOR (its blueprint slot), never inferred
     const publication = read('src/lib/exam-bank/publication.service.ts');
     expect(publication).not.toMatch(/objective_concept_mappings/);
     expect(publication).toMatch(/paaCertifiedConceptByStableId\(stableId\)/);

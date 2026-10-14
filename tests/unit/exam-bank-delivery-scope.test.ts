@@ -27,7 +27,7 @@ describe('delivery scope', () => {
     expect(pilot).toContain('student_eligible_item_instances_pilot');
     expect(production).toContain('student_eligible_item_instances_production');
     for (const sql of [pilot, production]) {
-      expect(sql).toMatch(/NOT EXISTS \(SELECT 1 FROM public\.question_bank_items cs_qi WHERE cs_qi\.id = ai\.bank_item_id AND cs_qi\.lineage_class = 'CORE_DERIVED'\)/);
+      expect(sql).toMatch(/NOT EXISTS \(SELECT 1 FROM public\.question_bank_items cs_qi WHERE cs_qi\.id = ai\.bank_item_id AND cs_qi\.lineage_class IN \('CORE_DERIVED', 'PILOT_CERTIFIED'\)\)/);
       // the copy must be the item's CURRENT version, of an item that is not retired, of an instance the view still returns
       expect(sql).toMatch(/cs_el\.id = cs_qi\.item_instance_id/);
       expect(sql).toMatch(/cs_qi\.retired_at IS NULL AND cs_qi\.current_version_id = ai\.id/);

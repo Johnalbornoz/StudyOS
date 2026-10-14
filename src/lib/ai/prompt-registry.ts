@@ -316,6 +316,22 @@ export const PROMPT_REGISTRY = {
     description:
       'Question Bank Factory REPAIR: one bounded attempt to fix the exact automated-validation findings of a candidate; the result is a NEW item version that goes through the full validation pipeline again.',
   }),
+  'exam_bank.paa_pilot.generate_unit': definePrompt({
+    id: 'exam_bank.paa_pilot.generate_unit',
+    version: 'v1',
+    capability: 'QUESTION_GENERATION',
+    service: 'src/lib/exam-bank/pilot/paa-pilot-ai.ts:generateUnit',
+    description:
+      'PAA pilot Exam Bank CANDIDATE PRODUCER (offline, pre-publication only, never on a Student request): writes one ORIGINAL StudyUs unit -- an optional stimulus and the selected-response items of named, uncovered blueprint slots. Its output is a candidate: the Exam Bank pipeline validates and certifies it; nothing it writes reaches a learner directly.',
+  }),
+  'exam_bank.paa_pilot.verify_unit': definePrompt({
+    id: 'exam_bank.paa_pilot.verify_unit',
+    version: 'v1',
+    capability: 'CLASSIFICATION',
+    service: 'src/lib/exam-bank/pilot/paa-pilot-ai.ts:solveUnit',
+    description:
+      'PAA pilot INDEPENDENT SOLVER: a separate call that answers the items of a candidate unit WITHOUT seeing the key, from its own shuffle of the options, and reports other defensible options, ambiguity, need for outside knowledge, skill fit, language problems and whether the stimulus reads as reproduced. Judged deterministically by the certification policy.',
+  }),
 } as const satisfies Record<string, PromptDefinition>;
 
 export type PromptId = keyof typeof PROMPT_REGISTRY;

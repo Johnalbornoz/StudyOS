@@ -532,25 +532,28 @@ async function createOrResumeDiagnostic(profile: StudentExamProfile, objective: 
   }
   const rows = (
     await db.query(
-      `SELECT n.exam_version_id, n.metadata, d.id AS definition_id FROM assessment_structure_nodes n
+      `SELECT n.node_key, n.selectable, n.assessment_component_id, n.exam_version_id, n.metadata, d.id AS definition_id FROM assessment_structure_nodes n
          JOIN exam_definitions d ON d.id = n.exam_definition_id AND d.status = 'ACTIVE'
         WHERE n.status = 'ACTIVE' AND ${selectableSql('n', 'STUDENT')} AND n.exam_version_id IS NOT NULL AND (n.node_key = $1 OR n.node_key LIKE $2)`,
       [objective.nodeKey, `${objective.nodeKey}.%`]
     )
   ).rows as any[];
-  // Practice-ready components per version, from the persisted readiness.
-  const byVersion = new Map<string, { definitionId: string; sections: Set<string> }>();
-  for (const r of rows) {
-    for (const c of (readinessFor({ ...r, selectable: true }, 'STUDENT').readiness.components ?? []) as Array<{ sectionKey: string; state: ReadinessState }>) {
-      if (!['PRACTICE_READY', 'REDUCED_MOCK_READY', 'FULL_MOCK_READY'].includes(c.state)) continue;
-      if (!byVersion.has(r.exam_version_id)) byVersion.set(r.exam_version_id, { definitionId: r.definition_id, sections: new Set() });
-      byVersion.get(r.exam_version_id)!.sections.add(c.sectionKey);
-    }
+  // Practice-ready components per version. The SAME readiness the capability was offered on: the persisted view with
+  // the bank-derived overlay (ENFORCE) -- the diagnostic must never read an older readiness than the button that offers it.
+  const READY = ['PRACTICE_READY', 'REDUCED_MOCK_READY', 'FULL_MOCK_READY'];
+  const overlaid = (await applyBankReadinessOverlay(rows.map((r) => ({ ...r, selectable: true })))) as any[];
+  const byVersion = new Map<string, { definitionId: string; sections: Set<string>; componentIds: Set<string> }>();
+  const slotOf = (r: any) => { if (!byVersion.has(r.exam_version_id)) byVersion.set(r.exam_version_id, { definitionId: r.definition_id, sections: new Set(), componentIds: new Set() }); return byVersion.get(r.exam_version_id)!; };
+  for (const r of overlaid) {
+    const readiness = (r.metadata?.readiness ?? {}) as { state?: ReadinessState; components?: Array<{ sectionKey: string; state: ReadinessState }> };
+    for (const c of readiness.components ?? []) if (READY.includes(c.state)) slotOf(r).sections.add(c.sectionKey);
+    // a node bound to ONE component whose own (bank-derived) state is practice-ready names that component directly
+    if (r.assessment_component_id && readiness.state && READY.includes(readiness.state)) slotOf(r).componentIds.add(r.assessment_component_id as string);
   }
-  const best = [...byVersion.entries()].sort((a, b) => b[1].sections.size - a[1].sections.size)[0];
+  const best = [...byVersion.entries()].sort((a, b) => (b[1].sections.size + b[1].componentIds.size) - (a[1].sections.size + a[1].componentIds.size))[0];
   if (!best) throw new PreparationError('CAPABILITY_NOT_AVAILABLE', 'DIAGNOSTIC');
-  const [versionId, { definitionId, sections }] = best;
-  const comps = (await db.query(`SELECT id FROM assessment_components WHERE exam_version_id = $1 AND section_key = ANY($2::text[]) AND simulation_capable = true ORDER BY sequence_order NULLS LAST`, [versionId, [...sections]])).rows.map((x: any) => x.id as string);
+  const [versionId, { definitionId, sections, componentIds }] = best;
+  const comps = (await db.query(`SELECT id FROM assessment_components WHERE exam_version_id = $1 AND (section_key = ANY($2::text[]) OR id = ANY($3::uuid[])) AND simulation_capable = true ORDER BY sequence_order NULLS LAST`, [versionId, [...sections], [...componentIds]])).rows.map((x: any) => x.id as string);
   if (!comps.length) throw new PreparationError('CAPABILITY_NOT_AVAILABLE', 'DIAGNOSTIC');
   // The preparation now names its exam (it may have been chosen as catalogue only before the exam was published).
   await db.query(`UPDATE student_exam_profiles SET exam_definition_id = COALESCE(exam_definition_id, $2), exam_version_id = COALESCE(exam_version_id, $3) WHERE id = $1`, [profile.id, definitionId, versionId]);

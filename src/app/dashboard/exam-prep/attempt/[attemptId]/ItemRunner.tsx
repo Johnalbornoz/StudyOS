@@ -145,7 +145,7 @@ interface SpeedReviewView { correct: boolean; assisted: boolean; targetSeconds: 
 function StrategyBody({ s, l, review }: { s: CoachStrategy; l: Record<string, string>; review: boolean }) {
   return (
     <div className="xr-coach-strategy">
-      <p className="xr-coach-strategy-title"><strong>{s.noReliableShortcut ? l['exv2.coach.noShortcut'] : l['exv2.coach.fast']}:</strong> {s.title}</p>
+      <p className="xr-coach-strategy-title"><strong>{s.noReliableShortcut ? l['exv2.coach.direct'] : l['exv2.coach.fast']}:</strong> {s.title}</p>
       <ol className="xr-coach-steps">{s.fastPath.map((x, i) => <li key={i}>{x}</li>)}</ol>
       {s.mentalMathOpportunity && <p><strong>{l['exv2.coach.mental']}:</strong> {s.mentalMathOpportunity}</p>}
       <p><strong>{l['exv2.coach.why']}:</strong> {s.whyFastPathWorks}</p>
@@ -512,6 +512,11 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
         return;
       }
       if (!res.ok) {
+        // the attempt was finished elsewhere (another tab, a hand-in): show its real state instead of an error
+        if (body?.error === 'ATTEMPT_NOT_ACTIVE') {
+          router.refresh();
+          return;
+        }
         setError(res.status === 422 ? labels.invalidAnswer : labels.submitError);
         if (body?.error === 'SECTION_CLOSED') await loadItem();
         else setPhase('ready');

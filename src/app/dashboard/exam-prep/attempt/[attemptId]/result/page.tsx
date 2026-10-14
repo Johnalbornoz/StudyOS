@@ -320,7 +320,7 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
                               {r.speed.verdict && tr[`exv2.coach.verdict.${r.speed.verdict}`] ? ` · ${tr[`exv2.coach.verdict.${r.speed.verdict}`]}` : ''}
                             </p>
                             <p className="ui-hint">{tr[`exv2.coach.targetNote.${r.speed.targetProvenance}`]}</p>
-                            <p><strong>{r.speed.strategy.noReliableShortcut ? tr['exv2.coach.noShortcut'] : tr['exv2.coach.fast']}:</strong> {r.speed.strategy.title}</p>
+                            <p><strong>{r.speed.strategy.noReliableShortcut ? tr['exv2.coach.direct'] : tr['exv2.coach.fast']}:</strong> {r.speed.strategy.title}</p>
                             <ol className="xr-coach-steps">{r.speed.strategy.fastPath.map((x, k) => <li key={k}>{x}</li>)}</ol>
                             <p><strong>{tr['exv2.coach.why']}:</strong> {r.speed.strategy.whyFastPathWorks}</p>
                             <p><strong>{tr['exv2.coach.trap']}:</strong> {r.speed.strategy.commonTimeTrap}</p>

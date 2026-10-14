@@ -11,6 +11,9 @@
  * other value, is PRODUCTION: the narrower scope. A pilot-certified item is therefore never delivered by a
  * deployment that was not explicitly told it is a pilot.
  *
+ * A PILOT_CERTIFIED bank version (generated, automated pilot certification -- migration 20261124_1000) is deliverable
+ * only in the PILOT_PREVIEW scope and only through `exam_bank_pilot_deliverable_versions`.
+ *
  * A LEGACY bank version (not core-derived) is untouched by this rule: `certifiedSupplySql` is TRUE for it.
  * This module reads no Student data and never asks a provider for anything.
  */
@@ -26,9 +29,13 @@ const VIEW: Readonly<Record<ExamBankDeliveryScope, string>> = { PILOT_PREVIEW: '
  * eligible in the deployment's scope now and its bank item is not retired. Constants only: no input reaches it.
  */
 export function certifiedSupplySql(alias = 'ai', scope: ExamBankDeliveryScope = examBankDeliveryScope()): string {
-  return `(NOT EXISTS (SELECT 1 FROM public.question_bank_items cs_qi WHERE cs_qi.id = ${alias}.bank_item_id AND cs_qi.lineage_class = 'CORE_DERIVED')`
+  const governed = `cs_qi.lineage_class IN ('CORE_DERIVED', 'PILOT_CERTIFIED')`;
+  // PILOT_CERTIFIED (generated, automatically certified for the pilot): deliverable ONLY by a PILOT_PREVIEW deployment,
+  // and only while its certification of exactly this content stands. In any other scope it is never deliverable.
+  const pilot = scope === 'PILOT_PREVIEW' ? ` OR EXISTS (SELECT 1 FROM public.exam_bank_pilot_deliverable_versions cs_pv WHERE cs_pv.approved_item_id = ${alias}.id)` : '';
+  return `(NOT EXISTS (SELECT 1 FROM public.question_bank_items cs_qi WHERE cs_qi.id = ${alias}.bank_item_id AND ${governed})`
     + ` OR EXISTS (SELECT 1 FROM public.question_bank_items cs_qi JOIN ${VIEW[scope]} cs_el ON cs_el.id = cs_qi.item_instance_id`
-    + ` WHERE cs_qi.id = ${alias}.bank_item_id AND cs_qi.lineage_class = 'CORE_DERIVED' AND cs_qi.retired_at IS NULL AND cs_qi.current_version_id = ${alias}.id))`;
+    + ` WHERE cs_qi.id = ${alias}.bank_item_id AND cs_qi.lineage_class = 'CORE_DERIVED' AND cs_qi.retired_at IS NULL AND cs_qi.current_version_id = ${alias}.id)${pilot})`;
 }
 
 /**

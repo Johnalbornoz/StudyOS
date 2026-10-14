@@ -1,0 +1,35 @@
+{
+  "target": "PREVIEW_TRACK_B",
+  "fingerprint": "4c249c68e0627b9f",
+  "mode": "APPLY",
+  "committed": true,
+  "units": 24,
+  "candidates": 84,
+  "certified": 67,
+  "reviewRequired": 17,
+  "stimuliInserted": 2,
+  "stimuliSkipped": 16,
+  "itemsInserted": 11,
+  "itemsSkipped": 56,
+  "byObjective": {
+    "paa.ing.lenguaje": 3,
+    "paa.ing.lectura": 3,
+    "paa.ing.redaccion": 2,
+    "paa.red.generalizacion": 1,
+    "paa.red.integracion": 1,
+    "paa.red.particularizacion": 1
+  },
+  "blocked": [],
+  "verification": {
+    "pilotBankItems": 67,
+    "deliverableVersions": 67,
+    "pilotStimuli": 18,
+    "activeWithoutACertification": 0,
+    "certificationsAttributedToAPerson": 0,
+    "humanReviewsWrittenForPilotItems": 0,
+    "withoutAnEstablishedRight": 0,
+    "withoutTheirPrimaryConcept": 0,
+    "stimulusLinkedItemsWithoutTheirStimulus": 0,
+    "coreDerivedBankItems": 296
+  }
+}

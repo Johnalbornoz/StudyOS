@@ -3,53 +3,16 @@
     "examVersionId": "4babb748-5943-409b-9fd4-0c967bcb503c",
     "scope": "PILOT_PREVIEW",
     "positions": 36,
-    "covered": 12,
+    "covered": 36,
     "readiness": {
       "structure": true,
       "practice": {
-        "ready": false,
-        "reasons": [
-          "Lectura · paa.lect.evidencia: 0/1 (faltan 1)",
-          "Lectura · paa.lect.explicitas: 0/1 (faltan 1)",
-          "Lectura · paa.lect.graficos: 0/1 (faltan 1)",
-          "Lectura · paa.lect.inferencia: 0/1 (faltan 1)",
-          "Lectura · paa.lect.literario: 0/1 (faltan 1)",
-          "Lectura · paa.lect.vocabulario: 0/1 (faltan 1)",
-          "Redacción · paa.red.adicion: 0/1 (faltan 1)",
-          "Redacción · paa.red.cohesion: 0/1 (faltan 1)",
-          "Redacción · paa.red.elision: 0/1 (faltan 1)",
-          "Redacción · paa.red.generalizacion: 0/1 (faltan 1)",
-          "Redacción · paa.red.integracion: 0/1 (faltan 1)",
-          "Redacción · paa.red.particularizacion: 0/1 (faltan 1)",
-          "Inglés como lengua extranjera (ESLAT) · paa.ing.lectura: 0/1 (faltan 1)",
-          "Inglés como lengua extranjera (ESLAT) · paa.ing.lenguaje: 0/1 (faltan 1)",
-          "Inglés como lengua extranjera (ESLAT) · paa.ing.redaccion: 0/1 (faltan 1)"
-        ]
+        "ready": true,
+        "reasons": []
       },
       "reducedMock": {
-        "ready": false,
-        "reasons": [
-          "Lectura · paa.lect.evidencia: 0/1 (faltan 1)",
-          "Lectura · paa.lect.explicitas: 0/2 (faltan 2)",
-          "Lectura · paa.lect.graficos: 0/1 (faltan 1)",
-          "Lectura · paa.lect.inferencia: 0/2 (faltan 2)",
-          "Lectura · paa.lect.literario: 0/2 (faltan 2)",
-          "Lectura · paa.lect.vocabulario: 0/2 (faltan 2)",
-          "Redacción · paa.red.adicion: 0/1 (faltan 1)",
-          "Redacción · paa.red.cohesion: 0/1 (faltan 1)",
-          "Redacción · paa.red.elision: 0/1 (faltan 1)",
-          "Redacción · paa.red.generalizacion: 0/1 (faltan 1)",
-          "Redacción · paa.red.integracion: 0/1 (faltan 1)",
-          "Redacción · paa.red.particularizacion: 0/1 (faltan 1)",
-          "Matemáticas · paa.mat.algebra: 0/3 (faltan 3)",
-          "Matemáticas · paa.mat.aritmetica: 0/3 (faltan 3)",
-          "Matemáticas · paa.mat.datos: 0/2 (faltan 2)",
-          "Matemáticas · paa.mat.geometria: 0/3 (faltan 3)",
-          "Matemáticas · paa.mat.probabilidad: 0/1 (faltan 1)",
-          "Inglés como lengua extranjera (ESLAT) · paa.ing.lectura: 0/3 (faltan 3)",
-          "Inglés como lengua extranjera (ESLAT) · paa.ing.lenguaje: 0/3 (faltan 3)",
-          "Inglés como lengua extranjera (ESLAT) · paa.ing.redaccion: 0/2 (faltan 2)"
-        ]
+        "ready": true,
+        "reasons": []
       },
       "fullMock": {
         "ready": false,
@@ -105,7 +68,7 @@
         ]
       },
       "formCapacity": {
-        "reduced": 0,
+        "reduced": 2,
         "full": 0
       }
     },
@@ -114,93 +77,31 @@
         "sectionKey": "lectura",
         "officialItemCount": 45,
         "reducedPositions": 10,
-        "positionsCovered": 0,
+        "positionsCovered": 10,
         "cells": 6,
-        "cellsCovered": 0,
-        "eligibleItems": 0,
-        "practice": false,
-        "reducedAssembles": false,
+        "cellsCovered": 6,
+        "eligibleItems": 32,
+        "practice": true,
+        "reducedAssembles": true,
         "fullAssembles": false,
-        "formCapacityProbed": 0,
-        "disjointForms": 0,
-        "missing": [
-          {
-            "objective": "paa.lect.evidencia",
-            "positions": 1,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.lect.explicitas",
-            "positions": 2,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.lect.graficos",
-            "positions": 1,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.lect.inferencia",
-            "positions": 2,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.lect.literario",
-            "positions": 2,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.lect.vocabulario",
-            "positions": 2,
-            "eligible": 0
-          }
-        ]
+        "formCapacityProbed": 4,
+        "disjointForms": 2,
+        "missing": []
       },
       {
         "sectionKey": "redaccion",
         "officialItemCount": 25,
         "reducedPositions": 6,
-        "positionsCovered": 0,
+        "positionsCovered": 6,
         "cells": 6,
-        "cellsCovered": 0,
-        "eligibleItems": 0,
-        "practice": false,
-        "reducedAssembles": false,
+        "cellsCovered": 6,
+        "eligibleItems": 15,
+        "practice": true,
+        "reducedAssembles": true,
         "fullAssembles": false,
-        "formCapacityProbed": 0,
-        "disjointForms": 0,
-        "missing": [
-          {
-            "objective": "paa.red.adicion",
-            "positions": 1,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.red.cohesion",
-            "positions": 1,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.red.elision",
-            "positions": 1,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.red.generalizacion",
-            "positions": 1,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.red.integracion",
-            "positions": 1,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.red.particularizacion",
-            "positions": 1,
-            "eligible": 0
-          }
-        ]
+        "formCapacityProbed": 2,
+        "disjointForms": 2,
+        "missing": []
       },
       {
         "sectionKey": "matematicas",
@@ -221,32 +122,16 @@
         "sectionKey": "ingles",
         "officialItemCount": 50,
         "reducedPositions": 8,
-        "positionsCovered": 0,
+        "positionsCovered": 8,
         "cells": 3,
-        "cellsCovered": 0,
-        "eligibleItems": 0,
-        "practice": false,
-        "reducedAssembles": false,
+        "cellsCovered": 3,
+        "eligibleItems": 20,
+        "practice": true,
+        "reducedAssembles": true,
         "fullAssembles": false,
-        "formCapacityProbed": 0,
-        "disjointForms": 0,
-        "missing": [
-          {
-            "objective": "paa.ing.lectura",
-            "positions": 3,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.ing.lenguaje",
-            "positions": 3,
-            "eligible": 0
-          },
-          {
-            "objective": "paa.ing.redaccion",
-            "positions": 2,
-            "eligible": 0
-          }
-        ]
+        "formCapacityProbed": 2,
+        "disjointForms": 2,
+        "missing": []
       }
     ]
   },

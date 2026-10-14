@@ -1,0 +1,452 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r2.ing-writ",
+    "component": "ingles",
+    "language": "en",
+    "stimulusKind": null,
+    "stimulusBrief": null,
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.ing.redaccion",
+        "conceptStableId": "efl.writing.complex-sentences",
+        "difficulty": 3,
+        "focus": "which option best combines two given short sentences into one correct sentence (quote both sentences in the stem)"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.ing.redaccion",
+        "conceptStableId": "efl.writing.complex-sentences",
+        "difficulty": 3,
+        "focus": "which option correctly rewrites a given sentence that contains one error (quote the sentence in the stem)"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.ing.redaccion",
+        "conceptStableId": "efl.writing.paragraph-organization",
+        "difficulty": 4,
+        "focus": "which sentence best continues or concludes a short three-sentence text quoted in the stem"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": null,
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "Which option best combines these two sentences into one correct sentence? “The workshop began late. The presenter had missed the early train.”",
+        "options": [
+          {
+            "text": "The workshop began late because the presenter had missed the early train.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "This sentence clearly shows that the missed train caused the late start."
+          },
+          {
+            "text": "The workshop began late although the presenter had missed the early train.",
+            "isKey": false,
+            "misconception": "MISUSES_CONTRAST_LINKER",
+            "rationale": "“Although” signals contrast, but missing the train explains the late start rather than contrasting with it."
+          },
+          {
+            "text": "The workshop began late, so the presenter had missed the early train.",
+            "isKey": false,
+            "misconception": "REVERSES_CAUSE_AND_EFFECT",
+            "rationale": "This option incorrectly presents the late start as the cause of the missed train."
+          },
+          {
+            "text": "The workshop began late while the presenter had missed the early train.",
+            "isKey": false,
+            "misconception": "USES_WEAK_TIME_LINKER",
+            "rationale": "“While” suggests two actions happened at the same time, but the ideas have a cause-and-effect relationship."
+          }
+        ],
+        "evidenceQuote": null
+      },
+      {
+        "slot": "s2",
+        "stem": "Which option correctly rewrites this sentence? “Neither the coach nor the players was ready for the match.”",
+        "options": [
+          {
+            "text": "Neither the coach nor the players were ready for the match.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "With “neither... nor,” the verb agrees with the closer subject, “the players,” which is plural."
+          },
+          {
+            "text": "Neither the coach nor the players was ready for the match.",
+            "isKey": false,
+            "misconception": "MISUSES_SUBJECT_VERB_AGREEMENT",
+            "rationale": "The verb is singular, but the nearer subject, “the players,” is plural."
+          },
+          {
+            "text": "Neither the coach nor the players are ready for the match.",
+            "isKey": false,
+            "misconception": "CHANGES_VERB_TENSE",
+            "rationale": "This option changes the past-time meaning of the original sentence to the present."
+          },
+          {
+            "text": "Neither the coach nor the players have been ready for the match.",
+            "isKey": false,
+            "misconception": "CHANGES_VERB_FORM",
+            "rationale": "This option changes the simple past statement into a present perfect statement with a different meaning."
+          }
+        ],
+        "evidenceQuote": null
+      },
+      {
+        "slot": "s3",
+        "stem": "Which sentence best concludes this text? “Mina collected comments from visitors to the town museum. She found that many people struggled to locate the map on the website. She moved the map link to the top of the home page.”",
+        "options": [
+          {
+            "text": "As a result, fewer visitors asked staff for directions the following week.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "This is a logical result of making the map easier to find on the website."
+          },
+          {
+            "text": "As a result, Mina removed the map from the home page the following week.",
+            "isKey": false,
+            "misconception": "CONTRADICTS_PREVIOUS_ACTION",
+            "rationale": "Removing the map would conflict with Mina’s action of making its link more visible."
+          },
+          {
+            "text": "As a result, the museum closed its main entrance the following week.",
+            "isKey": false,
+            "misconception": "INTRODUCES_UNRELATED_OUTCOME",
+            "rationale": "Closing an entrance is not connected to moving a website link."
+          },
+          {
+            "text": "As a result, visitors found the website harder to use the following week.",
+            "isKey": false,
+            "misconception": "REVERSES_LOGICAL_RESULT",
+            "rationale": "Moving an important link to the top of the page should make the website easier, not harder, to use."
+          }
+        ],
+        "evidenceQuote": null
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "bbd3bd40-b131-443e-b29d-efe6f8b1fc1c",
+    "generatedAt": "2026-10-14T01:33:25.354Z",
+    "unitId": "paa-pilot.r2.ing-writ"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "fa5da4c8-d007-48ff-b03d-247bcf9782c2",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "66178d5f-5588-450a-bb08-fa79b8e21e50",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": false,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "NONE",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.ing-redaccion.9d1412911343",
+        "slot": "s1",
+        "objectiveCode": "paa.ing.redaccion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.redaccion / efl.writing.complex-sentences"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-redaccion.95350e57296f",
+        "slot": "s2",
+        "objectiveCode": "paa.ing.redaccion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "CONSTRUCT_FIT"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.redaccion / efl.writing.complex-sentences"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": false,
+            "detail": "A: | B:skill "
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-redaccion.dfe0409b3cc7",
+        "slot": "s3",
+        "objectiveCode": "paa.ing.redaccion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.redaccion / efl.writing.paragraph-organization"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

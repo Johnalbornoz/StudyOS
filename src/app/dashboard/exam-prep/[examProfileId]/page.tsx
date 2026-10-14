@@ -163,7 +163,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
               </div>
             }
           />
-          <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} />
+          <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} />
           <ExamTargetOverview
             profileId={profile.id}
             resolution={resolution}
@@ -212,7 +212,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
             </div>
           }
         />
-        <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} />
+        <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} />
         <PreparationHome
           view={view}
           labels={prepLabels}
