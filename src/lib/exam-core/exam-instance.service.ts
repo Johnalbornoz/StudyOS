@@ -650,7 +650,7 @@ export async function toInstanceView(instance: ExamInstance): Promise<ExamInstan
     : null;
   // presentation only: is the bank of these components made of certified Exam Bank items (and of nothing else a Student can be delivered)?
   const bank = (await db.query(
-    `SELECT count(*) FILTER (WHERE qi.lineage_class = 'CORE_DERIVED')::int AS certified, count(*) FILTER (WHERE qi.lineage_class <> 'CORE_DERIVED' AND qi.provenance <> 'FIXTURE')::int AS other
+    `SELECT count(*) FILTER (WHERE qi.lineage_class IN ('CORE_DERIVED', 'PILOT_CERTIFIED'))::int AS certified, count(*) FILTER (WHERE qi.lineage_class NOT IN ('CORE_DERIVED', 'PILOT_CERTIFIED') AND qi.provenance <> 'FIXTURE')::int AS other
        FROM question_bank_items qi JOIN approved_items ai ON ai.id = qi.current_version_id AND ai.status = 'PUBLISHED'
       WHERE qi.assessment_component_id = ANY($1::uuid[]) AND qi.retired_at IS NULL`, [instance.componentIds]).catch(() => ({ rows: [] as any[] }))).rows[0];
   const contentCertified = !!bank && Number(bank.certified) > 0 && Number(bank.other) === 0;

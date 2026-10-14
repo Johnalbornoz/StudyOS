@@ -167,7 +167,7 @@ describe('E12: one deterministic migration chain', () => {
       // + QF V5.2 (20261122_1200): Exam Bank certification, coverage, supply authority. Additive.
       '20261122_1200_qf52_exam_bank_certification_coverage.sql',
       // + Exam Bank publication (20261123_1000): the author of a core-derived version. One function replaced.
-      '20261123_1000_exam_bank_core_derived_authorship.sql', '20261124_1000_exam_bank_pilot_generated_certification.sql', '20261124_1100_exam_bank_pilot_certified_activation.sql']);
+      '20261123_1000_exam_bank_core_derived_authorship.sql', '20261124_1000_exam_bank_pilot_generated_certification.sql', '20261124_1100_exam_bank_pilot_certified_activation.sql', '20261124_1200_exam_bank_pilot_certification_scope.sql']);
     expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);
   });
 });

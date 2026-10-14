@@ -534,14 +534,16 @@ async function createOrResumeDiagnostic(profile: StudentExamProfile, objective: 
     await db.query(
       `SELECT n.node_key, n.selectable, n.assessment_component_id, n.exam_version_id, n.metadata, d.id AS definition_id FROM assessment_structure_nodes n
          JOIN exam_definitions d ON d.id = n.exam_definition_id AND d.status = 'ACTIVE'
-        WHERE n.status = 'ACTIVE' AND ${selectableSql('n', 'STUDENT')} AND n.exam_version_id IS NOT NULL AND (n.node_key = $1 OR n.node_key LIKE $2)`,
+        WHERE n.status = 'ACTIVE' AND n.exam_version_id IS NOT NULL AND (n.node_key = $1 OR n.node_key LIKE $2)`,
       [objective.nodeKey, `${objective.nodeKey}.%`]
     )
   ).rows as any[];
   // Practice-ready components per version. The SAME readiness the capability was offered on: the persisted view with
   // the bank-derived overlay (ENFORCE) -- the diagnostic must never read an older readiness than the button that offers it.
   const READY = ['PRACTICE_READY', 'REDUCED_MOCK_READY', 'FULL_MOCK_READY'];
-  const overlaid = (await applyBankReadinessOverlay(rows.map((r) => ({ ...r, selectable: true })))) as any[];
+  // exactly as the capability is computed (objectiveCapabilities): the nodes as stored, then the Student's view of
+  // them -- the overlay decides what a Student may select; a stored `selectable` from an older readiness model does not
+  const overlaid = ((await applyBankReadinessOverlay(rows)) as any[]).filter((r) => r.selectable);
   const byVersion = new Map<string, { definitionId: string; sections: Set<string>; componentIds: Set<string> }>();
   const slotOf = (r: any) => { if (!byVersion.has(r.exam_version_id)) byVersion.set(r.exam_version_id, { definitionId: r.definition_id, sections: new Set(), componentIds: new Set() }); return byVersion.get(r.exam_version_id)!; };
   for (const r of overlaid) {

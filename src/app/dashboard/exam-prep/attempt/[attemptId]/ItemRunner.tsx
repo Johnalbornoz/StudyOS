@@ -246,8 +246,11 @@ function ChoiceList({ name, options, multi, value, onChange }: { name: string; o
   const selected: string[] = multi ? ((value as string[]) || []) : value ? [value as string] : [];
   return (
     <div className="xr-choices" role={multi ? 'group' : 'radiogroup'}>
-      {options.map((opt) => {
+      {options.map((opt, at) => {
         const checked = selected.includes(opt.id);
+        // The label the Student reads. An authored id is its own label ("A", "B"); an OPAQUE id (a certified item's
+        // stable option identity) is never shown: the label is the letter of the position it is presented in.
+        const label = /^[A-Za-z0-9]{1,2}$/.test(opt.id) ? opt.id : String.fromCharCode(65 + at);
         return (
           <label key={opt.id} className={`xr-choice${checked ? ' is-checked' : ''}`}>
             <input
@@ -259,7 +262,7 @@ function ChoiceList({ name, options, multi, value, onChange }: { name: string; o
                 else onChange(e.target.checked ? [...selected, opt.id] : selected.filter((id) => id !== opt.id));
               }}
             />
-            <span className="xr-choice-key" aria-hidden>{opt.id}</span>
+            <span className="xr-choice-key" aria-hidden>{label}</span>
             <span className="xr-choice-text">{opt.text}</span>
           </label>
         );

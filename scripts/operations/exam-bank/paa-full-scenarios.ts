@@ -105,6 +105,18 @@ async function main(): Promise<void> {
       used.push(...run.ids);
     }
 
+    /* ---------------------------------------------- catalogue + diagnostic ---------------------------------------------- */
+    {
+      const { startPreparationDiagnostic } = await import('@/lib/exam-core/objectives/preparation.service');
+      let diag: any = null; let diagError = '';
+      try { diag = await startPreparationDiagnostic(S, profileId); } catch (e: any) { diagError = String(e?.message ?? e); }
+      const diagComps = diag ? (await one(`SELECT component_ids FROM exam_instances WHERE id = $1`, [diag.instanceId]))?.component_ids ?? [] : [];
+      check('D1  "Diagnosticar mi preparación" starts: it reads the same bank-derived readiness the button is offered on', !!diag && diagComps.length === 4, diag ? `${diagComps.length} components, ${diag.instance?.status}` : diagError);
+      if (diag) await db.query(`UPDATE exam_instances SET status = 'CANCELLED' WHERE id = $1 AND status IN ('DRAFT', 'READY')`, [diag.instanceId]).catch(() => undefined);
+      const fullLevel = await resolveExamLevel('paa.full', 'es');
+      check('D2  the catalogue does not offer a Challenge without calibrated difficulty', !!fullLevel && !fullLevel.modes.includes('CHALLENGE'), fullLevel ? `modes ${fullLevel.modes.join(',')}` : 'no level');
+    }
+
     /* ---------------------------------------------- four-component practice mock ---------------------------------------------- */
     const full = await resolveExamLevel('paa.full', 'es');
     check('M0  the catalogue offers the four-component mock', !!full && full.modes.includes('MOCK'), full ? `modes ${full.modes.join(',')}` : 'no level');

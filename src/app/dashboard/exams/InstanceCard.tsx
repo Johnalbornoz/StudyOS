@@ -135,7 +135,7 @@ export function InstanceCard({ instance: initial, labels: l, language, highlight
           </p>
           {f.notes.includes('UNFILLED_POSITIONS') && <p className="ui-hint">{fmt(l['exv2.fidelity.unfilled'], { n: f.positions - f.filled })}</p>}
           {instance.mode !== 'PRACTICE' && (
-            <p className="ui-hint">{!f.difficultyBandMet ? l['exv2.difficulty.bandNotMet'] : instance.mode === 'CHALLENGE' ? l['exv2.difficulty.challenge'] : l['exv2.difficulty.mock']}</p>
+            <p className="ui-hint">{!f.difficultyBandMet ? l['exv2.difficulty.bandNotMet'] : instance.contentCertified ? null : instance.mode === 'CHALLENGE' ? l['exv2.difficulty.challenge'] : l['exv2.difficulty.mock']}</p>
           )}
         </div>
       )}

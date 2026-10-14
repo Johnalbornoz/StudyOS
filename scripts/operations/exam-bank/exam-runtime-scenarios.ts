@@ -231,7 +231,10 @@ async function main(): Promise<void> {
     /* ------------------------------------------------ F: Full Mock ------------------------------------------------ */
     check('F1  the bank health says a FULL Matemáticas form does not assemble (55 official positions; the certified blueprint is REDUCED)', mathHealth?.fullAssembles === false && Number(mathHealth?.fullFormCapacity) === 0, `official ${mathHealth?.officialItemCount}, reduced positions ${mathHealth?.reducedPositions}`);
     check('F2  no attempt of this Student was ever started as FULL_MOCK', (await n(`SELECT count(*)::int AS n FROM simulation_attempts WHERE student_id = $1 AND simulation_type = 'FULL_MOCK'`, [S])) === 0);
-    check('F3  the catalogue does not offer the whole-PAA mock: three of its four components have no certified content', !fullLevel || fullLevel.modes.length === 0, fullLevel ? `modes ${fullLevel.modes.join(',')}` : 'not offered');
+    // The whole-PAA mock is the package of its four components: it is offered exactly when every one of them has
+    // certified supply for a reduced form (Lectura, Redacción and Inglés got theirs from the PAA pilot publication).
+    const everyComponentReady = (health?.health.components ?? []).length === 4 && (health?.health.components ?? []).every((c: any) => c.reducedAssembles === true);
+    check('F3  the catalogue offers the whole-PAA mock exactly when all four components have certified supply for a reduced form', everyComponentReady ? !!fullLevel && fullLevel.modes.includes('MOCK') : !fullLevel || fullLevel.modes.length === 0, `${everyComponentReady ? 'all four ready' : 'not all ready'}; ${fullLevel ? `modes ${fullLevel.modes.join(',')}` : 'not offered'}`);
 
     /* ------------------------------------------------ E: eligibility is checked NOW ------------------------------------------------ */
     // a quality incident on one renderer envelope quarantines its instances: opened here, and resolved again below

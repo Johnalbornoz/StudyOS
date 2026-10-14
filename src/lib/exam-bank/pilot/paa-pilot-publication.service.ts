@@ -19,7 +19,7 @@ import { ApprovedItemContentSchema, examItemFromApproved } from '@/lib/exam-core
 import { candidateUnitOf, certifyUnit, tableText, type GeneratedUnit, type GenerationProvenance, type SolverRun, type UnitCertification, type UnitPlan } from './paa-pilot-contract';
 import { PAA_PILOT_CERT_POLICY_V1, PAA_PILOT_DECIDER, PAA_PILOT_POLICY_HASH, PAA_PILOT_POLICY_VERSION, PAA_PILOT_PROJECTION } from './paa-pilot-policy';
 
-export const PAA_PILOT_REQUIRED_MIGRATIONS = ['20261124_1000', '20261124_1100'] as const;
+export const PAA_PILOT_REQUIRED_MIGRATIONS = ['20261124_1000', '20261124_1100', '20261124_1200'] as const;
 export const PAA_PILOT_CONFIG_KEY = 'v2.paa';
 export const PAA_PILOT_USAGE = ['PRACTICE', 'REDUCED_MOCK'] as const;
 export interface PilotArtefact { plan: UnitPlan; generated: GeneratedUnit; provenance: GenerationProvenance; runs: SolverRun[] }
@@ -41,6 +41,8 @@ export async function runPilotPublication(client: PoolClient, artefacts: readonl
   await c.query('BEGIN');
   try {
     for (const m of PAA_PILOT_REQUIRED_MIGRATIONS) if (!(await one(c, `SELECT 1 FROM schema_migrations WHERE version = $1`, [m]))) throw new Error(`MIGRATION_NOT_APPLIED:${m}`);
+    // the database must have DECLARED itself a pilot environment (a deliberate operator step); the loader never declares it
+    if (!(await one(c, `SELECT 1 FROM exam_bank_pilot_environment WHERE scope = 'PILOT_PREVIEW'`))) throw new Error('PILOT_ENVIRONMENT_NOT_DECLARED: run declare-pilot-environment.ts on an authorised pilot database first');
     const author = (await one<{ id: string }>(c, `SELECT id FROM users WHERE is_system = true ORDER BY created_at ASC, id ASC LIMIT 1`))?.id;
     if (!author) throw new Error('NO_TECHNICAL_IDENTITY');
     // ---- the policy (immutable; a changed policy is a new version)

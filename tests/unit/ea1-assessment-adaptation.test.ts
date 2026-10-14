@@ -1379,7 +1379,7 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     expect(migrations.filter((f) => NEW_SCHEMA.test(f) || NEW_SCHEMA.test(read(`database/migrations/${f}`)))).toEqual(['20261121_1100_qf51_construct_core_lineage.sql']);
     // 82 files up to QB-R1C, plus the three of the L10 shared-foundation batch (20261120_*), which name nothing of this phase (asserted above).
     // 85 + the Student's scheduled assessments (20261121_1000) + QF V5.1 (20261121_1100) + curriculum convergence (20261122_1000, _1100).
-    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([93, '20261124_1100_exam_bank_pilot_certified_activation.sql']); // + QF V5.2 (20261122_1200), the Exam Bank certification model
+    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([94, '20261124_1200_exam_bank_pilot_certification_scope.sql']); // + QF V5.2 (20261122_1200), the Exam Bank certification model
   });
 
   it('B3 is not implemented here: no evidence engine, no evidence path, no second evidence writer', () => {

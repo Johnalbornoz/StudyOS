@@ -138,6 +138,21 @@ describe('PAA pilot: delivery and persistence are scoped', () => {
     expect(sql.replace(/^\s*--.*$/gm, '')).not.toMatch(/INSERT INTO|UPDATE public\.|question_bank_reviews r SET|DELETE FROM/);
     const activation = read('database/migrations/20261124_1100_exam_bank_pilot_certified_activation.sql');
     expect(activation).toMatch(/prov = 'STUDYUS_GENERATED' AND NOT public\.exam_bank_pilot_version_certified\(OLD\.bank_item_id, OLD\.id, OLD\.content_hash\)/);
+    // 20261124_1200: the path is tightened to its exact context -- the PAA pilot policy as decider, every rule passed,
+    // complete lineage, a PAA exam's item, and a database that DECLARED itself a pilot environment
+    const scope = read('database/migrations/20261124_1200_exam_bank_pilot_certification_scope.sql');
+    expect(scope).toMatch(/p\.policy_id = 'PAA_PILOT_CERT_POLICY' AND p\.may_grant_scopes = ARRAY\['PILOT_PREVIEW'\]/);
+    expect(scope).toMatch(/c\.decided_by = 'policy:' \|\| p\.policy_id \|\| '_' \|\| p\.version/);
+    expect(scope).toMatch(/g->>'code' = r->>'code' AND g->>'passed' = 'true'/);
+    expect(scope).toMatch(/g->>'passed' IS DISTINCT FROM 'true'/);
+    expect(scope).toMatch(/d\.exam_family = 'PAA'/);
+    expect(scope).toMatch(/EXAM_BANK_PILOT_ENVIRONMENT_NOT_DECLARED/);
+    expect(scope).toMatch(/EXISTS \(SELECT 1 FROM public\.exam_bank_pilot_environment e WHERE e\.scope = 'PILOT_PREVIEW'\)/);
+    for (const k of ['generationService', 'provider', 'model', 'promptId', 'promptVersion', 'executionId', 'generatedAt', 'candidateDigest']) expect(scope).toContain(`c.lineage->>'${k}'`);
+    // the migration declares no environment itself, and the loader never does: it is a separate, allow-listed operator step
+    expect(scope.replace(/^\s*--.*$/gm, '')).not.toMatch(/INSERT INTO/);
+    expect(read('src/lib/exam-bank/pilot/paa-pilot-publication.service.ts').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')).not.toMatch(/INSERT INTO exam_bank_pilot_environment/);
+    expect(read('scripts/operations/exam-bank/declare-pilot-environment.ts')).toMatch(/const TARGETS: Readonly<Record<string, string>> = \{ '2a29b99ee14a22b4': 'DEV', '4c249c68e0627b9f': 'PREVIEW_TRACK_B' \};/);
     const loader = read('src/lib/exam-bank/pilot/paa-pilot-publication.service.ts');
     expect(loader.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')).not.toMatch(/INSERT INTO question_bank_reviews|executeAI|callModel/);
     // the provider is reachable only from the offline factory

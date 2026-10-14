@@ -298,6 +298,19 @@ export interface ExamLevelSelection {
  * Resolves an exam-level node (bound to a vertical, e.g. "Math AA HL") into
  * its published version and the components the Student may pick.
  */
+/**
+ * The modes a Student is offered. A CHALLENGE promises more difficulty than the exam: it is offered only when the
+ * version holds Student-deliverable content with a calibrated difficulty. Without it the promise cannot be kept, so
+ * the mode is not shown (the bank being large is not a calibration).
+ */
+async function offeredModes(modes: Array<'PRACTICE' | 'MOCK' | 'CHALLENGE'>, examVersionId: string, audience: ContentAudience): Promise<Array<'PRACTICE' | 'MOCK' | 'CHALLENGE'>> {
+  if (audience !== 'STUDENT' || !modes.includes('CHALLENGE')) return modes;
+  // the ONE rule for "calibrated difficulty" (the same the preparation card uses): Student-deliverable content only
+  const { examVersionHasCalibratedDifficulty } = await import('@/lib/assessment-experience/assessment-experience.service');
+  const calibrated = await examVersionHasCalibratedDifficulty(examVersionId);
+  return calibrated ? modes : modes.filter((m) => m !== 'CHALLENGE');
+}
+
 export async function resolveExamLevel(nodeKey: string, language: string, internal: { /** In-process scenarios only (never a Student route): the engine view. */ audience?: ContentAudience } = {}): Promise<ExamLevelSelection | null> {
   const audience = internal.audience ?? 'STUDENT';
   // Question Bank: in ENFORCE mode a node's readiness / selectability comes from the latest bank-health snapshot (same overlay as the capabilities).
@@ -344,7 +357,7 @@ export async function resolveExamLevel(nodeKey: string, language: string, intern
     purpose: n.metadata?.purpose ?? null,
     examDefinitionId: n.exam_definition_id,
     examVersionId: n.exam_version_id,
-    modes: readiness.modes ?? [],
+    modes: await offeredModes(readiness.modes ?? [], n.exam_version_id, audience),
     readiness: readiness.state,
     focusObjectiveIds,
     componentsFixed: n.metadata?.purpose === 'FULL_TEST',
