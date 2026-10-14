@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { keyPositionCounts, optionIdOf, presentOptions, scoreSelectedResponse, selectedResponseBankFields, selectedResponseIssues, type SelectedResponseItem } from '@/lib/exam-bank/engines/selected-response';
+import { keyPositionCounts, optionIdOf, presentOptions, shuffledByIdentity, scoreSelectedResponse, selectedResponseBankFields, selectedResponseIssues, type SelectedResponseItem } from '@/lib/exam-bank/engines/selected-response';
 import { frozenFormStimulusIssues, stimulusBankField, stimulusContentDigest, stimulusIssues, stimulusRefOf, type Stimulus } from '@/lib/exam-bank/engines/stimulus';
-import { isAssisted, officialSecondsPerItem, resolveStrategy, speedStrategyDigest, speedStrategyIssues, strategyCoverage, strategyVisibility, timeReview, type SpeedStrategy } from '@/lib/exam-bank/engines/speed-strategy';
+import { inheritedStrategyOf, isAssisted, officialSecondsPerItem, resolveStrategy, speedStrategyDigest, speedStrategyIssues, strategyCoverage, strategyVisibility, timeReview, type SpeedStrategy } from '@/lib/exam-bank/engines/speed-strategy';
 import { ApprovedItemContentSchema } from '@/lib/exam-core/items';
 
 const D = 'a'.repeat(64);
@@ -24,6 +24,12 @@ describe('selected response engine', () => {
     expect(scoreSelectedResponse(i, i.options[1].id)).toMatchObject({ correct: false, misconceptionId: 'READS_TONE_AS_PURPOSE' });
     expect(scoreSelectedResponse(i, 'o-00000000').answered).toBe(false);
     expect(scoreSelectedResponse(i, null).answered).toBe(false);
+  });
+  it('shuffles any identified options deterministically, as a permutation', () => {
+    const opts = [{ id: 'a', text: '1' }, { id: 'b', text: '2' }, { id: 'c', text: '3' }, { id: 'd', text: '4' }];
+    expect(shuffledByIdentity(opts, 'att:3')).toEqual(shuffledByIdentity(opts, 'att:3'));
+    expect(shuffledByIdentity(opts, 'att:3').map((o) => o.id).sort()).toEqual(['a', 'b', 'c', 'd']);
+    expect(new Set(Array.from({ length: 30 }, (_, n) => shuffledByIdentity(opts, `att:${n}`).map((o) => o.id).join(''))).size).toBeGreaterThan(5);
   });
   it('spreads the key over the positions', () => {
     const items = Array.from({ length: 200 }, (_, n) => item({}, `it-${n}`));
@@ -101,11 +107,16 @@ describe('stimulus engine', () => {
 
 const official = { minutes: 60, items: 55 };
 const strat = (over: Partial<SpeedStrategy> = {}): SpeedStrategy => {
-  const base = { v: 1 as const, strategyId: 'strat.paa.mat.algebra.estructura', version: 1, type: 'STRUCTURE_BEFORE_COMPUTING' as const, language: 'es', scope: { systemId: 'paa', componentId: 'matematicas', family: 'MATH' as const, blueprintBucketIds: ['matematicas.algebra'], conceptStableIds: [], itemIds: [] }, title: 'Mira la estructura primero', steps: ['Identifica qué se pide antes de operar.', 'Busca un factor común o una forma conocida.'], whenToUse: 'Cuando la expresión tiene una forma reconocible.', whenNotToUse: 'Cuando los números son pequeños y operar es directo.', commonTrap: 'Expandir todo y perder la forma que simplificaba.', targetTime: { seconds: 65, provenance: 'OFFICIAL_DERIVED' as const, basis: '60 minutos oficiales / 55 preguntas.', sampleSize: null }, skipThresholdSeconds: 110, certification: { state: 'CERTIFIED' as const, mode: 'AUTOMATED' as const, recordId: 'rec-1' }, lineage: { source: 'test', generator: null }, digest: D, ...over };
-  return { ...base, digest: speedStrategyDigest(base) };
+  const base: SpeedStrategy = { v: 2, strategyId: 'strat.x.algebra.structure', strategyVersion: 1, strategyType: 'ALGEBRAIC_STRUCTURE', strategyFamily: 'x.algebra.structure', language: 'es', strategyTitle: 'Mira la estructura primero',
+    applicabilityRules: { systemId: 'SYS', componentId: 'SYS.MATH', constructFamilyId: 'tf.linear', constructFamilyVersion: '1.0.0', stemPattern: '^Si ' },
+    targetTimeSeconds: 65, skipThresholdSeconds: 130, timingProvenance: { target: 'OFFICIAL_DERIVED', skipThreshold: 'STUDYUS_HEURISTIC', basis: '60 minutos oficiales / 55 preguntas.', sampleSize: null },
+    fastPath: ['Identifica qué se pide antes de operar.', 'Busca una forma conocida.'], directPath: ['Despeja la incógnita paso a paso.'], whyFastPathWorks: 'La forma de la expresión acorta el cálculo.', eliminationRules: [], mentalMathOpportunity: null,
+    commonTimeTrap: 'Expandir todo y perder la forma que simplificaba.', whenNotToUse: 'Cuando operar directamente es igual de corto.', answerChoiceDependency: 'NONE',
+    strategyCertificationState: 'AUTOMATED_CERTIFIED_PILOT', certification: { decidedBy: 'policy:TEST_POLICY_V1', policyId: 'TEST_POLICY_V1', humanDecisionId: null }, strategyDigest: D, ...over };
+  return { ...base, strategyDigest: speedStrategyDigest(base) };
 };
-const ctx = { official, items: [{ itemId: 'it-1', hasOptions: false, keyTexts: ['\\frac{7}{2}', '3.5'] }] };
-const target = { itemId: 'it-1', conceptStableId: 'c-1', blueprintBucketId: 'matematicas.algebra', componentId: 'matematicas', language: 'es' };
+const ctx = { official, items: [{ itemId: 'it-1', hasOptions: false, keyTexts: ['7/2'] }] };
+const target = { systemId: 'SYS', componentId: 'SYS.MATH', constructFamilyId: 'tf.linear', constructFamilyVersion: '1.0.0', language: 'es', stem: 'Si 3x + 12 = 48, ¿cuál es el valor de x?', hasOptions: false };
 
 describe('speed strategy engine', () => {
   it('derives the official pace and certifies a strategy that states it', () => {
@@ -114,26 +125,33 @@ describe('speed strategy engine', () => {
     expect(speedStrategyIssues(strat(), ctx)).toEqual([]);
   });
   it('names every reason a strategy may not be certified', () => {
-    expect(speedStrategyIssues({ ...strat(), title: 'Otro título distinto' }, ctx)).toContain('DIGEST_IS_NOT_OF_THE_STRATEGY');
-    expect(speedStrategyIssues(strat({ targetTime: { seconds: 50, provenance: 'OFFICIAL_DERIVED', basis: 'No es el ritmo oficial.', sampleSize: null } }), ctx)).toContain('OFFICIAL_DERIVED_TIME_IS_NOT_THE_OFFICIAL_PACE');
-    expect(speedStrategyIssues(strat({ targetTime: { seconds: 50, provenance: 'STUDYUS_CALIBRATED', basis: 'Con muy pocas observaciones.', sampleSize: 4 } }), ctx)).toContain('CALIBRATED_TIME_WITHOUT_ENOUGH_OBSERVATIONS');
-    expect(speedStrategyIssues(strat({ targetTime: { seconds: 400, provenance: 'STUDYUS_HEURISTIC', basis: 'Demasiado lejos del ritmo.', sampleSize: null }, skipThresholdSeconds: 500 }), ctx)).toContain('HEURISTIC_TIME_FAR_FROM_THE_OFFICIAL_PACE');
+    expect(speedStrategyIssues({ ...strat(), strategyTitle: 'Otro título distinto' }, ctx)).toContain('DIGEST_IS_NOT_OF_THE_STRATEGY');
+    expect(speedStrategyIssues(strat({ targetTimeSeconds: 50 }), ctx)).toContain('OFFICIAL_DERIVED_TIME_IS_NOT_THE_OFFICIAL_PACE');
+    expect(speedStrategyIssues(strat({ targetTimeSeconds: 50, timingProvenance: { target: 'STUDYUS_CALIBRATED', skipThreshold: 'STUDYUS_HEURISTIC', basis: 'Con muy pocas observaciones.', sampleSize: 4 } }), ctx)).toContain('CALIBRATED_TIME_WITHOUT_ENOUGH_OBSERVATIONS');
+    expect(speedStrategyIssues(strat({ skipThresholdSeconds: 400 }), ctx)).toContain('HEURISTIC_TIME_FAR_FROM_THE_OFFICIAL_PACE');
     expect(speedStrategyIssues(strat({ skipThresholdSeconds: 60 }), ctx)).toContain('SKIP_THRESHOLD_NOT_AFTER_THE_TARGET');
-    expect(speedStrategyIssues(strat({ type: 'LOCATE_THE_EVIDENCE_LINE' }), ctx)).toContain('TYPE_NOT_FOR_THIS_COMPONENT');
-    expect(speedStrategyIssues(strat({ type: 'BACK_SOLVE_FROM_OPTIONS' }), ctx)).toContain('TYPE_NEEDS_OPTIONS_THE_ITEMS_DO_NOT_HAVE');
-    expect(speedStrategyIssues(strat({ scope: { ...strat().scope, blueprintBucketIds: [] } }), ctx)).toContain('SCOPE_IS_EMPTY');
-    expect(speedStrategyIssues(strat({ scope: { ...strat().scope, itemIds: ['it-1'] }, steps: ['Simplifica y verás que la respuesta: 3.5 aparece.'] }), ctx)).toContain('STRATEGY_REVEALS_AN_ANSWER');
-    expect(speedStrategyIssues(strat({ type: 'NO_RELIABLE_SHORTCUT', steps: ['Usa este truco para resolverla al instante.'] }), ctx)).toContain('NO_SHORTCUT_PROMISES_A_SHORTCUT');
-    expect(speedStrategyIssues(strat({ type: 'NO_RELIABLE_SHORTCUT', title: 'Resuélvela directo', steps: ['No hay atajo fiable: plantea y resuelve con orden.'] }), ctx)).toEqual([]);
-    expect(speedStrategyIssues(strat({ certification: { state: 'CERTIFIED', mode: null, recordId: null } }), ctx)).toContain('CERTIFIED_WITHOUT_A_RECORD');
+    expect(speedStrategyIssues(strat({ strategyType: 'BACKSOLVE_FROM_OPTIONS', answerChoiceDependency: 'REQUIRED' }), ctx)).toContain('TYPE_NEEDS_OPTIONS_THE_ITEMS_DO_NOT_HAVE');
+    expect(speedStrategyIssues(strat({ answerChoiceDependency: 'REQUIRED' }), ctx)).toContain('OPTION_DEPENDENCY_DISAGREES_WITH_THE_TYPE');
+    expect(speedStrategyIssues(strat({ eliminationRules: ['Descarta las opciones negativas.'] }), ctx)).toContain('ELIMINATION_RULES_WITHOUT_OPTIONS');
+    expect(speedStrategyIssues(strat({ applicabilityRules: { ...strat().applicabilityRules, stemPattern: '(' } }), ctx)).toContain('STEM_PATTERN_IS_NOT_A_REGULAR_EXPRESSION');
+    expect(speedStrategyIssues(strat({ fastPath: ['Simplifica y verás que la respuesta es 12 siempre.'] }), ctx)).toContain('STRATEGY_REVEALS_AN_ANSWER');
+    expect(speedStrategyIssues(strat({ strategyType: 'NO_RELIABLE_SHORTCUT', fastPath: ['Usa este truco para resolverla al instante.'] }), ctx)).toContain('NO_SHORTCUT_PROMISES_A_SHORTCUT');
+    expect(speedStrategyIssues(strat({ strategyType: 'NO_RELIABLE_SHORTCUT', strategyTitle: 'Sin atajo fiable: resuelve con orden', fastPath: ['No hay atajo fiable: plantea y resuelve con orden.'] }), ctx)).toEqual([]);
+    expect(speedStrategyIssues(strat({ certification: { decidedBy: 'john', policyId: null, humanDecisionId: null } }), ctx)).toContain('AUTOMATED_DECISION_ATTRIBUTED_TO_A_PERSON');
+    expect(speedStrategyIssues(strat({ strategyCertificationState: 'HUMAN_CERTIFIED' }), ctx)).toContain('HUMAN_STATE_WITHOUT_A_RECORDED_DECISION');
   });
-  it('resolves only a certified strategy, the most specific one', () => {
-    const bucket = strat(); const concept = strat({ strategyId: 'strat.paa.mat.c1', scope: { ...strat().scope, blueprintBucketIds: [], conceptStableIds: ['c-1'] } });
-    const candidate = strat({ strategyId: 'strat.paa.mat.item', scope: { ...strat().scope, itemIds: ['it-1'] }, certification: { state: 'CANDIDATE', mode: null, recordId: null } });
-    expect(resolveStrategy(target, [bucket, concept, candidate])?.strategyId).toBe('strat.paa.mat.c1');
-    expect(resolveStrategy(target, [candidate])).toBeNull();
-    expect(resolveStrategy({ ...target, componentId: 'lectura' }, [bucket])).toBeNull();
-    expect(strategyCoverage([target, { ...target, itemId: 'it-2', blueprintBucketId: 'matematicas.datos' }], [bucket])).toMatchObject({ items: 2, withStrategy: 1, fraction: 0.5 });
+  it('resolves only a deliverable strategy, and only when exactly one applies', () => {
+    const one = strat();
+    expect(resolveStrategy(target, [one])?.strategyId).toBe(one.strategyId);
+    expect(inheritedStrategyOf(one)).toMatchObject({ itemCertificationState: 'INHERITED_DETERMINISTIC', familyCertificationState: 'AUTOMATED_CERTIFIED_PILOT', strategyDigest: one.strategyDigest });
+    for (const state of ['CANDIDATE', 'REVIEW_REQUIRED', 'REJECTED'] as const) expect(resolveStrategy(target, [strat({ strategyCertificationState: state })])).toBeNull();
+    expect(resolveStrategy({ ...target, constructFamilyVersion: '2.0.0' }, [one])).toBeNull();
+    expect(resolveStrategy({ ...target, stem: 'Calcula x.' }, [one])).toBeNull();
+    // two families claim the item: it gets neither
+    expect(resolveStrategy(target, [one, strat({ strategyId: 'strat.x.other' })])).toBeNull();
+    // a newer version of the same family replaces the older one
+    expect(resolveStrategy(target, [one, strat({ strategyVersion: 2 })])?.strategyVersion).toBe(2);
+    expect(strategyCoverage([target, { ...target, stem: 'Otra forma' }], [one])).toMatchObject({ items: 2, withStrategy: 1, fraction: 0.5 });
   });
   it('never shows a strategy during a simulation; a coach reveal before answering is ASSISTED', () => {
     expect(strategyVisibility('EXAM_SIMULATION', 'BEFORE_ANSWER').visible).toBe(false);
@@ -145,7 +163,7 @@ describe('speed strategy engine', () => {
     expect(isAssisted({ strategyRevealedAtMs: null, answeredAtMs: 20 })).toBe(false);
   });
   it('reviews the time of an attempt', () => {
-    const r = (itemId: string, seconds: number, correct: boolean, answered = true) => ({ itemId, seconds, answered, correct, assisted: false, targetSeconds: 65, skipThresholdSeconds: 110, provenance: 'OFFICIAL_DERIVED' as const });
+    const r = (itemId: string, seconds: number, correct: boolean, answered = true) => ({ itemId, seconds, answered, correct, assisted: false, targetSeconds: 65, skipThresholdSeconds: 110 });
     const review = timeReview([r('a', 30, true), r('b', 60, true), r('c', 90, true), r('d', 20, false), r('e', 150, false), r('f', 40, false, false)]);
     expect(review.perItem.map((p) => p.verdict)).toEqual(['FAST_AND_RIGHT', 'ON_PACE_AND_RIGHT', 'RIGHT_BUT_SLOW', 'RUSHED_AND_WRONG', 'STUCK_PAST_THE_SKIP_POINT', 'NOT_ANSWERED']);
     expect(review).toMatchObject({ totalSeconds: 390, targetSeconds: 390, secondsOverTarget: 110, secondsPastSkipPoint: 40, onPace: true });

@@ -47,7 +47,9 @@ export type ResponseStatus =
   /** Served, not answered. Absence of evidence is not negative evidence. */
   | 'UNANSWERED'
   /** Answered, awaiting a reviewer's mark: not evidence until confirmed. */
-  | 'PENDING_REVIEW';
+  | 'PENDING_REVIEW'
+  /** Answered in coached practice AFTER opening the item's speed strategy: practice, not independent evidence. */
+  | 'ASSISTED';
 
 export interface ScoredResponse {
   /** `<store>:<id>` of the frozen item it answers. */
@@ -103,6 +105,7 @@ export type AttributionReason =
   | 'NO_CANONICALLY_LINKED_LEARNER_CONCEPT'
   | 'UNANSWERED'
   | 'PENDING_REVIEW'
+  | 'ASSISTED_BY_STRATEGY'
   | 'DIFFICULTY_UNKNOWN'
   | 'TRANSFER_GRADING_MISSING'
   | 'TECHNICAL_DEMO_CONTENT'
@@ -279,7 +282,7 @@ export function planEvidence(frozen: FrozenAssessment, attempt: AttemptContext, 
       continue;
     }
     if (r.status !== 'SCORED' || r.fraction === null) {
-      outcomes.push({ ...base(r, item), ...none, status: 'NOT_SCORED', reason: r.status === 'PENDING_REVIEW' ? 'PENDING_REVIEW' : 'UNANSWERED' });
+      outcomes.push({ ...base(r, item), ...none, status: 'NOT_SCORED', reason: r.status === 'PENDING_REVIEW' ? 'PENDING_REVIEW' : r.status === 'ASSISTED' ? 'ASSISTED_BY_STRATEGY' : 'UNANSWERED' });
       continue;
     }
     if (item.coverage.length === 0) {

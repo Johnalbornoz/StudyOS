@@ -43,7 +43,7 @@ vi.mock('@/lib/db', () => ({
         const hit = [...instances.entries()].find(([, i]) => i.simulation_attempt_id === params[0] && i.student_id === params[1] && i.assessment_snapshot);
         return { rows: hit ? [{ instance_id: hit[0], exam_attempt_id: hit[1].exam_attempt_id }] : [] };
       }
-      if (/^SELECT id, approved_item_id, score, max_score, review_status FROM exam_attempt_item_responses/.test(s)) return { rows: responses.get(params[0]) ?? [] };
+      if (/^SELECT id, approved_item_id, score, max_score, review_status, \(grading_detail->'coach'->>'assisted'\) = 'true' AS assisted FROM exam_attempt_item_responses/.test(s)) return { rows: responses.get(params[0]) ?? [] };
       throw new Error(`unexpected SQL: ${s}`);
     },
   },

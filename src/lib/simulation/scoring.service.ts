@@ -68,6 +68,8 @@ export async function recordSimulationItemResponse(params: {
   idempotencyKey?: string;
   /** Track B: the item's position in the frozen plan -- at most one committed response per item. */
   targetIndex?: number;
+  /** Practice Coach / time review: timing, the inherited speed strategy and whether it was opened before answering. Stored with the grading detail; never part of the score. */
+  coach?: Record<string, unknown> & { assisted: boolean };
 }): Promise<{ responseId: string; evaluation: EvaluationResult; evidenceWritten: boolean; duplicate: boolean; grade: ExamItemGrade }> {
   const item: ExamItem = isExamItem(params.question) ? params.question : examItemFromGenerated(params.question, params.learningObjectiveId ?? null);
   let submissionId: string | null = null;
@@ -101,7 +103,7 @@ export async function recordSimulationItemResponse(params: {
     itemSource: item.exam.source,
     v2: {
       normalizedResponse: grade.normalizedResponse,
-      gradingDetail: grade.detail,
+      gradingDetail: params.coach ? { ...(grade.detail ?? {}), coach: params.coach } : grade.detail,
       reviewStatus: grade.reviewStatus,
       contentOrigin: item.exam.contentOrigin ?? null,
       scoringStrategy: grade.scoringStrategy,
@@ -126,7 +128,8 @@ export async function recordSimulationItemResponse(params: {
   const legacyEvidenceOwner = (await executionAuthorityOfExamAttempt(params.examAttemptId)) === 'LEGACY';
   // V2: a response awaiting review is not evidence until a reviewer confirms its mark.
   if (legacyEvidenceOwner && grade.status === 'ANSWERED' && grade.reviewStatus === 'NONE' && params.learningObjectiveId) {
-    const bridge = await resolveActivityMetadataForObjective(params.learningObjectiveId);
+    // an ASSISTED response (speed strategy opened before answering) is practice: it writes no mastery evidence
+    const bridge = params.coach?.assisted === true ? null : await resolveActivityMetadataForObjective(params.learningObjectiveId);
     if (bridge && bridge.canonicalConceptIds.length > 0) {
       let studentConceptId: string | null = null;
       for (const canonicalConceptId of bridge.canonicalConceptIds) {

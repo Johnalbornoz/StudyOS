@@ -128,7 +128,7 @@ describe('PA-3 -- released assessment results for a Parent', () => {
     const body = await res.json();
     expect(body.data.results).toEqual([
       {
-        attemptId: 'a-visible', examName: 'PAA', versionLabel: '2026', simulationType: 'MINI_MOCK', status: 'SCORED', scoringStatus: 'SCORED', scoredAt: '2026-10-10T10:00:00.000Z',
+        attemptId: 'a-visible', examName: 'PAA', versionLabel: 'PAA revisada · Guía de estudio ©2021', simulationType: 'MINI_MOCK', status: 'SCORED', scoringStatus: 'SCORED', scoredAt: '2026-10-10T10:00:00.000Z',
         rawScore: 14, maxScore: 20, finalScore: 610, finalLabel: null, completion: { answered: 18, total: 20, missing: 2 }, minutesUsed: 42,
         objectives: { strengths: 1, developing: 0, gaps: 1, notAssessed: 0 },
       },

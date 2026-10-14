@@ -7,6 +7,7 @@
  *   action=autosave store an in-progress answer (never graded)
  *   action=skip     move past an item the platform could not prepare
  *   action=endBreak end a configured break early
+ *   action=revealStrategy  coached practice only: show the item's certified speed strategy (recorded: the response is ASSISTED)
  * Everything delegates to item-resolution.service.ts; this route performs no
  * grading or generation decision of its own. Owner-only. The body is
  * validated strictly: unknown fields (a client-supplied question, answer key,
@@ -23,6 +24,7 @@ import {
   skipUnavailableSimulationItem,
   saveSimulationItemDraft,
   endSimulationBreak,
+  revealSimulationItemStrategy,
   SimulationItemAccessDeniedError,
   SimulationItemNotFoundError,
   SimulationItemNotActiveError,
@@ -75,7 +77,7 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<{ i
 
 const SubmitSchema = z
   .object({
-    action: z.enum(['submit', 'skip', 'autosave', 'endBreak']).default('submit'),
+    action: z.enum(['submit', 'skip', 'autosave', 'endBreak', 'revealStrategy']).default('submit'),
     studentAnswer: z.string().max(20000).optional(),
     idempotencyKey: z.string().min(1).max(200).optional(),
     targetIndex: z.number().int().min(0).max(10000).optional(),
@@ -107,6 +109,12 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
     }
     if (validated.action === 'endBreak') {
       const result = await endSimulationBreak(actor.id, id);
+      return NextResponse.json({ success: true, data: result });
+    }
+    if (validated.action === 'revealStrategy') {
+      // Practice Coach: certified Exam Bank content, recorded as assistance. Refused in a simulation (409).
+      if (validated.targetIndex === undefined) return NextResponse.json({ error: 'INVALID_INPUT', message: 'targetIndex is required for action=revealStrategy' }, { status: 400 });
+      const result = await revealSimulationItemStrategy(actor.id, id, validated.targetIndex);
       return NextResponse.json({ success: true, data: result });
     }
     if (validated.action === 'autosave') {

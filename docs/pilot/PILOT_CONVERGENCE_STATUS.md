@@ -26,30 +26,27 @@ Source: `scripts/operations/exam-bank/paa-coverage.ts` (read only) → `docs/aud
 
 Missing buckets: `paa.lect.{evidencia 1, explicitas 2, graficos 1, inferencia 2, literario 2, vocabulario 2}`, `paa.red.{adicion, cohesion, elision, generalizacion, integracion, particularizacion}` (1 each), `paa.ing.{lectura 3, lenguaje 3, redaccion 2}`.
 
-## Engines (this increment)
+## Zero-spend sprint (2026-10-13, provider spend USD 0.00)
 
-| Engine | State | Where |
+| Capability | State | Where |
 |---|---|---|
-| A. Selected Response | IMPLEMENTED (pure, tested); not yet wired to a loader — there is no certified selected-response supply to publish | `src/lib/exam-bank/engines/selected-response.ts` |
-| B. Stimulus / Passage | IMPLEMENTED (pure, tested); same | `src/lib/exam-bank/engines/stimulus.ts` |
-| C. Speed Strategy | IMPLEMENTED (pure, tested): registry incl. NO_RELIABLE_SHORTCUT, target time with provenance, skip threshold, Coach vs Simulation visibility, ASSISTED, time review. No persistence, no UI, no certified strategies yet (coverage 0%) | `src/lib/exam-bank/engines/speed-strategy.ts` |
+| Speed Strategy — PAA Matemáticas | WIRED end to end: 24 certified families, 296 / 296 items inherit one, each proven (the family's own method gives the item's key). 20 items = NO_RELIABLE_SHORTCUT. Certification: AUTOMATED_CERTIFIED_PILOT by `policy:PAA_SPEED_STRATEGY_PILOT_POLICY_V1`, items INHERITED_DETERMINISTIC, 0 human reviewers | `src/lib/exam-bank/strategies/`, record `docs/audits/curriculum-first/exam-bank/PAA_MATH_SPEED_STRATEGY_CERTIFICATION.json` |
+| Practice Coach | target time (65 s, OFFICIAL_DERIVED: 60 min / 55 exercises — an average, not an official per-question time), elapsed time, "Ver estrategia rápida" (recorded → ASSISTED, no mastery evidence), skip rule past 130 s (STUDYUS_HEURISTIC), review after each answer and on the results page | `item-resolution.service.ts`, `ItemRunner.tsx`, result page |
+| Simulation integrity | no coach, no target, no strategy while a simulation runs (`itemFeedback = NEVER`); the reveal action is refused (409) | same |
+| Strategy persistence | versioned registry in code + certification record (digest per family) + per-response record in `grading_detail.coach`. **Not** a database table: no migration was made | — |
+| Selected Response | engine + shuffle-safe presentation of certified options at delivery (scored by option id). Certification → bank persistence NOT wired: the database still requires an individual human review for non-parametric content, and there is no certified supply | `engines/selected-response.ts` |
+| Stimulus | engine only; runtime already renders and freezes `content.stimulus`. Governed persistence NOT wired; no certified supply | `engines/stimulus.ts` |
+| Version copy | "Referencia: PAA revisada · Guía de estudio ©2021" (presentation only) | `docs/pilot/PAA_VERSION_AUDIT_2026-10-13.md` |
 
-Tests: `tests/unit/exam-bank-engines.test.ts`.
-
-## Zero-cost gap recovery
-
-None for Lectura / Redacción / Inglés: the only rows in those buckets are FIXTURE / DEV_CERT_FIXTURE (never deliverable) and the Canary inventory is rights-blocked. Reading, writing and English items need authored passages and distractors; no deterministic core produces them.
+Zero-cost recovery (final scan): Lectura 0 · Redacción 0 · Inglés 0. Paid generation is revoked; these three components stay NOT_READY.
 
 ## Open decisions (owner: John)
 
-1. Paid provider batch for Lectura / Redacción / Inglés (see the provider gate in the session return).
-2. Rights: `HUMAN50_POLICY_V1` does not deliver `STUDYUS_ORIGINAL_GENERATED` in PILOT_PREVIEW — needs a new policy version plus an originality record.
-3. Certification: the DB guard requires an INDIVIDUAL human review per non-parametric / stimulus item, and stimulus versions `humanApproved`. Who reviews (~100 items, ~10 passages), or is an automated-certification path authorised for the pilot scope?
-4. Generation freeze (`docs/audits/qb_review/GENERATION_FREEZE.json`) is in force — lifting it for PAA is a decision.
-5. The governed blueprint is REDUCED (36 positions). A four-component reduced mock is the achievable target; a 175-item full-length mock is not, and will not be claimed.
-6. Speed strategies: who certifies them (they are content).
-7. Repoint `preview.studyus.pro` to the validated increment (operator action / explicit go).
+1. Lectura / Redacción / Inglés supply: needs either paid generation (revoked) or human-authored content with a certification path. Until then PAA = Matemáticas only.
+2. Speed strategies are certified by automated gates and a proof per item; a human review of the 24 families would upgrade them to HUMAN_CERTIFIED.
+3. PAA version governance migration (see the audit document).
+4. Repoint `preview.studyus.pro` once the new Preview passes authenticated E2E.
 
 ## Not deployed yet
 
-`d5c2e6c` (approved copy: "Práctica certificada por StudyUs" / "Pregunta certificada por StudyUs" + disclaimer) and this increment. Next deploy = new immutable Preview on the candidate DB.
+See the deployment line at the top once the new immutable Preview is verified.

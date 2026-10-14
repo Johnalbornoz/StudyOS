@@ -2363,6 +2363,12 @@ a.pg-subject-title { display: inline-flex; align-items: center; min-height: var(
 .exv2-history-name { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 .exv2-history .ex-card-meta { margin: var(--space-1) 0 0; }
 .exv2-origin { margin: 0; font-size: var(--fs-xs); color: var(--text-muted); }
+/* Practice Coach / time review (certified speed strategies) */
+.xr-coach { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-sm); background: var(--info-subtle); font-size: var(--fs-sm); }
+.xr-coach p { margin: 0; }
+.xr-coach-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.xr-coach-steps { margin: 0; padding-left: var(--space-5); }
+.xr-coach-strategy { display: flex; flex-direction: column; gap: var(--space-2); }
 .exv2-math { display: flex; flex-direction: column; gap: var(--space-2); }
 .exv2-working { min-height: 96px; font-family: var(--font-mono, ui-monospace, monospace); font-size: var(--fs-sm); }
 .exv2-criteria { display: flex; flex-wrap: wrap; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }

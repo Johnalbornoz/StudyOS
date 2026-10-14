@@ -13,6 +13,8 @@
  * Item review respects the attempt's frozen policy (FULL vs SCORES_ONLY) and
  * is only built after submission.
  */
+import { speedReviewOf, type CoachRecord, type SpeedReview } from '@/lib/exam-bank/strategies/coach';
+import { certifiedPaaMathStrategies } from '@/lib/exam-bank/strategies/strategy-resolution';
 import { db } from '@/lib/db';
 import { getConceptKnowledgeState, type MasteryState } from '@/services/knowledge-state.service';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
@@ -35,6 +37,15 @@ export interface ResultObjectiveView {
   concepts: Array<{ canonicalConceptId: string; name: string; studentConceptId: string | null; subjectId: string | null; masteryState: MasteryState | null }>;
 }
 
+/** The stored coach record of a response, read back against the CERTIFIED registry: a strategy that is no longer the certified digest is not shown. */
+function speedOfResponse(coach: unknown, correct: boolean): SpeedReview | null {
+  const c = coach as Partial<CoachRecord> | null | undefined;
+  if (!c || typeof c.targetSeconds !== 'number' || !c.strategy) return null;
+  const strategy = certifiedPaaMathStrategies().find((s) => s.strategyId === c.strategy!.strategyId && s.strategyDigest === c.strategy!.strategyDigest);
+  if (!strategy) return null;
+  return speedReviewOf({ assisted: c.assisted === true, elapsedSeconds: typeof c.elapsedSeconds === 'number' ? c.elapsedSeconds : null, targetSeconds: c.targetSeconds, skipThresholdSeconds: c.skipThresholdSeconds ?? c.targetSeconds * 2, targetProvenance: c.targetProvenance ?? 'STUDYUS_HEURISTIC' }, strategy, correct);
+}
+
 export interface ResultItemReview {
   targetIndex: number;
   sectionName: string;
@@ -46,6 +57,8 @@ export interface ResultItemReview {
   available: number;
   status: 'CORRECT' | 'PARTIAL' | 'INCORRECT' | 'INVALID' | 'MISSING' | 'SKIPPED';
   explanation: string | null;
+  /** Time review (after submission): the certified speed strategy the item inherits and how the answer went against the clock. Null when the item has none. */
+  speed: SpeedReview | null;
   /** V2: how the answer was given (a portfolio submission has no text answer to show). */
   answerKind: 'STANDARD' | 'MATH' | 'PORTFOLIO';
   /** V2: the mark awaits human review (AI assessors disagreed / were unsure / could not see some files). */
@@ -209,7 +222,7 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
     const plan = (await db.query(`SELECT plan FROM simulation_plans WHERE id = $1`, [attempt.simulationPlanId])).rows[0]?.plan ?? {};
     const sections: Array<{ name: string; startIndex: number; endIndex: number }> = plan.sections ?? [];
     const sectionName = (i: number) => sections.find((s) => i >= s.startIndex && i <= s.endIndex)?.name ?? '';
-    const responses = (await db.query(`SELECT id, target_index, raw_response, score, max_score, criteria_breakdown, item_snapshot, review_status FROM exam_attempt_item_responses WHERE exam_attempt_id = $1 AND target_index IS NOT NULL`, [attempt.examAttemptId])).rows;
+    const responses = (await db.query(`SELECT id, target_index, raw_response, score, max_score, criteria_breakdown, item_snapshot, review_status, grading_detail->'coach' AS coach FROM exam_attempt_item_responses WHERE exam_attempt_id = $1 AND target_index IS NOT NULL`, [attempt.examAttemptId])).rows;
     const byIndex = new Map(responses.map((r: any) => [Number(r.target_index), r]));
     // V2: the decisive assessment per rubric response (the adjudicator when there was one, else assessor A).
     const rubricIds = responses.filter((r: any) => r.criteria_breakdown?.rubric).map((r: any) => r.id);
@@ -225,7 +238,7 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
       const state = nav.items?.[String(i)];
       const item: ExamItem | undefined = row?.item_snapshot ?? state?.item;
       if (!item) {
-        review.push({ targetIndex: i, sectionName: sectionName(i), question: '', stimulusTitle: null, yourAnswer: null, correctAnswer: null, earned: 0, available: 0, status: state?.status === 'EXCLUDED' ? 'SKIPPED' : 'MISSING', explanation: null, answerKind: 'STANDARD', reviewRequired: false, rubric: null });
+        review.push({ targetIndex: i, sectionName: sectionName(i), question: '', stimulusTitle: null, yourAnswer: null, correctAnswer: null, earned: 0, available: 0, status: state?.status === 'EXCLUDED' ? 'SKIPPED' : 'MISSING', explanation: null, speed: null, answerKind: 'STANDARD', reviewRequired: false, rubric: null });
         continue;
       }
       const raw = row ? (typeof row.raw_response === 'string' ? row.raw_response : row.raw_response === null ? null : String(row.raw_response)) : null;
@@ -245,6 +258,7 @@ export async function getAttemptResultView(simulationAttemptId: string): Promise
         available,
         status,
         explanation: item.explanation ?? null,
+        speed: speedOfResponse(row?.coach, status === 'CORRECT'),
         answerKind: item.exam?.portfolio ? 'PORTFOLIO' : item.exam?.math || item.exam?.parts?.some((p) => p.answerFormat === 'math') ? 'MATH' : 'STANDARD',
         reviewRequired: row?.review_status === 'REVIEW_REQUIRED',
         rubric: (() => {

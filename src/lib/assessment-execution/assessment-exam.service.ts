@@ -79,12 +79,14 @@ export async function completeExamAssessmentEvidence(simulationAttemptId: string
   });
   const instance = found.rows[0];
   if (!instance) return { ok: false, reason: 'NOT_CANONICAL' };
-  const rows = await db.query(`SELECT id, approved_item_id, score, max_score, review_status FROM exam_attempt_item_responses WHERE exam_attempt_id = $1 AND approved_item_id IS NOT NULL ORDER BY created_at, id`, [instance.exam_attempt_id]);
-  const responses: ScoredResponse[] = (rows.rows as Array<{ id: string; approved_item_id: string; score: string | number | null; max_score: string | number | null; review_status: string | null }>).map((row) => {
+  const rows = await db.query(`SELECT id, approved_item_id, score, max_score, review_status, (grading_detail->'coach'->>'assisted') = 'true' AS assisted FROM exam_attempt_item_responses WHERE exam_attempt_id = $1 AND approved_item_id IS NOT NULL ORDER BY created_at, id`, [instance.exam_attempt_id]);
+  const responses: ScoredResponse[] = (rows.rows as Array<{ id: string; approved_item_id: string; score: string | number | null; max_score: string | number | null; review_status: string | null; assisted: boolean | null }>).map((row) => {
     const itemKey = `REVIEWED_EXAM_BANK:${row.approved_item_id}`;
     const max = row.max_score === null ? null : Number(row.max_score);
     // a response awaiting review is not evidence until a reviewer confirms its mark (the existing rule)
     if (row.review_status === 'REVIEW_REQUIRED') return { itemKey, responseRef: row.id, status: 'PENDING_REVIEW', fraction: null };
+    // coached practice: the Student opened the speed strategy before answering -- practice, not independent evidence
+    if (row.assisted === true) return { itemKey, responseRef: row.id, status: 'ASSISTED', fraction: null };
     if (row.score === null || max === null || max <= 0) return { itemKey, responseRef: row.id, status: 'UNANSWERED', fraction: null };
     return { itemKey, responseRef: row.id, status: 'SCORED', fraction: Math.max(0, Math.min(1, Number(row.score) / max)) };
   });

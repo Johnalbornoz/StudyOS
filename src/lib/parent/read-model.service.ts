@@ -13,6 +13,7 @@
  * field-classification decisions.
  */
 
+import { studentFacingExamReference } from '@/lib/exam-core/exam-family-owner';
 import { studentAudienceDefinitionSql } from '@/lib/exam-core/audience';
 import { db } from '@/lib/db';
 import { isActiveParentOf, LEARNER_READ_SCOPE, type LearnerReadScope } from '@/lib/authorization';
@@ -408,7 +409,7 @@ function toParentReleasedResult(view: AttemptResultView): ParentReleasedResult |
   return {
     attemptId: view.attemptId,
     examName: view.exam.definitionName,
-    versionLabel: view.exam.versionLabel,
+    versionLabel: studentFacingExamReference(view.exam.family, view.exam.versionLabel).text,
     simulationType: view.simulationType,
     status: result.status,
     scoringStatus: result.scoringStatus,

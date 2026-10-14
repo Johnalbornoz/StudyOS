@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   const { refreshVersionHealth } = await import('@/lib/exam-core/question-bank/health.service');
   const { resolveExamLevel } = await import('@/lib/exam-core/catalog/structure.service');
   const { createExamInstance, startExamInstance, ensureExamProfile, getExamInstance, ExamInstanceError } = await import('@/lib/exam-core/exam-instance.service');
-  const { getNextSimulationItem, submitSimulationItemAnswer, finalizeOpenItemsForSubmission } = await import('@/lib/simulation/item-resolution.service');
+  const { getNextSimulationItem, submitSimulationItemAnswer, finalizeOpenItemsForSubmission, revealSimulationItemStrategy } = await import('@/lib/simulation/item-resolution.service');
   const { completeSimulationAttempt, getSimulationAttempt } = await import('@/lib/simulation/attempt.service');
   const { finalizeExamCompletion } = await import('@/lib/exam-core/post-completion');
   const { examAvailabilityForVersion } = await import('@/lib/assessment-experience/assessment-experience.service');
@@ -76,8 +76,8 @@ async function main(): Promise<void> {
     const learningEvidenceBefore = await n(`SELECT count(*)::int AS n FROM learning_evidence WHERE student_id = $1`, [S]);
 
     /** Drives one started attempt to its end with the SERVER-held key (the harness reads it; a client never can). */
-    const drive = async (simId: string, pattern: (i: number) => boolean) => {
-      const out = { delivered: 0, unavailable: 0, leak: null as string | null, approvedItemIds: [] as string[], objectiveOf: [] as string[] };
+    const drive = async (simId: string, pattern: (i: number) => boolean, reveal: (i: number) => boolean = () => false) => {
+      const out = { delivered: 0, unavailable: 0, leak: null as string | null, approvedItemIds: [] as string[], objectiveOf: [] as string[], coached: 0, targets: new Set<number>(), strategyBeforeAsking: 0, revealed: 0, revealRefusals: [] as string[], reviews: [] as any[], noShortcut: 0, strategyTypes: new Set<string>() };
       for (let guard = 0; guard < 80; guard += 1) {
         const next = await getNextSimulationItem(actor, simId);
         if (next.outcome === 'COMPLETE') break;
@@ -87,8 +87,19 @@ async function main(): Promise<void> {
         const item = state.item;
         out.approvedItemIds.push(item.exam.approvedItemId);
         out.objectiveOf.push(state.ctx.learningObjectiveId);
+        // ---- Practice Coach: present only in coached practice; the strategy only after it was asked for
+        if (next.coach) { out.coached += 1; out.targets.add(next.coach.timing.targetSeconds); if (next.coach.strategy) out.strategyBeforeAsking += 1; }
+        if (reveal(out.delivered) || !next.coach) {
+          try {
+            const shown = await revealSimulationItemStrategy(actor, simId, next.targetIndex);
+            out.revealed += 1; out.strategyTypes.add(shown.strategy.strategyType); if (shown.strategy.noReliableShortcut) out.noShortcut += 1;
+            const again = await getNextSimulationItem(actor, simId, next.targetIndex);
+            if (again.outcome !== 'ITEM_READY' || !again.coach?.assisted || !again.coach.strategy) throw new Error('a revealed strategy is not held on the attempt');
+          } catch (e: any) { out.revealRefusals.push(String(e?.code ?? e?.message ?? e)); }
+        }
         const answer = pattern(out.delivered) ? String(item.exam.acceptableAnswers?.[0] ?? item.correctAnswer) : '987654321';
-        await submitSimulationItemAnswer(actor, simId, answer, `ebr:${simId}:${next.targetIndex}`, next.targetIndex);
+        const submitted = await submitSimulationItemAnswer(actor, simId, answer, `ebr:${simId}:${next.targetIndex}`, next.targetIndex);
+        if (submitted.speedReview) out.reviews.push(submitted.speedReview);
         out.delivered += 1;
       }
       return out;
@@ -149,8 +160,25 @@ async function main(): Promise<void> {
     check('P11 exposure is recorded: the 12 items are in this Student\'s history', (await n(`SELECT count(DISTINCT approved_item_id)::int AS n FROM exam_item_usage WHERE student_id = $1 AND approved_item_id = ANY($2::uuid[])`, [S, pRun.approvedItemIds])) === 12);
     const practice2 = await createExamInstance({ studentId: S, examProfileId: profileId, examVersionId: paa.version_id, componentIds: [math.id], mode: 'PRACTICE' });
     const p2Sim = (await startExamInstance(practice2.id, { language: 'es' })).simulationAttemptId!;
-    const p2Run = await drive(p2Sim, () => true);
+    const p2Run = await drive(p2Sim, () => true, (i) => i < 12 && i % 4 === 0);
     await finish(p2Sim);
+    const p2Exam = (await one(`SELECT exam_attempt_id FROM simulation_attempts WHERE id = $1`, [p2Sim])).exam_attempt_id as string;
+    const p2Coach = (await db.query(`SELECT grading_detail->'coach' AS coach, score, max_score FROM exam_attempt_item_responses WHERE exam_attempt_id = $1 ORDER BY target_index`, [p2Exam])).rows as { coach: any; score: string; max_score: string }[];
+    const p2Evidence = await examEvidenceOf(p2Exam);
+    check('S1  coached practice: every item shows a target time (65 s, OFFICIAL_DERIVED) and no strategy until it is asked for', p2Run.coached === 12 && [...p2Run.targets].join() === '65' && p2Run.strategyBeforeAsking === 0, `${p2Run.coached} coached, targets ${[...p2Run.targets]}`);
+    check('S2  "Ver estrategia rápida" returns the item\'s certified strategy and is held on the attempt', p2Run.revealed === 3 && p2Run.revealRefusals.length === 0, `${p2Run.revealed} revealed ${[...p2Run.strategyTypes]} ${p2Run.revealRefusals}`);
+    check('S3  a strategy opened before answering makes the response ASSISTED, stored with the exact inherited family', p2Coach.length === 12 && p2Coach.filter((r) => r.coach?.assisted === true).length === 3 && p2Coach.every((r) => r.coach?.strategy?.itemCertificationState === 'INHERITED_DETERMINISTIC' && r.coach.strategy.familyCertificationState === 'AUTOMATED_CERTIFIED_PILOT' && /^[a-f0-9]{64}$/.test(r.coach.strategy.strategyDigest) && typeof r.coach.elapsedSeconds === 'number'), `${p2Coach.filter((r) => r.coach?.assisted === true).length} assisted of ${p2Coach.length}`);
+    check('S4  the score is unaffected (12 of 12) and each answer gets a time review with the certified method', p2Coach.every((r) => Number(r.score) === Number(r.max_score)) && p2Run.reviews.length === 12 && p2Run.reviews.filter((r) => r.assisted).length === 3 && p2Run.reviews.every((r) => r.correct && r.targetSeconds === 65 && r.strategy.fastPath.length > 0 && r.strategy.directPath.length > 0 && r.verdict), `${p2Run.reviews.length} reviews`);
+    check('S5  assisted responses are not independent evidence: 9 EXAM_ASSESSMENT rows for 12 correct answers', p2Evidence.length === 9, `${p2Evidence.length} evidence rows`);
+    // deterministic: read from the persisted bank an item whose family is NO_RELIABLE_SHORTCUT and resolve it as the runtime does
+    const { coachOfItem } = await import('@/lib/exam-bank/strategies/coach');
+    const { examItemFromApproved } = await import('@/lib/exam-core/items');
+    const nsRows = (await db.query(`SELECT ai.id, ai.learning_objective_id, ai.content FROM approved_items ai JOIN question_bank_items qi ON qi.current_version_id = ai.id WHERE qi.lineage_class = 'CORE_DERIVED' AND ai.content->>'question' ~ '^Si x\\(' LIMIT 3`)).rows;
+    const nsCoaches = nsRows.map((r: any) => { const it = examItemFromApproved(r); return it ? coachOfItem(it) : null; });
+    const allRows = (await db.query(`SELECT ai.id, ai.learning_objective_id, ai.content FROM approved_items ai JOIN question_bank_items qi ON qi.current_version_id = ai.id JOIN exam_versions v ON v.id = qi.exam_version_id JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE qi.lineage_class = 'CORE_DERIVED' AND d.config_key = 'v2.paa' AND ai.status = 'PUBLISHED'`)).rows;
+    const covered = allRows.filter((r: any) => { const it = examItemFromApproved(r); return !!it && !!coachOfItem(it); }).length;
+    check('S6  NO_RELIABLE_SHORTCUT is a governed result: persisted items of that family resolve to it', nsRows.length === 3 && nsCoaches.every((c: any) => c?.strategy.strategyType === 'NO_RELIABLE_SHORTCUT'), `${nsCoaches.map((c: any) => c?.strategy.strategyId).join(',')}`);
+    check('S6b every persisted PAA Matemáticas Exam Bank item resolves to a certified, proven strategy', allRows.length === 296 && covered === 296, `${covered} of ${allRows.length}`);
     check('P12 a second practice prefers items the Student has not met: none of the first 12 is repeated', p2Run.delivered === 12 && p2Run.approvedItemIds.every((id) => !pRun.approvedItemIds.includes(id)), `${p2Run.approvedItemIds.filter((id) => pRun.approvedItemIds.includes(id)).length} repeated`);
 
     /* ------------------------------------------------ M: Reduced Mock ------------------------------------------------ */
@@ -172,6 +200,7 @@ async function main(): Promise<void> {
     const mExamAttempt = (await getSimulationAttempt(mSim))!.examAttemptId;
     const mScore = await one(`SELECT count(*)::int AS responses, sum(score)::float AS earned FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [mExamAttempt]);
     const mEvidence = await examEvidenceOf(mExamAttempt);
+    check('S7  a simulation shows no target, no strategy and refuses the reveal; nothing is ASSISTED', mRun.coached === 0 && mRun.revealed === 0 && mRun.reviews.length === 0 && mRun.revealRefusals.length === 12 && mRun.revealRefusals.every((c) => c === 'STRATEGY_NOT_AVAILABLE_IN_SIMULATION') && (await n(`SELECT count(*)::int AS n FROM exam_attempt_item_responses r JOIN simulation_attempts sa ON sa.exam_attempt_id = r.exam_attempt_id WHERE sa.id = $1 AND r.grading_detail->'coach'->>'assisted' = 'true'`, [mSim])) === 0, `${mRun.revealRefusals.length} refusals ${[...new Set(mRun.revealRefusals)]}`);
     check('M4  scored (6 of 12 right, as answered) and completed', Number(mScore.responses) === 12 && Number(mScore.earned) === 6 && (await getSimulationAttempt(mSim))!.status === 'COMPLETED', JSON.stringify(mScore));
     check('M5  evidence is EXAM_ASSESSMENT', mEvidence.length > 0 && mEvidence.every((e) => e.metadata?.assessment?.supply?.evidenceClass === 'EXAM_ASSESSMENT'), `${mEvidence.length} rows`);
     check('M6  the mock did not reuse an item this Student met in practice', mRun.approvedItemIds.every((id) => !pRun.approvedItemIds.includes(id) && !p2Run.approvedItemIds.includes(id)));

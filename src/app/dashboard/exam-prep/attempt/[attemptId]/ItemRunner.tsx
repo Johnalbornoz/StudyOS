@@ -136,6 +136,31 @@ export interface ItemRunnerLabels {
   v2?: ItemRunnerV2Labels;
 }
 
+/** Practice Coach (coached practice only; a simulation never receives it). The strategy is certified Exam Bank content. */
+interface CoachStrategy { strategyType: string; noReliableShortcut: boolean; title: string; fastPath: string[]; whyFastPathWorks: string; directPath: string[]; commonTimeTrap: string; whenNotToUse: string; mentalMathOpportunity: string | null }
+interface CoachTiming { targetSeconds: number; skipThresholdSeconds: number; targetProvenance: string; skipThresholdProvenance: string }
+interface CoachView { timing: CoachTiming; elapsedSeconds: number; strategyAvailable: boolean; assisted: boolean; strategy: CoachStrategy | null }
+interface SpeedReviewView { correct: boolean; assisted: boolean; targetSeconds: number; actualSeconds: number | null; deltaSeconds: number | null; verdict: string | null; targetProvenance: string; strategy: CoachStrategy }
+
+function StrategyBody({ s, l, review }: { s: CoachStrategy; l: Record<string, string>; review: boolean }) {
+  return (
+    <div className="xr-coach-strategy">
+      <p className="xr-coach-strategy-title"><strong>{s.noReliableShortcut ? l['exv2.coach.noShortcut'] : l['exv2.coach.fast']}:</strong> {s.title}</p>
+      <ol className="xr-coach-steps">{s.fastPath.map((x, i) => <li key={i}>{x}</li>)}</ol>
+      {s.mentalMathOpportunity && <p><strong>{l['exv2.coach.mental']}:</strong> {s.mentalMathOpportunity}</p>}
+      <p><strong>{l['exv2.coach.why']}:</strong> {s.whyFastPathWorks}</p>
+      <p><strong>{l['exv2.coach.trap']}:</strong> {s.commonTimeTrap}</p>
+      {review && (
+        <>
+          <p><strong>{l['exv2.coach.direct']}:</strong></p>
+          <ol className="xr-coach-steps">{s.directPath.map((x, i) => <li key={i}>{x}</li>)}</ol>
+        </>
+      )}
+      <p className="ui-hint"><strong>{l['exv2.coach.notWhen']}:</strong> {s.whenNotToUse}</p>
+    </div>
+  );
+}
+
 type Phase = 'loading' | 'ready' | 'submitting' | 'unavailable' | 'skipping' | 'break' | 'complete' | 'handingIn' | 'error';
 
 function decodeMath(value: unknown): MathStaged | undefined {
@@ -327,6 +352,10 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
   const [safety, setSafety] = useState<SafetyNoticeData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [lastFeedback, setLastFeedback] = useState<string | null>(null);
+  const [coach, setCoach] = useState<CoachView | null>(null);
+  const [coachSince, setCoachSince] = useState<number | null>(null);
+  const [revealing, setRevealing] = useState(false);
+  const [lastReview, setLastReview] = useState<SpeedReviewView | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [deadline, setDeadline] = useState<number | null>(null);
   const [breakUntil, setBreakUntil] = useState<number | null>(null);
@@ -377,6 +406,8 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
           return;
         }
         setQuestion(data.question);
+        setCoach(data.coach ?? null);
+        setCoachSince(data.coach ? Date.now() - data.coach.elapsedSeconds * 1000 : null);
         setStaged(decodeDraft(data.question, data.draft));
         lastSaved.current = data.draft ?? null;
         dirty.current = false;
@@ -487,12 +518,26 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
         return;
       }
       setLastFeedback(body.data.evaluation?.feedback ?? null);
+      setLastReview(body.data.speedReview ?? null);
       setNotice(body.data.evaluation ? null : labels.answerRecorded);
       if (body.data.done) setPhase('complete');
       else await loadItem();
     } catch {
       setError(labels.submitError);
       setPhase('ready');
+    }
+  }
+
+  /** Practice Coach: asks for the item's certified speed strategy. The server records it (the answer will be ASSISTED) before returning it. */
+  async function onRevealStrategy() {
+    if (!question || !coach || coach.strategy || revealing) return;
+    setRevealing(true);
+    try {
+      const res = await fetch(`/api/simulation/attempts/${attemptId}/next-item`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'revealStrategy', targetIndex }) });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body?.data?.strategy) setCoach({ ...coach, assisted: true, strategy: body.data.strategy });
+    } finally {
+      setRevealing(false);
     }
   }
 
@@ -675,6 +720,23 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
       {notice && <p className="xr-notice" role="status">{notice}</p>}
       {safety && <SafetyNotice safety={safety} />}
       {navStrip}
+      {lastReview && labels.v2 && (
+        <section className="card xr-coach xr-coach-review" aria-label={labels.v2['exv2.coach.review']}>
+          <div className="xr-coach-head">
+            <strong>{labels.v2['exv2.coach.review']}</strong>
+            <span className={`xr-pill is-${lastReview.correct ? 'correct' : 'incorrect'}`}>{lastReview.correct ? labels.v2['exv2.coach.correct'] : labels.v2['exv2.coach.incorrect']}</span>
+            {lastReview.assisted && <span className="xr-pill">{labels.v2['exv2.coach.assisted']}</span>}
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setLastReview(null)}>{labels.v2['exv2.coach.dismiss']}</button>
+          </div>
+          <p>
+            {lastReview.actualSeconds === null
+              ? labels.v2['exv2.coach.timeUnknown'].replace('{t}', String(lastReview.targetSeconds))
+              : labels.v2['exv2.coach.time'].replace('{a}', String(lastReview.actualSeconds)).replace('{t}', String(lastReview.targetSeconds)).replace('{d}', (lastReview.deltaSeconds ?? 0) <= 0 ? labels.v2['exv2.coach.faster'].replace('{n}', String(Math.abs(lastReview.deltaSeconds ?? 0))) : labels.v2['exv2.coach.slower'].replace('{n}', String(lastReview.deltaSeconds)))}
+            {lastReview.verdict && labels.v2[`exv2.coach.verdict.${lastReview.verdict}`] ? ` · ${labels.v2[`exv2.coach.verdict.${lastReview.verdict}`]}` : ''}
+          </p>
+          <StrategyBody s={lastReview.strategy} l={labels.v2} review />
+        </section>
+      )}
       {question?.stimulus && (
         <section className="card xr-stimulus" aria-label={question.stimulus.title ?? undefined}>
           {question.stimulus.title && <h3 className="xr-stimulus-title">{question.stimulus.title}</h3>}
@@ -705,6 +767,32 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
           )}
           <AnswerInput item={question} staged={staged} onChange={onChange} labels={labels} locale={locale} instanceId={instanceId} onPortfolioReady={onPortfolioReady} />
           {question.originLabel && labels.v2?.[question.originLabel] && <p className="exv2-origin">{labels.v2[question.originLabel]}</p>}
+          {coach && labels.v2 && (() => {
+            const l = labels.v2;
+            const elapsed = coachSince === null ? coach.elapsedSeconds : Math.max(0, Math.round((now - coachSince) / 1000));
+            return (
+              <div className="xr-coach" data-testid="speed-coach">
+                <div className="xr-coach-head">
+                  <strong>{l['exv2.coach.title']}</strong>
+                  <span className="xr-pill" title={l[`exv2.coach.targetNote.${coach.timing.targetProvenance}`]}>{l['exv2.coach.target'].replace('{s}', String(coach.timing.targetSeconds))}</span>
+                  <span className={`xr-pill${elapsed > coach.timing.targetSeconds ? ' is-incorrect' : ''}`} role="timer" aria-live="off">{l['exv2.coach.elapsed'].replace('{t}', formatClock(elapsed))}</span>
+                  {coach.assisted && <span className="xr-pill">{l['exv2.coach.assisted']}</span>}
+                </div>
+                <p className="ui-hint">{l[`exv2.coach.targetNote.${coach.timing.targetProvenance}`]}</p>
+                {elapsed > coach.timing.skipThresholdSeconds && <p className="xr-notice" role="status">{l['exv2.coach.skipRule']}</p>}
+                {coach.strategy ? (
+                  <StrategyBody s={coach.strategy} l={l} review={false} />
+                ) : (
+                  coach.strategyAvailable && (
+                    <div>
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={onRevealStrategy} disabled={revealing}>{l['exv2.coach.show']}</button>
+                      <p className="ui-hint">{l['exv2.coach.showNote']}</p>
+                    </div>
+                  )
+                )}
+              </div>
+            );
+          })()}
           <div className="xr-save" aria-live="polite">
             {saveState === 'saving' ? labels.saving : saveState === 'saved' ? labels.saved : saveState === 'error' ? labels.saveError : ''}
           </div>

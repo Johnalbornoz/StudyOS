@@ -34,7 +34,9 @@ import { listComponentsForVersion } from '@/lib/assessment/component.service';
 import { recordSimulationItemResponse } from './scoring.service';
 import { sourceExamItem, type ItemUnavailableReason } from '@/lib/exam-core/item-sourcing.service';
 import { certifiedItemsNoLongerEligible } from '@/lib/exam-bank/delivery-scope';
-import { findAnswerKeyLeak, toExamClientItem, type ExamClientItem } from '@/lib/exam-core/items';
+import { shuffledByIdentity } from '@/lib/exam-bank/engines/selected-response';
+import { coachOfItem, coachRecordOf, speedReviewOf, strategyClientView, type CoachStrategyView, type CoachTiming, type SpeedReview } from '@/lib/exam-bank/strategies/coach';
+import { findAnswerKeyLeak, toExamClientItem, type ExamClientItem, type ExamItem } from '@/lib/exam-core/items';
 import { structuredAnswerProblem } from '@/lib/exam-core/item-grading';
 import { portfolioAnswerProblem } from '@/lib/exam-core/submissions/submission.service';
 import {
@@ -48,6 +50,7 @@ import {
   sectionDeadline,
   upgradeNavState,
   usedApprovedItemIds,
+  type ExamItemState,
   type ExamNavState,
 } from '@/lib/exam-core/navigation-state';
 import type { SimulationAttempt, SimulationPlan, SimulationPlanSection } from './types';
@@ -80,7 +83,7 @@ export class SimulationItemNoPendingItemError extends Error {
 }
 /** The requested item is not reachable under the attempt's navigation policy (or its section is closed). */
 export class SimulationNavigationError extends Error {
-  constructor(public readonly code: 'NAVIGATION_NOT_ALLOWED' | 'SECTION_CLOSED' | 'ON_BREAK') {
+  constructor(public readonly code: 'NAVIGATION_NOT_ALLOWED' | 'SECTION_CLOSED' | 'ON_BREAK' | 'STRATEGY_NOT_AVAILABLE_IN_SIMULATION' | 'NO_CERTIFIED_STRATEGY') {
     super(code);
     this.name = 'SimulationNavigationError';
   }
@@ -117,8 +120,15 @@ export interface ItemContextView {
   serverTime: string;
 }
 
+/**
+ * Practice Coach, for a delivered item. Present ONLY when the attempt's policy gives feedback after each item: a
+ * simulation gets null -- no target, no strategy, no hint while it runs. The strategy itself is included only after
+ * the Student asked for it (which is recorded and makes the response ASSISTED).
+ */
+export interface ItemCoachView { timing: CoachTiming; elapsedSeconds: number; strategyAvailable: true; assisted: boolean; strategy: CoachStrategyView | null }
+
 export type NextSimulationItemResult =
-  | ({ outcome: 'ITEM_READY'; targetIndex: number; totalTargets: number; question: ExamClientItem; draft: string | null } & ItemContextView)
+  | ({ outcome: 'ITEM_READY'; targetIndex: number; totalTargets: number; question: ExamClientItem; draft: string | null; coach: ItemCoachView | null } & ItemContextView)
   | { outcome: 'COMPLETE'; totalTargets: number }
   | { outcome: 'BREAK'; totalTargets: number; breakUntil: string; nextSectionName: string | null; serverTime: string }
   | ({ outcome: 'ITEM_UNAVAILABLE'; targetIndex: number; totalTargets: number; reason: ItemUnavailableReason } & ItemContextView);
@@ -189,6 +199,9 @@ async function withCas<T>(
 async function commitAnswer(loaded: LoadedAttempt, index: number, answer: string, idempotencyKey: string) {
   const state = loaded.nav.items[String(index)];
   if (!state?.item || !state.ctx) throw new SimulationItemNoPendingItemError();
+  // Time review: the item's certified speed strategy and timing travel with the response. ASSISTED only in coached
+  // practice, where the strategy can be opened before answering.
+  const coach = coachOfItem(state.item);
   const rec = await recordSimulationItemResponse({
     examAttemptId: loaded.attempt.examAttemptId,
     studentId: loaded.attempt.studentId,
@@ -202,11 +215,12 @@ async function commitAnswer(loaded: LoadedAttempt, index: number, answer: string
     language: loaded.attempt.language,
     idempotencyKey,
     targetIndex: index,
+    coach: coach ? { ...coachRecordOf(coach, state, Date.now()) } : undefined,
   });
   loaded.nav.items[String(index)] = { ...state, status: 'ANSWERED', responseId: rec.responseId, draft: undefined, draftSavedAt: undefined };
   const target = loaded.plan.selectedTargets[index];
   if (target && !loaded.nav.visitedTargetIds.includes(target.blueprintObjectiveTargetId)) loaded.nav.visitedTargetIds.push(target.blueprintObjectiveTargetId);
-  return rec;
+  return { ...rec, coach, coachRecord: coach ? coachRecordOf(coach, state, Date.now()) : null };
 }
 
 /**
@@ -369,10 +383,56 @@ export async function getNextSimulationItem(actorUserId: string, attemptId: stri
     if (state.status === 'UNAVAILABLE') {
       return { result: { outcome: 'ITEM_UNAVAILABLE', targetIndex: index, totalTargets, reason: state.unavailableReason ?? 'NO_ITEM_GENERATED', ...view }, write };
     }
-    return {
-      result: { outcome: 'ITEM_READY', targetIndex: index, totalTargets, question: guardNoLeak(toExamClientItem(state.item!, index)), draft: state.draft ?? null, ...view },
+    const ready = {
+      result: { outcome: 'ITEM_READY' as const, targetIndex: index, totalTargets, question: guardNoLeak(toExamClientItem(state.item!, index)), draft: state.draft ?? null, coach: coachViewOf(loaded.nav, state, nowMs), ...view },
       write,
     };
+    ready.result.question = presentedTo(attemptId, state.item!, ready.result.question, index);
+    return ready;
+  });
+}
+
+/**
+ * The browser-bound item of one attempt position. A certified selected-response item shows its options in an order
+ * that is this attempt's own (deterministic: a reload shows the same order); it is scored by option id, so the order
+ * never carries the answer. Every other item is presented as stored.
+ */
+function presentedTo(attemptId: string, item: ExamItem, client: ExamClientItem, index: number): ExamClientItem {
+  if (item.exam.studyusCertified !== true || item.answerFormat !== 'single_choice' || !client.options || item.exam.parts) return client;
+  return { ...client, options: shuffledByIdentity(client.options, `${attemptId}:${index}`) };
+}
+
+const isCoachedPractice = (nav: ExamNavState): boolean => nav.policy?.itemFeedback === 'AFTER_EACH_ITEM';
+function coachViewOf(nav: ExamNavState, state: ExamItemState, nowMs: number): ItemCoachView | null {
+  if (!isCoachedPractice(nav) || state.status !== 'DELIVERED' || !state.item) return null;
+  const coach = coachOfItem(state.item);
+  if (!coach) return null;
+  const delivered = state.deliveredAt ? new Date(state.deliveredAt).getTime() : nowMs;
+  return { timing: coach.timing, elapsedSeconds: Math.max(0, Math.round((nowMs - delivered) / 1000)), strategyAvailable: true, assisted: !!state.strategyRevealedAt, strategy: state.strategyRevealedAt ? strategyClientView(coach.strategy) : null };
+}
+
+/**
+ * Practice Coach: the Student asks to see the item's certified speed strategy BEFORE answering. Recorded on the
+ * attempt (the response will be ASSISTED) and only then returned. Refused in a simulation: nothing is shown while an
+ * exam runs. The strategy is certified content of the Exam Bank; no model is asked for anything.
+ */
+export async function revealSimulationItemStrategy(actorUserId: string, attemptId: string, index: number): Promise<{ targetIndex: number; assisted: true; strategy: CoachStrategyView; timing: CoachTiming }> {
+  return withCas(actorUserId, attemptId, ['ACTIVE'], async (loaded) => {
+    const nowMs = Date.now();
+    await housekeep(loaded, nowMs);
+    const { nav, sections } = loaded;
+    if (!isCoachedPractice(nav)) throw new SimulationNavigationError('STRATEGY_NOT_AVAILABLE_IN_SIMULATION');
+    if (nav.sectionIndex >= sections.length) throw new SimulationNavigationError('SECTION_CLOSED');
+    const section = sections[nav.sectionIndex];
+    if (index < section.startIndex || index > section.endIndex) throw new SimulationNavigationError('SECTION_CLOSED');
+    const state = nav.items[String(index)];
+    if (!state || state.status !== 'DELIVERED' || !state.item) throw new SimulationItemNoPendingItemError();
+    const coach = coachOfItem(state.item);
+    if (!coach) throw new SimulationNavigationError('NO_CERTIFIED_STRATEGY');
+    const first = !state.strategyRevealedAt;
+    if (first) nav.items[String(index)] = { ...state, strategyRevealedAt: new Date(nowMs).toISOString() };
+    if (first) console.log('[exam-core]', JSON.stringify({ at: 'speed_strategy_revealed', attemptId, targetIndex: index, strategyId: coach.strategy.strategyId, assisted: true }));
+    return { result: { targetIndex: index, assisted: true as const, strategy: strategyClientView(coach.strategy), timing: coach.timing }, write: first };
   });
 }
 
@@ -398,6 +458,8 @@ export async function saveSimulationItemDraft(actorUserId: string, attemptId: st
 export interface SubmitSimulationItemResult {
   /** Present only when the attempt's delivery policy allows item feedback. */
   evaluation: { score: number; maxScore: number; feedback: string | null } | null;
+  /** Coached practice only: how the answer went against the clock and the item's certified speed strategy. Null in a simulation. */
+  speedReview: SpeedReview | null;
   done: boolean;
   targetIndex: number;
   totalTargets: number;
@@ -463,6 +525,7 @@ export async function submitSimulationItemAnswer(
     return {
       result: {
         evaluation: feedbackAllowed ? { score: rec.evaluation.score, maxScore: rec.evaluation.maxScore, feedback: rec.evaluation.feedback ?? null } : null,
+        speedReview: feedbackAllowed && !rec.duplicate && rec.coach && rec.coachRecord ? speedReviewOf(rec.coachRecord, rec.coach.strategy, rec.grade.fraction >= 1) : null,
         done: nav.sectionIndex >= sections.length,
         targetIndex: index,
         totalTargets: plan.selectedTargets.length,

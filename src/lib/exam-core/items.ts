@@ -216,6 +216,8 @@ export interface ExamItemMeta {
   contentOrigin?: ContentOrigin;
   /** The item is a certified StudyUs Exam Bank item (the projection of a certified instance). Presentation only: provenance lives in the bank. */
   studyusCertified?: boolean;
+  /** Server-side only: the construct family a certified item was rendered from (its immutable generation lineage). Never sent to the browser. */
+  certifiedLineage?: { systemId: string; adapterId: string; constructFamilyId: string; constructFamilyVersion: string } | null;
   scoringStrategy?: ScoringStrategyKind;
   math?: MathKeyContent | null;
   method?: MethodKey | null;
@@ -247,6 +249,13 @@ export function scoringStrategyOf(item: ExamItem): ScoringStrategyKind {
 
 /** Server-held item: the full question (with answer key) + exam metadata. Never sent to the client as-is. */
 export type ExamItem = GeneratedQuestion & { exam: ExamItemMeta };
+
+function certifiedLineageOf(certified: unknown): ExamItemMeta['certifiedLineage'] {
+  const g = (certified as { generationLineage?: Record<string, unknown> } | undefined)?.generationLineage;
+  const s = (k: string): string | null => (typeof g?.[k] === 'string' && (g[k] as string).length > 0 ? (g[k] as string) : null);
+  const [systemId, adapterId, constructFamilyId, constructFamilyVersion] = [s('assessmentSystemId'), s('assessmentAdapterId'), s('constructFamilyId'), s('constructFamilyVersion')];
+  return systemId && adapterId && constructFamilyId && constructFamilyVersion ? { systemId, adapterId, constructFamilyId, constructFamilyVersion } : null;
+}
 
 export function examItemFromApproved(row: { id: string; learning_objective_id: string; content: unknown }): ExamItem | null {
   const parsed = ApprovedItemContentSchema.safeParse(row.content);
@@ -283,6 +292,7 @@ export function examItemFromApproved(row: { id: string; learning_objective_id: s
       commandTerm: c.commandTerm ?? null,
       contentOrigin: contentOriginOf(c),
       studyusCertified: c.certified !== undefined,
+      certifiedLineage: certifiedLineageOf(c.certified),
       scoringStrategy: c.scoringStrategy,
       math: c.math ?? null,
       method: c.method ?? null,

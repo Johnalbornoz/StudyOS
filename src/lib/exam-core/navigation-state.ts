@@ -32,6 +32,8 @@ export interface ExamItemState {
   responseId?: string;
   unavailableReason?: ItemUnavailableReason;
   deliveredAt?: string;
+  /** Practice Coach: when the Student opened the item's speed strategy BEFORE answering. Its presence makes the response ASSISTED. */
+  strategyRevealedAt?: string;
 }
 
 export interface ExamNavState {

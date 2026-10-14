@@ -307,6 +307,27 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
                         )}
                         {r.correctAnswer && r.answerKind !== 'PORTFOLIO' && !r.rubric && <p><strong>{t['examPrep.result.correctAnswer']}:</strong> {r.answerKind === 'MATH' ? <MathText text={r.correctAnswer} /> : r.correctAnswer}</p>}
                         {r.explanation && <p className="ui-hint">{r.explanation}</p>}
+                        {r.speed && (
+                          <div className="xr-coach">
+                            <div className="xr-coach-head">
+                              <strong>{tr['exv2.coach.resultTitle']}</strong>
+                              {r.speed.assisted && <span className="xr-pill">{tr['exv2.coach.assisted']}</span>}
+                            </div>
+                            <p>
+                              {r.speed.actualSeconds === null
+                                ? tr['exv2.coach.timeUnknown'].replace('{t}', String(r.speed.targetSeconds))
+                                : tr['exv2.coach.time'].replace('{a}', String(r.speed.actualSeconds)).replace('{t}', String(r.speed.targetSeconds)).replace('{d}', (r.speed.deltaSeconds ?? 0) <= 0 ? tr['exv2.coach.faster'].replace('{n}', String(Math.abs(r.speed.deltaSeconds ?? 0))) : tr['exv2.coach.slower'].replace('{n}', String(r.speed.deltaSeconds)))}
+                              {r.speed.verdict && tr[`exv2.coach.verdict.${r.speed.verdict}`] ? ` · ${tr[`exv2.coach.verdict.${r.speed.verdict}`]}` : ''}
+                            </p>
+                            <p className="ui-hint">{tr[`exv2.coach.targetNote.${r.speed.targetProvenance}`]}</p>
+                            <p><strong>{r.speed.strategy.noReliableShortcut ? tr['exv2.coach.noShortcut'] : tr['exv2.coach.fast']}:</strong> {r.speed.strategy.title}</p>
+                            <ol className="xr-coach-steps">{r.speed.strategy.fastPath.map((x, k) => <li key={k}>{x}</li>)}</ol>
+                            <p><strong>{tr['exv2.coach.why']}:</strong> {r.speed.strategy.whyFastPathWorks}</p>
+                            <p><strong>{tr['exv2.coach.trap']}:</strong> {r.speed.strategy.commonTimeTrap}</p>
+                            <p><strong>{tr['exv2.coach.direct']}:</strong></p>
+                            <ol className="xr-coach-steps">{r.speed.strategy.directPath.map((x, k) => <li key={k}>{x}</li>)}</ol>
+                          </div>
+                        )}
                       </div>
                     </details>
                   </li>

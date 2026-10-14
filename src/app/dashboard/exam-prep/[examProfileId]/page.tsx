@@ -1,3 +1,4 @@
+import { studentFacingExamReference } from '@/lib/exam-core/exam-family-owner';
 import { preparationSimulationTypes } from '@/lib/simulation/preparation-simulation';
 import { auth } from '@clerk/nextjs/server';
 import { examAudienceOf } from '@/lib/exam-core/audience';
@@ -294,7 +295,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
       />
       <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} />
       <p className="ui-hint" style={{ margin: 0 }}>
-        {[definition?.examFamily ? tr[`exam.family.${definition.examFamily}`] ?? definition.examFamily : null, examVersion ? `${t['examPrep.version']}: ${examVersion.versionLabel}` : null, sitting ? `${t['exam.sitting']}: ${sitting}` : null, contentStatus ? tr[`exam.contentStatus.${contentStatus}`] : null]
+        {[definition?.examFamily ? tr[`exam.family.${definition.examFamily}`] ?? definition.examFamily : null, examVersion ? (() => { const ref = studentFacingExamReference(definition?.examFamily, examVersion.versionLabel, tr); return `${ref.governed ? tr['exv2.reference.label'] : t['examPrep.version']}: ${ref.text}`; })() : null, sitting ? `${t['exam.sitting']}: ${sitting}` : null, contentStatus ? tr[`exam.contentStatus.${contentStatus}`] : null]
           .filter(Boolean)
           .join(' · ')}
       </p>

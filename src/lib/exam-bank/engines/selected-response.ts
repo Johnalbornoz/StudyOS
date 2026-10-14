@@ -107,6 +107,11 @@ export function presentOptions(item: SelectedResponseItem, seed: string): { id: 
   return [...item.options].sort((a, b) => sha([seed, a.id]).localeCompare(sha([seed, b.id]))).map((o) => ({ id: o.id, text: o.text }));
 }
 
+/** The same deterministic shuffle for any options that have stable ids (a delivered bank item): the order one presentation shows. */
+export function shuffledByIdentity<T extends { id: string }>(options: readonly T[], seed: string): T[] {
+  return [...options].sort((a, b) => sha([seed, a.id]).localeCompare(sha([seed, b.id])) || a.id.localeCompare(b.id));
+}
+
 /** Scored by option IDENTITY: the same selection scores the same whatever order it was shown in. An id that is not of the item is not an answer. */
 export function scoreSelectedResponse(item: SelectedResponseItem, selectedOptionId: string | null): { answered: boolean; correct: boolean; fraction: 0 | 1; misconceptionId: string | null } {
   const chosen = item.options.find((o) => o.id === selectedOptionId);
