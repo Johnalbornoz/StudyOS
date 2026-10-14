@@ -8,9 +8,10 @@ import { join } from 'path';
 import type { CertifiedInstance } from '@/lib/assessment-instance/v52';
 import { evaluateResponse, type ResponseEvaluationPolicy } from '@/lib/assessment-instance/response-evaluation';
 import { bankContentOf, projectionRefusal } from '@/lib/exam-bank/bank-projection';
-import { intermediateSatisfiedBy, scoringBankContentOf, scoringProjectionRefusal, SCORING_PROJECTION_VERSION, type MachineMarkScheme } from '@/lib/exam-bank/scoring-projection';
+import { bankProjectionFor, intermediateSatisfiedBy, scoringBankContentIssues, scoringBankContentOf, scoringProjectionRefusal, SCORING_PROJECTION_VERSION, type MachineMarkScheme } from '@/lib/exam-bank/scoring-projection';
 import { sha256OfCanonicalJson } from '@/lib/assessment-adaptation/canonical-hash';
 import { examItemFromApproved } from '@/lib/exam-core/items';
+import { criterionDigestOf, type MethodRule } from '@/lib/assessment-scoring/method-rules';
 import { gradeExamItem } from '@/lib/exam-core/item-grading';
 
 const SUPPLY = JSON.parse(readFileSync(join(process.cwd(), 'docs/exams/question-factory/v52/QF52_CERTIFIED_SUPPLY.json'), 'utf8')) as { rows: any[] };
@@ -47,7 +48,10 @@ describe('PAA supply: projection 3 keeps projection 2 scoring exactly', () => {
       expect(projectionRefusal(i)).toBeNull();
       expect(scoringProjectionRefusal(i)).toBeNull();
       const v2 = bankContentOf(i); const v3 = scoringBankContentOf(i);
-      expect(v3.math).toEqual(v2.math);
+      // the same math key, plus THE canonical contract the instance was validated and certified with
+      const { responseContract, ...v3math } = v3.math as typeof v3.math & { responseContract?: unknown };
+      expect(v3math).toEqual(v2.math);
+      expect(responseContract).toMatchObject({ version: 'canonical-response-1', policy: { groupingSeparators: [] } });
       expect([v3.question, v3.marks, v3.correctAnswer, v3.scoringStrategy]).toEqual([v2.question, v2.marks, v2.correctAnswer, v2.scoringStrategy]);
       expect((v3.certified as any).projection).toBe(SCORING_PROJECTION_VERSION);
     }
@@ -180,10 +184,11 @@ describe('accuracy is carried, never weakened (QF evaluator and Exam Core agree)
     expect(scoringBankContentOf(i).math).toMatchObject({ units: { expected: 'cm', required: true }, partialCredit: { unitMissing: 0, unitWrong: 0 } });
     await agree(i, ['57.9 cm', '57.9', '58 cm']);
   });
-  it('rules the Exam Core cannot express are refused, not dropped', () => {
-    expect(scoringProjectionRefusal(numericInstance('3', { decimalSeparators: ['.'] }))).toBe('SEPARATOR_RULE_NOT_PROJECTABLE');
-    expect(scoringProjectionRefusal(numericInstance('3', { units: { accepted: ['cm', 'centimetres'], required: true } }))).toBe('UNIT_RULE_NOT_PROJECTABLE');
-    expect(scoringProjectionRefusal(numericInstance('3', { acceptedRepresentations: ['FRACTION'] }))).toBe('REPRESENTATION_RULE_NOT_PROJECTABLE');
+  it('NUMBER targets carry every numeric rule exactly through the canonical contract; an incoherent policy is refused', async () => {
+    await agree(numericInstance('12.5', { decimalSeparators: ['.'] }), ['12.5', '12,5']);
+    await agree(numericInstance('3', { units: { accepted: ['cm', 'centimetres'], required: true } }), ['3 cm', '3 centimetres', '3']);
+    await agree(numericInstance('3/4', { acceptedRepresentations: ['FRACTION'] }), ['3/4', '0.75']);
+    expect(scoringProjectionRefusal(numericInstance('3', { groupingSeparators: ['.'] } as Partial<ResponseEvaluationPolicy>))).toBe('POLICY_INVALID');
   });
   it('two key VALUES on one target are refused (projection 2 would accept either as full credit)', () => {
     const i = { ...numericInstance('1', {}), key: { ...PAA[0].key, answers: ['1', '2'] } };
@@ -197,5 +202,52 @@ describe('accuracy is carried, never weakened (QF evaluator and Exam Core agree)
     expect(intermediateSatisfiedBy('x^2-3x+2=0', [1, 2])).toBe(true);
     expect(intermediateSatisfiedBy('(x-1)(x-3)=0', [1, 2])).toBe(false);
     expect(intermediateSatisfiedBy('x+y=0', [1])).toBeNull();
+  });
+});
+
+describe('FORM_AWARE_METHOD_MARK through projection 3 and the Exam Core', () => {
+  const ruleFor = (i: CertifiedInstance): MethodRule => ({ ruleType: 'QUADRATIC_SOLUTION_METHOD', version: 1, givenEquation: 'x^2 - 5x + 6 = 0', standardForm: { a: 1, b: -5, c: 6 }, roots: [2, 3], marks: 1, provenance: { rubricIndex: 0, rubricCode: 'M1', criterionDigest: criterionDigestOf(i.rubric[0].criterion) } });
+  const withRule = (mutate?: (r: MethodRule) => void, implied = false) => {
+    const p = RUBRIC_POLICY(['2', '3']); const i = quadratic({}, p); const rule = ruleFor(i); mutate?.(rule);
+    p.markScheme.targets[0].method = { points: [0], intermediates: ['(x-2)(x-3)=0'], impliedByCorrectAnswer: implied, rule } as any;
+    return i;
+  };
+  it('copied equation: answer marks only; formula working: M1; no working: answer marks only', async () => {
+    const content = scoringBankContentOf(withRule());
+    expect((content.parts![0].method as any).rule.ruleType).toBe('QUADRATIC_SOLUTION_METHOD');
+    const score = async (a: unknown, b = '3') => (await grade(content, JSON.stringify({ a, b }))).evaluation.score;
+    expect(await score({ latex: '2', working: 'x^2-5x+6=0' })).toBe(2);
+    expect(await score({ latex: '2', working: 'x=\\frac{5\\pm\\sqrt{25-24}}{2}' })).toBe(3);
+    expect(await score({ latex: '2', working: '(x-2)(x-3)=0' })).toBe(3);
+    expect(await score('2')).toBe(2);
+    expect(await score({ latex: '7', working: 'x = (5 ± sqrt(1))/2' })).toBe(2); // M1 for the method, A1 only for b
+    expect(await score({ latex: '2', working: 'hello' })).toBe(2);
+  });
+  it('a rule that is not exactly the certified point, or that would be implied, is refused', () => {
+    expect(scoringProjectionRefusal(withRule((r) => { r.marks = 2; }))).toBe('METHOD_RULE_NOT_THE_CERTIFIED_POINT');
+    expect(scoringProjectionRefusal(withRule((r) => { r.provenance.criterionDigest = 'a'.repeat(64); }))).toBe('METHOD_RULE_NOT_THE_CERTIFIED_POINT');
+    expect(scoringProjectionRefusal(withRule(undefined, true))).toBe('METHOD_RULE_NOT_THE_CERTIFIED_POINT');
+    expect(scoringProjectionRefusal(withRule())).toBeNull();
+  });
+});
+
+describe('IB_BANK_PROJECTION_V3 guarded scope / PAA_PUBLICATION_PATH_UNCHANGED', () => {
+  it('every non-IB instance keeps projection 2 with exactly its projection-2 verdict', () => {
+    for (const i of PAA) expect(bankProjectionFor(i)).toEqual({ version: 'exam-bank-projection-2', refusal: projectionRefusal(i) });
+  });
+  it('IB goes to projection 3, fail closed: the 30 working-marked instances stay refused, never fall back to projection 2', () => {
+    for (const i of IB) expect(bankProjectionFor(i)).toEqual({ version: 'exam-bank-projection-3', refusal: 'WORKING_MARKED_WITHOUT_MACHINE_MARK_SCHEME' });
+    expect(bankProjectionFor({ ...IB[0], format: 'EXTENDED_RESPONSE' })).toEqual({ version: 'exam-bank-projection-3', refusal: 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' });
+  });
+  it('the publication service selects the projection through bankProjectionFor only', () => {
+    const svc = readFileSync(join(process.cwd(), 'src/lib/exam-bank/publication.service.ts'), 'utf8');
+    expect(svc).toMatch(/const projection = bankProjectionFor\(i\);/);
+    expect(svc).not.toMatch(/projectionRefusal\(i\)/);
+  });
+  it('a projection-3 bank version is checked against its instance on every publication (idempotency / tamper)', () => {
+    const i = quadratic();
+    const content = scoringBankContentOf(i);
+    expect(scoringBankContentIssues(content, i)).toEqual([]);
+    expect(scoringBankContentIssues({ ...content, marks: 4 }, i)).toEqual(['content.marks']);
   });
 });

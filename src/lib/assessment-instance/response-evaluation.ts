@@ -20,6 +20,8 @@
  * and `evaluateResponse` scores only what is deterministic (the final answers), saying so.
  */
 
+import { canonicalKeyValue, evaluateCanonicalNumeric, parseCanonicalNumber, type CanonicalVerdictCode } from '@/lib/assessment-scoring/canonical-response';
+
 export const RESPONSE_POLICY_KINDS = ['OPTION', 'EXACT_TEXT', 'NUMERIC', 'SYMBOLIC', 'RUBRIC'] as const;
 export type ResponsePolicyKind = (typeof RESPONSE_POLICY_KINDS)[number];
 export const RESPONSE_REPRESENTATIONS = ['INTEGER', 'DECIMAL', 'FRACTION', 'EXPRESSION'] as const;
@@ -30,6 +32,8 @@ export interface ResponseEvaluationPolicy {
   /** Written forms that count. A correct value in a form that is not listed is NOT_IN_AN_ACCEPTED_FORM, not wrong. */
   acceptedRepresentations: readonly ResponseRepresentation[];
   decimalSeparators: readonly ('.' | ',')[];
+  /** Characters that may group thousands. Absent = none: nothing is ever read as a thousands separator by guess. */
+  groupingSeparators?: readonly ('.' | ',' | ' ' | "'")[];
   units: { accepted: readonly string[]; required: boolean };
   /** The precision the response must be written to; null = any. */
   rounding: { kind: 'DECIMAL_PLACES' | 'SIGNIFICANT_FIGURES'; digits: number } | null;
@@ -43,8 +47,7 @@ export interface ResponseEvaluationPolicy {
 export const EXACT_NUMERIC_POLICY: ResponseEvaluationPolicy = { kind: 'NUMERIC', acceptedRepresentations: ['INTEGER', 'DECIMAL', 'FRACTION'], decimalSeparators: ['.', ','], units: { accepted: [], required: false }, rounding: null, tolerance: null, symbolicEquivalence: false, partialCredit: [] };
 export const OPTION_POLICY: ResponseEvaluationPolicy = { kind: 'OPTION', acceptedRepresentations: [], decimalSeparators: [], units: { accepted: [], required: false }, rounding: null, tolerance: null, symbolicEquivalence: false, partialCredit: [] };
 
-export type ResponseVerdictCode =
-  | 'CORRECT' | 'INCORRECT' | 'EMPTY' | 'NOT_A_NUMBER' | 'NOT_IN_AN_ACCEPTED_FORM' | 'DECIMAL_SEPARATOR_NOT_ACCEPTED' | 'AMBIGUOUS_SEPARATOR' | 'UNIT_REQUIRED' | 'UNIT_NOT_ACCEPTED' | 'WRONG_PRECISION' | 'NOT_COMPARABLE' | 'NEEDS_A_MARKER';
+export type ResponseVerdictCode = CanonicalVerdictCode | 'NOT_COMPARABLE' | 'NEEDS_A_MARKER';
 export interface ResponseVerdict { code: ResponseVerdictCode; correct: boolean; marks: number | null; detail: string }
 const verdict = (code: ResponseVerdictCode, detail = '', marks: number | null = null): ResponseVerdict => ({ code, correct: code === 'CORRECT', marks, detail });
 
@@ -52,29 +55,14 @@ const verdict = (code: ResponseVerdictCode, detail = '', marks: number | null = 
 interface ParsedNumber { value: number; representation: ResponseRepresentation; separator: '.' | ',' | null; decimals: number; significant: number; unit: string | null }
 type ParseOutcome = { ok: true; n: ParsedNumber } | { ok: false; code: ResponseVerdictCode; detail: string };
 
-/** One written number, optionally followed by a unit. Thousands separators are refused as ambiguous rather than guessed. */
+/**
+ * One written number, optionally followed by a unit, read by THE canonical contract
+ * (assessment-scoring/canonical-response.ts) with both decimal separators and NO grouping: nothing is guessed.
+ */
 export function parseWrittenNumber(raw: string): ParseOutcome {
-  const text = raw.normalize('NFKC').replace(/[−‒–]/g, '-').trim();
-  if (!text) return { ok: false, code: 'EMPTY', detail: '' };
-  const m = /^([+-]?)\s*(\d+(?:[.,]\d+)*|[.,]\d+)(?:\s*\/\s*(\d+))?\s*(.*)$/.exec(text);
-  if (!m) return { ok: false, code: 'NOT_A_NUMBER', detail: text };
-  const [, sign, body, denominator, rest] = m;
-  const separators = body.replace(/\d/g, '');
-  if (separators.length > 1) return { ok: false, code: 'AMBIGUOUS_SEPARATOR', detail: body };
-  const separator = (separators[0] as '.' | ',' | undefined) ?? null;
-  const [whole, fraction = ''] = body.split(/[.,]/);
-  // "1.250" or "1,250" may be a thousand or a decimal: three digits after a single separator is not guessed
-  if (separator && fraction.length === 3 && whole !== '0' && whole !== '') return { ok: false, code: 'AMBIGUOUS_SEPARATOR', detail: body };
-  let value = Number(`${whole || '0'}${fraction ? `.${fraction}` : ''}`);
-  if (denominator !== undefined) {
-    if (separator || Number(denominator) === 0) return { ok: false, code: 'NOT_A_NUMBER', detail: text };
-    value /= Number(denominator);
-  }
-  if (sign === '-') value = -value;
-  const digits = `${whole}${fraction}`.replace(/^0+(?=\d)/, '');
-  const significant = separator ? digits.replace(/^0+/, '').length || 1 : digits.replace(/0+$/, '').length || 1;
-  const unit = rest.trim() || null;
-  return { ok: true, n: { value, representation: denominator !== undefined ? 'FRACTION' : separator ? 'DECIMAL' : 'INTEGER', separator, decimals: fraction.length, significant, unit } };
+  const r = parseCanonicalNumber(raw, { acceptedRepresentations: ['INTEGER', 'DECIMAL', 'FRACTION'], decimalSeparators: ['.', ','], units: { accepted: [], required: false }, rounding: null, tolerance: null });
+  if (!r.ok) return r;
+  return { ok: true, n: { value: r.n.value, representation: r.n.representation, separator: r.n.decimalSeparator, decimals: r.n.decimals, significant: r.n.significant, unit: r.n.unit } };
 }
 
 // ----------------------------------------------------------------------------------------------- expressions
@@ -120,30 +108,14 @@ export function symbolicallyEqual(a: string, b: string): boolean | null {
 
 // ------------------------------------------------------------------------------------------------ evaluation
 function evaluateNumeric(policy: ResponseEvaluationPolicy, key: string, response: string): ResponseVerdict {
-  const parsed = parseWrittenNumber(response);
-  if (!parsed.ok) {
-    // not a single number: an expression such as "3/4 + 1" may still be accepted, if the policy accepts expressions
-    if (parsed.code === 'NOT_A_NUMBER' && policy.acceptedRepresentations.includes('EXPRESSION')) { const eq = symbolicallyEqual(key, response); return eq === null ? verdict('NOT_COMPARABLE', response) : eq ? verdict('CORRECT') : verdict('INCORRECT'); }
-    return verdict(parsed.code, parsed.detail);
-  }
-  const n = parsed.n;
-  if (n.separator && !policy.decimalSeparators.includes(n.separator)) return verdict('DECIMAL_SEPARATOR_NOT_ACCEPTED', n.separator);
-  if (n.unit) {
-    if (!policy.units.accepted.some((u) => u.toLowerCase() === n.unit!.toLowerCase())) return verdict('UNIT_NOT_ACCEPTED', n.unit);
-  } else if (policy.units.required) return verdict('UNIT_REQUIRED', policy.units.accepted.join(' / '));
-  if (!policy.acceptedRepresentations.includes(n.representation)) return verdict('NOT_IN_AN_ACCEPTED_FORM', n.representation);
-  const keyed = parseWrittenNumber(key);
-  const expected = keyed.ok ? keyed.n.value : valueAt(key, {});
-  if (expected === null) return verdict('NOT_COMPARABLE', `the key "${key}" is not a number`);
-  if (policy.rounding && n.representation === 'DECIMAL') {
-    const given = policy.rounding.kind === 'DECIMAL_PLACES' ? n.decimals : n.significant;
-    if (given !== policy.rounding.digits) return verdict('WRONG_PRECISION', `${given} given, ${policy.rounding.digits} ${policy.rounding.kind === 'DECIMAL_PLACES' ? 'decimal places' : 'significant figures'} required`);
-  }
-  const window = policy.tolerance ? (policy.tolerance.kind === 'ABSOLUTE' ? policy.tolerance.value : Math.abs(expected) * policy.tolerance.value)
-    : policy.rounding && n.representation === 'DECIMAL' && policy.rounding.kind === 'DECIMAL_PLACES' ? 0.5 * 10 ** -policy.rounding.digits
-    : policy.rounding && n.representation === 'DECIMAL' ? 0.5 * 10 ** (Math.floor(Math.log10(Math.abs(expected) || 1)) + 1 - policy.rounding.digits)
-    : 0;
-  return Math.abs(n.value - expected) <= window + 1e-12 * Math.max(1, Math.abs(expected)) ? verdict('CORRECT') : verdict('INCORRECT', `${n.value} vs ${expected}`);
+  // THE canonical contract judges every number. Only an expression response (when the policy accepts expressions)
+  // or an expression key are read by the expression evaluator first.
+  const parsed = parseCanonicalNumber(response, policy);
+  if (!parsed.ok && parsed.code === 'NOT_A_NUMBER' && policy.acceptedRepresentations.includes('EXPRESSION')) { const eq = symbolicallyEqual(key, response); return eq === null ? verdict('NOT_COMPARABLE', response) : eq ? verdict('CORRECT') : verdict('INCORRECT'); }
+  const keyValue = canonicalKeyValue(key) ?? valueAt(key, {});
+  if (keyValue === null) return verdict('NOT_COMPARABLE', `the key "${key}" is not a number`);
+  const r = evaluateCanonicalNumeric(policy, String(keyValue), response);
+  return verdict(r.code, r.detail);
 }
 
 const fold = (s: string): string => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();

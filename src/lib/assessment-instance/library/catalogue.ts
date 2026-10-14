@@ -242,8 +242,10 @@ export interface LibraryEntry {
   reasoning: LibraryReasoning;
   /** What makes the hardest band hard, by name. A CHALLENGE band with no named mechanism is not certifiable. */
   challengeMechanisms: readonly DifficultyMechanism[];
-  /** Where the entry comes from: an object the pilot reviewer approved in Step 4B, or new in V5.2 and seen by nobody. */
-  origin: 'STEP4B_PILOT' | 'QF52_NEW';
+  /** Where the entry comes from: an object the pilot reviewer approved in Step 4B, new in V5.2 and seen by nobody, or adopted from a Content Factory package. */
+  origin: 'STEP4B_PILOT' | 'QF52_NEW' | 'CF_PACKAGE';
+  /** CF_PACKAGE: the package candidates to render, by planning band (seeds naming each candidate's parameter set). Absent = the batch draws its own seeds. */
+  packageSeeds?: Readonly<Partial<Record<PlanningBand, readonly string[]>>>;
 }
 const PAA_TARGET: LibraryTarget = { adapterId: PILOT_PAA, language: 'es', responseFormat: 'NUMERIC_ENTRY' };
 const IB_TARGET: LibraryTarget = { adapterId: PILOT_IB, language: 'en', responseFormat: 'SHORT_RESPONSE' };

@@ -78,6 +78,8 @@ export interface StrategyContext {
   adapter: AssessmentAdapter;
   specification: AdaptationSpecification;
   source: SeededSource;
+  /** The controlled seed itself. A strategy may read an explicit selection from it (`@rk=`); otherwise only `source`. */
+  seed?: string;
 }
 export interface StrategyOutput { learner: LearnerInstance; key: InstanceKey; rubric: RubricPoint[]; responsePolicy: ResponseEvaluationPolicy; parameterSet: Record<string, number | string> }
 export type StrategyResult = { ok: true; output: StrategyOutput } | { ok: false; code: string; detail: string };
@@ -169,7 +171,7 @@ export function createAssessmentInstanceRenderer(strategies: readonly RenderingS
       // the parameter set depends on the seed, the core and the band -- NOT on the system: one seed is one piece of
       // mathematics, asked the way each adapter asks
       const source = seededSource([input.seed, core.constructFamilyId, core.familyVersion, v.difficulty.band, strategy.rendererVersion].join('|'));
-      const rendered = strategy.render({ core, adapter, specification, source });
+      const rendered = strategy.render({ core, adapter, specification, source, seed: input.seed });
       if (!rendered.ok) return refuse('STRATEGY_REFUSED', `${rendered.code}: ${rendered.detail}`);
       const lineage = ItemInstanceLineageSchema.safeParse({
         constructFamilyId: core.constructFamilyId, constructFamilyVersion: core.familyVersion, primaryConceptId: core.primaryConceptStableId,

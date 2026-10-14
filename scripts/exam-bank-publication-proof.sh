@@ -42,6 +42,8 @@ Q "INSERT INTO schema_migrations (version, name, checksum) VALUES ('STUDYUS_BASE
 APPLIED=()
 for f in $(ls "$REPO"/database/migrations/*.sql | sort); do
   skip=0; for p in "${PENDING[@]}"; do [ "$(basename "$f")" = "$p" ] && skip=1; done
+  # every migration that sorts after the first pending one depends on it: the real runner applies it, in order
+  [[ "$(basename "$f")" > "${PENDING[0]}" ]] && skip=1
   [ "$skip" = "1" ] && continue
   $P -1 -f "$f" "$DB" >/dev/null 2>"$W/err" || fail "PRIOR_MIGRATION $(basename "$f")" "$(head -3 "$W/err")"
   APPLIED+=("$f")
@@ -59,7 +61,7 @@ grep -q "MIGRATION_NOT_APPLIED:20261121_1100" "$W/early" && echo "REFUSES_WITHOU
 
 npx tsx scripts/db-migrate.ts > "$W/migrate" 2>&1 || fail REAL_RUNNER "$(tail -8 "$W/migrate")"
 grep -E "^  2026|Applied|Pending" "$W/migrate"
-[ "$(Q "SELECT count(*) FROM schema_migrations")" = "$(( ${#APPLIED[@]} + 4 ))" ] && echo "LEDGER_AFTER = $(Q "SELECT count(*) FROM schema_migrations") (PASS)" || fail LEDGER_AFTER
+[ "$(Q "SELECT count(*) FROM schema_migrations")" = "$(( $(ls "$REPO"/database/migrations/*.sql | wc -l) + 1 ))" ] && echo "LEDGER_AFTER = $(Q "SELECT count(*) FROM schema_migrations") (PASS)" || fail LEDGER_AFTER
 
 counts() { Q "SELECT (SELECT count(*) FROM assessment_item_instances) || '/' || (SELECT count(*) FROM question_bank_items WHERE lineage_class = 'CORE_DERIVED') || '/' || (SELECT count(*) FROM assessment_certifications) || '/' || (SELECT count(*) FROM assessment_object_certifications) || '/' || (SELECT count(*) FROM assessment_construct_cores)"; }
 run() { EXAM_BANK_PUBLICATION_FP="$FP" npx tsx scripts/operations/exam-bank/publish-certified-supply.ts "$@" > "$W/run" 2>&1; local rc=$?; grep -E "^(exam bank|PLAN|DRY_RUN|APPLY|ROWS|  [a-z_]+ [0-9]+|SKIPPED|MATERIALIZED|BLOCKED|CONFLICTS|VERIFICATION|REFUS|CONFLICT|FAILED)" "$W/run" | cut -c1-1400; return $rc; }

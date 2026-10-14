@@ -16,6 +16,8 @@ import type { EvaluationResult } from '@/lib/assessment/types';
 import { examItemMarks, scoringStrategyOf, type ExamItem, type ExamItemPart, type MathKeyContent, type MethodKey, type RubricContent, type ScoringStrategyKind } from './items';
 import type { ScoringCriterionAward } from './scoring/scoring-engine';
 import { gradeMath, type MathGrade, type MathKind } from './math/math-engine';
+import { evaluateCanonicalNumeric, CANONICAL_RESPONSE_CONTRACT_VERSION } from '@/lib/assessment-scoring/canonical-response';
+import { evaluateMethodRule } from '@/lib/assessment-scoring/method-rules';
 import { assessWithRubric, type AssessorRunner, type DoubleAssessmentOutcome, type RubricAssessment } from './assessment/double-assessor.service';
 
 export interface ExamItemGrade {
@@ -194,8 +196,12 @@ function kindOfIntermediate(m: string): MathKind {
   return 'EXPRESSION';
 }
 
-/** Method marks: some line of the working is equivalent to one of the intermediates (or the right-hand side of a line is). */
+/**
+ * Method marks: some line of the working is equivalent to one of the intermediates (or the right-hand side of a line is).
+ * A method with a FORM-AWARE rule is judged by that rule alone.
+ */
 export function methodEvidenced(working: string, method: MethodKey, language: string): boolean {
+  if (method.rule) return evaluateMethodRule(method.rule, working).awarded > 0;
   if (!working.trim()) return false;
   const lines = working.split(/\r?\n|;/).map((l) => l.trim()).filter(Boolean).slice(0, MAX_WORKING_LINES);
   for (const inter of method.intermediates) {
@@ -240,13 +246,14 @@ export function gradeMathTarget(key: MathKeyContent, method: MethodKey | null | 
   if (!parsed.literal.trim() && !parsed.working.trim()) {
     return { awarded: 0, max, strictAwarded: 0, review: false, normalized: { literal: '' }, detail: { judgment: 'BLANK' } };
   }
+  if (key.responseContract && key.kind === 'NUMBER') return gradeContractTarget(key, method, marks, parsed, language);
   const g = gradeMath(parsed.literal, key, language);
   const answerFraction = parsed.literal.trim() ? answerFractionFor(g, key) : 0;
   let methodAward = 0;
   let methodSource: 'WORKING' | 'IMPLIED' | null = null;
   if (method) {
     if (methodEvidenced(parsed.working, method, language)) methodSource = 'WORKING';
-    else if (method.impliedByCorrectAnswer && g.mathematicalCorrectness === 'EQUIVALENT') methodSource = 'IMPLIED';
+    else if (method.impliedByCorrectAnswer && !method.rule && g.mathematicalCorrectness === 'EQUIVALENT') methodSource = 'IMPLIED';
     methodAward = methodSource ? method.marks : 0;
   }
   const awarded = marks * answerFraction + methodAward;
@@ -267,6 +274,35 @@ export function gradeMathTarget(key: MathKeyContent, method: MethodKey | null | 
       answerFraction,
       methodMarks: method ? { awarded: methodAward, max: method.marks, source: methodSource } : undefined,
     },
+  };
+}
+
+/**
+ * A numeric target that carries the canonical response contract: judged by THAT contract -- the one the instance was
+ * validated and certified with -- and by nothing else (no language-dependent reading, no invented partial credit).
+ * `answers` are written forms of ONE value (the projection refuses several values on one target).
+ */
+function gradeContractTarget(key: MathKeyContent, method: MethodKey | null | undefined, marks: number, parsed: { literal: string; working: string }, language: string): MathTargetGrade {
+  const contract = key.responseContract!;
+  const verdicts = key.answers.map((a) => evaluateCanonicalNumeric(contract.policy, a, parsed.literal));
+  const hit = verdicts.find((x) => x.correct) ?? verdicts[0];
+  const correct = !!parsed.literal.trim() && hit.correct;
+  let methodAward = 0;
+  let methodSource: 'WORKING' | 'IMPLIED' | null = null;
+  if (method) {
+    if (methodEvidenced(parsed.working, method, language)) methodSource = 'WORKING';
+    else if (method.impliedByCorrectAnswer && !method.rule && correct) methodSource = 'IMPLIED';
+    methodAward = methodSource ? method.marks : 0;
+  }
+  const max = marks + (method?.marks ?? 0);
+  const awarded = (correct ? marks : 0) + methodAward;
+  return {
+    awarded,
+    max,
+    strictAwarded: correct && (!method || methodAward === method.marks) ? max : 0,
+    review: false,
+    normalized: { literal: parsed.literal, value: hit.value, working: parsed.working || undefined },
+    detail: { judgment: correct ? 'CORRECT' : parsed.literal.trim() ? 'INCORRECT' : 'BLANK', contract: CANONICAL_RESPONSE_CONTRACT_VERSION, verdict: hit.code, reason: hit.detail || undefined, answerFraction: correct ? 1 : 0, methodMarks: method ? { awarded: methodAward, max: method.marks, source: methodSource } : undefined },
   };
 }
 

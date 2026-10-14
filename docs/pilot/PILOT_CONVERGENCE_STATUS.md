@@ -61,6 +61,17 @@ mutation, no migration.
     method and answer marks, s.f./tolerance/units, provenance. Proven against the real QF V5.2 supply; isolated.
   - **IB still has no deliverable item.** Exact blocker: no certified IB instance with a compatible schema exists, and
     the IB buckets beyond P1 functions are not certified (`IB_CONSTRUCTED_RESPONSE_GAP.md` §7).
+- 2026-10-14, third block, IB delivery bridge (`docs/audits/exam-bank/IB_DELIVERY_BRIDGE.md`). No deploy, no
+  database write, no migration.
+  - **One canonical scoring contract** (`assessment-scoring/canonical-response.ts`): SCORER_PARITY = PASS.
+  - **Projection 3** is guarded to new IB content and wired through `bankProjectionFor`. PAA stays on projection 2,
+    proven on a throwaway database.
+  - **Form-aware method-mark rules:** PASS.
+  - **The 30 existing IB items:** 0/30 compatible.
+  - **IB concepts:** 1/10 governed.
+  - **CF-IB-AAHL-01 dry run:** 0/300 accepted.
+  - **First IB DEV form:** NOT_READY. Exact blocker: the CF candidates are NUMERIC_ENTRY, and the governed IB AA HL
+    adapter does not offer NUMERIC_ENTRY.
 
 # Pilot Convergence Status — PAA P0
 

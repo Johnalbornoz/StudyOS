@@ -27,10 +27,12 @@
 import { parse } from 'mathjs';
 import { z } from 'zod';
 import { sha256OfCanonicalJson } from '@/lib/assessment-adaptation/canonical-hash';
-import type { ApprovedItemContent, MathKeyContent, MethodKey } from '@/lib/exam-core/items';
+import { MethodKeySchema, type ApprovedItemContent, type MathKeyContent, type MethodKey } from '@/lib/exam-core/items';
+import { criterionDigestOf } from '@/lib/assessment-scoring/method-rules';
 import { DELIVERABLE_CERTIFICATION_STATES, materialize, type CertifiedInstance } from '@/lib/assessment-instance/v52';
 import type { ResponseEvaluationPolicy } from '@/lib/assessment-instance/response-evaluation';
-import type { CertifiedBankExtension } from './bank-projection';
+import { projectionRefusal as projection2Refusal, type CertifiedBankExtension } from './bank-projection';
+import { policyIssues, responseContractOf, type CanonicalNumericPolicy } from '@/lib/assessment-scoring/canonical-response';
 
 export const SCORING_PROJECTION_VERSION = 'exam-bank-projection-3';
 export const MACHINE_MARK_SCHEME_VERSION = 1;
@@ -51,7 +53,11 @@ export const MachineMarkSchemeSchema = z.object({
     equivalents: z.array(z.string().min(1).max(300)).max(6).default([]),
     /** Indices into the instance rubric: the answer points this target earns. */
     answerPoints: z.array(PointIndex).min(1),
-    method: z.object({ points: z.array(PointIndex).min(1), intermediates: z.array(z.string().min(1).max(300)).min(1).max(10), impliedByCorrectAnswer: z.boolean() }).nullable(),
+    method: z.object({
+      points: z.array(PointIndex).min(1), intermediates: z.array(z.string().min(1).max(300)).min(1).max(10), impliedByCorrectAnswer: z.boolean(),
+      /** A form-aware rule (method-rules.ts): it must score exactly the certified point(s) and is never implied. */
+      rule: MethodKeySchema.shape.rule,
+    }).nullable(),
   })).min(1).max(12),
 });
 export type MachineMarkScheme = z.infer<typeof MachineMarkSchemeSchema>;
@@ -61,7 +67,7 @@ export type ScoringProjectionRefusal =
   | 'WORKING_MARKED_WITHOUT_MACHINE_MARK_SCHEME' | 'MARK_SCHEME_INVALID' | 'RUBRIC_POINT_NOT_MAPPED' | 'RUBRIC_POINT_MAPPED_TWICE' | 'POINT_KIND_MISMATCH'
   | 'METHOD_POINT_WITHOUT_INTERMEDIATES' | 'MARKS_INCONSISTENT' | 'TARGET_VALUE_NOT_THE_CERTIFIED_KEY' | 'KEY_VALUES_NOT_COVERED' | 'MULTIPLE_KEY_VALUES_WITHOUT_PART_STRUCTURE'
   | 'UNORDERED_SOLUTION_SET_NOT_SCORABLE' | 'PARTS_NOT_IN_CERTIFIED_LEARNER_CONTENT' | 'ORDER_NOT_SATISFIED' | 'INTERMEDIATE_NOT_SATISFIED_BY_THE_KEY' | 'INTERMEDIATE_NOT_VERIFIABLE'
-  | 'REPRESENTATION_RULE_NOT_PROJECTABLE' | 'SEPARATOR_RULE_NOT_PROJECTABLE' | 'UNIT_RULE_NOT_PROJECTABLE' | 'SYMBOLIC_RULE_NOT_PROJECTABLE';
+  | 'REPRESENTATION_RULE_NOT_PROJECTABLE' | 'SEPARATOR_RULE_NOT_PROJECTABLE' | 'UNIT_RULE_NOT_PROJECTABLE' | 'SYMBOLIC_RULE_NOT_PROJECTABLE' | 'POLICY_INVALID' | 'METHOD_RULE_NOT_THE_CERTIFIED_POINT';
 
 const ANSWER_KINDS = new Set(['ACCURACY', 'ANSWER']);
 const METHOD_KINDS = new Set(['METHOD']);
@@ -196,6 +202,14 @@ function planOf(i: CertifiedInstance): Plan | { refusal: ScoringProjectionRefusa
     const ok = nums.every((x, k) => k === 0 || (scheme.order === 'ASCENDING' ? x! > nums[k - 1]! : x! < nums[k - 1]!));
     if (!ok) return { refusal: 'ORDER_NOT_SATISFIED' };
   }
+  // a form-aware rule scores exactly its certified point: same index, same marks, same criterion text; never implied
+  for (const t of scheme.targets) {
+    const r = t.method?.rule;
+    if (!r) continue;
+    const pts = t.method!.points;
+    const marks = pts.reduce((s, k) => s + (i.rubric[k]?.marks ?? 0), 0);
+    if (t.method!.impliedByCorrectAnswer || pts.length !== 1 || pts[0] !== r.provenance.rubricIndex || r.marks !== marks || i.rubric[pts[0]]?.code !== r.provenance.rubricCode || criterionDigestOf(i.rubric[pts[0]]?.criterion ?? '') !== r.provenance.criterionDigest) return { refusal: 'METHOD_RULE_NOT_THE_CERTIFIED_POINT' };
+  }
   // intermediates must be TRUE of the key (each equation is satisfied by every key value)
   const numericKey = keyValues.filter((v): v is number => typeof v === 'number');
   for (const t of scheme.targets) for (const m of t.method?.intermediates ?? []) {
@@ -204,8 +218,10 @@ function planOf(i: CertifiedInstance): Plan | { refusal: ScoringProjectionRefusa
     if (sat === null) return { refusal: 'INTERMEDIATE_NOT_VERIFIABLE' };
     if (!sat) return { refusal: 'INTERMEDIATE_NOT_SATISFIED_BY_THE_KEY' };
   }
-  const acc = accuracyOf(p);
-  if (!acc.ok) return { refusal: acc.refusal };
+  // NUMBER targets are judged by THE canonical contract, which expresses every numeric rule exactly; it must be coherent.
+  if (policyIssues(p as unknown as CanonicalNumericPolicy).length > 0) return { refusal: 'POLICY_INVALID' };
+  // Other targets go through the math engine: only rules it expresses without weakening them are allowed.
+  if (scheme.targets.some((t) => t.kind !== 'NUMBER')) { const acc = accuracyOf(p); if (!acc.ok) return { refusal: acc.refusal }; }
   return { scheme, pointMap: [...used.entries()].filter(([k]) => k < i.rubric.length).sort((a, b) => a[0] - b[0]).map(([k, target]) => ({ rubricIndex: k, code: i.rubric[k].code, kind: i.rubric[k].kind, marks: i.rubric[k].marks, target })) };
 }
 /** Position of rubric point k among the answer-bearing points (the policy lists them in rubric order). */
@@ -217,14 +233,17 @@ export type ScoringBankContent = ApprovedItemContent & CertifiedBankExtension;
 export function scoringBankContentOf(i: CertifiedInstance): ScoringBankContent {
   const plan = planOf(i);
   if ('refusal' in plan) throw new Error(`EXAM_BANK_SCORING_PROJECTION_REFUSED: ${plan.refusal}`);
-  const acc = accuracyOf(i.responsePolicy);
-  if (!acc.ok) throw new Error(`EXAM_BANK_SCORING_PROJECTION_REFUSED: ${acc.refusal}`);
+  const accuracy = accuracyOf(i.responsePolicy);
+  // NUMBER targets: the contract decides; the engine fields are informational and never weaker than "exact".
+  const acc = accuracy.ok ? accuracy : { ok: true as const, key: { requiredForm: 'ANY' as const, partialCredit: { formNotMet: 0, unitMissing: 0, unitWrong: 0, significantFigures: 0 } } };
   const m = materialize(i);
   const c = m.content;
   const marksOf = (points: number[]): number => (i.rubric.length ? points.reduce((s, k) => s + i.rubric[k].marks, 0) : i.marks);
-  const mathOf = (t: MachineMarkScheme['targets'][number]): MathKeyContent => ({ kind: t.kind, answers: [t.value, ...t.equivalents], ...acc.key } as MathKeyContent);
-  const methodOf = (t: MachineMarkScheme['targets'][number]): MethodKey | undefined => (t.method ? { marks: marksOf(t.method.points), criterion: 'M', intermediates: [...t.method.intermediates], impliedByCorrectAnswer: t.method.impliedByCorrectAnswer } : undefined);
-  const scoring = { contractVersion: SCORING_PROJECTION_VERSION, markSchemeVersion: MACHINE_MARK_SCHEME_VERSION, structure: plan.scheme.structure, markSchemeDigest: sha256OfCanonicalJson(plan.scheme), rubricDigest: sha256OfCanonicalJson(i.rubric), responsePolicyDigest: sha256OfCanonicalJson(i.responsePolicy), pointMap: plan.pointMap };
+  // A NUMBER target carries THE canonical response contract: the Exam Core judges it exactly as validation and certification did.
+  const contract = responseContractOf(i.responsePolicy as unknown as CanonicalNumericPolicy);
+  const mathOf = (t: MachineMarkScheme['targets'][number]): MathKeyContent => ({ kind: t.kind, answers: [t.value, ...t.equivalents], ...acc.key, ...(t.kind === 'NUMBER' ? { responseContract: contract } : {}) } as MathKeyContent);
+  const methodOf = (t: MachineMarkScheme['targets'][number]): MethodKey | undefined => (t.method ? { marks: marksOf(t.method.points), criterion: 'M', intermediates: [...t.method.intermediates], impliedByCorrectAnswer: t.method.impliedByCorrectAnswer, ...(t.method.rule ? { rule: t.method.rule } : {}) } : undefined);
+  const scoring = { contractVersion: SCORING_PROJECTION_VERSION, responseContract: contract.version, responseContractDigest: sha256OfCanonicalJson(contract), markSchemeVersion: MACHINE_MARK_SCHEME_VERSION, structure: plan.scheme.structure, markSchemeDigest: sha256OfCanonicalJson(plan.scheme), rubricDigest: sha256OfCanonicalJson(i.rubric), responsePolicyDigest: sha256OfCanonicalJson(i.responsePolicy), pointMap: plan.pointMap };
   const delivery: ApprovedItemContent = plan.scheme.structure === 'ORDERED_PARTS'
     ? {
         key: c.key, contentStatus: 'ORIGINAL', contentOrigin: 'AUTHORED', language: c.language, type: 'step_by_step', answerFormat: 'text', question: c.question,
@@ -250,4 +269,27 @@ export function scoringBankContentOf(i: CertifiedInstance): ScoringBankContent {
     itemType: c.itemType, difficultyBand: c.difficultyBand, response: c.response, certifiedRubric: c.rubric, lineage: c.lineage, rights: c.rights,
     certified: { itemType: m.itemType, lineageClass: m.lineageClass, itemInstanceId: m.itemInstanceId, provenance: m.provenance, primaryConceptStableId: m.primaryConceptStableId, canonicalSubject: m.canonicalSubject, eligibilityScopes: [...m.eligibilityScopes], markedOnWorking: m.markedOnWorking, recognitionId: i.recognitionId, certificationMode: i.certificationMode, projection: SCORING_PROJECTION_VERSION, generationLineage: i.lineage, scoring } as CertifiedBankExtension['certified'] & { scoring: typeof scoring },
   } as ScoringBankContent;
+}
+
+// ------------------------------------------------------------------------------------------------ guarded scope
+/**
+ * Projection 3 is a GOVERNED capability for NEW IB content only. Every other system keeps projection 2 (the frozen PAA
+ * bank was published with it, and its publication path does not change). Within IB, only explicitly governed formats.
+ */
+export const PROJECTION_3_SYSTEMS: readonly string[] = ['IB'];
+export const PROJECTION_3_FORMATS: readonly string[] = ['NUMERIC_ENTRY', 'SHORT_RESPONSE', 'MULTI_PART_MATH'];
+export type BankProjectionChoice = { version: 'exam-bank-projection-2'; refusal: string | null } | { version: typeof SCORING_PROJECTION_VERSION; refusal: ScoringProjectionRefusal | 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' | null };
+/** Which projection publishes this instance, and whether it may. Fail closed: an IB instance never falls back to projection 2. */
+export function bankProjectionFor(i: CertifiedInstance): BankProjectionChoice {
+  if (!PROJECTION_3_SYSTEMS.includes(i.systemId)) return { version: 'exam-bank-projection-2', refusal: projection2Refusal(i) };
+  if (!PROJECTION_3_FORMATS.includes(i.format)) return { version: SCORING_PROJECTION_VERSION, refusal: 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' };
+  return { version: SCORING_PROJECTION_VERSION, refusal: scoringProjectionRefusal(i) };
+}
+
+/** Does this bank version still copy this instance exactly, under projection 3? Every top-level field that differs is named. */
+export function scoringBankContentIssues(content: unknown, i: CertifiedInstance): string[] {
+  let expected: ScoringBankContent;
+  try { expected = scoringBankContentOf(i); } catch (e) { return [e instanceof Error ? e.message : String(e)]; }
+  const got = (content ?? {}) as Record<string, unknown>;
+  return [...new Set([...Object.keys(expected), ...Object.keys(got)])].filter((k) => sha256OfCanonicalJson((expected as unknown as Record<string, unknown>)[k] ?? null) !== sha256OfCanonicalJson(got[k] ?? null)).map((k) => `content.${k}`);
 }

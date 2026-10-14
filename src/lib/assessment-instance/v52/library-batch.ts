@@ -88,8 +88,13 @@ export function certifyCell(entry: LibraryEntry, target: LibraryTarget, planning
   if (!governance) { out.refusals.push({ seed: '-', code: 'NO_GOVERNANCE_DECISION', detail: 'an object the cell depends on was not governed' }); return out; }
   const wordings = new Set<string>(); const recognition = new Set<string>();
   const short = entry.core.constructFamilyId.split('.').slice(2).join('.');
-  for (let n = 1; out.certified.length < wanted && n <= wanted * 40; n += 1) {
-    const seed = `${batchId}/${short}/${target.adapterId}/${planningBand.toLowerCase()}/${String(n).padStart(4, '0')}`;
+  // A Content Factory package entry renders exactly the package's candidates (each seed names its parameter set);
+  // every other entry draws its own seeds, as before.
+  const packaged = entry.packageSeeds?.[planningBand];
+  const seedAt = (n: number): string | undefined => (packaged ? packaged[n - 1] : `${batchId}/${short}/${target.adapterId}/${planningBand.toLowerCase()}/${String(n).padStart(4, '0')}`);
+  const limit = packaged ? packaged.length : wanted * 40;
+  for (let n = 1; (packaged || out.certified.length < wanted) && n <= limit; n += 1) {
+    const seed = seedAt(n)!;
     const r = renderLibraryInstance(entry, target, planningBand, seed);
     out.attempted += 1;
     if (!r.ok) { out.refusals.push({ seed, code: r.code, detail: r.detail }); if (out.refusals.length >= 3) break; continue; }

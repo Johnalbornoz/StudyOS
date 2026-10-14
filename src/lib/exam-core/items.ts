@@ -57,6 +57,22 @@ export const MathKeySchema = z.object({
   significantFigures: z.number().int().min(1).max(10).optional(),
   tolerance: z.object({ absolute: z.number().min(0).optional(), relative: z.number().min(0).optional() }).optional(),
   units: z.object({ expected: z.string().min(1).max(40), required: z.boolean().optional(), allowConversion: z.boolean().optional() }).optional(),
+  /**
+   * The canonical response contract (assessment-scoring/canonical-response.ts) of a governed bank version. Present =
+   * this target is judged by THAT contract (the same one validation and certification used), not by the
+   * language-dependent math engine. Absent = the existing math-engine path, unchanged.
+   */
+  responseContract: z.object({
+    version: z.literal('canonical-response-1'),
+    policy: z.object({
+      acceptedRepresentations: z.array(z.enum(['INTEGER', 'DECIMAL', 'FRACTION', 'EXPRESSION'])).min(1),
+      decimalSeparators: z.array(z.enum(['.', ','])),
+      groupingSeparators: z.array(z.enum(['.', ',', ' ', "'"])).default([]),
+      units: z.object({ accepted: z.array(z.string().min(1).max(40)), required: z.boolean() }),
+      rounding: z.object({ kind: z.enum(['DECIMAL_PLACES', 'SIGNIFICANT_FIGURES']), digits: z.number().int().min(0).max(10) }).nullable(),
+      tolerance: z.object({ kind: z.enum(['ABSOLUTE', 'RELATIVE']), value: z.number().min(0) }).nullable(),
+    }),
+  }).optional(),
   /** Fraction of the marks kept when the value is right but a requirement is not met. */
   partialCredit: z
     .object({ formNotMet: z.number().min(0).max(1).default(0.5), unitMissing: z.number().min(0).max(1).default(0.5), unitWrong: z.number().min(0).max(1).default(0), significantFigures: z.number().min(0).max(1).default(0.5) })
@@ -72,6 +88,20 @@ export const MethodKeySchema = z.object({
   intermediates: z.array(z.string().min(1).max(300)).min(1).max(10),
   /** Also award the method marks when the final answer is fully correct (follow-through). */
   impliedByCorrectAnswer: z.boolean().default(true),
+  /**
+   * A FORM-AWARE method rule (assessment-scoring/method-rules.ts) of a governed bank version. Present = the method mark
+   * is earned only by a working line in the governed method form (never by restating the question, never implied by a
+   * correct answer). Absent = the existing equivalence-to-an-intermediate path, unchanged.
+   */
+  rule: z.object({
+    ruleType: z.enum(['QUADRATIC_SOLUTION_METHOD', 'REARRANGE_TO_STANDARD_FORM']),
+    version: z.literal(1),
+    givenEquation: z.string().min(3).max(300),
+    standardForm: z.object({ a: z.number(), b: z.number(), c: z.number() }),
+    roots: z.array(z.number()).min(1).max(2),
+    marks: z.number().positive().max(20),
+    provenance: z.object({ rubricIndex: z.number().int().min(0), rubricCode: z.string().min(1).max(20), criterionDigest: z.string().regex(/^[a-f0-9]{64}$/) }),
+  }).optional(),
 });
 export type MethodKey = z.infer<typeof MethodKeySchema>;
 

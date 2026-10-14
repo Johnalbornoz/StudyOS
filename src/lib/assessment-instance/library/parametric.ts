@@ -81,7 +81,11 @@ export function parametricStrategy<P extends ParameterSet>(c: ParametricConstruc
     const band = v.difficulty.band as PlanningBand;
     const sets = PLANNING_BANDS.includes(band) ? parameterSetsOf(c, band) : [];
     if (sets.length === 0) return { ok: false, code: 'NO_VALID_PARAMETER_SET', detail: v.difficulty.band };
-    const p = sets[ctx.source.int(0, sets.length - 1)];
+    // An explicit selection (`<seed>@rk=<recognitionKey>`, used to re-render a delivered package candidate) names the
+    // parameter set; any other seed draws one from the seeded source, as before.
+    const named = /@rk=(.+)$/.exec(ctx.seed ?? '')?.[1];
+    const p = named !== undefined ? sets.find((x) => c.recognitionKey(x) === named) : sets[ctx.source.int(0, sets.length - 1)];
+    if (!p) return { ok: false, code: 'NO_SUCH_PARAMETER_SET', detail: `${named} is not a parameter set of ${v.difficulty.band}` };
     const answer = c.answer(p);
     const key = readRational(answer);
     // the renderer never emits a key its own independent check does not confirm

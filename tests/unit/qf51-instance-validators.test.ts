@@ -241,7 +241,12 @@ describe('RESPONSE EVALUATION POLICY belongs to the rendered item', () => {
   it('decimal separator, accepted representations and ambiguous writing are policy, not guesses', () => {
     expect(evaluateResponse(numeric({ decimalSeparators: ['.'] }), '12.5', '12,5').code).toBe('DECIMAL_SEPARATOR_NOT_ACCEPTED');
     expect(evaluateResponse(numeric({ acceptedRepresentations: ['FRACTION'] }), '3/4', '0.75').code).toBe('NOT_IN_AN_ACCEPTED_FORM');
-    expect(evaluateResponse(numeric(), '1250', '1.250').code).toBe('AMBIGUOUS_SEPARATOR');
+    // canonical contract: no grouping separator unless the policy governs one -- "1.250" is one point two five, never guessed
+    expect(evaluateResponse(numeric(), '1250', '1.250').code).toBe('INCORRECT');
+    expect(evaluateResponse(numeric(), '1.25', '1.250').code).toBe('CORRECT');
+    expect(evaluateResponse(numeric({ decimalSeparators: [','], groupingSeparators: ['.'] }), '1250', '1.250').code).toBe('CORRECT');
+    expect(evaluateResponse(numeric({ decimalSeparators: ['.'], groupingSeparators: [','] }), '1250.5', '1,250.5').code).toBe('CORRECT');
+    expect(evaluateResponse(numeric({ decimalSeparators: ['.'], groupingSeparators: [','] }), '1250', '12,50').code).toBe('GROUPING_NOT_ACCEPTED');
     expect(parseWrittenNumber('−2,5')).toMatchObject({ ok: true, n: { value: -2.5, representation: 'DECIMAL', separator: ',', decimals: 1 } });
   });
   it('units: accepted, required, or refused', () => {

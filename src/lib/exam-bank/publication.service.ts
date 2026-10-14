@@ -24,7 +24,8 @@ import { ApprovedItemContentSchema, examItemFromApproved } from '@/lib/exam-core
 import { persistRegisteredSystem } from '@/lib/assessment-instance/construct-core.repository';
 import { STUDYUS_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
 import { paaCertifiedConceptByStableId } from '@/lib/curriculum/paa/paa-certified-concepts';
-import { bankContentIssues, bankContentOf, BANK_PROJECTION_VERSION, CORE_DERIVED_ALIGNMENT, CORE_DERIVED_USAGE, projectionRefusal } from './bank-projection';
+import { bankContentIssues, bankContentOf, CORE_DERIVED_ALIGNMENT, CORE_DERIVED_USAGE } from './bank-projection';
+import { bankProjectionFor, scoringBankContentIssues, scoringBankContentOf, SCORING_PROJECTION_VERSION } from './scoring-projection';
 import { planCounts, type BlockedRow, type PlannedHumanDecision, type PlannedObjectCertification, type PublicationPlan } from './publication-plan';
 
 /** The migrations the model needs, by ledger version. */
@@ -307,7 +308,10 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
   const sectionOf = new Map<string, { sectionKey: string; objectiveCode: string }>(plan.blueprints.flatMap((b) => b.buckets.map((k) => [k.bucketId, { sectionKey: b.blueprint.sectionKey, objectiveCode: k.objectiveCode }] as const)));
   for (const p of plan.instances) {
     const i = p.instance;
-    const refusal = projectionRefusal(i);
+    // IB (new content only): the scoring-preserving projection 3. Every other system: projection 2, unchanged.
+    const projection = bankProjectionFor(i);
+    const PROJECTION = projection.version;
+    const refusal = projection.refusal;
     if (refusal) { report.blocked.push({ kind: 'EXAM_BANK_ROW', identity: i.instanceId, reason: refusal, detail: `${i.adapterId} ${i.format}: stays a certified instance with no bank row` }); continue; }
     const conceptId = await canonicalConceptOf(i.conceptId);
     if (!conceptId) { report.blocked.push({ kind: 'EXAM_BANK_ROW', identity: i.instanceId, reason: 'CANONICAL_CONCEPT_NOT_RESOLVED', detail: `${i.conceptId} is not exactly one ACTIVE concept of the certified catalogue here` }); continue; }
@@ -317,10 +321,11 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
     const byObjective = new Map(targets.map((t) => [t.objectiveId, t]));
     for (const target of byObjective.values()) {
       report.materialized.planned += 1;
-      const content = bankContentOf(i);
+      const content = PROJECTION === SCORING_PROJECTION_VERSION ? scoringBankContentOf(i) : bankContentOf(i);
+      const contentIssues = (): string[] => (PROJECTION === SCORING_PROJECTION_VERSION ? scoringBankContentIssues(content, i) : bankContentIssues(content, i));
       const parsed = ApprovedItemContentSchema.safeParse(content);
       if (!parsed.success || !examItemFromApproved({ id: i.instanceId, learning_objective_id: target.objectiveId, content })) throw new PublicationRefused([`BANK_CONTENT_IS_NOT_DELIVERABLE:${i.instanceId}:${parsed.success ? 'structure' : parsed.error.issues[0]?.message}`]);
-      if (bankContentIssues(content, i).length > 0) throw new PublicationRefused([`BANK_CONTENT_IS_NOT_ITS_INSTANCE:${i.instanceId}:${bankContentIssues(content, i).join(',')}`]);
+      if (contentIssues().length > 0) throw new PublicationRefused([`BANK_CONTENT_IS_NOT_ITS_INSTANCE:${i.instanceId}:${contentIssues().join(',')}`]);
       const hash = contentHash(content);
       const held = await one<{ id: string; item_instance_id: string | null; lineage_class: string; provenance: string; current_hash: string | null; version_id: string | null; projection: string | null; digest: string | null; lifecycle: string | null }>(c,
         `SELECT qi.id, qi.item_instance_id, qi.lineage_class, qi.provenance, ai.content_hash AS current_hash, ai.id AS version_id, ai.content->'certified'->>'projection' AS projection, ai.content->'lineage'->>'digest' AS digest, ai.bank_lifecycle_status AS lifecycle FROM question_bank_items qi LEFT JOIN approved_items ai ON ai.id = qi.current_version_id WHERE qi.learning_objective_id = $1 AND qi.item_key = $2`,
@@ -334,7 +339,7 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
        */
       const publishVersion = async (itemId: string, versionNumber: number, supersedes: string | null): Promise<string> => {
         const validation = {
-          kind: 'INHERITED_DETERMINISTIC_CERTIFICATION', projection: BANK_PROJECTION_VERSION, itemInstanceId: i.instanceId, lineageDigest: i.lineageHash,
+          kind: 'INHERITED_DETERMINISTIC_CERTIFICATION', projection: PROJECTION, itemInstanceId: i.instanceId, lineageDigest: i.lineageHash,
           generation: { certificationVersion: i.lineage.certificationVersion, seed: i.seed, rendererVersion: i.rendererVersion, note: 'the renderer\'s own record at rendering time; immutable; part of the lineage digest' },
           publication: { coreCertificationVersion: p.certificationVersion, instanceCertificationState: i.certificationState, certificationMode: i.certificationMode, policyVersion: i.policyVersion, policyHash: i.policyHash, batch: plan.batchId, note: 'recorded when the instance was published; it did not exist when the instance was rendered' },
         };
@@ -348,7 +353,7 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
         if (supersedes) {
           // the earlier version is kept as history, out of use: what an attempt saw is never rewritten
           await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'SUPERSEDED', status = 'RETIRED' WHERE id = $1`, [supersedes]);
-          await lifecycleEvent(itemId, supersedes, 'ACTIVE', 'SUPERSEDED', `REPLACED_BY_PROJECTION_${BANK_PROJECTION_VERSION}`, p);
+          await lifecycleEvent(itemId, supersedes, 'ACTIVE', 'SUPERSEDED', `REPLACED_BY_PROJECTION_${PROJECTION}`, p);
         }
         await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'ACTIVE', status = 'PUBLISHED', published_at = now() WHERE id = $1`, [version!.id]);
         await c.query(`UPDATE question_bank_items SET current_version_id = $2, updated_at = now() WHERE id = $1`, [itemId, version!.id]);
@@ -359,7 +364,7 @@ async function publish(c: Q, plan: PublicationPlan, report: PublicationReport): 
         if (held.item_instance_id !== instanceRowId.get(i.instanceId) || held.lineage_class !== 'CORE_DERIVED' || held.provenance !== 'STUDYUS_AUTHORED' || held.digest !== i.lineageHash) conflict('EXAM_BANK_ROW', `${content.key}`, 'a bank item of this key exists that is not this instance');
         if (held.current_hash !== hash) {
           // the SAME instance under an earlier projection: a new version supersedes it. Anything else is a conflict.
-          if (!held.projection || held.projection === BANK_PROJECTION_VERSION || held.lifecycle !== 'ACTIVE') conflict('EXAM_BANK_ROW', `${content.key}`, `the current version differs and is not an earlier projection in use (${held.projection ?? 'no projection'}, ${held.lifecycle})`);
+          if (!held.projection || held.projection === PROJECTION || held.lifecycle !== 'ACTIVE') conflict('EXAM_BANK_ROW', `${content.key}`, `the current version differs and is not an earlier projection in use (${held.projection ?? 'no projection'}, ${held.lifecycle})`);
           const next = Number((await one<{ n: string }>(c, `SELECT COALESCE(max(version_number), 0) AS n FROM approved_items WHERE bank_item_id = $1`, [held.id]))!.n) + 1;
           await publishVersion(held.id, next, held.version_id);
           report.materialized.superseded += 1;
