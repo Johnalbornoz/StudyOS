@@ -299,6 +299,8 @@ describe('B2-B1 blueprint variants and frozen forms', () => {
       // PAA pilot: the publication of automatically certified generated items records their right and their PRIMARY concept
       'src/lib/exam-bank/pilot/paa-pilot-publication.service.ts',
       'src/lib/exam-bank/publication.service.ts',
+      // Exam Bank hardening: the READ-ONLY readiness adapter reads a LEGACY version's reuse right to say whether it is cleared; it writes and delivers nothing
+      'src/lib/exam-bank/readiness/bank-readiness-adapter.ts',
       'src/lib/exam-core/question-bank/item-attribution.service.ts',
       'src/lib/exam-core/question-bank/reviewer-qualification.service.ts',
     ]);

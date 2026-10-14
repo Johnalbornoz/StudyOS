@@ -1359,12 +1359,15 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     // instance). It is the one consumer added; it is pure except its repository, and it is wired to no route or service.
     const INSTANCE_DIR = 'src/lib/assessment-instance';
     // Track B: the governed Exam Bank publication (src/lib/exam-bank) is the one consumer -- a loader, not a Student runtime
-    expect(walk('src').filter((f) => !f.startsWith(INSTANCE_DIR) && /assessment-instance/.test(read(f))).sort()).toEqual(['src/lib/exam-bank/bank-projection.ts', 'src/lib/exam-bank/publication-plan.ts', 'src/lib/exam-bank/publication.service.ts']);
+    // + the scoring-preserving projection 3 (pure, isolated: nothing publishes with it yet)
+    expect(walk('src').filter((f) => !f.startsWith(INSTANCE_DIR) && /assessment-instance/.test(read(f))).sort()).toEqual(['src/lib/exam-bank/bank-projection.ts', 'src/lib/exam-bank/publication-plan.ts', 'src/lib/exam-bank/publication.service.ts', 'src/lib/exam-bank/scoring-projection.ts']);
     const importers = walk('src').filter((f) => !f.startsWith(ADAPTATION_DIR) && !f.startsWith(FAMILIES_DIR) && !f.startsWith(INSTANCE_DIR) && /assessment-adaptation|question-bank\/task-families/.test(read(f))).sort();
     // QB-R2D adds three Production OS modules of the specification-driven path. Same direction (production -> adaptation), still pure, still no route, service or table.
     expect(importers).toEqual([
       // Track B: the Exam Bank publication plan hashes with the same canonical hash (pure; no route, service or table of its own)
       'src/lib/exam-bank/publication-plan.ts',
+      // Exam Bank hardening: the scoring-preserving projection 3 digests the mark scheme / rubric / policy with that same canonical hash (pure, not wired)
+      'src/lib/exam-bank/scoring-projection.ts',
       'src/lib/exam-core/question-bank/production/generation-contract.ts', 'src/lib/exam-core/question-bank/production/generator/generate-candidates.ts',
       'src/lib/exam-core/question-bank/production/generator/specification-generation-v2.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation-v3.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation-v4.ts', 'src/lib/exam-core/question-bank/production/generator/specification-generation.ts', 'src/lib/exam-core/question-bank/production/specification-candidate.ts',
       // QB-R2F adds generator version 3 and validators revision 4 (both read the item demand policy); same direction, still pure

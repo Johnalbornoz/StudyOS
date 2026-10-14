@@ -142,8 +142,10 @@ export function evaluateExamBankReadiness(input: ReadinessInput): ExamBankReadin
   const inBlueprint = input.supply.filter((r) => r.bucketIds.some((b) => bucketIds.has(b)));
   const excluded = new Map<string, Partial<Record<ReadinessReason, number>>>(buckets.map((b) => [b.bucketId, {}]));
   const eligibleByBucket = new Map<string, SupplyRow[]>(buckets.map((b) => [b.bucketId, []]));
-  const certifiedByBucket = new Map<string, number>(buckets.map((b) => [b.bucketId, 0]));
-  let certifiedNotDeliverable = 0; let certified = 0; let scorable = 0; let stimulusOk = 0; let stimulusRows = 0; let rightsOk = 0; let calibrated = 0;
+  // Certified counts are of ITEMS (a bank item with several versions is one item), never of rows.
+  const certifiedByBucket = new Map<string, Set<string>>(buckets.map((b) => [b.bucketId, new Set<string>()]));
+  const certifiedItems = new Set<string>(); const deliverableItems = new Set<string>();
+  let scorable = 0; let stimulusOk = 0; let stimulusRows = 0; let rightsOk = 0; let calibrated = 0;
   const pending: SupplyRow[] = [];
   for (const row of inBlueprint) {
     const mapped = row.bucketIds.filter((b) => bucketIds.has(b));
@@ -155,13 +157,12 @@ export function evaluateExamBankReadiness(input: ReadinessInput): ExamBankReadin
     if (formatAllowed.length === 0) rowReasons.push('FORMAT_NOT_ALLOWED_BY_BUCKET');
     const rowCalibrated = isCalibrated(row.difficulty, policy, now);
     if (mode.requiresCalibratedDifficulty && !rowCalibrated) rowReasons.push('CALIBRATION_REQUIRED');
-    if (isCert) { certified++; for (const b of mapped) certifiedByBucket.set(b, certifiedByBucket.get(b)! + 1); }
+    if (isCert) { certifiedItems.add(row.itemId); for (const b of mapped) certifiedByBucket.get(b)!.add(row.itemId); }
     if (capabilities.scorableFormats.includes(row.responseFormat)) scorable++;
     if (row.stimulusKind !== null) { stimulusRows++; if (capabilities.stimulusKinds.includes(row.stimulusKind)) stimulusOk++; }
     if (row.rights === 'CLEARED') rightsOk++;
     if (rowCalibrated) calibrated++;
-    if (rowReasons.length === 0) { pending.push({ ...row, bucketIds: formatAllowed }); continue; }
-    if (isCert) certifiedNotDeliverable++;
+    if (rowReasons.length === 0) { deliverableItems.add(row.itemId); pending.push({ ...row, bucketIds: formatAllowed }); continue; }
     for (const b of mapped) { const e = excluded.get(b)!; for (const r of new Set(rowReasons)) e[r] = (e[r] ?? 0) + 1; }
     for (const r of rowReasons) reasons.add(r);
   }
@@ -182,7 +183,7 @@ export function evaluateExamBankReadiness(input: ReadinessInput): ExamBankReadin
     const req = Math.max(1, b.requiredPositions);
     const unexposed = exposure ? el.filter((r) => !exposure.has(r.itemId)).length : null;
     return {
-      bucketId: b.bucketId, requiredPositions: b.requiredPositions, certifiedItemCount: certifiedByBucket.get(b.bucketId)!, runtimeEligibleItemCount: el.length,
+      bucketId: b.bucketId, requiredPositions: b.requiredPositions, certifiedItemCount: certifiedByBucket.get(b.bucketId)!.size, runtimeEligibleItemCount: el.length,
       effectiveBucketDepth: Math.floor(el.length / req), coveredPositions: Math.min(el.length, b.requiredPositions),
       distinctStimuli: new Set(el.map((r) => r.stimulusId).filter((s): s is string => s !== null)).size,
       studentUnexposedCount: unexposed, studentEffectiveDepth: unexposed === null ? null : Math.floor(unexposed / req), excluded: excluded.get(b.bucketId)!,
@@ -193,6 +194,8 @@ export function evaluateExamBankReadiness(input: ReadinessInput): ExamBankReadin
   const coveredPositions = depth.reduce((s, b) => s + b.coveredPositions, 0);
   const missingBuckets = depth.filter((b) => b.runtimeEligibleItemCount < b.requiredPositions).map((b) => b.bucketId);
   for (const b of depth) { if (b.runtimeEligibleItemCount === 0) reasons.add('BUCKET_UNCOVERED'); else if (b.runtimeEligibleItemCount < b.requiredPositions) reasons.add('BUCKET_UNDER_SUPPLIED'); }
+  const certified = certifiedItems.size;
+  const certifiedNotDeliverable = [...certifiedItems].filter((id) => !deliverableItems.has(id)).length;
   if (certified === 0) reasons.add('NO_CERTIFIED_SUPPLY');
   const uniqueFormDepth = depth.length === 0 ? 0 : Math.min(...depth.map((b) => b.effectiveBucketDepth));
   const runtimeEligible = depth.reduce((s, b) => s + b.runtimeEligibleItemCount, 0);

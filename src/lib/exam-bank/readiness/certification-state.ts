@@ -22,6 +22,8 @@
  *   REVIEW_REQUIRED            produced, not certified. Never deliverable.
  *   REJECTED                   failed certification. Never deliverable; never silently retried into the bank.
  *   DRAFT / VALIDATING         not yet decided. QUARANTINED / RETIRED: withdrawn. None is deliverable.
+ *   LEGACY_UNGOVERNED          a bank row with no governed certification record at all (lineage class LEGACY: older
+ *                              reviewed rows, AI-era rows, fixtures). Not certified, whatever the runtime does with it.
  * An AUTOMATED_CERTIFIED_PILOT row reaches PRODUCTION only through an explicit production release
  * (`assessment_production_releases`, mirrored here by `productionReleased`).
  *   CERTIFIED_NOT_DELIVERABLE  is NOT a stored certification state: it is the DERIVED verdict for a certified row that
@@ -30,7 +32,7 @@
 
 export type CertificationState =
   | 'HUMAN_CERTIFIED' | 'AUTOMATED_CERTIFIED_PILOT' | 'INHERITED_DETERMINISTIC' | 'REVIEW_REQUIRED' | 'REJECTED'
-  | 'DRAFT' | 'VALIDATING' | 'QUARANTINED' | 'RETIRED';
+  | 'DRAFT' | 'VALIDATING' | 'QUARANTINED' | 'RETIRED' | 'LEGACY_UNGOVERNED';
 export type DeliveryScope = 'PILOT_PREVIEW' | 'PRODUCTION';
 export type RightsStatus = 'CLEARED' | 'RESTRICTED' | 'UNKNOWN';
 
@@ -63,13 +65,15 @@ export interface SupplyRow {
   /** Rows sharing a stimulus are presented together (a stimulus set). null = self-contained. */
   stimulusId: string | null;
   retired: boolean;
+  /** The Question Bank lifecycle / usage axis (a usage gate, not a certification). Absent = deliverable. */
+  lifecycleDeliverable?: boolean;
   difficulty: import('./difficulty').DifficultyProfile | null;
 }
 
 export type CertificationVerdict = 'CERTIFIED' | 'NOT_CERTIFIED' | 'CERTIFIED_OUT_OF_SCOPE';
 export type DeliverabilityReason =
   | 'NOT_CERTIFIED' | 'REJECTED' | 'CERTIFICATION_OUT_OF_SCOPE' | 'INHERITANCE_BROKEN' | 'LINEAGE_INCOMPLETE' | 'RIGHTS_NOT_CLEARED'
-  | 'FORMAT_NOT_RENDERABLE' | 'FORMAT_NOT_SCORABLE' | 'STIMULUS_NOT_SUPPORTED' | 'RETIRED' | 'NOT_IN_BLUEPRINT';
+  | 'FORMAT_NOT_RENDERABLE' | 'FORMAT_NOT_SCORABLE' | 'STIMULUS_NOT_SUPPORTED' | 'RETIRED' | 'LIFECYCLE_NOT_DELIVERABLE' | 'NOT_IN_BLUEPRINT';
 export type Deliverability = 'RUNTIME_DELIVERABLE' | 'CERTIFIED_NOT_DELIVERABLE' | 'NOT_CERTIFIED';
 
 /** Is the row certified, and is its certification valid in this delivery scope? */
@@ -99,6 +103,7 @@ export function deliverabilityOf(row: SupplyRow, ctx: { scope: DeliveryScope; ca
   if (!ctx.capabilities.scorableFormats.includes(row.responseFormat)) reasons.push('FORMAT_NOT_SCORABLE');
   if (row.stimulusKind !== null && !ctx.capabilities.stimulusKinds.includes(row.stimulusKind)) reasons.push('STIMULUS_NOT_SUPPORTED');
   if (row.retired) reasons.push('RETIRED');
+  if (row.lifecycleDeliverable === false) reasons.push('LIFECYCLE_NOT_DELIVERABLE');
   if (!row.bucketIds.some((b) => ctx.blueprintBucketIds.has(b))) reasons.push('NOT_IN_BLUEPRINT');
   if (reasons.length === 0) return { verdict: 'RUNTIME_DELIVERABLE', reasons };
   // A pilot certification outside the pilot scope is still a certification: certified, not deliverable HERE.

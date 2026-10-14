@@ -47,6 +47,20 @@ mutation, no migration.
   - `IB_CONSTRUCTED_RESPONSE_GAP.md`.
 - The readiness engine is not yet the single authority. Live consumers are rewired only after the freeze is lifted
   (step R3 of the adoption plan).
+- 2026-10-14, second block (still generic; no deploy, DB mutation or migration):
+  - **Read-only readiness adapter**, plus a **DEV shadow** of the engine against every PAA surface
+    (`docs/audits/exam-bank/PAA_READINESS_SHADOW_REPORT.md`): 34 comparisons, 29 agree. Disagreements:
+    - catalogue tree vs instance API;
+    - diagnostic scope;
+    - Challenge, which is not represented in capabilities and is always startable at start;
+    - health reduced-mock reasons, which are counted from the FULL_MOCK pool;
+    - three meanings of "calibrated";
+    - LEGACY treated as deliverable.
+  - **Missing difficulty fails closed** in the engine: `NOT_CALIBRATED`, never 1.0.
+  - **Scoring-preserving projection 3** (`src/lib/exam-bank/scoring-projection.ts`): ordered parts, intermediate steps,
+    method and answer marks, s.f./tolerance/units, provenance. Proven against the real QF V5.2 supply; isolated.
+  - **IB still has no deliverable item.** Exact blocker: no certified IB instance with a compatible schema exists, and
+    the IB buckets beyond P1 functions are not certified (`IB_CONSTRUCTED_RESPONSE_GAP.md` §7).
 
 # Pilot Convergence Status — PAA P0
 

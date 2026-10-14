@@ -237,8 +237,8 @@ Keep the existing `difficulty_index`, `calibrated_difficulty`, `calibration_conf
 
 | Phase | Work | Changes PAA? |
 |---|---|---|
-| R1 | DB adapter: build `ReadinessInput` from the bank (`question_bank_items` + `approved_items` + instance certification + rights + blueprint buckets). Read-only. Snapshot keyed by `(engineVersion, scope, blueprint)`. | No (read-only) |
-| R2 | Shadow: Admin health and `paa-coverage.ts`-style report print engine vs current surfaces side by side; disagreements become tickets | No |
+| R1 | **DONE 2026-10-14.** DB adapter that builds `ReadinessInput` from the bank (`question_bank_items` + `approved_items` + instance certification + rights + blueprint buckets). Read-only. `src/lib/exam-bank/readiness/bank-readiness-adapter.ts`. Snapshot keyed by `(engineVersion, scope, blueprint)` is still to do. | No (read-only) |
+| R2 | **DONE on DEV 2026-10-14.** `scripts/operations/exam-bank/paa-readiness-shadow.ts` produces `PAA_READINESS_SHADOW_REPORT.md`: 34 comparisons, 29 agree. Disagreements D1–D7 are the R3 work list. | No |
 | R3 | Consumers switch, one at a time behind a flag: catalogue tree → `resolveExamLevel` → capabilities / PreparationHome → `examAvailabilityForVersion` (closes PAA-FOLLOWUP-01) → instance API gate → Challenge start gate | **Yes**: needs the freeze lifted |
 | R4 | Delete the duplicated deciders (C8 legacy guard, B1 config readiness for bank-backed families, unused `mockReady`) | Yes |
 

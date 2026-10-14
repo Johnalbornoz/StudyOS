@@ -58,3 +58,12 @@ export function isCalibrated(p: DifficultyProfile | null, policy: CalibrationPol
   }
   return true;
 }
+
+export type CalibrationStatus = 'CALIBRATED' | 'NOT_CALIBRATED';
+/** The calibration verdict of a profile. A missing profile, a missing index or a non-empirical source is NOT_CALIBRATED. */
+export const calibrationStatusOf = (p: DifficultyProfile | null, policy: CalibrationPolicy = DEFAULT_CALIBRATION_POLICY, now: Date = new Date()): CalibrationStatus => (isCalibrated(p, policy, now) ? 'CALIBRATED' : 'NOT_CALIBRATED');
+/**
+ * The difficulty index a consumer may use, or null. NEVER a synthetic number: an unknown difficulty is unknown, it is
+ * not 1.0 (the official difficulty). Only a calibrated profile yields a number.
+ */
+export const calibratedDifficultyIndex = (p: DifficultyProfile | null, policy: CalibrationPolicy = DEFAULT_CALIBRATION_POLICY, now: Date = new Date()): number | null => (isCalibrated(p, policy, now) ? p!.difficultyIndex : null);

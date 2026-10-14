@@ -80,6 +80,8 @@ describe('B2-B2 legacy blueprint readers are explicit', () => {
       'src/lib/assessment/blueprint.service.ts x1',
       // curriculum convergence: the certified PAA catalogue loader reads the objectives of published versions (legacy blueprint)
       'src/lib/curriculum/paa/paa-certified-catalog.service.ts x1',
+      // Exam Bank hardening: the READ-ONLY readiness adapter reads the governed (legacy, purpose IS NULL) blueprint of a version
+      'src/lib/exam-bank/readiness/bank-readiness-adapter.ts x1',
       'src/lib/exam-core/apply-vertical-config.service.ts x1',
       'src/lib/exam-core/catalog.service.ts x1',
       'src/lib/exam-core/catalog/learning-links.service.ts x1',
