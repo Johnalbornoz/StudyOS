@@ -293,7 +293,7 @@ describe('B5-D exam preparation availability', () => {
     const component = read('src/app/dashboard/exam-prep/[examProfileId]/CanonicalExamAvailability.tsx');
     expect(component).toMatch(/if \(!isSnapshotExecutionEnabled\(\)\) return null;/);
     expect(code('src/app/dashboard/exam-prep/[examProfileId]/CanonicalExamAvailability.tsx')).not.toMatch(/startExamInstance|createExamInstance|generate|mayUseGeneratedFallback|fetch\(/);
-    expect(read('src/app/dashboard/exam-prep/[examProfileId]/page.tsx').match(/<CanonicalExamAvailability examVersionId=\{profile\.examVersionId \?\? null\} t=\{t\}(?: catalogNode=\{view\.objective\.nodeKey\})? \/>/g)).toHaveLength(3);
+    expect(read('src/app/dashboard/exam-prep/[examProfileId]/page.tsx').match(/<CanonicalExamAvailability examVersionId=\{profile\.examVersionId \?\? null\} t=\{t\}(?: catalogNode=\{view\.objective\.nodeKey\} activities=\{view\.capabilities\} focusArea=\{[^}]*\}[^/]*)? \/>/g)).toHaveLength(3);
     // an unavailable attempt has no link (the shared component)
     expect(read('src/components/assessment/AssessmentExperience.tsx')).toMatch(/const startable = o\.available && !!href;/);
   });

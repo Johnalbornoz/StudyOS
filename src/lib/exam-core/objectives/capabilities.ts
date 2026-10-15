@@ -144,3 +144,18 @@ export function objectiveStatusKey(c: Pick<ExamPreparationCapabilities, 'canPlan
   if (c.canViewStructure) return c.unavailableReasons.some((r) => r.reason === 'BANK_IN_PROGRESS') ? 'bankInProgress' : 'structure';
   return 'canAdd';
 }
+
+/**
+ * F5 -- where each canonical "Comenzar" of a preparation lands: the governed activity of THIS preparation for that mode
+ * (practice: the area the plan most recommends, else the whole-test entry, else the first launchable entry -- the same
+ * rule as the preparation's own next step; mocks: the whole-test entry first), never the generic chooser. Falls back to
+ * the objective node, then the catalogue. Presentation only: readiness and supply decide what the lists contain.
+ */
+export function examEntryHrefs(objectiveNode: string | null, c: Pick<ExamPreparationCapabilities, 'practiceModes' | 'reducedMocks' | 'fullMocks'> | null, focusAreaLabel: string | null = null): Record<'EXAM_PRACTICE' | 'EXAM_CHALLENGE' | 'REDUCED_MOCK' | 'FULL_MOCK', string> {
+  const valid = (k: string | null | undefined) => (k && /^[a-z0-9][a-z0-9._-]{0,119}$/.test(k) ? k : null);
+  const pick = (list: ActivityEntry[] | undefined) => valid((list ?? []).find((e) => e.purpose === 'FULL_TEST')?.nodeKey ?? list?.[0]?.nodeKey);
+  const href = (k: string | null) => (k ? `/dashboard/exams?node=${encodeURIComponent(k)}` : '/dashboard/exams');
+  const fallback = valid(objectiveNode);
+  const practice = valid(focusAreaLabel ? c?.practiceModes.find((p) => p.label === focusAreaLabel)?.nodeKey : null) ?? pick(c?.practiceModes) ?? fallback;
+  return { EXAM_PRACTICE: href(practice), EXAM_CHALLENGE: href(practice), REDUCED_MOCK: href(pick(c?.reducedMocks) ?? fallback), FULL_MOCK: href(pick(c?.fullMocks) ?? fallback) };
+}

@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
+import { preparationChooserLabels } from '@/lib/i18n/preparation-chooser-labels';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
@@ -83,7 +84,7 @@ export default async function ExamPrepPage({ searchParams }: { searchParams?: Pr
   const profileMenuLabels: Record<string, string> = Object.fromEntries(
     Object.entries(tr).filter(([k]) => k.startsWith('examPrep.profile.') || k === 'exv2.menu.more' || k === 'exv2.delete.no')
   );
-  const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.') || k.startsWith('elig.') || k.startsWith('acp.prep.')));
+  const prepLabels: Record<string, string> = preparationChooserLabels(tr as Record<string, string>);
   const todayIso = new Date().toISOString().slice(0, 10);
   const dateLine = (examDate: string | null) => {
     if (!examDate) return t['examPrep.noExamDateSet'];

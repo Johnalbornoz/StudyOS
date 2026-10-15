@@ -163,7 +163,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
               </div>
             }
           />
-          <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} />
+          <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} activities={view.capabilities} focusArea={view.plan?.recommendations.find((r) => r.recommendation.action === 'PRACTICE_AREA')?.area ?? null} />
           <ExamTargetOverview
             profileId={profile.id}
             resolution={resolution}
@@ -212,7 +212,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
             </div>
           }
         />
-        <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} />
+        <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} activities={view.capabilities} focusArea={view.plan?.recommendations.find((r) => r.recommendation.action === 'PRACTICE_AREA')?.area ?? null} />
         <PreparationHome
           view={view}
           labels={prepLabels}

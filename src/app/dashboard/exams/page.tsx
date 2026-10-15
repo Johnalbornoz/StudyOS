@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
+import { preparationChooserLabels } from '@/lib/i18n/preparation-chooser-labels';
 import { selectableSql } from '@/lib/exam-core/catalog/readiness-view';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -51,7 +52,7 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
   const showAicePlanner = initialNode
     ? true
     : picker!.suggested.includes('CIE_AICE') || (await db.query(`SELECT 1 FROM aice_diploma_plans WHERE student_id = $1 AND status = 'ACTIVE' LIMIT 1`, [studentId])).rows.length > 0;
-  const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(t).filter(([k]) => k.startsWith('prep.') || k.startsWith('elig.')));
+  const prepLabels: Record<string, string> = preparationChooserLabels(t as Record<string, string>);
   const active = instances.filter((i) => i.status === 'DRAFT' || i.status === 'READY' || i.status === 'IN_PROGRESS');
   const past = instances.filter((i) => i.status === 'COMPLETED' || i.status === 'ARCHIVED');
 

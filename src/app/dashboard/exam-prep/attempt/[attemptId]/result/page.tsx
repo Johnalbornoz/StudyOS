@@ -11,6 +11,7 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getSimulationAttempt } from '@/lib/simulation/attempt.service';
 import { getAttemptResultView } from '@/lib/exam-core/result-view.service';
+import { finalScoreDisplay, rawMarksLine } from '@/lib/exam-core/scoring/final-score-display';
 import { finalizeExamCompletion } from '@/lib/exam-core/post-completion';
 import { masteryStateLabel } from '@/lib/knowledge-state-labels';
 import { PageIntro } from '@/components/ui/PageIntro';
@@ -101,13 +102,13 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
               <p className="ui-hint">{t['examPrep.attempt.noGradedItems']}</p>
             ) : result.scoringStatus === 'SCORED' ? (
               <p className="xr-score">
-                {result.finalLabel ?? (result.finalScore === null ? '—' : `${result.finalScore}${result.provenance?.final?.unit === '%' ? '%' : ''}`)}
-                {result.finalLabel === null && result.provenance?.final?.unit && result.provenance.final.unit !== '%' && <span className="xr-score-unit"> {result.provenance.final.unit}</span>}
+                {finalScoreDisplay(result).headline}
+                {finalScoreDisplay(result).unit && <span className="xr-score-unit"> {finalScoreDisplay(result).unit}</span>}
               </p>
             ) : (
               <p className="ui-hint">{t['examPrep.result.noPolicy']}</p>
             )}
-            <p className="xr-raw">{t['examPrep.result.raw'].replace('{earned}', String(result.rawScore)).replace('{available}', String(result.maxScore))}</p>
+            <p className="xr-raw">{rawMarksLine(result) ?? t['examPrep.result.raw'].replace('{earned}', String(result.rawScore)).replace('{available}', String(result.maxScore))}</p>
             <p className="ui-hint">{view.reporting?.scaleNote === 'NO_OFFICIAL_SCALE' ? tr['exv2.result.noOfficialScale'] : t['examPrep.result.examScoreNote']}</p>
             {(view.completion || view.minutesUsed) && (
               <p className="ui-hint">
