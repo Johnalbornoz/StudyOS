@@ -17,7 +17,7 @@
  * CERTIFICATION_ELIGIBLE = all governance checks above. A dry run ingests nothing; running it twice gives the same report.
  */
 import { createHash } from 'crypto';
-import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS } from '@/lib/assessment-instance/library/catalogue';
+import { PUBLICATION_APPLICABILITY, PUBLICATION_BLUEPRINTS, PUBLICATION_LIBRARY } from '@/lib/assessment-instance/library/catalogue';
 import { STUDYUS_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
 import { evaluateResponse, type ResponseEvaluationPolicy } from '@/lib/assessment-instance/response-evaluation';
 import { governLibrary } from '@/lib/assessment-instance/v52/library-batch';
@@ -26,9 +26,10 @@ import type { CertifiedInstance } from '@/lib/assessment-instance/v52';
 import { resolveApplicability, EA1_APPLICABILITY_THRESHOLD } from '@/lib/assessment-adaptation/assessment-applicability';
 import { evaluateCanonicalNumeric, policyIssues } from '@/lib/assessment-scoring/canonical-response';
 import { PAA_CERTIFIED_CONCEPTS } from '@/lib/curriculum/paa/paa-certified-concepts';
+import { IB_AA_HL_CONCEPT_IDENTITIES, IB_AA_HL_CORRESPONDENCES } from '@/lib/curriculum/ib/ib-aa-hl-concept-correspondence';
 import { bankProjectionFor } from './scoring-projection';
 
-export const CF_DRY_RUN_VERSION = 'cf-package-dry-run-1';
+export const CF_DRY_RUN_VERSION = 'cf-package-dry-run-2';
 export type DryRunCheck = 'PACKAGE_HASH' | 'IDENTITY' | 'CONCEPT_GOVERNED' | 'BUCKET_CERTIFIED' | 'ADAPTER_GOVERNED' | 'FORMAT_OFFERED' | 'SCORING_POLICY' | 'LINEAGE_COMPLETE' | 'RIGHTS_PROVENANCE' | 'NOT_A_DUPLICATE' | 'PROJECTION';
 export const GOVERNANCE_CHECKS: readonly DryRunCheck[] = ['CONCEPT_GOVERNED', 'BUCKET_CERTIFIED', 'ADAPTER_GOVERNED', 'FORMAT_OFFERED'];
 export interface CandidateVerdict { candidateId: string; construct: string; bucketId: string; failed: { check: DryRunCheck; detail: string }[]; certificationEligible: boolean; accepted: boolean }
@@ -38,19 +39,24 @@ export interface DryRunReport {
   status: PackageStatus;
   version: string; batchId: string; packageSha256: string; expectedSha256: string; candidates: number; constructs: number;
   accepted: number; certificationEligible: number; failuresByCheck: Partial<Record<DryRunCheck, number>>;
-  byConstruct: Array<{ construct: string; coreId: string; bucketId: string; conceptStableId: string; candidates: number; accepted: number; failedChecks: DryRunCheck[]; firstDetail: Partial<Record<DryRunCheck, string>> }>;
+  byConstruct: Array<{ construct: string; coreId: string; bucketId: string; conceptStableId: string; declaredConcept: string; candidates: number; accepted: number; failedChecks: DryRunCheck[]; firstDetail: Partial<Record<DryRunCheck, string>> }>;
   verdicts: CandidateVerdict[]; reportDigest: string;
 }
 
 const LINEAGE_FIELDS = ['systemId', 'systemVersionId', 'adapterId', 'blueprintId', 'bucketId', 'objectiveCode', 'coreId', 'coreVersion', 'rendererVersion', 'construct'] as const;
-const GOVERNED_STABLE_IDS = new Set(PAA_CERTIFIED_CONCEPTS.map((c) => c.stableId));
+const GOVERNED_STABLE_IDS = new Set([...PAA_CERTIFIED_CONCEPTS.map((c) => c.stableId), ...IB_AA_HL_CONCEPT_IDENTITIES.filter((x) => x.status !== 'PROPOSED_PENDING_DECISION').map((x) => x.stableId)]);
+/**
+ * The concept a candidate is governed under: the GOVERNED correspondence of its core (Track B owns concept identity),
+ * else the id the package declares. A package-declared id that differs is reported (`declaredConcept`), never adopted.
+ */
+const governedConceptOf = (coreId: string, declared: string): string => IB_AA_HL_CORRESPONDENCES.find((c) => c.constructId === coreId)?.studyusCanonicalConceptId ?? declared;
 const decimalOf = (k: string): string | null => { const m = /^(-?\d+)\/(\d+)$/.exec(k); if (!m) return null; let d = Number(m[2]); while (d % 2 === 0) d /= 2; while (d % 5 === 0) d /= 5; if (d !== 1) return null; const v = Number(m[1]) / Number(m[2]); const s = String(v); return s.length <= 12 ? s : null; };
 
 export function dryRunCfPackage(bytes: Buffer | string, expectedSha256: string, existingWordings: ReadonlySet<string>): DryRunReport {
   const sha = createHash('sha256').update(bytes).digest('hex');
   const pkg = JSON.parse(bytes.toString()) as { batchId: string; constructs: any[]; candidates: any[] };
   const registry = STUDYUS_ASSESSMENT_REGISTRY;
-  const g = governLibrary(undefined, LIBRARY);
+  const g = governLibrary(undefined, PUBLICATION_LIBRARY, PUBLICATION_BLUEPRINTS, PUBLICATION_APPLICABILITY);
   const count = (key: (c: any) => string) => { const m = new Map<string, number>(); for (const c of pkg.candidates) m.set(key(c), (m.get(key(c)) ?? 0) + 1); return m; };
   const ids = count((c) => c.candidateId), digests = count((c) => c.contentDigest), recog = count((c) => c.recognitionId), seeds = count((c) => c.seed), wordings = count((c) => `${c.lineage.adapterId}|${c.learner.prompt}`);
   const verdicts: CandidateVerdict[] = pkg.candidates.map((c) => {
@@ -60,11 +66,11 @@ export function dryRunCfPackage(bytes: Buffer | string, expectedSha256: string, 
     if (sha !== expectedSha256) fail('PACKAGE_HASH', `${sha} != ${expectedSha256}`);
     if ([ids.get(c.candidateId), digests.get(c.contentDigest), recog.get(c.recognitionId), seeds.get(c.seed)].some((n) => n !== 1)) fail('IDENTITY', 'an identity is not unique in the package');
     // concept: a governed stable id, established as assessed by THIS component
-    const stableId: string = l.concept?.stableId ?? '';
-    const established = GOVERNED_STABLE_IDS.has(stableId) && LIBRARY_APPLICABILITY.some((r) => r.concept.stableId === stableId && r.scope.componentId === l.adapterId && resolveApplicability(LIBRARY_APPLICABILITY, r.concept, r.scope, EA1_APPLICABILITY_THRESHOLD).status === 'ESTABLISHED');
+    const stableId: string = governedConceptOf(l.coreId, l.concept?.stableId ?? '');
+    const established = GOVERNED_STABLE_IDS.has(stableId) && PUBLICATION_APPLICABILITY.some((r) => r.concept.stableId === stableId && r.scope.componentId === l.adapterId && resolveApplicability(PUBLICATION_APPLICABILITY, r.concept, r.scope, EA1_APPLICABILITY_THRESHOLD).status === 'ESTABLISHED');
     if (!established) fail('CONCEPT_GOVERNED', `${stableId} (${l.concept?.stableIdStatus ?? 'no status'}): ${GOVERNED_STABLE_IDS.has(stableId) ? 'not established for' : 'no governed stable id for'} ${l.adapterId}`);
     // bucket: a governed classification of the component places the concept there
-    const bp = LIBRARY_BLUEPRINTS.find((b) => b.adapterId === l.adapterId && b.buckets.some((x) => x.bucket.bucketId === l.bucketId));
+    const bp = PUBLICATION_BLUEPRINTS.find((b) => b.adapterId === l.adapterId && b.buckets.some((x) => x.bucket.bucketId === l.bucketId));
     const bpDecision = bp ? g.blueprints.find((d) => d.objectId === bp.blueprintId && d.objectVersion === bp.classificationVersion) : undefined;
     const bucket = bp?.buckets.find((x) => x.bucket.bucketId === l.bucketId);
     if (!bp || !bpDecision || !governanceEligible(bpDecision) || !bucket?.bucket.primaryConceptStableIds.includes(stableId)) fail('BUCKET_CERTIFIED', bp ? `${l.bucketId} does not place ${stableId}` : `${l.bucketId}: no governed classification of ${l.adapterId} holds this bucket`);
@@ -101,7 +107,7 @@ export function dryRunCfPackage(bytes: Buffer | string, expectedSha256: string, 
     const cand = pkg.candidates.find((c) => c.lineage.construct === k.construct);
     const firstDetail: Partial<Record<DryRunCheck, string>> = {};
     for (const v of vs) for (const f of v.failed) if (!(f.check in firstDetail)) firstDetail[f.check] = f.detail;
-    return { construct: k.construct, coreId: k.proposedCoreId, bucketId: cand?.lineage.bucketId ?? '', conceptStableId: k.concept?.stableId ?? '', candidates: vs.length, accepted: vs.filter((v) => v.accepted).length, failedChecks: [...new Set(vs.flatMap((v) => v.failed.map((f) => f.check)))].sort() as DryRunCheck[], firstDetail };
+    return { construct: k.construct, coreId: k.proposedCoreId, bucketId: cand?.lineage.bucketId ?? '', conceptStableId: governedConceptOf(cand?.lineage.coreId ?? '', k.concept?.stableId ?? ''), declaredConcept: k.concept?.stableId ?? '', candidates: vs.length, accepted: vs.filter((v) => v.accepted).length, failedChecks: [...new Set(vs.flatMap((v) => v.failed.map((f) => f.check)))].sort() as DryRunCheck[], firstDetail };
   });
   const contentChecks: DryRunCheck[] = ['PACKAGE_HASH', 'IDENTITY', 'SCORING_POLICY', 'LINEAGE_COMPLETE', 'RIGHTS_PROVENANCE', 'NOT_A_DUPLICATE', 'PROJECTION'];
   const status: PackageStatus = {

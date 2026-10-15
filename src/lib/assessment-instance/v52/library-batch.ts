@@ -9,7 +9,7 @@
 import { sha256OfCanonicalJson } from '@/lib/assessment-adaptation/canonical-hash';
 import { bandOf } from '@/lib/exam-core/question-bank/quality';
 import { adapterConflicts, STUDYUS_ASSESSMENT_REGISTRY } from '../registered-systems';
-import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, renderLibraryInstance, type LibraryBlueprint, type LibraryEntry, type LibraryRender, type LibraryTarget } from '../library/catalogue';
+import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, libraryBucketOf, renderLibraryInstance, type LibraryBlueprint, type LibraryEntry, type LibraryRender, type LibraryTarget } from '../library/catalogue';
 import { PLANNING_BANDS, type PlanningBand } from '../library/parametric';
 import { pilotBlueprintHash, PILOT_BLUEPRINTS } from '../pilot/step4b-pilot-slice';
 import type { CertificationDecisionV52 } from './certification-engine';
@@ -29,14 +29,14 @@ function determinismOf(entry: LibraryEntry): boolean {
 const humanHashOf = (b: LibraryBlueprint): string | undefined => { const pilot = PILOT_BLUEPRINTS.find((p) => p.blueprintId === b.blueprintId); return pilot && b.classificationVersion === 'step4b-pilot-1' ? pilotBlueprintHash(pilot) : undefined; };
 
 /** Every governed object of the library and every registered adapter, decided. `human` is the recorded approvals, when there are any. */
-export function governLibrary(human: HumanRecords = NO_HUMAN, library: readonly LibraryEntry[] = LIBRARY): LibraryGovernance {
+export function governLibrary(human: HumanRecords = NO_HUMAN, library: readonly LibraryEntry[] = LIBRARY, blueprints: readonly LibraryBlueprint[] = LIBRARY_BLUEPRINTS, register: typeof LIBRARY_APPLICABILITY = LIBRARY_APPLICABILITY): LibraryGovernance {
   const registry = STUDYUS_ASSESSMENT_REGISTRY;
   const conflicts = adapterConflicts();
   return {
-    cores: library.map((e) => governCore(e, LIBRARY_APPLICABILITY, human)),
+    cores: library.map((e) => governCore(e, register, human)),
     adapters: registry.adapters().map((a) => governAdapter(a.adapterId, registry, conflicts, human)),
     envelopes: library.map((e) => governEnvelope(e, determinismOf(e), human)),
-    blueprints: LIBRARY_BLUEPRINTS.map((b) => governBlueprint(b, LIBRARY_APPLICABILITY, human, humanHashOf(b))),
+    blueprints: blueprints.map((b) => governBlueprint(b, register, human, humanHashOf(b))),
   };
 }
 
@@ -78,7 +78,7 @@ function toCertified(r: LibraryRender, decision: CertificationDecisionV52, state
  */
 export function certifyCell(entry: LibraryEntry, target: LibraryTarget, planningBand: PlanningBand, wanted: number, g: LibraryGovernance, batchId: string): CellResult {
   const adapter = STUDYUS_ASSESSMENT_REGISTRY.adapter(target.adapterId)!;
-  const placed = LIBRARY_BLUEPRINTS.find((b) => b.adapterId === target.adapterId);
+  const placed = libraryBucketOf(entry.core, target.adapterId)?.blueprint;
   const governance: Governance | null = (() => {
     const core = find(g.cores, entry.core.constructFamilyId, entry.core.familyVersion); const ad = find(g.adapters, target.adapterId); const env = find(g.envelopes, entry.envelope.rendererVersion, entry.envelope.constructFamilyVersion);
     const bp = placed ? find(g.blueprints, placed.blueprintId, placed.classificationVersion) : undefined;

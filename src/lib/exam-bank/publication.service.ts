@@ -19,6 +19,7 @@
  */
 import type { PoolClient } from 'pg';
 import { mergedForPublication } from './publication-plan';
+import { ibGovernedConceptByStableId } from '@/lib/curriculum/ib/ib-aa-hl-concept-correspondence';
 import { contentHash } from '@/lib/exam-core/question-bank/bank.service';
 import { itemFingerprints } from '@/lib/exam-core/fingerprints';
 import { ApprovedItemContentSchema, examItemFromApproved } from '@/lib/exam-core/items';
@@ -294,7 +295,8 @@ async function publish(c: Q, plan: ReturnType<typeof mergedForPublication>, repo
   const conceptRowOf = new Map<string, string | null>();
   const canonicalConceptOf = async (stableId: string): Promise<string | null> => {
     if (conceptRowOf.has(stableId)) return conceptRowOf.get(stableId)!;
-    const certified = paaCertifiedConceptByStableId(stableId);
+    // PAA-certified identities, then the IB identities governed for the pilot (StudyUs canonical knowledge, never official IB)
+    const certified = paaCertifiedConceptByStableId(stableId) ?? ibGovernedConceptByStableId(stableId);
     const rows = certified ? (await c.query(`SELECT cc.id FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id WHERE lower(cs.name) = lower($1) AND lower(cc.name) = lower($2) AND cc.status = 'ACTIVE'`, [certified.canonicalSubject, certified.canonicalName])).rows : [];
     const id = rows.length === 1 ? String(rows[0].id) : null;
     conceptRowOf.set(stableId, id);

@@ -24,13 +24,18 @@ describe('IB_PACKAGE_DRY_RUN', () => {
   it('content checks pass for every candidate: identity, scoring (both evaluators agree), lineage, rights, duplicates, projection 3', () => {
     for (const check of ['PACKAGE_HASH', 'IDENTITY', 'SCORING_POLICY', 'LINEAGE_COMPLETE', 'RIGHTS_PROVENANCE', 'NOT_A_DUPLICATE', 'PROJECTION'] as const) expect(report.failuresByCheck[check], check).toBeUndefined();
   });
-  it('governance refuses every candidate -- fail closed, with the exact reason', () => {
-    expect(report.failuresByCheck).toEqual({ FORMAT_OFFERED: 300, CONCEPT_GOVERNED: 270, BUCKET_CERTIFIED: 270 });
+  it('governance: concepts resolve through the governed correspondence; only the format (all 300) and one bucket refuse -- fail closed', () => {
+    // the package declares Content Factory ids (math.ib.*); Track B owns concept identity and resolves each core
+    // through its governed correspondence -- the declared id is reported, never adopted
+    expect(report.failuresByCheck).toEqual({ FORMAT_OFFERED: 300, BUCKET_CERTIFIED: 30 });
     expect(report.accepted).toBe(0);
     expect(report.certificationEligible).toBe(0);
     const qmin = report.byConstruct.find((k) => k.construct === 'QUADRATIC_MINIMUM_VALUE')!;
-    expect(qmin).toMatchObject({ conceptStableId: 'math.alg.quadratics', failedChecks: ['FORMAT_OFFERED'] });
+    expect(qmin).toMatchObject({ conceptStableId: 'math.alg.quadratics', declaredConcept: 'math.alg.quadratics', failedChecks: ['FORMAT_OFFERED'] });
     expect(qmin.firstDetail.FORMAT_OFFERED).toBe('NUMERIC_ENTRY not in MATH_EXPRESSION/SHORT_RESPONSE/EXTENDED_RESPONSE');
+    // the inverse-function construct: the human-certified functions bucket (D02) places only quadratics -- not re-placed by automation
+    const inv = report.byConstruct.find((k) => k.construct === 'INVERSE_FUNCTION_VALUE')!;
+    expect(inv).toMatchObject({ conceptStableId: 'math.fun.rational-functions-inverses', declaredConcept: 'math.ib.rational-functions-and-inverses', failedChecks: ['BUCKET_CERTIFIED', 'FORMAT_OFFERED'] });
   });
   it('IB_PACKAGE_IDEMPOTENCY: a second identical run gives the identical report and ingests nothing', () => {
     expect(dryRunCfPackage(bytes, CF_IB_AAHL_01.packageSha256, existing).reportDigest).toBe(report.reportDigest);
@@ -39,7 +44,7 @@ describe('IB_PACKAGE_DRY_RUN', () => {
     const tampered = Buffer.from(bytes.toString().replace('Find the sum to infinity', 'Find  the sum to infinity'));
     expect(dryRunCfPackage(tampered, CF_IB_AAHL_01.packageSha256, existing).failuresByCheck.PACKAGE_HASH).toBe(300);
   });
-  it('the IB Paper 2 adapter is governed (automated pilot) but no governed blueprint uses it', () => {
+  it('the IB Paper 2 adapter is governed (automated pilot)', () => {
     const p2 = governLibrary(undefined, LIBRARY).adapters.find((d) => d.objectId === 'IB.MATH_AA_HL.P2')!;
     expect(p2.state).toBe('AUTOMATED_CERTIFIED_PILOT');
   });

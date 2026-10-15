@@ -1362,10 +1362,12 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     // + the scoring-preserving projection 3; + the CF package dry run and the re-projection compatibility assessment (pure
     //   readers of certified artefacts); + the canonical response contract, which NAMES the QF evaluator in its documentation
     //   and imports nothing from it
-    expect(walk('src').filter((f) => !f.startsWith(INSTANCE_DIR) && /assessment-instance/.test(read(f))).sort()).toEqual(['src/lib/assessment-scoring/canonical-response.ts', 'src/lib/exam-bank/bank-projection.ts', 'src/lib/exam-bank/cf-package-validation.ts', 'src/lib/exam-bank/ib-reprojection-compatibility.ts', 'src/lib/exam-bank/publication-plan.ts', 'src/lib/exam-bank/publication.service.ts', 'src/lib/exam-bank/scoring-projection.ts']);
+    expect(walk('src').filter((f) => !f.startsWith(INSTANCE_DIR) && /assessment-instance/.test(read(f))).sort()).toEqual(['src/lib/assessment-scoring/canonical-response.ts', 'src/lib/exam-bank/bank-projection.ts', 'src/lib/exam-bank/cf-package-validation.ts', 'src/lib/exam-bank/cf-r1-convergence.ts', 'src/lib/exam-bank/ib-reprojection-compatibility.ts', 'src/lib/exam-bank/publication-plan.ts', 'src/lib/exam-bank/publication.service.ts', 'src/lib/exam-bank/scoring-projection.ts']);
     const importers = walk('src').filter((f) => !f.startsWith(ADAPTATION_DIR) && !f.startsWith(FAMILIES_DIR) && !f.startsWith(INSTANCE_DIR) && /assessment-adaptation|question-bank\/task-families/.test(read(f))).sort();
     // QB-R2D adds three Production OS modules of the specification-driven path. Same direction (production -> adaptation), still pure, still no route, service or table.
     expect(importers).toEqual([
+      // the IB pilot applicability register (pure data in the EA-1 register's own record type; no route, service or table)
+      'src/lib/curriculum/ib/ib-aa-hl-concept-correspondence.ts',
       // Exam Bank hardening: the CF package dry run resolves concept applicability with the EA-1 register (pure, no IO)
       'src/lib/exam-bank/cf-package-validation.ts',
       // Track B: the Exam Bank publication plan hashes with the same canonical hash (pure; no route, service or table of its own)

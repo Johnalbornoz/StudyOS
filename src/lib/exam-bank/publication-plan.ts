@@ -21,7 +21,7 @@ import type { AssessmentAdapter } from '@/lib/assessment-instance/assessment-ada
 import type { CertificationRecord, ReviewerQualification } from '@/lib/assessment-instance/certification';
 import type { ConstructCoreRecord } from '@/lib/assessment-instance/construct-core';
 import type { CoreApplicabilityRecord } from '@/lib/assessment-instance/core-applicability';
-import { LIBRARY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSIONS, libraryApplicability, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
+import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSIONS, libraryApplicability, PUBLICATION_APPLICABILITY, PUBLICATION_BLUEPRINTS, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
 import { CF_IB_AAHL_01 } from '@/lib/assessment-instance/library/cf-ib-aahl-01';
 import { pilotApplicabilityHash } from '@/lib/assessment-instance/pilot/step4b-pilot-slice';
 import { STUDYUS_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
@@ -120,11 +120,13 @@ export const coreCertificationVersionOf = (state: PlannedObjectCertification['st
 export function buildPublicationPlan(human: HumanDecisionsFile, scope: EligibilityScope = 'PILOT_PREVIEW'): PublicationPlan {
   // The V5.2 plan is computed exactly as it always was (its hash and its counts are the ones its artefacts name);
   // entries adopted later are an additive extension with a batch, inputs and hash of their own.
-  const base = planOfLibrary(human, scope, LIBRARY, PUBLICATION_BATCH_ID);
-  return LIBRARY_EXTENSIONS.length ? { ...base, extensions: [planOfLibrary(human, scope, LIBRARY_EXTENSIONS, CF_IB_AAHL_01.batchId)] } : base;
+  const base = planOfLibrary(human, scope, LIBRARY, PUBLICATION_BATCH_ID, LIBRARY_BLUEPRINTS, LIBRARY_APPLICABILITY);
+  // the extension carries every classification (the V5.2 ones it places items in, and the pilot ones it adds) and the
+  // register of the pilot-governed identities
+  return LIBRARY_EXTENSIONS.length ? { ...base, extensions: [planOfLibrary(human, scope, LIBRARY_EXTENSIONS, CF_IB_AAHL_01.batchId, PUBLICATION_BLUEPRINTS, PUBLICATION_APPLICABILITY)] } : base;
 }
 
-function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, library: readonly LibraryEntry[], batchId: string): PublicationPlan {
+function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, library: readonly LibraryEntry[], batchId: string, blueprintsIn: readonly LibraryBlueprint[], register: typeof LIBRARY_APPLICABILITY): PublicationPlan {
   const preflight: string[] = [];
   const blocked: BlockedRow[] = [];
   const registry = STUDYUS_ASSESSMENT_REGISTRY;
@@ -149,7 +151,7 @@ function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, libra
   const humanRecords = { records: records.map((r) => r.record), qualifications: [human.qualification] };
 
   // ---- governance of every object, as the library decides it
-  const governance: LibraryGovernance = governLibrary(humanRecords, library);
+  const governance: LibraryGovernance = governLibrary(humanRecords, library, blueprintsIn, register);
   const live: LiveGovernance = liveGovernanceOf(governance);
   /** The recorded decision a HUMAN_CERTIFIED object rests on: an approval of exactly this object at exactly this content. */
   const humanDecisionFor = (d: Pick<GovernanceDecision, 'objectType' | 'objectId' | 'objectVersion' | 'contentHash'>): PlannedHumanDecision | null =>
@@ -167,7 +169,7 @@ function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, libra
   const decisionOf = (list: readonly GovernanceDecision[], objectId: string, objectVersion: string): GovernanceDecision | undefined => list.find((d) => d.objectId === objectId && d.objectVersion === objectVersion);
   const refuse = (kind: string, identity: string, d: GovernanceDecision | undefined): void => { blocked.push({ kind, identity, reason: d ? d.state : 'NOT_GOVERNED', detail: d ? d.failed.join(', ') : 'no governance decision' }); };
 
-  const usedAdapterIds = [...new Set(LIBRARY_BLUEPRINTS.map((b) => b.adapterId))].sort();
+  const usedAdapterIds = [...new Set(blueprintsIn.map((b) => b.adapterId))].sort();
   const systems = [...new Set(usedAdapterIds.map((id) => registry.adapter(id)?.systemId).filter((x): x is string => !!x))].sort();
 
   const cores: PlannedCore[] = [];
@@ -199,7 +201,7 @@ function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, libra
   }
 
   const blueprints: PlannedBlueprint[] = [];
-  for (const b of LIBRARY_BLUEPRINTS) {
+  for (const b of blueprintsIn) {
     const adapter = registry.adapter(b.adapterId);
     const d = decisionOf(governance.blueprints, b.blueprintId, b.classificationVersion);
     const c = d ? certificationOf(d) : null;

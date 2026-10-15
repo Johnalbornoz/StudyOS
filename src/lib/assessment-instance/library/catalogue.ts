@@ -13,6 +13,7 @@
 import { ASSESSMENT_APPLICABILITY_CONTRACT_VERSION, type AssessmentApplicabilityRecord } from '@/lib/assessment-adaptation/assessment-applicability';
 import { MATHEMATICS_ADAPTATION_POLICY } from '@/lib/assessment-adaptation/discipline-policy';
 import { MATH_POC_APPLICABILITY } from '@/lib/assessment-adaptation/math-poc-applicability';
+import { IB_AA_HL_APPLICABILITY } from '@/lib/curriculum/ib/ib-aa-hl-concept-correspondence';
 import { mathPocFamilyOf } from '@/lib/exam-core/question-bank/task-families/math-poc-families';
 import { composeAssessmentSpecification, type BlueprintBucketRef } from '../assessment-specification';
 import { classifyBlueprintSection, type BlueprintClass, type BlueprintSectionFacts } from '../blueprint-classification';
@@ -206,6 +207,8 @@ const paaConcept = (stableId: string, topic: string, page = 36): AssessmentAppli
 });
 /** The EA-1 register plus the PAA concepts the new cores assess, each from an official topic of the certified hierarchy. */
 export const LIBRARY_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = [...MATH_POC_APPLICABILITY, paaConcept('math.geo.pythagorean-theorem', '058'), paaConcept('math.stat.central-tendency', '063'), paaConcept('math.num.percent', '029', 35), paaConcept('math.alg.linear-equations', '036', 35), paaConcept('math.alg.linear-systems', '051', 35), paaConcept('math.geo.plane-figures-area-perimeter', '059')];
+/** The V5.2 register plus the IB register of the pilot-governed StudyUs identities (publication and its extensions only). */
+export const PUBLICATION_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = [...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY];
 
 // --------------------------------------------------------------------------------------------------- blueprints
 export interface LibraryBlueprint { blueprintId: string; classificationVersion: string; adapterId: string; configKey: string; sectionKey: string; facts: BlueprintSectionFacts; blueprintClass: BlueprintClass; buckets: { bucket: BlueprintBucketRef; governedPositions: number; conceptLinks: string[] }[] }
@@ -231,6 +234,29 @@ export const LIBRARY_BLUEPRINT_IB: LibraryBlueprint = {
   buckets: PILOT_BLUEPRINT_IB.buckets.map((b) => ({ governedPositions: 1, conceptLinks: [b.conceptLink], bucket: b.bucket })),
 };
 export const LIBRARY_BLUEPRINTS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_PAA, LIBRARY_BLUEPRINT_IB];
+
+// ------------------------------------------------------------- IB pilot classifications (after the V5.2 run)
+/**
+ * The IB classifications that the pilot-governed StudyUs concept identities unblock (2026-10-14). The V5.2 classification
+ * `v2.ib.math-aa-hl/p1@step4b-pilot-1` (functions, HUMAN_CERTIFIED D02) is NOT changed: P1 algebra and calculus are a
+ * classification of their own; P2 statistics is the first P2 classification. Same governed facts as the D02 one; the
+ * P2 paper has 4 governed positions. Their certification is decided by the object governance, never assumed here.
+ */
+const ibBucket = (paper: 'p1' | 'p2', objectiveCode: string, concepts: string[]): BlueprintBucketRef => bucket('v2.ib.math-aa-hl', paper, paper === 'p1' ? PILOT_IB : 'IB.MATH_AA_HL.P2', LIBRARY_BLUEPRINT_IB.blueprintClass, objectiveCode, concepts);
+const IB_P2_FACTS: BlueprintSectionFacts = { ...LIBRARY_BLUEPRINT_IB.facts, governedSlots: 4 };
+export const LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS: LibraryBlueprint = {
+  blueprintId: LIBRARY_BLUEPRINT_IB.blueprintId, classificationVersion: 'cf-ib-aahl-01-p1', adapterId: PILOT_IB, configKey: 'v2.ib.math-aa-hl', sectionKey: 'p1', facts: LIBRARY_BLUEPRINT_IB.facts, blueprintClass: LIBRARY_BLUEPRINT_IB.blueprintClass,
+  buckets: [
+    { governedPositions: 1, conceptLinks: ['objective aahl.p1.algebra -> Logarithms, Sequences and series (objective-learning-links, DECLARED_REVIEWED; identities GOVERNED_PILOT)'], bucket: ibBucket('p1', 'aahl.p1.algebra', ['math.alg.sequences-series', 'math.alg.logarithms']) },
+    { governedPositions: 2, conceptLinks: ['objective aahl.p1.calculus -> Differentiation, Integration (objective-learning-links, DECLARED_REVIEWED; identities GOVERNED_PILOT)'], bucket: ibBucket('p1', 'aahl.p1.calculus', ['math.calc.differentiation', 'math.calc.integration']) },
+  ],
+};
+export const LIBRARY_BLUEPRINT_IB_P2_STATISTICS: LibraryBlueprint = {
+  blueprintId: 'v2.ib.math-aa-hl/p2', classificationVersion: 'cf-ib-aahl-01-p2', adapterId: 'IB.MATH_AA_HL.P2', configKey: 'v2.ib.math-aa-hl', sectionKey: 'p2', facts: IB_P2_FACTS, blueprintClass: classifyBlueprintSection(IB_P2_FACTS),
+  buckets: [{ governedPositions: 2, conceptLinks: ['objective aahl.p2.statistics -> Binomial distribution, Normal distribution (objective-learning-links, DECLARED_REVIEWED; identities GOVERNED_PILOT)'], bucket: bucket('v2.ib.math-aa-hl', 'p2', 'IB.MATH_AA_HL.P2', classifyBlueprintSection(IB_P2_FACTS), 'aahl.p2.statistics', ['math.prob.binomial-distribution', 'math.prob.normal-distribution']) }],
+};
+export const LIBRARY_BLUEPRINT_EXTENSIONS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS];
+export const PUBLICATION_BLUEPRINTS: readonly LibraryBlueprint[] = [...LIBRARY_BLUEPRINTS, ...LIBRARY_BLUEPRINT_EXTENSIONS];
 
 // ----------------------------------------------------------------------------------------------------- entries
 export interface LibraryTarget { adapterId: string; language: string; responseFormat: string; /** The command term the construct's wording uses, from the adapter's vocabulary. Absent = the policy's choice. */ commandTerm?: string }
@@ -273,9 +299,10 @@ export const PUBLICATION_LIBRARY: readonly LibraryEntry[] = [...LIBRARY, ...LIBR
 export const libraryEntryOf = (constructFamilyId: string): LibraryEntry | null => LIBRARY.find((e) => e.core.constructFamilyId === constructFamilyId) ?? null;
 
 const renderer = createAssessmentInstanceRenderer(PUBLICATION_LIBRARY.map((e) => e.strategy));
-export const libraryApplicability = (core: ConstructCoreRecord, adapterId: string): CoreApplicabilityRecord => deriveCoreApplicability(core, { systemProfileId: adapterId.split('.')[0], componentId: adapterId }, LIBRARY_APPLICABILITY);
+export const libraryApplicability = (core: ConstructCoreRecord, adapterId: string): CoreApplicabilityRecord => deriveCoreApplicability(core, { systemProfileId: adapterId.split('.')[0], componentId: adapterId }, PUBLICATION_APPLICABILITY);
 export const libraryBucketOf = (core: ConstructCoreRecord, adapterId: string): { bucket: BlueprintBucketRef; blueprint: LibraryBlueprint } | null => {
-  for (const blueprint of LIBRARY_BLUEPRINTS) { const hit = blueprint.adapterId === adapterId ? blueprint.buckets.find((b) => b.bucket.primaryConceptStableIds.includes(core.primaryConceptStableId)) : undefined; if (hit) return { bucket: hit.bucket, blueprint }; }
+  // the governed classification of the component that places the concept (an extension never re-places a base concept)
+  for (const blueprint of PUBLICATION_BLUEPRINTS) { const hit = blueprint.adapterId === adapterId ? blueprint.buckets.find((b) => b.bucket.primaryConceptStableIds.includes(core.primaryConceptStableId)) : undefined; if (hit) return { bucket: hit.bucket, blueprint }; }
   return null;
 };
 
@@ -294,7 +321,7 @@ export function renderLibraryInstance(e: LibraryEntry, target: LibraryTarget, pl
   if (!placed) return { ok: false, code: 'NO_GOVERNED_BUCKET_FOR_THE_CONCEPT', detail: `${e.core.primaryConceptStableId} x ${target.adapterId}` };
   const applicability = libraryApplicability(e.core, target.adapterId);
   const spec = composeAssessmentSpecification({
-    use: 'DEV_TEST', registry, core: e.core, adapter, system: pair.system, component: pair.component, coreApplicability: [applicability], applicabilityRegister: LIBRARY_APPLICABILITY, bucket: placed.bucket, disciplinePolicy: MATHEMATICS_ADAPTATION_POLICY,
+    use: 'DEV_TEST', registry, core: e.core, adapter, system: pair.system, component: pair.component, coreApplicability: [applicability], applicabilityRegister: PUBLICATION_APPLICABILITY, bucket: placed.bucket, disciplinePolicy: MATHEMATICS_ADAPTATION_POLICY,
     request: { purpose: 'PRACTICE', difficultyBand: planningBand, language: target.language, contentUseClass: 'DEV_TEST_CONTENT', responseFormat: target.responseFormat, ...(target.commandTerm ? { commandTerm: target.commandTerm } : {}) },
   });
   if (!spec.ok) return { ok: false, code: spec.code, detail: spec.detail };

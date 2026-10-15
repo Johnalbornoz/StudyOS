@@ -13,8 +13,8 @@
  * The package renders NUMERIC_ENTRY, which the governed IB AA HL P1 adapter does not offer. DECISION (John, 2026-10-14):
  * the adapter contract is NOT widened; the construct is delivered in IB's governed SHORT_RESPONSE with answer marks.
  * FIRST DELIVERY: ONE item (`CF_QUADRATIC_MINIMUM_FIRST_DELIVERY`) is registered in the live library. The Content
- * Factory's formal SHORT_RESPONSE revision of the package is pending; when it arrives it must equal these renders
- * (scripts/operations/exam-bank/cf-package-dry-run.ts). See docs/audits/exam-bank/IB_FIRST_DELIVERY.md.
+ * Factory's formal SHORT_RESPONSE revision (CF-IB-AAHL-01-R1) arrived and equals these renders (`CF_IB_AAHL_01_R1`).
+ * See docs/audits/exam-bank/IB_FIRST_DELIVERY.md.
  *
  * The construct code is the Content Factory's, copied unchanged (scripts/content-factory/ib-aahl-01/constructs.ts,
  * QUADRATIC_MINIMUM_VALUE and the helpers it uses). Nothing is authored here: the core family records what the
@@ -28,6 +28,13 @@ import type { LibraryEntry } from './catalogue';
 import { CF_QUADRATIC_MINIMUM_SEEDS } from './cf-ib-aahl-01.seeds';
 
 export const CF_IB_AAHL_01 = { batchId: 'CF-IB-AAHL-01', packageSha256: '678741c9d6423e6e328847979bf8ca60358bcc944a2d42258f099604c6e659a8', sourceBaselineSha: '610d3c6' } as const;
+/**
+ * The Content Factory's SHORT_RESPONSE revision (docs/exams/content-factory/CF-IB-AAHL-01-R1). ACCEPTED: its 30
+ * candidates equal the governed renders on every identity field (src/lib/exam-bank/cf-r1-convergence.ts). It is
+ * recorded, not re-imported: the bank already holds the first item under its governed seed, so the DEV identity is
+ * not duplicated. `firstDeliveryCandidate` is the R1 candidate of the same parameter set as the DEV item.
+ */
+export const CF_IB_AAHL_01_R1 = { batchId: 'CF-IB-AAHL-01-R1', packageSha256: '9f0ecffebdf9d5bc0db1dc3731709903df6f6850dd30159b3557d6a764fc6c8b', revisionOf: 'CF-IB-AAHL-01', validatedAgainstTrackBSha: 'a2055a0', firstDeliveryCandidate: '1236bb36859ef146633efc3d6dd29857fc0ae5d0fda8627ce86e5a091fc95fe9' } as const;
 
 // ------------------------------------------------------------------ Content Factory code, unchanged (helpers)
 const R = (n: number, d = 1): Rational => rational(n, d);

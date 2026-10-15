@@ -73,8 +73,8 @@ describe('no shared supply', () => {
     const importers = walk('src').filter((f) => !f.startsWith('src/lib/assessment-instance/') && /@\/lib\/assessment-instance|\.\.\/assessment-instance/.test(code(f)));
     // the loader that publishes certified instances as Exam Bank rows; the Exam Core then reads those ROWS, never the artefacts
     // + the scoring-preserving projection 3: the same kind of module as bank-projection (instance -> bank content), pure, not wired
-    // + the CF package dry run and the re-projection compatibility assessment: pure readers of certified artefacts, no Student runtime
-    expect(importers.sort()).toEqual(['src/lib/exam-bank/bank-projection.ts', 'src/lib/exam-bank/cf-package-validation.ts', 'src/lib/exam-bank/ib-reprojection-compatibility.ts', 'src/lib/exam-bank/publication-plan.ts', 'src/lib/exam-bank/publication.service.ts', 'src/lib/exam-bank/scoring-projection.ts']);
+    // + the CF package dry run, the R1 convergence and the re-projection compatibility assessment: pure readers of certified artefacts, no Student runtime
+    expect(importers.sort()).toEqual(['src/lib/exam-bank/bank-projection.ts', 'src/lib/exam-bank/cf-package-validation.ts', 'src/lib/exam-bank/cf-r1-convergence.ts', 'src/lib/exam-bank/ib-reprojection-compatibility.ts', 'src/lib/exam-bank/publication-plan.ts', 'src/lib/exam-bank/publication.service.ts', 'src/lib/exam-bank/scoring-projection.ts']);
     for (const f of importers) expect(code(f), f).not.toMatch(/ai-runtime|quiz-generation\.service|learning-item-supply|question_bank_candidates|assessment-supply\/learning/);
   });
 });

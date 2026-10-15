@@ -12,14 +12,22 @@
  * none is invented. The correspondence is at SYLLABUS_AREA level (the repository holds no IB content statements).
  *
  * Concept identity: every CF-IB-AAHL-01 construct maps to a concept that ALREADY EXISTS in the StudyUs catalogue
- * (Mathematics rows of dev-learning-catalog.ts). Only `math.alg.quadratics` has a governed stable identity today
- * (PAA REMAP_EXISTING; the human-certified IB bucket D02 places it). For the other seven rows a StudyUs stable identity
- * is PROPOSED here; it becomes governed only by a recorded decision (docs/audits/exam-bank/IB_CONCEPT_IDENTITY_DECISIONS.csv).
- * Until then every construct that depends on one fails closed.
+ * (Mathematics rows of dev-learning-catalog.ts). `math.alg.quadratics` is governed by its certified record; the other
+ * seven identities are GOVERNED_PILOT by the recorded architecture-governance decision of 2026-10-14
+ * (docs/audits/exam-bank/IB_CONCEPT_IDENTITY_DECISIONS.csv): pilot scope, no named human reviewer.
  */
 
+import { ASSESSMENT_APPLICABILITY_CONTRACT_VERSION, type AssessmentApplicabilityRecord } from '@/lib/assessment-adaptation/assessment-applicability';
+
 export const IB_AA_HL_SOURCE = { sourceKey: 'ibo-math-aa-guide-2021', configKey: 'v2.ib.math-aa-hl', recordedIn: 'src/lib/exam-core/verticals/v2/ib-math-aa-hl.ts' } as const;
-export type ConceptIdentityStatus = 'GOVERNED' | 'PROPOSED_PENDING_DECISION';
+/**
+ * GOVERNED            governed by an existing certified record (math.alg.quadratics: PAA REMAP_EXISTING + D02).
+ * GOVERNED_PILOT      approved for PILOT governance by a recorded ARCHITECTURE_GOVERNANCE_DECISION (no named human
+ *                     reviewer: never a basis for any HUMAN_CERTIFIED state; the owner signs before such a state).
+ * PROPOSED_PENDING_DECISION  not governed.
+ */
+export type ConceptIdentityStatus = 'GOVERNED' | 'GOVERNED_PILOT' | 'PROPOSED_PENDING_DECISION';
+export const IB_CONCEPT_IDENTITY_DECISION = { decisionId: 'IB-CONCEPT-IDENTITIES-2026-10-14', decision: 'APPROVED', basis: 'ARCHITECTURE_GOVERNANCE_DECISION', reviewScope: 'PILOT', humanReviewer: null, recordedIn: 'docs/audits/exam-bank/IB_CONCEPT_IDENTITY_DECISIONS.csv', decidedAt: '2026-10-14' } as const;
 export interface StudyUsConceptIdentity {
   stableId: string;
   /** The existing StudyUs catalogue concept the identity names (exact canonical subject + name). */
@@ -34,13 +42,13 @@ export interface StudyUsConceptIdentity {
 /** The identities the ten constructs need: one governed, seven proposed (over existing catalogue rows). */
 export const IB_AA_HL_CONCEPT_IDENTITIES: readonly StudyUsConceptIdentity[] = [
   { stableId: 'math.alg.quadratics', canonicalSubject: 'Mathematics', canonicalName: 'Quadratic functions and inequalities', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED', governedBy: 'src/lib/curriculum/paa/paa-certified-concepts.ts (REMAP_EXISTING) + human-certified bucket D02' },
-  { stableId: 'math.alg.sequences-series', canonicalSubject: 'Mathematics', canonicalName: 'Sequences and series', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'PROPOSED_PENDING_DECISION', governedBy: null },
-  { stableId: 'math.alg.logarithms', canonicalSubject: 'Mathematics', canonicalName: 'Logarithms', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'PROPOSED_PENDING_DECISION', governedBy: null },
-  { stableId: 'math.fun.rational-functions-inverses', canonicalSubject: 'Mathematics', canonicalName: 'Rational functions and inverses', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'PROPOSED_PENDING_DECISION', governedBy: null },
-  { stableId: 'math.calc.differentiation', canonicalSubject: 'Mathematics', canonicalName: 'Differentiation', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'PROPOSED_PENDING_DECISION', governedBy: null },
-  { stableId: 'math.calc.integration', canonicalSubject: 'Mathematics', canonicalName: 'Integration', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'PROPOSED_PENDING_DECISION', governedBy: null },
-  { stableId: 'math.prob.binomial-distribution', canonicalSubject: 'Mathematics', canonicalName: 'Binomial distribution', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'PROPOSED_PENDING_DECISION', governedBy: null },
-  { stableId: 'math.prob.normal-distribution', canonicalSubject: 'Mathematics', canonicalName: 'Normal distribution', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'PROPOSED_PENDING_DECISION', governedBy: null },
+  { stableId: 'math.alg.sequences-series', canonicalSubject: 'Mathematics', canonicalName: 'Sequences and series', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED_PILOT', governedBy: IB_CONCEPT_IDENTITY_DECISION.recordedIn },
+  { stableId: 'math.alg.logarithms', canonicalSubject: 'Mathematics', canonicalName: 'Logarithms', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED_PILOT', governedBy: IB_CONCEPT_IDENTITY_DECISION.recordedIn },
+  { stableId: 'math.fun.rational-functions-inverses', canonicalSubject: 'Mathematics', canonicalName: 'Rational functions and inverses', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED_PILOT', governedBy: IB_CONCEPT_IDENTITY_DECISION.recordedIn },
+  { stableId: 'math.calc.differentiation', canonicalSubject: 'Mathematics', canonicalName: 'Differentiation', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED_PILOT', governedBy: IB_CONCEPT_IDENTITY_DECISION.recordedIn },
+  { stableId: 'math.calc.integration', canonicalSubject: 'Mathematics', canonicalName: 'Integration', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED_PILOT', governedBy: IB_CONCEPT_IDENTITY_DECISION.recordedIn },
+  { stableId: 'math.prob.binomial-distribution', canonicalSubject: 'Mathematics', canonicalName: 'Binomial distribution', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED_PILOT', governedBy: IB_CONCEPT_IDENTITY_DECISION.recordedIn },
+  { stableId: 'math.prob.normal-distribution', canonicalSubject: 'Mathematics', canonicalName: 'Normal distribution', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED_PILOT', governedBy: IB_CONCEPT_IDENTITY_DECISION.recordedIn },
 ];
 
 export type CorrespondenceType = 'SYLLABUS_AREA_CORRESPONDENCE';
@@ -74,7 +82,7 @@ export const IB_AA_HL_CORRESPONDENCES: readonly IbConstructCorrespondence[] = [
   p1('tf.math.probability.normal-symmetry', 'math.prob.normal-distribution', 'aahl.p2.statistics', 'distributions'),
 ];
 
-export type CorrespondenceGovernance = 'GOVERNED' | 'SOURCE_BACKED_IDENTITY_PENDING_DECISION' | 'NOT_DEFENSIBLE';
+export type CorrespondenceGovernance = 'GOVERNED' | 'GOVERNED_PILOT' | 'SOURCE_BACKED_IDENTITY_PENDING_DECISION' | 'NOT_DEFENSIBLE';
 /** Governance of one correspondence: defensible (source + link + catalogue row), and governed only with a governed identity. */
 export function governanceOf(c: IbConstructCorrespondence, facts: { objectiveDescription: (code: string) => string | null; objectiveLinks: (code: string) => readonly { subject: string; name: string }[]; catalogue: readonly { subject: string; name: string }[] }): { status: CorrespondenceGovernance; reasons: string[] } {
   const reasons: string[] = [];
@@ -85,5 +93,23 @@ export function governanceOf(c: IbConstructCorrespondence, facts: { objectiveDes
   if (id && !facts.objectiveLinks(c.ibSourceReference.objectiveCode).some((l) => l.subject === id.canonicalSubject && l.name === id.canonicalName)) reasons.push('NO_OBJECTIVE_LINK_TO_THE_CONCEPT');
   if (id && !facts.catalogue.some((r) => r.subject === id.canonicalSubject && r.name === id.canonicalName)) reasons.push('CONCEPT_NOT_IN_THE_CATALOGUE');
   if (reasons.length) return { status: 'NOT_DEFENSIBLE', reasons };
-  return id!.status === 'GOVERNED' ? { status: 'GOVERNED', reasons } : { status: 'SOURCE_BACKED_IDENTITY_PENDING_DECISION', reasons: ['IDENTITY_NOT_YET_GOVERNED'] };
+  return id!.status === 'GOVERNED' ? { status: 'GOVERNED', reasons } : id!.status === 'GOVERNED_PILOT' ? { status: 'GOVERNED_PILOT', reasons } : { status: 'SOURCE_BACKED_IDENTITY_PENDING_DECISION', reasons: ['IDENTITY_NOT_YET_GOVERNED'] };
 }
+
+/** A governed identity (GOVERNED or GOVERNED_PILOT) by stable id: the catalogue row it names. */
+export const ibGovernedConceptByStableId = (stableId: string): StudyUsConceptIdentity | null => IB_AA_HL_CONCEPT_IDENTITIES.find((x) => x.stableId === stableId && x.status !== 'PROPOSED_PENDING_DECISION') ?? null;
+
+/**
+ * The IB applicability register of the pilot-governed identities: for each, the objective -> concept catalogue link
+ * the repository ALREADY holds (OBJECTIVE_LEARNING_LINKS, DECLARED_REVIEWED, the same evidence as math.alg.quadratics'
+ * IB record). Scope is the component of the objective.
+ */
+export const IB_AA_HL_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = IB_AA_HL_CONCEPT_IDENTITIES.filter((x) => x.status === 'GOVERNED_PILOT').flatMap((x) => {
+  const objectives = [...new Set(IB_AA_HL_CORRESPONDENCES.filter((c) => c.studyusCanonicalConceptId === x.stableId).map((c) => c.ibSourceReference.objectiveCode))];
+  return objectives.map((objectiveCode) => ({
+    v: ASSESSMENT_APPLICABILITY_CONTRACT_VERSION, concept: { stableId: x.stableId, canonicalSubject: x.canonicalSubject },
+    scope: { systemProfileId: 'IB', subject: 'Mathematics: analysis and approaches', componentId: objectiveCode.startsWith('aahl.p2') ? 'IB.MATH_AA_HL.P2' : 'IB.MATH_AA_HL.P1' },
+    basis: 'REVIEWED_CATALOGUE_LINK' as const,
+    evidence: [{ kind: 'OBJECTIVE_CONCEPT_LINK' as const, reference: objectiveCode, recordedIn: 'src/lib/exam-core/catalog/objective-learning-links.ts (OBJECTIVE_LEARNING_LINKS)', sourceReference: null, reviewState: 'DECLARED_REVIEWED' as const }],
+  } as AssessmentApplicabilityRecord));
+});

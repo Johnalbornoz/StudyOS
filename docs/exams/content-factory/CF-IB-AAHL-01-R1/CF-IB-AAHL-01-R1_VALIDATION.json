@@ -1,0 +1,3267 @@
+{
+ "batchId": "CF-IB-AAHL-01-R1",
+ "packageSha256": "9f0ecffebdf9d5bc0db1dc3731709903df6f6850dd30159b3557d6a764fc6c8b",
+ "trackBSha": "a2055a0",
+ "envelopeHash": "2d2c398df24bba3d4041ba172f2d1247a238846306824e5ab7167e95f010de16",
+ "envelopeDelta": [
+  "responseFormats"
+ ],
+ "sweep": [
+  {
+   "band": "FOUNDATIONAL",
+   "checked": 293,
+   "keyFailures": 0,
+   "bandFailures": 0,
+   "misconceptionCollisions": 0,
+   "nonPositiveKeys": 0,
+   "duplicateWordingsWithDifferentKeys": 0
+  },
+  {
+   "band": "STANDARD",
+   "checked": 442,
+   "keyFailures": 0,
+   "bandFailures": 0,
+   "misconceptionCollisions": 0,
+   "nonPositiveKeys": 0,
+   "duplicateWordingsWithDifferentKeys": 0
+  },
+  {
+   "band": "CHALLENGE",
+   "checked": 2137,
+   "keyFailures": 0,
+   "bandFailures": 0,
+   "misconceptionCollisions": 0,
+   "nonPositiveKeys": 0,
+   "duplicateWordingsWithDifferentKeys": 0
+  }
+ ],
+ "sweepClean": true,
+ "failures": [],
+ "trackBDryRun": {
+  "version": "cf-package-dry-run-1",
+  "accepted": 30,
+  "certificationEligible": 30,
+  "candidates": 30,
+  "failuresByCheck": {},
+  "byConstruct": [
+   {
+    "construct": "QUADRATIC_MINIMUM_VALUE",
+    "coreId": "tf.math.quadratic.minimum-value",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "conceptStableId": "math.alg.quadratics",
+    "candidates": 30,
+    "accepted": 30,
+    "failedChecks": [],
+    "firstDetail": {}
+   }
+  ],
+  "reportDigest": "636b62b8afe742721ef064092a34511403bef9d3d2c3a9478e80141c8f1acb1e",
+  "idempotent": true
+ },
+ "perCandidate": [
+  {
+   "candidateId": "66559bde44306729296266c7f38510c757719ee1e71cc3579127f43398125be9",
+   "recognitionId": "tf.math.quadratic.minimum-value|1|-4|36",
+   "band": "FOUNDATIONAL",
+   "key": "32",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "077207c88920ce5763d83e3b2a8d408c298caa1d5921a5fd4218522dae06abc5",
+    "rubricDigest": "a9630571c850aa8f53d569a67f8c8c41bdf53cad6f288544bd82c707b37a527e",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 2
+   },
+   "parity": [
+    {
+     "response": "32",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "32.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "64/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 32 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "36",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "40",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "33",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-32",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "727b5a324ebb6964e7fd8a72d66b1676159f1513c73c41819b989da8f9c6259c",
+   "recognitionId": "tf.math.quadratic.minimum-value|1|2|30",
+   "band": "FOUNDATIONAL",
+   "key": "29",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "48a44099692569ba03d44473c31855c3293ad54f91d516b71666a5d6a141fe68",
+    "rubricDigest": "38fb9c96dec035f8d975c61dbabfdc37fd7eed0d40f1c279c6824c75e1afe51a",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 2
+   },
+   "parity": [
+    {
+     "response": "29",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "29.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "58/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 29 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-1",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "30",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "31",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "30",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-29",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "df65ace171ff573c76c345f541596faa45b599f8c0a5db21a0bcdbdf13ffc58e",
+   "recognitionId": "tf.math.quadratic.minimum-value|1|-4|10",
+   "band": "FOUNDATIONAL",
+   "key": "6",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "67435d40d5cf6e7c07a24cc14313ab156bda5837b4b2cb2eb5d3d09663320164",
+    "rubricDigest": "8a46c4b60e2e1bd9b5f6e41d062a7fa7ffb8fe286a29098f265f09962fe0db2b",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 2
+   },
+   "parity": [
+    {
+     "response": "6",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "6.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "12/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 6 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "10",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "14",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "7",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-6",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "ccdde11278dd42785ebfbbc794ebd2871843ee1a83776072635d357226259fa2",
+   "recognitionId": "tf.math.quadratic.minimum-value|1|8|25",
+   "band": "FOUNDATIONAL",
+   "key": "9",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "6465b40272144af50a1f0ed643631b808e3227147b18e2085d555af277ce3476",
+    "rubricDigest": "16c4701bb01c0340911ad33ed47999d64e36bee4624054a78e833bbbd8b06f6a",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 2
+   },
+   "parity": [
+    {
+     "response": "9",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "9.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "18/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 9 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-4",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "25",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "41",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "10",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-9",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "7ac3d9815699f531fce5f41660e081b6488ffa1ef0823356e61b37a4cc6fa335",
+   "recognitionId": "tf.math.quadratic.minimum-value|1|4|40",
+   "band": "FOUNDATIONAL",
+   "key": "36",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "a03951fdbfb9f3a95377d1603dc4863766dcc8f7930dc3ecd8d37cfa494daf7d",
+    "rubricDigest": "5fbe0cae5444abfbf6d8fb54abdc242d97d8e356b7d77cd5f0dc0d2f36cd59c4",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 2
+   },
+   "parity": [
+    {
+     "response": "36",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "36.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "72/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 36 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "40",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "44",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "37",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-36",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "dba94253f98df16796e9c05cd88c034816716bcaac5b295a0559ac2800e1a90a",
+   "recognitionId": "tf.math.quadratic.minimum-value|1|4|7",
+   "band": "FOUNDATIONAL",
+   "key": "3",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "f37027abb9f854d317168857cdb3c690b52c3b06a0e25365bd2050eea937d1f1",
+    "rubricDigest": "0bd83416fd25b32dd22000681d0d40fb4b83cebe6809da500388d3b9e8f0d399",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 2
+   },
+   "parity": [
+    {
+     "response": "3",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "3.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "6/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 3 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "7",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "11",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "4",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "885cac894d0bd35c53a179dafffd154a538a9d6a35112296f4683cf7e8809cd2",
+   "recognitionId": "tf.math.quadratic.minimum-value|1|6|28",
+   "band": "FOUNDATIONAL",
+   "key": "19",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "232aaf32e9a5d3bce7dc635e95ef2401ac31fb2de1f70f351ca25ae71b7adab9",
+    "rubricDigest": "892c6691968e0240053c6953bfdd35b8502795cf19fd15bf4ce3c5a875a91597",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 2
+   },
+   "parity": [
+    {
+     "response": "19",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "19.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "38/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 19 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "28",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "37",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "20",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-19",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "887dc88426303223ae75989bd6fb35d857182a62b8cafc77e79cbb3c31a52fce",
+   "recognitionId": "tf.math.quadratic.minimum-value|1|-4|29",
+   "band": "FOUNDATIONAL",
+   "key": "25",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "3868633bef36a01b6aa04d7c579236ab047ea427585e7504cb48267fa75902d3",
+    "rubricDigest": "1c8619a049d7b4ebd1544d23aa828fc07df1190bc013562bbcf068c8e3508817",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 2
+   },
+   "parity": [
+    {
+     "response": "25",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "25.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "50/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 25 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "29",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "33",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "26",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-25",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "f306c5a6d09fcad1a6c1d5a29f1e1ec4c489c401dc597c721cbd3b4282c510fa",
+   "recognitionId": "tf.math.quadratic.minimum-value|1|-6|24",
+   "band": "FOUNDATIONAL",
+   "key": "15",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "4e7efbb8c43e0e806af3d4dbe441afdde91894a92159de6f296b3771370d50de",
+    "rubricDigest": "694afd69e70aa222a8c5aac7a73fcef94a883a23cbb218c7f78217e47b7010d0",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 2
+   },
+   "parity": [
+    {
+     "response": "15",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "15.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "30/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 15 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "24",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "33",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "16",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-15",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "3b9e1953e856e5b53af52fc6e2e2097e1e4f9955e51b998303ba3bf4a3a4b3a2",
+   "recognitionId": "tf.math.quadratic.minimum-value|1|4|11",
+   "band": "FOUNDATIONAL",
+   "key": "7",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "2e8847cc78b651ab23c48200cf327521c7541d45367460a25e576aaf2b3235b1",
+    "rubricDigest": "399d7e8af0eeb5729241b8f926217dc86080944f45410d8d4b5bda7602926b41",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 2
+   },
+   "parity": [
+    {
+     "response": "7",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "7.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "14/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 7 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "11",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "15",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "8",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-7",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "3edc13729e704bd971144d831fb470a49523d31c8c605d839085fbd593923de5",
+   "recognitionId": "tf.math.quadratic.minimum-value|2|8|25",
+   "band": "STANDARD",
+   "key": "17",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "7147c98af1f14c706df8e18082782e93daa4938b4b9fb14474713795e361dc44",
+    "rubricDigest": "edd4a7302bb3e9ad847e2dbeaec65bdae07bb25c077d637fc6f39da7b69e0a87",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 3
+   },
+   "parity": [
+    {
+     "response": "17",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "17.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "34/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 17 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "25",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "33",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "18",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-17",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "3849dcc119829fc3daa5b0dbeba3cd737092445af91c21e373a16065f014d245",
+   "recognitionId": "tf.math.quadratic.minimum-value|2|-8|28",
+   "band": "STANDARD",
+   "key": "20",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "3575ca30a01175b83018de3e0d1a851a0e37afd33b05cb69d4b01f9123c0a74c",
+    "rubricDigest": "a461bffdc97f75a2b7bc93a2fc7fb77d3f612aa7f55d333aaf8f60af19f43ee5",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 3
+   },
+   "parity": [
+    {
+     "response": "20",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "20.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "40/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 20 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "28",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "36",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "21",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-20",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "b39c0317be3da57420c9d9bf24e92b43439255806f053fda6ea4c5b0eb95aeda",
+   "recognitionId": "tf.math.quadratic.minimum-value|2|-4|29",
+   "band": "STANDARD",
+   "key": "27",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "0fcefad95af2139c91bbd613f54f391091e8ab06ad58d3b7f19e8c181a73900c",
+    "rubricDigest": "15919b41d76f875e98b1e1d0ec1f5712ca16021d3e4f863a8ba640c4d137f100",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 3
+   },
+   "parity": [
+    {
+     "response": "27",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "27.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "54/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 27 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "1",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "29",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "31",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "28",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-27",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "b0af9851d0094af2ed3670cc2bc95740df52c9ba0cd33a4b3c0e6533121048f4",
+   "recognitionId": "tf.math.quadratic.minimum-value|2|12|29",
+   "band": "STANDARD",
+   "key": "11",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "ac8a9d4cc571f371522768b2ab768c59e5418ba2971a11f7cf2d0b9a9c25547f",
+    "rubricDigest": "4235b2959648c90b216827ce4dc5107afcb432d5e371961fba965d0264281e5d",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 3
+   },
+   "parity": [
+    {
+     "response": "11",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "11.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "22/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 11 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "29",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "47",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "12",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-11",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "573b806e3d351304d3b6cc3570f77f3df53739dbd64d1a27ebcc769029ebec6a",
+   "recognitionId": "tf.math.quadratic.minimum-value|2|4|16",
+   "band": "STANDARD",
+   "key": "14",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "cd74082a761d663ad0cde4eba169be919578bd41bbd9b36b07b8f5e9188d62a1",
+    "rubricDigest": "615240e03b742d4ac1dfe7eaf6c455c4bdf87a69784b7daec5e925d18a43203f",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 3
+   },
+   "parity": [
+    {
+     "response": "14",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "14.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "28/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 14 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-1",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "16",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "18",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "15",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-14",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "26f785bef4bf234e2883e5d38a4a6d3e5a3b8cddb0bb278e3e9cee5a499676f3",
+   "recognitionId": "tf.math.quadratic.minimum-value|2|4|21",
+   "band": "STANDARD",
+   "key": "19",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "232aaf32e9a5d3bce7dc635e95ef2401ac31fb2de1f70f351ca25ae71b7adab9",
+    "rubricDigest": "d0e86809daa063b0d3565d067ab3662ae83c5e982230dec5169867deef1f1a55",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 3
+   },
+   "parity": [
+    {
+     "response": "19",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "19.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "38/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 19 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-1",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "21",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "23",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "20",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-19",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "29f0abf1b3d85edce91bb3b4790514e59fb16c75a98cbe4831a201e754157428",
+   "recognitionId": "tf.math.quadratic.minimum-value|4|16|23",
+   "band": "STANDARD",
+   "key": "7",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "2e8847cc78b651ab23c48200cf327521c7541d45367460a25e576aaf2b3235b1",
+    "rubricDigest": "e0b8f5c30a360440622078c3308d6eaa01466e272b456a0fdd9f9e48a798caab",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 3
+   },
+   "parity": [
+    {
+     "response": "7",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "7.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "14/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 7 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "23",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "39",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "8",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-7",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "dd9a8229a54a0d1cbf4619aa232b8e08caa80c15ad9fbc87475c8d09982694b0",
+   "recognitionId": "tf.math.quadratic.minimum-value|4|-8|16",
+   "band": "STANDARD",
+   "key": "12",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "17f48452312a7abd2d5256bafd771d8ef77f89de0e25e5d199a05ed73d61be98",
+    "rubricDigest": "9a835f44c07047a0405fc5dc25d730c2ec769eb67ecc74dfb800ed29ab82c711",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 3
+   },
+   "parity": [
+    {
+     "response": "12",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "12.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "24/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 12 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "1",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "16",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "20",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "13",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-12",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "4adc98a75ae39d7fc26f1f69947a2662b565d0d7a8b41723d7f088a7598c94e7",
+   "recognitionId": "tf.math.quadratic.minimum-value|4|-8|7",
+   "band": "STANDARD",
+   "key": "3",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "f37027abb9f854d317168857cdb3c690b52c3b06a0e25365bd2050eea937d1f1",
+    "rubricDigest": "4310773410931d7502eab54a85d12315b6f0ad1d53f27238bb1456faadb62434",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 3
+   },
+   "parity": [
+    {
+     "response": "3",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "3.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "6/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 3 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "1",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "7",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "11",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "4",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "110c1b5e941897ae506673875ab4be0060da386520de53744e7da3acebbdebed",
+   "recognitionId": "tf.math.quadratic.minimum-value|3|6|14",
+   "band": "STANDARD",
+   "key": "11",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "ac8a9d4cc571f371522768b2ab768c59e5418ba2971a11f7cf2d0b9a9c25547f",
+    "rubricDigest": "4235b2959648c90b216827ce4dc5107afcb432d5e371961fba965d0264281e5d",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 3
+   },
+   "parity": [
+    {
+     "response": "11",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "11.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "22/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 11 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-1",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "14",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "17",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "12",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-11",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "1236bb36859ef146633efc3d6dd29857fc0ae5d0fda8627ce86e5a091fc95fe9",
+   "recognitionId": "tf.math.quadratic.minimum-value|4|-10|27",
+   "band": "CHALLENGE",
+   "key": "83/4",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "03eb0eb52da41de3808230a9ca6b49de471a9ad3a3434989985a21c0cbae5723",
+    "rubricDigest": "972a13189b27a23a4f6fab76815fc7e72fa38c6f30b04b1113344e997805ba71",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 4
+   },
+   "parity": [
+    {
+     "response": "83/4",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "20.75",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "20,75",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "249/12",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 83/4 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "5/4",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "27",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "133/4",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "84/4",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-20.75",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "c2d87f2535e9fe4e9d9fa4ca3826937354ff4343b65300ab7b72fe4dec815c23",
+   "recognitionId": "tf.math.quadratic.minimum-value|4|-4|36",
+   "band": "CHALLENGE",
+   "key": "35",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "250fa4e1e4f9d338c2432c70193f0e620b202df596e9a53432e03ba3584aee59",
+    "rubricDigest": "599186a9038da5a55d1e333ccf30138b99943842550571ffc5f88a8d530ecb74",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 4
+   },
+   "parity": [
+    {
+     "response": "35",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "35.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "70/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 35 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "1/2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "36",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "37",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "36",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-35",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "b302231fe271d9fb7fc47be28a9c238bfe1d0f2228db0bcbe9a6ff5bb6147661",
+   "recognitionId": "tf.math.quadratic.minimum-value|4|4|33",
+   "band": "CHALLENGE",
+   "key": "32",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "077207c88920ce5763d83e3b2a8d408c298caa1d5921a5fd4218522dae06abc5",
+    "rubricDigest": "a7d1009c371bd7ff723caf6e2ca7e32e3a5b4531353d3b02192117aed8486c75",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 4
+   },
+   "parity": [
+    {
+     "response": "32",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "32.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "64/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 32 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-1/2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "33",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "34",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "33",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-32",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "2ea2c7a0979aa9753b2aaee9fda1e10054827a4824720a45deaa437354721dd4",
+   "recognitionId": "tf.math.quadratic.minimum-value|4|-6|15",
+   "band": "CHALLENGE",
+   "key": "51/4",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "8068a011564465c3510a21e0b25661a124b32d8af4ec592d255c28799b851e6b",
+    "rubricDigest": "d5c380a908c9c8fe61c303fbc937d97e890a1f3ee25462fb864780444f4b2d3e",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 4
+   },
+   "parity": [
+    {
+     "response": "51/4",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "12.75",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "12,75",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "153/12",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 51/4 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "3/4",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "15",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "69/4",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "52/4",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-12.75",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "df4bcb1b4a95c2dad427e549e3a1e00672b79d443369e30ad2d79045a69aff03",
+   "recognitionId": "tf.math.quadratic.minimum-value|4|5|3",
+   "band": "CHALLENGE",
+   "key": "23/16",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "e6f0d5fcd16eb989277d2903be5e42b76ccb8f65422b3a97a7a8b34c5dbbd6a8",
+    "rubricDigest": "c93d6349387411707bd1319df9694972a28dc34e5c1669bad6e7c699d6f2b5cf",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 4
+   },
+   "parity": [
+    {
+     "response": "23/16",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "1.4375",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "1,4375",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "69/48",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 23/16 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-5/8",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "73/16",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "24/16",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-1.4375",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "e2640503dff47bfe9e2607dc83bc63553a5a15ddc2040193c11b52919b7a8f80",
+   "recognitionId": "tf.math.quadratic.minimum-value|4|4|32",
+   "band": "CHALLENGE",
+   "key": "31",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "4c88493f67aceca76b66e93b5c3bfead0585fc8ba3afdfdd6f27f200bb7202a5",
+    "rubricDigest": "d93fc7f312cd568a0431b9134049447fb4fea3503ef156b7dc055cd58cf007ef",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 4
+   },
+   "parity": [
+    {
+     "response": "31",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "31.0",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "62/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 31 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-1/2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "32",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "33",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "32",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-31",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "762064c0125793b52c80901e27c847df7a4479ca8af1a913d56d686e4e815acd",
+   "recognitionId": "tf.math.quadratic.minimum-value|2|2|37",
+   "band": "CHALLENGE",
+   "key": "73/2",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "0c81f381f91c894f9d9964e9989eb9792994853b07d38b8a4c8ddb85f886c80c",
+    "rubricDigest": "90eb789bad3b74effa34aee8bedbc2c71d2d88ee1d24a52339dcdfcab92d7f53",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 4
+   },
+   "parity": [
+    {
+     "response": "73/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "36.5",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "36,5",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "219/6",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 73/2 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-1/2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "37",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "75/2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "74/2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-36.5",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "c0e12fa307a57a7d97310a65aaacf17de08d4355183af413d52b33fb8c5da0ef",
+   "recognitionId": "tf.math.quadratic.minimum-value|3|-14|39",
+   "band": "CHALLENGE",
+   "key": "68/3",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "8a571af53ff7e54eab1f1680fd2416e37bea2b919d9c6e0e007a583bbeffab31",
+    "rubricDigest": "07c60b027d922e6c15b76dbcd70e6648323127396a87b259898d4383fc076602",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 4
+   },
+   "parity": [
+    {
+     "response": "68/3",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "204/9",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 68/3 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "7/3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "39",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "166/3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "69/3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-22.666666666666668",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "b2187c531655e9157f6aeea727d88d3b15f1d8ad8488b566d2c9a35c534b2a90",
+   "recognitionId": "tf.math.quadratic.minimum-value|2|-6|22",
+   "band": "CHALLENGE",
+   "key": "35/2",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "a1551f4f6a6823d3110b577410241b9b71f7073f456e69856dd4197062c44a5d",
+    "rubricDigest": "18ad0940523a10244e737845d8f4e8af2aa7cc67d0ac76e808df549be8325482",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 4
+   },
+   "parity": [
+    {
+     "response": "35/2",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "17.5",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "17,5",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "105/6",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 35/2 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "3/2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "22",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "53/2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "36/2",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-17.5",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  },
+  {
+   "candidateId": "4f3fea1038146170b82b2eed897366b6f9ef12683a4405c161bf4ab6cdb5e5b8",
+   "recognitionId": "tf.math.quadratic.minimum-value|3|10|16",
+   "band": "CHALLENGE",
+   "key": "23/3",
+   "bank": {
+    "projection": "exam-bank-projection-3",
+    "structure": "SINGLE",
+    "responseContract": "canonical-response-1",
+    "responseContractDigest": "2c468ff43018dbb21473e96edced0ef03ff56785d8677953cfac75c04fa655a6",
+    "markSchemeDigest": "d2d4bd1c84490b039c30a8a94033fe3a5cedabc19166b71f74a528a75e4f2ca8",
+    "rubricDigest": "db04018a459d7c32bbab3e4cd88efba762b433fd76af0408a9fb260b63f6e997",
+    "scoringStrategy": "MATHEMATICAL_EQUIVALENCE",
+    "marks": 4
+   },
+   "parity": [
+    {
+     "response": "23/3",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "69/9",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": " 23/3 ",
+     "qf": true,
+     "canonical": true,
+     "examCoreEn": 1,
+     "examCoreEs": 1,
+     "agree": true
+    },
+    {
+     "response": "-5/3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "16",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "73/3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "24/3",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "-7.666666666666667",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    },
+    {
+     "response": "x",
+     "qf": false,
+     "canonical": false,
+     "examCoreEn": 0,
+     "examCoreEs": 0,
+     "agree": true
+    }
+   ]
+  }
+ ]
+}
