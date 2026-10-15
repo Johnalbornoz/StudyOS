@@ -28,10 +28,10 @@ describe('objective catalogue: every governed exam objective is selectable', () 
     expect(by('CIE_AICE').map((o) => o.key)).toEqual(['cie.aice.diploma']);
     expect(by('CIE_AICE')[0].kind).toBe('PROGRAMME_PLAN');
     // 49 Cambridge subjects / 87 subject-levels, each ONE objective even when listed in several AICE groups.
-    expect(by('CIE_AS_A')).toHaveLength(87);
+    expect(by('CIE_AS_A')).toHaveLength(88); // + the Cambridge system's own 9709 AS (Paper 1 pilot)
     expect(new Set(by('CIE_AS_A').map((o) => o.context.syllabusCode)).size).toBe(49);
     expect(by('IB_DP').length).toBeGreaterThan(50);
-    expect(list.length).toBe(by('IB_DP').length + 87 + 2 + 4);
+    expect(list.length).toBe(by('IB_DP').length + 88 + 2 + 4);
   });
   it('IB: subject -> SL / HL; TOK and EE are objectives; CAS (not examined) is not', () => {
     expect(objectiveByKey('ib.dp.physics.hl')?.context.subject).toBe('Physics');

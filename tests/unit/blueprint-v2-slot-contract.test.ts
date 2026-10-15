@@ -148,9 +148,9 @@ describe('integration gate: every shadow record is explained', () => {
     const tally: Record<string, number> = {};
     for (const x of r.records) tally[explainShadowRecord(x)] = (tally[explainShadowRecord(x)] ?? 0) + 1;
     expect(tally).toEqual({
-      MATCH: 175,
+      MATCH: 178,
       'LEGACY_ONLY:STRUCTURAL_FULL_MOCK_UNSUPPORTED': 28,
-      'LEGACY_ONLY:REDUCED_FORM_NOT_FULL_MOCK': 13,
+      'LEGACY_ONLY:REDUCED_FORM_NOT_FULL_MOCK': 14,
       'LEGACY_ONLY:STAGE_MOCK_UNMODELLED': 9,
       'LEGACY_DEFECT:ROUTED_FULL_MOCK_ALL_COMPONENTS': 6,
       'MISSING_CONTEXT:ROUTE_NOT_STORED': 4,

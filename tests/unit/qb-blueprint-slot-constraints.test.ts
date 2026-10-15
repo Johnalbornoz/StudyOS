@@ -136,7 +136,8 @@ describe('8. every existing blueprint stays compatible', () => {
     expect(parsed).toHaveLength(allV2Configs().length);
     const others = parsed.filter((p) => p.config.key !== 'v2.saber11.math');
     for (const { config } of others) {
-      const json = JSON.stringify(config);
+      // Cambridge 9709 P1 declares a bank source (certified Exam Bank only) and nothing else of these
+      const json = JSON.stringify(config.key === 'v2.cambridge.9709-as' ? { ...config, bankSource: undefined } : config);
       expect(json, config.key).not.toMatch(/"constraints"|"bankSource"|"margins"|"cells"/);
     }
   });

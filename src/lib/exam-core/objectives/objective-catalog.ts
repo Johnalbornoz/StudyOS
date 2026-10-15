@@ -101,6 +101,7 @@ const FRAMEWORK_RULES: FrameworkRule[] = [
   { rootKey: 'saber11', framework: 'SABER11', objectiveLevel: 'TEST' },
   { rootKey: 'ib.dp', framework: 'IB_DP', objectiveLevel: 'SUBJECT_LEVEL' },
   { rootKey: 'cie.igcse', framework: 'CIE_IGCSE', objectiveLevel: 'SUBJECT_LEVEL' },
+  { rootKey: 'cie.asal', framework: 'CIE_AS_A', objectiveLevel: 'SUBJECT_LEVEL' },
   {
     rootKey: 'cie.aice', framework: 'CIE_AICE', objectiveLevel: 'SUBJECT_LEVEL', planner: { key: 'cie.aice.diploma' }, subjectFramework: 'CIE_AS_A',
     // One Cambridge qualification per syllabus code and level, whatever AICE group it is listed under.

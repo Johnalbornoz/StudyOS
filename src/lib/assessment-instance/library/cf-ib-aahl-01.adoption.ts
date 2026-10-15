@@ -27,12 +27,12 @@ const MARKS_BY_BAND = { FOUNDATIONAL: 2, STANDARD: 3, CHALLENGE: 4 } as const;
 const BAND_DIFFICULTY: Record<PlanningBand, number> = { FOUNDATIONAL: 2, STANDARD: 3, CHALLENGE: 4 };
 
 interface Variable { symbol: string; meaning: string; role: 'GIVEN' | 'UNKNOWN' | 'PARAMETER' | 'DERIVED'; domain: 'INTEGER' | 'RATIONAL' | 'REAL' | 'CATEGORY' }
-interface AdoptionSpec {
+export interface AdoptionSpec {
   construct: ParametricConstruct<never>;
   familyId: string;
-  adapterId: 'IB.MATH_AA_HL.P1' | 'IB.MATH_AA_HL.P2';
-  commandTerm: 'find' | 'solve';
-  concept: { stableId: string; canonicalName: string };
+  adapterId: string;
+  commandTerm: string;
+  concept: { stableId: string; canonicalName: string; /** Default 'Mathematics'. */ canonicalSubject?: string };
   skill: string;
   action: 'COMPUTE' | 'SOLVE';
   object: string;
@@ -58,21 +58,33 @@ function rangesOf(spec: AdoptionSpec): { symbol: string; min: number; max: numbe
   });
 }
 
-function adopt(spec: AdoptionSpec): LibraryEntry {
+export interface AdoptionOptions {
+  system: string;
+  provenanceNote: string;
+  referenceSourceKeys: string[];
+  /** The package candidates to render, by band; absent = the batch draws its own seeds. */
+  seeds?: LibraryEntry['packageSeeds'];
+  origin: LibraryEntry['origin'];
+}
+const CF_OPTIONS = (familyId: string): AdoptionOptions => ({ system: 'IB', provenanceNote: 'Content Factory CF-IB-AAHL-01: deterministic construct written in-session by the model; reviewed by nobody. Adopted by Track B unchanged.', referenceSourceKeys: ['studyus.content-factory.cf-ib-aahl-01'], seeds: CF_IB_AAHL_01_PACKAGE_SEEDS[familyId], origin: 'CF_PACKAGE' });
+const adopt = (spec: AdoptionSpec): LibraryEntry => adoptParametricConstruct(spec, CF_OPTIONS(spec.familyId));
+
+/** A parametric construct as a governed library entry: its core family, envelope and SHORT_RESPONSE strategy. */
+export function adoptParametricConstruct(spec: AdoptionSpec, o: AdoptionOptions): LibraryEntry {
   const c = spec.construct as ParametricConstruct;
   const ranges = rangesOf(spec);
   const built = constructCoreOf({
     family: {
-      v: 1, familyId: spec.familyId, version: CORE_VERSION, familyType: 'MATH_PROBLEM', canonicalSubject: 'Mathematics',
-      primaryConcepts: [{ stableId: spec.concept.stableId, canonicalSubject: 'Mathematics', canonicalName: spec.concept.canonicalName }],
+      v: 1, familyId: spec.familyId, version: CORE_VERSION, familyType: 'MATH_PROBLEM', canonicalSubject: spec.concept.canonicalSubject ?? 'Mathematics',
+      primaryConcepts: [{ stableId: spec.concept.stableId, canonicalSubject: spec.concept.canonicalSubject ?? 'Mathematics', canonicalName: spec.concept.canonicalName }],
       targetSkills: [spec.skill], targetCompetencies: ['dev.comp.math-reasoning'],
       evidenceTarget: { actions: [spec.action], object: spec.object, observablePerformance: spec.observable },
       supportedContexts: [{ kind: 'ABSTRACT', note: 'The mathematical object is given directly.' }],
       difficultyLevers: [{ lever: 'band-form', kind: 'STEPS', description: 'The band fixes the form of the task (see the envelope lever settings).' }],
       commonMisconceptions: spec.misconceptions.map((m) => m.description),
       responseConstraints: { allowedFormats: ['NUMERIC_ENTRY', 'SHORT_RESPONSE'], stimulusNeed: 'NONE', stimulusKinds: [], note: 'A produced value; no candidate value is offered.' },
-      profileSupport: { IB: { status: 'SUPPORTED' } },
-      provenance: { authoredBy: 'STUDYUS', authoringKind: 'STUDYUS_GENERATED', authoredAt: '2026-10-14T00:00:00Z', referenceSourceKeys: ['studyus.content-factory.cf-ib-aahl-01'], containsCopiedProtectedExpression: false, note: 'Content Factory CF-IB-AAHL-01: deterministic construct written in-session by the model; reviewed by nobody. Adopted by Track B unchanged.' },
+      profileSupport: { [o.system]: { status: 'SUPPORTED' } },
+      provenance: { authoredBy: 'STUDYUS', authoringKind: 'STUDYUS_GENERATED', authoredAt: '2026-10-14T00:00:00Z', referenceSourceKeys: o.referenceSourceKeys, containsCopiedProtectedExpression: false, note: o.provenanceNote },
       lifecycle: 'IN_REVIEW', reviewStatus: 'IN_REVIEW',
       specialization: {
         mathematicalStructure: { construct: c.construct, description: spec.structure },
@@ -101,7 +113,7 @@ function adopt(spec: AdoptionSpec): LibraryEntry {
     core: built.core, envelope: parsed.data as RendererEnvelope, construct: c, strategy: parametricStrategy(c, { format: 'SHORT_RESPONSE', marksByBand: MARKS_BY_BAND }),
     targets: [{ adapterId: spec.adapterId, language: 'en', responseFormat: 'SHORT_RESPONSE', commandTerm: spec.commandTerm }],
     reasoning: { minimumSuccessfulPath: spec.path, supportedStrategies: spec.strategies, requiredObservableMethod: null },
-    challengeMechanisms: [spec.challenge], origin: 'CF_PACKAGE', packageSeeds: CF_IB_AAHL_01_PACKAGE_SEEDS[spec.familyId],
+    challengeMechanisms: [spec.challenge], origin: o.origin, ...(o.seeds ? { packageSeeds: o.seeds } : {}),
   };
 }
 

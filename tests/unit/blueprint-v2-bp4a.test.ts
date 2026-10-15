@@ -280,10 +280,10 @@ describe('T17 -- no Student runtime consumes a shadow selection', () => {
 describe('runtime parity over the applied catalogue (through the real hooks)', () => {
   it('counts are reported truthfully', async () => {
     const r = await runRuntimeShadowParity([...allV2Configs(), ...DEV_CERT_VERTICALS]);
-    expect(r.records).toHaveLength(282);
+    expect(r.records).toHaveLength(286); // + Cambridge 9709 P1
     expect(r.notOfferedByRuntime).toHaveLength(50);
     // Saber 11 V2.1 (QB 802d9be): its F9 Full Mock now resolves (174 -> 175).
-    expect(r.byResolutionStatus).toEqual({ SINGLE_COMPATIBLE_MATCH: 175, NO_MATCH: 56, MISSING_CONTEXT: 51 });
+    expect(r.byResolutionStatus).toEqual({ SINGLE_COMPATIBLE_MATCH: 178, NO_MATCH: 57, MISSING_CONTEXT: 51 }); // + Cambridge 9709 P1
     expect(r.records.filter((x) => x.parity_status === 'MATCH').every((x) => x.reasons.includes('FROZEN_DRY_RUN_OK') && x.v2_structure_fingerprint === x.legacy_structure_fingerprint)).toBe(true);
     for (const x of r.records) expect(Object.keys(x).sort()).toEqual([...RUNTIME_SHADOW_RECORD_KEYS].sort());
   });

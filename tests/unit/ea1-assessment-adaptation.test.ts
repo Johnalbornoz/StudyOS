@@ -1366,6 +1366,8 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     const importers = walk('src').filter((f) => !f.startsWith(ADAPTATION_DIR) && !f.startsWith(FAMILIES_DIR) && !f.startsWith(INSTANCE_DIR) && /assessment-adaptation|question-bank\/task-families/.test(read(f))).sort();
     // QB-R2D adds three Production OS modules of the specification-driven path. Same direction (production -> adaptation), still pure, still no route, service or table.
     expect(importers).toEqual([
+      // the Cambridge 9709 P1 applicability register (pure data in the EA-1 register's own record type)
+      'src/lib/curriculum/cambridge/cie-9709-p1-correspondence.ts',
       // the IB pilot applicability register (pure data in the EA-1 register's own record type; no route, service or table)
       'src/lib/curriculum/ib/ib-aa-hl-concept-correspondence.ts',
       // Exam Bank hardening: the CF package dry run resolves concept applicability with the EA-1 register (pure, no IO)

@@ -83,6 +83,8 @@ function mathLinks(prefix: 'aahl' | 'aasl'): Record<string, LearningLink> {
 }
 
 /** Every reviewed link (PAA, IB, sciences, Cambridge AICE and PISA 2022). */
+// Cambridge 9709 Paper 1: the official section -> StudyUs concept correspondences (PILOT; cie-9709-p1-correspondence.ts)
+import { CIE_9709_P1_LEARNING_LINKS } from '@/lib/curriculum/cambridge/cie-9709-p1-correspondence';
 export function allLearningLinks(): Record<string, LearningLink> {
-  return { ...OBJECTIVE_LEARNING_LINKS, ...SCIENCE_LEARNING_LINKS, ...AICE_LEARNING_LINKS, ...PISA_LEARNING_LINKS };
+  return { ...OBJECTIVE_LEARNING_LINKS, ...SCIENCE_LEARNING_LINKS, ...AICE_LEARNING_LINKS, ...PISA_LEARNING_LINKS, ...CIE_9709_P1_LEARNING_LINKS };
 }

@@ -40,7 +40,8 @@ describe('compileExam over the 88 configurations', () => {
 
   it('only the 14 AICE configurations carry the V1 unit-label conflict', () => {
     const conflicts = CONFIGS.filter((c) => compileExam(c).examDefinition!.legacyRuntime.finalScore.status === 'UNIT_LABEL_CONFLICT').map((c) => c.family);
-    expect(conflicts).toHaveLength(14);
-    expect(new Set(conflicts)).toEqual(new Set(['AICE']));
+    // + Cambridge 9709 (same 9709 marks unit)
+    expect(conflicts).toHaveLength(15);
+    expect(new Set(conflicts)).toEqual(new Set(['AICE', 'CAMBRIDGE']));
   });
 });

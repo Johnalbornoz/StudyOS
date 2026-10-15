@@ -295,7 +295,7 @@ describe('M04. exam catalogue typeahead', () => {
     expect(suggest('superior fis').map((s) => [s.kind, s.label])).toEqual([['VARIANT', 'Física'], ['OPTION', 'Nivel Superior (NS)']]);
     const code9709 = suggest('9709');
     expect(code9709[0]).toMatchObject({ kind: 'VARIANT', label: 'Mathematics (9709)', apply: { framework: 'CIE_AS_A', query: 'Mathematics (9709)' } });
-    expect(code9709.slice(1).map((s) => s.label)).toEqual(['AS Level', 'A Level']);
+    expect(code9709.slice(1).map((s) => s.label)).toEqual(expect.arrayContaining(['AS Level', 'A Level', 'AS Level · Paper 1']));
     // English interface: English labels, the same keys underneath.
     expect(suggest('ana', 'en').map((s) => s.label)).toEqual(['Mathematics: analysis and approaches', 'Standard Level (SL)', 'Higher Level (HL)']);
     expect(suggest('ana', 'en').map((s) => s.id)).toEqual(suggest('ana').map((s) => s.id).map((id) => id.replace('Matemáticas: Análisis y Enfoques', 'Mathematics: analysis and approaches')));

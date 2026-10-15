@@ -224,6 +224,24 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
           },
         ],
       },
+      // Cambridge International AS & A Level, as the CAMBRIDGE system's own qualification (pilot: 9709 Paper 1). Not the
+      // AICE Diploma tree below: no AICE equivalence is claimed or inferred from the shared syllabus code.
+      {
+        key: 'cie.asal', type: 'QUALIFICATION', label: 'Cambridge International AS & A Level',
+        children: [
+          {
+            key: 'cie.asal.cambridge.9709', type: 'SUBJECT', label: 'Mathematics (9709)', syllabusCode: '9709', firstAssessment: 2026, lastAssessment: 2027, frameworkVersion: 'v4', sourceKeys: ['cie-9709-syllabus-2026-2027'],
+            children: [
+              {
+                key: 'cie.asal.cambridge.9709.as', type: 'VARIANT', label: 'AS Level · Paper 1', bind: { configKey: 'v2.cambridge.9709-as' }, sourceKeys: ['cie-9709-syllabus-2026-2027'],
+                children: [
+                  paper('cie.asal.cambridge.9709.p1', 'Paper 1 Pure Mathematics 1', { minutes: 110, marks: 75, weightPercent: 60, calculator: 'scientific' }, { configKey: 'v2.cambridge.9709-as', sectionKey: 'p1' }, ['cie-9709-syllabus-2026-2027']),
+                ],
+              },
+            ],
+          },
+        ],
+      },
       // Cambridge AICE Diploma: Core + Groups 1-4 -> subject (syllabus code) -> AS / A Level -> official components.
       aiceCatalogTree((configKey) => V2_VERTICALS.find((v) => v.key === configKey)?.sections.map((sec) => ({ key: sec.key })) ?? null),
     ],

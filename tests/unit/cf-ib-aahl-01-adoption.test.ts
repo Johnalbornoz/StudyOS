@@ -101,10 +101,11 @@ describe('publication: the V5.2 plan is unchanged; the IB first delivery is an a
     expect(plan.extensions?.map((x) => ({ batch: x.batchId, instances: x.instances.length, cores: x.cores.map((c) => c.core.constructFamilyId), preflight: x.preflight }))).toEqual([
       { batch: 'CF-IB-AAHL-01', instances: 1, cores: ['tf.math.quadratic.minimum-value'], preflight: [] },
       { batch: 'CF-IB-AAHL-01-A2', instances: 240, cores: expect.any(Array), preflight: [] },
+      { batch: 'CIE-9709-P1-A1', instances: 237, cores: expect.any(Array), preflight: [] },
     ]);
     const merged = mergedForPublication(plan);
-    expect(merged.instances).toHaveLength(567);
-    expect(merged.batches.map((b) => b.batchId)).toEqual(['qf52-batch-1', 'CF-IB-AAHL-01', 'CF-IB-AAHL-01-A2']);
+    expect(merged.instances).toHaveLength(804);
+    expect(merged.batches.map((b) => b.batchId)).toEqual(['qf52-batch-1', 'CF-IB-AAHL-01', 'CF-IB-AAHL-01-A2', 'CIE-9709-P1-A1']);
     expect(merged.instances.filter((i) => i.batchId === 'CF-IB-AAHL-01').map((i) => i.instance.key.answers[0])).toEqual(['83/4']);
     expect(new Set(merged.adapters.map((a) => a.adapter.adapterId)).size).toBe(merged.adapters.length);
   });

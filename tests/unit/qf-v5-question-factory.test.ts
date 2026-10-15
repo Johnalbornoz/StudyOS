@@ -2,6 +2,7 @@
  * Question Factory V5 -- profiles, the eleven stages, triage, batch control and blueprint readiness.
  * Every model-backed stage is a stub here: no provider is called, no key is read.
  */
+import { DETERMINISTIC_BANK_ONLY_CONFIG_KEYS } from '@/lib/exam-core/verticals/v2/cambridge-9709';
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -44,7 +45,8 @@ const run = (raw: unknown, s = spec(), p = PAA_MATH, st: Partial<StageProviders>
 const codes = (raw: unknown, s = spec(), p = PAA_MATH) => structuralFindings(raw, s, p).findings.map((f) => f.code);
 
 describe('assessment authenticity profiles', () => {
-  const sections = allV2Configs().filter((c) => !RETIRED_V2_CONFIG_KEYS.includes(c.key)).flatMap((c) => c.sections.map((s) => ({ configKey: c.key, family: c.family, sectionKey: s.key, componentType: s.componentType, simulationCapable: s.simulationCapable ?? true })));
+  // the V5 generation scope: configurations supplied only by deterministic Exam Bank content are not generation targets
+  const sections = allV2Configs().filter((c) => !RETIRED_V2_CONFIG_KEYS.includes(c.key) && !DETERMINISTIC_BANK_ONLY_CONFIG_KEYS.includes(c.key)).flatMap((c) => c.sections.map((s) => ({ configKey: c.key, family: c.family, sectionKey: s.key, componentType: s.componentType, simulationCapable: s.simulationCapable ?? true })));
 
   it('every active family has its own profiles; none is a shared prompt with the name substituted', () => {
     const by = profilesByFamily();
@@ -350,7 +352,7 @@ describe('regeneration, calibration, stop conditions, audit, spend, checkpoint',
 });
 
 describe('blueprint readiness from the global certified bank', () => {
-  const configs = allV2Configs().filter((c) => !RETIRED_V2_CONFIG_KEYS.includes(c.key));
+  const configs = allV2Configs().filter((c) => !RETIRED_V2_CONFIG_KEYS.includes(c.key) && !DETERMINISTIC_BANK_ONLY_CONFIG_KEYS.includes(c.key));
   const sections = blueprintSections(configs as never);
   const fill = (family: string, perBucket: (required: number) => number, eligible = true): BankItem[] => sections.filter((s) => s.family === family && resolveProfile(s).kind === 'PROFILE').flatMap((s) => s.buckets.flatMap((b) => Array.from({ length: perBucket(b.required) }, (_, i) => ({ itemId: `${b.bucketKey}:${i}`, bucketKey: b.bucketKey, difficulty: i % 3 === 2 ? 'CHALLENGE' as const : 'STANDARD' as const, itemType: 'SELECTED_RESPONSE', studentEligible: eligible }))));
 

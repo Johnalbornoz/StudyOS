@@ -82,7 +82,7 @@ describe('IB bucket governance with the pilot-governed identities', () => {
     expect(['HUMAN_CERTIFIED', 'AUTOMATED_CERTIFIED_PILOT']).toContain(find('v2.ib.math-aa-hl/p1', 'step4b-pilot-1').state);
     expect(g.adapters.find((d) => d.objectId === 'IB.MATH_AA_HL.P2')!.state).toBe('AUTOMATED_CERTIFIED_PILOT');
     // positions: P1 functions 1 (D02) + algebra 1 + calculus 2, P2 statistics 2 -> 6 of the 9 pilot positions
-    expect([...LIBRARY_BLUEPRINT_IB.buckets, ...LIBRARY_BLUEPRINT_EXTENSIONS.flatMap((b) => b.buckets)].reduce((n, b) => n + b.governedPositions, 0)).toBe(6);
+    expect([...LIBRARY_BLUEPRINT_IB.buckets, ...LIBRARY_BLUEPRINT_EXTENSIONS.filter((b) => b.adapterId.startsWith('IB.')).flatMap((b) => b.buckets)].reduce((n, b) => n + b.governedPositions, 0)).toBe(6);
     // the V5.2 library and its governance are unchanged
     expect(LIBRARY.length).toBe(10);
   });

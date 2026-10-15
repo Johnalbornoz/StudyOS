@@ -273,10 +273,11 @@ export function scoringBankContentOf(i: CertifiedInstance): ScoringBankContent {
 
 // ------------------------------------------------------------------------------------------------ guarded scope
 /**
- * Projection 3 is a GOVERNED capability for NEW IB content only. Every other system keeps projection 2 (the frozen PAA
+ * Projection 3 is a GOVERNED capability for NEW IB and Cambridge content only. Every other system keeps projection 2 (the frozen PAA
  * bank was published with it, and its publication path does not change). Within IB, only explicitly governed formats.
  */
-export const PROJECTION_3_SYSTEMS: readonly string[] = ['IB'];
+// + CAMBRIDGE (2026-10-14): 9709 Paper 1 is published with the same canonical contract (no bank was published for it before)
+export const PROJECTION_3_SYSTEMS: readonly string[] = ['IB', 'CAMBRIDGE'];
 export const PROJECTION_3_FORMATS: readonly string[] = ['NUMERIC_ENTRY', 'SHORT_RESPONSE', 'MULTI_PART_MATH'];
 export type BankProjectionChoice = { version: 'exam-bank-projection-2'; refusal: string | null } | { version: typeof SCORING_PROJECTION_VERSION; refusal: ScoringProjectionRefusal | 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' | null };
 /** Which projection publishes this instance, and whether it may. Fail closed: an IB instance never falls back to projection 2. */

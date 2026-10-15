@@ -29,6 +29,8 @@ import { QUADRATIC_SOLVE_STRATEGY } from '../strategy-quadratic-solve';
 import { DATA_SET_MEAN, LINE_SLOPE, PROPORTION_MISSING_VALUE, QUADRATIC_SOLVE, RIGHT_TRIANGLE, SINGLE_DRAW } from './constructs';
 import { LINEAR_EQUATION, LINEAR_SYSTEM, PERCENT, RECTANGLE } from './constructs-arithmetic-algebra-geometry';
 import { parametricStrategy, type ParametricConstruct, type PlanningBand } from './parametric';
+import { CIE_9709_P1_ENTRIES } from './cie-9709-p1.adoption';
+import { CIE_9709_P1_SECTIONS, withCie9709P1Applicability } from '@/lib/curriculum/cambridge/cie-9709-p1-correspondence';
 import { CF_IB_AAHL_01_ADOPTED } from './cf-ib-aahl-01.adoption';
 import { CF_QUADRATIC_MINIMUM_FIRST_DELIVERY } from './cf-ib-aahl-01';
 
@@ -209,7 +211,7 @@ const paaConcept = (stableId: string, topic: string, page = 36): AssessmentAppli
 /** The EA-1 register plus the PAA concepts the new cores assess, each from an official topic of the certified hierarchy. */
 export const LIBRARY_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = [...MATH_POC_APPLICABILITY, paaConcept('math.geo.pythagorean-theorem', '058'), paaConcept('math.stat.central-tendency', '063'), paaConcept('math.num.percent', '029', 35), paaConcept('math.alg.linear-equations', '036', 35), paaConcept('math.alg.linear-systems', '051', 35), paaConcept('math.geo.plane-figures-area-perimeter', '059')];
 /** The V5.2 register plus the IB register of the pilot-governed StudyUs identities (publication and its extensions only). */
-export const PUBLICATION_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = [...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY];
+export const PUBLICATION_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY]);
 
 // --------------------------------------------------------------------------------------------------- blueprints
 export interface LibraryBlueprint { blueprintId: string; classificationVersion: string; adapterId: string; configKey: string; sectionKey: string; facts: BlueprintSectionFacts; blueprintClass: BlueprintClass; buckets: { bucket: BlueprintBucketRef; governedPositions: number; conceptLinks: string[] }[] }
@@ -256,7 +258,19 @@ export const LIBRARY_BLUEPRINT_IB_P2_STATISTICS: LibraryBlueprint = {
   blueprintId: 'v2.ib.math-aa-hl/p2', classificationVersion: 'cf-ib-aahl-01-p2', adapterId: 'IB.MATH_AA_HL.P2', configKey: 'v2.ib.math-aa-hl', sectionKey: 'p2', facts: IB_P2_FACTS, blueprintClass: classifyBlueprintSection(IB_P2_FACTS),
   buckets: [{ governedPositions: 2, conceptLinks: ['objective aahl.p2.statistics -> Binomial distribution, Normal distribution (objective-learning-links, DECLARED_REVIEWED; identities GOVERNED_PILOT)'], bucket: bucket('v2.ib.math-aa-hl', 'p2', 'IB.MATH_AA_HL.P2', classifyBlueprintSection(IB_P2_FACTS), 'aahl.p2.statistics', ['math.prob.binomial-distribution', 'math.prob.normal-distribution']) }],
 };
-export const LIBRARY_BLUEPRINT_EXTENSIONS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS];
+// ------------------------------------------------------------- Cambridge 9709 Paper 1 pilot classification
+/**
+ * v2.cambridge.9709-as / p1: one bucket per OFFICIAL syllabus section (1.1 ... 1.8), one governed position each,
+ * placing the section's StudyUs concepts (cie-9709-p1-correspondence.ts). Reduced: 8 of the paper's 10 to 12
+ * structured questions. Certification is decided by the object governance, never assumed here.
+ */
+const CIE_P1_FACTS: BlueprintSectionFacts = { itemBankable: true, declaredFixture: false, fullFormDocumented: false, distributionPartlyDocumented: false, officialItemCount: null, governedSlots: 8 };
+const CIE_P1_CLASS = classifyBlueprintSection(CIE_P1_FACTS);
+export const LIBRARY_BLUEPRINT_CIE_9709_P1: LibraryBlueprint = {
+  blueprintId: 'v2.cambridge.9709-as/p1', classificationVersion: 'cie-9709-p1-pilot-1', adapterId: 'CAMBRIDGE.9709.P1', configKey: 'v2.cambridge.9709-as', sectionKey: 'p1', facts: CIE_P1_FACTS, blueprintClass: CIE_P1_CLASS,
+  buckets: CIE_9709_P1_SECTIONS.map((s) => ({ governedPositions: 1, conceptLinks: [`syllabus 9709 ${s.section} ${s.title} (p. ${s.page}) -> ${s.concepts.map((c) => `${c.stableId} [${c.correspondenceType}]`).join(', ')} (PILOT correspondence, not human reviewed)`], bucket: bucket('v2.cambridge.9709-as', 'p1', 'CAMBRIDGE.9709.P1', CIE_P1_CLASS, s.objectiveCode, s.concepts.map((c) => c.stableId)) })),
+};
+export const LIBRARY_BLUEPRINT_EXTENSIONS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS, LIBRARY_BLUEPRINT_CIE_9709_P1];
 export const PUBLICATION_BLUEPRINTS: readonly LibraryBlueprint[] = [...LIBRARY_BLUEPRINTS, ...LIBRARY_BLUEPRINT_EXTENSIONS];
 
 // ----------------------------------------------------------------------------------------------------- entries
@@ -271,7 +285,7 @@ export interface LibraryEntry {
   /** What makes the hardest band hard, by name. A CHALLENGE band with no named mechanism is not certifiable. */
   challengeMechanisms: readonly DifficultyMechanism[];
   /** Where the entry comes from: an object the pilot reviewer approved in Step 4B, new in V5.2 and seen by nobody, or adopted from a Content Factory package. */
-  origin: 'STEP4B_PILOT' | 'QF52_NEW' | 'CF_PACKAGE';
+  origin: 'STEP4B_PILOT' | 'QF52_NEW' | 'CF_PACKAGE' | 'TRACK_B_DETERMINISTIC';
   /** CF_PACKAGE: the package candidates to render, by planning band (seeds naming each candidate's parameter set). Absent = the batch draws its own seeds. */
   packageSeeds?: Readonly<Partial<Record<PlanningBand, readonly string[]>>>;
 }
@@ -304,6 +318,8 @@ export interface LibraryExtensionBatch { batchId: string; entries: readonly Libr
 export const LIBRARY_EXTENSION_BATCHES: readonly LibraryExtensionBatch[] = [
   { batchId: 'CF-IB-AAHL-01', entries: [CF_QUADRATIC_MINIMUM_FIRST_DELIVERY] },
   { batchId: 'CF-IB-AAHL-01-A2', entries: CF_IB_AAHL_01_ADOPTED },
+  // Cambridge 9709 Paper 1: the eight StudyUs-original constructs, one per official section (cie-9709-p1.adoption.ts)
+  { batchId: 'CIE-9709-P1-A1', entries: CIE_9709_P1_ENTRIES },
 ];
 export const LIBRARY_EXTENSIONS: readonly LibraryEntry[] = LIBRARY_EXTENSION_BATCHES.flatMap((b) => b.entries);
 export const PUBLICATION_LIBRARY: readonly LibraryEntry[] = [...LIBRARY, ...LIBRARY_EXTENSIONS];

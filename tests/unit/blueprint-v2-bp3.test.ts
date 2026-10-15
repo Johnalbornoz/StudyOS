@@ -68,7 +68,7 @@ describe('T1 -- legacy single blueprint == V2 single compatible candidate', () =
   it('every V2 bank configuration matches for practice and diagnostic', () => {
     const r = runShadowParity(allV2Configs());
     const practice = r.records.filter((x) => x.purpose === 'PRACTICE' || x.purpose === 'DIAGNOSTIC');
-    expect(practice).toHaveLength(60);
+    expect(practice).toHaveLength(62); // + Cambridge 9709 P1 (practice + diagnostic)
     expect(practice.every((x) => x.parity_status === 'MATCH')).toBe(true);
   });
 });
@@ -371,12 +371,12 @@ describe('flow-specific contexts', () => {
 describe('parity across the applied catalogue (truth over green)', () => {
   const r = runShadowParity([...allV2Configs(), ...DEV_CERT_VERTICALS]);
   it('BP-2 catalog unchanged: 562 variants; structure-only exams are not replayed', () => {
-    expect(r.variants).toBe(562);
+    expect(r.variants).toBe(566); // + Cambridge 9709 P1
     expect(r.notOfferedByRuntime).toHaveLength(50);
   });
   it('no MATCH is claimed where the runtime is ambiguous or unsupported', () => {
     // Saber 11 V2.1 (QB 802d9be) is full length: its Student Full Mock request now MATCHes (174 -> 175).
-    expect(r.totals).toEqual({ MATCH: 175, LEGACY_ONLY: 43, MISSING_CONTEXT: 56 });
+    expect(r.totals).toEqual({ MATCH: 178, LEGACY_ONLY: 44, MISSING_CONTEXT: 56 });
     for (const x of r.records) {
       if (x.parity_status === 'MATCH') expect(x.v2_structure_fingerprint).toBe(x.legacy_structure_fingerprint);
       if (x.parity_status !== 'MATCH') expect(x.v2_blueprint_identity === null || x.parity_status === 'STRUCTURAL_MISMATCH').toBe(true);

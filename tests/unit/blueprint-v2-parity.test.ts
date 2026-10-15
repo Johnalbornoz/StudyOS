@@ -16,8 +16,8 @@ const CONFIGS = [...allV2Configs(), ...DEV_CERT_VERTICALS];
 
 describe('compiled Blueprint V2 == runtime shape', () => {
   it('covers 88 configurations', () => {
-    expect(allV2Configs()).toHaveLength(80);
-    expect(CONFIGS).toHaveLength(88);
+    expect(allV2Configs()).toHaveLength(81); // + Cambridge 9709 AS (P1)
+    expect(CONFIGS).toHaveLength(89);
   });
 
   it.each(CONFIGS.map((c) => [(c as { key: string }).key, c] as const))('%s', (_key, cfg) => {
