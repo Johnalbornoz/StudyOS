@@ -23,6 +23,8 @@ import {
   type CellResult, type CertifiedInstance, type DemandUnit, type NormalizedCandidate, type QualityVerdict, type RecordedSignals, type SystemBlueprintSection,
 } from '@/lib/assessment-instance/v52';
 import { allV2Configs } from '@/lib/exam-core/verticals/v2/all';
+// the archived run reads the registry as it certified against it (no rebinding made after V5.2)
+import { V52_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
 
 const ROOT = process.cwd();
 const OUT = join(ROOT, 'docs/exams/question-factory/v52');
@@ -39,7 +41,7 @@ const human = existsSync(recordsFile) ? (() => { const f = readJson<{ qualificat
 
 // ------------------------------------------------------------------------------------------ 1. governance
 if (policyIssues(HUMAN50_POLICY_V1).length > 0) throw new Error(`POLICY_INVALID: ${policyIssues(HUMAN50_POLICY_V1).join(', ')}`);
-const governance = governLibrary(human);
+const governance = governLibrary(human, undefined, undefined, undefined, V52_ASSESSMENT_REGISTRY);
 const live = liveGovernanceOf(governance);
 const eligibleCount = (list: readonly { state: string }[]) => list.filter(governanceEligible as (d: { state: string }) => boolean).length;
 
@@ -94,7 +96,7 @@ const fromRun = (source: 'HUMAN_50' | 'V5_UNSEEN', candidateId: string, c: RunCa
   const hash = contentHashOf(c.item);
   const sys = systemOfRecord(c.record);
   return {
-    source, candidateId, contentHash: hash, systemId: sys.systemId, systemVersionId: sys.systemId ? STUDYUS_ASSESSMENT_REGISTRY.adapter(sys.componentId ?? '')?.systemVersionId ?? null : null, subject: c.record.subject ?? null, componentId: sys.componentId,
+    source, candidateId, contentHash: hash, systemId: sys.systemId, systemVersionId: sys.systemId ? V52_ASSESSMENT_REGISTRY.adapter(sys.componentId ?? '')?.systemVersionId ?? null : null, subject: c.record.subject ?? null, componentId: sys.componentId,
     // the runs recorded an objective, not a concept: nothing is mapped to a concept here
     conceptId: null, format: c.record.itemType, intendedTier: c.record.intendedDifficulty, itemDifficulty: null, provenance: generatedByRun(c.record), lineage: null, quality: c.quality, humanJudgement, possibleCoreIds: [], duplicateOf: dedupe(candidateId, hash),
   };
@@ -205,7 +207,7 @@ const sections: (SystemBlueprintSection & { profile: string })[] = csv.slice(1).
   return { systemId: col(row, 'family'), configKey: col(row, 'config'), sectionKey: col(row, 'section'), itemBankable, governedSlots: facts.governedSlots, officialItemCount: facts.officialItemCount, blueprintClass: classifyBlueprintSection(facts), classBasis: 'structural facts of BLUEPRINT_GOVERNANCE_INVENTORY.csv', profile: col(row, 'generation_profile') };
 });
 const certifiedAdapters = new Set(governance.adapters.filter(governanceEligible).map((d) => d.objectId));
-const systems = systemCoverage(STUDYUS_ASSESSMENT_REGISTRY, sections, supply, certifiedAdapters, demands, SCOPE, live);
+const systems = systemCoverage(V52_ASSESSMENT_REGISTRY, sections, supply, certifiedAdapters, demands, SCOPE, live);
 const linked = new Set(LIBRARY_BLUEPRINTS.map((b) => b.blueprintId));
 const sectionGaps = sections.filter((s) => s.itemBankable).map((s) => {
   const id = `${s.configKey}/${s.sectionKey}`;
@@ -262,7 +264,7 @@ const final = {
   SYSTEMS: Object.fromEntries(systems.map((s) => [s.systemId, s.readiness])),
   PROVIDER: provider, AUDIT: { policy: PROVISIONAL_AUDIT_POLICY, sampled: audit.length, byStream: audit.reduce<Record<string, number>>((m, a) => { m[a.stream] = (m[a.stream] ?? 0) + 1; return m; }, {}) },
 };
-const coverageOut = { kind: 'QF52_COVERAGE', scope: SCOPE, demandPolicy: DEMAND_POLICY, capacityPolicy: CAPACITY_POLICY, summary: final, capacityByEnvelope: capacityCells, matrix: coverageMatrix(supply, STUDYUS_ASSESSMENT_REGISTRY, SCOPE, live), blueprintDemand: blueprintUnits, systems, sectionGaps, pilotGapPlan: plan };
+const coverageOut = { kind: 'QF52_COVERAGE', scope: SCOPE, demandPolicy: DEMAND_POLICY, capacityPolicy: CAPACITY_POLICY, summary: final, capacityByEnvelope: capacityCells, matrix: coverageMatrix(supply, V52_ASSESSMENT_REGISTRY, SCOPE, live), blueprintDemand: blueprintUnits, systems, sectionGaps, pilotGapPlan: plan };
 const recoveryOut = { kind: 'QF52_INVENTORY_RECOVERY', policyVersion: HUMAN50_POLICY_VERSION, sources: final.RECOVERY.sources, totals, bySource, decisions };
 
 const t = (headRow: string[], rows: unknown[][]): string => [`| ${headRow.join(' | ')} |`, `|${headRow.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.map((c) => String(c).replace(/\|/g, '\\|')).join(' | ')} |`)].join('\n');

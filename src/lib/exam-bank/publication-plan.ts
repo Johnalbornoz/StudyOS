@@ -23,7 +23,8 @@ import type { ConstructCoreRecord } from '@/lib/assessment-instance/construct-co
 import type { CoreApplicabilityRecord } from '@/lib/assessment-instance/core-applicability';
 import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSION_BATCHES, libraryApplicability, PUBLICATION_APPLICABILITY, PUBLICATION_BLUEPRINTS, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
 import { pilotApplicabilityHash } from '@/lib/assessment-instance/pilot/step4b-pilot-slice';
-import { STUDYUS_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
+import { STUDYUS_ASSESSMENT_REGISTRY, V52_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
+import type { AssessmentSystemRegistry } from '@/lib/assessment-instance/assessment-system-registry';
 import { envelopeHashOf, instanceContentHashOf, type RendererEnvelope } from '@/lib/assessment-instance/renderer-envelope';
 import {
   capacitySummary, certifyCell, eligibilityRefusals, envelopeCapacity, EXAM_BANK_ITEM, governanceEligible, governLibrary, HUMAN50_POLICY_HASH, HUMAN50_POLICY_V1, HUMAN50_POLICY_VERSION, libraryCells, liveGovernanceOf,
@@ -119,16 +120,18 @@ export const coreCertificationVersionOf = (state: PlannedObjectCertification['st
 export function buildPublicationPlan(human: HumanDecisionsFile, scope: EligibilityScope = 'PILOT_PREVIEW'): PublicationPlan {
   // The V5.2 plan is computed exactly as it always was (its hash and its counts are the ones its artefacts name);
   // entries adopted later are an additive extension with a batch, inputs and hash of their own.
-  const base = planOfLibrary(human, scope, LIBRARY, PUBLICATION_BATCH_ID, LIBRARY_BLUEPRINTS, LIBRARY_APPLICABILITY);
+  // It is governed against the registry as the V5.2 run certified against it (V52_ASSESSMENT_REGISTRY): adapters
+  // re-governed later (Cambridge 9709 P1, 2026-10-14) are not inputs of this archived batch.
+  const base = planOfLibrary(human, scope, LIBRARY, PUBLICATION_BATCH_ID, LIBRARY_BLUEPRINTS, LIBRARY_APPLICABILITY, V52_ASSESSMENT_REGISTRY);
   // the extension carries every classification (the V5.2 ones it places items in, and the pilot ones it adds) and the
   // register of the pilot-governed identities
   return LIBRARY_EXTENSION_BATCHES.length ? { ...base, extensions: LIBRARY_EXTENSION_BATCHES.map((b) => planOfLibrary(human, scope, b.entries, b.batchId, PUBLICATION_BLUEPRINTS, PUBLICATION_APPLICABILITY)) } : base;
 }
 
-function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, library: readonly LibraryEntry[], batchId: string, blueprintsIn: readonly LibraryBlueprint[], register: typeof LIBRARY_APPLICABILITY): PublicationPlan {
+function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, library: readonly LibraryEntry[], batchId: string, blueprintsIn: readonly LibraryBlueprint[], register: typeof LIBRARY_APPLICABILITY, registry: AssessmentSystemRegistry = STUDYUS_ASSESSMENT_REGISTRY): PublicationPlan {
   const preflight: string[] = [];
   const blocked: BlockedRow[] = [];
-  const registry = STUDYUS_ASSESSMENT_REGISTRY;
+  // the registry the batch is governed against (live, or the V5.2 one for the archived batch)
   for (const issue of policyIssues(HUMAN50_POLICY_V1)) preflight.push(`POLICY_INVALID:${issue}`);
   if (sha256OfCanonicalJson(HUMAN50_POLICY_V1) !== HUMAN50_POLICY_HASH) preflight.push('POLICY_HASH_IS_NOT_THE_HASH_OF_THE_POLICY');
   if (!(HUMAN50_POLICY_V1.mayGrantScopes as readonly string[]).includes(scope)) preflight.push(`POLICY_DOES_NOT_GRANT_SCOPE:${scope}`);
@@ -150,7 +153,7 @@ function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, libra
   const humanRecords = { records: records.map((r) => r.record), qualifications: [human.qualification] };
 
   // ---- governance of every object, as the library decides it
-  const governance: LibraryGovernance = governLibrary(humanRecords, library, blueprintsIn, register);
+  const governance: LibraryGovernance = governLibrary(humanRecords, library, blueprintsIn, register, registry);
   const live: LiveGovernance = liveGovernanceOf(governance);
   /** The recorded decision a HUMAN_CERTIFIED object rests on: an approval of exactly this object at exactly this content. */
   const humanDecisionFor = (d: Pick<GovernanceDecision, 'objectType' | 'objectId' | 'objectVersion' | 'contentHash'>): PlannedHumanDecision | null =>

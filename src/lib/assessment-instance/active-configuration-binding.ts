@@ -15,7 +15,7 @@
  * The EA-1 profile file itself is not edited: earlier recorded runs hash it. The rebound pair is what V5.1 registers.
  */
 import type { AssessmentComponentProfile, AssessmentSystemProfile } from '@/lib/assessment-adaptation/assessment-system-profile';
-import { PISA_MATHEMATICS_COMPONENT, PISA_SYSTEM_PROFILE } from '@/lib/assessment-adaptation/system-profiles';
+import { CAMBRIDGE_9709_P1_COMPONENT, CAMBRIDGE_SYSTEM_PROFILE, PISA_MATHEMATICS_COMPONENT, PISA_SYSTEM_PROFILE } from '@/lib/assessment-adaptation/system-profiles';
 import { PISA_2022_V2, RETIRED_V2_CONFIG_KEYS } from '@/lib/exam-core/verticals/v2/index';
 
 /** How a retired configuration is named where a profile cites it: its key, its file / framework stem, its constant. */
@@ -103,5 +103,36 @@ export function pisaMathematicsBoundToActiveConfiguration(): { system: Assessmen
   return { system, component };
 }
 
-/** Component id -> the pair bound to the active configuration, for components whose EA-1 profile cites a retired one. */
-export const ACTIVE_CONFIGURATION_REBINDINGS: Readonly<Record<string, () => { system: AssessmentSystemProfile; component: AssessmentComponentProfile }>> = { [PISA_MATHEMATICS_COMPONENT.componentId]: pisaMathematicsBoundToActiveConfiguration };
+// ------------------------------------------------------------------------------- Cambridge 9709 Pure Mathematics 1
+/**
+ * The command words of the 9709 syllabus for 2026 and 2027, exactly as its command-word table lists them (lower case):
+ * section 4 "Details of the assessment" > "Command words", p. 42 of the v4 syllabus (source `cie-9709-syllabus-2026-2027`,
+ * src/lib/exam-core/catalog/sources.ts). Provenance, retrieval and document digest:
+ * docs/exams/sources/cambridge-9709/CIE_9709_2026_2027_SOURCE_EXTRACT.json. Read from the official document; never
+ * inferred from words that appear in questions ("find" and "write down" are not in the table).
+ */
+export const CIE_9709_COMMAND_WORDS = ['calculate', 'describe', 'determine', 'evaluate', 'explain', 'identify', 'justify', 'show that', 'sketch', 'state', 'verify'] as const;
+export const CIE_9709_COMMAND_WORDS_LOCATOR = 'syllabus 9709 (2026-2027, v4) > 4 Details of the assessment > Command words (p. 42)';
+export const CAMBRIDGE_REBOUND_SYSTEM_VERSION = '0.3.1-illustrative-cie9709-command-words';
+export const CAMBRIDGE_REBOUND_COMPONENT_VERSION = '0.4.1-illustrative-cie9709-command-words';
+/**
+ * Cambridge 9709 P1 bound to the governed syllabus source. The EA-1 profile recorded the IGCSE 0580 terms as a
+ * StudyUs working assumption (so COMMAND_TERMS_SOURCED failed); this pair records the 9709 syllabus's OWN command-word
+ * table as an OFFICIAL rule. Every other rule is the EA-1 profile's, unchanged (StudyUs policy stays policy).
+ * The EA-1 profile file itself is not edited: earlier recorded runs hash it.
+ */
+export function cambridge9709P1BoundToGovernedSyllabus(): { system: AssessmentSystemProfile; component: AssessmentComponentProfile } {
+  const sources = [{ sourceKey: 'cie-9709-syllabus-2026-2027', locator: CIE_9709_COMMAND_WORDS_LOCATOR }];
+  const system = {
+    ...CAMBRIDGE_SYSTEM_PROFILE, version: CAMBRIDGE_REBOUND_SYSTEM_VERSION,
+    rules: { ...CAMBRIDGE_SYSTEM_PROFILE.rules, commandTerms: { ruleId: CAMBRIDGE_SYSTEM_PROFILE.rules.commandTerms.ruleId, value: { use: 'CONTROLLED_VOCABULARY' as const, terms: [...CIE_9709_COMMAND_WORDS] }, authority: { kind: 'OFFICIAL' as const, sources } } },
+  } as AssessmentSystemProfile;
+  const component = { ...CAMBRIDGE_9709_P1_COMPONENT, version: CAMBRIDGE_REBOUND_COMPONENT_VERSION } as AssessmentComponentProfile;
+  return { system, component };
+}
+
+/** Component id -> the pair V5.1 registers instead of the EA-1 pair: bound to the active configuration (PISA) or to the governed official source (Cambridge 9709 P1). */
+export const ACTIVE_CONFIGURATION_REBINDINGS: Readonly<Record<string, () => { system: AssessmentSystemProfile; component: AssessmentComponentProfile }>> = {
+  [PISA_MATHEMATICS_COMPONENT.componentId]: pisaMathematicsBoundToActiveConfiguration,
+  [CAMBRIDGE_9709_P1_COMPONENT.componentId]: cambridge9709P1BoundToGovernedSyllabus,
+};

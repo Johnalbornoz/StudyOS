@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { gradeMath } from '@/lib/exam-core/math/math-engine';
 import { bandOf } from '@/lib/exam-core/question-bank/quality';
+import { V52_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
 import { adapterConflicts, evaluateResponse, STUDYUS_ASSESSMENT_REGISTRY, type CertificationRecord, type ReviewerQualification } from '@/lib/assessment-instance';
 import { PARAMETRIC_CONSTRUCTS } from '@/lib/assessment-instance/library/constructs';
 import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINT_PAA, LIBRARY_BLUEPRINTS, renderLibraryInstance, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
@@ -220,11 +221,15 @@ describe('V5.2 / object governance -- cores, adapters, blueprints and envelopes 
     const ib = governAdapter('IB.MATH_AA_HL.P1', STUDYUS_ASSESSMENT_REGISTRY, conflicts);
     expect(ib.state).toBe('AUTOMATED_CERTIFIED_PILOT');
     expect(ib.checks.find((c) => c.code === 'COMMAND_TERMS_SOURCED')!.detail).toBe('6 governed terms');
-    expect(governAdapter('CAMBRIDGE.9709.P1', STUDYUS_ASSESSMENT_REGISTRY, conflicts)).toMatchObject({ state: 'REVIEW_REQUIRED', failed: ['COMMAND_TERMS_SOURCED'] });
+    // as the V5.2 run certified it: the 0580 terms reused as an assumption -- unsourced
+    expect(governAdapter('CAMBRIDGE.9709.P1', V52_ASSESSMENT_REGISTRY, conflicts)).toMatchObject({ state: 'REVIEW_REQUIRED', failed: ['COMMAND_TERMS_SOURCED'] });
+    // live (2026-10-14): bound to the 9709 syllabus's own command-word table -- sourced, automated pilot
+    const cie = governAdapter('CAMBRIDGE.9709.P1', STUDYUS_ASSESSMENT_REGISTRY, conflicts);
+    expect({ state: cie.state, failed: cie.failed, terms: cie.checks.find((c) => c.code === 'COMMAND_TERMS_SOURCED')!.detail }).toEqual({ state: 'AUTOMATED_CERTIFIED_PILOT', failed: [], terms: '11 governed terms' });
     const derived = governance.adapters.filter((d) => d.failed.includes('GOVERNED_RULE_PROFILE'));
     expect(derived).toHaveLength(49); for (const d of derived) expect(d.state).toBe('REVIEW_REQUIRED');
     expect(governAdapter('NOPE.X', STUDYUS_ASSESSMENT_REGISTRY, conflicts).state).toBe('REVIEW_REQUIRED');
-    expect(governance.adapters.filter(governanceEligible).map((d) => d.objectId).sort()).toEqual(['IB.MATH_AA_HL.P1', 'IB.MATH_AA_HL.P2', 'ICFES.SABER11_MATEMATICAS', 'PAA.MATEMATICAS', 'PISA.MATHEMATICS']);
+    expect(governance.adapters.filter(governanceEligible).map((d) => d.objectId).sort()).toEqual(['CAMBRIDGE.9709.P1', 'IB.MATH_AA_HL.P1', 'IB.MATH_AA_HL.P2', 'ICFES.SABER11_MATEMATICAS', 'PAA.MATEMATICAS', 'PISA.MATHEMATICS']);
   });
   it('a blueprint is classified by structure; a demonstration, an unlinked bucket or a false FULL is sent to review', () => {
     expect(governBlueprint(LIBRARY_BLUEPRINT_PAA, LIBRARY_APPLICABILITY)).toMatchObject({ state: 'AUTOMATED_CERTIFIED_PILOT' });

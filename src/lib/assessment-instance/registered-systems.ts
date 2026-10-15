@@ -43,11 +43,11 @@ export const GENERATION_PROFILE_COMPONENT: Readonly<Record<string, string>> = {
 /** The one version registered for a system that has no EA-1 profile of its own. */
 const UNPROFILED_VERSION = 'repository-recorded';
 
-function build(): AssessmentSystemRegistry {
+function build(rebindings: typeof ACTIVE_CONFIGURATION_REBINDINGS = ACTIVE_CONFIGURATION_REBINDINGS): AssessmentSystemRegistry {
   // an adapter bound to a retired configuration cannot be registered here
   const registry = createAssessmentSystemRegistry({ retiredConfigurationsOf: retiredConfigurationsReferencedBy });
   // the pair V5.1 registers for a component: the EA-1 profile, or its rebinding where that profile cites a retired configuration
-  const pairOf = (c: (typeof EA1_COMPONENT_PROFILES)[number]) => ACTIVE_CONFIGURATION_REBINDINGS[c.componentId]?.() ?? (() => { const system = EA1_SYSTEM_PROFILES.find((p) => p.profileId === c.systemProfileId); return system ? { system, component: c } : null; })();
+  const pairOf = (c: (typeof EA1_COMPONENT_PROFILES)[number]) => rebindings[c.componentId]?.() ?? (() => { const system = EA1_SYSTEM_PROFILES.find((p) => p.profileId === c.systemProfileId); return system ? { system, component: c } : null; })();
   const must = <T>(r: { ok: true; value: T } | { ok: false; code: string; detail: string }): T => { if (!r.ok) throw new Error(`REGISTERED_SYSTEMS_INVALID: ${r.code} ${r.detail}`); return r.value; };
   const provenance = { basis: 'STUDYUS_POLICY' as const, sources: ['src/lib/assessment-adaptation/system-profiles.ts', 'src/lib/assessment-instance/active-configuration-binding.ts'], recordedBy: RECORDED_BY };
   const versionOf = new Map<string, string>();
@@ -77,6 +77,11 @@ function build(): AssessmentSystemRegistry {
 
 /** The registry of the systems StudyUs ships. Read-only use: a caller that needs another system builds its own registry. */
 export const STUDYUS_ASSESSMENT_REGISTRY: AssessmentSystemRegistry = build();
+/**
+ * The registry AS THE QF V5.2 RUN CERTIFIED AGAINST IT: every rebinding except the Cambridge 9709 P1 one made after it
+ * (2026-10-14). Read only by the archived V5.2 run and its publication batch (qf52-batch-1), whose inputs are history.
+ */
+export const V52_ASSESSMENT_REGISTRY: AssessmentSystemRegistry = build(Object.fromEntries(Object.entries(ACTIVE_CONFIGURATION_REBINDINGS).filter(([componentId]) => componentId !== 'CAMBRIDGE.9709.P1')));
 
 /** Every adapter StudyUs has, each defined once and each bound to a registered system version. */
 export const ASSESSMENT_ADAPTERS: readonly AssessmentAdapter[] = Object.freeze([...STUDYUS_ASSESSMENT_REGISTRY.adapters()]);

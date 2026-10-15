@@ -9,6 +9,7 @@
 import { sha256OfCanonicalJson } from '@/lib/assessment-adaptation/canonical-hash';
 import { bandOf } from '@/lib/exam-core/question-bank/quality';
 import { adapterConflicts, STUDYUS_ASSESSMENT_REGISTRY } from '../registered-systems';
+import type { AssessmentSystemRegistry } from '../assessment-system-registry';
 import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, libraryBucketOf, renderLibraryInstance, type LibraryBlueprint, type LibraryEntry, type LibraryRender, type LibraryTarget } from '../library/catalogue';
 import { PLANNING_BANDS, type PlanningBand } from '../library/parametric';
 import { pilotBlueprintHash, PILOT_BLUEPRINTS } from '../pilot/step4b-pilot-slice';
@@ -29,8 +30,7 @@ function determinismOf(entry: LibraryEntry): boolean {
 const humanHashOf = (b: LibraryBlueprint): string | undefined => { const pilot = PILOT_BLUEPRINTS.find((p) => p.blueprintId === b.blueprintId); return pilot && b.classificationVersion === 'step4b-pilot-1' ? pilotBlueprintHash(pilot) : undefined; };
 
 /** Every governed object of the library and every registered adapter, decided. `human` is the recorded approvals, when there are any. */
-export function governLibrary(human: HumanRecords = NO_HUMAN, library: readonly LibraryEntry[] = LIBRARY, blueprints: readonly LibraryBlueprint[] = LIBRARY_BLUEPRINTS, register: typeof LIBRARY_APPLICABILITY = LIBRARY_APPLICABILITY): LibraryGovernance {
-  const registry = STUDYUS_ASSESSMENT_REGISTRY;
+export function governLibrary(human: HumanRecords = NO_HUMAN, library: readonly LibraryEntry[] = LIBRARY, blueprints: readonly LibraryBlueprint[] = LIBRARY_BLUEPRINTS, register: typeof LIBRARY_APPLICABILITY = LIBRARY_APPLICABILITY, registry: AssessmentSystemRegistry = STUDYUS_ASSESSMENT_REGISTRY): LibraryGovernance {
   const conflicts = adapterConflicts();
   return {
     cores: library.map((e) => governCore(e, register, human)),
