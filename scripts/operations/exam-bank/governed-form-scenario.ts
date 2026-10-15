@@ -50,7 +50,7 @@ async function main(): Promise<number> {
   const n = async (sql: string, p: unknown[] = []) => Number((await one(sql, p))?.n ?? 0);
 
   const exam = await one(`SELECT d.id AS definition_id, v.id AS version_id FROM exam_definitions d JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED' WHERE d.config_key = $1`, [CONFIG]);
-  check('C1  the configuration is published in DEV', !!exam, CONFIG);
+  check(`C1  the configuration is published in ${TARGETS[fp]}`, !!exam, CONFIG);
   if (!exam) { await db.end(); return 1; }
   const comp = await one(`SELECT id FROM assessment_components WHERE exam_version_id = $1 AND section_key = $2`, [exam.version_id, SECTION]);
   const targets = (await db.query(`SELECT lo.id, lo.code, max(COALESCE(t.target_item_count, 1))::int AS required FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id WHERE t.assessment_component_id = $1 GROUP BY lo.id, lo.code ORDER BY lo.code`, [comp.id])).rows;

@@ -47,6 +47,10 @@ async function main(): Promise<void> {
     const concepts = (await db.query(`SELECT DISTINCT ic.canonical_concept_id AS id FROM question_bank_item_concepts ic JOIN question_bank_items qi ON qi.current_version_id = ic.approved_item_id WHERE qi.exam_version_id = $1 AND ic.role = 'PRIMARY'`, [paa.version_id])).rows as { id: string }[];
     for (const c of concepts) await enrollCanonicalConcept(S, c.id, { type: 'SELF_SELECTED', actorUserId: null }, null).catch(() => undefined);
     const profileId = await ensureExamProfile(S, paa.definition_id, paa.version_id);
+    // Evidence separation (EXAM_EVIDENCE_KNOWLEDGE_STATE): SEPARATED (default) -> exam evidence is Exam Readiness evidence;
+    // LEGACY -> the previous Learning evidence rows.
+    const SEPARATED = (await import('@/lib/exam-readiness/exam-readiness-evidence.service')).examEvidenceKnowledgeStateMode() === 'SEPARATED';
+    const readinessOf = async (examAttemptId: string) => (await db.query(`SELECT evidence_class, system_id, status FROM exam_readiness_evidence WHERE student_id = $1 AND exam_attempt_id = $2`, [S, examAttemptId])).rows as any[];
     const evidenceOf = async (examAttemptId: string) => (await db.query(`SELECT metadata FROM learning_evidence WHERE student_id = $1 AND (metadata->'assessment'->>'examAttemptId' = $2 OR metadata->'context'->>'examAttemptId' = $2 OR metadata::text LIKE '%' || $2 || '%')`, [S, examAttemptId])).rows as any[];
 
     const drive = async (simId: string, wrongEvery = 0) => {
@@ -100,7 +104,9 @@ async function main(): Promise<void> {
       if (section !== 'ingles') check(`${section} P4  every item is read against its frozen stimulus`, run.stimuli.every((k) => !!k && /^stim\.paa\./.test(k)), `${new Set(run.stimuli).size} stimuli`);
       else check('ingles P4  reading items carry their stimulus; language and writing items are self-contained', run.stimuli.filter(Boolean).length === 3, `${run.stimuli.filter(Boolean).length} with a stimulus`);
       const ev = await evidenceOf(examAttempt);
-      check(`${section} P5  evidence is EXAM_ASSESSMENT of the standardized exam, one per response`, ev.length === run.delivered && ev.every((e) => e.metadata?.assessment?.supply?.evidenceClass === 'EXAM_ASSESSMENT' && e.metadata?.assessment?.supply?.family === 'STANDARDIZED_EXAM'), `${ev.length} rows`);
+      const rd = await readinessOf(examAttempt);
+      if (SEPARATED) check(`${section} P5  evidence is EXAM_ASSESSMENT Exam Readiness evidence, one per response, and NOT Learning evidence`, rd.length === run.delivered && rd.every((e) => e.evidence_class === 'EXAM_ASSESSMENT') && ev.length === 0, `${rd.length} readiness rows, ${ev.length} learning rows`);
+      else check(`${section} P5  evidence is EXAM_ASSESSMENT of the standardized exam, one per response`, ev.length === run.delivered && ev.every((e) => e.metadata?.assessment?.supply?.evidenceClass === 'EXAM_ASSESSMENT' && e.metadata?.assessment?.supply?.family === 'STANDARDIZED_EXAM'), `${ev.length} rows`);
       check(`${section} P6  exposure is recorded`, (await n(`SELECT count(DISTINCT approved_item_id)::int AS n FROM exam_item_usage WHERE student_id = $1 AND approved_item_id = ANY($2::uuid[])`, [S, run.ids])) === run.delivered);
       used.push(...run.ids);
     }
@@ -141,7 +147,9 @@ async function main(): Promise<void> {
     const mExam = (await one(`SELECT exam_attempt_id FROM simulation_attempts WHERE id = $1`, [mSim])).exam_attempt_id as string;
     const mScore = await one(`SELECT count(*)::int AS n, sum(score)::float AS earned, sum(max_score)::float AS available FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [mExam]);
     const mEv = await evidenceOf(mExam);
-    check('M6  scored 36 of 36 by option identity / numeric key; evidence EXAM_ASSESSMENT', Number(mScore.n) === 36 && Number(mScore.earned) === 36 && mEv.length > 0 && mEv.every((e) => e.metadata?.assessment?.supply?.evidenceClass === 'EXAM_ASSESSMENT'), `${mScore.earned}/${mScore.available}; ${mEv.length} evidence rows`);
+    const mRd = await readinessOf(mExam);
+    if (SEPARATED) check('M6  scored 36 of 36 by option identity / numeric key; evidence EXAM_ASSESSMENT Exam Readiness evidence, not Learning evidence', Number(mScore.n) === 36 && Number(mScore.earned) === 36 && mRd.length === 36 && mEv.length === 0, `${mScore.earned}/${mScore.available}; ${mRd.length} readiness rows, ${mEv.length} learning rows`);
+    else check('M6  scored 36 of 36 by option identity / numeric key; evidence EXAM_ASSESSMENT', Number(mScore.n) === 36 && Number(mScore.earned) === 36 && mEv.length > 0 && mEv.every((e) => e.metadata?.assessment?.supply?.evidenceClass === 'EXAM_ASSESSMENT'), `${mScore.earned}/${mScore.available}; ${mEv.length} evidence rows`);
     check('M7  exposure of the 36 is recorded', (await n(`SELECT count(DISTINCT approved_item_id)::int AS n FROM exam_item_usage WHERE student_id = $1 AND approved_item_id = ANY($2::uuid[])`, [S, mRun.ids])) === 36);
     check('X1  no provider was asked for anything during the six attempts', (await n(`SELECT count(*)::int AS n FROM ai_execution_events WHERE student_id = $1`, [S])) === 0);
     check('X2  a deployment that is not a pilot delivers none of the pilot-certified supply', (await n(`SELECT count(*)::int AS n FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id WHERE qi.lineage_class = 'PILOT_CERTIFIED' AND ${(await import('@/lib/exam-bank/delivery-scope')).certifiedSupplySql('ai', 'PRODUCTION')}`)) === 0);

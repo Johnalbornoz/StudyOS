@@ -1,0 +1,303 @@
+{
+  "kind": "EXAM_READINESS_REPORT",
+  "database": "PILOT_CANDIDATE_20261015",
+  "engineVersion": "exam-bank-readiness-1",
+  "generatedAt": "2026-10-15T14:41:14.424Z",
+  "configs": {
+    "v2.paa": {
+      "examVersionId": "4babb748-5943-409b-9fd4-0c967bcb503c",
+      "family": "PAA",
+      "sections": [
+        "lectura",
+        "redaccion",
+        "matematicas",
+        "ingles"
+      ],
+      "cells": 20,
+      "versionsRead": 410,
+      "modes": {
+        "practice:lectura": {
+          "status": "READY",
+          "coveredPositions": 10,
+          "requiredPositions": 10,
+          "certifiedItemCount": 32,
+          "runtimeEligibleItemCount": 32,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "practice:redaccion": {
+          "status": "READY",
+          "coveredPositions": 6,
+          "requiredPositions": 6,
+          "certifiedItemCount": 15,
+          "runtimeEligibleItemCount": 15,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "practice:matematicas": {
+          "status": "READY",
+          "coveredPositions": 12,
+          "requiredPositions": 12,
+          "certifiedItemCount": 296,
+          "runtimeEligibleItemCount": 296,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "practice:ingles": {
+          "status": "READY",
+          "coveredPositions": 8,
+          "requiredPositions": 8,
+          "certifiedItemCount": 20,
+          "runtimeEligibleItemCount": 20,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "diagnostic": {
+          "status": "READY",
+          "coveredPositions": 36,
+          "requiredPositions": 36,
+          "certifiedItemCount": 363,
+          "runtimeEligibleItemCount": 363,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "reducedMock": {
+          "status": "READY",
+          "coveredPositions": 36,
+          "requiredPositions": 36,
+          "certifiedItemCount": 363,
+          "runtimeEligibleItemCount": 363,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "challenge": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 36,
+          "certifiedItemCount": 363,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "CALIBRATION_REQUIRED"
+          ],
+          "missingBuckets": [
+            "lectura|paa.lect.evidencia|*|*-*|*",
+            "lectura|paa.lect.explicitas|*|*-*|*",
+            "lectura|paa.lect.graficos|*|*-*|*",
+            "lectura|paa.lect.inferencia|*|*-*|*",
+            "lectura|paa.lect.literario|*|*-*|*",
+            "lectura|paa.lect.vocabulario|*|*-*|*",
+            "redaccion|paa.red.adicion|*|*-*|*",
+            "redaccion|paa.red.cohesion|*|*-*|*",
+            "redaccion|paa.red.elision|*|*-*|*",
+            "redaccion|paa.red.generalizacion|*|*-*|*",
+            "redaccion|paa.red.integracion|*|*-*|*",
+            "redaccion|paa.red.particularizacion|*|*-*|*",
+            "matematicas|paa.mat.algebra|*|*-*|*",
+            "matematicas|paa.mat.aritmetica|*|*-*|*",
+            "matematicas|paa.mat.datos|*|*-*|*",
+            "matematicas|paa.mat.geometria|*|*-*|*",
+            "matematicas|paa.mat.probabilidad|*|*-*|*",
+            "ingles|paa.ing.lectura|*|*-*|*",
+            "ingles|paa.ing.lenguaje|*|*-*|*",
+            "ingles|paa.ing.redaccion|*|*-*|*"
+          ]
+        }
+      }
+    },
+    "v2.cambridge.9709-as": {
+      "examVersionId": "b04b12ec-88af-4a7a-b3d2-744743cea26b",
+      "family": "CAMBRIDGE",
+      "sections": [
+        "p1"
+      ],
+      "cells": 8,
+      "versionsRead": 237,
+      "modes": {
+        "practice:p1": {
+          "status": "READY",
+          "coveredPositions": 8,
+          "requiredPositions": 8,
+          "certifiedItemCount": 237,
+          "runtimeEligibleItemCount": 237,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "diagnostic": {
+          "status": "READY",
+          "coveredPositions": 8,
+          "requiredPositions": 8,
+          "certifiedItemCount": 237,
+          "runtimeEligibleItemCount": 237,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "reducedMock": {
+          "status": "READY",
+          "coveredPositions": 8,
+          "requiredPositions": 8,
+          "certifiedItemCount": 237,
+          "runtimeEligibleItemCount": 237,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "challenge": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 8,
+          "certifiedItemCount": 237,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "CALIBRATION_REQUIRED"
+          ],
+          "missingBuckets": [
+            "p1|cie.9709.p1.circular-measure|*|*-*|calculate",
+            "p1|cie.9709.p1.coordinate-geometry|*|*-*|calculate",
+            "p1|cie.9709.p1.differentiation|*|*-*|calculate",
+            "p1|cie.9709.p1.functions|*|*-*|determine",
+            "p1|cie.9709.p1.integration|*|*-*|evaluate",
+            "p1|cie.9709.p1.quadratics|*|*-*|determine",
+            "p1|cie.9709.p1.series|*|*-*|calculate",
+            "p1|cie.9709.p1.trigonometry|*|*-*|determine"
+          ]
+        }
+      }
+    },
+    "v2.ib.math-aa-hl": {
+      "examVersionId": "8108c3c0-4f33-4030-810c-05586018923e",
+      "family": "IB",
+      "sections": [
+        "p1",
+        "p2",
+        "p3"
+      ],
+      "cells": 8,
+      "versionsRead": 259,
+      "modes": {
+        "practice:p1": {
+          "status": "PARTIAL",
+          "coveredPositions": 4,
+          "requiredPositions": 5,
+          "certifiedItemCount": 181,
+          "runtimeEligibleItemCount": 181,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE"
+          ],
+          "missingBuckets": [
+            "p1|aahl.p1.extended|*|*-*|show that"
+          ]
+        },
+        "practice:p2": {
+          "status": "PARTIAL",
+          "coveredPositions": 2,
+          "requiredPositions": 4,
+          "certifiedItemCount": 60,
+          "runtimeEligibleItemCount": 60,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE"
+          ],
+          "missingBuckets": [
+            "p2|aahl.p2.extended|*|*-*|find",
+            "p2|aahl.p2.trigonometry|*|*-*|find"
+          ]
+        },
+        "practice:p3": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 1,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "p3|aahl.p3.investigation|*|*-*|show that"
+          ]
+        },
+        "diagnostic": {
+          "status": "PARTIAL",
+          "coveredPositions": 6,
+          "requiredPositions": 10,
+          "certifiedItemCount": 241,
+          "runtimeEligibleItemCount": 241,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE"
+          ],
+          "missingBuckets": [
+            "p1|aahl.p1.extended|*|*-*|show that",
+            "p2|aahl.p2.extended|*|*-*|find",
+            "p2|aahl.p2.trigonometry|*|*-*|find",
+            "p3|aahl.p3.investigation|*|*-*|show that"
+          ]
+        },
+        "reducedMock": {
+          "status": "PARTIAL",
+          "coveredPositions": 6,
+          "requiredPositions": 10,
+          "certifiedItemCount": 241,
+          "runtimeEligibleItemCount": 241,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE"
+          ],
+          "missingBuckets": [
+            "p1|aahl.p1.extended|*|*-*|show that",
+            "p2|aahl.p2.extended|*|*-*|find",
+            "p2|aahl.p2.trigonometry|*|*-*|find",
+            "p3|aahl.p3.investigation|*|*-*|show that"
+          ]
+        },
+        "challenge": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 10,
+          "certifiedItemCount": 241,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "CALIBRATION_REQUIRED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE"
+          ],
+          "missingBuckets": [
+            "p1|aahl.p1.algebra|*|*-*|solve",
+            "p1|aahl.p1.calculus|*|*-*|find",
+            "p1|aahl.p1.extended|*|*-*|show that",
+            "p1|aahl.p1.functions|*|*-*|find",
+            "p2|aahl.p2.extended|*|*-*|find",
+            "p2|aahl.p2.statistics|*|*-*|find",
+            "p2|aahl.p2.trigonometry|*|*-*|find",
+            "p3|aahl.p3.investigation|*|*-*|show that"
+          ]
+        }
+      }
+    }
+  }
+}
