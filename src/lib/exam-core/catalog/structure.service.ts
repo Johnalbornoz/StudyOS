@@ -199,12 +199,31 @@ function localized(labels: Record<string, string> | null, label: string, languag
   return (labels && labels[language]) || label;
 }
 
+
+/**
+ * R-1 (single authority): under ENFORCE the Student catalogue's readiness -- each node's own and the aggregate of its
+ * descendants -- comes from the SAME overlaid rows the preparation and the level resolver read (bank health, then
+ * the Exam Bank Readiness Engine). null = not applicable (SHADOW, or not the Student view): the persisted SQL view stands.
+ */
+async function overlaidFamily(family: string | null, audience: ContentAudience): Promise<{ byId: Map<string, any>; descendants: (id: string) => any[] } | null> {
+  if (audience !== 'STUDENT' || readinessMode() !== 'ENFORCE') return null;
+  const r = await db.query(`SELECT id, parent_id, family, node_key, node_type, label, labels, selectable, metadata, exam_version_id, assessment_component_id FROM assessment_structure_nodes WHERE status = 'ACTIVE' ${family ? 'AND family = $1' : ''}`, family ? [family] : []);
+  const rows = (await applyBankReadinessOverlay(r.rows as any[])) as any[];
+  const byId = new Map(rows.map((x) => [x.id as string, x]));
+  const children = new Map<string, string[]>();
+  for (const x of rows) if (x.parent_id) children.set(x.parent_id, [...(children.get(x.parent_id) ?? []), x.id]);
+  const descendants = (id: string): any[] => { const out: any[] = []; const stack = [...(children.get(id) ?? [])]; while (stack.length) { const c = stack.pop()!; out.push(byId.get(c)); stack.push(...(children.get(c) ?? [])); } return out.filter(Boolean); };
+  return { byId, descendants };
+}
+
 export async function listStructureFamilies(audience: ContentAudience = 'STUDENT'): Promise<Array<{ family: string; roots: number; available: boolean }>> {
   const r = await db.query(
     `SELECT n.family, count(*) FILTER (WHERE n.parent_id IS NULL)::int AS roots, bool_or(${selectableSql('n', audience)}) AS available
        FROM assessment_structure_nodes n WHERE n.status = 'ACTIVE' GROUP BY n.family ORDER BY n.family`
   );
-  return r.rows.map((x: any) => ({ family: x.family, roots: x.roots, available: !!x.available }));
+  const ov = await overlaidFamily(null, audience);
+  // R-1: a family offers activities when one of its nodes is selectable as the engine allows (ENFORCE, Student view)
+  return r.rows.map((x: any) => ({ family: x.family, roots: x.roots, available: ov ? [...ov.byId.values()].some((n) => n.family === x.family && n.selectable) : !!x.available }));
 }
 
 export async function listStructureChildren(params: { family: string; parentKey: string | null; language: string; /** In-process scenarios only: the engine view. */ audience?: ContentAudience }): Promise<StructureNodeView[]> {
@@ -234,9 +253,14 @@ export async function listStructureChildren(params: { family: string; parentKey:
       ORDER BY n.order_index, n.label`,
     [params.family, params.parentKey]
   );
-  return r.rows.map((row: any) => {
+  const ov = await overlaidFamily(params.family, audience);
+  return r.rows.map((row0: any) => {
+    // R-1: under ENFORCE (Student view) the node and its descendants read the overlaid rows (bank health + engine)
+    const o = ov?.byId.get(row0.id);
+    const desc = o ? ov!.descendants(row0.id) : null;
+    const row = o ? { ...row0, selectable: o.selectable, metadata: o.metadata, descendant_selectable: desc!.some((d) => d.selectable), descendant_states: desc!.map((d) => d.metadata?.readiness?.state).filter(Boolean) } : row0;
     // QB-1: the audience's readiness view (a pre-QB-1 row is never a Student truth).
-    const view = readinessFor(row, audience);
+    const view = o ? { selectable: row.selectable, readiness: row.metadata?.readiness } : readinessFor(row, audience);
     const n = { ...row, selectable: view.selectable, metadata: { ...row.metadata, readiness: view.readiness } };
     const bind = n.metadata?.bind ?? null;
     // The exam level is the bound node above the components (IB HL, Cambridge Extended, PISA Mathematics...).

@@ -13,7 +13,7 @@
 import { ASSESSMENT_APPLICABILITY_CONTRACT_VERSION, type AssessmentApplicabilityRecord } from '@/lib/assessment-adaptation/assessment-applicability';
 import { MATHEMATICS_ADAPTATION_POLICY } from '@/lib/assessment-adaptation/discipline-policy';
 import { MATH_POC_APPLICABILITY } from '@/lib/assessment-adaptation/math-poc-applicability';
-import { IB_AA_HL_APPLICABILITY, IB_AA_HL_APPLICABILITY_2026_10_14 } from '@/lib/curriculum/ib/ib-aa-hl-concept-correspondence';
+import { IB_AA_HL_APPLICABILITY, IB_AA_HL_APPLICABILITY_2026_10_14, IB_AA_HL_APPLICABILITY_2026_10_15_ALL } from '@/lib/curriculum/ib/ib-aa-hl-concept-correspondence';
 import { mathPocFamilyOf } from '@/lib/exam-core/question-bank/task-families/math-poc-families';
 import { composeAssessmentSpecification, type BlueprintBucketRef } from '../assessment-specification';
 import { classifyBlueprintSection, type BlueprintClass, type BlueprintSectionFacts } from '../blueprint-classification';
@@ -33,6 +33,7 @@ import { CIE_9709_P1_ENTRIES } from './cie-9709-p1.adoption';
 import { CIE_9709_P1_SECTIONS, withCie9709P1Applicability } from '@/lib/curriculum/cambridge/cie-9709-p1-correspondence';
 import { CF_IB_AAHL_01_ADOPTED } from './cf-ib-aahl-01.adoption';
 import { IB_AAHL_EXT_ENTRIES } from './ib-aahl-ext.adoption';
+import { IB_AAHL_P3_ENTRIES } from './ib-aahl-p3.adoption';
 import { applicabilityThresholdFor } from '../applicability-threshold';
 import { PISA_MATH_APPLICABILITY, PISA_MATH_ENTRIES } from './pisa-math.adoption';
 import { AICE_9709_P1_ENTRIES } from './aice-9709-p1.adoption';
@@ -222,7 +223,9 @@ export const LIBRARY_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = [
 // + Saber 11 (2026-10-15): the GOVERNED_PILOT content-category correspondences (UNREVIEWED; read under the Saber PILOT threshold only)
 export const PUBLICATION_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY, ...PISA_MATH_APPLICABILITY, ...SABER_APPLICABILITY]);
 /** The publication register AS IT WAS when TB-IB-AAHL-EXT-A1 was published on DEV (2026-10-15, before PISA and AICE). */
-export const PUBLICATION_APPLICABILITY_2026_10_15_IB: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY]);
+export const PUBLICATION_APPLICABILITY_2026_10_15_IB: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY_2026_10_15_ALL]);
+/** The publication register AS IT WAS when PISA, AICE and Saber A1/A2 were published on DEV (2026-10-15, before IB Paper 3). */
+export const PUBLICATION_APPLICABILITY_2026_10_15_ALL: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY_2026_10_15_ALL, ...PISA_MATH_APPLICABILITY, ...SABER_APPLICABILITY]);
 /** The publication register AS IT WAS on 2026-10-14: the input of the batches published that day (CF-IB-AAHL-01-A2, CIE-9709-P1-A1). */
 export const PUBLICATION_APPLICABILITY_2026_10_14: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY_2026_10_14]);
 
@@ -290,6 +293,15 @@ export const LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED: LibraryBlueprint = {
   ],
 };
 /**
+ * IB Paper 3 (2026-10-15): the one governed objective aahl.p3.investigation, one position, placing Sequences and series
+ * (objective-learning-links, DECLARED_REVIEWED; identity GOVERNED_PILOT). Paper 3 is its own component (IB.MATH_AA_HL.P3).
+ */
+const IB_P3_FACTS: BlueprintSectionFacts = { ...LIBRARY_BLUEPRINT_IB.facts, governedSlots: 1 };
+export const LIBRARY_BLUEPRINT_IB_P3_INVESTIGATION: LibraryBlueprint = {
+  blueprintId: 'v2.ib.math-aa-hl/p3', classificationVersion: 'tb-ib-aahl-p3', adapterId: 'IB.MATH_AA_HL.P3', configKey: 'v2.ib.math-aa-hl', sectionKey: 'p3', facts: IB_P3_FACTS, blueprintClass: classifyBlueprintSection(IB_P3_FACTS),
+  buckets: [{ governedPositions: 1, conceptLinks: ['objective aahl.p3.investigation -> Sequences and series (objective-learning-links, DECLARED_REVIEWED; identity GOVERNED_PILOT)'], bucket: bucket('v2.ib.math-aa-hl', 'p3', 'IB.MATH_AA_HL.P3', classifyBlueprintSection(IB_P3_FACTS), 'aahl.p3.investigation', ['math.alg.sequences-series']) }],
+};
+/**
  * PISA 2022 Mathematics (2026-10-15): one bucket per governed objective (content area x process), one position each,
  * placing the concept the reviewed PISA link names (all PAA-certified identities). Reduced practice form (8 items).
  */
@@ -343,10 +355,12 @@ export const LIBRARY_BLUEPRINT_CIE_9709_P1: LibraryBlueprint = {
   blueprintId: 'v2.cambridge.9709-as/p1', classificationVersion: 'cie-9709-p1-pilot-1', adapterId: 'CAMBRIDGE.9709.P1', configKey: 'v2.cambridge.9709-as', sectionKey: 'p1', facts: CIE_P1_FACTS, blueprintClass: CIE_P1_CLASS,
   buckets: CIE_9709_P1_SECTIONS.map((s) => ({ governedPositions: 1, conceptLinks: [`syllabus 9709 ${s.section} ${s.title} (p. ${s.page}) -> ${s.concepts.map((c) => `${c.stableId} [${c.correspondenceType}]`).join(', ')} (PILOT correspondence, not human reviewed)`], bucket: bucket('v2.cambridge.9709-as', 'p1', 'CAMBRIDGE.9709.P1', CIE_P1_CLASS, s.objectiveCode, s.concepts.map((c) => c.stableId)) })),
 };
-export const LIBRARY_BLUEPRINT_EXTENSIONS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS, LIBRARY_BLUEPRINT_CIE_9709_P1, LIBRARY_BLUEPRINT_IB_P1_EXTENDED, LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED, LIBRARY_BLUEPRINT_PISA_MATH, LIBRARY_BLUEPRINT_AICE_9709_P1, LIBRARY_BLUEPRINT_SABER_MATH];
+export const LIBRARY_BLUEPRINT_EXTENSIONS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS, LIBRARY_BLUEPRINT_CIE_9709_P1, LIBRARY_BLUEPRINT_IB_P1_EXTENDED, LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED, LIBRARY_BLUEPRINT_PISA_MATH, LIBRARY_BLUEPRINT_AICE_9709_P1, LIBRARY_BLUEPRINT_SABER_MATH, LIBRARY_BLUEPRINT_IB_P3_INVESTIGATION];
 export const PUBLICATION_BLUEPRINTS: readonly LibraryBlueprint[] = [...LIBRARY_BLUEPRINTS, ...LIBRARY_BLUEPRINT_EXTENSIONS];
 /** The classifications AS THEY WERE on 2026-10-14: the input of the batches published that day. */
 export const PUBLICATION_BLUEPRINTS_2026_10_14: readonly LibraryBlueprint[] = [...LIBRARY_BLUEPRINTS, LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS, LIBRARY_BLUEPRINT_CIE_9709_P1];
+/** The classifications AS THEY WERE when PISA, AICE and Saber A1/A2 were published (2026-10-15, before IB Paper 3). */
+export const PUBLICATION_BLUEPRINTS_2026_10_15_ALL: readonly LibraryBlueprint[] = [...PUBLICATION_BLUEPRINTS_2026_10_14, LIBRARY_BLUEPRINT_IB_P1_EXTENDED, LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED, LIBRARY_BLUEPRINT_PISA_MATH, LIBRARY_BLUEPRINT_AICE_9709_P1, LIBRARY_BLUEPRINT_SABER_MATH];
 /** The classifications AS THEY WERE when TB-IB-AAHL-EXT-A1 was published (2026-10-15, before PISA and AICE). */
 export const PUBLICATION_BLUEPRINTS_2026_10_15_IB: readonly LibraryBlueprint[] = [...PUBLICATION_BLUEPRINTS_2026_10_14, LIBRARY_BLUEPRINT_IB_P1_EXTENDED, LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED];
 
@@ -407,6 +421,8 @@ export const LIBRARY_EXTENSION_BATCHES: readonly LibraryExtensionBatch[] = [
   { batchId: 'TB-SABER-MATH-A1', entries: SABER_MATH_ENTRIES },
   // Saber 11: the same constructs in several situations each (template variety for the 50-position form)
   { batchId: 'TB-SABER-MATH-A2', entries: SABER_MATH_IN_CONTEXT_ENTRIES },
+  // IB Paper 3: the investigation construct for aahl.p3.investigation (ib-aahl-p3.adoption.ts)
+  { batchId: 'TB-IB-AAHL-P3-A1', entries: IB_AAHL_P3_ENTRIES },
 ];
 export const LIBRARY_EXTENSIONS: readonly LibraryEntry[] = LIBRARY_EXTENSION_BATCHES.flatMap((b) => b.entries);
 export const PUBLICATION_LIBRARY: readonly LibraryEntry[] = [...LIBRARY, ...LIBRARY_EXTENSIONS];

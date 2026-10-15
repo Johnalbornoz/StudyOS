@@ -237,7 +237,9 @@ describe('IB_BANK_PROJECTION_V3 guarded scope / PAA_PUBLICATION_PATH_UNCHANGED',
   });
   it('IB goes to projection 3, fail closed: the 30 working-marked instances stay refused, never fall back to projection 2', () => {
     for (const i of IB) expect(bankProjectionFor(i)).toEqual({ version: 'exam-bank-projection-3', refusal: 'WORKING_MARKED_WITHOUT_MACHINE_MARK_SCHEME' });
-    expect(bankProjectionFor({ ...IB[0], format: 'EXTENDED_RESPONSE' })).toEqual({ version: 'exam-bank-projection-3', refusal: 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' });
+    // EXTENDED_RESPONSE is governed since IB Paper 3 (answer marks on one value); a working-marked one stays refused
+    expect(bankProjectionFor({ ...IB[0], format: 'EXTENDED_RESPONSE' })).toEqual({ version: 'exam-bank-projection-3', refusal: 'WORKING_MARKED_WITHOUT_MACHINE_MARK_SCHEME' });
+    expect(bankProjectionFor({ ...IB[0], format: 'ESSAY' })).toEqual({ version: 'exam-bank-projection-3', refusal: 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' });
   });
   it('the publication service selects the projection through bankProjectionFor only', () => {
     const svc = readFileSync(join(process.cwd(), 'src/lib/exam-bank/publication.service.ts'), 'utf8');

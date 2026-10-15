@@ -24,6 +24,7 @@ async function main(): Promise<number> {
   assertReadOnly(db as never);
   const { loadReadinessScope, readinessInputOf } = await import('@/lib/exam-bank/readiness/bank-readiness-adapter');
   const { evaluateExamBankReadiness, MODE_REQUIREMENTS, EXAM_BANK_READINESS_ENGINE_VERSION } = await import('@/lib/exam-bank/readiness/bank-readiness');
+  const { mockUseOf } = await import('@/lib/exam-bank/readiness/readiness-authority.service');
   const now = new Date();
   const report: Record<string, unknown> = { kind: 'EXAM_READINESS_REPORT', database: TARGETS[fp], engineVersion: EXAM_BANK_READINESS_ENGINE_VERSION, generatedAt: now.toISOString(), configs: {} };
   for (const config of configs) {
@@ -33,7 +34,7 @@ async function main(): Promise<number> {
     const modes = Object.fromEntries([
       ...scope.sections.map((sec) => [`practice:${sec}`, readinessInputOf(scope, { deliveryScope: 'PILOT_PREVIEW', mode: MODE_REQUIREMENTS.SECTION_PRACTICE, use: 'PRACTICE', sectionKeys: [sec], now })] as const),
       ['diagnostic', readinessInputOf(scope, { deliveryScope: 'PILOT_PREVIEW', mode: MODE_REQUIREMENTS.DIAGNOSTIC, use: 'PRACTICE', sectionKeys: null, now })] as const,
-      ['reducedMock', readinessInputOf(scope, { deliveryScope: 'PILOT_PREVIEW', mode: MODE_REQUIREMENTS.MOCK, use: 'REDUCED_MOCK', sectionKeys: null, now })] as const,
+      ['reducedMock', readinessInputOf(scope, { deliveryScope: 'PILOT_PREVIEW', mode: MODE_REQUIREMENTS.MOCK, use: mockUseOf(scope), sectionKeys: null, now })] as const,
       ['challenge', readinessInputOf(scope, { deliveryScope: 'PILOT_PREVIEW', mode: MODE_REQUIREMENTS.CHALLENGE, use: 'PRACTICE', sectionKeys: null, now })] as const,
     ].map(([k, input]) => { const r = evaluateExamBankReadiness(((input as any).input ?? input) as never); return [k, { status: r.status, coveredPositions: r.coveredPositions, requiredPositions: r.requiredPositions, certifiedItemCount: r.certifiedItemCount, runtimeEligibleItemCount: r.runtimeEligibleItemCount, blockingReasons: r.blockingReasons, missingBuckets: r.missingBuckets.map((b: any) => b.bucketId ?? b) }]; }));
     (report.configs as any)[config] = { examVersionId: v, family: scope.family, sections: scope.sections, cells: scope.cells.length, versionsRead: scope.rows.length, modes };

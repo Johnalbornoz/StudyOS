@@ -69,19 +69,19 @@ export interface IbConstructCorrespondence {
   constructId: string;
   studyusCanonicalConceptId: string;
   conceptExistingOrNew: 'EXISTING_GOVERNED' | 'EXISTING_CATALOGUE_CONCEPT_IDENTITY_PROPOSED';
-  ibSourceReference: { sourceKey: string; configKey: string; component: 'p1' | 'p2'; objectiveCode: string; syllabusAreaWords: string };
+  ibSourceReference: { sourceKey: string; configKey: string; component: 'p1' | 'p2' | 'p3'; objectiveCode: string; syllabusAreaWords: string };
   ibCorrespondenceType: CorrespondenceType;
   sourceTextState: SourceTextState;
   /** The applicability evidence the register already holds for the objective -> concept link. */
-  assessmentApplicability: { componentId: 'IB.MATH_AA_HL.P1' | 'IB.MATH_AA_HL.P2'; evidence: 'OBJECTIVE_CONCEPT_LINK'; reference: string; reviewState: 'DECLARED_REVIEWED' };
+  assessmentApplicability: { componentId: 'IB.MATH_AA_HL.P1' | 'IB.MATH_AA_HL.P2' | 'IB.MATH_AA_HL.P3'; evidence: 'OBJECTIVE_CONCEPT_LINK'; reference: string; reviewState: 'DECLARED_REVIEWED' };
 }
 
 const p1 = (constructId: string, stableId: string, objectiveCode: string, syllabusAreaWords: string): IbConstructCorrespondence => ({
   constructId, studyusCanonicalConceptId: stableId, conceptExistingOrNew: IB_AA_HL_CONCEPT_IDENTITIES.find((x) => x.stableId === stableId)?.status === 'GOVERNED' ? 'EXISTING_GOVERNED' : 'EXISTING_CATALOGUE_CONCEPT_IDENTITY_PROPOSED',
-  ibSourceReference: { sourceKey: IB_AA_HL_SOURCE.sourceKey, configKey: IB_AA_HL_SOURCE.configKey, component: objectiveCode.startsWith('aahl.p2') ? 'p2' : 'p1', objectiveCode, syllabusAreaWords },
+  ibSourceReference: { sourceKey: IB_AA_HL_SOURCE.sourceKey, configKey: IB_AA_HL_SOURCE.configKey, component: objectiveCode.startsWith('aahl.p3') ? 'p3' : objectiveCode.startsWith('aahl.p2') ? 'p2' : 'p1', objectiveCode, syllabusAreaWords },
   ibCorrespondenceType: 'SYLLABUS_AREA_CORRESPONDENCE',
   sourceTextState: stableId === 'math.alg.quadratics' ? 'OFFICIAL_TEXT_SOURCE_BACKED' : 'PILOT_SYLLABUS_CORRESPONDENCE_SOURCE_TEXT_REVALIDATION_PENDING',
-  assessmentApplicability: { componentId: objectiveCode.startsWith('aahl.p2') ? 'IB.MATH_AA_HL.P2' : 'IB.MATH_AA_HL.P1', evidence: 'OBJECTIVE_CONCEPT_LINK', reference: objectiveCode, reviewState: 'DECLARED_REVIEWED' },
+  assessmentApplicability: { componentId: objectiveCode.startsWith('aahl.p3') ? 'IB.MATH_AA_HL.P3' : objectiveCode.startsWith('aahl.p2') ? 'IB.MATH_AA_HL.P2' : 'IB.MATH_AA_HL.P1', evidence: 'OBJECTIVE_CONCEPT_LINK', reference: objectiveCode, reviewState: 'DECLARED_REVIEWED' },
 });
 /** One per CF-IB-AAHL-01 construct. `syllabusAreaWords` are the words of the objective's governed description that cover it. */
 export const IB_AA_HL_CORRESPONDENCES: readonly IbConstructCorrespondence[] = [
@@ -99,6 +99,8 @@ export const IB_AA_HL_CORRESPONDENCES: readonly IbConstructCorrespondence[] = [
   p1('tf.ib.extended.show-that-stationary-minimum', 'math.calc.differentiation', 'aahl.p1.extended', 'multi-step analysis'),
   p1('tf.ib.trigonometry.cosine-rule-side', 'math.trig.ratios', 'aahl.p2.trigonometry', 'triangles'),
   p1('tf.ib.modelling.exponential-model', 'math.fun.exponential', 'aahl.p2.extended', 'modelling'),
+  // IB Paper 3 (ib-aahl-p3.adoption.ts): the investigation objective -> Sequences and series
+  p1('tf.ib.investigation.arithmetic-sum-pattern', 'math.alg.sequences-series', 'aahl.p3.investigation', 'generalize'),
 ];
 
 export type CorrespondenceGovernance = 'GOVERNED' | 'GOVERNED_PILOT' | 'SOURCE_BACKED_IDENTITY_PENDING_DECISION' | 'NOT_DEFENSIBLE';
@@ -128,7 +130,7 @@ function ibApplicabilityOf(correspondences: readonly IbConstructCorrespondence[]
   return IB_AA_HL_CONCEPT_IDENTITIES.filter(include).flatMap((x) => {
     const objectives = [...new Set(correspondences.filter((c) => c.studyusCanonicalConceptId === x.stableId).map((c) => c.ibSourceReference.objectiveCode))];
     // ONE record per (concept, component): a concept linked from two objectives of a paper carries both links as evidence
-    const componentOf = (o: string) => (o.startsWith('aahl.p2') ? 'IB.MATH_AA_HL.P2' : 'IB.MATH_AA_HL.P1');
+    const componentOf = (o: string) => (o.startsWith('aahl.p3') ? 'IB.MATH_AA_HL.P3' : o.startsWith('aahl.p2') ? 'IB.MATH_AA_HL.P2' : 'IB.MATH_AA_HL.P1');
     return [...new Set(objectives.map(componentOf))].map((componentId) => ({
       v: ASSESSMENT_APPLICABILITY_CONTRACT_VERSION, concept: { stableId: x.stableId, canonicalSubject: x.canonicalSubject },
       scope: { systemProfileId: 'IB', subject: 'Mathematics: analysis and approaches', componentId },
@@ -139,5 +141,7 @@ function ibApplicabilityOf(correspondences: readonly IbConstructCorrespondence[]
 }
 /** The live register: the pilot identities + the PAA-governed identities applied to IB (quadratics has its own record). */
 export const IB_AA_HL_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = ibApplicabilityOf(IB_AA_HL_CORRESPONDENCES, (x) => x.status === 'GOVERNED_PILOT' || (x.status === 'GOVERNED' && x.stableId !== 'math.alg.quadratics'));
+/** The register AS PUBLISHED on 2026-10-15 before IB Paper 3 (the P1/P2 correspondences only). */
+export const IB_AA_HL_APPLICABILITY_2026_10_15_ALL: readonly AssessmentApplicabilityRecord[] = ibApplicabilityOf(IB_AA_HL_CORRESPONDENCES.filter((c) => c.ibSourceReference.component !== 'p3'), (x) => x.status === 'GOVERNED_PILOT' || (x.status === 'GOVERNED' && x.stableId !== 'math.alg.quadratics'));
 /** The register AS PUBLISHED on 2026-10-14 (the CF correspondences, the seven pilot identities): the input of the batches published then. */
 export const IB_AA_HL_APPLICABILITY_2026_10_14: readonly AssessmentApplicabilityRecord[] = ibApplicabilityOf(IB_AA_HL_CORRESPONDENCES.filter((c) => !c.constructId.startsWith('tf.ib.')), (x) => x.status === 'GOVERNED_PILOT');

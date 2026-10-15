@@ -8,7 +8,7 @@
 import { flattenCatalog } from '../catalog/structure';
 import { factoryConfig } from './policy';
 import { latestSnapshots } from './health.service';
-import { overlayNodeReadiness, type Mode, type NodeBinding } from './readiness-overlay';
+import { overlayNodeReadiness, restrictNodeByEngine, type EngineNodeVerdict, type Mode, type NodeBinding } from './readiness-overlay';
 import { withAudienceReadiness } from '../catalog/readiness-view';
 
 let declared: Map<string, Mode[] | undefined> | null = null;
@@ -44,6 +44,9 @@ export async function applyBankReadinessOverlay<T extends OverlayRow>(input: T[]
   if (versionIds.length === 0) return rows;
   // Student readiness: only snapshots computed under the current delivery rule (a stale one = no bank overlay).
   const snapshots = await latestSnapshots(versionIds, { currentEngineOnly: true });
+  // R-1: the engine's verdict per version (one evaluation per version per call); a failure = not evaluated, never a widening
+  const { engineReadinessForVersion } = await import('@/lib/exam-bank/readiness/readiness-authority.service');
+  const engines = new Map<string, EngineNodeVerdict | null>(await Promise.all(versionIds.map(async (v) => [v, await engineReadinessForVersion(v).catch(() => null)] as const)));
   return rows.map((row) => {
     const snap = row.exam_version_id ? snapshots.get(row.exam_version_id) : undefined;
     const r = row.metadata?.readiness ?? {};
@@ -57,8 +60,13 @@ export async function applyBankReadinessOverlay<T extends OverlayRow>(input: T[]
       mode: 'ENFORCE',
       mockable: typeof r.mockable === 'boolean' ? r.mockable : undefined,
     });
-    if (!out.changed) return row;
-    const components = (r.components ?? []).map((c: any) => ({ ...c, state: out.components.find((x) => x.sectionKey === c.sectionKey)?.state ?? c.state }));
-    return { ...row, selectable: out.selectable, metadata: { ...row.metadata, readiness: { ...r, state: out.state, modes: out.modes, components, bankDerived: true } } };
+    const healthComponents = (r.components ?? []).map((c: any) => ({ ...c, state: out.components.find((x) => x.sectionKey === c.sectionKey)?.state ?? c.state }));
+    // R-1: the Exam Bank Readiness Engine has the last word (restricts only)
+    const engine = row.exam_version_id ? engines.get(row.exam_version_id) ?? null : null;
+    const sectionKeys = bind?.sectionKey ? [bind.sectionKey] : ((bind as { sectionKeys?: string[] } | null)?.sectionKeys ?? null);
+    const e = restrictNodeByEngine({ state: out.state, modes: out.modes, selectable: out.selectable, components: healthComponents }, sectionKeys, engine);
+    if (!out.changed && !engine) return row;
+    const components = healthComponents.map((c: any) => ({ ...c, state: e.components.find((x) => x.sectionKey === c.sectionKey)?.state ?? c.state }));
+    return { ...row, selectable: e.selectable, metadata: { ...row.metadata, readiness: { ...r, state: e.state, modes: e.modes, components, bankDerived: true, ...(engine ? { engineVerdict: true } : {}) } } };
   });
 }

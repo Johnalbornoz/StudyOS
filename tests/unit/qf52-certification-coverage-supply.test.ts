@@ -229,7 +229,7 @@ describe('V5.2 / object governance -- cores, adapters, blueprints and envelopes 
     const derived = governance.adapters.filter((d) => d.failed.includes('GOVERNED_RULE_PROFILE'));
     expect(derived).toHaveLength(49); for (const d of derived) expect(d.state).toBe('REVIEW_REQUIRED');
     expect(governAdapter('NOPE.X', STUDYUS_ASSESSMENT_REGISTRY, conflicts).state).toBe('REVIEW_REQUIRED');
-    expect(governance.adapters.filter(governanceEligible).map((d) => d.objectId).sort()).toEqual(['CAMBRIDGE.9709.P1', 'IB.MATH_AA_HL.P1', 'IB.MATH_AA_HL.P2', 'ICFES.SABER11_MATEMATICAS', 'PAA.MATEMATICAS', 'PISA.MATHEMATICS']);
+    expect(governance.adapters.filter(governanceEligible).map((d) => d.objectId).sort()).toEqual(['CAMBRIDGE.9709.P1', 'IB.MATH_AA_HL.P1', 'IB.MATH_AA_HL.P2', 'IB.MATH_AA_HL.P3', 'ICFES.SABER11_MATEMATICAS', 'PAA.MATEMATICAS', 'PISA.MATHEMATICS']);
   });
   it('a blueprint is classified by structure; a demonstration, an unlinked bucket or a false FULL is sent to review', () => {
     expect(governBlueprint(LIBRARY_BLUEPRINT_PAA, LIBRARY_APPLICABILITY)).toMatchObject({ state: 'AUTOMATED_CERTIFIED_PILOT' });

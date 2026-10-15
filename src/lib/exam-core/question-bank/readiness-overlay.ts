@@ -92,3 +92,25 @@ export function shadowDirection(persisted: ReadinessState, calculated: Readiness
   const d = ORDER.indexOf(calculated) - ORDER.indexOf(persisted);
   return d === 0 ? 'SAME' : d > 0 ? 'UPGRADE' : 'DOWNGRADE';
 }
+
+/**
+ * R-1 (single authority): a node's readiness as the Student may see it, RESTRICTED by the Exam Bank Readiness Engine
+ * (pure; never extends what the bank-health overlay allows). `engine` null = not evaluated (unchanged).
+ *   - a component whose section the engine calls NOT_READY for practice drops to STRUCTURE_READY;
+ *   - PRACTICE stays only when some section of the node is not NOT_READY;
+ *   - MOCK stays only when the engine's reduced (or full) mock is READY; CHALLENGE only when its challenge is READY;
+ *   - the state follows the modes left; a node with no mode is not selectable.
+ */
+export interface EngineNodeVerdict { practiceBySection: Record<string, 'READY' | 'PARTIAL' | 'NOT_READY'>; reducedMock: string; fullMock: string; challenge: string }
+export function restrictNodeByEngine(n: { state: string; modes: string[]; selectable: boolean; components: { sectionKey: string; state: string }[] }, sectionKeys: readonly string[] | null, engine: EngineNodeVerdict | null): { state: string; modes: string[]; selectable: boolean; components: { sectionKey: string; state: string }[] } {
+  if (!engine) return n;
+  const order = ['CATALOG_ONLY', 'STRUCTURE_READY', 'PRACTICE_READY', 'REDUCED_MOCK_READY', 'FULL_MOCK_READY'];
+  const cap = (s: string, max: string) => (order.indexOf(s) > order.indexOf(max) ? max : s);
+  const sections = sectionKeys && sectionKeys.length ? sectionKeys : Object.keys(engine.practiceBySection);
+  const practiceOk = sections.some((k) => (engine.practiceBySection[k] ?? 'NOT_READY') !== 'NOT_READY');
+  const mockOk = engine.reducedMock === 'READY' || engine.fullMock === 'READY';
+  const modes = n.modes.filter((m) => (m === 'PRACTICE' ? practiceOk : m === 'MOCK' ? mockOk : m === 'CHALLENGE' ? engine.challenge === 'READY' : true));
+  const ceiling = engine.fullMock === 'READY' ? 'FULL_MOCK_READY' : mockOk ? 'REDUCED_MOCK_READY' : practiceOk ? 'PRACTICE_READY' : 'STRUCTURE_READY';
+  const components = n.components.map((c) => ((engine.practiceBySection[c.sectionKey] ?? 'NOT_READY') === 'NOT_READY' ? { ...c, state: cap(c.state, 'STRUCTURE_READY') } : { ...c, state: cap(c.state, ceiling) }));
+  return { state: cap(n.state, ceiling), modes, selectable: n.selectable && modes.length > 0, components };
+}

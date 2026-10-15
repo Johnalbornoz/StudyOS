@@ -26,6 +26,9 @@ export interface EngineReadinessView {
 }
 export type LaunchMode = 'PRACTICE' | 'MOCK' | 'CHALLENGE';
 
+/** The delivery use of a mock of this blueprint: FULL_MOCK when the reduced form is the full official length (as exam-instance assembly decides). */
+export const mockUseOf = (scope: LoadedReadinessScope): 'FULL_MOCK' | 'REDUCED_MOCK' => (scope.cells.length > 0 && scope.cells.every((c) => (c as { lengthBasis?: string }).lengthBasis === 'BLUEPRINT_IS_FULL') ? 'FULL_MOCK' : 'REDUCED_MOCK');
+
 const statusOf = (s: string): EngineStatus => (s === 'READY' ? 'READY' : s === 'PARTIAL' ? 'PARTIAL' : 'NOT_READY');
 
 function evaluate(scope: LoadedReadinessScope, p: Parameters<typeof readinessInputOf>[1]): { status: EngineStatus; reasons: string[] } {
@@ -49,7 +52,8 @@ export async function engineReadinessForVersion(examVersionId: string, now = new
   return {
     examVersionId, sections: [...scope.sections], practiceBySection,
     diagnostic: mode('diagnostic', { deliveryScope, mode: MODE_REQUIREMENTS.DIAGNOSTIC, use: 'PRACTICE', sectionKeys: null, now }),
-    reducedMock: mode('reducedMock', { deliveryScope, mode: MODE_REQUIREMENTS.MOCK, use: 'REDUCED_MOCK', sectionKeys: null, now }),
+    // the mock is assembled as the runtime assembles it: a form whose reduced length IS the official length draws FULL_MOCK items
+    reducedMock: mode('reducedMock', { deliveryScope, mode: MODE_REQUIREMENTS.MOCK, use: mockUseOf(scope), sectionKeys: null, now }),
     fullMock: mode('fullMock', { deliveryScope, mode: MODE_REQUIREMENTS.MOCK, use: 'FULL_MOCK', sectionKeys: null, length: 'FULL', now }),
     challenge: mode('challenge', { deliveryScope, mode: MODE_REQUIREMENTS.CHALLENGE, use: 'PRACTICE', sectionKeys: null, now }),
     reasons,

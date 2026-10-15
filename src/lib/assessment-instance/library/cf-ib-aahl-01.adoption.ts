@@ -74,7 +74,7 @@ export interface AdoptionOptions {
   origin: LibraryEntry['origin'];
   /** Defaults (as before): English, SHORT_RESPONSE, marks 2 / 3 / 4 by band. */
   language?: 'en' | 'es';
-  responseFormat?: 'SHORT_RESPONSE' | 'NUMERIC_ENTRY' | 'SELECTED_RESPONSE';
+  responseFormat?: 'SHORT_RESPONSE' | 'NUMERIC_ENTRY' | 'EXTENDED_RESPONSE' | 'SELECTED_RESPONSE';
   /** null = the specification's maximum (as the NUMERIC_ENTRY library does). */
   marksByBand?: Readonly<Record<PlanningBand, number>> | null;
 }
@@ -94,7 +94,7 @@ export function adoptParametricConstruct(spec: AdoptionSpec, o: AdoptionOptions)
       supportedContexts: spec.contexts?.length ? spec.contexts.map((x) => ({ ...x })) : [{ kind: 'ABSTRACT', note: 'The mathematical object is given directly.' }],
       difficultyLevers: [{ lever: 'band-form', kind: 'STEPS', description: 'The band fixes the form of the task (see the envelope lever settings).' }],
       commonMisconceptions: spec.misconceptions.map((m) => m.description),
-      responseConstraints: o.responseFormat === 'SELECTED_RESPONSE' ? { allowedFormats: ['SELECTED_RESPONSE'], stimulusNeed: 'NONE', stimulusKinds: [], note: 'Four values are offered: the key and three distractors, each what a modelled misconception gives.' } : { allowedFormats: ['NUMERIC_ENTRY', 'SHORT_RESPONSE'], stimulusNeed: 'NONE', stimulusKinds: [], note: 'A produced value; no candidate value is offered.' },
+      responseConstraints: o.responseFormat === 'SELECTED_RESPONSE' ? { allowedFormats: ['SELECTED_RESPONSE'], stimulusNeed: 'NONE', stimulusKinds: [], note: 'Four values are offered: the key and three distractors, each what a modelled misconception gives.' } : { allowedFormats: o.responseFormat === 'EXTENDED_RESPONSE' ? ['EXTENDED_RESPONSE'] : ['NUMERIC_ENTRY', 'SHORT_RESPONSE'], stimulusNeed: 'NONE', stimulusKinds: [], note: 'A produced value; no candidate value is offered.' },
       profileSupport: { [o.system]: { status: 'SUPPORTED' } },
       provenance: { authoredBy: 'STUDYUS', authoringKind: 'STUDYUS_GENERATED', authoredAt: '2026-10-14T00:00:00Z', referenceSourceKeys: o.referenceSourceKeys, containsCopiedProtectedExpression: false, note: o.provenanceNote },
       lifecycle: 'IN_REVIEW', reviewStatus: 'IN_REVIEW',

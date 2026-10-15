@@ -31,6 +31,8 @@ const check = (id: string, ok: boolean, detail = ''): void => { results.push({ i
 
 async function main(): Promise<number> {
   const CONFIG = arg('--config'); const SECTION = arg('--section'); const SYSTEM = arg('--system'); const out = arg('--out');
+  // the system whose certified pair supplies the items (AICE 9709 P1: the CAMBRIDGE pair, by the PILOT equivalence); the mode of the complete form (a full-length form = MOCK)
+  const SUPPLY_SYSTEM = arg('--supply-system') ?? SYSTEM; const MODE = (arg('--mode') ?? 'PRACTICE') as 'PRACTICE' | 'MOCK';
   if (!CONFIG || !SECTION || !SYSTEM) throw new Error('usage: --config <key> --section <key> --system <systemId>');
   const u = new URL(process.env.DATABASE_URL ?? '');
   const fp = createHash('sha256').update(`${u.hostname}|${u.pathname.slice(1)}`).digest('hex').slice(0, 16);
@@ -53,11 +55,11 @@ async function main(): Promise<number> {
   check(`C1  the configuration is published in ${TARGETS[fp]}`, !!exam, CONFIG);
   if (!exam) { await db.end(); return 1; }
   const comp = await one(`SELECT id FROM assessment_components WHERE exam_version_id = $1 AND section_key = $2`, [exam.version_id, SECTION]);
-  const targets = (await db.query(`SELECT lo.id, lo.code, max(COALESCE(t.target_item_count, 1))::int AS required FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id WHERE t.assessment_component_id = $1 GROUP BY lo.id, lo.code ORDER BY lo.code`, [comp.id])).rows;
+  const targets = (await db.query(`SELECT lo.id, lo.code, sum(COALESCE(t.target_item_count, 1))::int AS required FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id WHERE t.assessment_component_id = $1 GROUP BY lo.id, lo.code ORDER BY lo.code`, [comp.id])).rows;
   const supply = (await db.query(
     `SELECT ai.learning_objective_id AS lo, count(*)::int AS n FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id AND qi.current_version_id = ai.id JOIN assessment_item_instances i ON i.id = qi.item_instance_id
       WHERE ai.learning_objective_id = ANY($1::uuid[]) AND i.system_id = $2 AND EXISTS (SELECT 1 FROM student_eligible_item_instances_pilot e WHERE e.id = i.id) AND ${certifiedSupplySql('ai', 'PILOT_PREVIEW')}
-      GROUP BY ai.learning_objective_id`, [targets.map((t: any) => t.id), SYSTEM])).rows;
+      GROUP BY ai.learning_objective_id`, [targets.map((t: any) => t.id), SUPPLY_SYSTEM])).rows;
   const supplyOf = (lo: string) => Number(supply.find((s: any) => s.lo === lo)?.n ?? 0);
   const required = targets.reduce((m: number, t: any) => m + Number(t.required), 0);
   check('C2  every blueprint objective of the section has certified, pilot-eligible supply of this system', targets.length > 0 && targets.every((t: any) => supplyOf(t.id) >= Number(t.required)), targets.map((t: any) => `${t.code}:${supplyOf(t.id)}/${t.required}`).join(' '));
@@ -79,7 +81,7 @@ async function main(): Promise<number> {
 
     /** One PRACTICE attempt of the whole section; every served position answered with `answerOf(item)`. */
     const attempt = async (label: string, answerOf: (content: any) => string) => {
-      const inst = await createExamInstance({ studentId: S, examProfileId: profileId, examVersionId: exam.version_id, componentIds: [comp.id], mode: 'PRACTICE' });
+      const inst = await createExamInstance({ studentId: S, examProfileId: profileId, examVersionId: exam.version_id, componentIds: [comp.id], mode: MODE });
       const started = await startExamInstance(inst.id, { language: 'en' });
       const frozen = await one(`SELECT form_frozen_at, assessment_snapshot FROM exam_instances WHERE id = $1`, [inst.id]);
       const sim = started.simulationAttemptId!;
@@ -97,7 +99,7 @@ async function main(): Promise<number> {
       await completeSimulationAttempt(sim);
       await finalizeExamCompletion(sim, S, 'governed-form-scenario');
       const examAttemptId = (await getSimulationAttempt(sim))!.examAttemptId;
-      const responses = (await db.query(`SELECT approved_item_id, score, max_score, review_status, grading_detail FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [examAttemptId])).rows;
+      const responses = (await db.query(`SELECT approved_item_id, score, max_score, review_status, grading_detail, evaluation_model_version FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [examAttemptId])).rows;
       return { frozen, served, examAttemptId, responses };
     };
     const calls0 = await questionCalls();
@@ -106,9 +108,13 @@ async function main(): Promise<number> {
     check('F1  the whole-section PRACTICE instance is frozen at start (assessment snapshot)', !!a.frozen?.assessment_snapshot && !!a.frozen?.form_frozen_at);
     check('F2  it serves exactly one position per blueprint objective (the complete governed form)', a.served.length === required && targets.every((t: any) => a.served.filter((s) => s.objective === t.code).length === Number(t.required)), `${a.served.length}/${required} positions; ${[...objectives].join(', ')}`);
     check('F3  no answer key on the wire for any position', a.served.every((s) => s.leak === null));
-    const full = a.responses.every((r: any) => Number(r.score) === Number(r.max_score) && Number(r.max_score) > 0 && r.review_status === 'NONE' && r.grading_detail?.contract === 'canonical-response-1');
+    // a numeric item that carries THE canonical contract is judged by it; a selected-response / projection-2 item by its deterministic grader (never a model)
+    const contractOf = async (id: string) => (await one(`SELECT content->'math'->'responseContract'->>'version' AS v FROM approved_items WHERE id = $1`, [id]))?.v ?? null;
+    const contracts = await Promise.all(a.responses.map((r: any) => contractOf(r.approved_item_id)));
+    const full = a.responses.every((r: any, k: number) => Number(r.score) === Number(r.max_score) && Number(r.max_score) > 0 && r.review_status === 'NONE' && (contracts[k] ? r.grading_detail?.contract === contracts[k] : !r.evaluation_model_version));
     check('S1  keyed answers score full marks on every position, by the canonical contract', a.responses.length === required && full, a.responses.map((r: any) => `${r.score}/${r.max_score}`).join(' '));
-    const b = await attempt('wrong', (c) => `${String(c.correctAnswer).includes('/') ? '1' : String(Number(c.correctAnswer) + 1)}`);
+    // a selected-response item is answered wrong by choosing a real distractor (an option the item offers), never a non-option
+    const b = await attempt('wrong', (c) => (Array.isArray(c.options) && c.options.length ? String(c.options.find((o: any) => o.id !== c.correctAnswer).id) : `${String(c.correctAnswer).includes('/') ? '1' : String(Number(c.correctAnswer) + 1)}`));
     check('S2  wrong values score 0 on every position (no partial credit invented)', b.responses.length === required && b.responses.every((r: any) => Number(r.score) === 0), b.responses.map((r: any) => `${r.score}/${r.max_score}`).join(' '));
     check('X1  0 question-provider calls', (await questionCalls()) - calls0 === 0);
     check('X2  no Learning Plan entry was created by exam prep', (await planEntries()) === plan0);
@@ -120,6 +126,8 @@ async function main(): Promise<number> {
     const independentCorrect = await n(`SELECT count(*)::int AS n FROM exam_readiness_evidence WHERE student_id = $1 AND independent AND fraction = 1`, [S]);
     check('E1  every response of both attempts is Exam Readiness evidence (off-plan: the Student owns no learner concept)', readiness === a.responses.length + b.responses.length && ownedConcepts === 0, `${readiness} rows; ${independentCorrect} independent correct; owned concepts ${ownedConcepts}`);
     check('E2  no Learning evidence row was written by exam prep (separation)', (await n(`SELECT count(*)::int AS n FROM learning_evidence WHERE student_id = $1`, [S])) === 0);
+    const attributed = await n(`SELECT count(*)::int AS n FROM exam_readiness_evidence WHERE student_id = $1 AND system_id = $2 AND exam_target_id IS NOT NULL AND exam_version_id IS NOT NULL`, [S, SYSTEM]);
+    check('E3  every Exam Readiness row is attributed to the exam sat (system, version, target)', attributed === readiness && readiness > 0, `${attributed}/${readiness} attributed to ${SYSTEM}`);
     report.attempts = [a, b].map((x) => ({ examAttemptId: x.examAttemptId, positions: x.served.map((s) => s.objective), scores: x.responses.map((r: any) => [Number(r.score), Number(r.max_score)]) }));
   } finally {
     const remaining = await cleanupFixtureStudent(db, S, actor).catch((e) => { console.error(e); return -1; });

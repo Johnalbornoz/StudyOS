@@ -9,13 +9,14 @@ describe('F5: a preparation\'s "Comenzar" opens its own governed activity', () =
     expect(h.EXAM_PRACTICE).toBe('/dashboard/exams?node=paa.practice');
     expect(h.EXAM_CHALLENGE).toBe('/dashboard/exams?node=paa.practice');
     expect(h.REDUCED_MOCK).toBe('/dashboard/exams?node=paa.mock.reduced');
-    expect(h.FULL_MOCK).toBe('/dashboard/exams?node=paa');
+    expect(h.FULL_MOCK).toBeUndefined(); // no launchable full mock: no link (no dead end)
   });
-  it('without a whole-test entry the first launchable entry is used; nothing launchable falls back to the objective, then the catalogue', () => {
+  it('without a whole-test entry the first launchable entry is used; nothing launchable = no link; not evaluated = the objective node', () => {
     expect(examEntryHrefs('paa', { practiceModes: [e('paa.practice.ingles')], reducedMocks: [], fullMocks: [] }).EXAM_PRACTICE).toBe('/dashboard/exams?node=paa.practice.ingles');
+    expect(examEntryHrefs('ib.dp.math-aa.hl', { practiceModes: [], reducedMocks: [], fullMocks: [] })).toEqual({});
     expect(examEntryHrefs('cie.9709', null).EXAM_PRACTICE).toBe('/dashboard/exams?node=cie.9709');
     expect(examEntryHrefs(null, null).REDUCED_MOCK).toBe('/dashboard/exams');
-    expect(examEntryHrefs('bad key!', { practiceModes: [e('Bad Node')], reducedMocks: [], fullMocks: [] }).EXAM_PRACTICE).toBe('/dashboard/exams');
+    expect(examEntryHrefs('bad key!', { practiceModes: [e('Bad Node')], reducedMocks: [], fullMocks: [] }).EXAM_PRACTICE).toBeUndefined();
   });
 });
 

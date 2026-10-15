@@ -79,8 +79,11 @@ export function parameterSetsOf<P extends ParameterSet>(c: ParametricConstruct<P
  *                   canonical numeric contract; the marks are ANSWER marks (no method mark, working not assessed), so
  *                   the item is not marked on working. The format classification is the system's; the scoring is the
  *                   same deterministic contract.
+ *   EXTENDED_RESPONSE (`{ format: 'EXTENDED_RESPONSE' }`) the same, for a component whose governed written formats are
+ *                   MATH_EXPRESSION / EXTENDED_RESPONSE (IB Paper 3; MATH_EXPRESSION is closed and cannot carry IB's marked
+ *                   parts): the learner writes the investigation; ONE exact value, the "hence" result, carries the answer marks.
  */
-export function parametricStrategy<P extends ParameterSet>(c: ParametricConstruct<P>, opts: { format?: 'NUMERIC_ENTRY' | 'SHORT_RESPONSE' | 'SELECTED_RESPONSE'; marksByBand?: Readonly<Record<PlanningBand, number>> } = {}): RenderingStrategy {
+export function parametricStrategy<P extends ParameterSet>(c: ParametricConstruct<P>, opts: { format?: 'NUMERIC_ENTRY' | 'SHORT_RESPONSE' | 'EXTENDED_RESPONSE' | 'SELECTED_RESPONSE'; marksByBand?: Readonly<Record<PlanningBand, number>> } = {}): RenderingStrategy {
   const format = opts.format ?? 'NUMERIC_ENTRY';
   const render = (ctx: StrategyContext): StrategyResult => {
     const v = ctx.specification.variable;
@@ -135,8 +138,8 @@ export function parametricStrategy<P extends ParameterSet>(c: ParametricConstruc
       output: {
         learner: { language, itemType: format, stimulus: null, prompt: c.present(p, language), parts: [], options: [], marks, conditions: { calculator: v.toolPolicy.calculator, workingShown: false } },
         key: { answers: [answer], correctOption: null, distractorRationales: {}, distractorLineage: {} },
-        // NUMERIC_ENTRY keeps its rubric exactly; a SHORT_RESPONSE states its answer marks as A marks
-        rubric: [{ code: format === 'SHORT_RESPONSE' ? `A${marks}` : 'KEY', kind: 'ANSWER', marks, criterion: answer }],
+        // NUMERIC_ENTRY keeps its rubric exactly; a SHORT_RESPONSE / EXTENDED_RESPONSE states its answer marks as A marks
+        rubric: [{ code: format === 'SHORT_RESPONSE' || format === 'EXTENDED_RESPONSE' ? `A${marks}` : 'KEY', kind: 'ANSWER', marks, criterion: answer }],
         responsePolicy: EXACT_NUMERIC_POLICY,
         parameterSet: { ...p },
       },

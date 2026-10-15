@@ -13,6 +13,8 @@
  *     profile of its own, only provisional adapters derived from generation profiles;
  *   - every adapter is PROVISIONAL, because no profile is certified.
  */
+import { IB_MATH_AA_HL_P2_COMPONENT } from '@/lib/assessment-adaptation/system-profiles';
+import type { AssessmentComponentProfile } from '@/lib/assessment-adaptation/assessment-system-profile';
 import type { ApplicabilityThresholdPolicy } from '@/lib/assessment-adaptation/assessment-applicability';
 import { SABER_PILOT_APPLICABILITY_THRESHOLD } from '@/lib/curriculum/icfes/saber11-content-correspondence';
 import { EA1_COMPONENT_PROFILES, EA1_SYSTEM_PROFILES } from '@/lib/assessment-adaptation/system-profiles';
@@ -38,6 +40,20 @@ const SYSTEMS: readonly SystemSeed[] = [
  * ICFES: the Saber PILOT threshold (SABER-CONTENT-CORRESPONDENCE-2026-10-15; PILOT_PREVIEW; review PENDING).
  */
 export const SYSTEM_APPLICABILITY_THRESHOLDS: Readonly<Record<string, ApplicabilityThresholdPolicy>> = { ICFES: SABER_PILOT_APPLICABILITY_THRESHOLD };
+/**
+ * IB Mathematics: analysis and approaches HL -- PAPER 3, registered by Track B (2026-10-15) without editing the frozen
+ * EA-1 profile file: the Paper 2 profile (same system, same calculator rule) with exactly what the vertical's own
+ * sections[p3].definition records -- key p3, its response formats (MATH_EXPRESSION, EXTENDED_RESPONSE) and its official
+ * time and marks (60 min, 55 marks). Same sources, same authority kind; nothing else is assumed.
+ */
+const IB_P3_FROM_P2 = (): AssessmentComponentProfile => {
+  const json = JSON.stringify(IB_MATH_AA_HL_P2_COMPONENT).split('sections[p2]').join('sections[p3]').split('ib.math-aa-hl.p2').join('ib.math-aa-hl.p3').split('IB.MATH_AA_HL.P2').join('IB.MATH_AA_HL.P3').split('Paper 2').join('Paper 3').split('"componentKey":"p2"').join('"componentKey":"p3"');
+  const p = JSON.parse(json) as AssessmentComponentProfile & { overrides: Record<string, { value: unknown }> };
+  p.overrides.responseFormats!.value = ['MATH_EXPRESSION', 'EXTENDED_RESPONSE'];
+  p.overrides.timePressure!.value = { officialMinutes: 60, officialItems: null, officialMarks: 55 };
+  return p;
+};
+export const TRACK_B_COMPONENT_PROFILES: readonly AssessmentComponentProfile[] = [IB_P3_FROM_P2()];
 /** V5 generation profile -> the EA-1 component that is the SAME component. Only real identities are listed. */
 export const GENERATION_PROFILE_COMPONENT: Readonly<Record<string, string>> = {
   'PAA.MATEMATICAS': 'PAA.MATEMATICAS',
@@ -50,7 +66,7 @@ export const GENERATION_PROFILE_COMPONENT: Readonly<Record<string, string>> = {
 /** The one version registered for a system that has no EA-1 profile of its own. */
 const UNPROFILED_VERSION = 'repository-recorded';
 
-function build(rebindings: typeof ACTIVE_CONFIGURATION_REBINDINGS = ACTIVE_CONFIGURATION_REBINDINGS): AssessmentSystemRegistry {
+function build(rebindings: typeof ACTIVE_CONFIGURATION_REBINDINGS = ACTIVE_CONFIGURATION_REBINDINGS, extraComponents: readonly AssessmentComponentProfile[] = TRACK_B_COMPONENT_PROFILES): AssessmentSystemRegistry {
   // an adapter bound to a retired configuration cannot be registered here
   const registry = createAssessmentSystemRegistry({ retiredConfigurationsOf: retiredConfigurationsReferencedBy });
   // the pair V5.1 registers for a component: the EA-1 profile, or its rebinding where that profile cites a retired configuration
@@ -73,7 +89,7 @@ function build(rebindings: typeof ACTIVE_CONFIGURATION_REBINDINGS = ACTIVE_CONFI
     must(registry.registerNode({ v: 1, nodeId: adapterId, systemId, versionId, kind: 'COMPONENT', parentNodeId: null, code: adapterId.slice(systemId.length + 1), displayName }));
     return versionId;
   };
-  for (const c of EA1_COMPONENT_PROFILES) {
+  for (const c of [...EA1_COMPONENT_PROFILES, ...extraComponents]) {
     const pair = pairOf(c);
     if (!pair) continue;
     must(registry.registerAdapter({ versionId: component(c.componentId, c.displayName), definition: { kind: 'EA1_PROFILE_PAIR', system: pair.system, component: pair.component } }));
@@ -88,7 +104,9 @@ export const STUDYUS_ASSESSMENT_REGISTRY: AssessmentSystemRegistry = build();
  * The registry AS THE QF V5.2 RUN CERTIFIED AGAINST IT: every rebinding except the Cambridge 9709 P1 one made after it
  * (2026-10-14). Read only by the archived V5.2 run and its publication batch (qf52-batch-1), whose inputs are history.
  */
-export const V52_ASSESSMENT_REGISTRY: AssessmentSystemRegistry = build(Object.fromEntries(Object.entries(ACTIVE_CONFIGURATION_REBINDINGS).filter(([componentId]) => componentId !== 'CAMBRIDGE.9709.P1')));
+export const V52_ASSESSMENT_REGISTRY: AssessmentSystemRegistry = build(Object.fromEntries(Object.entries(ACTIVE_CONFIGURATION_REBINDINGS).filter(([componentId]) => componentId !== 'CAMBRIDGE.9709.P1')), []);
+/** The registry as it was before the IB Paper 3 component was registered (2026-10-15): the input of the batches published until then. */
+export const STUDYUS_ASSESSMENT_REGISTRY_2026_10_15: AssessmentSystemRegistry = build(ACTIVE_CONFIGURATION_REBINDINGS, []);
 
 /** Every adapter StudyUs has, each defined once and each bound to a registered system version. */
 export const ASSESSMENT_ADAPTERS: readonly AssessmentAdapter[] = Object.freeze([...STUDYUS_ASSESSMENT_REGISTRY.adapters()]);

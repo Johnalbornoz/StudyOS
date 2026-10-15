@@ -282,7 +282,8 @@ export function scoringBankContentOf(i: CertifiedInstance): ScoringBankContent {
 // + CAMBRIDGE (2026-10-14): 9709 Paper 1 is published with the same canonical contract (no bank was published for it before)
 // + ICFES (2026-10-15): Saber 11 SELECTED_RESPONSE from deterministic constructs, scored by option identity (selected-response engine)
 export const PROJECTION_3_SYSTEMS: readonly string[] = ['IB', 'CAMBRIDGE', 'ICFES'];
-export const PROJECTION_3_FORMATS: readonly string[] = ['NUMERIC_ENTRY', 'SHORT_RESPONSE', 'MULTI_PART_MATH', 'SELECTED_RESPONSE'];
+// + EXTENDED_RESPONSE (2026-10-15): IB Paper 3, answer marks on ONE exact value (the "hence" result), scored by the same canonical contract
+export const PROJECTION_3_FORMATS: readonly string[] = ['NUMERIC_ENTRY', 'SHORT_RESPONSE', 'MULTI_PART_MATH', 'SELECTED_RESPONSE', 'EXTENDED_RESPONSE'];
 export type BankProjectionChoice = { version: 'exam-bank-projection-2'; refusal: string | null } | { version: typeof SCORING_PROJECTION_VERSION; refusal: ScoringProjectionRefusal | 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' | null };
 /** Which projection publishes this instance, and whether it may. Fail closed: an IB instance never falls back to projection 2. */
 export function bankProjectionFor(i: CertifiedInstance): BankProjectionChoice {

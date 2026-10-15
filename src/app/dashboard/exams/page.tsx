@@ -44,7 +44,9 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
   const persisted = validNode
     ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes n WHERE node_key = $1 AND status = 'ACTIVE' AND ${selectableSql('n', 'STUDENT')}`, [validNode, locale])).rows[0] ?? null)
     : null;
-  const initialNode = persisted ?? (validNode && readinessMode() === 'ENFORCE' && (await resolveExamLevel(validNode, locale).catch(() => null))
+  // R-1: under ENFORCE a deep link opens only a level the overlaid readiness (bank health + engine) resolves -- never a persisted row alone
+  const enforce = readinessMode() === 'ENFORCE';
+  const initialNode = (enforce ? null : persisted) ?? (validNode && enforce && (await resolveExamLevel(validNode, locale).catch(() => null))
     ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes n WHERE node_key = $1 AND status = 'ACTIVE'`, [validNode, locale])).rows[0] ?? null)
     : null);
   const picker = initialNode ? null : await loadPickerData(studentId, locale);
