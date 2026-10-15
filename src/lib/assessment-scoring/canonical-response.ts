@@ -14,7 +14,8 @@
  *                         cannot be both. With no grouping allowed, "2.625" is two point six two five when '.' is a
  *                         decimal separator, and malformed when it is not: never "two thousand six hundred twenty-five".
  *                         Grouping, when allowed, is only in the integer part, in groups of exactly three.
- *   fractions             integer / integer (no separators), only when FRACTION is an accepted representation.
+ *   fractions             integer / integer (no separators), only when FRACTION is an accepted representation. The math
+ *                         keyboard's TeX for the same number (\frac{A}{B}, \frac72, {,}) is read first (`texNumberOf`).
  *   equivalent forms      INTEGER, DECIMAL and FRACTION are written forms of one value; a form that is not accepted is
  *                         NOT_IN_AN_ACCEPTED_FORM (not wrong, not right). Scientific notation is not a form here.
  *   significant figures   `rounding` constrains a DECIMAL response only: it must be written to exactly that precision,
@@ -64,9 +65,39 @@ export function policyIssues(p: CanonicalNumericPolicy): string[] {
 
 const SEPARATOR_CHARS = ['.', ',', ' ', "'"];
 
+/**
+ * What a math keyboard (MathLive) writes for a number, read as the same written number -- NOTHING ELSE IS INTERPRETED:
+ *   \frac{A}{B}, \dfrac{A}{B}, \tfrac{A}{B}    A / B, where A and B are integers (an optional sign on either)
+ *   \frac72                                    TeX single-token shorthand: each argument is exactly ONE digit (7 / 2)
+ *   {,}  {.}                                   MathLive's wrapped separators -> ',' '.' (the POLICY still decides them)
+ * The fraction must be the whole number: anything left directly after it (\frac123, \frac{1}{2}5) is malformed, never
+ * re-read: a \\frac that is not exactly one of these forms is MALFORMED_NUMBER (fail closed). Any other TeX is not read
+ * here and stays NOT_A_NUMBER, exactly as before (an expression policy still reaches its expression evaluator).
+ */
+function texNumberOf(text: string): { ok: true; text: string } | { ok: false } | null {
+  if (!/[\\{}]/.test(text)) return null;
+  let t = text.replace(/\$/g, '').replace(/\{\s*([.,])\s*\}/g, '$1').trim();
+  const arg = String.raw`(?:\{\s*([+-]?\s*\d+)\s*\}|(\d))`;
+  const frac = new RegExp(String.raw`^([+-]?)\s*\\[dt]?frac\s*${arg}\s*${arg}(.*)$`).exec(t);
+  if (frac) {
+    const [, outer, nb, ns, db, ds, rest] = frac;
+    const num = (nb ?? ns).replace(/\s+/g, ''); const den = (db ?? ds).replace(/\s+/g, '');
+    if (/^\s*\d/.test(rest)) return { ok: false };
+    const negative = [outer, num, den].filter((x) => x.startsWith('-')).length % 2 === 1;
+    t = `${negative ? '-' : ''}${num.replace(/^[+-]/, '')}/${den.replace(/^[+-]/, '')}${rest}`;
+  }
+  // a fraction command that is not exactly one of the forms above is malformed (fail closed); any OTHER TeX is not read
+  // here at all and stays NOT_A_NUMBER, so a policy that accepts expressions still reaches its expression evaluator
+  if (/\\[dt]?frac/.test(t)) return { ok: false };
+  return /[\\{}]/.test(t) ? null : { ok: true, text: t.trim() };
+}
+
 /** One written number (optionally followed by a unit) under the policy. */
 export function parseCanonicalNumber(raw: string, p: CanonicalNumericPolicy): CanonicalParse {
-  const text = String(raw ?? '').normalize('NFKC').replace(/[−‒–]/g, '-').replace(/ | /g, ' ').trim();
+  const plain = String(raw ?? '').normalize('NFKC').replace(/[−‒–]/g, '-').replace(/ | /g, ' ').trim();
+  const tex = texNumberOf(plain);
+  if (tex && !tex.ok) return { ok: false, code: 'MALFORMED_NUMBER', detail: plain };
+  const text = tex ? tex.text : plain;
   if (!text) return { ok: false, code: 'EMPTY', detail: '' };
   const m = /^([+-]?)\s*(\d[\d.,' ]*\d|\d|[.,]\d+)(?:\s*\/\s*(\d+))?\s*(.*)$/.exec(text);
   if (!m) return { ok: false, code: 'NOT_A_NUMBER', detail: text };
