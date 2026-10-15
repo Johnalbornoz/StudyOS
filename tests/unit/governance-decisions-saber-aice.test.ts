@@ -57,7 +57,7 @@ describe('AICE 9709 AS Papers 2 / 4 / 5: source-backed component equivalence', (
   });
   it('the concept is the one the reviewed AICE link names, an existing catalogue row, through an existing or pilot identity (no new concept)', () => {
     for (const e of AICE_9709_P2P4P5_EQUIVALENCES) {
-      expect(AICE_LEARNING_LINKS[e.aiceObjectiveCode]!.concepts.map((c) => c.name), e.aiceObjectiveCode).toEqual([e.conceptName]);
+      expect((AICE_LEARNING_LINKS[e.aiceObjectiveCode]?.concepts ?? []).map((c) => c.name), e.aiceObjectiveCode).toEqual([e.conceptName]);
       expect(DEV_CANONICAL_CONCEPTS.some((c: any) => c.subject === 'Mathematics' && c.name === e.conceptName), e.conceptName).toBe(true);
       const identity = ibGovernedConceptByStableId(e.conceptStableId) ?? CIE_9709_CONCEPT_IDENTITIES.find((x) => x.stableId === e.conceptStableId);
       expect(identity?.canonicalName, e.conceptStableId).toBe(e.conceptName);
