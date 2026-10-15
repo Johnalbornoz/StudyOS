@@ -21,9 +21,9 @@ import type { AssessmentAdapter } from '@/lib/assessment-instance/assessment-ada
 import type { CertificationRecord, ReviewerQualification } from '@/lib/assessment-instance/certification';
 import type { ConstructCoreRecord } from '@/lib/assessment-instance/construct-core';
 import type { CoreApplicabilityRecord } from '@/lib/assessment-instance/core-applicability';
-import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSION_BATCHES, libraryApplicability, PUBLICATION_APPLICABILITY, PUBLICATION_APPLICABILITY_2026_10_14, PUBLICATION_APPLICABILITY_2026_10_15_IB, PUBLICATION_APPLICABILITY_2026_10_15_ALL, PUBLICATION_BLUEPRINTS, PUBLICATION_BLUEPRINTS_2026_10_15_ALL, PUBLICATION_BLUEPRINTS_2026_10_14, PUBLICATION_BLUEPRINTS_2026_10_15_IB, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
+import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSION_BATCHES, libraryApplicability, PUBLICATION_APPLICABILITY, PUBLICATION_APPLICABILITY_2026_10_14, PUBLICATION_APPLICABILITY_2026_10_15_IB, PUBLICATION_APPLICABILITY_2026_10_15_ALL, PUBLICATION_APPLICABILITY_2026_10_15_P3, PUBLICATION_BLUEPRINTS_2026_10_15_P3, PUBLICATION_BLUEPRINTS, PUBLICATION_BLUEPRINTS_2026_10_15_ALL, PUBLICATION_BLUEPRINTS_2026_10_14, PUBLICATION_BLUEPRINTS_2026_10_15_IB, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
 import { pilotApplicabilityHash } from '@/lib/assessment-instance/pilot/step4b-pilot-slice';
-import { STUDYUS_ASSESSMENT_REGISTRY, STUDYUS_ASSESSMENT_REGISTRY_2026_10_15, V52_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
+import { STUDYUS_ASSESSMENT_REGISTRY, STUDYUS_ASSESSMENT_REGISTRY_2026_10_15, STUDYUS_ASSESSMENT_REGISTRY_2026_10_15_P3, V52_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
 import type { AssessmentSystemRegistry } from '@/lib/assessment-instance/assessment-system-registry';
 import { envelopeHashOf, instanceContentHashOf, type RendererEnvelope } from '@/lib/assessment-instance/renderer-envelope';
 import {
@@ -132,6 +132,8 @@ const ARCHIVED_BATCH_INPUTS: Readonly<Record<string, { blueprints: readonly Libr
   'AICE-9709-P1-EQ-A1': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_15_ALL, register: PUBLICATION_APPLICABILITY_2026_10_15_ALL, registry: STUDYUS_ASSESSMENT_REGISTRY_2026_10_15, coreRegister: PUBLICATION_APPLICABILITY_2026_10_15_ALL },
   'TB-SABER-MATH-A1': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_15_ALL, register: PUBLICATION_APPLICABILITY_2026_10_15_ALL, registry: STUDYUS_ASSESSMENT_REGISTRY_2026_10_15, coreRegister: PUBLICATION_APPLICABILITY_2026_10_15_ALL },
   'TB-SABER-MATH-A2': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_15_ALL, register: PUBLICATION_APPLICABILITY_2026_10_15_ALL, registry: STUDYUS_ASSESSMENT_REGISTRY_2026_10_15, coreRegister: PUBLICATION_APPLICABILITY_2026_10_15_ALL },
+  // published on DEV 2026-10-15 before the Saber boundary decision and the Cambridge 9709 P2/P4/P5 components
+  'TB-IB-AAHL-P3-A1': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_15_P3, register: PUBLICATION_APPLICABILITY_2026_10_15_P3, registry: STUDYUS_ASSESSMENT_REGISTRY_2026_10_15_P3, coreRegister: PUBLICATION_APPLICABILITY_2026_10_15_P3 },
 };
 
 /**

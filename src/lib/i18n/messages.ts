@@ -1175,6 +1175,7 @@ export type MessageKey =
   | 'exv2.setup.level'
   | 'exv2.setup.timedPractice'
   | 'exv2.setup.officialTiming'
+  | 'exv2.setup.preparationNotOfficial'
   | 'exv2.setup.untimedNote'
   | 'exv2.setup.create'
   | 'exv2.setup.creating'
@@ -3488,6 +3489,7 @@ const es: Messages = {
   'exv2.setup.level': 'Nivel de práctica',
   'exv2.setup.timedPractice': 'Practicar con cronómetro (sin cierre forzado)',
   'exv2.setup.officialTiming': 'Se aplica el tiempo oficial: cada sección se cierra al terminar su tiempo.',
+  'exv2.setup.preparationNotOfficial': 'Simulacro de preparación StudyUs, con preguntas originales de StudyUs. No es un examen oficial ni lo aplica la entidad que administra el examen.',
   'exv2.setup.untimedNote': 'Componente de trabajo de curso: sin tiempo oficial; la entrega se evalúa con su rúbrica.',
   'exv2.setup.create': 'Crear examen',
   'exv2.setup.creating': 'Preparando el examen…',
@@ -3973,7 +3975,7 @@ const es: Messages = {
   'exv2.readiness.bankInProgress': 'Banco en preparación',
   'exv2.readiness.structureOnly': 'Solo estructura',
   'exv2.readiness.notYet': 'Actividades StudyUs en desarrollo',
-  'exv2.readinessHint.fullMock': 'Puedes hacer un simulacro con la longitud oficial de esta evaluación.',
+  'exv2.readinessHint.fullMock': 'Puedes hacer un simulacro de preparación StudyUs con la longitud oficial de esta evaluación (no es un examen oficial).',
   'exv2.readinessHint.reducedMock': 'Puedes hacer un simulacro fijo, pero más corto que la evaluación oficial: cubre una parte de su longitud.',
   'exv2.readinessHint.practice': 'Puedes practicar con preguntas de esta área; todavía no hay suficientes para un simulacro.',
   'exv2.readinessHint.bankInProgress': 'La estructura oficial está configurada, pero todavía no hay suficientes preguntas validadas para empezar.',
@@ -5799,6 +5801,7 @@ const en: Messages = {
   'exv2.setup.level': 'Practice level',
   'exv2.setup.timedPractice': 'Practise with a timer (no forced close)',
   'exv2.setup.officialTiming': 'Official timing applies: each section closes when its time is up.',
+  'exv2.setup.preparationNotOfficial': 'A StudyUs preparation mock with original StudyUs questions. It is not an official exam and is not administered by the exam board.',
   'exv2.setup.untimedNote': 'Coursework component: no official time; the submission is assessed with its rubric.',
   'exv2.setup.create': 'Create exam',
   'exv2.setup.creating': 'Preparing the exam…',
@@ -6284,7 +6287,7 @@ const en: Messages = {
   'exv2.readiness.bankInProgress': 'Question bank in progress',
   'exv2.readiness.structureOnly': 'Structure only',
   'exv2.readiness.notYet': 'StudyUs activities in development',
-  'exv2.readinessHint.fullMock': 'You can take a mock with the official length of this assessment.',
+  'exv2.readinessHint.fullMock': 'You can take a StudyUs preparation mock with the official length of this assessment (not an official exam).',
   'exv2.readinessHint.reducedMock': 'You can take a fixed mock, but it is shorter than the official assessment: it covers part of its length.',
   'exv2.readinessHint.practice': 'You can practise with questions from this area; there are not enough yet for a mock.',
   'exv2.readinessHint.bankInProgress': 'The official structure is configured, but there are not enough validated questions to start yet.',
@@ -8110,6 +8113,7 @@ const de: Messages = {
   'exv2.setup.level': 'Übungsniveau',
   'exv2.setup.timedPractice': 'Mit Timer üben (ohne erzwungenes Ende)',
   'exv2.setup.officialTiming': 'Es gilt die offizielle Zeit: Jeder Abschnitt schließt, wenn die Zeit abgelaufen ist.',
+  'exv2.setup.preparationNotOfficial': 'Eine StudyUs-Übungsprüfung mit eigenen StudyUs-Fragen. Sie ist keine offizielle Prüfung und wird nicht von der Prüfungsstelle durchgeführt.',
   'exv2.setup.untimedNote': 'Kursarbeit: keine offizielle Zeit; die Abgabe wird nach Bewertungsraster beurteilt.',
   'exv2.setup.create': 'Prüfung erstellen',
   'exv2.setup.creating': 'Prüfung wird vorbereitet…',
@@ -10421,6 +10425,7 @@ const fr: Messages = {
   'exv2.setup.level': 'Niveau d’entraînement',
   'exv2.setup.timedPractice': 'S’entraîner avec un minuteur (sans fermeture forcée)',
   'exv2.setup.officialTiming': 'Le temps officiel s’applique : chaque section se ferme à la fin de son temps.',
+  'exv2.setup.preparationNotOfficial': 'Un examen blanc de préparation StudyUs, avec des questions originales StudyUs. Ce n’est pas un examen officiel et il n’est pas administré par l’organisme de l’examen.',
   'exv2.setup.untimedNote': 'Travail de cours : pas de durée officielle ; le rendu est évalué avec sa grille.',
   'exv2.setup.create': 'Créer l’examen',
   'exv2.setup.creating': 'Préparation de l’examen…',
@@ -12732,6 +12737,7 @@ const pt: Messages = {
   'exv2.setup.level': 'Nível de prática',
   'exv2.setup.timedPractice': 'Praticar com cronómetro (sem fecho forçado)',
   'exv2.setup.officialTiming': 'Aplica-se o tempo oficial: cada secção fecha quando o tempo termina.',
+  'exv2.setup.preparationNotOfficial': 'Um simulado de preparação StudyUs, com perguntas originais da StudyUs. Não é um exame oficial nem é aplicado pela entidade do exame.',
   'exv2.setup.untimedNote': 'Trabalho de curso: sem tempo oficial; a entrega é avaliada com a sua rubrica.',
   'exv2.setup.create': 'Criar exame',
   'exv2.setup.creating': 'A preparar o exame…',

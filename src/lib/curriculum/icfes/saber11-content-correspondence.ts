@@ -28,6 +28,17 @@ export const SABER_GOVERNANCE_DECISION = {
   humanReviewer: null, humanReviewStatus: 'PENDING', decidedAt: '2026-10-15', authorisedBy: 'operator instruction 2026-10-15 (Track B thread): SABER GOVERNANCE DECISION -- APPROVED FOR PILOT',
   sources: ['icfes-marco-matematicas-saber11', 'icfes-guia-saber11-2026'], configKey: 'v2.saber11.math',
 } as const;
+/**
+ * GOVERNANCE DECISIONS -- APPROVED (John, 2026-10-15, second decision): the three boundary concepts are PILOT
+ * correspondences to their EXISTING neutral StudyUs identities (no replacement id): probability, percent, coordinate
+ * plane. The official Saber classification (the content category) stays a separate dimension; the concept never
+ * becomes a Saber concept. Same governance: GOVERNED_PILOT, human reviewer empty, review PENDING.
+ */
+export const SABER_BOUNDARY_CORRESPONDENCE_DECISION = {
+  decisionId: 'SABER-BOUNDARY-CORRESPONDENCES-2026-10-15', decision: 'APPROVED', decisionType: 'ARCHITECTURE_GOVERNANCE_DECISION', scope: 'PILOT', environment: 'PILOT_PREVIEW',
+  humanReviewer: null, humanReviewStatus: 'PENDING', decidedAt: '2026-10-15', authorisedBy: 'operator instruction 2026-10-15 (Track B thread): GOVERNANCE DECISIONS -- APPROVED (Saber)',
+  approvedConcepts: ['math.prob.probability', 'math.num.percent', 'math.geo.coordinate-plane'],
+} as const;
 
 /** The official content categories, exactly as the governed source labels them (question-bank/pilots/saber11-math.ts CONTENTS). */
 export const SABER_CONTENT_CATEGORIES = ['Estadística', 'Álgebra y cálculo', 'Geometría'] as const;
@@ -52,11 +63,15 @@ export interface SaberCorrespondence {
   governanceStatus: 'GOVERNED_PILOT' | 'BLOCKED';
   /** Why a row is BLOCKED (the question for the owner). */
   blockedReason?: string;
+  /** A row approved after it was BLOCKED: the decision that approved it, and the question it answered. */
+  approvedBy?: typeof SABER_BOUNDARY_CORRESPONDENCE_DECISION.decisionId;
+  resolvedQuestion?: string;
 }
 const row = (officialContentCategory: SaberContentCategory, studyusConceptStableId: string, studyusConceptName: string, confidence: 'HIGH' | 'MEDIUM' = 'HIGH'): SaberCorrespondence => ({
   officialContentCategory, studyusConceptStableId, studyusConceptName, canonicalSubject: 'Matemáticas', relation: 'CATEGORY_CONTAINS_CONCEPT', correspondenceScope: 'PILOT', source: SABER_GOVERNANCE_DECISION.sources, confidence, governanceStatus: 'GOVERNED_PILOT',
 });
-const blocked = (officialContentCategory: SaberContentCategory, studyusConceptStableId: string, studyusConceptName: string, blockedReason: string): SaberCorrespondence => ({ ...row(officialContentCategory, studyusConceptStableId, studyusConceptName, 'MEDIUM'), governanceStatus: 'BLOCKED', blockedReason });
+const approved = (officialContentCategory: SaberContentCategory, studyusConceptStableId: string, studyusConceptName: string, resolvedQuestion: string): SaberCorrespondence => ({ ...row(officialContentCategory, studyusConceptStableId, studyusConceptName, 'MEDIUM'), approvedBy: SABER_BOUNDARY_CORRESPONDENCE_DECISION.decisionId, resolvedQuestion });
+export const blocked = (officialContentCategory: SaberContentCategory, studyusConceptStableId: string, studyusConceptName: string, blockedReason: string): SaberCorrespondence => ({ ...row(officialContentCategory, studyusConceptStableId, studyusConceptName, 'MEDIUM'), governanceStatus: 'BLOCKED', blockedReason });
 
 export const SABER_CONTENT_CORRESPONDENCES: readonly SaberCorrespondence[] = [
   row('Estadística', 'math.stat.central-tendency', 'Medidas de tendencia central'),
@@ -66,10 +81,11 @@ export const SABER_CONTENT_CORRESPONDENCES: readonly SaberCorrespondence[] = [
   row('Álgebra y cálculo', 'math.alg.linear-systems', 'Sistemas de ecuaciones'),
   row('Geometría', 'math.geo.plane-figures-area-perimeter', 'Área y perímetro'),
   row('Geometría', 'math.geo.pythagorean-theorem', 'Teorema de Pitágoras'),
-  // Ambiguous: the repository's source says nothing finer than the category label, and these sit on a boundary.
-  blocked('Estadística', 'math.prob.probability', 'Probabilidad', 'The governed source names the category "Estadística" only; whether ICFES places probability under it is not recorded in the repository.'),
-  blocked('Álgebra y cálculo', 'math.num.percent', 'Porcentajes', 'Percentages are arithmetic; whether ICFES files them under "Álgebra y cálculo" (or treats them as generic content of every category) is not recorded.'),
-  blocked('Geometría', 'math.geo.coordinate-plane', 'Plano cartesiano: coordenadas, distancia y punto medio', 'Coordinate geometry sits between "Geometría" and "Álgebra y cálculo"; not forced.'),
+  // Boundary concepts, BLOCKED until the owner decided (SABER-BOUNDARY-CORRESPONDENCES-2026-10-15): approved as PILOT
+  // correspondences to the existing neutral identities; the official category lineage stays separate.
+  approved('Estadística', 'math.prob.probability', 'Probabilidad', 'The governed source names the category "Estadística" only; whether ICFES places probability under it is not recorded in the repository.'),
+  approved('Álgebra y cálculo', 'math.num.percent', 'Porcentajes', 'Percentages are arithmetic; whether ICFES files them under "Álgebra y cálculo" (or treats them as generic content of every category) is not recorded.'),
+  approved('Geometría', 'math.geo.coordinate-plane', 'Plano cartesiano: coordenadas, distancia y punto medio', 'Coordinate geometry sits between "Geometría" and "Álgebra y cálculo"; not forced.'),
 ];
 export const saberCorrespondenceOf = (stableId: string): SaberCorrespondence | null => SABER_CONTENT_CORRESPONDENCES.find((c) => c.studyusConceptStableId === stableId && c.governanceStatus === 'GOVERNED_PILOT') ?? null;
 
@@ -79,11 +95,14 @@ export const saberCorrespondenceOf = (stableId: string): SaberCorrespondence | n
  * certified identity), review state UNREVIEWED -- the truth: no person reviewed the correspondence.
  */
 export const SABER_COMPONENT_ID = 'ICFES.SABER11_MATEMATICAS';
-export const SABER_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = SABER_CONTENT_CORRESPONDENCES.filter((c) => c.governanceStatus === 'GOVERNED_PILOT').map((c) => ({
+const applicabilityOf = (rows: readonly SaberCorrespondence[]): readonly AssessmentApplicabilityRecord[] => rows.filter((c) => c.governanceStatus === 'GOVERNED_PILOT').map((c) => ({
   v: ASSESSMENT_APPLICABILITY_CONTRACT_VERSION, concept: { stableId: c.studyusConceptStableId, canonicalSubject: c.canonicalSubject },
   scope: { systemProfileId: 'ICFES', subject: 'Matemáticas', componentId: SABER_COMPONENT_ID }, basis: 'OFFICIAL_EXAM_STRUCTURE',
   evidence: [{ kind: 'OFFICIAL_STRUCTURE_NODE_WITH_CERTIFIED_CONCEPT', reference: `saber.content.${c.officialContentCategory}`, recordedIn: 'src/lib/curriculum/icfes/saber11-content-correspondence.ts', sourceReference: c.source.join(', '), reviewState: 'UNREVIEWED' }],
 }));
+export const SABER_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = applicabilityOf(SABER_CONTENT_CORRESPONDENCES);
+/** The register AS PUBLISHED with TB-SABER-MATH-A1 / A2 (2026-10-15): the seven rows before the boundary decision. */
+export const SABER_APPLICABILITY_2026_10_15: readonly AssessmentApplicabilityRecord[] = applicabilityOf(SABER_CONTENT_CORRESPONDENCES.filter((c) => !c.approvedBy));
 
 /**
  * The PILOT threshold under which those records establish applicability: the EA-1 rules unchanged, plus an official

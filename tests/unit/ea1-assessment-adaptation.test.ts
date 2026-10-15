@@ -1366,6 +1366,8 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     const importers = walk('src').filter((f) => !f.startsWith(ADAPTATION_DIR) && !f.startsWith(FAMILIES_DIR) && !f.startsWith(INSTANCE_DIR) && /assessment-adaptation|question-bank\/task-families/.test(read(f))).sort();
     // QB-R2D adds three Production OS modules of the specification-driven path. Same direction (production -> adaptation), still pure, still no route, service or table.
     expect(importers).toEqual([
+      // the AICE 9709 P2/P4/P5 applicability register (pure data in the EA-1 register's own record type)
+      'src/lib/curriculum/cambridge/aice-9709-p2p4p5-equivalence.ts',
       // the Cambridge 9709 P1 applicability register (pure data in the EA-1 register's own record type)
       'src/lib/curriculum/cambridge/cie-9709-p1-correspondence.ts',
       // the IB pilot applicability register (pure data in the EA-1 register's own record type; no route, service or table)

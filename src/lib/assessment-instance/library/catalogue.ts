@@ -37,8 +37,10 @@ import { IB_AAHL_P3_ENTRIES } from './ib-aahl-p3.adoption';
 import { applicabilityThresholdFor } from '../applicability-threshold';
 import { PISA_MATH_APPLICABILITY, PISA_MATH_ENTRIES } from './pisa-math.adoption';
 import { AICE_9709_P1_ENTRIES } from './aice-9709-p1.adoption';
+import { AICE_9709_P2P4P5_ENTRIES } from './aice-9709-p2p4p5.adoption';
+import { AICE_9709_P2P4P5_APPLICABILITY, AICE_9709_P2P4P5_DECISION, AICE_9709_P2P4P5_EQUIVALENCES, CIE_9709_PAPER_ADAPTER, type Cie9709Paper } from '@/lib/curriculum/cambridge/aice-9709-p2p4p5-equivalence';
 import { SABER_MATH_ENTRIES, SABER_MATH_IN_CONTEXT_ENTRIES } from './saber11-math.adoption';
-import { SABER_APPLICABILITY, SABER_GOVERNANCE_DECISION, saberCorrespondenceOf } from '@/lib/curriculum/icfes/saber11-content-correspondence';
+import { SABER_APPLICABILITY, SABER_APPLICABILITY_2026_10_15, SABER_GOVERNANCE_DECISION, saberCorrespondenceOf } from '@/lib/curriculum/icfes/saber11-content-correspondence';
 import { AICE_9709_P1_EQUIVALENCE_DECISION, AICE_9709_P1_EQUIVALENCES } from '@/lib/curriculum/cambridge/aice-9709-p1-equivalence';
 import { CF_QUADRATIC_MINIMUM_FIRST_DELIVERY } from './cf-ib-aahl-01';
 
@@ -221,11 +223,14 @@ export const LIBRARY_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = [
 /** The V5.2 register plus the IB register of the pilot-governed StudyUs identities (publication and its extensions only). */
 // + PISA (2026-10-15): the reviewed PISA objective -> concept links of the concepts the PISA constructs assess
 // + Saber 11 (2026-10-15): the GOVERNED_PILOT content-category correspondences (UNREVIEWED; read under the Saber PILOT threshold only)
-export const PUBLICATION_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY, ...PISA_MATH_APPLICABILITY, ...SABER_APPLICABILITY]);
+// + AICE 9709 P2/P4/P5 (2026-10-15): the reviewed AICE objective links, scoped to CAMBRIDGE.9709.P2/P4/P5
+export const PUBLICATION_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY, ...PISA_MATH_APPLICABILITY, ...SABER_APPLICABILITY, ...AICE_9709_P2P4P5_APPLICABILITY]);
 /** The publication register AS IT WAS when TB-IB-AAHL-EXT-A1 was published on DEV (2026-10-15, before PISA and AICE). */
 export const PUBLICATION_APPLICABILITY_2026_10_15_IB: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY_2026_10_15_ALL]);
 /** The publication register AS IT WAS when PISA, AICE and Saber A1/A2 were published on DEV (2026-10-15, before IB Paper 3). */
-export const PUBLICATION_APPLICABILITY_2026_10_15_ALL: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY_2026_10_15_ALL, ...PISA_MATH_APPLICABILITY, ...SABER_APPLICABILITY]);
+export const PUBLICATION_APPLICABILITY_2026_10_15_ALL: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY_2026_10_15_ALL, ...PISA_MATH_APPLICABILITY, ...SABER_APPLICABILITY_2026_10_15]);
+/** The publication register AS IT WAS when TB-IB-AAHL-P3-A1 was published on DEV (2026-10-15, before the Saber boundary decision and AICE P2/P4/P5). */
+export const PUBLICATION_APPLICABILITY_2026_10_15_P3: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY, ...PISA_MATH_APPLICABILITY, ...SABER_APPLICABILITY_2026_10_15]);
 /** The publication register AS IT WAS on 2026-10-14: the input of the batches published that day (CF-IB-AAHL-01-A2, CIE-9709-P1-A1). */
 export const PUBLICATION_APPLICABILITY_2026_10_14: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY_2026_10_14]);
 
@@ -355,12 +360,30 @@ export const LIBRARY_BLUEPRINT_CIE_9709_P1: LibraryBlueprint = {
   blueprintId: 'v2.cambridge.9709-as/p1', classificationVersion: 'cie-9709-p1-pilot-1', adapterId: 'CAMBRIDGE.9709.P1', configKey: 'v2.cambridge.9709-as', sectionKey: 'p1', facts: CIE_P1_FACTS, blueprintClass: CIE_P1_CLASS,
   buckets: CIE_9709_P1_SECTIONS.map((s) => ({ governedPositions: 1, conceptLinks: [`syllabus 9709 ${s.section} ${s.title} (p. ${s.page}) -> ${s.concepts.map((c) => `${c.stableId} [${c.correspondenceType}]`).join(', ')} (PILOT correspondence, not human reviewed)`], bucket: bucket('v2.cambridge.9709-as', 'p1', 'CAMBRIDGE.9709.P1', CIE_P1_CLASS, s.objectiveCode, s.concepts.map((c) => c.stableId)) })),
 };
-export const LIBRARY_BLUEPRINT_EXTENSIONS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS, LIBRARY_BLUEPRINT_CIE_9709_P1, LIBRARY_BLUEPRINT_IB_P1_EXTENDED, LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED, LIBRARY_BLUEPRINT_PISA_MATH, LIBRARY_BLUEPRINT_AICE_9709_P1, LIBRARY_BLUEPRINT_SABER_MATH, LIBRARY_BLUEPRINT_IB_P3_INVESTIGATION];
+/**
+ * AICE 9709 AS Papers 2, 4 and 5 (2026-10-15): one bucket per AICE objective, each one official topic of its paper,
+ * one governed position each, filled from the Cambridge 9709 P2 / P4 / P5 entries (PILOT equivalence). Reduced forms.
+ */
+const aicePaperBlueprint = (paper: Cie9709Paper): LibraryBlueprint => {
+  const eqs = AICE_9709_P2P4P5_EQUIVALENCES.filter((e) => e.paper === paper);
+  const facts: BlueprintSectionFacts = { itemBankable: true, declaredFixture: false, fullFormDocumented: false, distributionPartlyDocumented: false, officialItemCount: null, governedSlots: eqs.length };
+  const cls = classifyBlueprintSection(facts);
+  return {
+    blueprintId: `v2.aice.9709-as/${paper}`, classificationVersion: `aice-9709-${paper}-eq-pilot-1`, adapterId: CIE_9709_PAPER_ADAPTER[paper], configKey: 'v2.aice.9709-as', sectionKey: paper, facts, blueprintClass: cls,
+    buckets: eqs.map((eq) => ({ governedPositions: 1, conceptLinks: [`AICE ${eq.aiceObjectiveCode} = syllabus 9709 ${paper.toUpperCase()} topic "${eq.officialTopic}" -> ${eq.conceptStableId} (PILOT equivalence ${AICE_9709_P2P4P5_DECISION.decisionId}, not human reviewed)`], bucket: bucket('v2.aice.9709-as', paper, CIE_9709_PAPER_ADAPTER[paper], cls, eq.aiceObjectiveCode, [eq.conceptStableId]) })),
+  };
+};
+export const LIBRARY_BLUEPRINT_AICE_9709_P2 = aicePaperBlueprint('p2');
+export const LIBRARY_BLUEPRINT_AICE_9709_P4 = aicePaperBlueprint('p4');
+export const LIBRARY_BLUEPRINT_AICE_9709_P5 = aicePaperBlueprint('p5');
+export const LIBRARY_BLUEPRINT_EXTENSIONS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS, LIBRARY_BLUEPRINT_CIE_9709_P1, LIBRARY_BLUEPRINT_IB_P1_EXTENDED, LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED, LIBRARY_BLUEPRINT_PISA_MATH, LIBRARY_BLUEPRINT_AICE_9709_P1, LIBRARY_BLUEPRINT_SABER_MATH, LIBRARY_BLUEPRINT_IB_P3_INVESTIGATION, LIBRARY_BLUEPRINT_AICE_9709_P2, LIBRARY_BLUEPRINT_AICE_9709_P4, LIBRARY_BLUEPRINT_AICE_9709_P5];
 export const PUBLICATION_BLUEPRINTS: readonly LibraryBlueprint[] = [...LIBRARY_BLUEPRINTS, ...LIBRARY_BLUEPRINT_EXTENSIONS];
 /** The classifications AS THEY WERE on 2026-10-14: the input of the batches published that day. */
 export const PUBLICATION_BLUEPRINTS_2026_10_14: readonly LibraryBlueprint[] = [...LIBRARY_BLUEPRINTS, LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS, LIBRARY_BLUEPRINT_CIE_9709_P1];
 /** The classifications AS THEY WERE when PISA, AICE and Saber A1/A2 were published (2026-10-15, before IB Paper 3). */
 export const PUBLICATION_BLUEPRINTS_2026_10_15_ALL: readonly LibraryBlueprint[] = [...PUBLICATION_BLUEPRINTS_2026_10_14, LIBRARY_BLUEPRINT_IB_P1_EXTENDED, LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED, LIBRARY_BLUEPRINT_PISA_MATH, LIBRARY_BLUEPRINT_AICE_9709_P1, LIBRARY_BLUEPRINT_SABER_MATH];
+/** The classifications AS THEY WERE when TB-IB-AAHL-P3-A1 was published (2026-10-15, before AICE P2/P4/P5). */
+export const PUBLICATION_BLUEPRINTS_2026_10_15_P3: readonly LibraryBlueprint[] = [...PUBLICATION_BLUEPRINTS_2026_10_15_ALL, LIBRARY_BLUEPRINT_IB_P3_INVESTIGATION];
 /** The classifications AS THEY WERE when TB-IB-AAHL-EXT-A1 was published (2026-10-15, before PISA and AICE). */
 export const PUBLICATION_BLUEPRINTS_2026_10_15_IB: readonly LibraryBlueprint[] = [...PUBLICATION_BLUEPRINTS_2026_10_14, LIBRARY_BLUEPRINT_IB_P1_EXTENDED, LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED];
 
@@ -423,6 +446,8 @@ export const LIBRARY_EXTENSION_BATCHES: readonly LibraryExtensionBatch[] = [
   { batchId: 'TB-SABER-MATH-A2', entries: SABER_MATH_IN_CONTEXT_ENTRIES },
   // IB Paper 3: the investigation construct for aahl.p3.investigation (ib-aahl-p3.adoption.ts)
   { batchId: 'TB-IB-AAHL-P3-A1', entries: IB_AAHL_P3_ENTRIES },
+  // AICE 9709 AS Papers 2, 4, 5: the Cambridge 9709 P2/P4/P5 entries in the AICE buckets (PILOT equivalence)
+  { batchId: 'AICE-9709-P2P4P5-A1', entries: AICE_9709_P2P4P5_ENTRIES },
 ];
 export const LIBRARY_EXTENSIONS: readonly LibraryEntry[] = LIBRARY_EXTENSION_BATCHES.flatMap((b) => b.entries);
 export const PUBLICATION_LIBRARY: readonly LibraryEntry[] = [...LIBRARY, ...LIBRARY_EXTENSIONS];

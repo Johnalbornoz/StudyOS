@@ -170,7 +170,7 @@ describe('4. one adapter system', () => {
   it('every adapter is defined once', () => {
     const ids = ASSESSMENT_ADAPTERS.map((a) => a.adapterId);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ASSESSMENT_ADAPTERS.filter((a) => a.source === 'EA1_COMPONENT_PROFILE').map((a) => a.adapterId).sort()).toEqual(['CAMBRIDGE.9709.P1', 'IB.MATH_AA_HL.P1', 'IB.MATH_AA_HL.P2', 'IB.MATH_AA_HL.P3', 'ICFES.SABER11_MATEMATICAS', 'PAA.MATEMATICAS', 'PISA.MATHEMATICS']);
+    expect(ASSESSMENT_ADAPTERS.filter((a) => a.source === 'EA1_COMPONENT_PROFILE').map((a) => a.adapterId).sort()).toEqual(['CAMBRIDGE.9709.P1', 'CAMBRIDGE.9709.P2', 'CAMBRIDGE.9709.P4', 'CAMBRIDGE.9709.P5', 'IB.MATH_AA_HL.P1', 'IB.MATH_AA_HL.P2', 'IB.MATH_AA_HL.P3', 'ICFES.SABER11_MATEMATICAS', 'PAA.MATEMATICAS', 'PISA.MATHEMATICS']);
   });
 
   it('covers the twelve dimensions', () => {

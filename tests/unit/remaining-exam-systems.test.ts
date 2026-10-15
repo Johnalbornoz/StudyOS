@@ -78,12 +78,14 @@ describe('Saber 11 -- governance', () => {
     expect([...SABER_CONTENT_CATEGORIES]).toEqual(['Estadística', 'Álgebra y cálculo', 'Geometría']);
     expect(readFileSync('src/lib/curriculum/icfes/saber11-content-correspondence.ts', 'utf8')).not.toMatch(/'HUMAN_CERTIFIED'/);
   });
-  it('every correspondence reuses an EXISTING certified StudyUs concept (no Saber concept); ambiguous rows are BLOCKED, not used', () => {
+  it('every correspondence reuses an EXISTING certified StudyUs concept (no Saber concept); the boundary rows, BLOCKED until the owner decided, are approved to their existing identities', () => {
     const certified = new Set(PAA_CERTIFIED_CONCEPTS.map((c) => c.stableId));
     for (const c of SABER_CONTENT_CORRESPONDENCES) { expect(certified.has(c.studyusConceptStableId), c.studyusConceptStableId).toBe(true); expect(c.studyusConceptStableId).not.toMatch(/saber|icfes/i); }
-    const blocked = SABER_CONTENT_CORRESPONDENCES.filter((c) => c.governanceStatus === 'BLOCKED');
-    expect(blocked.map((c) => c.studyusConceptStableId)).toEqual(['math.prob.probability', 'math.num.percent', 'math.geo.coordinate-plane']);
-    for (const b of blocked) expect(saberCorrespondenceOf(b.studyusConceptStableId)).toBeNull();
+    expect(SABER_CONTENT_CORRESPONDENCES.filter((c) => c.governanceStatus === 'BLOCKED')).toEqual([]);
+    // SABER-BOUNDARY-CORRESPONDENCES-2026-10-15 (John): approved as PILOT to the existing identities, no replacement id
+    const approved = SABER_CONTENT_CORRESPONDENCES.filter((c) => c.approvedBy);
+    expect(approved.map((c) => c.studyusConceptStableId)).toEqual(['math.prob.probability', 'math.num.percent', 'math.geo.coordinate-plane']);
+    for (const b of approved) expect(saberCorrespondenceOf(b.studyusConceptStableId)?.governanceStatus).toBe('GOVERNED_PILOT');
   });
   it('the register is honest (UNREVIEWED) and only the Saber PILOT threshold reads it; every other system keeps EA-1', () => {
     for (const r of SABER_APPLICABILITY) expect(r.evidence.every((e) => e.reviewState === 'UNREVIEWED')).toBe(true);

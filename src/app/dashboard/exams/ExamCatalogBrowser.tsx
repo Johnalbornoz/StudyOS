@@ -393,6 +393,7 @@ export function ExamCatalogBrowser({ labels: l, language, initialNode }: { label
             </div>
           )}
           {mode !== 'PRACTICE' && <p className="ui-hint">{allUntimed ? l['exv2.setup.untimedNote'] : l['exv2.setup.officialTiming']}</p>}
+          {mode !== 'PRACTICE' && <p className="ui-hint" data-testid="exv2-preparation-not-official">{l['exv2.setup.preparationNotOfficial']}</p>}
           {mode !== 'PRACTICE' && picked.length > 0 && (
             <div className="exv2-fidelity">
               <p className="exv2-fidelity-main">{l['exv2.setup.beforeStart']}</p>

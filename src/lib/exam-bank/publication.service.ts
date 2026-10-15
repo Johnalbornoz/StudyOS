@@ -26,7 +26,9 @@ import { ApprovedItemContentSchema, examItemFromApproved } from '@/lib/exam-core
 import { persistRegisteredSystem } from '@/lib/assessment-instance/construct-core.repository';
 import { STUDYUS_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
 import { paaCertifiedConceptByStableId } from '@/lib/curriculum/paa/paa-certified-concepts';
-import { bankContentIssues, bankContentOf, CORE_DERIVED_ALIGNMENT, CORE_DERIVED_USAGE } from './bank-projection';
+import { bankContentIssues, bankContentOf, CORE_DERIVED_ALIGNMENT } from './bank-projection';
+import { coreDerivedUsageFor, fullMockAuthorizationFor } from './full-mock-authorization';
+import { cie9709GovernedConceptByStableId } from '@/lib/curriculum/cambridge/aice-9709-p2p4p5-equivalence';
 import { bankProjectionFor, scoringBankContentIssues, scoringBankContentOf, SCORING_PROJECTION_VERSION } from './scoring-projection';
 import { planCounts, type BlockedRow, type PlannedHumanDecision, type PlannedObjectCertification, type PublicationPlan } from './publication-plan';
 
@@ -57,7 +59,7 @@ export interface PublicationReport {
   inserted: Record<WrittenTable, number>;
   insertedTotal: number;
   skipped: Record<string, number>;
-  materialized: { planned: number; inserted: number; skipped: number; superseded: number; byObjective: Record<string, number> };
+  materialized: { planned: number; inserted: number; skipped: number; superseded: number; byObjective: Record<string, number>; /** versions in use whose usage a governed authorisation widened (full-length preparation mock) */ usageAuthorized?: number };
   blocked: BlockedRow[];
   conflicts: string[];
   verification: Record<string, number | string | boolean>;
@@ -296,7 +298,8 @@ async function publish(c: Q, plan: ReturnType<typeof mergedForPublication>, repo
   const canonicalConceptOf = async (stableId: string): Promise<string | null> => {
     if (conceptRowOf.has(stableId)) return conceptRowOf.get(stableId)!;
     // PAA-certified identities, then the IB identities governed for the pilot (StudyUs canonical knowledge, never official IB)
-    const certified = paaCertifiedConceptByStableId(stableId) ?? ibGovernedConceptByStableId(stableId);
+    // + the Cambridge 9709 P2/P4/P5 identities over existing catalogue rows (AICE-9709-P2P4P5-EQUIVALENCE-2026-10-15)
+    const certified = paaCertifiedConceptByStableId(stableId) ?? ibGovernedConceptByStableId(stableId) ?? cie9709GovernedConceptByStableId(stableId);
     const rows = certified ? (await c.query(`SELECT cc.id FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id WHERE lower(cs.name) = lower($1) AND lower(cc.name) = lower($2) AND cc.status = 'ACTIVE'`, [certified.canonicalSubject, certified.canonicalName])).rows : [];
     const id = rows.length === 1 ? String(rows[0].id) : null;
     conceptRowOf.set(stableId, id);
@@ -332,8 +335,8 @@ async function publish(c: Q, plan: ReturnType<typeof mergedForPublication>, repo
       if (!parsed.success || !examItemFromApproved({ id: i.instanceId, learning_objective_id: target.objectiveId, content })) throw new PublicationRefused([`BANK_CONTENT_IS_NOT_DELIVERABLE:${i.instanceId}:${parsed.success ? 'structure' : parsed.error.issues[0]?.message}`]);
       if (contentIssues().length > 0) throw new PublicationRefused([`BANK_CONTENT_IS_NOT_ITS_INSTANCE:${i.instanceId}:${contentIssues().join(',')}`]);
       const hash = contentHash(content);
-      const held = await one<{ id: string; item_instance_id: string | null; lineage_class: string; provenance: string; current_hash: string | null; version_id: string | null; projection: string | null; digest: string | null; lifecycle: string | null }>(c,
-        `SELECT qi.id, qi.item_instance_id, qi.lineage_class, qi.provenance, ai.content_hash AS current_hash, ai.id AS version_id, ai.content->'certified'->>'projection' AS projection, ai.content->'lineage'->>'digest' AS digest, ai.bank_lifecycle_status AS lifecycle FROM question_bank_items qi LEFT JOIN approved_items ai ON ai.id = qi.current_version_id WHERE qi.learning_objective_id = $1 AND qi.item_key = $2`,
+      const held = await one<{ id: string; item_instance_id: string | null; lineage_class: string; provenance: string; current_hash: string | null; version_id: string | null; projection: string | null; digest: string | null; lifecycle: string | null; usage: string[] | null }>(c,
+        `SELECT qi.id, qi.item_instance_id, qi.lineage_class, qi.provenance, ai.content_hash AS current_hash, ai.id AS version_id, ai.usage_eligibility AS usage, ai.content->'certified'->>'projection' AS projection, ai.content->'lineage'->>'digest' AS digest, ai.bank_lifecycle_status AS lifecycle FROM question_bank_items qi LEFT JOIN approved_items ai ON ai.id = qi.current_version_id WHERE qi.learning_objective_id = $1 AND qi.item_key = $2`,
         [target.objectiveId, content.key]);
       const fp = itemFingerprints(parsed.data);
       /**
@@ -352,7 +355,7 @@ async function publish(c: Q, plan: ReturnType<typeof mergedForPublication>, repo
           `INSERT INTO approved_items (learning_objective_id, question_type, content, created_by, status, published_at, content_origin, semantic_fingerprint, template_fingerprint, reasoning_fingerprint, stimulus_fingerprint,
                                        bank_item_id, version_number, bank_lifecycle_status, content_hash, target_difficulty, calibration_confidence, lifecycle_updated_at, usage_eligibility, exam_alignment, validation_report, supersedes_version_id)
            VALUES ($1, $2, $3::jsonb, $4, 'APPROVED', NULL, 'AUTHORED', $5, $6, $7, $8, $9, $10, 'VALIDATED', $11, $12, 'INSUFFICIENT_DATA', now(), $13::text[], $14, $15::jsonb, $16) RETURNING id`,
-          [target.objectiveId, content.type, JSON.stringify(content), author, fp.semantic, fp.template, fp.reasoning, fp.stimulus, itemId, versionNumber, hash, content.difficulty, [...CORE_DERIVED_USAGE], CORE_DERIVED_ALIGNMENT, JSON.stringify(validation), supersedes]);
+          [target.objectiveId, content.type, JSON.stringify(content), author, fp.semantic, fp.template, fp.reasoning, fp.stimulus, itemId, versionNumber, hash, content.difficulty, [...coreDerivedUsageFor(i.systemId, plan.scope)], CORE_DERIVED_ALIGNMENT, JSON.stringify(validation), supersedes]);
         await ensureRights(version!.id, p);
         await attribute(version!.id, conceptId);
         if (supersedes) {
@@ -380,6 +383,17 @@ async function publish(c: Q, plan: ReturnType<typeof mergedForPublication>, repo
         if (attributed.some((a) => a.role === 'PRIMARY' && a.canonical_concept_id !== conceptId)) conflict('EXAM_BANK_ATTRIBUTION', content.key, 'the version is attributed to another concept than its instance');
         if (!attributed.some((a) => a.role === 'PRIMARY')) conflict('EXAM_BANK_ATTRIBUTION', content.key, 'the version in use states no primary concept');
         skip('conceptAttributions');
+        // a governed full-length preparation mock authorisation widens the usage of the version in use (never narrows,
+        // never touches content): recorded as a lifecycle event naming the decision
+        const governedUsage = coreDerivedUsageFor(i.systemId, plan.scope);
+        const missing = governedUsage.filter((u) => !(held.usage ?? []).includes(u));
+        if (missing.length > 0 && held.lifecycle === 'ACTIVE') {
+          const auth = fullMockAuthorizationFor(i.systemId, plan.scope);
+          await c.query(`UPDATE approved_items SET usage_eligibility = $2::text[] WHERE id = $1`, [held.version_id, [...new Set([...(held.usage ?? []), ...governedUsage])]]);
+          await c.query(`INSERT INTO question_bank_lifecycle_events (bank_item_id, approved_item_id, from_status, to_status, reason, actor_kind, actor_user_id, run_id, detail) VALUES ($1, $2, 'ACTIVE', 'ACTIVE', 'USAGE_AUTHORIZED_BY_GOVERNANCE', 'SYSTEM', NULL, NULL, $3::jsonb)`,
+            [held.id, held.version_id, JSON.stringify({ added: missing, decision: auth?.decisionId ?? null, scope: plan.scope, presentation: auth?.presentation ?? null, itemInstanceId: i.instanceId })]);
+          report.materialized.usageAuthorized = (report.materialized.usageAuthorized ?? 0) + 1;
+        }
         report.materialized.skipped += 1;
         continue;
       }
@@ -454,7 +468,7 @@ function verificationFailures(plan: PublicationPlan, v: PublicationReport['verif
  */
 export async function runPublication(client: PoolClient, plan: PublicationPlan, opts: { apply: boolean }): Promise<PublicationReport> {
   const empty = Object.fromEntries(WRITTEN_TABLES.map((t) => [t, 0])) as Record<WrittenTable, number>;
-  const report: PublicationReport = { mode: opts.apply ? 'APPLY' : 'DRY_RUN', committed: false, planHash: plan.planHash, planned: planCounts(plan), inserted: empty, insertedTotal: 0, skipped: {}, materialized: { planned: 0, inserted: 0, skipped: 0, superseded: 0, byObjective: {} }, blocked: [...plan.blocked], conflicts: [], verification: {} };
+  const report: PublicationReport = { mode: opts.apply ? 'APPLY' : 'DRY_RUN', committed: false, planHash: plan.planHash, planned: planCounts(plan), inserted: empty, insertedTotal: 0, skipped: {}, materialized: { planned: 0, inserted: 0, skipped: 0, superseded: 0, byObjective: {}, usageAuthorized: 0 }, blocked: [...plan.blocked], conflicts: [], verification: {} };
   const work = mergedForPublication(plan);
   if (work.preflight.length > 0) throw new PublicationRefused(work.preflight);
   await client.query('BEGIN');
