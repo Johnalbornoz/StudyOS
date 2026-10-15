@@ -9,6 +9,7 @@
  * A curriculum node (a topic, a unit, a strand ... of any framework) is resolved to its canonical concepts
  * through the universal CurriculumScope; nothing here knows a framework by name.
  */
+import { isCalibrated, type CalibrationSource } from '@/lib/exam-bank/readiness/difficulty';
 import { loadCurriculumScope } from '@/lib/curriculum/curriculum-scope.service';
 import { conceptsUnderNode } from '@/lib/curriculum/cross-curriculum';
 import { evaluateExamVersionReadiness, solveLearningForStudent } from '@/lib/assessment-blueprint/assessment-blueprint.service';
@@ -140,14 +141,24 @@ export interface ExamAvailability {
  * index)? A challenge is defined by that index; a 1-5 item difficulty is not a calibration. Only what a Student may be
  * delivered counts (the one delivery rule: never a fixture, never a withdrawn item). Read-only; a failed read is "no".
  */
+/**
+ * Is the exam version's Challenge supply CALIBRATED? Only a governed EMPIRICAL calibration counts (exam-bank/readiness/
+ * difficulty.ts `isCalibrated`: enough independent responses, not stale). A raw or manually populated difficulty index
+ * is an estimate, never a calibration: Challenge fails closed without one.
+ */
 export async function examVersionHasCalibratedDifficulty(examVersionId: string): Promise<boolean> {
   try {
     const r = await db.query(
-      `SELECT EXISTS (SELECT 1 FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id AND qi.current_version_id = ai.id
-                       WHERE qi.exam_version_id = $1 AND ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('PRACTICE', undefined, 'STUDENT')} AND ${certifiedSupplySql('ai')}
-                         AND (ai.difficulty_index IS NOT NULL OR ai.content ? 'difficultyIndex')) AS calibrated`,
+      `SELECT ai.difficulty_index, ai.content->'difficultyCalibration' AS calibration FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id AND qi.current_version_id = ai.id
+        WHERE qi.exam_version_id = $1 AND ai.status = 'PUBLISHED' AND ${lifecycleSqlFor('PRACTICE', undefined, 'STUDENT')} AND ${certifiedSupplySql('ai')}
+          AND ai.content ? 'difficultyCalibration'
+        LIMIT 5000`,
       [examVersionId]);
-    return r.rows[0]?.calibrated === true;
+    return r.rows.some((row: { difficulty_index: string | number | null; calibration: Record<string, unknown> | null }) => {
+      const c = row.calibration ?? {};
+      const index = row.difficulty_index === null ? null : Number(row.difficulty_index);
+      return isCalibrated({ difficultyIndex: index, difficultyBand: null, confidence: Number(c.confidence ?? 0), calibrationSource: (c.source as CalibrationSource) ?? 'CONSTRUCT_DESIGN', sampleSize: Number(c.sampleSize ?? 0), lastCalibratedAt: typeof c.calibratedAt === 'string' ? c.calibratedAt : null });
+    });
   } catch {
     return false;
   }
