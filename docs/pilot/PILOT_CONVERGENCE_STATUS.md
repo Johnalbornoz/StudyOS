@@ -11,6 +11,21 @@
 Frozen: no further PAA deploys, no change to the alias, Exam Bank content, PAA runtime, evidence model, readiness
 logic, Stage or Production. Student history is preserved.
 
+## Overnight convergence run (2026-10-14) — PAA alias still 610d3c6
+
+Authoritative report: `docs/pilot/OVERNIGHT_PILOT_CONVERGENCE_REPORT.md` (tip `fe440882`).
+
+| Exam | DEV state |
+|---|---|
+| Cambridge 9709 P1 | READY. 8/8 official sections, 237 items, complete form 13/13 |
+| IB | PARTIAL. 6/9: P1 extended, P2 trigonometry and P2 extended have no content |
+| PAA | Math 43/43 in both evidence modes |
+| PISA, Saber, AICE | Blocked (see X-1..X-3) |
+
+- **Exam evidence.** Separation S1–S4 is on DEV (migration `20261125_1000`, ledger 96); the readers are not switched yet.
+- **Candidate.** Not deployed. Needs a new database cloned from `neondb_trackb_exam` (K-1).
+- **PAA-FOLLOWUP-02.** The off-plan evidence half is implemented behind `EXAM_EVIDENCE_KNOWLEDGE_STATE` in the convergence line only; the frozen alias is unchanged.
+
 ## Follow-ups (non-blocking, not started)
 
 - **PAA-FOLLOWUP-01** — Connect the stale "Simulacro reducido" card on the preparation page
