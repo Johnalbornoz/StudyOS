@@ -51,7 +51,7 @@ async function main(): Promise<number> {
   check('C1  the configuration is published in DEV', !!exam, CONFIG);
   if (!exam) { await db.end(); return 1; }
   const comp = await one(`SELECT id FROM assessment_components WHERE exam_version_id = $1 AND section_key = $2`, [exam.version_id, SECTION]);
-  const targets = (await db.query(`SELECT lo.id, lo.code, sum(t.target_count)::int AS required FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id WHERE t.assessment_component_id = $1 GROUP BY lo.id, lo.code ORDER BY lo.code`, [comp.id])).rows;
+  const targets = (await db.query(`SELECT lo.id, lo.code, max(COALESCE(t.target_item_count, 1))::int AS required FROM blueprint_objective_targets t JOIN learning_objectives lo ON lo.id = t.learning_objective_id WHERE t.assessment_component_id = $1 GROUP BY lo.id, lo.code ORDER BY lo.code`, [comp.id])).rows;
   const supply = (await db.query(
     `SELECT ai.learning_objective_id AS lo, count(*)::int AS n FROM approved_items ai JOIN question_bank_items qi ON qi.id = ai.bank_item_id AND qi.current_version_id = ai.id JOIN assessment_item_instances i ON i.id = qi.item_instance_id
       WHERE ai.learning_objective_id = ANY($1::uuid[]) AND i.system_id = $2 AND EXISTS (SELECT 1 FROM student_eligible_item_instances_pilot e WHERE e.id = i.id) AND ${certifiedSupplySql('ai', 'PILOT_PREVIEW')}
@@ -112,6 +112,12 @@ async function main(): Promise<number> {
     check('X2  no Learning Plan entry was created by exam prep', (await planEntries()) === plan0);
     const ks1 = await knowledge();
     check('X3  Knowledge State: no row written for the Student by exam prep', ks0 === -1 || ks1 === ks0, ks0 === -1 ? 'table not present' : `${ks0} -> ${ks1}`);
+    // EXAM_ASSESSMENT -> Exam Readiness: one row per response and concept, for a Student who owns NO learner concept (off-plan)
+    const ownedConcepts = await n(`SELECT count(*)::int AS n FROM concepts c JOIN subjects s ON s.id = c.subject_id WHERE s.student_id = $1`, [S]).catch(() => -1);
+    const readiness = await n(`SELECT count(*)::int AS n FROM exam_readiness_evidence WHERE student_id = $1 AND evidence_class = 'EXAM_ASSESSMENT'`, [S]);
+    const independentCorrect = await n(`SELECT count(*)::int AS n FROM exam_readiness_evidence WHERE student_id = $1 AND independent AND fraction = 1`, [S]);
+    check('E1  every response of both attempts is Exam Readiness evidence (off-plan: the Student owns no learner concept)', readiness === a.responses.length + b.responses.length && ownedConcepts === 0, `${readiness} rows; ${independentCorrect} independent correct; owned concepts ${ownedConcepts}`);
+    check('E2  no Learning evidence row was written by exam prep (separation)', (await n(`SELECT count(*)::int AS n FROM learning_evidence WHERE student_id = $1`, [S])) === 0);
     report.attempts = [a, b].map((x) => ({ examAttemptId: x.examAttemptId, positions: x.served.map((s) => s.objective), scores: x.responses.map((r: any) => [Number(r.score), Number(r.max_score)]) }));
   } finally {
     const remaining = await cleanupFixtureStudent(db, S, actor).catch((e) => { console.error(e); return -1; });

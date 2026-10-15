@@ -1,0 +1,882 @@
+{
+  "kind": "EXAM_READINESS_REPORT",
+  "database": "DEV",
+  "engineVersion": "exam-bank-readiness-1",
+  "generatedAt": "2026-10-15T02:41:24.143Z",
+  "configs": {
+    "v2.cambridge.9709-as": {
+      "examVersionId": "6142712a-88c8-4182-83cb-14e3c4f064bb",
+      "family": "CAMBRIDGE",
+      "sections": [
+        "p1"
+      ],
+      "cells": 8,
+      "versionsRead": 237,
+      "modes": {
+        "practice:p1": {
+          "status": "READY",
+          "coveredPositions": 8,
+          "requiredPositions": 8,
+          "certifiedItemCount": 237,
+          "runtimeEligibleItemCount": 237,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "diagnostic": {
+          "status": "READY",
+          "coveredPositions": 8,
+          "requiredPositions": 8,
+          "certifiedItemCount": 237,
+          "runtimeEligibleItemCount": 237,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "reducedMock": {
+          "status": "READY",
+          "coveredPositions": 8,
+          "requiredPositions": 8,
+          "certifiedItemCount": 237,
+          "runtimeEligibleItemCount": 237,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "challenge": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 8,
+          "certifiedItemCount": 237,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "CALIBRATION_REQUIRED"
+          ],
+          "missingBuckets": [
+            "p1|cie.9709.p1.circular-measure|*|*-*|calculate",
+            "p1|cie.9709.p1.coordinate-geometry|*|*-*|calculate",
+            "p1|cie.9709.p1.differentiation|*|*-*|calculate",
+            "p1|cie.9709.p1.functions|*|*-*|determine",
+            "p1|cie.9709.p1.integration|*|*-*|evaluate",
+            "p1|cie.9709.p1.quadratics|*|*-*|determine",
+            "p1|cie.9709.p1.series|*|*-*|calculate",
+            "p1|cie.9709.p1.trigonometry|*|*-*|determine"
+          ]
+        }
+      }
+    },
+    "v2.ib.math-aa-hl": {
+      "examVersionId": "67350668-c383-4595-8500-cfaf1b1b21e2",
+      "family": "IB",
+      "sections": [
+        "p1",
+        "p2",
+        "p3"
+      ],
+      "cells": 8,
+      "versionsRead": 259,
+      "modes": {
+        "practice:p1": {
+          "status": "PARTIAL",
+          "coveredPositions": 4,
+          "requiredPositions": 5,
+          "certifiedItemCount": 181,
+          "runtimeEligibleItemCount": 181,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE"
+          ],
+          "missingBuckets": [
+            "p1|aahl.p1.extended|*|*-*|show that"
+          ]
+        },
+        "practice:p2": {
+          "status": "PARTIAL",
+          "coveredPositions": 2,
+          "requiredPositions": 4,
+          "certifiedItemCount": 60,
+          "runtimeEligibleItemCount": 60,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE"
+          ],
+          "missingBuckets": [
+            "p2|aahl.p2.extended|*|*-*|find",
+            "p2|aahl.p2.trigonometry|*|*-*|find"
+          ]
+        },
+        "practice:p3": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 1,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "p3|aahl.p3.investigation|*|*-*|show that"
+          ]
+        },
+        "diagnostic": {
+          "status": "PARTIAL",
+          "coveredPositions": 6,
+          "requiredPositions": 10,
+          "certifiedItemCount": 241,
+          "runtimeEligibleItemCount": 241,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE"
+          ],
+          "missingBuckets": [
+            "p1|aahl.p1.extended|*|*-*|show that",
+            "p2|aahl.p2.extended|*|*-*|find",
+            "p2|aahl.p2.trigonometry|*|*-*|find",
+            "p3|aahl.p3.investigation|*|*-*|show that"
+          ]
+        },
+        "reducedMock": {
+          "status": "PARTIAL",
+          "coveredPositions": 6,
+          "requiredPositions": 10,
+          "certifiedItemCount": 241,
+          "runtimeEligibleItemCount": 241,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE"
+          ],
+          "missingBuckets": [
+            "p1|aahl.p1.extended|*|*-*|show that",
+            "p2|aahl.p2.extended|*|*-*|find",
+            "p2|aahl.p2.trigonometry|*|*-*|find",
+            "p3|aahl.p3.investigation|*|*-*|show that"
+          ]
+        },
+        "challenge": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 10,
+          "certifiedItemCount": 241,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "CALIBRATION_REQUIRED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE"
+          ],
+          "missingBuckets": [
+            "p1|aahl.p1.algebra|*|*-*|solve",
+            "p1|aahl.p1.calculus|*|*-*|find",
+            "p1|aahl.p1.extended|*|*-*|show that",
+            "p1|aahl.p1.functions|*|*-*|find",
+            "p2|aahl.p2.extended|*|*-*|find",
+            "p2|aahl.p2.statistics|*|*-*|find",
+            "p2|aahl.p2.trigonometry|*|*-*|find",
+            "p3|aahl.p3.investigation|*|*-*|show that"
+          ]
+        }
+      }
+    },
+    "v2.paa": {
+      "examVersionId": "ebb5f8cc-984c-49bf-8b8e-53ecec8f75e7",
+      "family": "PAA",
+      "sections": [
+        "lectura",
+        "redaccion",
+        "matematicas",
+        "ingles"
+      ],
+      "cells": 20,
+      "versionsRead": 655,
+      "modes": {
+        "practice:lectura": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 10,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "RETIRED",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "lectura|paa.lect.evidencia|*|*-*|*",
+            "lectura|paa.lect.explicitas|*|*-*|*",
+            "lectura|paa.lect.graficos|*|*-*|*",
+            "lectura|paa.lect.inferencia|*|*-*|*",
+            "lectura|paa.lect.literario|*|*-*|*",
+            "lectura|paa.lect.vocabulario|*|*-*|*"
+          ]
+        },
+        "practice:redaccion": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 6,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "redaccion|paa.red.adicion|*|*-*|*",
+            "redaccion|paa.red.cohesion|*|*-*|*",
+            "redaccion|paa.red.elision|*|*-*|*",
+            "redaccion|paa.red.generalizacion|*|*-*|*",
+            "redaccion|paa.red.integracion|*|*-*|*",
+            "redaccion|paa.red.particularizacion|*|*-*|*"
+          ]
+        },
+        "practice:matematicas": {
+          "status": "READY",
+          "coveredPositions": 12,
+          "requiredPositions": 12,
+          "certifiedItemCount": 296,
+          "runtimeEligibleItemCount": 296,
+          "blockingReasons": [],
+          "missingBuckets": []
+        },
+        "practice:ingles": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 8,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "ingles|paa.ing.lectura|*|*-*|*",
+            "ingles|paa.ing.lenguaje|*|*-*|*",
+            "ingles|paa.ing.redaccion|*|*-*|*"
+          ]
+        },
+        "diagnostic": {
+          "status": "PARTIAL",
+          "coveredPositions": 12,
+          "requiredPositions": 36,
+          "certifiedItemCount": 296,
+          "runtimeEligibleItemCount": 296,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "RETIRED"
+          ],
+          "missingBuckets": [
+            "lectura|paa.lect.evidencia|*|*-*|*",
+            "lectura|paa.lect.explicitas|*|*-*|*",
+            "lectura|paa.lect.graficos|*|*-*|*",
+            "lectura|paa.lect.inferencia|*|*-*|*",
+            "lectura|paa.lect.literario|*|*-*|*",
+            "lectura|paa.lect.vocabulario|*|*-*|*",
+            "redaccion|paa.red.adicion|*|*-*|*",
+            "redaccion|paa.red.cohesion|*|*-*|*",
+            "redaccion|paa.red.elision|*|*-*|*",
+            "redaccion|paa.red.generalizacion|*|*-*|*",
+            "redaccion|paa.red.integracion|*|*-*|*",
+            "redaccion|paa.red.particularizacion|*|*-*|*",
+            "ingles|paa.ing.lectura|*|*-*|*",
+            "ingles|paa.ing.lenguaje|*|*-*|*",
+            "ingles|paa.ing.redaccion|*|*-*|*"
+          ]
+        },
+        "reducedMock": {
+          "status": "PARTIAL",
+          "coveredPositions": 12,
+          "requiredPositions": 36,
+          "certifiedItemCount": 296,
+          "runtimeEligibleItemCount": 296,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "RETIRED"
+          ],
+          "missingBuckets": [
+            "lectura|paa.lect.evidencia|*|*-*|*",
+            "lectura|paa.lect.explicitas|*|*-*|*",
+            "lectura|paa.lect.graficos|*|*-*|*",
+            "lectura|paa.lect.inferencia|*|*-*|*",
+            "lectura|paa.lect.literario|*|*-*|*",
+            "lectura|paa.lect.vocabulario|*|*-*|*",
+            "redaccion|paa.red.adicion|*|*-*|*",
+            "redaccion|paa.red.cohesion|*|*-*|*",
+            "redaccion|paa.red.elision|*|*-*|*",
+            "redaccion|paa.red.generalizacion|*|*-*|*",
+            "redaccion|paa.red.integracion|*|*-*|*",
+            "redaccion|paa.red.particularizacion|*|*-*|*",
+            "ingles|paa.ing.lectura|*|*-*|*",
+            "ingles|paa.ing.lenguaje|*|*-*|*",
+            "ingles|paa.ing.redaccion|*|*-*|*"
+          ]
+        },
+        "challenge": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 36,
+          "certifiedItemCount": 296,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "CALIBRATION_REQUIRED",
+            "RETIRED"
+          ],
+          "missingBuckets": [
+            "lectura|paa.lect.evidencia|*|*-*|*",
+            "lectura|paa.lect.explicitas|*|*-*|*",
+            "lectura|paa.lect.graficos|*|*-*|*",
+            "lectura|paa.lect.inferencia|*|*-*|*",
+            "lectura|paa.lect.literario|*|*-*|*",
+            "lectura|paa.lect.vocabulario|*|*-*|*",
+            "redaccion|paa.red.adicion|*|*-*|*",
+            "redaccion|paa.red.cohesion|*|*-*|*",
+            "redaccion|paa.red.elision|*|*-*|*",
+            "redaccion|paa.red.generalizacion|*|*-*|*",
+            "redaccion|paa.red.integracion|*|*-*|*",
+            "redaccion|paa.red.particularizacion|*|*-*|*",
+            "matematicas|paa.mat.algebra|*|*-*|*",
+            "matematicas|paa.mat.aritmetica|*|*-*|*",
+            "matematicas|paa.mat.datos|*|*-*|*",
+            "matematicas|paa.mat.geometria|*|*-*|*",
+            "matematicas|paa.mat.probabilidad|*|*-*|*",
+            "ingles|paa.ing.lectura|*|*-*|*",
+            "ingles|paa.ing.lenguaje|*|*-*|*",
+            "ingles|paa.ing.redaccion|*|*-*|*"
+          ]
+        }
+      }
+    },
+    "v2.pisa.2022": {
+      "examVersionId": "f8284dc0-a3ef-48f7-ad1c-6470f5997c6a",
+      "family": "PISA",
+      "sections": [
+        "math",
+        "reading",
+        "science"
+      ],
+      "cells": 21,
+      "versionsRead": 47,
+      "modes": {
+        "practice:math": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 8,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "FORMAT_NOT_SCORABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "math|pisa.cambio.formular|*|*-*|*",
+            "math|pisa.cambio.razonar|*|*-*|*",
+            "math|pisa.cantidad.emplear|*|*-*|*",
+            "math|pisa.cantidad.formular|*|*-*|*",
+            "math|pisa.espacio.emplear|*|*-*|*",
+            "math|pisa.espacio.interpretar|*|*-*|*",
+            "math|pisa.incertidumbre.interpretar|*|*-*|*",
+            "math|pisa.incertidumbre.razonar|*|*-*|*"
+          ]
+        },
+        "practice:reading": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 7,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "FORMAT_NOT_SCORABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "reading|pisa.read.evaluate.conflict|*|*-*|*",
+            "reading|pisa.read.evaluate.quality|*|*-*|*",
+            "reading|pisa.read.evaluate.reflect|*|*-*|*",
+            "reading|pisa.read.locate.access|*|*-*|*",
+            "reading|pisa.read.locate.search|*|*-*|*",
+            "reading|pisa.read.understand.integrate|*|*-*|*",
+            "reading|pisa.read.understand.literal|*|*-*|*"
+          ]
+        },
+        "practice:science": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 6,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "FORMAT_NOT_SCORABLE",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "science|pisa.sci.evaluate.epistemic|*|*-*|*",
+            "science|pisa.sci.evaluate.procedural|*|*-*|*",
+            "science|pisa.sci.explain.earth|*|*-*|*",
+            "science|pisa.sci.explain.living|*|*-*|*",
+            "science|pisa.sci.explain.physical|*|*-*|*",
+            "science|pisa.sci.interpret.data|*|*-*|*"
+          ]
+        },
+        "diagnostic": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 21,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "FORMAT_NOT_SCORABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "math|pisa.cambio.formular|*|*-*|*",
+            "math|pisa.cambio.razonar|*|*-*|*",
+            "math|pisa.cantidad.emplear|*|*-*|*",
+            "math|pisa.cantidad.formular|*|*-*|*",
+            "math|pisa.espacio.emplear|*|*-*|*",
+            "math|pisa.espacio.interpretar|*|*-*|*",
+            "math|pisa.incertidumbre.interpretar|*|*-*|*",
+            "math|pisa.incertidumbre.razonar|*|*-*|*",
+            "reading|pisa.read.evaluate.conflict|*|*-*|*",
+            "reading|pisa.read.evaluate.quality|*|*-*|*",
+            "reading|pisa.read.evaluate.reflect|*|*-*|*",
+            "reading|pisa.read.locate.access|*|*-*|*",
+            "reading|pisa.read.locate.search|*|*-*|*",
+            "reading|pisa.read.understand.integrate|*|*-*|*",
+            "reading|pisa.read.understand.literal|*|*-*|*",
+            "science|pisa.sci.evaluate.epistemic|*|*-*|*",
+            "science|pisa.sci.evaluate.procedural|*|*-*|*",
+            "science|pisa.sci.explain.earth|*|*-*|*",
+            "science|pisa.sci.explain.living|*|*-*|*",
+            "science|pisa.sci.explain.physical|*|*-*|*",
+            "science|pisa.sci.interpret.data|*|*-*|*"
+          ]
+        },
+        "reducedMock": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 21,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "FORMAT_NOT_SCORABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "math|pisa.cambio.formular|*|*-*|*",
+            "math|pisa.cambio.razonar|*|*-*|*",
+            "math|pisa.cantidad.emplear|*|*-*|*",
+            "math|pisa.cantidad.formular|*|*-*|*",
+            "math|pisa.espacio.emplear|*|*-*|*",
+            "math|pisa.espacio.interpretar|*|*-*|*",
+            "math|pisa.incertidumbre.interpretar|*|*-*|*",
+            "math|pisa.incertidumbre.razonar|*|*-*|*",
+            "reading|pisa.read.evaluate.conflict|*|*-*|*",
+            "reading|pisa.read.evaluate.quality|*|*-*|*",
+            "reading|pisa.read.evaluate.reflect|*|*-*|*",
+            "reading|pisa.read.locate.access|*|*-*|*",
+            "reading|pisa.read.locate.search|*|*-*|*",
+            "reading|pisa.read.understand.integrate|*|*-*|*",
+            "reading|pisa.read.understand.literal|*|*-*|*",
+            "science|pisa.sci.evaluate.epistemic|*|*-*|*",
+            "science|pisa.sci.evaluate.procedural|*|*-*|*",
+            "science|pisa.sci.explain.earth|*|*-*|*",
+            "science|pisa.sci.explain.living|*|*-*|*",
+            "science|pisa.sci.explain.physical|*|*-*|*",
+            "science|pisa.sci.interpret.data|*|*-*|*"
+          ]
+        },
+        "challenge": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 21,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "CALIBRATION_REQUIRED",
+            "FORMAT_NOT_SCORABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "math|pisa.cambio.formular|*|*-*|*",
+            "math|pisa.cambio.razonar|*|*-*|*",
+            "math|pisa.cantidad.emplear|*|*-*|*",
+            "math|pisa.cantidad.formular|*|*-*|*",
+            "math|pisa.espacio.emplear|*|*-*|*",
+            "math|pisa.espacio.interpretar|*|*-*|*",
+            "math|pisa.incertidumbre.interpretar|*|*-*|*",
+            "math|pisa.incertidumbre.razonar|*|*-*|*",
+            "reading|pisa.read.evaluate.conflict|*|*-*|*",
+            "reading|pisa.read.evaluate.quality|*|*-*|*",
+            "reading|pisa.read.evaluate.reflect|*|*-*|*",
+            "reading|pisa.read.locate.access|*|*-*|*",
+            "reading|pisa.read.locate.search|*|*-*|*",
+            "reading|pisa.read.understand.integrate|*|*-*|*",
+            "reading|pisa.read.understand.literal|*|*-*|*",
+            "science|pisa.sci.evaluate.epistemic|*|*-*|*",
+            "science|pisa.sci.evaluate.procedural|*|*-*|*",
+            "science|pisa.sci.explain.earth|*|*-*|*",
+            "science|pisa.sci.explain.living|*|*-*|*",
+            "science|pisa.sci.explain.physical|*|*-*|*",
+            "science|pisa.sci.interpret.data|*|*-*|*"
+          ]
+        }
+      }
+    },
+    "v2.saber11.math": {
+      "examVersionId": "4c77ed1e-a957-49a3-bf9f-c26bdb81fb70",
+      "family": "ICFES",
+      "sections": [
+        "math"
+      ],
+      "cells": 3,
+      "versionsRead": 31,
+      "modes": {
+        "practice:math": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 50,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "RETIRED",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "math|saber.argumentacion|multiple_choice|*-*|*",
+            "math|saber.formulacion|multiple_choice|*-*|*",
+            "math|saber.interpretacion|multiple_choice|*-*|*"
+          ]
+        },
+        "diagnostic": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 50,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "RETIRED",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "math|saber.argumentacion|multiple_choice|*-*|*",
+            "math|saber.formulacion|multiple_choice|*-*|*",
+            "math|saber.interpretacion|multiple_choice|*-*|*"
+          ]
+        },
+        "reducedMock": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 50,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "RETIRED",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "math|saber.argumentacion|multiple_choice|*-*|*",
+            "math|saber.formulacion|multiple_choice|*-*|*",
+            "math|saber.interpretacion|multiple_choice|*-*|*"
+          ]
+        },
+        "challenge": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 50,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "CALIBRATION_REQUIRED",
+            "RETIRED",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "math|saber.argumentacion|multiple_choice|*-*|*",
+            "math|saber.formulacion|multiple_choice|*-*|*",
+            "math|saber.interpretacion|multiple_choice|*-*|*"
+          ]
+        }
+      }
+    },
+    "v2.aice.9709-as": {
+      "examVersionId": "5ec8f7bb-fcc7-481d-aff8-70f633847d48",
+      "family": "AICE",
+      "sections": [
+        "p1",
+        "p2",
+        "p4",
+        "p5"
+      ],
+      "cells": 14,
+      "versionsRead": 14,
+      "modes": {
+        "practice:p1": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 4,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "p1|aice.9709.p1.differentiation|*|*-*|*",
+            "p1|aice.9709.p1.integration|*|*-*|*",
+            "p1|aice.9709.p1.quadratics|*|*-*|*",
+            "p1|aice.9709.p1.series|*|*-*|*"
+          ]
+        },
+        "practice:p2": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 3,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "p2|aice.9709.p2.differentiation|*|*-*|*",
+            "p2|aice.9709.p2.logarithms|*|*-*|*",
+            "p2|aice.9709.p2.numerical|*|*-*|*"
+          ]
+        },
+        "practice:p4": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 3,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "p4|aice.9709.p4.energy|*|*-*|*",
+            "p4|aice.9709.p4.forces|*|*-*|*",
+            "p4|aice.9709.p4.kinematics|*|*-*|*"
+          ]
+        },
+        "practice:p5": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 4,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "p5|aice.9709.p5.distributions|*|*-*|*",
+            "p5|aice.9709.p5.normal|*|*-*|*",
+            "p5|aice.9709.p5.permutations|*|*-*|*",
+            "p5|aice.9709.p5.probability|*|*-*|*"
+          ]
+        },
+        "diagnostic": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 14,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "p1|aice.9709.p1.differentiation|*|*-*|*",
+            "p1|aice.9709.p1.integration|*|*-*|*",
+            "p1|aice.9709.p1.quadratics|*|*-*|*",
+            "p1|aice.9709.p1.series|*|*-*|*",
+            "p2|aice.9709.p2.differentiation|*|*-*|*",
+            "p2|aice.9709.p2.logarithms|*|*-*|*",
+            "p2|aice.9709.p2.numerical|*|*-*|*",
+            "p4|aice.9709.p4.energy|*|*-*|*",
+            "p4|aice.9709.p4.forces|*|*-*|*",
+            "p4|aice.9709.p4.kinematics|*|*-*|*",
+            "p5|aice.9709.p5.distributions|*|*-*|*",
+            "p5|aice.9709.p5.normal|*|*-*|*",
+            "p5|aice.9709.p5.permutations|*|*-*|*",
+            "p5|aice.9709.p5.probability|*|*-*|*"
+          ]
+        },
+        "reducedMock": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 14,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "p1|aice.9709.p1.differentiation|*|*-*|*",
+            "p1|aice.9709.p1.integration|*|*-*|*",
+            "p1|aice.9709.p1.quadratics|*|*-*|*",
+            "p1|aice.9709.p1.series|*|*-*|*",
+            "p2|aice.9709.p2.differentiation|*|*-*|*",
+            "p2|aice.9709.p2.logarithms|*|*-*|*",
+            "p2|aice.9709.p2.numerical|*|*-*|*",
+            "p4|aice.9709.p4.energy|*|*-*|*",
+            "p4|aice.9709.p4.forces|*|*-*|*",
+            "p4|aice.9709.p4.kinematics|*|*-*|*",
+            "p5|aice.9709.p5.distributions|*|*-*|*",
+            "p5|aice.9709.p5.normal|*|*-*|*",
+            "p5|aice.9709.p5.permutations|*|*-*|*",
+            "p5|aice.9709.p5.probability|*|*-*|*"
+          ]
+        },
+        "challenge": {
+          "status": "NOT_READY",
+          "coveredPositions": 0,
+          "requiredPositions": 14,
+          "certifiedItemCount": 0,
+          "runtimeEligibleItemCount": 0,
+          "blockingReasons": [
+            "BUCKET_UNCOVERED",
+            "NOT_CERTIFIED",
+            "LINEAGE_INCOMPLETE",
+            "RIGHTS_NOT_CLEARED",
+            "LIFECYCLE_NOT_DELIVERABLE",
+            "CALIBRATION_REQUIRED",
+            "NO_CERTIFIED_SUPPLY"
+          ],
+          "missingBuckets": [
+            "p1|aice.9709.p1.differentiation|*|*-*|*",
+            "p1|aice.9709.p1.integration|*|*-*|*",
+            "p1|aice.9709.p1.quadratics|*|*-*|*",
+            "p1|aice.9709.p1.series|*|*-*|*",
+            "p2|aice.9709.p2.differentiation|*|*-*|*",
+            "p2|aice.9709.p2.logarithms|*|*-*|*",
+            "p2|aice.9709.p2.numerical|*|*-*|*",
+            "p4|aice.9709.p4.energy|*|*-*|*",
+            "p4|aice.9709.p4.forces|*|*-*|*",
+            "p4|aice.9709.p4.kinematics|*|*-*|*",
+            "p5|aice.9709.p5.distributions|*|*-*|*",
+            "p5|aice.9709.p5.normal|*|*-*|*",
+            "p5|aice.9709.p5.permutations|*|*-*|*",
+            "p5|aice.9709.p5.probability|*|*-*|*"
+          ]
+        }
+      }
+    }
+  }
+}
