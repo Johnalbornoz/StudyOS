@@ -303,6 +303,8 @@ describe('B2-B1 blueprint variants and frozen forms', () => {
       'src/lib/exam-bank/readiness/bank-readiness-adapter.ts',
       'src/lib/exam-core/question-bank/item-attribution.service.ts',
       'src/lib/exam-core/question-bank/reviewer-qualification.service.ts',
+      // Track B: the Exam Readiness evidence writer reads the PRIMARY concept of each served item (question_bank_item_concepts)
+      'src/lib/exam-readiness/exam-readiness-evidence.service.ts',
     ]);
     // still no route and no start path: nothing under src/app touches the schema, and nothing outside the B2 module imports the adapter
     expect(users.some((f) => f.startsWith('src/app/'))).toBe(false);

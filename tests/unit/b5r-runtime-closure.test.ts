@@ -237,7 +237,9 @@ describe('B5-R exam instance: provenance at start, canonical evidence at complet
     const post = read('src/lib/exam-core/post-completion.ts');
     expect(post.indexOf('scoreAndRecordAttemptResult(attemptId)')).toBeLessThan(post.indexOf('completeExamAssessmentEvidence(attemptId, studentId)'));
     expect(post).toMatch(/try \{\s+await completeExamAssessmentEvidence\(attemptId, studentId\);\s+\} catch \(e\) \{/);
-    expect(post).toMatch(/return \{ result, gapRefresh \};/);
+    // + the Exam Readiness evidence of the attempt (EXAM_ASSESSMENT stream), reported alongside; the result stays first
+    expect(post).toMatch(/return \{ result, gapRefresh, examReadiness \};/);
+    expect(post.indexOf('scoreAndRecordAttemptResult(attemptId)')).toBeLessThan(post.indexOf('recordExamReadinessEvidence(attemptId, studentId)'));
     // the exam-side module changes no form, score, attempt type or fallback
     const src = read('src/lib/assessment-execution/assessment-exam.service.ts').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     expect(src).not.toMatch(/\bUPDATE\b|\bINSERT\b|\bDELETE\b|deriveInstanceAttemptType|mayUseGeneratedFallback|updateMastery\(|form\s*=/);

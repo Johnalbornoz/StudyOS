@@ -85,7 +85,7 @@ describe('R2 -- unified post-completion flow', () => {
     const r = await finalizeExamCompletion('att-1', 'stu-1', '/x');
     expect(scoreMock).toHaveBeenCalledWith('att-1');
     expect(refreshMock).toHaveBeenCalledWith('stu-1');
-    expect(r).toEqual({ result: { rawScore: 3, maxScore: 5 }, gapRefresh: 'REFRESHED' });
+    expect(r).toMatchObject({ result: { rawScore: 3, maxScore: 5 }, gapRefresh: 'REFRESHED' });
     expect(scoreMock.mock.invocationCallOrder[0]).toBeLessThan(refreshMock.mock.invocationCallOrder[0]);
   });
 

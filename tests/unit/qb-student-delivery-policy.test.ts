@@ -91,7 +91,10 @@ describe('every Student-facing selector uses the one rule', () => {
   const NON_STUDENT = /curriculum\/item-traceability\.service\.ts$|question-bank\/(review|review-admin|reviewer-qualification|item-attribution|admin|bank|factory|calibration|health|demand)\.service\.ts$|apply-vertical-config\.service\.ts$|assessment\/item-bank\.service\.ts$|assessment-foundation\/question-coverage\.service\.ts$|assessment-blueprint\/assessment-blueprint\.service\.ts$|exam-bank\/(publication\.service|delivery-scope)\.ts$|exam-bank\/pilot\/paa-pilot-publication\.service\.ts$|assessment-experience\/assessment-experience\.service\.ts$|exam-core\/result-view\.service\.ts$|exam-bank\/readiness\/bank-readiness-adapter\.ts$/; // + delivery-scope: it re-checks items already selected (it only ever narrows) and selects nothing; + the result view: reads whether a completed attempt's items were certified, to label the result; + the experience service: asks only whether calibrated difficulty exists (a challenge is then offered or not), and selects nothing // + the Exam Bank publication: a governed loader that writes bank rows, never a Student reader
   // + the READ-ONLY readiness adapter (Exam Bank hardening): it reads EVERY version to explain why each is or is not deliverable, applies
   //   the one rule in memory through `isEligible`, and selects nothing for a Student.
-  const readers = SRC.filter((f) => /FROM approved_items|JOIN approved_items/.test(read(f)) && !NON_STUDENT.test(f));
+  // + the Exam Readiness evidence writer: it records evidence of items ALREADY served and scored in an attempt (it reads the
+  //   served version's objective and lineage); it selects nothing for a Student.
+  const EVIDENCE_OF_SERVED = /exam-readiness\/exam-readiness-evidence\.service\.ts$/;
+  const readers = SRC.filter((f) => /FROM approved_items|JOIN approved_items/.test(read(f)) && !NON_STUDENT.test(f) && !EVIDENCE_OF_SERVED.test(f));
 
   it('8 / 9 / 10 / 12. the Student readers are exactly: practice & dynamic sourcing, exam instances (practice, diagnostic, mocks), the full-mock guard', () => {
     // + reviewed-item-learning.service: the content of reviewed items the Blueprint Core froze for a Student's own partial exam

@@ -114,6 +114,16 @@ const decisionIdentity = (r: Pick<CertificationRecord, 'objectType' | 'objectId'
 export const coreCertificationVersionOf = (state: PlannedObjectCertification['state']): string => `${HUMAN50_POLICY_VERSION}:${state}`;
 
 /**
+ * Extension batches already published, with the inputs they were certified from: a later classification, register
+ * entry or re-governed adapter is not an input of theirs (their stored inputs hash stays theirs). Every later batch
+ * is planned against the live publication state.
+ */
+const ARCHIVED_BATCH_INPUTS: Readonly<Record<string, { blueprints: readonly LibraryBlueprint[]; register: typeof LIBRARY_APPLICABILITY; registry: AssessmentSystemRegistry }>> = {
+  // the first IB delivery (DEV, 2026-10-14): V5.2 classifications and register, the registry before the Cambridge rebinding
+  'CF-IB-AAHL-01': { blueprints: LIBRARY_BLUEPRINTS, register: LIBRARY_APPLICABILITY, registry: V52_ASSESSMENT_REGISTRY },
+};
+
+/**
  * Everything the loader will write, derived from the artefacts. `human` is the recorded decisions file, parsed.
  * A plan with a non-empty `preflight` must not be applied.
  */
@@ -125,7 +135,7 @@ export function buildPublicationPlan(human: HumanDecisionsFile, scope: Eligibili
   const base = planOfLibrary(human, scope, LIBRARY, PUBLICATION_BATCH_ID, LIBRARY_BLUEPRINTS, LIBRARY_APPLICABILITY, V52_ASSESSMENT_REGISTRY);
   // the extension carries every classification (the V5.2 ones it places items in, and the pilot ones it adds) and the
   // register of the pilot-governed identities
-  return LIBRARY_EXTENSION_BATCHES.length ? { ...base, extensions: LIBRARY_EXTENSION_BATCHES.map((b) => planOfLibrary(human, scope, b.entries, b.batchId, PUBLICATION_BLUEPRINTS, PUBLICATION_APPLICABILITY)) } : base;
+  return LIBRARY_EXTENSION_BATCHES.length ? { ...base, extensions: LIBRARY_EXTENSION_BATCHES.map((b) => { const archived = ARCHIVED_BATCH_INPUTS[b.batchId]; return archived ? planOfLibrary(human, scope, b.entries, b.batchId, archived.blueprints, archived.register, archived.registry) : planOfLibrary(human, scope, b.entries, b.batchId, PUBLICATION_BLUEPRINTS, PUBLICATION_APPLICABILITY); }) } : base;
 }
 
 function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, library: readonly LibraryEntry[], batchId: string, blueprintsIn: readonly LibraryBlueprint[], register: typeof LIBRARY_APPLICABILITY, registry: AssessmentSystemRegistry = STUDYUS_ASSESSMENT_REGISTRY): PublicationPlan {

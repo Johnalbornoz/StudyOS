@@ -6,6 +6,7 @@
  * mark schemes. Persistence stays F7's real recordExamAttemptItemResponse.
  * No exam-family branching anywhere.
  */
+import { examEvidenceKnowledgeStateMode } from '@/lib/exam-readiness/exam-readiness-evidence.service';
 import { executionAuthorityOfExamAttempt } from '@/lib/assessment-execution/assessment-start.service';
 import { db } from '@/lib/db';
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
@@ -139,7 +140,8 @@ export async function recordSimulationItemResponse(params: {
       if (studentConceptId) {
         const subjectRow = await db.query(`SELECT subject_id FROM concepts WHERE id = $1`, [studentConceptId]);
         const subjectId = subjectRow.rows[0]?.subject_id;
-        if (subjectId) {
+        // SEPARATED (default): exam responses go to Exam Readiness at completion, never to the Knowledge State
+        if (subjectId && examEvidenceKnowledgeStateMode() === 'LEGACY') {
           const metadata: Record<string, unknown> = { context: { examAttemptId: params.examAttemptId, simulationSource: true, itemSource: item.exam.source } };
           if (bridge.skillIds.length > 0) metadata.skillIds = bridge.skillIds;
           metadata.framework = { examVersionId: params.examVersionId };
