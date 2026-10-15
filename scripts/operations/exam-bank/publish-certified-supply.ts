@@ -29,6 +29,9 @@ const AUTHORISED_TARGETS: Readonly<Record<string, string>> = {
   // Authorised 2026-10-13: the Track B Preview candidate's OWN database (neondb_trackb_exam), a clone of the Preview
   // database. The database of the known-good fallback (f1436f7) is a different one and is not a target.
   '4c249c68e0627b9f': 'PREVIEW_TRACK_B',
+  // Authorised 2026-10-15 (John): the converged pilot candidate's OWN database, Neon branch pilot-candidate-20261015
+  // (neondb_trackb_exam cloned from preview). Never the frozen Preview database.
+  '4baac799b9bd2a6a': 'PILOT_CANDIDATE_20261015',
 };
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 /** The artefacts the publication is computed from, pinned. A changed artefact is a different publication: it stops here. */

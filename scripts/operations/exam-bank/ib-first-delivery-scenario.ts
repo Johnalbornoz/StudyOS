@@ -19,6 +19,8 @@ process.env.QUESTION_BANK_READINESS_MODE = 'ENFORCE';
 process.env.EXAM_BANK_DELIVERY_SCOPE = 'PILOT_PREVIEW';
 
 const DEV = '2a29b99ee14a22b4';
+/** Where this may run: DEV and the pilot candidate's own database (never the frozen Preview database). */
+const TARGETS: Readonly<Record<string, string>> = { [DEV]: 'DEV', '4baac799b9bd2a6a': 'PILOT_CANDIDATE_20261015' };
 const RUN = randomBytes(3).toString('hex');
 const results: { id: string; ok: boolean; detail: string }[] = [];
 const check = (id: string, ok: boolean, detail = ''): void => { results.push({ id, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${id}${detail ? `  [${detail}]` : ''}`); };
@@ -26,7 +28,7 @@ const check = (id: string, ok: boolean, detail = ''): void => { results.push({ i
 async function main(): Promise<number> {
   const u = new URL(process.env.DATABASE_URL ?? '');
   const fp = createHash('sha256').update(`${u.hostname}|${u.pathname.slice(1)}`).digest('hex').slice(0, 16);
-  if (fp !== DEV || process.env.EXAM_BANK_PUBLICATION_FP !== fp) throw new Error(`REFUSING: database ${fp} is not DEV`);
+  if (!TARGETS[fp] || process.env.EXAM_BANK_PUBLICATION_FP !== fp) throw new Error(`REFUSING: database ${fp} is not an authorised target`);
   const at = process.argv.indexOf('--out'); const out = at > 0 ? process.argv[at + 1] : null;
   const { db } = await import('@/lib/db');
   const { getOrCreateCanonicalUser } = await import('@/lib/identity/canonical-user.service');
@@ -59,7 +61,7 @@ async function main(): Promise<number> {
   const S = await upsertStudentFromWebhook(clerk, `${clerk}@exam-bank.test`, 'ib first delivery');
   const actor = user.id as string;
   await assignSelfServiceRole(clerk, actor, 'STUDENT');
-  const report: Record<string, unknown> = { kind: 'IB_FIRST_DELIVERY_DEV', run: RUN, database: 'DEV', bankItem: row ? { approvedItemId: row.id, prompt: row.content.question, key: row.content.correctAnswer, marks: row.content.marks } : null };
+  const report: Record<string, unknown> = { kind: 'IB_FIRST_DELIVERY_DEV', run: RUN, database: TARGETS[fp], bankItem: row ? { approvedItemId: row.id, prompt: row.content.question, key: row.content.correctAnswer, marks: row.content.marks } : null };
   try {
     await db.query(`INSERT INTO profiles (id, user_type, full_name) VALUES ($1, 'student', 'ib first delivery') ON CONFLICT (id) DO NOTHING`, [S]);
     await db.query(`INSERT INTO student_profiles (id) VALUES ($1) ON CONFLICT (id) DO NOTHING`, [S]);

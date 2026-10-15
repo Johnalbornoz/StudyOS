@@ -152,7 +152,9 @@ describe('PAA pilot: delivery and persistence are scoped', () => {
     // the migration declares no environment itself, and the loader never does: it is a separate, allow-listed operator step
     expect(scope.replace(/^\s*--.*$/gm, '')).not.toMatch(/INSERT INTO/);
     expect(read('src/lib/exam-bank/pilot/paa-pilot-publication.service.ts').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')).not.toMatch(/INSERT INTO exam_bank_pilot_environment/);
-    expect(read('scripts/operations/exam-bank/declare-pilot-environment.ts')).toMatch(/const TARGETS: Readonly<Record<string, string>> = \{ '2a29b99ee14a22b4': 'DEV', '4c249c68e0627b9f': 'PREVIEW_TRACK_B' \};/);
+    // + the pilot candidate's own database (2026-10-15), a declared CLONE of the Track B Preview database
+    expect(read('scripts/operations/exam-bank/declare-pilot-environment.ts')).toMatch(/const TARGETS: Readonly<Record<string, string>> = \{ '2a29b99ee14a22b4': 'DEV', '4c249c68e0627b9f': 'PREVIEW_TRACK_B', '4baac799b9bd2a6a': 'PILOT_CANDIDATE_20261015' \};/);
+    expect(read('scripts/operations/exam-bank/declare-pilot-environment.ts')).toMatch(/const CLONES: Readonly<Record<string, string>> = \{ '4baac799b9bd2a6a': '4c249c68e0627b9f' \};/);
     const loader = read('src/lib/exam-bank/pilot/paa-pilot-publication.service.ts');
     expect(loader.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')).not.toMatch(/INSERT INTO question_bank_reviews|executeAI|callModel/);
     // the provider is reachable only from the offline factory

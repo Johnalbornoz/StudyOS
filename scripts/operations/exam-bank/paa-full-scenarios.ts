@@ -10,7 +10,7 @@ import { createHash, randomBytes } from 'crypto';
 process.env.ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED = 'true';
 process.env.QUESTION_BANK_READINESS_MODE = 'ENFORCE';
 process.env.EXAM_BANK_DELIVERY_SCOPE = 'PILOT_PREVIEW';
-const TARGETS: Readonly<Record<string, string>> = { '4c249c68e0627b9f': 'PREVIEW_TRACK_B' };
+const TARGETS: Readonly<Record<string, string>> = { '4c249c68e0627b9f': 'PREVIEW_TRACK_B', '4baac799b9bd2a6a': 'PILOT_CANDIDATE_20261015' };
 const RUN = randomBytes(3).toString('hex');
 const results: boolean[] = [];
 const check = (id: string, ok: boolean, detail = ''): void => { results.push(ok); console.log(`${ok ? 'PASS' : 'FAIL'}  ${id}${detail ? '  [' + detail + ']' : ''}`); };

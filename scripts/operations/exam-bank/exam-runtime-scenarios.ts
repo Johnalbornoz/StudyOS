@@ -20,7 +20,7 @@ process.env.QUESTION_BANK_READINESS_MODE = 'ENFORCE';
 process.env.EXAM_BANK_DELIVERY_SCOPE = 'PILOT_PREVIEW';
 
 /** Where this may run: DEV, and the Track B Preview candidate's own database (never the shared Preview database, never Production). */
-const TARGETS: Readonly<Record<string, string>> = { '2a29b99ee14a22b4': 'DEV', '4c249c68e0627b9f': 'PREVIEW_TRACK_B' };
+const TARGETS: Readonly<Record<string, string>> = { '2a29b99ee14a22b4': 'DEV', '4c249c68e0627b9f': 'PREVIEW_TRACK_B', '4baac799b9bd2a6a': 'PILOT_CANDIDATE_20261015' };
 const RUN = randomBytes(3).toString('hex');
 const results: { id: string; ok: boolean }[] = [];
 const check = (id: string, ok: boolean, detail = ''): void => { results.push({ id, ok }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${id}${detail ? '  [' + detail + ']' : ''}`); };

@@ -22,6 +22,8 @@ process.env.QUESTION_BANK_READINESS_MODE = 'ENFORCE';
 process.env.EXAM_BANK_DELIVERY_SCOPE = 'PILOT_PREVIEW';
 
 const DEV = '2a29b99ee14a22b4';
+/** Where this may run: DEV and the pilot candidate's own database (never the frozen Preview database). */
+const TARGETS: Readonly<Record<string, string>> = { [DEV]: 'DEV', '4baac799b9bd2a6a': 'PILOT_CANDIDATE_20261015' };
 const RUN = randomBytes(3).toString('hex');
 const arg = (k: string): string | null => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const results: { id: string; ok: boolean; detail: string }[] = [];
@@ -32,7 +34,7 @@ async function main(): Promise<number> {
   if (!CONFIG || !SECTION || !SYSTEM) throw new Error('usage: --config <key> --section <key> --system <systemId>');
   const u = new URL(process.env.DATABASE_URL ?? '');
   const fp = createHash('sha256').update(`${u.hostname}|${u.pathname.slice(1)}`).digest('hex').slice(0, 16);
-  if (fp !== DEV || process.env.EXAM_BANK_PUBLICATION_FP !== fp) throw new Error(`REFUSING: database ${fp} is not DEV`);
+  if (!TARGETS[fp] || process.env.EXAM_BANK_PUBLICATION_FP !== fp) throw new Error(`REFUSING: database ${fp} is not an authorised target`);
   const { db } = await import('@/lib/db');
   const { getOrCreateCanonicalUser } = await import('@/lib/identity/canonical-user.service');
   const { upsertStudentFromWebhook } = await import('@/lib/auth');
@@ -59,7 +61,7 @@ async function main(): Promise<number> {
   const supplyOf = (lo: string) => Number(supply.find((s: any) => s.lo === lo)?.n ?? 0);
   const required = targets.reduce((m: number, t: any) => m + Number(t.required), 0);
   check('C2  every blueprint objective of the section has certified, pilot-eligible supply of this system', targets.length > 0 && targets.every((t: any) => supplyOf(t.id) >= Number(t.required)), targets.map((t: any) => `${t.code}:${supplyOf(t.id)}/${t.required}`).join(' '));
-  const report: Record<string, unknown> = { kind: 'GOVERNED_FORM_DEV', run: RUN, database: 'DEV', config: CONFIG, section: SECTION, system: SYSTEM, positionsRequired: required, supply: targets.map((t: any) => ({ objective: t.code, required: Number(t.required), certifiedEligible: supplyOf(t.id) })) };
+  const report: Record<string, unknown> = { kind: 'GOVERNED_FORM_DEV', run: RUN, database: TARGETS[fp], config: CONFIG, section: SECTION, system: SYSTEM, positionsRequired: required, supply: targets.map((t: any) => ({ objective: t.code, required: Number(t.required), certifiedEligible: supplyOf(t.id) })) };
 
   const clerk = `ebr-form-${RUN}`;
   const user = await getOrCreateCanonicalUser(clerk, `${clerk}@exam-bank.test`);
