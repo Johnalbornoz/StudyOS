@@ -18,7 +18,8 @@ import { certificationVerdict, deliverabilityOf, type DeliverabilityReason, type
 import { DEFAULT_CALIBRATION_POLICY, isCalibrated, type CalibrationPolicy } from './difficulty';
 import type { ExposureHistory } from './exposure';
 
-export const EXAM_BANK_READINESS_ENGINE_VERSION = 'exam-bank-readiness-1';
+// -2 (2026-10-15): a bucket is covered by DISTINCT TEMPLATES (a form never repeats a template), not by items
+export const EXAM_BANK_READINESS_ENGINE_VERSION = 'exam-bank-readiness-2';
 
 export interface BlueprintBucket {
   bucketId: string;
@@ -82,6 +83,8 @@ export interface BucketDepth {
   /** floor(eligible / required): disjoint forms this bucket supports. */
   effectiveBucketDepth: number;
   coveredPositions: number;
+  /** Distinct templates among the eligible rows: what one form can place (a form never repeats a template). */
+  placeableTemplates: number;
   distinctStimuli: number;
   /** Student-specific (only with exposure): never-exposed eligible rows and the depth they support. */
   studentUnexposedCount: number | null;
@@ -182,9 +185,11 @@ export function evaluateExamBankReadiness(input: ReadinessInput): ExamBankReadin
     const el = eligibleByBucket.get(b.bucketId)!;
     const req = Math.max(1, b.requiredPositions);
     const unexposed = exposure ? el.filter((r) => !exposure.has(r.itemId)).length : null;
+    // what ONE form can place in the bucket: one item per template (items without a template key are each their own)
+    const placeable = new Set(el.map((r) => r.templateKey ?? `item:${r.itemId}`)).size;
     return {
       bucketId: b.bucketId, requiredPositions: b.requiredPositions, certifiedItemCount: certifiedByBucket.get(b.bucketId)!.size, runtimeEligibleItemCount: el.length,
-      effectiveBucketDepth: Math.floor(el.length / req), coveredPositions: Math.min(el.length, b.requiredPositions),
+      effectiveBucketDepth: placeable < b.requiredPositions ? 0 : Math.floor(el.length / req), coveredPositions: Math.min(placeable, b.requiredPositions), placeableTemplates: placeable,
       distinctStimuli: new Set(el.map((r) => r.stimulusId).filter((s): s is string => s !== null)).size,
       studentUnexposedCount: unexposed, studentEffectiveDepth: unexposed === null ? null : Math.floor(unexposed / req), excluded: excluded.get(b.bucketId)!,
     };
@@ -192,8 +197,8 @@ export function evaluateExamBankReadiness(input: ReadinessInput): ExamBankReadin
 
   const requiredPositions = buckets.reduce((s, b) => s + Math.max(0, b.requiredPositions), 0);
   const coveredPositions = depth.reduce((s, b) => s + b.coveredPositions, 0);
-  const missingBuckets = depth.filter((b) => b.runtimeEligibleItemCount < b.requiredPositions).map((b) => b.bucketId);
-  for (const b of depth) { if (b.runtimeEligibleItemCount === 0) reasons.add('BUCKET_UNCOVERED'); else if (b.runtimeEligibleItemCount < b.requiredPositions) reasons.add('BUCKET_UNDER_SUPPLIED'); }
+  const missingBuckets = depth.filter((b) => b.coveredPositions < b.requiredPositions).map((b) => b.bucketId);
+  for (const b of depth) { if (b.runtimeEligibleItemCount === 0) reasons.add('BUCKET_UNCOVERED'); else if (b.coveredPositions < b.requiredPositions) reasons.add('BUCKET_UNDER_SUPPLIED'); }
   const certified = certifiedItems.size;
   const certifiedNotDeliverable = [...certifiedItems].filter((id) => !deliverableItems.has(id)).length;
   if (certified === 0) reasons.add('NO_CERTIFIED_SUPPLY');

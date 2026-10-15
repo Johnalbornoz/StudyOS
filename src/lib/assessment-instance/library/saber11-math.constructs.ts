@@ -312,4 +312,110 @@ export const SABER_SCALED_AREA_CLAIM: ParametricConstruct<ScaledAreaParameters> 
   recognitionKey: (x) => `${x.a}|${x.b}|${x.k}`,
 };
 
+// ====================================================================== scenarios (template variety)
+/**
+ * A real form never carries two items of one TEMPLATE (wording with the numbers masked). The V2.1 form places up to 9
+ * items of one competency x category cell, and each cell has one construct: each construct is therefore presented in
+ * several SITUATIONS. A scenario changes the situation only -- the same parameter set, the same numbers, the same key,
+ * the same misconceptions -- and is a parameter of its own (`ctx`), so every (situation, numbers) pair is one instance.
+ */
+type WithCtx<P> = P & { ctx: number };
+function withScenarios<P extends Record<string, number | string>>(base: ParametricConstruct<P>, rendererVersion: string, scenarios: readonly ((p: P) => string)[]): ParametricConstruct<WithCtx<P>> {
+  const strip = (p: WithCtx<P>): P => { const { ctx: _ctx, ...rest } = p; return rest as unknown as P; };
+  return {
+    construct: `${base.construct}_IN_CONTEXT`, rendererVersion, languages: base.languages,
+    enumerate: (band) => base.enumerate(band).flatMap((p) => scenarios.map((_, ctx) => ({ ...p, ctx } as WithCtx<P>))),
+    bandIssues: (band, p) => (Number.isInteger(p.ctx) && p.ctx >= 0 && p.ctx < scenarios.length ? base.bandIssues(band, strip(p)) : ['CTX_OUTSIDE_THE_ENVELOPE']),
+    present: (p) => scenarios[p.ctx](strip(p)),
+    answer: (p) => base.answer(strip(p)),
+    keyHolds: (p, key) => base.keyHolds(strip(p), key),
+    misconceptionAnswers: (p) => base.misconceptionAnswers(strip(p)),
+    recognitionKey: (p) => `${p.ctx}|${base.recognitionKey(strip(p))}`,
+  };
+}
+export const SABER_TABLE_DIFFERENCE_IN_CONTEXT = withScenarios(SABER_TABLE_DIFFERENCE, 'tb.saber.table-difference@0.2.0', [
+  (x) => `En una encuesta, los estudiantes de un colegio eligieron su deporte favorito: fútbol ${x.a}, baloncesto ${x.b}, voleibol ${x.c} y natación ${x.d}. ${x.ask === 'A_MINUS_B' ? '¿Cuántos estudiantes más eligieron fútbol que baloncesto?' : '¿Cuántos estudiantes más eligieron fútbol que voleibol y natación juntos?'}`,
+  (x) => `Una frutería registró las cajas vendidas en una semana: mango ${x.a}, banano ${x.b}, fresa ${x.c} y piña ${x.d}. ${x.ask === 'A_MINUS_B' ? '¿Cuántas cajas más de mango que de banano se vendieron?' : '¿Cuántas cajas más de mango que de fresa y piña juntas se vendieron?'}`,
+  (x) => `Los estudiantes de un colegio indicaron cómo llegan cada mañana: en bus ${x.a}, en bicicleta ${x.b}, a pie ${x.c} y en carro ${x.d}. ${x.ask === 'A_MINUS_B' ? '¿Cuántos estudiantes más llegan en bus que en bicicleta?' : '¿Cuántos estudiantes más llegan en bus que a pie y en carro juntos?'}`,
+  (x) => `Una emisora preguntó a sus oyentes por su género musical preferido: salsa ${x.a}, vallenato ${x.b}, rock ${x.c} y reguetón ${x.d}. ${x.ask === 'A_MINUS_B' ? '¿Cuántos oyentes más prefieren salsa que vallenato?' : '¿Cuántos oyentes más prefieren salsa que rock y reguetón juntos?'}`,
+  (x) => `La biblioteca escolar registró los préstamos del mes por tipo de libro: novela ${x.a}, cuento ${x.b}, poesía ${x.c} e historieta ${x.d}. ${x.ask === 'A_MINUS_B' ? '¿Cuántos préstamos más de novela que de cuento hubo?' : '¿Cuántos préstamos más de novela que de poesía e historieta juntas hubo?'}`,
+  (x) => `En un barrio se contaron las mascotas de las familias: perros ${x.a}, gatos ${x.b}, peces ${x.c} y aves ${x.d}. ${x.ask === 'A_MINUS_B' ? '¿Cuántos perros más que gatos hay?' : '¿Cuántos perros más que peces y aves juntos hay?'}`,
+  (x) => `Una tienda deportiva vendió camisetas por color: azul ${x.a}, verde ${x.b}, roja ${x.c} y amarilla ${x.d}. ${x.ask === 'A_MINUS_B' ? '¿Cuántas camisetas azules más que verdes se vendieron?' : '¿Cuántas camisetas azules más que rojas y amarillas juntas se vendieron?'}`,
+  (x) => `La cafetería del colegio contó los pedidos de la semana: arepas ${x.a}, empanadas ${x.b}, frutas ${x.c} y yogures ${x.d}. ${x.ask === 'A_MINUS_B' ? '¿Cuántos pedidos más de arepas que de empanadas hubo?' : '¿Cuántos pedidos más de arepas que de frutas y yogures juntos hubo?'}`,
+]);
+export const SABER_RATE_FROM_TABLE_IN_CONTEXT = withScenarios(SABER_RATE_FROM_TABLE, 'tb.saber.rate-from-table@0.2.0', [
+  (x) => `El costo de alquilar una bicicleta depende de las horas de uso, según la tabla: ${rateRows(x).map(([h, c]) => `${h} h → ${c} mil pesos`).join('; ')}. Si la relación es lineal, ¿cuántos miles de pesos aumenta el costo por cada hora adicional?`,
+  (x) => `Un parqueadero cobra según las horas que el carro permanece estacionado: ${rateRows(x).map(([h, c]) => `${h} h → ${c} mil pesos`).join('; ')}. Si la relación es lineal, ¿cuántos miles de pesos aumenta el cobro por cada hora adicional?`,
+  (x) => `Un gimnasio cobra según los meses de afiliación: ${rateRows(x).map(([h, c]) => `${h} meses → ${c} mil pesos`).join('; ')}. Si la relación es lineal, ¿cuántos miles de pesos aumenta el cobro por cada mes adicional?`,
+  (x) => `Una empresa de acueducto factura según los metros cúbicos consumidos: ${rateRows(x).map(([h, c]) => `${h} m³ → ${c} mil pesos`).join('; ')}. Si la relación es lineal, ¿cuántos miles de pesos aumenta la factura por cada metro cúbico adicional?`,
+  (x) => `El alquiler de una lancha en un embalse cuesta según las horas de uso: ${rateRows(x).map(([h, c]) => `${h} h → ${c} mil pesos`).join('; ')}. Si la relación es lineal, ¿cuántos miles de pesos aumenta el costo por cada hora adicional?`,
+  (x) => `Una lavandería cobra según los kilogramos de ropa: ${rateRows(x).map(([h, c]) => `${h} kg → ${c} mil pesos`).join('; ')}. Si la relación es lineal, ¿cuántos miles de pesos aumenta el cobro por cada kilogramo adicional?`,
+  (x) => `Un servicio de mensajería cobra según los kilómetros del recorrido: ${rateRows(x).map(([h, c]) => `${h} km → ${c} mil pesos`).join('; ')}. Si la relación es lineal, ¿cuántos miles de pesos aumenta el cobro por cada kilómetro adicional?`,
+]);
+export const SABER_SCALE_PLAN_AREA_IN_CONTEXT = withScenarios(SABER_SCALE_PLAN_AREA, 'tb.saber.scale-plan-area@0.2.0', [
+  (x) => `En el plano de una casa, dibujado a escala 1 : ${x.scale}, una habitación rectangular mide ${x.a} cm de largo y ${x.b} cm de ancho. ¿Cuál es el área real de la habitación, en metros cuadrados?`,
+  (x) => `En el plano de un colegio, a escala 1 : ${x.scale}, un salón rectangular mide ${x.a} cm por ${x.b} cm. ¿Cuál es el área real del salón, en metros cuadrados?`,
+  (x) => `Un lote rectangular aparece en un plano a escala 1 : ${x.scale} con ${x.a} cm de largo y ${x.b} cm de ancho. ¿Cuál es el área real del lote, en metros cuadrados?`,
+  (x) => `En el plano de un apartamento, a escala 1 : ${x.scale}, la cocina es un rectángulo de ${x.a} cm por ${x.b} cm. ¿Cuál es el área real de la cocina, en metros cuadrados?`,
+  (x) => `Un patio rectangular está dibujado a escala 1 : ${x.scale} con ${x.a} cm de largo y ${x.b} cm de ancho. ¿Cuál es el área real del patio, en metros cuadrados?`,
+]);
+export const SABER_MEAN_OF_DATA_IN_CONTEXT = withScenarios(SABER_MEAN_OF_DATA, 'tb.saber.mean-of-data@0.2.0', [
+  (x) => `Una tienda registró las ventas diarias de un producto (en unidades): ${vals(x).join(', ')}. ¿Cuál es el promedio (media aritmética) de las ventas diarias?`,
+  (x) => `Un bus urbano transportó en sus viajes de la mañana estos números de pasajeros: ${vals(x).join(', ')}. ¿Cuál es el promedio (media aritmética) de pasajeros por viaje?`,
+  (x) => `Una estudiante registró los minutos que leyó cada día: ${vals(x).join(', ')}. ¿Cuál es el promedio (media aritmética) de minutos de lectura por día?`,
+  (x) => `Una finca registró los litros de leche producidos por día: ${vals(x).join(', ')}. ¿Cuál es el promedio (media aritmética) de litros por día?`,
+  (x) => `Un museo contó sus visitantes de varios días: ${vals(x).join(', ')}. ¿Cuál es el promedio (media aritmética) de visitantes por día?`,
+  (x) => `Los puntajes de un equipo en varias rondas de un concurso fueron: ${vals(x).join(', ')}. ¿Cuál es el promedio (media aritmética) de puntos por ronda?`,
+  (x) => `Un centro de atención registró los clientes atendidos por hora: ${vals(x).join(', ')}. ¿Cuál es el promedio (media aritmética) de clientes por hora?`,
+  (x) => `Una panadería registró los panes vendidos por hora durante la mañana: ${vals(x).join(', ')}. ¿Cuál es el promedio (media aritmética) de panes por hora?`,
+  (x) => `Un ciclista registró los kilómetros recorridos en varios entrenamientos: ${vals(x).join(', ')}. ¿Cuál es el promedio (media aritmética) de kilómetros por entrenamiento?`,
+]);
+export const SABER_PLAN_EQUATION_IN_CONTEXT = withScenarios(SABER_PLAN_EQUATION, 'tb.saber.plan-equation@0.2.0', [
+  (x) => `Un plan de datos móviles cobra un cargo fijo de ${x.f} mil pesos al mes más ${x.p} mil pesos por cada gigabyte consumido. Si la factura de un mes fue de ${x.f + x.p * x.g} mil pesos, ¿cuántos gigabytes se consumieron?`,
+  (x) => `Un gimnasio cobra una inscripción de ${x.f} mil pesos más ${x.p} mil pesos por cada clase dirigida. Si una persona pagó en total ${x.f + x.p * x.g} mil pesos, ¿a cuántas clases dirigidas asistió?`,
+  (x) => `Un parqueadero cobra ${x.f} mil pesos por la entrada más ${x.p} mil pesos por cada hora. Si un conductor pagó ${x.f + x.p * x.g} mil pesos, ¿cuántas horas estuvo estacionado?`,
+  (x) => `Una lavandería cobra ${x.f} mil pesos por servicio más ${x.p} mil pesos por cada kilogramo de ropa. Si un cliente pagó ${x.f + x.p * x.g} mil pesos, ¿cuántos kilogramos de ropa llevó?`,
+  (x) => `Un taxi cobra un banderazo de ${x.f} mil pesos más ${x.p} mil pesos por cada kilómetro. Si un viaje costó ${x.f + x.p * x.g} mil pesos, ¿cuántos kilómetros se recorrieron?`,
+  (x) => `Una academia cobra una matrícula de ${x.f} mil pesos más ${x.p} mil pesos por cada clase de natación. Si un estudiante pagó ${x.f + x.p * x.g} mil pesos, ¿cuántas clases tomó?`,
+  (x) => `Una empresa de envíos cobra ${x.f} mil pesos por paquete más ${x.p} mil pesos por cada kilogramo. Si el envío de un paquete costó ${x.f + x.p * x.g} mil pesos, ¿cuántos kilogramos pesaba?`,
+  (x) => `Un café internet cobra ${x.f} mil pesos de entrada más ${x.p} mil pesos por cada hora de uso. Si un usuario pagó ${x.f + x.p * x.g} mil pesos, ¿cuántas horas usó el computador?`,
+  (x) => `Una empresa de acueducto cobra un cargo fijo de ${x.f} mil pesos más ${x.p} mil pesos por cada metro cúbico. Si una factura fue de ${x.f + x.p * x.g} mil pesos, ¿cuántos metros cúbicos se consumieron?`,
+  (x) => `Un salón de eventos cobra ${x.f} mil pesos por la reserva más ${x.p} mil pesos por cada invitado adicional. Si una reserva costó ${x.f + x.p * x.g} mil pesos, ¿cuántos invitados adicionales hubo?`,
+]);
+const hyp = (x: LadderParameters) => Math.round(Math.sqrt(x.a * x.a + x.h * x.h));
+export const SABER_LADDER_HEIGHT_IN_CONTEXT = withScenarios(SABER_LADDER_HEIGHT, 'tb.saber.ladder-height@0.2.0', [
+  (x) => `Una escalera de ${hyp(x)} m de largo está apoyada en una pared vertical. Su base está a ${x.a} m de la pared. ¿A qué altura, en metros, llega la escalera sobre la pared?`,
+  (x) => `Una cometa está sujeta por una cuerda tensa de ${hyp(x)} m. La persona que la sostiene está a ${x.a} m, en horizontal, del punto que queda justo debajo de la cometa. Sin contar la altura de la persona, ¿a qué altura, en metros, está la cometa?`,
+  (x) => `Un cable tenso de ${hyp(x)} m va desde la punta de una antena vertical hasta un punto del suelo que está a ${x.a} m de la base de la antena. ¿Cuál es la altura de la antena, en metros?`,
+  (x) => `Un poste vertical se sostiene con un tensor de ${hyp(x)} m que va desde su punta hasta el suelo, a ${x.a} m de la base del poste. ¿Cuál es la altura del poste, en metros?`,
+  (x) => `Una rampa recta de ${hyp(x)} m de largo cubre una distancia horizontal de ${x.a} m. ¿Cuántos metros se eleva la rampa?`,
+  (x) => `Un árbol vertical se asegura con una cuerda tensa de ${hyp(x)} m atada a su punta y a una estaca a ${x.a} m de la base del árbol. ¿Cuál es la altura del árbol, en metros?`,
+]);
+const cmSumOf = (x: CheckMeanParameters) => x.v1 + x.v2 + x.v3 + x.v4;
+export const SABER_CHECK_THE_MEAN_IN_CONTEXT = withScenarios(SABER_CHECK_THE_MEAN, 'tb.saber.check-the-mean@0.2.0', [
+  (x) => `Para hallar el promedio de los puntajes ${x.v1}, ${x.v2}, ${x.v3} y ${x.v4}, Camilo sumó los cuatro valores y dividió el resultado entre 3, y afirma que el promedio es ${cmSumOf(x) / 3}. Su procedimiento no es correcto. ¿Cuál es el promedio correcto?`,
+  (x) => `Laura estudió ${x.v1}, ${x.v2}, ${x.v3} y ${x.v4} minutos en cuatro días. Para hallar el promedio sumó los tiempos y dividió entre 3, y obtuvo ${cmSumOf(x) / 3} minutos. Su procedimiento no es correcto. ¿Cuál es el promedio correcto, en minutos?`,
+  (x) => `Un equipo recorrió ${x.v1}, ${x.v2}, ${x.v3} y ${x.v4} kilómetros en cuatro jornadas. Andrés calculó el promedio sumando las distancias y dividiendo entre 3, y afirma que es ${cmSumOf(x) / 3} km. Su procedimiento no es correcto. ¿Cuál es el promedio correcto, en kilómetros?`,
+  (x) => `Una tienda vendió ${x.v1}, ${x.v2}, ${x.v3} y ${x.v4} unidades en cuatro días. Mariana dice que el promedio es ${cmSumOf(x) / 3} porque sumó las ventas y dividió entre 3. Su procedimiento no es correcto. ¿Cuál es el promedio correcto de unidades por día?`,
+  (x) => `En cuatro partidas de un juego, Julián obtuvo ${x.v1}, ${x.v2}, ${x.v3} y ${x.v4} puntos. Su hermana afirma que el promedio es ${cmSumOf(x) / 3}, pues sumó los puntajes y dividió entre 3. Su procedimiento no es correcto. ¿Cuál es el promedio correcto?`,
+]);
+const sysText = (p: SystemParameters) => `${p.k === 1 ? '' : p.k}x + ${p.k === 1 ? '' : p.k}y = ${p.k * (p.x + p.y)} y x − y = ${p.x - p.y}`;
+const sysStep = (p: SystemParameters) => (p.k === 1 ? 'sumó las dos ecuaciones' : `dividió la primera ecuación entre ${p.k} y luego sumó las dos ecuaciones`);
+export const SABER_CHECK_THE_SYSTEM_IN_CONTEXT = withScenarios(SABER_CHECK_THE_SYSTEM, 'tb.saber.check-the-system@0.2.0', [
+  (p) => `Para resolver el sistema ${sysText(p)}, Sofía ${sysStep(p)} y afirma que x = ${2 * p.x}. Su conclusión no es correcta. ¿Cuál es el valor correcto de x?`,
+  (p) => `En el tablero, Mateo resolvió el sistema ${sysText(p)}: ${sysStep(p)} y escribió como respuesta x = ${2 * p.x}. Esa respuesta no es correcta. ¿Cuál es el valor correcto de x?`,
+  (p) => `Dos números x e y cumplen ${sysText(p)}. Daniela ${sysStep(p)} y concluyó que x = ${2 * p.x}. Su conclusión no es correcta. ¿Cuál es el valor correcto de x?`,
+  (p) => `En una tarea, Andrés debía resolver el sistema ${sysText(p)}. Él ${sysStep(p)} y entregó x = ${2 * p.x}. La respuesta no es correcta. ¿Cuál es el valor correcto de x?`,
+  (p) => `Juliana revisa la solución de un compañero al sistema ${sysText(p)}: él ${sysStep(p)} y obtuvo x = ${2 * p.x}. Ella sabe que hay un error. ¿Cuál es el valor correcto de x?`,
+]);
+export const SABER_SCALED_AREA_CLAIM_IN_CONTEXT = withScenarios(SABER_SCALED_AREA_CLAIM, 'tb.saber.scaled-area-claim@0.2.0', [
+  (x) => `Un rectángulo mide ${x.a} cm por ${x.b} cm. Si se multiplica cada uno de sus lados por ${x.k}, Valentina afirma que el área del nuevo rectángulo es ${x.k * x.a * x.b} cm². Su afirmación no es correcta. ¿Cuál es el área del nuevo rectángulo, en cm²?`,
+  (x) => `Una foto de ${x.a} cm por ${x.b} cm se amplía multiplicando cada lado por ${x.k}. Santiago dice que la foto ampliada ocupa ${x.k * x.a * x.b} cm². Su afirmación no es correcta. ¿Cuál es el área de la foto ampliada, en cm²?`,
+  (x) => `Una baldosa rectangular mide ${x.a} dm por ${x.b} dm. Se fabrica otra con cada lado ${x.k} veces más largo, y Paula afirma que su área es ${x.k * x.a * x.b} dm². Su afirmación no es correcta. ¿Cuál es el área de la nueva baldosa, en dm²?`,
+  (x) => `Un afiche de ${x.a} dm por ${x.b} dm se reproduce con cada lado multiplicado por ${x.k}. Tomás afirma que el nuevo afiche tiene ${x.k * x.a * x.b} dm² de área. Su afirmación no es correcta. ¿Cuál es el área del nuevo afiche, en dm²?`,
+  (x) => `Una huerta rectangular de ${x.a} m por ${x.b} m se amplía multiplicando cada lado por ${x.k}. Felipe dice que la nueva huerta mide ${x.k * x.a * x.b} m². Su afirmación no es correcta. ¿Cuál es el área de la nueva huerta, en m²?`,
+]);
+
 export const SABER_MATH_CONSTRUCTS = [SABER_TABLE_DIFFERENCE, SABER_MEAN_OF_DATA, SABER_CHECK_THE_MEAN, SABER_RATE_FROM_TABLE, SABER_PLAN_EQUATION, SABER_CHECK_THE_SYSTEM, SABER_SCALE_PLAN_AREA, SABER_LADDER_HEIGHT, SABER_SCALED_AREA_CLAIM] as const;
+/** TB-SABER-MATH-A2: the same nine constructs in several situations each (template variety for the 50-position form). */
+export const SABER_MATH_CONSTRUCTS_IN_CONTEXT = [SABER_TABLE_DIFFERENCE_IN_CONTEXT, SABER_MEAN_OF_DATA_IN_CONTEXT, SABER_CHECK_THE_MEAN_IN_CONTEXT, SABER_RATE_FROM_TABLE_IN_CONTEXT, SABER_PLAN_EQUATION_IN_CONTEXT, SABER_CHECK_THE_SYSTEM_IN_CONTEXT, SABER_SCALE_PLAN_AREA_IN_CONTEXT, SABER_LADDER_HEIGHT_IN_CONTEXT, SABER_SCALED_AREA_CLAIM_IN_CONTEXT] as const;

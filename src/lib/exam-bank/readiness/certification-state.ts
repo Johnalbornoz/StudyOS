@@ -52,6 +52,8 @@ export interface SupplyRow {
   itemId: string;
   /** Stable content identity of exactly what would be delivered (e.g. bank version digest). */
   contentDigest: string;
+  /** The item's TEMPLATE (its wording with every number masked): a form never carries two items of one template. Absent = every item is its own template. */
+  templateKey?: string | null;
   bucketIds: readonly string[];
   certification: CertificationState;
   /** INHERITED_DETERMINISTIC only: whether every parent digest still matches. */

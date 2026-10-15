@@ -5,7 +5,9 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { PISA_MATH_CONSTRUCTS } from '@/lib/assessment-instance/library/pisa-math.constructs';
-import { SABER_MATH_CONSTRUCTS } from '@/lib/assessment-instance/library/saber11-math.constructs';
+import { SABER_MATH_CONSTRUCTS, SABER_MATH_CONSTRUCTS_IN_CONTEXT } from '@/lib/assessment-instance/library/saber11-math.constructs';
+import { itemFingerprints } from '@/lib/exam-core/fingerprints';
+import { evaluateExamBankReadiness, MODE_REQUIREMENTS } from '@/lib/exam-bank/readiness/bank-readiness';
 import { LIBRARY_BLUEPRINT_AICE_9709_P1, LIBRARY_BLUEPRINT_PISA_MATH, LIBRARY_BLUEPRINT_SABER_MATH, LIBRARY_EXTENSION_BATCHES, PUBLICATION_APPLICABILITY, PUBLICATION_BLUEPRINTS, PUBLICATION_LIBRARY } from '@/lib/assessment-instance/library/catalogue';
 import { PLANNING_BANDS, rational, sameRational } from '@/lib/assessment-instance/library/parametric';
 import { certifyCell, governLibrary } from '@/lib/assessment-instance/v52/library-batch';
@@ -116,5 +118,37 @@ describe('Saber 11 -- SELECTED_RESPONSE through the governed selected-response e
     const e = batch('TB-SABER-MATH-A1').entries[0];
     const positions = certifyCell(e, e.targets[0], 'STANDARD', 10, g, 'TB-SABER-MATH-A1').certified.map((i) => i.key.correctOption);
     expect(new Set(positions).size).toBeGreaterThan(1);
+  });
+});
+
+describe('Saber 11 -- template variety for the 50-position form (a form never repeats a template)', () => {
+  it('the in-context constructs keep the key, the misconceptions and the bands of their base; only the situation changes', () => {
+    for (const c of SABER_MATH_CONSTRUCTS_IN_CONTEXT as readonly any[]) {
+      const p = c.enumerate('STANDARD')[0];
+      const base = (SABER_MATH_CONSTRUCTS as readonly any[]).find((b) => `${b.construct}_IN_CONTEXT` === c.construct);
+      const { ctx: _ctx, ...rest } = p;
+      expect(c.answer(p)).toBe(base.answer(rest));
+      expect(c.misconceptionAnswers(p)).toEqual(base.misconceptionAnswers(rest));
+    }
+  });
+  it('A1 + A2 give every competency x category cell at least as many distinct templates as the V2.1 form places there', () => {
+    const need: Record<string, number> = { 'Interpretación y representación|Álgebra y cálculo': 6, 'Interpretación y representación|Estadística': 7, 'Interpretación y representación|Geometría': 4, 'Formulación y ejecución|Álgebra y cálculo': 9, 'Formulación y ejecución|Estadística': 8, 'Formulación y ejecución|Geometría': 5, 'Argumentación|Álgebra y cálculo': 4, 'Argumentación|Estadística': 4, 'Argumentación|Geometría': 3 };
+    const by = new Map<string, Set<string>>();
+    for (const id of ['TB-SABER-MATH-A1', 'TB-SABER-MATH-A2']) for (const e of batch(id).entries) for (const band of PLANNING_BANDS) for (const i of certifyCell(e, e.targets[0], band, 10, g, id).certified) {
+      const c: any = scoringBankContentOf(i); const k = `${c.tags.competency}|${c.tags.contentCategory}`;
+      if (!by.has(k)) by.set(k, new Set()); by.get(k)!.add(itemFingerprints(c).template);
+    }
+    for (const [k, n] of Object.entries(need)) expect(by.get(k)?.size ?? 0, k).toBeGreaterThanOrEqual(n);
+  }, 120000);
+});
+
+describe('readiness engine: a bucket is covered by DISTINCT TEMPLATES', () => {
+  it('nine items of one template cover one position, not nine', () => {
+    const row = (i: number, t: string) => ({ itemId: `i${i}`, contentDigest: `d${i}`, templateKey: t, bucketIds: ['b'], certification: 'INHERITED_DETERMINISTIC', inheritanceIntact: true, lineageComplete: true, rights: 'CLEARED', responseFormat: 'SELECTED_RESPONSE', stimulusKind: null, stimulusId: null, retired: false, lifecycleDeliverable: true, difficulty: null });
+    const input = (rows: any[]) => ({ blueprint: { assessmentSystem: 'X', assessmentVersion: '1', profile: null, component: null, blueprintId: 'bp', blueprintVersion: '1', buckets: [{ bucketId: 'b', requiredPositions: 9, allowedFormats: null }] }, mode: MODE_REQUIREMENTS.MOCK, scope: 'PILOT_PREVIEW', capabilities: { renderableFormats: ['SELECTED_RESPONSE'], scorableFormats: ['SELECTED_RESPONSE'], stimulusKinds: [] }, supply: rows, now: new Date() }) as never;
+    const same = evaluateExamBankReadiness(input(Array.from({ length: 9 }, (_, i) => row(i, 'T')))) as any;
+    const distinct = evaluateExamBankReadiness(input(Array.from({ length: 9 }, (_, i) => row(i, `T${i}`)))) as any;
+    expect({ covered: same.coveredPositions, status: same.status }).toEqual({ covered: 1, status: expect.not.stringMatching(/^READY$/) });
+    expect(distinct.coveredPositions).toBe(9);
   });
 });

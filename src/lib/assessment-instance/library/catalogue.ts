@@ -36,7 +36,7 @@ import { IB_AAHL_EXT_ENTRIES } from './ib-aahl-ext.adoption';
 import { applicabilityThresholdFor } from '../applicability-threshold';
 import { PISA_MATH_APPLICABILITY, PISA_MATH_ENTRIES } from './pisa-math.adoption';
 import { AICE_9709_P1_ENTRIES } from './aice-9709-p1.adoption';
-import { SABER_MATH_ENTRIES } from './saber11-math.adoption';
+import { SABER_MATH_ENTRIES, SABER_MATH_IN_CONTEXT_ENTRIES } from './saber11-math.adoption';
 import { SABER_APPLICABILITY, SABER_GOVERNANCE_DECISION, saberCorrespondenceOf } from '@/lib/curriculum/icfes/saber11-content-correspondence';
 import { AICE_9709_P1_EQUIVALENCE_DECISION, AICE_9709_P1_EQUIVALENCES } from '@/lib/curriculum/cambridge/aice-9709-p1-equivalence';
 import { CF_QUADRATIC_MINIMUM_FIRST_DELIVERY } from './cf-ib-aahl-01';
@@ -405,6 +405,8 @@ export const LIBRARY_EXTENSION_BATCHES: readonly LibraryExtensionBatch[] = [
   { batchId: 'AICE-9709-P1-EQ-A1', entries: AICE_9709_P1_ENTRIES },
   // Saber 11 Matemáticas: nine SELECTED_RESPONSE constructs, competency x content category (saber11-math.adoption.ts)
   { batchId: 'TB-SABER-MATH-A1', entries: SABER_MATH_ENTRIES },
+  // Saber 11: the same constructs in several situations each (template variety for the 50-position form)
+  { batchId: 'TB-SABER-MATH-A2', entries: SABER_MATH_IN_CONTEXT_ENTRIES },
 ];
 export const LIBRARY_EXTENSIONS: readonly LibraryEntry[] = LIBRARY_EXTENSION_BATCHES.flatMap((b) => b.entries);
 export const PUBLICATION_LIBRARY: readonly LibraryEntry[] = [...LIBRARY, ...LIBRARY_EXTENSIONS];

@@ -72,6 +72,8 @@ export interface RawSupplyRow {
   learning_objective_id: string;
   question_type: string | null;
   content: any;
+  /** The bank version's template fingerprint (wording with numbers masked); absent on older rows. */
+  template_fingerprint?: string | null;
   status: string;
   bank_lifecycle_status: string | null;
   usage_eligibility: string[] | null;
@@ -162,7 +164,7 @@ export function supplyRowOf(r: RawSupplyRow, ctx: { scope: DeliveryScope; use: D
   if (!lifecycleDeliverable) notes.push(`lifecycle ${r.bank_lifecycle_status ?? 'NULL'} / ${r.status} / usage ${(r.usage_eligibility ?? []).join(',') || 'any'} / provenance ${r.provenance ?? 'unknown'}`);
   return {
     row: {
-      itemId: r.bank_item_id ?? r.id, contentDigest: r.id, bucketIds: ctx.bucketIds, certification, productionReleased, lineageComplete, rights,
+      itemId: r.bank_item_id ?? r.id, contentDigest: r.id, templateKey: r.template_fingerprint ?? null, bucketIds: ctx.bucketIds, certification, productionReleased, lineageComplete, rights,
       responseFormat: responseFormatOf(r.content), stimulusKind: r.content?.stimulus ? 'TEXT_PASSAGE' : null, stimulusId: r.content?.stimulus?.key ?? null,
       retired: !!r.retired_at || !isCurrentVersion, lifecycleDeliverable, difficulty: difficultyProfileOfRaw(r),
     },
@@ -214,7 +216,7 @@ export async function loadReadinessScope(q: Queryable, examVersionId: string): P
   const cells = deriveBlueprintCells(targets.rows.map((t: any) => ({ id: t.id, learningObjectiveId: t.learning_objective_id, objectiveCode: t.objective_code, objectiveDescription: t.objective_description, assessmentComponentId: t.assessment_component_id, questionType: t.question_type, difficultyMin: t.difficulty_min, difficultyMax: t.difficulty_max, commandTerm: t.command_term })), components);
   const objectiveIds = [...new Set(cells.map((c) => c.learningObjectiveId))];
   const rows = objectiveIds.length === 0 ? [] : (await q.query(
-    `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.status, ai.bank_lifecycle_status, ai.usage_eligibility, ai.exam_alignment,
+    `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.status, ai.bank_lifecycle_status, ai.usage_eligibility, ai.exam_alignment, ai.template_fingerprint,
             ai.difficulty_index, ai.calibration_confidence, ai.calibration_sample_size, ai.calibrated_at, ai.bank_item_id,
             qi.lineage_class, qi.retired_at, qi.current_version_id, qi.provenance,
             inst.certification_state AS inst_state, inst.certification_mode AS inst_mode, inst.eligibility_scopes AS inst_scopes, inst.rights_category AS inst_rights_category,

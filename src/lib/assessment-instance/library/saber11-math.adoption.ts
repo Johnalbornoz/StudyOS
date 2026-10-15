@@ -8,7 +8,7 @@
 import type { ParametricConstruct } from './parametric';
 import type { LibraryEntry } from './catalogue';
 import { adoptParametricConstruct, type AdoptionOptions, type AdoptionSpec } from './cf-ib-aahl-01.adoption';
-import { SABER_CHECK_THE_MEAN, SABER_CHECK_THE_SYSTEM, SABER_LADDER_HEIGHT, SABER_MEAN_OF_DATA, SABER_PLAN_EQUATION, SABER_RATE_FROM_TABLE, SABER_SCALED_AREA_CLAIM, SABER_SCALE_PLAN_AREA, SABER_TABLE_DIFFERENCE } from './saber11-math.constructs';
+import { SABER_CHECK_THE_MEAN, SABER_CHECK_THE_SYSTEM, SABER_LADDER_HEIGHT, SABER_MEAN_OF_DATA, SABER_PLAN_EQUATION, SABER_RATE_FROM_TABLE, SABER_SCALED_AREA_CLAIM, SABER_SCALE_PLAN_AREA, SABER_TABLE_DIFFERENCE, SABER_MATH_CONSTRUCTS_IN_CONTEXT } from './saber11-math.constructs';
 import { saberCorrespondenceOf } from '@/lib/curriculum/icfes/saber11-content-correspondence';
 
 const A = 'ICFES.SABER11_MATEMATICAS';
@@ -134,3 +134,14 @@ export const SABER_MATH_ADOPTION_SPECS: readonly AdoptionSpec[] = [
 ];
 
 export const SABER_MATH_ENTRIES: readonly LibraryEntry[] = SABER_MATH_ADOPTION_SPECS.map((s) => adoptParametricConstruct(s, OPTIONS));
+
+/**
+ * TB-SABER-MATH-A2 (2026-10-15): the same nine entries presented in several situations each, so that one form can place
+ * as many DISTINCT templates as its cell has positions (a form never repeats a template). Own family and construct
+ * (`-in-context`); same concept, competency, category, key, misconceptions and certification route as A1.
+ */
+const IN_CONTEXT: Record<string, ParametricConstruct<never>> = Object.fromEntries(SABER_MATH_CONSTRUCTS_IN_CONTEXT.map((x) => [x.construct.replace(/_IN_CONTEXT$/, ''), x as unknown as ParametricConstruct<never>]));
+export const SABER_MATH_IN_CONTEXT_ENTRIES: readonly LibraryEntry[] = SABER_MATH_ADOPTION_SPECS.map((s) => adoptParametricConstruct({
+  ...s, construct: IN_CONTEXT[(s.construct as unknown as { construct: string }).construct], familyId: `${s.familyId}-in-context`,
+  variables: [...s.variables, { symbol: 'ctx', meaning: 'The situation the task is set in', role: 'PARAMETER', domain: 'CATEGORY' }],
+}, OPTIONS));
