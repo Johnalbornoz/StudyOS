@@ -11,7 +11,8 @@
  * functions.
  */
 import { sha256OfCanonicalJson } from '@/lib/assessment-adaptation/canonical-hash';
-import { resolveApplicability, EA1_APPLICABILITY_THRESHOLD, type AssessmentApplicabilityRecord } from '@/lib/assessment-adaptation/assessment-applicability';
+import { resolveApplicability, type AssessmentApplicabilityRecord } from '@/lib/assessment-adaptation/assessment-applicability';
+import { applicabilityThresholdFor } from '../applicability-threshold';
 import { retiredConfigurationsReferencedBy } from '../active-configuration-binding';
 import { reconcileAdapterDifferences, responseRepresentationsOf, STRUCTURE_CODES_AMONG_FORMATS } from '../adapter-reconciliation';
 import type { AdapterConflict } from '../assessment-adapter';
@@ -65,7 +66,7 @@ export function governCore(entry: Pick<LibraryEntry, 'core' | 'reasoning' | 'cha
   const s = coreSemantics(core);
   const f = core.family;
   const rights = rightsCategoryOf({ origin: 'DETERMINISTIC_RENDER', coreAuthoredByStudyUs: f.provenance.authoredBy === 'STUDYUS', containsCopiedProtectedExpression: f.provenance.containsCopiedProtectedExpression, runRecordPresent: false, basisRecorded: false });
-  const assessedSomewhere = register.some((r) => r.concept.stableId === core.primaryConceptStableId && resolveApplicability(register, f.primaryConcepts[0], r.scope, EA1_APPLICABILITY_THRESHOLD).status === 'ESTABLISHED');
+  const assessedSomewhere = register.some((r) => r.concept.stableId === core.primaryConceptStableId && resolveApplicability(register, f.primaryConcepts[0], r.scope, applicabilityThresholdFor(r.scope.systemProfileId)).status === 'ESTABLISHED');
   const allowed = f.responseConstraints.allowedFormats as readonly string[];
   const checks = [
     check('CONTENT_INTACT', coreContentIntact(core), 'the stored contract matches its content hash'),
@@ -121,7 +122,7 @@ export function governAdapter(adapterId: string, registry: AssessmentSystemRegis
 export const blueprintHashOf = (b: LibraryBlueprint): string => sha256OfCanonicalJson({ blueprintId: b.blueprintId, classificationVersion: b.classificationVersion, facts: b.facts, blueprintClass: b.blueprintClass, buckets: b.buckets.map((x) => ({ bucket: x.bucket, governedPositions: x.governedPositions })) });
 export function governBlueprint(b: LibraryBlueprint, register: readonly AssessmentApplicabilityRecord[], human: HumanRecords = NO_HUMAN, humanHash?: string): GovernanceDecision {
   const positions = b.buckets.reduce((n, x) => n + x.governedPositions, 0);
-  const unlinked = b.buckets.flatMap((x) => x.bucket.primaryConceptStableIds.filter((c) => !register.some((r) => r.concept.stableId === c && r.scope.componentId === b.adapterId && resolveApplicability(register, { stableId: c, canonicalSubject: r.concept.canonicalSubject }, r.scope, EA1_APPLICABILITY_THRESHOLD).status === 'ESTABLISHED')).map((c) => `${x.bucket.objectiveCode} -> ${c}`));
+  const unlinked = b.buckets.flatMap((x) => x.bucket.primaryConceptStableIds.filter((c) => !register.some((r) => r.concept.stableId === c && r.scope.componentId === b.adapterId && resolveApplicability(register, { stableId: c, canonicalSubject: r.concept.canonicalSubject }, r.scope, applicabilityThresholdFor(r.scope.systemProfileId)).status === 'ESTABLISHED')).map((c) => `${x.bucket.objectiveCode} -> ${c}`));
   const checks = [
     // the class is of the STRUCTURE: the content status of the items a configuration ships is not an input
     check('CLASS_FOLLOWS_FROM_THE_RECORDED_FACTS', classifyBlueprintSection(b.facts) === b.blueprintClass, `${JSON.stringify(b.facts)} -> ${classifyBlueprintSection(b.facts)}`),

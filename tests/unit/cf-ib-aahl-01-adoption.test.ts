@@ -102,10 +102,14 @@ describe('publication: the V5.2 plan is unchanged; the IB first delivery is an a
       { batch: 'CF-IB-AAHL-01', instances: 1, cores: ['tf.math.quadratic.minimum-value'], preflight: [] },
       { batch: 'CF-IB-AAHL-01-A2', instances: 240, cores: expect.any(Array), preflight: [] },
       { batch: 'CIE-9709-P1-A1', instances: 237, cores: expect.any(Array), preflight: [] },
+      { batch: 'TB-IB-AAHL-EXT-A1', instances: 90, cores: ['tf.ib.extended.show-that-stationary-minimum', 'tf.ib.trigonometry.cosine-rule-side', 'tf.ib.modelling.exponential-model'], preflight: [] },
+      { batch: 'TB-PISA-MATH-A1', instances: 240, cores: expect.any(Array), preflight: [] },
+      { batch: 'AICE-9709-P1-EQ-A1', instances: 120, cores: expect.any(Array), preflight: [] },
+      { batch: 'TB-SABER-MATH-A1', instances: 270, cores: expect.any(Array), preflight: [] },
     ]);
     const merged = mergedForPublication(plan);
-    expect(merged.instances).toHaveLength(804);
-    expect(merged.batches.map((b) => b.batchId)).toEqual(['qf52-batch-1', 'CF-IB-AAHL-01', 'CF-IB-AAHL-01-A2', 'CIE-9709-P1-A1']);
+    expect(merged.instances).toHaveLength(1524);
+    expect(merged.batches.map((b) => b.batchId)).toEqual(['qf52-batch-1', 'CF-IB-AAHL-01', 'CF-IB-AAHL-01-A2', 'CIE-9709-P1-A1', 'TB-IB-AAHL-EXT-A1', 'TB-PISA-MATH-A1', 'AICE-9709-P1-EQ-A1', 'TB-SABER-MATH-A1']);
     expect(merged.instances.filter((i) => i.batchId === 'CF-IB-AAHL-01').map((i) => i.instance.key.answers[0])).toEqual(['83/4']);
     expect(new Set(merged.adapters.map((a) => a.adapter.adapterId)).size).toBe(merged.adapters.length);
   });

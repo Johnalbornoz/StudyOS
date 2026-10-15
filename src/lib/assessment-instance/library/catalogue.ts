@@ -13,7 +13,7 @@
 import { ASSESSMENT_APPLICABILITY_CONTRACT_VERSION, type AssessmentApplicabilityRecord } from '@/lib/assessment-adaptation/assessment-applicability';
 import { MATHEMATICS_ADAPTATION_POLICY } from '@/lib/assessment-adaptation/discipline-policy';
 import { MATH_POC_APPLICABILITY } from '@/lib/assessment-adaptation/math-poc-applicability';
-import { IB_AA_HL_APPLICABILITY } from '@/lib/curriculum/ib/ib-aa-hl-concept-correspondence';
+import { IB_AA_HL_APPLICABILITY, IB_AA_HL_APPLICABILITY_2026_10_14 } from '@/lib/curriculum/ib/ib-aa-hl-concept-correspondence';
 import { mathPocFamilyOf } from '@/lib/exam-core/question-bank/task-families/math-poc-families';
 import { composeAssessmentSpecification, type BlueprintBucketRef } from '../assessment-specification';
 import { classifyBlueprintSection, type BlueprintClass, type BlueprintSectionFacts } from '../blueprint-classification';
@@ -32,6 +32,13 @@ import { parametricStrategy, type ParametricConstruct, type PlanningBand } from 
 import { CIE_9709_P1_ENTRIES } from './cie-9709-p1.adoption';
 import { CIE_9709_P1_SECTIONS, withCie9709P1Applicability } from '@/lib/curriculum/cambridge/cie-9709-p1-correspondence';
 import { CF_IB_AAHL_01_ADOPTED } from './cf-ib-aahl-01.adoption';
+import { IB_AAHL_EXT_ENTRIES } from './ib-aahl-ext.adoption';
+import { applicabilityThresholdFor } from '../applicability-threshold';
+import { PISA_MATH_APPLICABILITY, PISA_MATH_ENTRIES } from './pisa-math.adoption';
+import { AICE_9709_P1_ENTRIES } from './aice-9709-p1.adoption';
+import { SABER_MATH_ENTRIES } from './saber11-math.adoption';
+import { SABER_APPLICABILITY, SABER_GOVERNANCE_DECISION, saberCorrespondenceOf } from '@/lib/curriculum/icfes/saber11-content-correspondence';
+import { AICE_9709_P1_EQUIVALENCE_DECISION, AICE_9709_P1_EQUIVALENCES } from '@/lib/curriculum/cambridge/aice-9709-p1-equivalence';
 import { CF_QUADRATIC_MINIMUM_FIRST_DELIVERY } from './cf-ib-aahl-01';
 
 export const LIBRARY_VERSION = 'qf52-library-1' as const;
@@ -211,7 +218,13 @@ const paaConcept = (stableId: string, topic: string, page = 36): AssessmentAppli
 /** The EA-1 register plus the PAA concepts the new cores assess, each from an official topic of the certified hierarchy. */
 export const LIBRARY_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = [...MATH_POC_APPLICABILITY, paaConcept('math.geo.pythagorean-theorem', '058'), paaConcept('math.stat.central-tendency', '063'), paaConcept('math.num.percent', '029', 35), paaConcept('math.alg.linear-equations', '036', 35), paaConcept('math.alg.linear-systems', '051', 35), paaConcept('math.geo.plane-figures-area-perimeter', '059')];
 /** The V5.2 register plus the IB register of the pilot-governed StudyUs identities (publication and its extensions only). */
-export const PUBLICATION_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY]);
+// + PISA (2026-10-15): the reviewed PISA objective -> concept links of the concepts the PISA constructs assess
+// + Saber 11 (2026-10-15): the GOVERNED_PILOT content-category correspondences (UNREVIEWED; read under the Saber PILOT threshold only)
+export const PUBLICATION_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY, ...PISA_MATH_APPLICABILITY, ...SABER_APPLICABILITY]);
+/** The publication register AS IT WAS when TB-IB-AAHL-EXT-A1 was published on DEV (2026-10-15, before PISA and AICE). */
+export const PUBLICATION_APPLICABILITY_2026_10_15_IB: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY]);
+/** The publication register AS IT WAS on 2026-10-14: the input of the batches published that day (CF-IB-AAHL-01-A2, CIE-9709-P1-A1). */
+export const PUBLICATION_APPLICABILITY_2026_10_14: readonly AssessmentApplicabilityRecord[] = withCie9709P1Applicability([...LIBRARY_APPLICABILITY, ...IB_AA_HL_APPLICABILITY_2026_10_14]);
 
 // --------------------------------------------------------------------------------------------------- blueprints
 export interface LibraryBlueprint { blueprintId: string; classificationVersion: string; adapterId: string; configKey: string; sectionKey: string; facts: BlueprintSectionFacts; blueprintClass: BlueprintClass; buckets: { bucket: BlueprintBucketRef; governedPositions: number; conceptLinks: string[] }[] }
@@ -258,6 +271,66 @@ export const LIBRARY_BLUEPRINT_IB_P2_STATISTICS: LibraryBlueprint = {
   blueprintId: 'v2.ib.math-aa-hl/p2', classificationVersion: 'cf-ib-aahl-01-p2', adapterId: 'IB.MATH_AA_HL.P2', configKey: 'v2.ib.math-aa-hl', sectionKey: 'p2', facts: IB_P2_FACTS, blueprintClass: classifyBlueprintSection(IB_P2_FACTS),
   buckets: [{ governedPositions: 2, conceptLinks: ['objective aahl.p2.statistics -> Binomial distribution, Normal distribution (objective-learning-links, DECLARED_REVIEWED; identities GOVERNED_PILOT)'], bucket: bucket('v2.ib.math-aa-hl', 'p2', 'IB.MATH_AA_HL.P2', classifyBlueprintSection(IB_P2_FACTS), 'aahl.p2.statistics', ['math.prob.binomial-distribution', 'math.prob.normal-distribution']) }],
 };
+/**
+ * IB 6/9 -> 9/9 (2026-10-15): the three governed objectives the CF constructs leave uncovered, each a classification of
+ * its own (the existing ones are not changed): P1 extended ('show that'), P2 trigonometry and P2 extended ('find').
+ * The concept links are the objective -> concept links the repository already holds (DECLARED_REVIEWED); the concepts
+ * are governed identities (Differentiation GOVERNED_PILOT; Trigonometry and triangles, Exponential models GOVERNED by
+ * their certified PAA record). Certification is decided by the object governance, never assumed here.
+ */
+export const LIBRARY_BLUEPRINT_IB_P1_EXTENDED: LibraryBlueprint = {
+  blueprintId: LIBRARY_BLUEPRINT_IB.blueprintId, classificationVersion: 'tb-ib-aahl-ext-p1', adapterId: PILOT_IB, configKey: 'v2.ib.math-aa-hl', sectionKey: 'p1', facts: LIBRARY_BLUEPRINT_IB.facts, blueprintClass: LIBRARY_BLUEPRINT_IB.blueprintClass,
+  buckets: [{ governedPositions: 1, conceptLinks: ['objective aahl.p1.extended -> Differentiation (objective-learning-links, DECLARED_REVIEWED; identity GOVERNED_PILOT)'], bucket: ibBucket('p1', 'aahl.p1.extended', ['math.calc.differentiation']) }],
+};
+export const LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED: LibraryBlueprint = {
+  blueprintId: 'v2.ib.math-aa-hl/p2', classificationVersion: 'tb-ib-aahl-ext-p2', adapterId: 'IB.MATH_AA_HL.P2', configKey: 'v2.ib.math-aa-hl', sectionKey: 'p2', facts: IB_P2_FACTS, blueprintClass: classifyBlueprintSection(IB_P2_FACTS),
+  buckets: [
+    { governedPositions: 1, conceptLinks: ['objective aahl.p2.trigonometry -> Trigonometry and triangles (objective-learning-links, DECLARED_REVIEWED; identity GOVERNED by the certified PAA record)'], bucket: bucket('v2.ib.math-aa-hl', 'p2', 'IB.MATH_AA_HL.P2', classifyBlueprintSection(IB_P2_FACTS), 'aahl.p2.trigonometry', ['math.trig.ratios']) },
+    { governedPositions: 1, conceptLinks: ['objective aahl.p2.extended -> Exponential models (objective-learning-links, DECLARED_REVIEWED; identity GOVERNED by the certified PAA record)'], bucket: bucket('v2.ib.math-aa-hl', 'p2', 'IB.MATH_AA_HL.P2', classifyBlueprintSection(IB_P2_FACTS), 'aahl.p2.extended', ['math.fun.exponential']) },
+  ],
+};
+/**
+ * PISA 2022 Mathematics (2026-10-15): one bucket per governed objective (content area x process), one position each,
+ * placing the concept the reviewed PISA link names (all PAA-certified identities). Reduced practice form (8 items).
+ */
+const PISA_FACTS: BlueprintSectionFacts = { itemBankable: true, declaredFixture: false, fullFormDocumented: false, distributionPartlyDocumented: true, officialItemCount: null, governedSlots: 8 };
+const PISA_CLASS = classifyBlueprintSection(PISA_FACTS);
+const PISA_BUCKETS: [string, string, string][] = [
+  ['pisa.cantidad.formular', 'math.num.ratio-proportion', 'Proporcionalidad'], ['pisa.cantidad.emplear', 'math.num.percent', 'Porcentajes'],
+  ['pisa.incertidumbre.interpretar', 'math.stat.central-tendency', 'Medidas de tendencia central'], ['pisa.incertidumbre.razonar', 'math.prob.probability', 'Probabilidad'],
+  ['pisa.cambio.formular', 'math.alg.linear-equations', 'Ecuaciones lineales'], ['pisa.cambio.razonar', 'math.alg.linear-systems', 'Sistemas de ecuaciones'],
+  ['pisa.espacio.emplear', 'math.geo.plane-figures-area-perimeter', 'Área y perímetro'], ['pisa.espacio.interpretar', 'math.geo.similarity-congruence', 'Semejanza de triángulos'],
+];
+/**
+ * AICE 9709 AS Paper 1 (2026-10-15): the four AICE P1 objectives, each one official 9709 P1 section, filled from the
+ * governed CAMBRIDGE.9709.P1 pair under the PILOT equivalence (aice-9709-p1-equivalence.ts). One position each.
+ */
+const AICE_P1_FACTS: BlueprintSectionFacts = { itemBankable: true, declaredFixture: false, fullFormDocumented: false, distributionPartlyDocumented: false, officialItemCount: null, governedSlots: 4 };
+const AICE_P1_CLASS = classifyBlueprintSection(AICE_P1_FACTS);
+export const LIBRARY_BLUEPRINT_AICE_9709_P1: LibraryBlueprint = {
+  blueprintId: 'v2.aice.9709-as/p1', classificationVersion: 'aice-9709-p1-eq-pilot-1', adapterId: 'CAMBRIDGE.9709.P1', configKey: 'v2.aice.9709-as', sectionKey: 'p1', facts: AICE_P1_FACTS, blueprintClass: AICE_P1_CLASS,
+  buckets: AICE_9709_P1_EQUIVALENCES.map((eq) => ({ governedPositions: 1, conceptLinks: [`AICE ${eq.aiceObjectiveCode} = syllabus 9709 ${eq.syllabusSection} (${eq.cambridgeObjectiveCode}) -> ${eq.conceptStableId} (PILOT equivalence ${AICE_9709_P1_EQUIVALENCE_DECISION.decisionId}, not human reviewed)`], bucket: bucket('v2.aice.9709-as', 'p1', 'CAMBRIDGE.9709.P1', AICE_P1_CLASS, eq.aiceObjectiveCode, [eq.conceptStableId]) })),
+};
+/**
+ * Saber 11.° Matemáticas (2026-10-15): one bucket per official COMPETENCY (the objectives of v2.saber11.math), with the
+ * V2.1 position totals 17 / 22 / 11 (OFFICIAL_DERIVED); each bucket places the concepts its constructs assess, every
+ * one inside an official content category by a GOVERNED_PILOT correspondence (SABER-CONTENT-CORRESPONDENCE-2026-10-15).
+ */
+const SABER_FACTS: BlueprintSectionFacts = { itemBankable: true, declaredFixture: false, fullFormDocumented: true, distributionPartlyDocumented: true, officialItemCount: 50, governedSlots: 50 };
+const SABER_CLASS = classifyBlueprintSection(SABER_FACTS);
+const SABER_BUCKETS: [string, number, string[]][] = [
+  ['saber.interpretacion', 17, ['math.stat.data-representation', 'math.fun.linear-functions-lines', 'math.geo.plane-figures-area-perimeter']],
+  ['saber.formulacion', 22, ['math.stat.central-tendency', 'math.alg.linear-equations', 'math.geo.pythagorean-theorem']],
+  ['saber.argumentacion', 11, ['math.stat.central-tendency', 'math.alg.linear-systems', 'math.geo.plane-figures-area-perimeter']],
+];
+export const LIBRARY_BLUEPRINT_SABER_MATH: LibraryBlueprint = {
+  blueprintId: 'v2.saber11.math/math', classificationVersion: 'tb-saber-math-pilot-1', adapterId: 'ICFES.SABER11_MATEMATICAS', configKey: 'v2.saber11.math', sectionKey: 'math', facts: SABER_FACTS, blueprintClass: SABER_CLASS,
+  buckets: SABER_BUCKETS.map(([objectiveCode, positions, concepts]) => ({ governedPositions: positions, conceptLinks: concepts.map((k) => `competency ${objectiveCode}; content category ${saberCorrespondenceOf(k)?.officialContentCategory} -> ${k} (GOVERNED_PILOT ${SABER_GOVERNANCE_DECISION.decisionId}, review PENDING)`), bucket: bucket('v2.saber11.math', 'math', 'ICFES.SABER11_MATEMATICAS', SABER_CLASS, objectiveCode, concepts) })),
+};
+export const LIBRARY_BLUEPRINT_PISA_MATH: LibraryBlueprint = {
+  blueprintId: 'v2.pisa.math/math', classificationVersion: 'tb-pisa-math-pilot-1', adapterId: 'PISA.MATHEMATICS', configKey: 'v2.pisa.math', sectionKey: 'math', facts: PISA_FACTS, blueprintClass: PISA_CLASS,
+  buckets: PISA_BUCKETS.map(([objectiveCode, stableId, name]) => ({ governedPositions: 1, conceptLinks: [`objective ${objectiveCode} -> ${name} (pisa-learning-links, DECLARED_REVIEWED; identity GOVERNED by the certified PAA record)`], bucket: bucket('v2.pisa.math', 'math', 'PISA.MATHEMATICS', PISA_CLASS, objectiveCode, [stableId]) })),
+};
 // ------------------------------------------------------------- Cambridge 9709 Paper 1 pilot classification
 /**
  * v2.cambridge.9709-as / p1: one bucket per OFFICIAL syllabus section (1.1 ... 1.8), one governed position each,
@@ -270,11 +343,15 @@ export const LIBRARY_BLUEPRINT_CIE_9709_P1: LibraryBlueprint = {
   blueprintId: 'v2.cambridge.9709-as/p1', classificationVersion: 'cie-9709-p1-pilot-1', adapterId: 'CAMBRIDGE.9709.P1', configKey: 'v2.cambridge.9709-as', sectionKey: 'p1', facts: CIE_P1_FACTS, blueprintClass: CIE_P1_CLASS,
   buckets: CIE_9709_P1_SECTIONS.map((s) => ({ governedPositions: 1, conceptLinks: [`syllabus 9709 ${s.section} ${s.title} (p. ${s.page}) -> ${s.concepts.map((c) => `${c.stableId} [${c.correspondenceType}]`).join(', ')} (PILOT correspondence, not human reviewed)`], bucket: bucket('v2.cambridge.9709-as', 'p1', 'CAMBRIDGE.9709.P1', CIE_P1_CLASS, s.objectiveCode, s.concepts.map((c) => c.stableId)) })),
 };
-export const LIBRARY_BLUEPRINT_EXTENSIONS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS, LIBRARY_BLUEPRINT_CIE_9709_P1];
+export const LIBRARY_BLUEPRINT_EXTENSIONS: readonly LibraryBlueprint[] = [LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS, LIBRARY_BLUEPRINT_CIE_9709_P1, LIBRARY_BLUEPRINT_IB_P1_EXTENDED, LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED, LIBRARY_BLUEPRINT_PISA_MATH, LIBRARY_BLUEPRINT_AICE_9709_P1, LIBRARY_BLUEPRINT_SABER_MATH];
 export const PUBLICATION_BLUEPRINTS: readonly LibraryBlueprint[] = [...LIBRARY_BLUEPRINTS, ...LIBRARY_BLUEPRINT_EXTENSIONS];
+/** The classifications AS THEY WERE on 2026-10-14: the input of the batches published that day. */
+export const PUBLICATION_BLUEPRINTS_2026_10_14: readonly LibraryBlueprint[] = [...LIBRARY_BLUEPRINTS, LIBRARY_BLUEPRINT_IB_P1_ALGEBRA_CALCULUS, LIBRARY_BLUEPRINT_IB_P2_STATISTICS, LIBRARY_BLUEPRINT_CIE_9709_P1];
+/** The classifications AS THEY WERE when TB-IB-AAHL-EXT-A1 was published (2026-10-15, before PISA and AICE). */
+export const PUBLICATION_BLUEPRINTS_2026_10_15_IB: readonly LibraryBlueprint[] = [...PUBLICATION_BLUEPRINTS_2026_10_14, LIBRARY_BLUEPRINT_IB_P1_EXTENDED, LIBRARY_BLUEPRINT_IB_P2_TRIG_EXTENDED];
 
 // ----------------------------------------------------------------------------------------------------- entries
-export interface LibraryTarget { adapterId: string; language: string; responseFormat: string; /** The command term the construct's wording uses, from the adapter's vocabulary. Absent = the policy's choice. */ commandTerm?: string }
+export interface LibraryTarget { adapterId: string; language: string; responseFormat: string; /** The command term the construct's wording uses, from the adapter's vocabulary. Absent = the policy's choice. */ commandTerm?: string; /** The governed objective the entry is written for: it is placed in that objective's bucket. Absent = the first classification that places the concept (as before). */ objectiveCode?: string }
 export interface LibraryEntry {
   core: ConstructCoreRecord;
   envelope: RendererEnvelope;
@@ -320,16 +397,26 @@ export const LIBRARY_EXTENSION_BATCHES: readonly LibraryExtensionBatch[] = [
   { batchId: 'CF-IB-AAHL-01-A2', entries: CF_IB_AAHL_01_ADOPTED },
   // Cambridge 9709 Paper 1: the eight StudyUs-original constructs, one per official section (cie-9709-p1.adoption.ts)
   { batchId: 'CIE-9709-P1-A1', entries: CIE_9709_P1_ENTRIES },
+  // IB 6/9 -> 9/9: P1 extended, P2 trigonometry, P2 extended (ib-aahl-ext.adoption.ts)
+  { batchId: 'TB-IB-AAHL-EXT-A1', entries: IB_AAHL_EXT_ENTRIES },
+  // PISA 2022 Mathematics: one construct per objective (pisa-math.adoption.ts)
+  { batchId: 'TB-PISA-MATH-A1', entries: PISA_MATH_ENTRIES },
+  // AICE 9709 AS Paper 1: the governed Cambridge 9709 P1 entries in the AICE P1 buckets (PILOT equivalence)
+  { batchId: 'AICE-9709-P1-EQ-A1', entries: AICE_9709_P1_ENTRIES },
+  // Saber 11 Matemáticas: nine SELECTED_RESPONSE constructs, competency x content category (saber11-math.adoption.ts)
+  { batchId: 'TB-SABER-MATH-A1', entries: SABER_MATH_ENTRIES },
 ];
 export const LIBRARY_EXTENSIONS: readonly LibraryEntry[] = LIBRARY_EXTENSION_BATCHES.flatMap((b) => b.entries);
 export const PUBLICATION_LIBRARY: readonly LibraryEntry[] = [...LIBRARY, ...LIBRARY_EXTENSIONS];
 export const libraryEntryOf = (constructFamilyId: string): LibraryEntry | null => LIBRARY.find((e) => e.core.constructFamilyId === constructFamilyId) ?? null;
 
-const renderer = createAssessmentInstanceRenderer(PUBLICATION_LIBRARY.map((e) => e.strategy));
-export const libraryApplicability = (core: ConstructCoreRecord, adapterId: string): CoreApplicabilityRecord => deriveCoreApplicability(core, { systemProfileId: adapterId.split('.')[0], componentId: adapterId }, PUBLICATION_APPLICABILITY);
-export const libraryBucketOf = (core: ConstructCoreRecord, adapterId: string): { bucket: BlueprintBucketRef; blueprint: LibraryBlueprint } | null => {
-  // the governed classification of the component that places the concept (an extension never re-places a base concept)
-  for (const blueprint of PUBLICATION_BLUEPRINTS) { const hit = blueprint.adapterId === adapterId ? blueprint.buckets.find((b) => b.bucket.primaryConceptStableIds.includes(core.primaryConceptStableId)) : undefined; if (hit) return { bucket: hit.bucket, blueprint }; }
+// one strategy per construct: an entry placed in a second bucket (AICE 9709 P1) reuses its construct's strategy
+const renderer = createAssessmentInstanceRenderer([...new Map(PUBLICATION_LIBRARY.map((e) => [e.strategy.construct, e.strategy] as const)).values()]);
+export const libraryApplicability = (core: ConstructCoreRecord, adapterId: string, register: readonly AssessmentApplicabilityRecord[] = PUBLICATION_APPLICABILITY): CoreApplicabilityRecord => deriveCoreApplicability(core, { systemProfileId: adapterId.split('.')[0], componentId: adapterId }, register, applicabilityThresholdFor(adapterId.split('.')[0]));
+export const libraryBucketOf = (core: ConstructCoreRecord, adapterId: string, objectiveCode?: string): { bucket: BlueprintBucketRef; blueprint: LibraryBlueprint } | null => {
+  // the governed classification of the component that places the concept (an extension never re-places a base concept);
+  // an entry written for a named objective is placed only in that objective's bucket
+  for (const blueprint of PUBLICATION_BLUEPRINTS) { const hit = blueprint.adapterId === adapterId ? blueprint.buckets.find((b) => b.bucket.primaryConceptStableIds.includes(core.primaryConceptStableId) && (!objectiveCode || b.bucket.objectiveCode === objectiveCode)) : undefined; if (hit) return { bucket: hit.bucket, blueprint }; }
   return null;
 };
 
@@ -339,16 +426,16 @@ export type LibraryRenderResult = { ok: true; value: LibraryRender } | { ok: fal
  * One instance of a library entry: composed and rendered through the composer and the renderer a delivery uses,
  * in DEV_TEST use (rendering certifies nothing), then placed against its envelope. No decision is taken here.
  */
-export function renderLibraryInstance(e: LibraryEntry, target: LibraryTarget, planningBand: PlanningBand, seed: string): LibraryRenderResult {
+export function renderLibraryInstance(e: LibraryEntry, target: LibraryTarget, planningBand: PlanningBand, seed: string, register: readonly AssessmentApplicabilityRecord[] = PUBLICATION_APPLICABILITY): LibraryRenderResult {
   const registry = STUDYUS_ASSESSMENT_REGISTRY;
   const adapter = registry.adapter(target.adapterId);
   const pair = registry.profilePairOf(target.adapterId);
-  const placed = libraryBucketOf(e.core, target.adapterId);
+  const placed = libraryBucketOf(e.core, target.adapterId, target.objectiveCode);
   if (!adapter || !pair) return { ok: false, code: 'ADAPTER_NOT_REGISTERED', detail: target.adapterId };
   if (!placed) return { ok: false, code: 'NO_GOVERNED_BUCKET_FOR_THE_CONCEPT', detail: `${e.core.primaryConceptStableId} x ${target.adapterId}` };
-  const applicability = libraryApplicability(e.core, target.adapterId);
+  const applicability = libraryApplicability(e.core, target.adapterId, register);
   const spec = composeAssessmentSpecification({
-    use: 'DEV_TEST', registry, core: e.core, adapter, system: pair.system, component: pair.component, coreApplicability: [applicability], applicabilityRegister: PUBLICATION_APPLICABILITY, bucket: placed.bucket, disciplinePolicy: MATHEMATICS_ADAPTATION_POLICY,
+    use: 'DEV_TEST', registry, core: e.core, adapter, system: pair.system, component: pair.component, coreApplicability: [applicability], applicabilityRegister: register, applicabilityPolicy: applicabilityThresholdFor(target.adapterId.split('.')[0]), bucket: placed.bucket, disciplinePolicy: MATHEMATICS_ADAPTATION_POLICY,
     request: { purpose: 'PRACTICE', difficultyBand: planningBand, language: target.language, contentUseClass: 'DEV_TEST_CONTENT', responseFormat: target.responseFormat, ...(target.commandTerm ? { commandTerm: target.commandTerm } : {}) },
   });
   if (!spec.ok) return { ok: false, code: spec.code, detail: spec.detail };

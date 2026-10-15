@@ -13,6 +13,8 @@
  *     profile of its own, only provisional adapters derived from generation profiles;
  *   - every adapter is PROVISIONAL, because no profile is certified.
  */
+import type { ApplicabilityThresholdPolicy } from '@/lib/assessment-adaptation/assessment-applicability';
+import { SABER_PILOT_APPLICABILITY_THRESHOLD } from '@/lib/curriculum/icfes/saber11-content-correspondence';
 import { EA1_COMPONENT_PROFILES, EA1_SYSTEM_PROFILES } from '@/lib/assessment-adaptation/system-profiles';
 import { adapterConflictsWith, uncoveredGenerationProfileAdapters, type AdapterConflict, type AssessmentAdapter } from './assessment-adapter';
 import { ACTIVE_CONFIGURATION_REBINDINGS, retiredConfigurationsReferencedBy } from './active-configuration-binding';
@@ -31,6 +33,11 @@ const SYSTEMS: readonly SystemSeed[] = [
   { systemId: 'AICE', displayName: 'Cambridge AICE Diploma', organization: 'Cambridge University Press & Assessment', region: null, systemType: 'QUALIFICATION', metadata: { legacyExamFamilyCodes: ['AICE'], qualificationOfSystem: 'CAMBRIDGE' } },
   { systemId: 'ICFES', displayName: 'Saber 11', organization: 'Instituto Colombiano para la Evaluación de la Educación (ICFES)', region: 'CO', systemType: 'EXAM', metadata: { legacyExamFamilyCodes: ['ICFES'] } },
 ];
+/**
+ * A system whose applicability records are read under a threshold of its own (by a recorded decision). Absent = EA-1.
+ * ICFES: the Saber PILOT threshold (SABER-CONTENT-CORRESPONDENCE-2026-10-15; PILOT_PREVIEW; review PENDING).
+ */
+export const SYSTEM_APPLICABILITY_THRESHOLDS: Readonly<Record<string, ApplicabilityThresholdPolicy>> = { ICFES: SABER_PILOT_APPLICABILITY_THRESHOLD };
 /** V5 generation profile -> the EA-1 component that is the SAME component. Only real identities are listed. */
 export const GENERATION_PROFILE_COMPONENT: Readonly<Record<string, string>> = {
   'PAA.MATEMATICAS': 'PAA.MATEMATICAS',

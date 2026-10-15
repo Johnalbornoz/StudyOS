@@ -85,6 +85,19 @@ export function evidenceOfInstance(r: LibraryRender, adapter: AssessmentAdapter,
   } else if (policyKind === 'RUBRIC') {
     const answerPoints = rendered.responsePolicy.partialCredit.filter((c) => c.answer !== null).map((c) => c.answer as string);
     out.push(E.check('RESPONSE_EVALUATION', rendered.key.answers.filter((a) => !answerPoints.includes(a)).map((a) => ({ reasonCode: 'KEY_NOT_ACCEPTED_BY_ITS_OWN_POLICY', detail: `${a} has no accuracy point` })), `each keyed value has an accuracy point; method points are marked by a marker (${rendered.responsePolicy.partialCredit.length} points)`));
+  } else if (policyKind === 'OPTION' && rendered.key.correctOption && keys.length === 1 && keys[0]) {
+    // a selected response is judged by its option: the key's label is accepted, every other label refused; the key
+    // option shows the checked key, and every distractor shows what a MODELLED misconception gives (never a made-up value)
+    const k = keys[0];
+    const correct = rendered.key.correctOption;
+    const options = rendered.learner.options;
+    const issues: { reasonCode: string; detail: string }[] = [];
+    if (!evaluateResponse(rendered.responsePolicy, [correct], correct).correct) issues.push({ reasonCode: 'KEY_NOT_ACCEPTED_BY_ITS_OWN_POLICY', detail: correct });
+    for (const o of options) if (o.label !== correct && evaluateResponse(rendered.responsePolicy, [correct], o.label).correct) issues.push({ reasonCode: 'WRONG_ANSWER_ACCEPTED', detail: o.label });
+    if (options.find((o) => o.label === correct)?.text !== writeRational(k)) issues.push({ reasonCode: 'KEY_OPTION_IS_NOT_THE_KEY', detail: correct });
+    const modelled = construct.misconceptionAnswers(p).filter((m) => m.value !== null).map((m) => writeRational(m.value!));
+    for (const o of options) if (o.label !== correct && (!modelled.includes(o.text) || o.text === writeRational(k))) issues.push({ reasonCode: 'DISTRACTOR_NOT_A_MODELLED_MISCONCEPTION', detail: `${o.label}: ${o.text}` });
+    out.push(E.check('RESPONSE_EVALUATION', issues, `option ${correct} accepted, ${options.length - 1} others refused; every distractor is a modelled misconception value`));
   } else out.push(E.unknown('RESPONSE_EVALUATION', 'NO_RESPONSE_POLICY', `a ${policyKind} policy is not checked by this version`));
   const rubricMarks = rendered.rubric.reduce((n, x) => n + x.marks, 0);
   out.push(rubricMarks === rendered.learner.marks && rendered.learner.marks > 0 ? E.pass('MARKS_CONSISTENCY', `${rendered.learner.marks} marks; the mark scheme adds up to ${rubricMarks}`) : E.fail('MARKS_CONSISTENCY', 'MARKS_DO_NOT_ADD_UP', `${rendered.learner.marks} stated, ${rubricMarks} in the mark scheme`));

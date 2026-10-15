@@ -24,6 +24,8 @@
  * intermediates, an unordered solution set, part prompts that are not certified learner content, an accuracy rule the
  * Exam Core cannot express without weakening it.
  */
+import { optionIdOf, selectedResponseBankFields, selectedResponseDigest, selectedResponseIssues, type SelectedResponseItem } from './engines/selected-response';
+import { SABER_COMPETENCIES, saberCorrespondenceOf } from '@/lib/curriculum/icfes/saber11-content-correspondence';
 import { parse } from 'mathjs';
 import { z } from 'zod';
 import { sha256OfCanonicalJson } from '@/lib/assessment-adaptation/canonical-hash';
@@ -231,6 +233,7 @@ export type ScoringBankContent = ApprovedItemContent & CertifiedBankExtension;
 
 /** The bank-version content that the Exam Core scores exactly as the certified instance says. Throws on a refusal. */
 export function scoringBankContentOf(i: CertifiedInstance): ScoringBankContent {
+  if (i.format === 'SELECTED_RESPONSE') return selectedResponseBankContentOf(i);
   const plan = planOf(i);
   if ('refusal' in plan) throw new Error(`EXAM_BANK_SCORING_PROJECTION_REFUSED: ${plan.refusal}`);
   const accuracy = accuracyOf(i.responsePolicy);
@@ -277,14 +280,15 @@ export function scoringBankContentOf(i: CertifiedInstance): ScoringBankContent {
  * bank was published with it, and its publication path does not change). Within IB, only explicitly governed formats.
  */
 // + CAMBRIDGE (2026-10-14): 9709 Paper 1 is published with the same canonical contract (no bank was published for it before)
-export const PROJECTION_3_SYSTEMS: readonly string[] = ['IB', 'CAMBRIDGE'];
-export const PROJECTION_3_FORMATS: readonly string[] = ['NUMERIC_ENTRY', 'SHORT_RESPONSE', 'MULTI_PART_MATH'];
+// + ICFES (2026-10-15): Saber 11 SELECTED_RESPONSE from deterministic constructs, scored by option identity (selected-response engine)
+export const PROJECTION_3_SYSTEMS: readonly string[] = ['IB', 'CAMBRIDGE', 'ICFES'];
+export const PROJECTION_3_FORMATS: readonly string[] = ['NUMERIC_ENTRY', 'SHORT_RESPONSE', 'MULTI_PART_MATH', 'SELECTED_RESPONSE'];
 export type BankProjectionChoice = { version: 'exam-bank-projection-2'; refusal: string | null } | { version: typeof SCORING_PROJECTION_VERSION; refusal: ScoringProjectionRefusal | 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' | null };
 /** Which projection publishes this instance, and whether it may. Fail closed: an IB instance never falls back to projection 2. */
 export function bankProjectionFor(i: CertifiedInstance): BankProjectionChoice {
   if (!PROJECTION_3_SYSTEMS.includes(i.systemId)) return { version: 'exam-bank-projection-2', refusal: projection2Refusal(i) };
   if (!PROJECTION_3_FORMATS.includes(i.format)) return { version: SCORING_PROJECTION_VERSION, refusal: 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' };
-  return { version: SCORING_PROJECTION_VERSION, refusal: scoringProjectionRefusal(i) };
+  return { version: SCORING_PROJECTION_VERSION, refusal: i.format === 'SELECTED_RESPONSE' ? (selectedResponseRefusal(i) as ScoringProjectionRefusal | null) : scoringProjectionRefusal(i) };
 }
 
 /** Does this bank version still copy this instance exactly, under projection 3? Every top-level field that differs is named. */
@@ -293,4 +297,57 @@ export function scoringBankContentIssues(content: unknown, i: CertifiedInstance)
   try { expected = scoringBankContentOf(i); } catch (e) { return [e instanceof Error ? e.message : String(e)]; }
   const got = (content ?? {}) as Record<string, unknown>;
   return [...new Set([...Object.keys(expected), ...Object.keys(got)])].filter((k) => sha256OfCanonicalJson((expected as unknown as Record<string, unknown>)[k] ?? null) !== sha256OfCanonicalJson(got[k] ?? null)).map((k) => `content.${k}`);
+}
+
+// ------------------------------------------------------------------------------------- selected response (projection 3)
+/**
+ * A deterministic SELECTED_RESPONSE instance as a governed selected-response item: the four rendered options with
+ * opaque ids of their own text, the key, and for every distractor the modelled misconception it comes from. The Exam
+ * Core delivers it shuffled and scores it by option identity, exactly as the PAA pilot items.
+ */
+const misconceptionCode = (id: string): string => `M_${id.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '')}`.slice(0, 80);
+export function selectedResponseItemOf(i: CertifiedInstance): SelectedResponseItem {
+  const itemId = `qf52.${i.instanceId.slice(0, 24)}`;
+  return {
+    v: 1, itemId, language: i.language, stem: i.learner.prompt,
+    options: i.learner.options.map((o) => {
+      const isKey = o.label === i.key.correctOption;
+      const l = i.key.distractorLineage[o.label];
+      return { id: optionIdOf(itemId, o.text), text: o.text, role: isKey ? 'KEY' as const : 'DISTRACTOR' as const, misconceptionId: isKey ? null : misconceptionCode(l?.misconceptionId ?? 'unmodelled'), rationale: isKey ? 'The value the construct keys, confirmed by an independent check of the shown numbers.' : (i.key.distractorRationales[o.label] ?? `Produced by the modelled error: ${l?.reasoningError ?? 'unrecorded'}.`) };
+    }),
+    difficulty: Math.min(5, Math.max(1, Math.round(i.itemDifficulty))), conceptStableId: i.conceptId, blueprintBucketId: i.bucketId, stimulus: null,
+    rights: { category: i.rightsCategory, basis: 'StudyUs-original deterministic construct (Track B); no ICFES item is copied.' },
+    lineage: { source: 'CORE_DERIVED', generator: i.rendererVersion, coverageGap: i.bucketId }, speedStrategyDigest: null,
+  };
+}
+const objectiveOfBucket = (bucketId: string): string | null => /\/([^/#]+)#\d+$/.exec(bucketId)?.[1] ?? null;
+/** The official dimensions a Saber item carries: its competency (the objective) and its content category (the governed correspondence). */
+export function saberDimensionsOf(i: Pick<CertifiedInstance, 'bucketId' | 'conceptId'>): { competency: string; contentCategory: string } | null {
+  const objective = objectiveOfBucket(i.bucketId);
+  const competency = SABER_COMPETENCIES.find((c) => c.objectiveCode === objective)?.label ?? null;
+  const category = saberCorrespondenceOf(i.conceptId)?.officialContentCategory ?? null;
+  return competency && category ? { competency, contentCategory: category } : null;
+}
+export function selectedResponseRefusal(i: CertifiedInstance): string | null {
+  if (i.responsePolicy.kind !== 'OPTION' || !i.key.correctOption || i.learner.options.length < 4) return 'SELECTED_RESPONSE_SHAPE_INVALID';
+  if (i.systemId === 'ICFES' && !saberDimensionsOf(i)) return 'SABER_DIMENSION_NOT_GOVERNED';
+  const issues = selectedResponseIssues(selectedResponseItemOf(i));
+  return issues.length ? `SELECTED_RESPONSE_${issues[0]}` : null;
+}
+function selectedResponseBankContentOf(i: CertifiedInstance): ScoringBankContent {
+  const refusal = selectedResponseRefusal(i);
+  if (refusal) throw new Error(`EXAM_BANK_SCORING_PROJECTION_REFUSED: ${refusal}`);
+  const m = materialize(i);
+  const c = m.content;
+  const item = selectedResponseItemOf(i);
+  const fields = selectedResponseBankFields(item);
+  const dims = i.systemId === 'ICFES' ? saberDimensionsOf(i)! : null;
+  const scoring = { contractVersion: SCORING_PROJECTION_VERSION, responseContract: 'selected-response-1', itemDigest: selectedResponseDigest(item), rubricDigest: sha256OfCanonicalJson(i.rubric), responsePolicyDigest: sha256OfCanonicalJson(i.responsePolicy) };
+  return {
+    key: c.key, contentStatus: 'ORIGINAL', contentOrigin: 'AUTHORED', language: c.language, ...fields, explanation: '', explanationStatus: 'NONE',
+    difficulty: c.difficulty, marks: i.marks, calculatorAllowed: i.learner.conditions.calculator !== 'NONE',
+    tags: { responseFormat: c.itemType, ...(dims ?? {}) },
+    itemType: c.itemType, difficultyBand: c.difficultyBand, response: c.response, certifiedRubric: c.rubric, lineage: c.lineage, rights: c.rights,
+    certified: { itemType: m.itemType, lineageClass: m.lineageClass, itemInstanceId: m.itemInstanceId, provenance: m.provenance, primaryConceptStableId: m.primaryConceptStableId, canonicalSubject: m.canonicalSubject, eligibilityScopes: [...m.eligibilityScopes], markedOnWorking: m.markedOnWorking, recognitionId: i.recognitionId, certificationMode: i.certificationMode, projection: SCORING_PROJECTION_VERSION, generationLineage: i.lineage, scoring } as CertifiedBankExtension['certified'] & { scoring: typeof scoring },
+  } as unknown as ScoringBankContent;
 }

@@ -1370,6 +1370,8 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
       'src/lib/curriculum/cambridge/cie-9709-p1-correspondence.ts',
       // the IB pilot applicability register (pure data in the EA-1 register's own record type; no route, service or table)
       'src/lib/curriculum/ib/ib-aa-hl-concept-correspondence.ts',
+      // the Saber PILOT applicability register and threshold (pure data in the EA-1 register's own record types; no route, service or table)
+      'src/lib/curriculum/icfes/saber11-content-correspondence.ts',
       // Exam Bank hardening: the CF package dry run resolves concept applicability with the EA-1 register (pure, no IO)
       'src/lib/exam-bank/cf-package-validation.ts',
       // Track B: the Exam Bank publication plan hashes with the same canonical hash (pure; no route, service or table of its own)

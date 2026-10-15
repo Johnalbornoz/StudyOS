@@ -31,10 +31,17 @@ export interface AdoptionSpec {
   construct: ParametricConstruct<never>;
   familyId: string;
   adapterId: string;
-  commandTerm: string;
+  /** Absent where the adapter's vocabulary is NONE (no command term is worded). */
+  commandTerm?: string;
+  /** Where the task is set; absent = ABSTRACT (the mathematical object is given directly), as before. */
+  contexts?: { kind: 'PERSONAL' | 'OCCUPATIONAL' | 'SOCIETAL' | 'SCIENTIFIC'; note: string }[];
+  /** The governed objective the entry is written for (placed in that objective's bucket). Absent = placed by concept, as before. */
+  objectiveCode?: string;
   concept: { stableId: string; canonicalName: string; /** Default 'Mathematics'. */ canonicalSubject?: string };
   skill: string;
   action: 'COMPUTE' | 'SOLVE';
+  /** Further evidence actions the task asks for (in a situation: FORMULATE / INTERPRET / EVALUATE). Absent = [action], as before. */
+  alsoActions?: ('FORMULATE' | 'INTERPRET' | 'EVALUATE')[];
   object: string;
   observable: string;
   structure: string;
@@ -65,6 +72,11 @@ export interface AdoptionOptions {
   /** The package candidates to render, by band; absent = the batch draws its own seeds. */
   seeds?: LibraryEntry['packageSeeds'];
   origin: LibraryEntry['origin'];
+  /** Defaults (as before): English, SHORT_RESPONSE, marks 2 / 3 / 4 by band. */
+  language?: 'en' | 'es';
+  responseFormat?: 'SHORT_RESPONSE' | 'NUMERIC_ENTRY' | 'SELECTED_RESPONSE';
+  /** null = the specification's maximum (as the NUMERIC_ENTRY library does). */
+  marksByBand?: Readonly<Record<PlanningBand, number>> | null;
 }
 const CF_OPTIONS = (familyId: string): AdoptionOptions => ({ system: 'IB', provenanceNote: 'Content Factory CF-IB-AAHL-01: deterministic construct written in-session by the model; reviewed by nobody. Adopted by Track B unchanged.', referenceSourceKeys: ['studyus.content-factory.cf-ib-aahl-01'], seeds: CF_IB_AAHL_01_PACKAGE_SEEDS[familyId], origin: 'CF_PACKAGE' });
 const adopt = (spec: AdoptionSpec): LibraryEntry => adoptParametricConstruct(spec, CF_OPTIONS(spec.familyId));
@@ -78,11 +90,11 @@ export function adoptParametricConstruct(spec: AdoptionSpec, o: AdoptionOptions)
       v: 1, familyId: spec.familyId, version: CORE_VERSION, familyType: 'MATH_PROBLEM', canonicalSubject: spec.concept.canonicalSubject ?? 'Mathematics',
       primaryConcepts: [{ stableId: spec.concept.stableId, canonicalSubject: spec.concept.canonicalSubject ?? 'Mathematics', canonicalName: spec.concept.canonicalName }],
       targetSkills: [spec.skill], targetCompetencies: ['dev.comp.math-reasoning'],
-      evidenceTarget: { actions: [spec.action], object: spec.object, observablePerformance: spec.observable },
-      supportedContexts: [{ kind: 'ABSTRACT', note: 'The mathematical object is given directly.' }],
+      evidenceTarget: { actions: [spec.action, ...(spec.alsoActions ?? [])], object: spec.object, observablePerformance: spec.observable },
+      supportedContexts: spec.contexts?.length ? spec.contexts.map((x) => ({ ...x })) : [{ kind: 'ABSTRACT', note: 'The mathematical object is given directly.' }],
       difficultyLevers: [{ lever: 'band-form', kind: 'STEPS', description: 'The band fixes the form of the task (see the envelope lever settings).' }],
       commonMisconceptions: spec.misconceptions.map((m) => m.description),
-      responseConstraints: { allowedFormats: ['NUMERIC_ENTRY', 'SHORT_RESPONSE'], stimulusNeed: 'NONE', stimulusKinds: [], note: 'A produced value; no candidate value is offered.' },
+      responseConstraints: o.responseFormat === 'SELECTED_RESPONSE' ? { allowedFormats: ['SELECTED_RESPONSE'], stimulusNeed: 'NONE', stimulusKinds: [], note: 'Four values are offered: the key and three distractors, each what a modelled misconception gives.' } : { allowedFormats: ['NUMERIC_ENTRY', 'SHORT_RESPONSE'], stimulusNeed: 'NONE', stimulusKinds: [], note: 'A produced value; no candidate value is offered.' },
       profileSupport: { [o.system]: { status: 'SUPPORTED' } },
       provenance: { authoredBy: 'STUDYUS', authoringKind: 'STUDYUS_GENERATED', authoredAt: '2026-10-14T00:00:00Z', referenceSourceKeys: o.referenceSourceKeys, containsCopiedProtectedExpression: false, note: o.provenanceNote },
       lifecycle: 'IN_REVIEW', reviewStatus: 'IN_REVIEW',
@@ -98,20 +110,20 @@ export function adoptParametricConstruct(spec: AdoptionSpec, o: AdoptionOptions)
         calculatorDependency: 'NONE',
       },
     },
-    shortcutConstraints: [{ id: spec.shortcut.id, bypass: spec.shortcut.bypass, excludedFormats: ['SELECTED_RESPONSE'], instanceRule: spec.shortcut.instanceRule }],
+    shortcutConstraints: [{ id: spec.shortcut.id, bypass: spec.shortcut.bypass, excludedFormats: o.responseFormat === 'SELECTED_RESPONSE' ? ['NUMERIC_ENTRY'] : ['SELECTED_RESPONSE'], instanceRule: spec.shortcut.instanceRule }],
   });
   if (!built.ok) throw new Error(`CF_IB_AAHL_01_CORE_INVALID ${spec.familyId}: ${built.issue} ${built.details.join('; ')}`);
   const parsed = RendererEnvelopeSchema.safeParse({
     v: 1, rendererVersion: c.rendererVersion, strategy: 'PARAMETRIC_DETERMINISTIC', construct: c.construct, constructFamilyId: built.core.constructFamilyId, constructFamilyVersion: built.core.familyVersion,
-    adapterIds: [spec.adapterId], languages: ['en'], responseFormats: ['SHORT_RESPONSE'], commandTerms: [spec.commandTerm],
+    adapterIds: [spec.adapterId], languages: [o.language ?? 'en'], responseFormats: [o.responseFormat ?? 'SHORT_RESPONSE'], commandTerms: spec.commandTerm ? [spec.commandTerm] : [],
     parameterRanges: ranges,
     bands: PLANNING_BANDS.map((b) => ({ planningBand: b, itemDifficulty: BAND_DIFFICULTY[b], leverSettings: spec.levers[b] })),
     stimulusKinds: [], exclusions: spec.exclusions,
   });
   if (!parsed.success) throw new Error(`CF_IB_AAHL_01_ENVELOPE_INVALID ${spec.familyId}: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
   return {
-    core: built.core, envelope: parsed.data as RendererEnvelope, construct: c, strategy: parametricStrategy(c, { format: 'SHORT_RESPONSE', marksByBand: MARKS_BY_BAND }),
-    targets: [{ adapterId: spec.adapterId, language: 'en', responseFormat: 'SHORT_RESPONSE', commandTerm: spec.commandTerm }],
+    core: built.core, envelope: parsed.data as RendererEnvelope, construct: c, strategy: parametricStrategy(c, { format: o.responseFormat ?? 'SHORT_RESPONSE', ...(o.marksByBand === null ? {} : { marksByBand: o.marksByBand ?? MARKS_BY_BAND }) }),
+    targets: [{ adapterId: spec.adapterId, language: o.language ?? 'en', responseFormat: o.responseFormat ?? 'SHORT_RESPONSE', ...(spec.commandTerm ? { commandTerm: spec.commandTerm } : {}), ...(spec.objectiveCode ? { objectiveCode: spec.objectiveCode } : {}) }],
     reasoning: { minimumSuccessfulPath: spec.path, supportedStrategies: spec.strategies, requiredObservableMethod: null },
     challengeMechanisms: [spec.challenge], origin: o.origin, ...(o.seeds ? { packageSeeds: o.seeds } : {}),
   };

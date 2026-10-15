@@ -49,6 +49,9 @@ export const IB_AA_HL_CONCEPT_IDENTITIES: readonly StudyUsConceptIdentity[] = [
   { stableId: 'math.calc.integration', canonicalSubject: 'Mathematics', canonicalName: 'Integration', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED_PILOT', governedBy: IB_CONCEPT_IDENTITY_DECISION.recordedIn },
   { stableId: 'math.prob.binomial-distribution', canonicalSubject: 'Mathematics', canonicalName: 'Binomial distribution', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED_PILOT', governedBy: IB_CONCEPT_IDENTITY_DECISION.recordedIn },
   { stableId: 'math.prob.normal-distribution', canonicalSubject: 'Mathematics', canonicalName: 'Normal distribution', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED_PILOT', governedBy: IB_CONCEPT_IDENTITY_DECISION.recordedIn },
+  // 2026-10-15 (IB 6/9 -> 9/9): two identities that are ALREADY governed by their certified PAA record -- reused, no new identity
+  { stableId: 'math.trig.ratios', canonicalSubject: 'Mathematics', canonicalName: 'Trigonometry and triangles', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED', governedBy: 'src/lib/curriculum/paa/paa-certified-concepts.ts (certified PAA concept)' },
+  { stableId: 'math.fun.exponential', canonicalSubject: 'Mathematics', canonicalName: 'Exponential models', origin: 'STUDYUS_CANONICAL_KNOWLEDGE', status: 'GOVERNED', governedBy: 'src/lib/curriculum/paa/paa-certified-concepts.ts (certified PAA concept)' },
 ];
 
 export type CorrespondenceType = 'SYLLABUS_AREA_CORRESPONDENCE';
@@ -74,7 +77,7 @@ export interface IbConstructCorrespondence {
 }
 
 const p1 = (constructId: string, stableId: string, objectiveCode: string, syllabusAreaWords: string): IbConstructCorrespondence => ({
-  constructId, studyusCanonicalConceptId: stableId, conceptExistingOrNew: stableId === 'math.alg.quadratics' ? 'EXISTING_GOVERNED' : 'EXISTING_CATALOGUE_CONCEPT_IDENTITY_PROPOSED',
+  constructId, studyusCanonicalConceptId: stableId, conceptExistingOrNew: IB_AA_HL_CONCEPT_IDENTITIES.find((x) => x.stableId === stableId)?.status === 'GOVERNED' ? 'EXISTING_GOVERNED' : 'EXISTING_CATALOGUE_CONCEPT_IDENTITY_PROPOSED',
   ibSourceReference: { sourceKey: IB_AA_HL_SOURCE.sourceKey, configKey: IB_AA_HL_SOURCE.configKey, component: objectiveCode.startsWith('aahl.p2') ? 'p2' : 'p1', objectiveCode, syllabusAreaWords },
   ibCorrespondenceType: 'SYLLABUS_AREA_CORRESPONDENCE',
   sourceTextState: stableId === 'math.alg.quadratics' ? 'OFFICIAL_TEXT_SOURCE_BACKED' : 'PILOT_SYLLABUS_CORRESPONDENCE_SOURCE_TEXT_REVALIDATION_PENDING',
@@ -92,6 +95,10 @@ export const IB_AA_HL_CORRESPONDENCES: readonly IbConstructCorrespondence[] = [
   p1('tf.math.calculus.cubic-local-maximum', 'math.calc.differentiation', 'aahl.p1.calculus', 'differentiation'),
   p1('tf.math.probability.binomial-exact-probability', 'math.prob.binomial-distribution', 'aahl.p2.statistics', 'distributions'),
   p1('tf.math.probability.normal-symmetry', 'math.prob.normal-distribution', 'aahl.p2.statistics', 'distributions'),
+  // Track B constructs for the objectives CF leaves uncovered (ib-aahl-ext.adoption.ts): PILOT syllabus-area correspondences
+  p1('tf.ib.extended.show-that-stationary-minimum', 'math.calc.differentiation', 'aahl.p1.extended', 'multi-step analysis'),
+  p1('tf.ib.trigonometry.cosine-rule-side', 'math.trig.ratios', 'aahl.p2.trigonometry', 'triangles'),
+  p1('tf.ib.modelling.exponential-model', 'math.fun.exponential', 'aahl.p2.extended', 'modelling'),
 ];
 
 export type CorrespondenceGovernance = 'GOVERNED' | 'GOVERNED_PILOT' | 'SOURCE_BACKED_IDENTITY_PENDING_DECISION' | 'NOT_DEFENSIBLE';
@@ -116,12 +123,21 @@ export const ibGovernedConceptByStableId = (stableId: string): StudyUsConceptIde
  * the repository ALREADY holds (OBJECTIVE_LEARNING_LINKS, DECLARED_REVIEWED, the same evidence as math.alg.quadratics'
  * IB record). Scope is the component of the objective.
  */
-export const IB_AA_HL_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = IB_AA_HL_CONCEPT_IDENTITIES.filter((x) => x.status === 'GOVERNED_PILOT').flatMap((x) => {
-  const objectives = [...new Set(IB_AA_HL_CORRESPONDENCES.filter((c) => c.studyusCanonicalConceptId === x.stableId).map((c) => c.ibSourceReference.objectiveCode))];
-  return objectives.map((objectiveCode) => ({
-    v: ASSESSMENT_APPLICABILITY_CONTRACT_VERSION, concept: { stableId: x.stableId, canonicalSubject: x.canonicalSubject },
-    scope: { systemProfileId: 'IB', subject: 'Mathematics: analysis and approaches', componentId: objectiveCode.startsWith('aahl.p2') ? 'IB.MATH_AA_HL.P2' : 'IB.MATH_AA_HL.P1' },
-    basis: 'REVIEWED_CATALOGUE_LINK' as const,
-    evidence: [{ kind: 'OBJECTIVE_CONCEPT_LINK' as const, reference: objectiveCode, recordedIn: 'src/lib/exam-core/catalog/objective-learning-links.ts (OBJECTIVE_LEARNING_LINKS)', sourceReference: null, reviewState: 'DECLARED_REVIEWED' as const }],
-  } as AssessmentApplicabilityRecord));
-});
+/** The register built from a set of correspondences, for the identities `include` admits. */
+function ibApplicabilityOf(correspondences: readonly IbConstructCorrespondence[], include: (x: StudyUsConceptIdentity) => boolean): readonly AssessmentApplicabilityRecord[] {
+  return IB_AA_HL_CONCEPT_IDENTITIES.filter(include).flatMap((x) => {
+    const objectives = [...new Set(correspondences.filter((c) => c.studyusCanonicalConceptId === x.stableId).map((c) => c.ibSourceReference.objectiveCode))];
+    // ONE record per (concept, component): a concept linked from two objectives of a paper carries both links as evidence
+    const componentOf = (o: string) => (o.startsWith('aahl.p2') ? 'IB.MATH_AA_HL.P2' : 'IB.MATH_AA_HL.P1');
+    return [...new Set(objectives.map(componentOf))].map((componentId) => ({
+      v: ASSESSMENT_APPLICABILITY_CONTRACT_VERSION, concept: { stableId: x.stableId, canonicalSubject: x.canonicalSubject },
+      scope: { systemProfileId: 'IB', subject: 'Mathematics: analysis and approaches', componentId },
+      basis: 'REVIEWED_CATALOGUE_LINK' as const,
+      evidence: objectives.filter((o) => componentOf(o) === componentId).map((objectiveCode) => ({ kind: 'OBJECTIVE_CONCEPT_LINK' as const, reference: objectiveCode, recordedIn: 'src/lib/exam-core/catalog/objective-learning-links.ts (OBJECTIVE_LEARNING_LINKS)', sourceReference: null, reviewState: 'DECLARED_REVIEWED' as const })),
+    } as AssessmentApplicabilityRecord));
+  });
+}
+/** The live register: the pilot identities + the PAA-governed identities applied to IB (quadratics has its own record). */
+export const IB_AA_HL_APPLICABILITY: readonly AssessmentApplicabilityRecord[] = ibApplicabilityOf(IB_AA_HL_CORRESPONDENCES, (x) => x.status === 'GOVERNED_PILOT' || (x.status === 'GOVERNED' && x.stableId !== 'math.alg.quadratics'));
+/** The register AS PUBLISHED on 2026-10-14 (the CF correspondences, the seven pilot identities): the input of the batches published then. */
+export const IB_AA_HL_APPLICABILITY_2026_10_14: readonly AssessmentApplicabilityRecord[] = ibApplicabilityOf(IB_AA_HL_CORRESPONDENCES.filter((c) => !c.constructId.startsWith('tf.ib.')), (x) => x.status === 'GOVERNED_PILOT');

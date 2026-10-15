@@ -27,7 +27,8 @@ export type UnavailableReason =
   | 'PRACTICE_ONLY' // practice exists, no mock form yet
   | 'REDUCED_ONLY' // a reduced mock exists, the bank cannot cover the official length
   | 'NO_CONCEPT_MAPPINGS' // no reviewed requirement -> concept links yet
-  | 'PLANNED_BY_SUBJECT'; // a programme (AICE Diploma): activities are per subject
+  | 'PLANNED_BY_SUBJECT' // a programme (AICE Diploma): activities are per subject
+  | 'READINESS_ENGINE_NOT_READY'; // the Exam Bank Readiness Engine does not certify this mode for the bank as it is
 
 /** One persisted catalogue entry of the objective (assessment_structure_nodes row, reduced). */
 export interface ObjectiveEntry {
@@ -158,4 +159,23 @@ export function examEntryHrefs(objectiveNode: string | null, c: Pick<ExamPrepara
   const fallback = valid(objectiveNode);
   const practice = valid(focusAreaLabel ? c?.practiceModes.find((p) => p.label === focusAreaLabel)?.nodeKey : null) ?? pick(c?.practiceModes) ?? fallback;
   return { EXAM_PRACTICE: href(practice), EXAM_CHALLENGE: href(practice), REDUCED_MOCK: href(pick(c?.reducedMocks) ?? fallback), FULL_MOCK: href(pick(c?.fullMocks) ?? fallback) };
+}
+
+/**
+ * R-1: the Exam Bank Readiness Engine RESTRICTS the activities the catalogue offers (never adds one). A mock entry
+ * stays only when the engine says READY for that mock; practice stays unless the engine says NOT_READY for every
+ * section. `engine` null = not evaluated (SHADOW, or no governed blueprint): unchanged.
+ */
+export interface EngineModeVerdicts { anyPractice: boolean; reducedMock: 'READY' | 'PARTIAL' | 'NOT_READY'; fullMock: 'READY' | 'PARTIAL' | 'NOT_READY' }
+export function restrictByReadinessEngine(c: ExamPreparationCapabilities, engine: EngineModeVerdicts | null): ExamPreparationCapabilities {
+  if (!engine) return c;
+  const reasons = [...c.unavailableReasons];
+  const practiceModes = engine.anyPractice ? c.practiceModes : [];
+  const reducedMocks = engine.reducedMock === 'READY' ? c.reducedMocks : [];
+  const fullMocks = engine.fullMock === 'READY' ? c.fullMocks : [];
+  const add = (capability: Capability) => { if (!reasons.some((r) => r.capability === capability)) reasons.push({ capability, reason: 'READINESS_ENGINE_NOT_READY' }); };
+  if (c.practiceModes.length && !practiceModes.length) add('PRACTICE');
+  if (c.reducedMocks.length && !reducedMocks.length) add('REDUCED_MOCK');
+  if (c.fullMocks.length && !fullMocks.length) add('FULL_MOCK');
+  return { ...c, practiceModes, canPractice: practiceModes.length > 0, canRunDiagnostic: c.canRunDiagnostic && practiceModes.length > 0, reducedMocks, canRunReducedMock: reducedMocks.length > 0, fullMocks, canRunFullMock: fullMocks.length > 0, unavailableReasons: reasons };
 }

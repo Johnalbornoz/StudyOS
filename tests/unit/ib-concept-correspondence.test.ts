@@ -18,11 +18,18 @@ const facts = {
   objectiveLinks: (code: string) => (links[code]?.concepts ?? []).map((x: any) => ({ subject: x.subject ?? x.canonicalSubject, name: x.name ?? x.canonicalName })),
   catalogue: DEV_CANONICAL_CONCEPTS,
 };
+const TRACK_B = ['tf.ib.extended.show-that-stationary-minimum', 'tf.ib.trigonometry.cosine-rule-side', 'tf.ib.modelling.exponential-model'];
 const PKG = JSON.parse(readFileSync(join(process.cwd(), 'docs/exams/content-factory/CF-IB-AAHL-01/CF-IB-AAHL-01_CANDIDATE_PACKAGE.json'), 'utf8')) as { constructs: any[] };
 
 describe('IB_CANONICAL_CONCEPT_MODEL', () => {
   it('one correspondence per CF-IB-AAHL-01 construct, each to the objective the package targets', () => {
-    expect(IB_AA_HL_CORRESPONDENCES.map((c) => c.constructId).sort()).toEqual(PKG.constructs.map((k) => k.proposedCoreId).sort());
+    // the CF constructs, plus the three Track B constructs for the objectives CF leaves uncovered (IB 6/9 -> 9/9)
+    expect(IB_AA_HL_CORRESPONDENCES.map((c) => c.constructId).sort()).toEqual([...PKG.constructs.map((k) => k.proposedCoreId), ...TRACK_B].sort());
+    expect(IB_AA_HL_CORRESPONDENCES.filter((c) => TRACK_B.includes(c.constructId)).map((c) => [c.constructId, c.ibSourceReference.objectiveCode, c.studyusCanonicalConceptId])).toEqual([
+      ['tf.ib.extended.show-that-stationary-minimum', 'aahl.p1.extended', 'math.calc.differentiation'],
+      ['tf.ib.trigonometry.cosine-rule-side', 'aahl.p2.trigonometry', 'math.trig.ratios'],
+      ['tf.ib.modelling.exponential-model', 'aahl.p2.extended', 'math.fun.exponential'],
+    ]);
     for (const k of PKG.constructs) expect(IB_AA_HL_CORRESPONDENCES.find((c) => c.constructId === k.proposedCoreId)!.ibSourceReference.objectiveCode).toBe(k.objectiveCode);
   });
   it('10/10 are source-backed: the governed syllabus area names the construct, the objective links the concept, the concept exists in the catalogue', () => {
@@ -31,8 +38,11 @@ describe('IB_CANONICAL_CONCEPT_MODEL', () => {
   });
   it('identities: math.alg.quadratics GOVERNED; the seven others GOVERNED_PILOT by the recorded architecture decision -- no human reviewer', () => {
     const statuses = IB_AA_HL_CORRESPONDENCES.map((c) => [c.constructId, governanceOf(c, facts).status]);
-    expect(statuses.filter(([, s]) => s === 'GOVERNED').map(([id]) => id)).toEqual(['tf.math.quadratic.minimum-value']);
-    expect(statuses.filter(([, s]) => s === 'GOVERNED_PILOT')).toHaveLength(9);
+    // GOVERNED: quadratics, and the two identities governed by their certified PAA record (reused, never re-decided)
+    expect(statuses.filter(([, s]) => s === 'GOVERNED').map(([id]) => id)).toEqual(['tf.math.quadratic.minimum-value', 'tf.ib.trigonometry.cosine-rule-side', 'tf.ib.modelling.exponential-model']);
+    expect(statuses.filter(([, s]) => s === 'GOVERNED_PILOT')).toHaveLength(10);
+    const paaGoverned = new Set(PAA_CERTIFIED_CONCEPTS.map((c) => c.stableId));
+    for (const x of IB_AA_HL_CONCEPT_IDENTITIES.filter((i) => i.status === 'GOVERNED')) expect(paaGoverned.has(x.stableId), x.stableId).toBe(true);
     const pilot = IB_AA_HL_CONCEPT_IDENTITIES.filter((x) => x.status === 'GOVERNED_PILOT');
     expect(pilot).toHaveLength(7);
     expect(IB_CONCEPT_IDENTITY_DECISION).toMatchObject({ decision: 'APPROVED', basis: 'ARCHITECTURE_GOVERNANCE_DECISION', reviewScope: 'PILOT', humanReviewer: null });
@@ -63,8 +73,13 @@ import { governLibrary } from '@/lib/assessment-instance/v52/library-batch';
 
 describe('IB bucket governance with the pilot-governed identities', () => {
   it('the IB register holds the existing objective links (DECLARED_REVIEWED) for the seven, scoped to their paper', () => {
-    expect(IB_AA_HL_APPLICABILITY).toHaveLength(7);
-    for (const r of IB_AA_HL_APPLICABILITY) expect(r).toMatchObject({ basis: 'REVIEWED_CATALOGUE_LINK', evidence: [{ kind: 'OBJECTIVE_CONCEPT_LINK', reviewState: 'DECLARED_REVIEWED' }] });
+    // the seven pilot identities + the two PAA-governed ones newly applied to IB; one record per (concept, paper)
+    expect(IB_AA_HL_APPLICABILITY).toHaveLength(9);
+    for (const r of IB_AA_HL_APPLICABILITY) {
+      expect(r).toMatchObject({ basis: 'REVIEWED_CATALOGUE_LINK' });
+      for (const e of r.evidence) expect(e).toMatchObject({ kind: 'OBJECTIVE_CONCEPT_LINK', reviewState: 'DECLARED_REVIEWED' });
+    }
+    expect(IB_AA_HL_APPLICABILITY.find((r) => r.concept.stableId === 'math.calc.differentiation')!.evidence.map((e) => e.reference)).toEqual(['aahl.p1.calculus', 'aahl.p1.extended']);
   });
   it('without the pilot identities the new classifications fail ONLY on the concept link; with them they are AUTOMATED_CERTIFIED_PILOT', () => {
     for (const b of LIBRARY_BLUEPRINT_EXTENSIONS) {
@@ -81,8 +96,10 @@ describe('IB bucket governance with the pilot-governed identities', () => {
     expect(find('v2.ib.math-aa-hl/p2', 'cf-ib-aahl-01-p2').state).toBe('AUTOMATED_CERTIFIED_PILOT');
     expect(['HUMAN_CERTIFIED', 'AUTOMATED_CERTIFIED_PILOT']).toContain(find('v2.ib.math-aa-hl/p1', 'step4b-pilot-1').state);
     expect(g.adapters.find((d) => d.objectId === 'IB.MATH_AA_HL.P2')!.state).toBe('AUTOMATED_CERTIFIED_PILOT');
-    // positions: P1 functions 1 (D02) + algebra 1 + calculus 2, P2 statistics 2 -> 6 of the 9 pilot positions
-    expect([...LIBRARY_BLUEPRINT_IB.buckets, ...LIBRARY_BLUEPRINT_EXTENSIONS.filter((b) => b.adapterId.startsWith('IB.')).flatMap((b) => b.buckets)].reduce((n, b) => n + b.governedPositions, 0)).toBe(6);
+    // positions: P1 functions 1 (D02) + algebra 1 + calculus 2 + extended 1, P2 statistics 2 + trigonometry 1 + extended 1 -> 9 of 9
+    expect([...LIBRARY_BLUEPRINT_IB.buckets, ...LIBRARY_BLUEPRINT_EXTENSIONS.filter((b) => b.adapterId.startsWith('IB.')).flatMap((b) => b.buckets)].reduce((n, b) => n + b.governedPositions, 0)).toBe(9);
+    expect(find('v2.ib.math-aa-hl/p1', 'tb-ib-aahl-ext-p1').state).toBe('AUTOMATED_CERTIFIED_PILOT');
+    expect(find('v2.ib.math-aa-hl/p2', 'tb-ib-aahl-ext-p2').state).toBe('AUTOMATED_CERTIFIED_PILOT');
     // the V5.2 library and its governance are unchanged
     expect(LIBRARY.length).toBe(10);
   });
@@ -90,7 +107,8 @@ describe('IB bucket governance with the pilot-governed identities', () => {
     const m = await import('@/lib/curriculum/ib/ib-aa-hl-concept-correspondence');
     const by = (st: string) => m.IB_AA_HL_CORRESPONDENCES.filter((c) => c.sourceTextState === st).map((c) => c.constructId);
     expect(by('OFFICIAL_TEXT_SOURCE_BACKED')).toEqual(['tf.math.quadratic.minimum-value']);
-    expect(by('PILOT_SYLLABUS_CORRESPONDENCE_SOURCE_TEXT_REVALIDATION_PENDING')).toHaveLength(9);
+    // the nine CF ones + the three Track B ones (the IB guide text is not held: even PAA-governed identities stay pending here)
+    expect(by('PILOT_SYLLABUS_CORRESPONDENCE_SOURCE_TEXT_REVALIDATION_PENDING')).toHaveLength(12);
     expect(m.IB_SOURCE_TEXT_DECISION).toMatchObject({ scope: 'DEV_PILOT', productionAuthorization: false, officialGuideRetrieval: 'HTTP_403_NOT_BYPASSED' });
   });
 });

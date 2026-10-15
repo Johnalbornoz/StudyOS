@@ -15,7 +15,7 @@
  * A seed picks one parameter set by index. There is no provider, no clock, no random source but the seed.
  */
 import type { RenderingStrategy, StrategyContext, StrategyResult } from '../renderer';
-import { EXACT_NUMERIC_POLICY } from '../response-evaluation';
+import { EXACT_NUMERIC_POLICY, OPTION_POLICY } from '../response-evaluation';
 
 export const PLANNING_BANDS = ['FOUNDATIONAL', 'STANDARD', 'CHALLENGE'] as const;
 export type PlanningBand = (typeof PLANNING_BANDS)[number];
@@ -80,7 +80,7 @@ export function parameterSetsOf<P extends ParameterSet>(c: ParametricConstruct<P
  *                   the item is not marked on working. The format classification is the system's; the scoring is the
  *                   same deterministic contract.
  */
-export function parametricStrategy<P extends ParameterSet>(c: ParametricConstruct<P>, opts: { format?: 'NUMERIC_ENTRY' | 'SHORT_RESPONSE'; marksByBand?: Readonly<Record<PlanningBand, number>> } = {}): RenderingStrategy {
+export function parametricStrategy<P extends ParameterSet>(c: ParametricConstruct<P>, opts: { format?: 'NUMERIC_ENTRY' | 'SHORT_RESPONSE' | 'SELECTED_RESPONSE'; marksByBand?: Readonly<Record<PlanningBand, number>> } = {}): RenderingStrategy {
   const format = opts.format ?? 'NUMERIC_ENTRY';
   const render = (ctx: StrategyContext): StrategyResult => {
     const v = ctx.specification.variable;
@@ -104,6 +104,32 @@ export function parametricStrategy<P extends ParameterSet>(c: ParametricConstruc
     const key = readRational(answer);
     // the renderer never emits a key its own independent check does not confirm
     if (!key || !c.keyHolds(p, key)) return { ok: false, code: 'KEY_DOES_NOT_HOLD', detail: answer };
+    if (format === 'SELECTED_RESPONSE') {
+      // the key and three distractors, each the value a MODELLED misconception gives for this parameter set (never an
+      // invented number); the order is drawn from the seeded source, so no position carries the key
+      const keyText = writeRational(key);
+      const seen = new Set([keyText]);
+      // a distractor must be competitive: within the selected-response engine's spread (x20) of the key, never a value nobody would choose
+      const near = (v: Rational) => { const r = (v.n * key.d) / (v.d * key.n); return r <= 20 && r >= 1 / 20; };
+      const wrong = c.misconceptionAnswers(p).flatMap((m) => { if (!m.value || m.value.n <= 0 || !near(m.value)) return []; const t = writeRational(m.value); if (seen.has(t)) return []; seen.add(t); return [{ id: m.id, text: t }]; }).slice(0, 3);
+      if (wrong.length < 3) return { ok: false, code: 'TOO_FEW_MODELLED_DISTRACTORS', detail: `${wrong.length} distinct misconception values` };
+      const order = [{ id: null as string | null, text: keyText }, ...wrong];
+      for (let i = order.length - 1; i > 0; i -= 1) { const j = ctx.source.int(0, i); [order[i], order[j]] = [order[j], order[i]]; }
+      const labels = ['A', 'B', 'C', 'D'];
+      const options = order.map((o, i) => ({ label: labels[i], text: o.text }));
+      const correct = labels[order.findIndex((o) => o.id === null)];
+      const human = (id: string) => id.replace(/-/g, ' ');
+      return {
+        ok: true,
+        output: {
+          learner: { language, itemType: 'SELECTED_RESPONSE', stimulus: null, prompt: c.present(p, language), parts: [], options, marks, conditions: { calculator: v.toolPolicy.calculator, workingShown: false } },
+          key: { answers: [keyText], correctOption: correct, distractorRationales: Object.fromEntries(order.flatMap((o, i) => (o.id ? [[labels[i], `A learner who ${human(o.id)} chooses this value.`]] : []))), distractorLineage: Object.fromEntries(order.flatMap((o, i) => (o.id ? [[labels[i], { misconceptionId: o.id, reasoningError: human(o.id), derivedAnswer: o.text }]] : []))) },
+          rubric: [{ code: 'KEY', kind: 'ANSWER', marks, criterion: correct }],
+          responsePolicy: OPTION_POLICY,
+          parameterSet: { ...p },
+        },
+      };
+    }
     return {
       ok: true,
       output: {

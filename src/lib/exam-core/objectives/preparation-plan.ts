@@ -71,6 +71,22 @@ export interface LearnerConceptState {
 /** `sameExam` = the result belongs to THIS exam target (G6: target-scoped, not "same exam definition"). */
 export interface ExamEvidence { classification: ExamClassification; at: string; examName: string; sameExam: boolean }
 
+/**
+ * E-1: THIS exam's own signal on a requirement, read from Exam Readiness (exam_readiness_evidence of this exam target,
+ * on the requirement's canonical concepts) -- never from the Knowledge State, which exam attempts no longer update.
+ * Only independent scored responses count; nothing is concluded from fewer than MIN_INDEPENDENT of them.
+ *   mean fraction >= 0.8 -> STRENGTH; < 0.5 -> GAP; otherwise DEVELOPING.
+ */
+export interface ExamReadinessCellSummary { canonicalConceptId: string; independentAttempts: number; meanFraction: number | null; lastAt: string | null }
+export const EXAM_READINESS_MIN_INDEPENDENT = 2;
+export function examReadinessEvidenceOf(cells: readonly ExamReadinessCellSummary[], examName: string): ExamEvidence | null {
+  const n = cells.reduce((a, c) => a + c.independentAttempts, 0);
+  if (n < EXAM_READINESS_MIN_INDEPENDENT) return null;
+  const weighted = cells.reduce((a, c) => a + (c.meanFraction ?? 0) * c.independentAttempts, 0) / n;
+  const at = cells.map((c) => c.lastAt).filter((x): x is string => !!x).sort().pop() ?? new Date(0).toISOString();
+  return { classification: weighted >= 0.8 ? 'STRENGTH' : weighted < 0.5 ? 'GAP' : 'DEVELOPING', at, examName, sameExam: true };
+}
+
 export interface RequirementInput {
   learningObjectiveId: string;
   code: string;

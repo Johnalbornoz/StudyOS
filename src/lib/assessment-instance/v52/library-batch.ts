@@ -1,3 +1,4 @@
+import type { AssessmentApplicabilityRecord } from '@/lib/assessment-adaptation/assessment-applicability';
 /**
  * QF V5.2 -- the batch that turns the library into certified EXAM BANK supply (pure, deterministic, no IO).
  *
@@ -76,9 +77,9 @@ function toCertified(r: LibraryRender, decision: CertificationDecisionV52, state
  * give them. The certification state is AUTOMATED: an instance is never called human-certified because the objects
  * above it were approved by a person -- no person reviewed the instance.
  */
-export function certifyCell(entry: LibraryEntry, target: LibraryTarget, planningBand: PlanningBand, wanted: number, g: LibraryGovernance, batchId: string): CellResult {
+export function certifyCell(entry: LibraryEntry, target: LibraryTarget, planningBand: PlanningBand, wanted: number, g: LibraryGovernance, batchId: string, register?: readonly AssessmentApplicabilityRecord[]): CellResult {
   const adapter = STUDYUS_ASSESSMENT_REGISTRY.adapter(target.adapterId)!;
-  const placed = libraryBucketOf(entry.core, target.adapterId)?.blueprint;
+  const placed = libraryBucketOf(entry.core, target.adapterId, target.objectiveCode)?.blueprint;
   const governance: Governance | null = (() => {
     const core = find(g.cores, entry.core.constructFamilyId, entry.core.familyVersion); const ad = find(g.adapters, target.adapterId); const env = find(g.envelopes, entry.envelope.rendererVersion, entry.envelope.constructFamilyVersion);
     const bp = placed ? find(g.blueprints, placed.blueprintId, placed.classificationVersion) : undefined;
@@ -96,7 +97,7 @@ export function certifyCell(entry: LibraryEntry, target: LibraryTarget, planning
   const limit = packaged ? packaged.length : wanted * 40;
   for (let n = 1; (packaged || out.certified.length < wanted) && n <= limit; n += 1) {
     const seed = seedAt(n)!;
-    const r = renderLibraryInstance(entry, target, planningBand, seed);
+    const r = renderLibraryInstance(entry, target, planningBand, seed, register);
     out.attempted += 1;
     if (!r.ok) { out.refusals.push({ seed, code: r.code, detail: r.detail }); if (out.refusals.length >= 3) break; continue; }
     const id = recognitionIdOf(r.value);

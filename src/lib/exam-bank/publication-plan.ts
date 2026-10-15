@@ -21,7 +21,7 @@ import type { AssessmentAdapter } from '@/lib/assessment-instance/assessment-ada
 import type { CertificationRecord, ReviewerQualification } from '@/lib/assessment-instance/certification';
 import type { ConstructCoreRecord } from '@/lib/assessment-instance/construct-core';
 import type { CoreApplicabilityRecord } from '@/lib/assessment-instance/core-applicability';
-import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSION_BATCHES, libraryApplicability, PUBLICATION_APPLICABILITY, PUBLICATION_BLUEPRINTS, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
+import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSION_BATCHES, libraryApplicability, PUBLICATION_APPLICABILITY, PUBLICATION_APPLICABILITY_2026_10_14, PUBLICATION_APPLICABILITY_2026_10_15_IB, PUBLICATION_BLUEPRINTS, PUBLICATION_BLUEPRINTS_2026_10_14, PUBLICATION_BLUEPRINTS_2026_10_15_IB, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
 import { pilotApplicabilityHash } from '@/lib/assessment-instance/pilot/step4b-pilot-slice';
 import { STUDYUS_ASSESSMENT_REGISTRY, V52_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
 import type { AssessmentSystemRegistry } from '@/lib/assessment-instance/assessment-system-registry';
@@ -118,9 +118,15 @@ export const coreCertificationVersionOf = (state: PlannedObjectCertification['st
  * entry or re-governed adapter is not an input of theirs (their stored inputs hash stays theirs). Every later batch
  * is planned against the live publication state.
  */
-const ARCHIVED_BATCH_INPUTS: Readonly<Record<string, { blueprints: readonly LibraryBlueprint[]; register: typeof LIBRARY_APPLICABILITY; registry: AssessmentSystemRegistry }>> = {
+const ARCHIVED_BATCH_INPUTS: Readonly<Record<string, { blueprints: readonly LibraryBlueprint[]; register: typeof LIBRARY_APPLICABILITY; registry: AssessmentSystemRegistry; coreRegister?: typeof LIBRARY_APPLICABILITY }>> = {
   // the first IB delivery (DEV, 2026-10-14): V5.2 classifications and register, the registry before the Cambridge rebinding
   'CF-IB-AAHL-01': { blueprints: LIBRARY_BLUEPRINTS, register: LIBRARY_APPLICABILITY, registry: V52_ASSESSMENT_REGISTRY },
+  // published 2026-10-14 against the classifications and the register of that day; later classifications (IB extended,
+  // trigonometry, 2026-10-15) and register records are not inputs of theirs
+  'CF-IB-AAHL-01-A2': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_14, register: PUBLICATION_APPLICABILITY_2026_10_14, registry: STUDYUS_ASSESSMENT_REGISTRY, coreRegister: PUBLICATION_APPLICABILITY_2026_10_14 },
+  'CIE-9709-P1-A1': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_14, register: PUBLICATION_APPLICABILITY_2026_10_14, registry: STUDYUS_ASSESSMENT_REGISTRY, coreRegister: PUBLICATION_APPLICABILITY_2026_10_14 },
+  // published on DEV 2026-10-15 before the PISA and AICE classifications and register records existed
+  'TB-IB-AAHL-EXT-A1': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_15_IB, register: PUBLICATION_APPLICABILITY_2026_10_15_IB, registry: STUDYUS_ASSESSMENT_REGISTRY, coreRegister: PUBLICATION_APPLICABILITY_2026_10_15_IB },
 };
 
 /**
@@ -135,10 +141,10 @@ export function buildPublicationPlan(human: HumanDecisionsFile, scope: Eligibili
   const base = planOfLibrary(human, scope, LIBRARY, PUBLICATION_BATCH_ID, LIBRARY_BLUEPRINTS, LIBRARY_APPLICABILITY, V52_ASSESSMENT_REGISTRY);
   // the extension carries every classification (the V5.2 ones it places items in, and the pilot ones it adds) and the
   // register of the pilot-governed identities
-  return LIBRARY_EXTENSION_BATCHES.length ? { ...base, extensions: LIBRARY_EXTENSION_BATCHES.map((b) => { const archived = ARCHIVED_BATCH_INPUTS[b.batchId]; return archived ? planOfLibrary(human, scope, b.entries, b.batchId, archived.blueprints, archived.register, archived.registry) : planOfLibrary(human, scope, b.entries, b.batchId, PUBLICATION_BLUEPRINTS, PUBLICATION_APPLICABILITY); }) } : base;
+  return LIBRARY_EXTENSION_BATCHES.length ? { ...base, extensions: LIBRARY_EXTENSION_BATCHES.map((b) => { const archived = ARCHIVED_BATCH_INPUTS[b.batchId]; return archived ? planOfLibrary(human, scope, b.entries, b.batchId, archived.blueprints, archived.register, archived.registry, archived.coreRegister) : planOfLibrary(human, scope, b.entries, b.batchId, PUBLICATION_BLUEPRINTS, PUBLICATION_APPLICABILITY); }) } : base;
 }
 
-function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, library: readonly LibraryEntry[], batchId: string, blueprintsIn: readonly LibraryBlueprint[], register: typeof LIBRARY_APPLICABILITY, registry: AssessmentSystemRegistry = STUDYUS_ASSESSMENT_REGISTRY): PublicationPlan {
+function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, library: readonly LibraryEntry[], batchId: string, blueprintsIn: readonly LibraryBlueprint[], register: typeof LIBRARY_APPLICABILITY, registry: AssessmentSystemRegistry = STUDYUS_ASSESSMENT_REGISTRY, /** The register a core's applicability is read from: the live one, or the one an archived batch was published against. */ coreRegister: typeof LIBRARY_APPLICABILITY = PUBLICATION_APPLICABILITY): PublicationPlan {
   const preflight: string[] = [];
   const blocked: BlockedRow[] = [];
   // the registry the batch is governed against (live, or the V5.2 one for the archived batch)
@@ -223,7 +229,7 @@ function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, libra
 
   const applicability: PlannedApplicability[] = [];
   for (const e of library) for (const t of e.targets) {
-    const record = libraryApplicability(e.core, t.adapterId);
+    const record = libraryApplicability(e.core, t.adapterId, coreRegister);
     const contentHash = pilotApplicabilityHash(record);
     const identity = `${e.core.constructFamilyId} x ${t.adapterId}`;
     if (record.status === 'NOT_APPLICABLE') { blocked.push({ kind: 'CORE_APPLICABILITY', identity, reason: 'NOT_APPLICABLE', detail: record.reason ?? '' }); continue; }
@@ -234,7 +240,7 @@ function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, libra
   }
 
   // ---- the certified instances: rendered and judged exactly as the QF V5.2 run does
-  const cellResults: CellResult[] = libraryCells(library).map((c) => certifyCell(c.entry, c.target, c.planningBand, PUBLICATION_PER_CELL, governance, batchId));
+  const cellResults: CellResult[] = libraryCells(library).map((c) => certifyCell(c.entry, c.target, c.planningBand, PUBLICATION_PER_CELL, governance, batchId, coreRegister));
   const instances: PlannedInstance[] = [];
   for (const cell of cellResults) {
     for (const n of cell.notCertified) blocked.push({ kind: 'ITEM_INSTANCE', identity: n.seed, reason: n.outcome, detail: n.reasons.join(', ') });

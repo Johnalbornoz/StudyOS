@@ -1671,6 +1671,7 @@ export type MessageKey =
   | 'prep.unavailable.BANK_IN_PROGRESS'
   | 'prep.unavailable.PRACTICE_ONLY'
   | 'prep.unavailable.REDUCED_ONLY'
+  | 'prep.unavailable.READINESS_ENGINE_NOT_READY'
   | 'prep.unavailable.NO_CONCEPT_MAPPINGS'
   | 'prep.unavailable.PLANNED_BY_SUBJECT'
   | 'prep.goal.framework'
@@ -3824,6 +3825,7 @@ const es: Messages = {
   'prep.unavailable.BANK_IN_PROGRESS': 'El banco de práctica está en preparación.',
   'prep.unavailable.PRACTICE_ONLY': 'Hay práctica, pero todavía no un simulacro.',
   'prep.unavailable.REDUCED_ONLY': 'StudyUs todavía está ampliando y validando el banco necesario para construir un simulacro de longitud completa.',
+  'prep.unavailable.READINESS_ENGINE_NOT_READY': 'El banco certificado todavía no cubre todo lo que esta actividad exige.',
   'prep.unavailable.NO_CONCEPT_MAPPINGS': 'Los requisitos aún no están vinculados a conceptos de StudyUs.',
   'prep.unavailable.PLANNED_BY_SUBJECT': 'El Diploma se prepara asignatura por asignatura.',
   'prep.goal.framework': 'Marco',
@@ -6134,6 +6136,7 @@ const en: Messages = {
   'prep.unavailable.BANK_IN_PROGRESS': 'The practice bank is in preparation.',
   'prep.unavailable.PRACTICE_ONLY': 'Practice exists, but there is no mock yet.',
   'prep.unavailable.REDUCED_ONLY': 'StudyUs is still expanding and validating the bank needed to build a full-length mock.',
+  'prep.unavailable.READINESS_ENGINE_NOT_READY': 'The certified bank does not yet cover everything this activity requires.',
   'prep.unavailable.NO_CONCEPT_MAPPINGS': 'The requirements are not linked to StudyUs concepts yet.',
   'prep.unavailable.PLANNED_BY_SUBJECT': 'The Diploma is prepared subject by subject.',
   'prep.goal.framework': 'Framework',
@@ -8444,6 +8447,7 @@ const de: Messages = {
   'prep.unavailable.BANK_IN_PROGRESS': 'Die Übungsbank ist in Vorbereitung.',
   'prep.unavailable.PRACTICE_ONLY': 'Es gibt Übungen, aber noch keine Simulation.',
   'prep.unavailable.REDUCED_ONLY': 'StudyUs erweitert und prüft noch die Aufgabenbank, die für eine Simulation in voller Länge nötig ist.',
+  'prep.unavailable.READINESS_ENGINE_NOT_READY': 'Die zertifizierte Aufgabenbank deckt noch nicht alles ab, was diese Aktivität verlangt.',
   'prep.unavailable.NO_CONCEPT_MAPPINGS': 'Die Anforderungen sind noch nicht mit StudyUs-Konzepten verknüpft.',
   'prep.unavailable.PLANNED_BY_SUBJECT': 'Das Diplom wird Fach für Fach vorbereitet.',
   'prep.goal.framework': 'Rahmen',
@@ -10754,6 +10758,7 @@ const fr: Messages = {
   'prep.unavailable.BANK_IN_PROGRESS': 'La banque d’exercices est en préparation.',
   'prep.unavailable.PRACTICE_ONLY': 'L’entraînement existe, mais pas encore d’examen blanc.',
   'prep.unavailable.REDUCED_ONLY': 'StudyUs élargit et valide encore la banque nécessaire pour construire un examen blanc de longueur complète.',
+  'prep.unavailable.READINESS_ENGINE_NOT_READY': 'La banque certifiée ne couvre pas encore tout ce que cette activité exige.',
   'prep.unavailable.NO_CONCEPT_MAPPINGS': 'Les exigences ne sont pas encore reliées à des concepts StudyUs.',
   'prep.unavailable.PLANNED_BY_SUBJECT': 'Le diplôme se prépare matière par matière.',
   'prep.goal.framework': 'Cadre',
@@ -13064,6 +13069,7 @@ const pt: Messages = {
   'prep.unavailable.BANK_IN_PROGRESS': 'O banco de prática está em preparação.',
   'prep.unavailable.PRACTICE_ONLY': 'Há prática, mas ainda não um simulado.',
   'prep.unavailable.REDUCED_ONLY': 'O StudyUs ainda está ampliando e validando o banco necessário para montar um simulado de duração completa.',
+  'prep.unavailable.READINESS_ENGINE_NOT_READY': 'O banco certificado ainda não cobre tudo o que esta atividade exige.',
   'prep.unavailable.NO_CONCEPT_MAPPINGS': 'Os requisitos ainda não estão vinculados a conceitos do StudyUs.',
   'prep.unavailable.PLANNED_BY_SUBJECT': 'O Diploma é preparado disciplina por disciplina.',
   'prep.goal.framework': 'Marco',

@@ -18,6 +18,8 @@
  *       the exam bridge (one learner state per canonical concept), provenance
  *       EXAM_PREPARATION recorded once.
  */
+import { readinessMode } from '@/lib/exam-core/question-bank/capability-overlay.service';
+import { engineReadinessForVersion } from '@/lib/exam-bank/readiness/readiness-authority.service';
 import { technicalExamAttemptSql } from '../audience';
 import { examAttemptEvidenceSql, inExamScopeSql } from '../evidence-scope';
 import { readinessFor, selectableSql } from '../catalog/readiness-view';
@@ -36,8 +38,8 @@ import { READINESS_ORDER, type ReadinessState, type ComponentReadiness } from '.
 import { addConceptToStudentLearning } from '../catalog/learning-links.service';
 import { createExamInstance, toInstanceView } from '../exam-instance.service';
 import { examObjectives, objectiveByKey, objectiveForConfig, type ExamObjective } from './objective-catalog';
-import { computeCapabilities, objectiveStatusKey, type ExamPreparationCapabilities, type ObjectiveEntry } from './capabilities';
-import { buildPreparationPlan, nextStep, type ExamEvidence, type LearnerConceptState, type PreparationPlan, type RequirementInput } from './preparation-plan';
+import { computeCapabilities, objectiveStatusKey, type ExamPreparationCapabilities, type ObjectiveEntry, restrictByReadinessEngine, type EngineModeVerdicts } from './capabilities';
+import { buildPreparationPlan, nextStep, type ExamEvidence, type LearnerConceptState, type PreparationPlan, type RequirementInput, examReadinessEvidenceOf, type ExamReadinessCellSummary } from './preparation-plan';
 import { applyBankReadinessOverlay } from '../question-bank/capability-overlay.service';
 import { acquireLaunchLock } from '@/services/activity-launch-lock.service';
 import { objectiveEligibilityForStudent } from '../eligibility/eligibility.service';
@@ -395,6 +397,34 @@ async function examEvidence(studentId: string, codes: string[], canonicalIds: st
   return { byCode, byConcept };
 }
 
+/**
+ * E-1: this exam target's Exam Readiness per canonical concept (exam_readiness_evidence; independent scored responses).
+ * Absent table (an older database) = no readiness signal, never an error.
+ */
+async function examReadinessByConcept(studentId: string, canonicalIds: string[], examTargetId: string): Promise<Map<string, ExamReadinessCellSummary>> {
+  const out = new Map<string, ExamReadinessCellSummary>();
+  if (!canonicalIds.length) return out;
+  try {
+    const r = await db.query(
+      `SELECT canonical_concept_id, count(*) FILTER (WHERE independent)::int AS n, avg(fraction) FILTER (WHERE independent) AS mean, max(occurred_at) AS last_at
+         FROM exam_readiness_evidence WHERE student_id = $1 AND exam_target_id = $2::uuid AND canonical_concept_id = ANY($3::uuid[])
+        GROUP BY canonical_concept_id`,
+      [studentId, examTargetId, canonicalIds],
+    );
+    for (const x of r.rows as any[]) out.set(x.canonical_concept_id, { canonicalConceptId: x.canonical_concept_id, independentAttempts: Number(x.n), meanFraction: x.mean === null ? null : Number(x.mean), lastAt: x.last_at ? new Date(x.last_at).toISOString() : null });
+  } catch (e) {
+    if ((e as { code?: string })?.code !== '42P01') throw e;
+  }
+  return out;
+}
+
+/** The engine's verdicts for a version (ENFORCE only; null = not evaluated: SHADOW, no version, or no governed blueprint). */
+async function engineVerdictsFor(examVersionId: string | null): Promise<EngineModeVerdicts | null> {
+  if (!examVersionId || readinessMode() !== 'ENFORCE') return null;
+  const view = await engineReadinessForVersion(examVersionId).catch(() => null);
+  return view ? { anyPractice: Object.values(view.practiceBySection).some((s) => s !== 'NOT_READY'), reducedMock: view.reducedMock, fullMock: view.fullMock } : null;
+}
+
 /** Other active preparations whose requirements map to the same canonical concepts (real mappings only, never by name). */
 async function otherPreparationsByConcept(studentId: string, excludeProfileId: string, canonicalIds: string[], language = 'en'): Promise<Map<string, string[]>> {
   const out = new Map<string, string[]>();
@@ -427,11 +457,12 @@ export async function buildProfilePlan(studentId: string, profile: StudentExamPr
   const canonicalIds = [...new Set([...conceptsByReq.values()].flat().map((c) => c.id))];
   // Micro-delta M03: requirement and concept NAMES are catalogue display labels in the reader's language
   // (learning-objective labels by stable code; canonical_concept_localizations). IDs, codes and areas are unchanged.
-  const [learner, evidence, also, conceptLabels] = await Promise.all([
+  const [learner, evidence, also, conceptLabels, readiness] = await Promise.all([
     learnerStates(studentId, canonicalIds, profile.id),
     examEvidence(studentId, reqs.map((r) => r.code), canonicalIds, profile.id),
     otherPreparationsByConcept(studentId, profile.id, canonicalIds, language),
     canonicalConceptLabels(canonicalIds, language).catch(() => new Map<string, string>()),
+    examReadinessByConcept(studentId, canonicalIds, profile.id),
   ]);
   const totalItems = reqs.reduce((a, r) => a + r.items, 0);
   const inputs: RequirementInput[] = reqs.map((r) => ({
@@ -440,7 +471,8 @@ export async function buildProfilePlan(studentId: string, profile: StudentExamPr
     description: learningObjectiveLabel(r.code, language) ?? r.description,
     area: r.area,
     weight: totalItems ? r.items / totalItems : 1 / reqs.length,
-    ownEvidence: evidence.byCode.get(r.code) ?? null,
+    // this exam's result on the requirement's own objective, else its Exam Readiness on the requirement's concepts (E-1)
+    ownEvidence: evidence.byCode.get(r.code) ?? examReadinessEvidenceOf((conceptsByReq.get(r.id) ?? []).flatMap((c) => (readiness.has(c.id) ? [readiness.get(c.id)!] : [])), objective.label),
     concepts: (conceptsByReq.get(r.id) ?? []).map((c) => ({
       canonicalConceptId: c.id,
       name: conceptLabels.get(c.id) ?? c.name,
@@ -468,7 +500,8 @@ export async function getPreparationView(studentId: string, profileId: string, l
   if (!profile || profile.studentId !== studentId) return null;
   const objective = await profileObjective(profile);
   if (!objective) return null;
-  const capabilities = await objectiveCapabilities(objective, language);
+  // R-1: under ENFORCE the Exam Bank Readiness Engine restricts what the catalogue offers (never adds)
+  const capabilities = restrictByReadinessEngine(await objectiveCapabilities(objective, language), await engineVerdictsFor(profile.examVersionId ?? null));
   const [plan, open, diag] = await Promise.all([
     buildProfilePlan(studentId, profile, objective, capabilities, language),
     findOpenSimulationAttemptForProfile(profile.id),

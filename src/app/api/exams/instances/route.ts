@@ -14,6 +14,9 @@ import { resolveExamLevel } from '@/lib/exam-core/catalog/structure.service';
 import { atLeast, isMockReady } from '@/lib/exam-core/catalog/readiness';
 import { createExamInstance, ensureExamProfile, listExamInstances, toInstanceView, ExamInstanceError } from '@/lib/exam-core/exam-instance.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { db } from '@/lib/db';
+import { readinessMode } from '@/lib/exam-core/question-bank/capability-overlay.service';
+import { engineAllowsLaunch, engineReadinessForVersion } from '@/lib/exam-bank/readiness/readiness-authority.service';
 
 const CreateSchema = z.strictObject({
   nodeKey: z.string().regex(/^[a-z0-9._-]{1,120}$/),
@@ -63,6 +66,16 @@ async function handlePOST(request: NextRequest) {
   const ready = (s: Parameters<typeof isMockReady>[0]) => (body.mode === 'PRACTICE' ? atLeast(s, 'PRACTICE_READY') : isMockReady(s));
   if (level.components.filter((c) => body.componentIds.includes(c.componentId)).some((c) => !ready(c.readiness))) {
     return NextResponse.json({ error: 'COMPONENT_NOT_READY' }, { status: 409 });
+  }
+  // R-1 / R-2: under ENFORCE the Exam Bank Readiness Engine has the last word -- a complete-form mode starts only when
+  // the engine says READY, practice unless it says NOT_READY for the sections asked (it can only restrict).
+  if (readinessMode() === 'ENFORCE') {
+    const view = await engineReadinessForVersion(level.examVersionId);
+    if (view) {
+      const sections = (await db.query(`SELECT section_key FROM assessment_components WHERE id = ANY($1::uuid[])`, [body.componentIds])).rows.map((r: { section_key: string }) => r.section_key);
+      const verdict = engineAllowsLaunch(view, body.mode, sections);
+      if (!verdict.allowed) return NextResponse.json({ error: 'READINESS_ENGINE_NOT_READY', reason: verdict.reason }, { status: 409 });
+    }
   }
   try {
     const examProfileId = await ensureExamProfile(studentId, level.examDefinitionId, level.examVersionId);

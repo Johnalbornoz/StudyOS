@@ -38,12 +38,23 @@ export async function classifyBlueprintTargetCoverage(
     studentConceptId = await resolveStudentConceptForCanonicalConcept(studentId, canonicalConceptId);
     if (studentConceptId) break;
   }
+  // E-1: exam attempts are Exam Readiness evidence (exam_readiness_evidence), not Knowledge State evidence. A target
+  // this exam target has scored responses on is EVIDENCED by them, with no learner diagnosis (nothing is inferred
+  // about the learner's knowledge from an exam).
+  const examReadiness = async (): Promise<boolean> => {
+    try {
+      const r = await db.query(`SELECT 1 FROM exam_readiness_evidence WHERE student_id = $1 AND exam_target_id = $2::uuid AND canonical_concept_id = ANY($3::uuid[]) AND status = 'SCORED' LIMIT 1`, [studentId, examProfileId, bridge.canonicalConceptIds]);
+      return r.rows.length > 0;
+    } catch (e) { if ((e as { code?: string })?.code === '42P01') return false; throw e; }
+  };
   if (!studentConceptId) {
+    if (bridge.canonicalConceptIds.length > 0 && (await examReadiness())) return { targetId: target.id, status: 'SUPPORTED_AND_EVIDENCED', reasonCodes: ['EXAM_READINESS_EVIDENCE'], studentConceptId: null, diagnosisId: null };
     return { targetId: target.id, status: 'SUPPORTED_BUT_UNEVIDENCED', reasonCodes: ['NO_MATCHED_STUDENT_CONCEPT'], studentConceptId: null, diagnosisId: null };
   }
 
   const evidenceCheck = await db.query(`SELECT 1 FROM learning_evidence le WHERE le.student_id = $1 AND le.concept_id = $2 AND ${inExamScopeSql('le', '$3')} LIMIT 1`, [studentId, studentConceptId, examProfileId]);
   if (evidenceCheck.rows.length === 0) {
+    if (bridge.canonicalConceptIds.length > 0 && (await examReadiness())) return { targetId: target.id, status: 'SUPPORTED_AND_EVIDENCED', reasonCodes: ['EXAM_READINESS_EVIDENCE'], studentConceptId, diagnosisId: null };
     return { targetId: target.id, status: 'SUPPORTED_BUT_UNEVIDENCED', reasonCodes: ['NO_EVIDENCE_YET'], studentConceptId, diagnosisId: null };
   }
 

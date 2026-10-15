@@ -60,6 +60,8 @@ export interface CompositionInput {
   coreApplicability: readonly CoreApplicabilityRecord[];
   /** The concept applicability register `adapt()` reads. */
   applicabilityRegister: readonly AssessmentApplicabilityRecord[];
+  /** The threshold `adapt()` reads the register under. Absent = EA-1 (as before). */
+  applicabilityPolicy?: unknown;
   bucket: BlueprintBucketRef;
   disciplinePolicy: unknown;
   request: { purpose: string; difficultyBand: string; language: string; contentUseClass: string; responseFormat?: string; participationMode?: string };
@@ -99,7 +101,7 @@ export function composeAssessmentSpecification(input: CompositionInput): Composi
   const examined = isExaminedSystemType(registered.system.systemType);
   if (examined && input.request.participationMode === 'COLLABORATIVE') return refuse('EXAMINED_SYSTEM_IS_SAT_INDIVIDUALLY', `${registered.system.systemId} is registered as ${registered.system.systemType}: its assessments are sat individually`);
   const run = (withApproach: boolean) => adapt({
-    family: familyForAdaptation(core, gate.record), profile: input.system, component: input.component, applicability: input.applicabilityRegister, disciplinePolicy: input.disciplinePolicy,
+    family: familyForAdaptation(core, gate.record), profile: input.system, component: input.component, applicability: input.applicabilityRegister, disciplinePolicy: input.disciplinePolicy, ...(input.applicabilityPolicy !== undefined ? { applicabilityPolicy: input.applicabilityPolicy } : {}),
     ...(withApproach && input.learningApproach !== undefined ? { learningApproach: input.learningApproach } : {}),
     // the specification records the bucket it is for: the blueprint places the instance, it does not define it
     request: { ...input.request, requirementCellKey: bucket.bucketId, ...(bucket.responseFormat ? { responseFormat: bucket.responseFormat } : {}) },
