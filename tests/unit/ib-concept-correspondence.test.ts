@@ -86,4 +86,11 @@ describe('IB bucket governance with the pilot-governed identities', () => {
     // the V5.2 library and its governance are unchanged
     expect(LIBRARY.length).toBe(10);
   });
+  it('OFFICIAL_GUIDE_TEXT_SOURCE_BACKED = 1/10; the other nine are pilot syllabus correspondences pending source-text revalidation', async () => {
+    const m = await import('@/lib/curriculum/ib/ib-aa-hl-concept-correspondence');
+    const by = (st: string) => m.IB_AA_HL_CORRESPONDENCES.filter((c) => c.sourceTextState === st).map((c) => c.constructId);
+    expect(by('OFFICIAL_TEXT_SOURCE_BACKED')).toEqual(['tf.math.quadratic.minimum-value']);
+    expect(by('PILOT_SYLLABUS_CORRESPONDENCE_SOURCE_TEXT_REVALIDATION_PENDING')).toHaveLength(9);
+    expect(m.IB_SOURCE_TEXT_DECISION).toMatchObject({ scope: 'DEV_PILOT', productionAuthorization: false, officialGuideRetrieval: 'HTTP_403_NOT_BYPASSED' });
+  });
 });

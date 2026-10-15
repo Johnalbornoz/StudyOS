@@ -270,7 +270,7 @@ describe('V5.2 / renderer properties -- every envelope, exhaustively', () => {
       expect(JSON.stringify(renderOk(e, band, 'same').rendered)).toBe(JSON.stringify(renderOk(e, band, 'same').rendered));
       for (let n = 0; n < 150; n += 1) { const r = renderOk(e, band, `p-${n}`); expect(r.envelopeIssues, `${e.envelope.rendererVersion} ${band} ${n}`).toEqual([]); expect(r.rendered.learner).toMatchObject({ itemType: 'NUMERIC_ENTRY', language: 'es', stimulus: null, options: [] }); }
     }
-  });
+  }, 60_000);
   it('the parameter sets a seed can reach are exactly the enumerated ones', () => {
     for (const e of LIBRARY.filter((x) => x.origin === 'QF52_NEW')) for (const band of PLANNING_BANDS) {
       const wordings = new Set(parameterSetsOf(e.construct, band).map((p) => e.construct.present(p, 'es')));

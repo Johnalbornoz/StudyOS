@@ -29,6 +29,7 @@ import { QUADRATIC_SOLVE_STRATEGY } from '../strategy-quadratic-solve';
 import { DATA_SET_MEAN, LINE_SLOPE, PROPORTION_MISSING_VALUE, QUADRATIC_SOLVE, RIGHT_TRIANGLE, SINGLE_DRAW } from './constructs';
 import { LINEAR_EQUATION, LINEAR_SYSTEM, PERCENT, RECTANGLE } from './constructs-arithmetic-algebra-geometry';
 import { parametricStrategy, type ParametricConstruct, type PlanningBand } from './parametric';
+import { CF_IB_AAHL_01_ADOPTED } from './cf-ib-aahl-01.adoption';
 import { CF_QUADRATIC_MINIMUM_FIRST_DELIVERY } from './cf-ib-aahl-01';
 
 export const LIBRARY_VERSION = 'qf52-library-1' as const;
@@ -294,7 +295,17 @@ export const LIBRARY: readonly LibraryEntry[] = [
  * archived V5.2 library exactly (its run and its artefacts are frozen); publication reads `PUBLICATION_LIBRARY`.
  *   CF-IB-AAHL-01 first delivery: ONE certified item of the quadratic-minimum construct (IB SHORT_RESPONSE, answer marks).
  */
-export const LIBRARY_EXTENSIONS: readonly LibraryEntry[] = [CF_QUADRATIC_MINIMUM_FIRST_DELIVERY];
+export interface LibraryExtensionBatch { batchId: string; entries: readonly LibraryEntry[] }
+/**
+ * Each extension batch is published with inputs and a hash of its own, so adding a batch never changes one already
+ * published. CF-IB-AAHL-01: the first-delivery item. CF-IB-AAHL-01-A2: the eight further CF constructs, re-projected
+ * into SHORT_RESPONSE (cf-ib-aahl-01.adoption.ts).
+ */
+export const LIBRARY_EXTENSION_BATCHES: readonly LibraryExtensionBatch[] = [
+  { batchId: 'CF-IB-AAHL-01', entries: [CF_QUADRATIC_MINIMUM_FIRST_DELIVERY] },
+  { batchId: 'CF-IB-AAHL-01-A2', entries: CF_IB_AAHL_01_ADOPTED },
+];
+export const LIBRARY_EXTENSIONS: readonly LibraryEntry[] = LIBRARY_EXTENSION_BATCHES.flatMap((b) => b.entries);
 export const PUBLICATION_LIBRARY: readonly LibraryEntry[] = [...LIBRARY, ...LIBRARY_EXTENSIONS];
 export const libraryEntryOf = (constructFamilyId: string): LibraryEntry | null => LIBRARY.find((e) => e.core.constructFamilyId === constructFamilyId) ?? null;
 

@@ -62,7 +62,8 @@ describe('IB_PARAMETRIC_SHORT_RESPONSE: CF-IB-AAHL-01 / QUADRATIC_MINIMUM_VALUE 
   });
   it('FIRST DELIVERY: the archived V5.2 LIBRARY is unchanged; the publication library adds exactly ONE item of the construct', () => {
     expect(LIBRARY.some((e) => e.core.constructFamilyId === CORE_QUADRATIC_MINIMUM.constructFamilyId)).toBe(false);
-    expect(LIBRARY_EXTENSIONS).toEqual([CF_QUADRATIC_MINIMUM_FIRST_DELIVERY]);
+    expect(LIBRARY_EXTENSIONS[0]).toBe(CF_QUADRATIC_MINIMUM_FIRST_DELIVERY);
+    expect(LIBRARY_EXTENSIONS.filter((e) => e.core.constructFamilyId === CORE_QUADRATIC_MINIMUM.constructFamilyId)).toHaveLength(1);
     const live = PUBLICATION_LIBRARY.find((e) => e.core.constructFamilyId === CORE_QUADRATIC_MINIMUM.constructFamilyId)!;
     expect(live).toBe(CF_QUADRATIC_MINIMUM_FIRST_DELIVERY);
     const gp = governLibrary(undefined, PUBLICATION_LIBRARY);
@@ -97,10 +98,13 @@ describe('publication: the V5.2 plan is unchanged; the IB first delivery is an a
     const human = JSON.parse(readFileSync(join(process.cwd(), 'docs/exams/question-factory/step4b/STEP4B_CERTIFICATION_RECORDS.json'), 'utf8'));
     const plan = buildPublicationPlan(human);
     expect({ batch: plan.batchId, instances: plan.instances.length, preflight: plan.preflight }).toEqual({ batch: 'qf52-batch-1', instances: 326, preflight: [] });
-    expect(plan.extensions?.map((x) => ({ batch: x.batchId, instances: x.instances.length, cores: x.cores.map((c) => c.core.constructFamilyId), preflight: x.preflight }))).toEqual([{ batch: 'CF-IB-AAHL-01', instances: 1, cores: ['tf.math.quadratic.minimum-value'], preflight: [] }]);
+    expect(plan.extensions?.map((x) => ({ batch: x.batchId, instances: x.instances.length, cores: x.cores.map((c) => c.core.constructFamilyId), preflight: x.preflight }))).toEqual([
+      { batch: 'CF-IB-AAHL-01', instances: 1, cores: ['tf.math.quadratic.minimum-value'], preflight: [] },
+      { batch: 'CF-IB-AAHL-01-A2', instances: 240, cores: expect.any(Array), preflight: [] },
+    ]);
     const merged = mergedForPublication(plan);
-    expect(merged.instances).toHaveLength(327);
-    expect(merged.batches.map((b) => b.batchId)).toEqual(['qf52-batch-1', 'CF-IB-AAHL-01']);
+    expect(merged.instances).toHaveLength(567);
+    expect(merged.batches.map((b) => b.batchId)).toEqual(['qf52-batch-1', 'CF-IB-AAHL-01', 'CF-IB-AAHL-01-A2']);
     expect(merged.instances.filter((i) => i.batchId === 'CF-IB-AAHL-01').map((i) => i.instance.key.answers[0])).toEqual(['83/4']);
     expect(new Set(merged.adapters.map((a) => a.adapter.adapterId)).size).toBe(merged.adapters.length);
   });

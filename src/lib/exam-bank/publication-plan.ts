@@ -21,8 +21,7 @@ import type { AssessmentAdapter } from '@/lib/assessment-instance/assessment-ada
 import type { CertificationRecord, ReviewerQualification } from '@/lib/assessment-instance/certification';
 import type { ConstructCoreRecord } from '@/lib/assessment-instance/construct-core';
 import type { CoreApplicabilityRecord } from '@/lib/assessment-instance/core-applicability';
-import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSIONS, libraryApplicability, PUBLICATION_APPLICABILITY, PUBLICATION_BLUEPRINTS, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
-import { CF_IB_AAHL_01 } from '@/lib/assessment-instance/library/cf-ib-aahl-01';
+import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSION_BATCHES, libraryApplicability, PUBLICATION_APPLICABILITY, PUBLICATION_BLUEPRINTS, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
 import { pilotApplicabilityHash } from '@/lib/assessment-instance/pilot/step4b-pilot-slice';
 import { STUDYUS_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
 import { envelopeHashOf, instanceContentHashOf, type RendererEnvelope } from '@/lib/assessment-instance/renderer-envelope';
@@ -123,7 +122,7 @@ export function buildPublicationPlan(human: HumanDecisionsFile, scope: Eligibili
   const base = planOfLibrary(human, scope, LIBRARY, PUBLICATION_BATCH_ID, LIBRARY_BLUEPRINTS, LIBRARY_APPLICABILITY);
   // the extension carries every classification (the V5.2 ones it places items in, and the pilot ones it adds) and the
   // register of the pilot-governed identities
-  return LIBRARY_EXTENSIONS.length ? { ...base, extensions: [planOfLibrary(human, scope, LIBRARY_EXTENSIONS, CF_IB_AAHL_01.batchId, PUBLICATION_BLUEPRINTS, PUBLICATION_APPLICABILITY)] } : base;
+  return LIBRARY_EXTENSION_BATCHES.length ? { ...base, extensions: LIBRARY_EXTENSION_BATCHES.map((b) => planOfLibrary(human, scope, b.entries, b.batchId, PUBLICATION_BLUEPRINTS, PUBLICATION_APPLICABILITY)) } : base;
 }
 
 function planOfLibrary(human: HumanDecisionsFile, scope: EligibilityScope, library: readonly LibraryEntry[], batchId: string, blueprintsIn: readonly LibraryBlueprint[], register: typeof LIBRARY_APPLICABILITY): PublicationPlan {

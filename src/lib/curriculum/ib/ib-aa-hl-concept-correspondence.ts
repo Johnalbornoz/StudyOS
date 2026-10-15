@@ -52,12 +52,23 @@ export const IB_AA_HL_CONCEPT_IDENTITIES: readonly StudyUsConceptIdentity[] = [
 ];
 
 export type CorrespondenceType = 'SYLLABUS_AREA_CORRESPONDENCE';
+/**
+ * What the correspondence's SOURCE TEXT backing is (decision 2026-10-14, John). The official IBO guide text is not
+ * held in the repository (its retrieval was refused by the host, HTTP 403, and was not bypassed):
+ *   OFFICIAL_TEXT_SOURCE_BACKED  backed by governed precedent that already holds the source (math.alg.quadratics, D02)
+ *   PILOT_SYLLABUS_CORRESPONDENCE_SOURCE_TEXT_REVALIDATION_PENDING  an existing StudyUs catalogue concept + the
+ *     governed objective -> concept link the repository holds; DEV/PILOT only; to be revalidated against the official
+ *     guide text before any production governance. Never HUMAN_CERTIFIED, never an official IB concept.
+ */
+export type SourceTextState = 'OFFICIAL_TEXT_SOURCE_BACKED' | 'PILOT_SYLLABUS_CORRESPONDENCE_SOURCE_TEXT_REVALIDATION_PENDING';
+export const IB_SOURCE_TEXT_DECISION = { decidedAt: '2026-10-14', basis: 'ARCHITECTURE_GOVERNANCE_DECISION', scope: 'DEV_PILOT', officialGuideRetrieval: 'HTTP_403_NOT_BYPASSED', productionAuthorization: false } as const;
 export interface IbConstructCorrespondence {
   constructId: string;
   studyusCanonicalConceptId: string;
   conceptExistingOrNew: 'EXISTING_GOVERNED' | 'EXISTING_CATALOGUE_CONCEPT_IDENTITY_PROPOSED';
   ibSourceReference: { sourceKey: string; configKey: string; component: 'p1' | 'p2'; objectiveCode: string; syllabusAreaWords: string };
   ibCorrespondenceType: CorrespondenceType;
+  sourceTextState: SourceTextState;
   /** The applicability evidence the register already holds for the objective -> concept link. */
   assessmentApplicability: { componentId: 'IB.MATH_AA_HL.P1' | 'IB.MATH_AA_HL.P2'; evidence: 'OBJECTIVE_CONCEPT_LINK'; reference: string; reviewState: 'DECLARED_REVIEWED' };
 }
@@ -66,6 +77,7 @@ const p1 = (constructId: string, stableId: string, objectiveCode: string, syllab
   constructId, studyusCanonicalConceptId: stableId, conceptExistingOrNew: stableId === 'math.alg.quadratics' ? 'EXISTING_GOVERNED' : 'EXISTING_CATALOGUE_CONCEPT_IDENTITY_PROPOSED',
   ibSourceReference: { sourceKey: IB_AA_HL_SOURCE.sourceKey, configKey: IB_AA_HL_SOURCE.configKey, component: objectiveCode.startsWith('aahl.p2') ? 'p2' : 'p1', objectiveCode, syllabusAreaWords },
   ibCorrespondenceType: 'SYLLABUS_AREA_CORRESPONDENCE',
+  sourceTextState: stableId === 'math.alg.quadratics' ? 'OFFICIAL_TEXT_SOURCE_BACKED' : 'PILOT_SYLLABUS_CORRESPONDENCE_SOURCE_TEXT_REVALIDATION_PENDING',
   assessmentApplicability: { componentId: objectiveCode.startsWith('aahl.p2') ? 'IB.MATH_AA_HL.P2' : 'IB.MATH_AA_HL.P1', evidence: 'OBJECTIVE_CONCEPT_LINK', reference: objectiveCode, reviewState: 'DECLARED_REVIEWED' },
 });
 /** One per CF-IB-AAHL-01 construct. `syllabusAreaWords` are the words of the objective's governed description that cover it. */
