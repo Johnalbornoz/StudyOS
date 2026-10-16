@@ -48,7 +48,7 @@ async function main(): Promise<number> {
        WHERE qi.item_key = ANY($1::text[]) AND ai.bank_lifecycle_status = 'ACTIVE'`, [PAA_DUPLICATE_ITEM_KEYS])).rows;
     const dupOk = dup.filter((r: any) => r.others > 0);
     for (const r of dupOk) {
-      await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'SUSPENDED' WHERE id = $1`, [r.version_id]);
+      await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'SUSPENDED', status = 'IN_REVIEW' WHERE id = $1`, [r.version_id]);
       await event(r.item_id, r.version_id, 'SUSPENDED', 'DUPLICATE_TEMPLATE_NON_DIVERSITY', { objective: r.code, usage: r.usage, sameTemplateActiveVersions: r.others, note: 'certified; its wording duplicates a template the objective already holds, so it adds no position to a form; certification and history preserved' });
     }
     console.log(JSON.stringify({ target: TARGETS[fp], mode: apply ? 'APPLY' : 'DRY_RUN', aiceSuperseded: aice.length, aiceByObjective: aice.reduce((m: Record<string, number>, r: any) => ({ ...m, [r.code]: (m[r.code] ?? 0) + 1 }), {}), paaDuplicateFound: dup.length, paaDuplicateSuspended: dupOk.length, paaDuplicate: dup.map((r: any) => ({ objective: r.code, usage: r.usage, sameTemplateActiveVersions: r.others })) }));
