@@ -29,11 +29,16 @@ export const PAA_OBJECTIVE_OF_CONCEPT: Readonly<Record<string, string>> = {
   'math.geo.pythagorean-theorem': 'paa.mat.geometria', 'math.geo.plane-figures-area-perimeter': 'paa.mat.geometria',
   'math.stat.central-tendency': 'paa.mat.datos',
 };
+/**
+ * The SAME construct under a PAA identity of its own (construct name and renderer version): a renderer envelope names
+ * its adapters, so the PAA envelope is a different object from the Saber one and never replaces it. Same functions.
+ */
+const asPaaConstruct = (x: ParametricConstruct<never>): ParametricConstruct<never> => ({ ...x, construct: `PAA_MC_${x.construct}`, rendererVersion: x.rendererVersion.replace(/^tb\.saber\./, 'tb.paa.mc.') });
 const asPaa = (s: AdoptionSpec, familyId: string, construct?: ParametricConstruct<never>): AdoptionSpec | null => {
   const objectiveCode = PAA_OBJECTIVE_OF_CONCEPT[s.concept.stableId];
   if (!objectiveCode) return null;
   const { commandTerm: _t, ...rest } = s;
-  return { ...rest, ...(construct ? { construct } : {}), familyId, adapterId: A, objectiveCode };
+  return { ...rest, construct: asPaaConstruct((construct ?? s.construct) as ParametricConstruct<never>), familyId, adapterId: A, objectiveCode };
 };
 const IN_CONTEXT: Record<string, ParametricConstruct<never>> = Object.fromEntries(SABER_MATH_CONSTRUCTS_IN_CONTEXT.map((x) => [x.construct.replace(/_IN_CONTEXT$/, ''), x as unknown as ParametricConstruct<never>]));
 const FROM_SABER: AdoptionSpec[] = SABER_MATH_ADOPTION_SPECS.flatMap((s) => {
