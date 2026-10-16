@@ -118,7 +118,7 @@ export function InstanceCard({ instance: initial, labels: l, language, highlight
         </div>
         <div className="exv2-badges">
           <span className={`xr-pill${instance.mode === 'CHALLENGE' ? ' is-warn' : instance.mode === 'MOCK' ? ' is-good' : ''}`}>
-            {instance.mode === 'MOCK' && instance.form ? l[instance.form.fidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced'] : l[`exv2.mode.${instance.mode}`]}
+            {instance.mode === 'MOCK' && instance.form ? l[instance.form.fidelity === 'FULL' ? 'exv2.mode.MOCK.full' : instance.form.fidelity === 'REDUCED' ? 'exv2.mode.MOCK.reduced' : 'exv2.mode.MOCK.preparation'] : l[`exv2.mode.${instance.mode}`]}
           </span>
           <span className="xr-pill">{l[`exv2.status.${instance.status}`] ?? instance.status}</span>
         </div>

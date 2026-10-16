@@ -128,7 +128,9 @@ export function classifyExamFormFidelity(f: FormFidelityFacts): FormFidelity {
 /* Stored attempt type of an exam instance                              */
 /* ------------------------------------------------------------------ */
 
-export type InstanceAttemptType = 'EXAM_PRACTICE' | 'EXAM_CHALLENGE' | 'FULL_MOCK' | 'REDUCED_MOCK';
+export type InstanceAttemptType = 'EXAM_PRACTICE' | 'EXAM_CHALLENGE' | 'FULL_MOCK' | 'REDUCED_MOCK' | 'PREPARATION_MOCK';
+/** The only reasons a complete-size form may still start as an AUTHORISED full-length preparation mock: its official structure is not verifiable. */
+export const PREPARATION_MOCK_ADMISSIBLE_REASONS: readonly FidelityReason[] = ['OFFICIAL_TIMING_NOT_VERIFIABLE', 'DISTRIBUTION_NOT_DOCUMENTED'];
 
 /** Why a MOCK instance may not be created / started (the canonical not-ready code is FIDELITY_NOT_VERIFIABLE). */
 export type MockNotStartableReason = 'FIDELITY_UNKNOWN' | 'OFFICIAL_DIFFICULTY_NOT_MET';
@@ -144,18 +146,25 @@ export type InstanceAttemptDecision = { startable: true; type: InstanceAttemptTy
  *   MOCK, fidelity FULL           -> FULL_MOCK        (and only when the form lands in the official difficulty band)
  *   MOCK, fidelity REDUCED        -> REDUCED_MOCK
  *   MOCK, fidelity UNKNOWN        -> not startable. Never downgraded to preparation.
+ *   MOCK, fidelity UNKNOWN ONLY because the official timing / distribution cannot be verified (the size is complete),
+ *     under a recorded governance authorisation of its system and scope -> PREPARATION_MOCK (StudyUs preparation,
+ *     never official). Any other UNKNOWN reason, or no authorisation, stays not startable.
  *
  * A TECHNICAL_DEMO instance (in-process engine certification on DEV fixtures; no Student route creates one)
  * is never a verified official mock: it is stored as REDUCED_MOCK whatever its fidelity, and is not refused
  * for UNKNOWN fidelity. It keeps every REDUCED_MOCK guarantee (frozen form, no generated content).
  */
-export function deriveInstanceAttemptType(p: { mode: string; fidelity: FormFidelity | null; difficultyBandMet: boolean | null; contentAudience?: ContentAudience }): InstanceAttemptDecision {
+export function deriveInstanceAttemptType(p: { mode: string; fidelity: FormFidelity | null; difficultyBandMet: boolean | null; contentAudience?: ContentAudience; /** A recorded full-length preparation mock authorisation holds for this version's system and delivery scope. */ preparationMockAuthorized?: boolean }): InstanceAttemptDecision {
   if (p.mode === 'PRACTICE') return { startable: true, type: 'EXAM_PRACTICE' };
   if (p.mode === 'CHALLENGE') return { startable: true, type: 'EXAM_CHALLENGE' };
   if (p.contentAudience === 'TECHNICAL_DEMO') return { startable: true, type: 'REDUCED_MOCK' };
   const fidelity = p.fidelity ?? { fidelity: 'UNKNOWN' as const, reasons: ['FORM_NOT_FROZEN' as const] };
   if (fidelity.fidelity === 'REDUCED') return { startable: true, type: 'REDUCED_MOCK' };
-  if (fidelity.fidelity === 'UNKNOWN') return { startable: false, reason: 'FIDELITY_UNKNOWN', fidelityReasons: fidelity.reasons };
+  if (fidelity.fidelity === 'UNKNOWN') {
+    const onlyStructure = fidelity.reasons.length > 0 && fidelity.reasons.every((r) => PREPARATION_MOCK_ADMISSIBLE_REASONS.includes(r));
+    if (onlyStructure && p.preparationMockAuthorized === true) return { startable: true, type: 'PREPARATION_MOCK' };
+    return { startable: false, reason: 'FIDELITY_UNKNOWN', fidelityReasons: fidelity.reasons };
+  }
   // FULL structure: a full mock is also the official difficulty.
   if (p.difficultyBandMet !== true) return { startable: false, reason: 'OFFICIAL_DIFFICULTY_NOT_MET', fidelityReasons: [] };
   return { startable: true, type: 'FULL_MOCK' };

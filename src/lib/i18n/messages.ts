@@ -815,6 +815,7 @@ export type MessageKey =
   | 'ex.type.EXAM_PRACTICE'
   | 'ex.type.EXAM_CHALLENGE'
   | 'ex.type.REDUCED_MOCK'
+  | 'ex.type.PREPARATION_MOCK'
   | 'ex.typeBody.FULL_MOCK'
   | 'ex.type.TOPIC_EXAM'
   | 'ex.typeBody.TOPIC_EXAM'
@@ -1345,6 +1346,7 @@ export type MessageKey =
   | 'exv2.result.institutionDefined'
   | 'exv2.result.institutionPolicy'
   | 'exv2.mode.MOCK.reduced'
+  | 'exv2.mode.MOCK.preparation'
   | 'exv2.mode.MOCK.full'
   | 'exv2.error.MODE_NOT_AVAILABLE'
   | 'exv2.error.COMPONENT_NOT_READY'
@@ -3127,6 +3129,7 @@ const es: Messages = {
   'ex.type.EXAM_PRACTICE': 'Práctica de examen',
   'ex.type.EXAM_CHALLENGE': 'Reto de examen',
   'ex.type.REDUCED_MOCK': 'Simulacro reducido',
+  'ex.type.PREPARATION_MOCK': 'Simulacro de preparación StudyUs',
   'ex.typeBody.FULL_MOCK': 'El examen entero, como el día real.',
   'ex.type.TOPIC_EXAM': 'Por objetivo',
   'ex.typeBody.TOPIC_EXAM': 'Un objetivo concreto del temario.',
@@ -3672,6 +3675,7 @@ const es: Messages = {
   'exv2.result.institutionDefined': 'Cada institución decide cómo usa este resultado (admisión, ubicación o diagnóstico).',
   'exv2.result.institutionPolicy': 'Tu institución objetivo tiene una política registrada para este resultado; consúltala en tu perfil de examen.',
   'exv2.mode.MOCK.reduced': 'Simulacro de formato reducido',
+  'exv2.mode.MOCK.preparation': 'Simulacro de preparación StudyUs (longitud completa, no oficial)',
   'exv2.mode.MOCK.full': 'Simulación de práctica de longitud completa',
   'exv2.error.MODE_NOT_AVAILABLE': 'Ese modo no está disponible para esta opción.',
   'exv2.error.COMPONENT_NOT_READY': 'Esa prueba aún no tiene preguntas para este modo.',
@@ -5439,6 +5443,7 @@ const en: Messages = {
   'ex.type.EXAM_PRACTICE': 'Exam practice',
   'ex.type.EXAM_CHALLENGE': 'Exam challenge',
   'ex.type.REDUCED_MOCK': 'Reduced mock exam',
+  'ex.type.PREPARATION_MOCK': 'StudyUs preparation mock',
   'ex.typeBody.FULL_MOCK': 'The whole exam, like the real day.',
   'ex.type.TOPIC_EXAM': 'By objective',
   'ex.typeBody.TOPIC_EXAM': 'One specific objective of the syllabus.',
@@ -5984,6 +5989,7 @@ const en: Messages = {
   'exv2.result.institutionDefined': 'Each institution decides how it uses this result (admission, placement or diagnosis).',
   'exv2.result.institutionPolicy': 'Your target institution has a recorded policy for this result; see your exam profile.',
   'exv2.mode.MOCK.reduced': 'Reduced-format mock',
+  'exv2.mode.MOCK.preparation': 'StudyUs preparation mock (full length, not official)',
   'exv2.mode.MOCK.full': 'Full-length practice simulation',
   'exv2.error.MODE_NOT_AVAILABLE': 'That mode is not available for this option.',
   'exv2.error.COMPONENT_NOT_READY': 'That paper has no questions for this mode yet.',
@@ -7751,6 +7757,7 @@ const de: Messages = {
   'ex.type.EXAM_PRACTICE': 'Prüfungsübung',
   'ex.type.EXAM_CHALLENGE': 'Prüfungs-Challenge',
   'ex.type.REDUCED_MOCK': 'Verkürzte Probeprüfung',
+  'ex.type.PREPARATION_MOCK': 'StudyUs-Übungsprüfung',
   'ex.typeBody.FULL_MOCK': 'Die ganze Prüfung, wie am echten Tag.',
   'ex.type.TOPIC_EXAM': 'Nach Lernziel',
   'ex.typeBody.TOPIC_EXAM': 'Ein bestimmtes Lernziel des Lehrplans.',
@@ -8296,6 +8303,7 @@ const de: Messages = {
   'exv2.result.institutionDefined': 'Jede Institution entscheidet, wie sie dieses Ergebnis nutzt.',
   'exv2.result.institutionPolicy': 'Deine Zielinstitution hat eine hinterlegte Regel für dieses Ergebnis.',
   'exv2.mode.MOCK.reduced': 'Probeprüfung im reduzierten Format',
+  'exv2.mode.MOCK.preparation': 'StudyUs-Übungsprüfung (volle Länge, nicht offiziell)',
   'exv2.mode.MOCK.full': 'Übungssimulation in voller Länge',
   'exv2.error.MODE_NOT_AVAILABLE': 'Dieser Modus ist hier nicht verfügbar.',
   'exv2.error.COMPONENT_NOT_READY': 'Für diesen Teil gibt es noch keine Fragen.',
@@ -10063,6 +10071,7 @@ const fr: Messages = {
   'ex.type.EXAM_PRACTICE': 'Entraînement à l\'examen',
   'ex.type.EXAM_CHALLENGE': 'Défi d\'examen',
   'ex.type.REDUCED_MOCK': 'Examen blanc réduit',
+  'ex.type.PREPARATION_MOCK': 'Examen blanc de préparation StudyUs',
   'ex.typeBody.FULL_MOCK': 'L\'examen entier, comme le jour J.',
   'ex.type.TOPIC_EXAM': 'Par objectif',
   'ex.typeBody.TOPIC_EXAM': 'Un objectif précis du programme.',
@@ -10608,6 +10617,7 @@ const fr: Messages = {
   'exv2.result.institutionDefined': 'Chaque établissement décide comment il utilise ce résultat.',
   'exv2.result.institutionPolicy': 'Ton établissement cible a une règle enregistrée pour ce résultat.',
   'exv2.mode.MOCK.reduced': 'Examen blanc au format réduit',
+  'exv2.mode.MOCK.preparation': 'Examen blanc de préparation StudyUs (longueur complète, non officiel)',
   'exv2.mode.MOCK.full': 'Simulation d’entraînement complète',
   'exv2.error.MODE_NOT_AVAILABLE': 'Ce mode n’est pas disponible ici.',
   'exv2.error.COMPONENT_NOT_READY': 'Cette épreuve n’a pas encore de questions pour ce mode.',
@@ -12375,6 +12385,7 @@ const pt: Messages = {
   'ex.type.EXAM_PRACTICE': 'Prática de prova',
   'ex.type.EXAM_CHALLENGE': 'Desafio de prova',
   'ex.type.REDUCED_MOCK': 'Simulado reduzido',
+  'ex.type.PREPARATION_MOCK': 'Simulado de preparação StudyUs',
   'ex.typeBody.FULL_MOCK': 'A prova inteira, como no dia real.',
   'ex.type.TOPIC_EXAM': 'Por objetivo',
   'ex.typeBody.TOPIC_EXAM': 'Um objetivo específico do programa.',
@@ -12920,6 +12931,7 @@ const pt: Messages = {
   'exv2.result.institutionDefined': 'Cada instituição decide como usa este resultado.',
   'exv2.result.institutionPolicy': 'A tua instituição alvo tem uma política registada para este resultado.',
   'exv2.mode.MOCK.reduced': 'Simulado em formato reduzido',
+  'exv2.mode.MOCK.preparation': 'Simulado de preparação StudyUs (extensão completa, não oficial)',
   'exv2.mode.MOCK.full': 'Simulação de prática completa',
   'exv2.error.MODE_NOT_AVAILABLE': 'Esse modo não está disponível aqui.',
   'exv2.error.COMPONENT_NOT_READY': 'Essa prova ainda não tem perguntas para este modo.',

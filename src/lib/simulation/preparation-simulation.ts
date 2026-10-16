@@ -65,6 +65,7 @@ export function assessmentPathOf(f: AttemptPathFacts): AssessmentPath {
   if (f.simulationType === 'EXAM_PRACTICE' || f.instanceMode === 'PRACTICE') return 'EXAM_PRACTICE';
   if (f.simulationType === 'EXAM_CHALLENGE' || f.instanceMode === 'CHALLENGE') return 'EXAM_CHALLENGE';
   if (f.simulationType === 'REDUCED_MOCK') return 'REDUCED_MOCK';
+  if (f.simulationType === 'PREPARATION_MOCK') return 'PREPARATION_MOCK';
   if (f.instanceMode === 'MOCK') {
     if (f.formFrozen === false) return 'EXAM_PRACTICE';
     return f.formFidelity === 'REDUCED' ? 'REDUCED_MOCK' : 'OFFICIAL_MOCK';
@@ -81,7 +82,7 @@ export function assessmentPathOf(f: AttemptPathFacts): AssessmentPath {
  * content governance as a full one. Only preparation may: EXAM_PRACTICE and the three direct types.
  */
 export function mayUseGeneratedFallback(f: AttemptPathFacts): boolean {
-  if (f.simulationType === 'FULL_MOCK' || f.simulationType === 'REDUCED_MOCK' || f.simulationType === 'EXAM_CHALLENGE') return false;
+  if (f.simulationType === 'FULL_MOCK' || f.simulationType === 'REDUCED_MOCK' || f.simulationType === 'PREPARATION_MOCK' || f.simulationType === 'EXAM_CHALLENGE') return false;
   if (f.instanceMode === 'MOCK' || f.instanceMode === 'CHALLENGE') return false;
   return true;
 }
@@ -104,6 +105,7 @@ export type InstanceStartViolation = typeof OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE
  * The start invariant, by stored type (B1-E):
  *   FULL_MOCK       -> a MOCK instance + its frozen form + VERIFIED FULL fidelity
  *   REDUCED_MOCK    -> a MOCK instance + its frozen form
+ *   PREPARATION_MOCK -> a MOCK instance + its frozen form (authorised full-length preparation)
  *   EXAM_CHALLENGE  -> a CHALLENGE instance + its frozen form
  *   EXAM_PRACTICE   -> a PRACTICE instance
  *   any other type  -> no instance involved
@@ -112,7 +114,7 @@ export type InstanceStartViolation = typeof OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE
 export function instanceStartViolation(f: { simulationType: string; examInstanceId?: string | null; examInstanceMode?: string | null; hasFrozenForm: boolean; verifiedFullFidelity?: boolean }): InstanceStartViolation | null {
   const frozenInstance = (mode: string) => !!f.examInstanceId && f.hasFrozenForm && f.examInstanceMode === mode;
   if (f.simulationType === 'FULL_MOCK') return frozenInstance('MOCK') && f.verifiedFullFidelity === true ? null : OFFICIAL_MOCK_REQUIRES_EXAM_INSTANCE;
-  if (f.simulationType === 'REDUCED_MOCK') return frozenInstance('MOCK') ? null : INSTANCE_TYPE_REQUIRES_EXAM_INSTANCE;
+  if (f.simulationType === 'REDUCED_MOCK' || f.simulationType === 'PREPARATION_MOCK') return frozenInstance('MOCK') ? null : INSTANCE_TYPE_REQUIRES_EXAM_INSTANCE;
   if (f.simulationType === 'EXAM_CHALLENGE') return frozenInstance('CHALLENGE') ? null : INSTANCE_TYPE_REQUIRES_EXAM_INSTANCE;
   if (f.simulationType === 'EXAM_PRACTICE') return f.examInstanceId && f.examInstanceMode === 'PRACTICE' ? null : EXAM_PRACTICE_REQUIRES_EXAM_INSTANCE;
   return null;

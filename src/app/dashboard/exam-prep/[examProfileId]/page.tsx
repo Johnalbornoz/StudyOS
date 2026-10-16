@@ -117,7 +117,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
             locale={locale}
             rows={archivedAttempts.filter((a) => a.status === 'COMPLETED').map((a) => ({
               id: a.id,
-              name: `${examName} · ${a.instanceMode ? tr0[a.instanceMode === 'MOCK' ? (a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced') : `exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr0[`ex.type.${a.simulationType}`] ?? a.simulationType}`,
+              name: `${examName} · ${a.instanceMode ? tr0[a.instanceMode === 'MOCK' ? (a.simulationType === 'PREPARATION_MOCK' ? 'exv2.mode.MOCK.preparation' : a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced') : `exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr0[`ex.type.${a.simulationType}`] ?? a.simulationType}`,
               status: a.status,
               createdAt: a.createdAt,
               result: a.resultStatus === 'SCORED' ? a.finalLabel ?? (a.finalScore !== null ? `${a.finalScore}` : `${a.rawScore}/${a.maxScore}`) : null,
@@ -174,7 +174,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
             attempts={completed.map((a) => ({
               id: a.id,
               name: `${view.objective.label} · ${
-                a.instanceMode === 'MOCK' ? tr[a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced'] : a.instanceMode ? tr[`exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr[`ex.type.${a.simulationType}`] ?? a.simulationType
+                a.instanceMode === 'MOCK' ? tr[a.simulationType === 'PREPARATION_MOCK' ? 'exv2.mode.MOCK.preparation' : a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced'] : a.instanceMode ? tr[`exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr[`ex.type.${a.simulationType}`] ?? a.simulationType
               }`,
               status: a.status,
               createdAt: a.createdAt,
@@ -229,7 +229,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
               rows={attempts.map((a) => ({
                 id: a.id,
                 name: `${view.objective.label} · ${
-                  a.instanceMode === 'MOCK' ? tr[a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced'] : a.instanceMode ? tr[`exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr[`ex.type.${a.simulationType}`] ?? a.simulationType
+                  a.instanceMode === 'MOCK' ? tr[a.simulationType === 'PREPARATION_MOCK' ? 'exv2.mode.MOCK.preparation' : a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced'] : a.instanceMode ? tr[`exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr[`ex.type.${a.simulationType}`] ?? a.simulationType
                 }`,
                 status: a.status,
                 createdAt: a.createdAt,
@@ -458,7 +458,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
               rows={attempts.map((a) => ({
                 id: a.id,
                 name: `${definition?.name ?? ''} · ${
-                  a.instanceMode === 'MOCK' ? tr[a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced'] : a.instanceMode ? tr[`exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr[`ex.type.${a.simulationType}`] ?? a.simulationType
+                  a.instanceMode === 'MOCK' ? tr[a.simulationType === 'PREPARATION_MOCK' ? 'exv2.mode.MOCK.preparation' : a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced'] : a.instanceMode ? tr[`exv2.mode.${a.instanceMode}`] ?? a.instanceMode : tr[`ex.type.${a.simulationType}`] ?? a.simulationType
                 }`,
                 status: a.status,
                 createdAt: a.createdAt,

@@ -12,6 +12,7 @@ import { db } from '@/lib/db';
 import { examBankDeliveryScope } from '../delivery-scope';
 import { evaluateExamBankReadiness, MODE_REQUIREMENTS } from './bank-readiness';
 import { loadReadinessScope, readinessInputOf, type LoadedReadinessScope } from './bank-readiness-adapter';
+import { fullMockAuthorizationFor } from '../full-mock-authorization';
 
 export type EngineStatus = 'READY' | 'PARTIAL' | 'NOT_READY';
 export interface EngineReadinessView {
@@ -22,6 +23,12 @@ export interface EngineReadinessView {
   reducedMock: EngineStatus;
   fullMock: EngineStatus;
   challenge: EngineStatus;
+  /**
+   * The attempt type the mock of this blueprint is stored as: REDUCED_MOCK (a reduced form), FULL_MOCK (full length,
+   * official structure to be verified by the runtime), or PREPARATION_MOCK (full length under a recorded preparation
+   * authorisation of the version's system in this delivery scope -- StudyUs preparation, never official).
+   */
+  mockAttemptType: 'REDUCED_MOCK' | 'FULL_MOCK' | 'PREPARATION_MOCK';
   reasons: Record<string, string[]>;
 }
 export type LaunchMode = 'PRACTICE' | 'MOCK' | 'CHALLENGE';
@@ -49,13 +56,17 @@ export async function engineReadinessForVersion(examVersionId: string, now = new
     practiceBySection[sec] = r.status; reasons[`practice:${sec}`] = r.reasons;
   }
   const mode = (key: string, p: Parameters<typeof readinessInputOf>[1]): EngineStatus => { const r = evaluate(scope, p); reasons[key] = r.reasons; return r.status; };
+  const use = mockUseOf(scope);
+  const system = use === 'FULL_MOCK' ? ((await db.query(`SELECT d.exam_family FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE v.id = $1`, [examVersionId])).rows[0]?.exam_family as string | undefined) : undefined;
+  const mockAttemptType = use === 'REDUCED_MOCK' ? 'REDUCED_MOCK' as const : system && fullMockAuthorizationFor(system, deliveryScope) ? 'PREPARATION_MOCK' as const : 'FULL_MOCK' as const;
   return {
     examVersionId, sections: [...scope.sections], practiceBySection,
     diagnostic: mode('diagnostic', { deliveryScope, mode: MODE_REQUIREMENTS.DIAGNOSTIC, use: 'PRACTICE', sectionKeys: null, now }),
     // the mock is assembled as the runtime assembles it: a form whose reduced length IS the official length draws FULL_MOCK items
-    reducedMock: mode('reducedMock', { deliveryScope, mode: MODE_REQUIREMENTS.MOCK, use: mockUseOf(scope), sectionKeys: null, now }),
+    reducedMock: mode('reducedMock', { deliveryScope, mode: MODE_REQUIREMENTS.MOCK, use, sectionKeys: null, now }),
     fullMock: mode('fullMock', { deliveryScope, mode: MODE_REQUIREMENTS.MOCK, use: 'FULL_MOCK', sectionKeys: null, length: 'FULL', now }),
     challenge: mode('challenge', { deliveryScope, mode: MODE_REQUIREMENTS.CHALLENGE, use: 'PRACTICE', sectionKeys: null, now }),
+    mockAttemptType,
     reasons,
   };
 }

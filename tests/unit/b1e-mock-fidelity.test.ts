@@ -274,9 +274,9 @@ describe('B1-E -- start invariant, fallback and client authority', () => {
   });
 
   it('derived instance-only types are not client-requestable anywhere', () => {
-    expect([...INSTANCE_DERIVED_SIMULATION_TYPES]).toEqual(['FULL_MOCK', 'REDUCED_MOCK', 'EXAM_CHALLENGE', 'EXAM_PRACTICE']);
+    expect([...INSTANCE_DERIVED_SIMULATION_TYPES]).toEqual(['FULL_MOCK', 'REDUCED_MOCK', 'PREPARATION_MOCK', 'EXAM_CHALLENGE', 'EXAM_PRACTICE']);
     for (const t of INSTANCE_DERIVED_SIMULATION_TYPES) expect(isPreparationSimulationType(t), t).toBe(false);
-    for (const t of ['EXAM_PRACTICE', 'EXAM_CHALLENGE', 'REDUCED_MOCK']) {
+    for (const t of ['EXAM_PRACTICE', 'EXAM_CHALLENGE', 'REDUCED_MOCK', 'PREPARATION_MOCK']) {
       expect([...SIMULATION_TYPES], t).not.toContain(t);
       expect(DeliveryPolicySchema.safeParse({ allowedSimulationTypes: [t] }).success, t).toBe(false);
     }

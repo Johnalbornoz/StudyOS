@@ -97,7 +97,7 @@ export function isModeAllowed(config: DeliveryPolicyConfig, simulationType: Simu
   // name them. EXAM_PRACTICE is governed by the exam instance's own readiness gates. REDUCED_MOCK and
   // EXAM_CHALLENGE are mock-format assessments: they are allowed exactly where the version allows a mock
   // (the allow-list entry they were checked against while both were stored as FULL_MOCK).
-  const allowListKey = simulationType === 'EXAM_PRACTICE' ? null : simulationType === 'REDUCED_MOCK' || simulationType === 'EXAM_CHALLENGE' ? 'FULL_MOCK' : simulationType;
+  const allowListKey = simulationType === 'EXAM_PRACTICE' ? null : simulationType === 'REDUCED_MOCK' || simulationType === 'PREPARATION_MOCK' || simulationType === 'EXAM_CHALLENGE' ? 'FULL_MOCK' : simulationType;
   if (allowListKey !== null && !(config.allowedSimulationTypes as readonly string[]).includes(allowListKey)) return { allowed: false, reason: 'SIMULATION_TYPE_NOT_ALLOWED' };
   if (!config.allowedTimingModes.includes(timingMode)) return { allowed: false, reason: 'TIMING_MODE_NOT_ALLOWED' };
   return { allowed: true };

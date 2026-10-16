@@ -323,7 +323,16 @@ async function instanceAttemptDecision(instance: ExamInstance, form: AssembledFo
   // Only a Student MOCK needs its fidelity read; every other case is decided by the mode alone.
   const needsFidelity = instance.mode === 'MOCK' && instance.contentAudience !== 'TECHNICAL_DEMO';
   const fidelity = needsFidelity ? await examFormFidelityOf(instance, form) : null;
-  return deriveInstanceAttemptType({ mode: instance.mode, fidelity, difficultyBandMet: form?.difficultyBandMet ?? null, contentAudience: instance.contentAudience });
+  // a full-length StudyUs preparation mock is startable only under a recorded authorisation of the version's system in this delivery scope
+  const preparationMockAuthorized = fidelity?.fidelity === 'UNKNOWN' ? await preparationMockAuthorizedFor(instance.examVersionId) : false;
+  return deriveInstanceAttemptType({ mode: instance.mode, fidelity, difficultyBandMet: form?.difficultyBandMet ?? null, contentAudience: instance.contentAudience, preparationMockAuthorized });
+}
+async function preparationMockAuthorizedFor(examVersionId: string): Promise<boolean> {
+  const r = await db.query(`SELECT d.exam_family FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE v.id = $1`, [examVersionId]);
+  const system = r.rows[0]?.exam_family as string | undefined;
+  if (!system) return false;
+  const [{ fullMockAuthorizationFor }, { examBankDeliveryScope }] = await Promise.all([import('@/lib/exam-bank/full-mock-authorization'), import('@/lib/exam-bank/delivery-scope')]);
+  return fullMockAuthorizationFor(system, examBankDeliveryScope()) !== null;
 }
 
 /* ------------------------------------------------------------------ */

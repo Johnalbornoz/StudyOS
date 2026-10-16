@@ -234,7 +234,7 @@ describe('B5-D answers in progress', () => {
       // PAA pilot: the automated certification path for generated Exam Bank content; it adds no response model
       '20261124_1000_exam_bank_pilot_generated_certification.sql',
       '20261124_1100_exam_bank_pilot_certified_activation.sql',
-      '20261124_1200_exam_bank_pilot_certification_scope.sql', '20261125_1000_exam_readiness_evidence.sql',
+      '20261124_1200_exam_bank_pilot_certification_scope.sql', '20261125_1000_exam_readiness_evidence.sql', '20261126_1000_simulation_type_preparation_mock.sql',
     ]);
   });
 

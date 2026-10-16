@@ -152,16 +152,16 @@ export function objectiveStatusKey(c: Pick<ExamPreparationCapabilities, 'canPlan
  * rule as the preparation's own next step; mocks: the whole-test entry first), never the generic chooser. Falls back to
  * the objective node, then the catalogue. Presentation only: readiness and supply decide what the lists contain.
  */
-export function examEntryHrefs(objectiveNode: string | null, c: Pick<ExamPreparationCapabilities, 'practiceModes' | 'reducedMocks' | 'fullMocks'> | null, focusAreaLabel: string | null = null): Partial<Record<'EXAM_PRACTICE' | 'EXAM_CHALLENGE' | 'REDUCED_MOCK' | 'FULL_MOCK', string>> {
+export function examEntryHrefs(objectiveNode: string | null, c: Pick<ExamPreparationCapabilities, 'practiceModes' | 'reducedMocks' | 'fullMocks'> | null, focusAreaLabel: string | null = null): Partial<Record<'EXAM_PRACTICE' | 'EXAM_CHALLENGE' | 'REDUCED_MOCK' | 'FULL_MOCK' | 'PREPARATION_MOCK', string>> {
   const valid = (k: string | null | undefined) => (k && /^[a-z0-9][a-z0-9._-]{0,119}$/.test(k) ? k : null);
   const pick = (list: ActivityEntry[] | undefined) => valid((list ?? []).find((e) => e.purpose === 'FULL_TEST')?.nodeKey ?? list?.[0]?.nodeKey);
   const href = (k: string | null) => (k ? `/dashboard/exams?node=${encodeURIComponent(k)}` : '/dashboard/exams');
   // without the preparation's activities (not evaluated): the objective node, as before
-  if (!c) { const fallback = href(valid(objectiveNode)); return { EXAM_PRACTICE: fallback, EXAM_CHALLENGE: fallback, REDUCED_MOCK: fallback, FULL_MOCK: fallback }; }
+  if (!c) { const fallback = href(valid(objectiveNode)); return { EXAM_PRACTICE: fallback, EXAM_CHALLENGE: fallback, REDUCED_MOCK: fallback, FULL_MOCK: fallback, PREPARATION_MOCK: fallback }; }
   // R-1 / no dead end: a mode is linked ONLY to a launchable entry of this preparation; none = no link (shown unavailable)
   const practice = valid(focusAreaLabel ? c.practiceModes.find((p) => p.label === focusAreaLabel)?.nodeKey : null) ?? pick(c.practiceModes);
   const reduced = pick(c.reducedMocks); const full = pick(c.fullMocks);
-  return { ...(practice ? { EXAM_PRACTICE: href(practice), EXAM_CHALLENGE: href(practice) } : {}), ...(reduced ? { REDUCED_MOCK: href(reduced) } : {}), ...(full ? { FULL_MOCK: href(full) } : {}) };
+  return { ...(practice ? { EXAM_PRACTICE: href(practice), EXAM_CHALLENGE: href(practice) } : {}), ...(reduced ? { REDUCED_MOCK: href(reduced) } : {}), ...(full ? { FULL_MOCK: href(full) } : {}), ...(full ?? reduced ? { PREPARATION_MOCK: href((full ?? reduced)!) } : {}) };
 }
 
 /**

@@ -10,7 +10,7 @@ import { restrictByReadinessEngine, type ExamPreparationCapabilities } from '@/l
 import { examAttemptOptionsUnderEngine, type ExamAttemptOption } from '@/lib/assessment-experience/views';
 import { classifyRequirement, examReadinessEvidenceOf } from '@/lib/exam-core/objectives/preparation-plan';
 
-const view = (o: Partial<EngineReadinessView> = {}): EngineReadinessView => ({ examVersionId: 'v', sections: ['p1', 'p2', 'p3'], practiceBySection: { p1: 'READY', p2: 'READY', p3: 'NOT_READY' }, diagnostic: 'PARTIAL', reducedMock: 'PARTIAL', fullMock: 'NOT_READY', challenge: 'NOT_READY', reasons: {}, ...o });
+const view = (o: Partial<EngineReadinessView> = {}): EngineReadinessView => ({ examVersionId: 'v', sections: ['p1', 'p2', 'p3'], practiceBySection: { p1: 'READY', p2: 'READY', p3: 'NOT_READY' }, diagnostic: 'PARTIAL', reducedMock: 'PARTIAL', fullMock: 'NOT_READY', challenge: 'NOT_READY', mockAttemptType: 'REDUCED_MOCK', reasons: {}, ...o });
 
 describe('R-2: launch gate', () => {
   it('a complete-form mode starts only when the engine says READY (IB with P3 uncovered: no mock, no challenge)', () => {

@@ -29,6 +29,7 @@ void _copy;
  * a practice instance is never presented as a full mock. An attempt with no instance keeps its type label.
  */
 export function attemptKindLabelKey(a: { simulationType: string; instanceMode?: string | null; instanceFidelity?: string | null }): string {
+  if (a.simulationType === 'PREPARATION_MOCK') return 'exv2.mode.MOCK.preparation';
   if (a.instanceMode === 'MOCK') return a.instanceFidelity === 'FULL' ? 'exv2.mode.MOCK.full' : 'exv2.mode.MOCK.reduced';
   if (a.instanceMode) return `exv2.mode.${a.instanceMode}`;
   return `ex.type.${a.simulationType}`;

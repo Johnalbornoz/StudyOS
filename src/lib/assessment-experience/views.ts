@@ -288,13 +288,20 @@ export function resultViewOf(state: PostAssessmentState): AssessmentResultView {
  * say: practice when the engine does not say NOT_READY everywhere; a mock only when the engine says READY for it AND
  * the preparation offers that mock; a challenge only when the engine says READY (calibrated difficulty).
  */
-export function examAttemptOptionsUnderEngine(options: readonly ExamAttemptOption[], engine: { anyPractice: boolean; reducedMock: string; fullMock: string; challenge: string }, offered: { reducedMock: boolean; fullMock: boolean }): ExamAttemptOption[] {
+export function examAttemptOptionsUnderEngine(options: readonly ExamAttemptOption[], engine: { anyPractice: boolean; reducedMock: string; fullMock: string; challenge: string; /** the type the engine's mock is stored as (absent = REDUCED_MOCK, as before) */ mockAttemptType?: 'REDUCED_MOCK' | 'FULL_MOCK' | 'PREPARATION_MOCK' }, offered: { reducedMock: boolean; fullMock: boolean }): ExamAttemptOption[] {
   const no = (type: ExamAttemptOption['type'], reason: ExamOptionReason): ExamAttemptOption => ({ type, available: false, reason });
-  return options.map((o) => {
+  // a full-length StudyUs preparation mock is offered as ITSELF: never as a reduced or an official full mock
+  const preparation = engine.mockAttemptType === 'PREPARATION_MOCK';
+  const mapped = options.map((o) => {
     if (o.type === 'EXAM_PRACTICE') return engine.anyPractice ? o : no(o.type, 'READINESS_ENGINE_NOT_READY');
+    if ((o.type === 'REDUCED_MOCK' || o.type === 'FULL_MOCK') && preparation) return no(o.type, 'FIDELITY_NOT_VERIFIED');
     if (o.type === 'REDUCED_MOCK') return engine.reducedMock === 'READY' && offered.reducedMock ? { type: o.type, available: true, reason: null } : no(o.type, engine.reducedMock === 'READY' ? 'CONTENT_NOT_READY' : 'READINESS_ENGINE_NOT_READY');
     if (o.type === 'FULL_MOCK') return engine.fullMock === 'READY' && offered.fullMock ? { type: o.type, available: true, reason: null } : no(o.type, engine.fullMock === 'READY' ? 'CONTENT_NOT_READY' : 'READINESS_ENGINE_NOT_READY');
     if (o.type === 'EXAM_CHALLENGE') return engine.challenge === 'READY' && o.available ? o : no(o.type, o.reason === 'DIFFICULTY_NOT_CALIBRATED' ? 'DIFFICULTY_NOT_CALIBRATED' : 'READINESS_ENGINE_NOT_READY');
     return o;
   });
+  if (!preparation) return mapped;
+  const prep: ExamAttemptOption = engine.reducedMock === 'READY' && (offered.reducedMock || offered.fullMock) ? { type: 'PREPARATION_MOCK', available: true, reason: null } : no('PREPARATION_MOCK', engine.reducedMock === 'READY' ? 'CONTENT_NOT_READY' : 'READINESS_ENGINE_NOT_READY');
+  const at = mapped.findIndex((o) => o.type === 'REDUCED_MOCK');
+  return [...mapped.slice(0, at + 1), prep, ...mapped.slice(at + 1)];
 }

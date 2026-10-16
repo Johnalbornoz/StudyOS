@@ -100,6 +100,7 @@ async function selectTargets(params: {
     // B1-E: a reduced mock and a challenge are frozen instance forms over the selected components' positions,
     // exactly as a MOCK / CHALLENGE instance was planned when both were stored as FULL_MOCK.
     case 'REDUCED_MOCK':
+    case 'PREPARATION_MOCK':
     case 'EXAM_CHALLENGE':
       return allTargets;
   }
