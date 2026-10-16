@@ -287,7 +287,10 @@ export const PROJECTION_3_FORMATS: readonly string[] = ['NUMERIC_ENTRY', 'SHORT_
 export type BankProjectionChoice = { version: 'exam-bank-projection-2'; refusal: string | null } | { version: typeof SCORING_PROJECTION_VERSION; refusal: ScoringProjectionRefusal | 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' | null };
 /** Which projection publishes this instance, and whether it may. Fail closed: an IB instance never falls back to projection 2. */
 export function bankProjectionFor(i: CertifiedInstance): BankProjectionChoice {
-  if (!PROJECTION_3_SYSTEMS.includes(i.systemId)) return { version: 'exam-bank-projection-2', refusal: projection2Refusal(i) };
+  // + PAA SELECTED_RESPONSE (2026-10-15): NEW multiple-choice PAA Matemáticas content only, scored by option identity;
+  //   every other PAA instance keeps projection 2 (the frozen PAA publication path is unchanged)
+  const paaSelected = i.systemId === 'PAA' && i.format === 'SELECTED_RESPONSE';
+  if (!PROJECTION_3_SYSTEMS.includes(i.systemId) && !paaSelected) return { version: 'exam-bank-projection-2', refusal: projection2Refusal(i) };
   if (!PROJECTION_3_FORMATS.includes(i.format)) return { version: SCORING_PROJECTION_VERSION, refusal: 'FORMAT_NOT_GOVERNED_FOR_PROJECTION_3' };
   return { version: SCORING_PROJECTION_VERSION, refusal: i.format === 'SELECTED_RESPONSE' ? (selectedResponseRefusal(i) as ScoringProjectionRefusal | null) : scoringProjectionRefusal(i) };
 }

@@ -48,7 +48,7 @@ const slot = (n: number, objectiveCode: string, conceptStableId: string, difficu
 const EXPOSITORY_TOPICS = ['la restauración de un humedal costero y sus efectos sobre una comunidad de pescadores', 'la historia del reloj mecánico y cómo cambió la organización del trabajo', 'el uso de sensores de bajo costo para medir la calidad del aire en una ciudad intermedia', 'la conservación de semillas nativas en bancos comunitarios', 'la arquitectura de tierra y su comportamiento ante el calor', 'el papel de las bibliotecas móviles en zonas rurales'];
 const LITERARY_SEEDS = ['una joven que regresa al taller de relojería de su abuelo', 'un pescador que espera el cambio de la marea junto a su hijo', 'una maestra que encuentra un cuaderno olvidado en un aula vacía', 'un viajero que cruza un puente al amanecer con una carta sin abrir', 'dos hermanos que cuidan un faro durante una tormenta', 'una música que afina un instrumento heredado antes de un concierto'];
 const TABLE_TOPICS = ['la producción mensual de una cooperativa de café durante un semestre', 'el consumo de agua por sector en un municipio durante cuatro años', 'las horas de lectura semanal por grupo de edad en una encuesta escolar', 'la asistencia a tres museos de una ciudad por trimestre', 'la generación de energía solar de una escuela a lo largo de seis meses', 'los tiempos de traslado por medio de transporte en un barrio'];
-const WRITING_TOPICS = ['un proyecto escolar de huerto urbano', 'la organización de una feria de ciencias', 'la recuperación de una plaza del barrio', 'un club de lectura juvenil', 'una campaña de reciclaje en un colegio', 'la visita a un observatorio astronómico'];
+const WRITING_TOPICS = ['un proyecto escolar de huerto urbano', 'la organización de una feria de ciencias', 'la recuperación de una plaza del barrio', 'un club de lectura juvenil', 'una campaña de reciclaje en un colegio', 'la visita a un observatorio astronómico', 'la creación de una biblioteca comunitaria en un barrio', 'un intercambio de semillas entre agricultores de una vereda', 'la renovación de una cancha deportiva por los vecinos'];
 const ENGLISH_TOPICS = ['a community garden started by high-school students', 'a small town that restored its old train station', 'a student who learns to repair bicycles', 'a school radio program run by teenagers', 'a volunteer group that cleans a local beach', 'a young inventor who builds a low-cost water filter'];
 
 /** The unit plans of one round. Round n uses the n-th topic of each list: a later round never repeats an earlier text. */
@@ -56,6 +56,10 @@ export function paaPilotRound(round: number): UnitPlan[] {
   const r = round;
   const t = <T>(xs: readonly T[]): T => xs[r % xs.length];
   const id = (k: string): string => `paa-pilot.r${r + 1}.${k}`;
+  // Rounds 4-6 (2026-10-15, PAA_FULL_LENGTH_MOCK = REQUIRED): the same governed buckets, slot mix sized to the gaps of
+  // ONE complete 175-position form (gap analysis of the candidate bank); still one new text per unit, never a repeat.
+  if (r === 6) return paaFullLengthGapRound(t, id);
+  if (r >= 3) return paaFullLengthRound(r, t, id);
   return [
     { unitId: id('lect-exp'), component: 'lectura', language: 'es', stimulusKind: 'READING_PASSAGE', stimulusBrief: `Texto expositivo-argumentativo ORIGINAL de 300 a 380 palabras sobre ${t(EXPOSITORY_TOPICS)}. Debe tener una tesis reconocible, datos concretos, al menos una relación causa-efecto y dos o tres palabras cuyo sentido dependa del contexto. Párrafos breves.`, slots: [
       slot(1, 'paa.lect.explicitas', 'read.explicit-information', 2, 'un dato o detalle afirmado explícitamente en el texto'),
@@ -100,6 +104,101 @@ export function paaPilotRound(round: number): UnitPlan[] {
       slot(1, 'paa.ing.redaccion', 'efl.writing.complex-sentences', 3, 'which option best combines two given short sentences into one correct sentence (quote both sentences in the stem)'),
       slot(2, 'paa.ing.redaccion', 'efl.writing.complex-sentences', 3, 'which option correctly rewrites a given sentence that contains one error (quote the sentence in the stem)'),
       slot(3, 'paa.ing.redaccion', 'efl.writing.paragraph-organization', 4, 'which sentence best continues or concludes a short three-sentence text quoted in the stem'),
+    ] },
+  ];
+}
+
+/**
+ * The full-length gap rounds (4..6). Per round: Lectura one 8-item expository passage (a practice-test-sized text set) +
+ * a 3-item literary fragment; Redaccion two 4-item numbered segments; Ingles 8 language-use items, one 4-item reading
+ * passage and 6 indirect-writing items. Sized from the gap matrix: Lectura +16, Redaccion +12, Ingles +31 unique items
+ * over three rounds, with margin for items the certification refuses.
+ */
+function paaFullLengthRound(r: number, t: <T>(xs: readonly T[]) => T, id: (k: string) => string): UnitPlan[] {
+  return [
+    { unitId: id('lect-exp'), component: 'lectura', language: 'es', stimulusKind: 'READING_PASSAGE', stimulusBrief: `Texto expositivo-argumentativo ORIGINAL de 380 a 460 palabras sobre ${t(EXPOSITORY_TOPICS)}. Debe tener una tesis reconocible, datos concretos, al menos dos relaciones causa-efecto, una concesión o contraargumento y vocabulario preciso con al menos tres palabras cuyo sentido dependa del contexto.`, slots: [
+      slot(1, 'paa.lect.explicitas', 'read.explicit-information', 2, 'un dato o detalle afirmado explícitamente en el texto'),
+      slot(2, 'paa.lect.explicitas', 'read.central-idea', 3, 'la tesis o idea central del texto'),
+      slot(3, 'paa.lect.explicitas', 'read.explicit-information', 3, 'qué enunciado resume mejor un párrafo concreto del texto (indica cuál)'),
+      slot(4, 'paa.lect.inferencia', 'read.inference', 3, 'una conclusión que el texto implica sin afirmarla'),
+      slot(5, 'paa.lect.inferencia', 'read.inference', 4, 'la relación causa-efecto o la intención del autor, deducida del texto'),
+      slot(6, 'paa.lect.vocabulario', 'read.vocabulary-in-context', 2, 'el sentido de una palabra o expresión tal como se usa en el texto (cítala entre comillas)'),
+      slot(7, 'paa.lect.vocabulario', 'read.vocabulary-in-context', 3, 'el sentido contextual de otra palabra o expresión del texto (cítala entre comillas)'),
+      slot(8, 'paa.lect.evidencia', 'read.textual-evidence', 4, 'qué fragmento del texto respalda mejor una afirmación dada sobre él'),
+    ] },
+    { unitId: id('lect-lit'), component: 'lectura', language: 'es', stimulusKind: 'READING_PASSAGE', stimulusBrief: `Fragmento narrativo literario ORIGINAL de 280 a 360 palabras sobre ${t(LITERARY_SEEDS)}. Narrador definido (primera o tercera persona), al menos dos figuras retóricas claras (símil, metáfora, personificación o hipérbole) y un cambio en el estado de ánimo del personaje.`, slots: [
+      slot(1, 'paa.lect.literario', 'lit.narrative-elements', 3, 'el tipo de narrador o la voz narrativa del fragmento'),
+      slot(2, 'paa.lect.literario', 'lit.figurative-language', 4, 'el efecto o sentido de una imagen figurada citada del fragmento'),
+      slot(3, 'paa.lect.vocabulario', 'read.vocabulary-in-context', 3, 'el sentido de una palabra o expresión tal como se usa en el fragmento (cítala entre comillas)'),
+    ] },
+    { unitId: id('red-a'), component: 'redaccion', language: 'es', stimulusKind: 'SHORT_SOURCE_TEXT', stimulusBrief: `Párrafo ORIGINAL de 130 a 190 palabras sobre ${t(WRITING_TOPICS)}, escrito como borrador de estudiante con las oraciones NUMERADAS así: (1) ... (2) ... hasta (7) u (8). Debe contener una redundancia, una unión de oraciones mejorable con un conector y un punto donde convenga añadir una precisión.`, slots: [
+      slot(1, 'paa.red.elision', 'write.concision-elision', 3, 'qué parte de una oración numerada es redundante y debe eliminarse, o cuál es la versión más concisa sin perder información'),
+      slot(2, 'paa.red.cohesion', 'write.cohesion-connectors', 3, 'qué conector o transición une mejor dos oraciones numeradas según su relación lógica'),
+      slot(3, 'paa.red.adicion', 'write.stylistic-addition', 3, 'qué oración conviene añadir en un punto indicado para ampliar o precisar la idea'),
+      slot(4, 'paa.red.cohesion', 'write.cohesion-connectors', 4, 'qué reordenamiento de dos oraciones numeradas mejora la coherencia del párrafo'),
+    ] },
+    { unitId: id('red-b'), component: 'redaccion', language: 'es', stimulusKind: 'SHORT_SOURCE_TEXT', stimulusBrief: `Párrafo ORIGINAL de 130 a 190 palabras sobre ${t(WRITING_TOPICS.slice().reverse())}, con las oraciones NUMERADAS así: (1) ... (2) ... hasta (7) u (8). Debe presentar varios casos particulares de una idea general, admitir un título claro y tener una afirmación general que pueda ilustrarse.`, slots: [
+      slot(1, 'paa.red.generalizacion', 'write.generalization', 3, 'qué oración general recoge mejor los casos particulares de varias oraciones numeradas'),
+      slot(2, 'paa.red.integracion', 'write.global-synthesis', 3, 'qué título u oración resume mejor el párrafo completo'),
+      slot(3, 'paa.red.particularizacion', 'write.indirect-expression', 3, 'qué ejemplo o detalle concreto ilustra mejor una afirmación general de una oración numerada'),
+      slot(4, 'paa.red.adicion', 'write.stylistic-addition', 4, 'qué oración conviene añadir al final para cerrar el párrafo con una idea que lo amplíe'),
+    ] },
+    { unitId: id('ing-read'), component: 'ingles', language: 'en', stimulusKind: 'READING_PASSAGE', stimulusBrief: `An ORIGINAL English passage of 200 to 260 words (CEFR B1-B2) about ${t(ENGLISH_TOPICS)}. Clear main idea, concrete details, one implied attitude or purpose, and two words whose meaning depends on context.`, slots: [
+      slot(1, 'paa.ing.lectura', 'efl.reading.literal', 2, 'a detail stated in the passage'),
+      slot(2, 'paa.ing.lectura', 'efl.reading.interpretive', 3, 'something the passage implies, or the writer\'s purpose'),
+      slot(3, 'paa.ing.lectura', 'efl.reading.literal', 3, 'the main idea of the passage'),
+      slot(4, 'paa.ing.lectura', 'efl.reading.interpretive', 3, 'the meaning of a word or phrase as it is used in the passage (quote it)'),
+    ] },
+    { unitId: id('ing-lang'), component: 'ingles', language: 'en', stimulusKind: null, stimulusBrief: null, slots: [
+      slot(1, 'paa.ing.lenguaje', 'efl.grammar.verb-forms', 2, 'choosing the correct verb tense or form to complete a sentence (one blank shown as ____)'),
+      slot(2, 'paa.ing.lenguaje', 'efl.grammar.verb-forms', 3, 'choosing the correct verb form in a conditional or passive sentence (one blank shown as ____)'),
+      slot(3, 'paa.ing.lenguaje', 'efl.grammar.function-words', 2, 'choosing the correct preposition to complete a sentence (one blank shown as ____)'),
+      slot(4, 'paa.ing.lenguaje', 'efl.grammar.function-words', 3, 'choosing the correct article, pronoun or conjunction to complete a sentence (one blank shown as ____)'),
+      slot(5, 'paa.ing.lenguaje', 'efl.vocabulary', 2, 'choosing the word that best fits the meaning of a sentence (one blank shown as ____)'),
+      slot(6, 'paa.ing.lenguaje', 'efl.vocabulary', 3, 'choosing the phrase or collocation that best fits the meaning of a sentence (one blank shown as ____)'),
+      slot(7, 'paa.ing.lenguaje', 'efl.grammar.noun-adjective-forms', 3, 'choosing the correct word form (noun, adjective or adverb) to complete a sentence (one blank shown as ____)'),
+      slot(8, 'paa.ing.lenguaje', 'efl.grammar.noun-adjective-forms', 4, 'choosing the correct comparative or superlative form to complete a sentence (one blank shown as ____)'),
+    ] },
+    { unitId: id('ing-writ'), component: 'ingles', language: 'en', stimulusKind: null, stimulusBrief: null, slots: [
+      slot(1, 'paa.ing.redaccion', 'efl.writing.complex-sentences', 3, 'which option best combines two given short sentences into one correct sentence (quote both sentences in the stem)'),
+      slot(2, 'paa.ing.redaccion', 'efl.writing.complex-sentences', 3, 'which option correctly rewrites a given sentence that contains one error (quote the sentence in the stem)'),
+      slot(3, 'paa.ing.redaccion', 'efl.writing.complex-sentences', 4, 'which option best combines two given sentences using a relative clause or a subordinating conjunction (quote both in the stem)'),
+      slot(4, 'paa.ing.redaccion', 'efl.writing.paragraph-organization', 3, 'which sentence best continues a short three-sentence text quoted in the stem'),
+      slot(5, 'paa.ing.redaccion', 'efl.writing.paragraph-organization', 4, 'which sentence best concludes a short three-sentence text quoted in the stem'),
+      slot(6, 'paa.ing.redaccion', 'efl.writing.paragraph-organization', 3, 'which order of three given sentences makes the most coherent short paragraph (quote the sentences in the stem)'),
+    ] },
+  ];
+}
+
+/**
+ * Round 7: the residual gaps of the full-length form after rounds 4-6 (Redacción cohesión / elisión /
+ * particularización; Inglés redacción indirecta), on texts never used before (topics appended to the list).
+ */
+function paaFullLengthGapRound(_t: <T>(xs: readonly T[]) => T, id: (k: string) => string): UnitPlan[] {
+  return [
+    { unitId: id('red-c'), component: 'redaccion', language: 'es', stimulusKind: 'SHORT_SOURCE_TEXT', stimulusBrief: `Párrafo ORIGINAL de 140 a 200 palabras sobre ${WRITING_TOPICS[6]}, escrito como borrador de estudiante con las oraciones NUMERADAS así: (1) ... (2) ... hasta (8). Debe contener dos uniones de oraciones mejorables con un conector, una repetición innecesaria de una palabra, una redundancia y una afirmación general que pueda ilustrarse con un detalle concreto.`, slots: [
+      slot(1, 'paa.red.cohesion', 'write.cohesion-connectors', 3, 'qué conector o transición une mejor dos oraciones numeradas según su relación lógica'),
+      slot(2, 'paa.red.cohesion', 'write.cohesion-connectors', 3, 'qué palabra o expresión evita mejor la repetición innecesaria de una palabra entre dos oraciones numeradas'),
+      slot(3, 'paa.red.cohesion', 'write.cohesion-connectors', 4, 'qué transición conviene al comienzo de una oración numerada para marcar contraste o consecuencia'),
+      slot(4, 'paa.red.elision', 'write.concision-elision', 3, 'qué parte de una oración numerada es redundante y debe eliminarse, o cuál es la versión más concisa sin perder información'),
+      slot(5, 'paa.red.particularizacion', 'write.indirect-expression', 3, 'qué ejemplo o detalle concreto ilustra mejor una afirmación general de una oración numerada'),
+    ] },
+    { unitId: id('red-d'), component: 'redaccion', language: 'es', stimulusKind: 'SHORT_SOURCE_TEXT', stimulusBrief: `Párrafo ORIGINAL de 140 a 200 palabras sobre ${WRITING_TOPICS[7]}, con las oraciones NUMERADAS así: (1) ... (2) ... hasta (8). Debe contener una unión de oraciones mejorable con un conector, una oración con información prescindible y una afirmación general que pueda concretarse.`, slots: [
+      slot(1, 'paa.red.cohesion', 'write.cohesion-connectors', 3, 'qué conector o transición une mejor dos oraciones numeradas según su relación lógica'),
+      slot(2, 'paa.red.elision', 'write.concision-elision', 3, 'qué oración numerada puede eliminarse sin que el párrafo pierda información necesaria'),
+      slot(3, 'paa.red.particularizacion', 'write.indirect-expression', 4, 'qué detalle concreto expresa de manera indirecta una característica afirmada en una oración numerada'),
+    ] },
+    { unitId: id('ing-writ'), component: 'ingles', language: 'en', stimulusKind: null, stimulusBrief: null, slots: [
+      slot(1, 'paa.ing.redaccion', 'efl.writing.complex-sentences', 3, 'which option best combines two given short sentences into one correct sentence (quote both sentences in the stem)'),
+      slot(2, 'paa.ing.redaccion', 'efl.writing.complex-sentences', 3, 'which option correctly rewrites a given sentence that contains one error (quote the sentence in the stem)'),
+      slot(3, 'paa.ing.redaccion', 'efl.writing.paragraph-organization', 3, 'which sentence best continues a short three-sentence text quoted in the stem'),
+      slot(4, 'paa.ing.redaccion', 'efl.writing.paragraph-organization', 4, 'which sentence best concludes a short three-sentence text quoted in the stem'),
+    ] },
+    { unitId: id('ing-writ-b'), component: 'ingles', language: 'en', stimulusKind: null, stimulusBrief: null, slots: [
+      slot(1, 'paa.ing.redaccion', 'efl.writing.complex-sentences', 3, 'which option best combines two given sentences with a suitable linking word such as because, although or so (quote both sentences in the stem)'),
+      slot(2, 'paa.ing.redaccion', 'efl.writing.complex-sentences', 4, 'which option correctly rewrites a given sentence that contains one agreement or tense error (quote the sentence in the stem)'),
+      slot(3, 'paa.ing.redaccion', 'efl.writing.paragraph-organization', 3, 'which sentence does NOT belong in a short four-sentence text quoted in the stem'),
+      slot(4, 'paa.ing.redaccion', 'efl.writing.paragraph-organization', 3, 'which sentence best introduces a short text whose next two sentences are quoted in the stem'),
     ] },
   ];
 }

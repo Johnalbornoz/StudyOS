@@ -33,12 +33,14 @@ describe('Saber: boundary correspondences approved to existing identities', () =
 
 describe('Saber: full-length StudyUs preparation mock (PILOT_PREVIEW only)', () => {
   it('one authorisation, ICFES in PILOT_PREVIEW, presented as StudyUs preparation, zero runtime generation, no reviewer', () => {
-    expect(FULL_MOCK_AUTHORIZATIONS.map((a) => [a.systemId, a.deliveryScope, a.positions])).toEqual([['ICFES', 'PILOT_PREVIEW', 50]]);
+    // + PAA full-length (PAA-FULL-LENGTH-PREPARATION-MOCK-2026-10-15), the only other authorisation
+    expect(FULL_MOCK_AUTHORIZATIONS.map((a) => [a.systemId, a.deliveryScope, a.positions])).toEqual([['ICFES', 'PILOT_PREVIEW', 50], ['PAA', 'PILOT_PREVIEW', 175]]);
     expect(fullMockAuthorizationFor('ICFES', 'PILOT_PREVIEW')).toMatchObject({ presentation: 'STUDYUS_PREPARATION_NOT_OFFICIAL', runtimeGeneration: 0, humanReviewer: null, humanReviewStatus: 'PENDING' });
   });
-  it('the usage widens for Saber in PILOT_PREVIEW only; every other system and scope keeps PRACTICE + REDUCED_MOCK', () => {
+  it('the usage widens for Saber and PAA in PILOT_PREVIEW only; every other system and scope keeps PRACTICE + REDUCED_MOCK', () => {
     expect(coreDerivedUsageFor('ICFES', 'PILOT_PREVIEW')).toEqual([...CORE_DERIVED_USAGE, 'FULL_MOCK']);
-    for (const [system, scope] of [['ICFES', 'PRODUCTION'], ['ICFES', 'DEV'], ['PAA', 'PILOT_PREVIEW'], ['IB', 'PILOT_PREVIEW'], ['CAMBRIDGE', 'PILOT_PREVIEW'], ['PISA', 'PILOT_PREVIEW']]) expect(coreDerivedUsageFor(system, scope)).toEqual(CORE_DERIVED_USAGE);
+    expect(coreDerivedUsageFor('PAA', 'PILOT_PREVIEW')).toEqual([...CORE_DERIVED_USAGE, 'FULL_MOCK']);
+    for (const [system, scope] of [['ICFES', 'PRODUCTION'], ['ICFES', 'DEV'], ['PAA', 'PRODUCTION'], ['IB', 'PILOT_PREVIEW'], ['CAMBRIDGE', 'PILOT_PREVIEW'], ['PISA', 'PILOT_PREVIEW']]) expect(coreDerivedUsageFor(system, scope)).toEqual(CORE_DERIVED_USAGE);
   });
   it('the mock setup says it is StudyUs preparation, not an official exam, in every locale', () => {
     for (const [locale, m] of Object.entries(MESSAGES)) expect((m as Record<string, string>)['exv2.setup.preparationNotOfficial'], locale).toMatch(/StudyUs/);

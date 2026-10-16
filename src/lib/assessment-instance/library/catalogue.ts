@@ -38,6 +38,7 @@ import { applicabilityThresholdFor } from '../applicability-threshold';
 import { PISA_MATH_APPLICABILITY, PISA_MATH_ENTRIES } from './pisa-math.adoption';
 import { AICE_9709_P1_ENTRIES } from './aice-9709-p1.adoption';
 import { AICE_9709_P2P4P5_ENTRIES } from './aice-9709-p2p4p5.adoption';
+import { PAA_MATH_MC_ENTRIES } from './paa-math-mc.adoption';
 import { AICE_9709_P2P4P5_APPLICABILITY, AICE_9709_P2P4P5_DECISION, AICE_9709_P2P4P5_EQUIVALENCES, CIE_9709_PAPER_ADAPTER, type Cie9709Paper } from '@/lib/curriculum/cambridge/aice-9709-p2p4p5-equivalence';
 import { SABER_MATH_ENTRIES, SABER_MATH_IN_CONTEXT_ENTRIES } from './saber11-math.adoption';
 import { SABER_APPLICABILITY, SABER_APPLICABILITY_2026_10_15, SABER_GOVERNANCE_DECISION, saberCorrespondenceOf } from '@/lib/curriculum/icfes/saber11-content-correspondence';
@@ -448,6 +449,8 @@ export const LIBRARY_EXTENSION_BATCHES: readonly LibraryExtensionBatch[] = [
   { batchId: 'TB-IB-AAHL-P3-A1', entries: IB_AAHL_P3_ENTRIES },
   // AICE 9709 AS Papers 2, 4, 5: the Cambridge 9709 P2/P4/P5 entries in the AICE buckets (PILOT equivalence)
   { batchId: 'AICE-9709-P2P4P5-A1', entries: AICE_9709_P2P4P5_ENTRIES },
+  // PAA Matemáticas multiple choice for the full-length preparation form (paa-math-mc.adoption.ts)
+  { batchId: 'TB-PAA-MATH-MC-A1', entries: PAA_MATH_MC_ENTRIES },
 ];
 export const LIBRARY_EXTENSIONS: readonly LibraryEntry[] = LIBRARY_EXTENSION_BATCHES.flatMap((b) => b.entries);
 export const PUBLICATION_LIBRARY: readonly LibraryEntry[] = [...LIBRARY, ...LIBRARY_EXTENSIONS];

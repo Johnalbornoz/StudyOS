@@ -35,6 +35,14 @@ export const FULL_MOCK_AUTHORIZATIONS: readonly FullMockAuthorization[] = [
     systemId: 'ICFES', configKey: 'v2.saber11.math', blueprintId: 'v2.saber11.math/math', positions: 50,
     presentation: 'STUDYUS_PREPARATION_NOT_OFFICIAL', runtimeGeneration: 0, humanReviewer: null, humanReviewStatus: 'PENDING', decidedAt: '2026-10-15',
   },
+  // PAA (John, 2026-10-15, URGENT SCOPE CHANGE -- PAA_FULL_LENGTH_MOCK = REQUIRED; classification decision PREPARATION_MOCK):
+  // the 175-position full-length StudyUs preparation mock (v2.paa-full-length). The official source publishes no
+  // per-category distribution, so the form is never an official PAA form; StudyUs preparation, not College Board.
+  {
+    decisionId: 'PAA-FULL-LENGTH-PREPARATION-MOCK-2026-10-15', decisionType: 'ARCHITECTURE_GOVERNANCE_DECISION', scope: 'PILOT', deliveryScope: 'PILOT_PREVIEW',
+    systemId: 'PAA', configKey: 'v2.paa-full-length', blueprintId: 'v2.paa-full-length', positions: 175,
+    presentation: 'STUDYUS_PREPARATION_NOT_OFFICIAL', runtimeGeneration: 0, humanReviewer: null, humanReviewStatus: 'PENDING', decidedAt: '2026-10-15',
+  },
 ];
 
 /** The authorisation that lets this system's certified deterministic supply serve a full-length mock in this scope, or null. */

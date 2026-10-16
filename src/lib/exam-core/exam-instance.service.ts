@@ -181,9 +181,12 @@ export async function formInputs(examVersionId: string, componentIds: string[], 
   // diagnostic, Mock / Challenge -- draws only human-approved ACTIVE / CALIBRATED items (never PILOT); a mock is
   // never filled with weaker content to reach its length.
   // A Student instance never draws a DEV fixture; only an in-process TECHNICAL_DEMO instance may.
+  // A full-length StudyUs PREPARATION mock is authorised for CERTIFIED supply only (full-mock-authorization.ts): an
+  // uncertified LEGACY version never fills one of its positions.
+  const certifiedOnly = use === 'FULL_MOCK' && audience === 'STUDENT' && (await preparationMockAuthorizedFor(examVersionId));
   const poolRows = await db.query(
     `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.difficulty_index, ai.template_fingerprint, ai.semantic_fingerprint, ai.content_origin
-       FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ai.learning_objective_id = ANY($1::uuid[]) AND ${lifecycleSqlFor(use, undefined, audience)} AND ${certifiedSupplySql('ai')}`,
+       FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ai.learning_objective_id = ANY($1::uuid[]) AND ${lifecycleSqlFor(use, undefined, audience)} AND ${certifiedSupplySql('ai')}${certifiedOnly ? ` AND EXISTS (SELECT 1 FROM public.question_bank_items co_qi WHERE co_qi.id = ai.bank_item_id AND co_qi.lineage_class IN ('CORE_DERIVED', 'PILOT_CERTIFIED'))` : ''}`,
     [objectiveIds]
   );
   const pool: PoolItem[] = [];

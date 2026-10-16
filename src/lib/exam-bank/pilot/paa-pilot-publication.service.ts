@@ -12,6 +12,7 @@
  * TRANSACTIONAL, IDEMPOTENT (an identical item is skipped), FAIL-CLOSED (an item of the same key with other content
  * stops the run), DRY RUN = the same statements then ROLLBACK.
  */
+import { fullMockAuthorizationFor } from '../full-mock-authorization';
 import type { PoolClient } from 'pg';
 import { contentHash } from '@/lib/exam-core/question-bank/bank.service';
 import { itemFingerprints } from '@/lib/exam-core/fingerprints';
@@ -22,8 +23,11 @@ import { PAA_PILOT_CERT_POLICY_V1, PAA_PILOT_DECIDER, PAA_PILOT_POLICY_HASH, PAA
 export const PAA_PILOT_REQUIRED_MIGRATIONS = ['20261124_1000', '20261124_1100', '20261124_1200'] as const;
 export const PAA_PILOT_CONFIG_KEY = 'v2.paa';
 export const PAA_PILOT_USAGE = ['PRACTICE', 'REDUCED_MOCK'] as const;
+/** The pilot certification is PILOT_PREVIEW only; under the recorded full-length preparation mock authorisation the usage adds FULL_MOCK. */
+const PILOT_SCOPE = 'PILOT_PREVIEW';
+const PILOT_USAGE: readonly string[] = fullMockAuthorizationFor('PAA', PILOT_SCOPE) ? [...PAA_PILOT_USAGE, 'FULL_MOCK'] : PAA_PILOT_USAGE;
 export interface PilotArtefact { plan: UnitPlan; generated: GeneratedUnit; provenance: GenerationProvenance; runs: SolverRun[] }
-export interface PilotPublicationReport { mode: 'DRY_RUN' | 'APPLY'; committed: boolean; units: number; candidates: number; certified: number; reviewRequired: number; stimuliInserted: number; stimuliSkipped: number; itemsInserted: number; itemsSkipped: number; byObjective: Record<string, number>; blocked: { identity: string; reason: string }[]; verification: Record<string, number> }
+export interface PilotPublicationReport { mode: 'DRY_RUN' | 'APPLY'; committed: boolean; units: number; candidates: number; certified: number; reviewRequired: number; stimuliInserted: number; stimuliSkipped: number; itemsInserted: number; itemsSkipped: number; /** versions in use whose usage a governed authorisation widened */ usageAuthorized?: number; byObjective: Record<string, number>; blocked: { identity: string; reason: string }[]; verification: Record<string, number> }
 
 /** The certifications of a set of artefacts, in order: an earlier unit's stimulus makes a later identical one a duplicate. */
 export function certifyArtefacts(artefacts: readonly PilotArtefact[]): UnitCertification[] {
@@ -86,9 +90,17 @@ export async function runPilotPublication(client: PoolClient, artefacts: readonl
         const parsed = ApprovedItemContentSchema.safeParse(ci.content);
         if (!parsed.success || !examItemFromApproved({ id: key, learning_objective_id: target.objective_id, content: ci.content })) throw new Error(`BANK_CONTENT_IS_NOT_DELIVERABLE:${key}`);
         const hash = contentHash(ci.content);
-        const heldItem = await one<{ id: string; lineage_class: string; provenance: string; current_hash: string | null }>(c, `SELECT qi.id, qi.lineage_class, qi.provenance, ai.content_hash AS current_hash FROM question_bank_items qi LEFT JOIN approved_items ai ON ai.id = qi.current_version_id WHERE qi.learning_objective_id = $1 AND qi.item_key = $2`, [target.objective_id, key]);
+        const heldItem = await one<{ id: string; lineage_class: string; provenance: string; current_hash: string | null; version_id: string | null; usage: string[] | null; lifecycle: string | null }>(c, `SELECT qi.id, qi.lineage_class, qi.provenance, ai.content_hash AS current_hash, ai.id AS version_id, ai.usage_eligibility AS usage, ai.bank_lifecycle_status AS lifecycle FROM question_bank_items qi LEFT JOIN approved_items ai ON ai.id = qi.current_version_id WHERE qi.learning_objective_id = $1 AND qi.item_key = $2`, [target.objective_id, key]);
         if (heldItem) {
           if (heldItem.lineage_class !== 'PILOT_CERTIFIED' || heldItem.provenance !== 'STUDYUS_GENERATED' || heldItem.current_hash !== hash) throw new Error(`PUBLICATION_CONFLICT: a bank item ${key} exists that is not this certified content`);
+          // a governed full-length preparation mock authorisation widens the usage of the version in use (never its content)
+          const missing = PILOT_USAGE.filter((u) => !(heldItem.usage ?? []).includes(u));
+          if (missing.length > 0 && heldItem.lifecycle === 'ACTIVE' && heldItem.version_id) {
+            await c.query(`UPDATE approved_items SET usage_eligibility = $2::text[] WHERE id = $1`, [heldItem.version_id, [...new Set([...(heldItem.usage ?? []), ...PILOT_USAGE])]]);
+            await c.query(`INSERT INTO question_bank_lifecycle_events (bank_item_id, approved_item_id, from_status, to_status, reason, actor_kind, actor_user_id, run_id, detail) VALUES ($1, $2, 'ACTIVE', 'ACTIVE', 'USAGE_AUTHORIZED_BY_GOVERNANCE', 'SYSTEM', NULL, NULL, $3::jsonb)`,
+              [heldItem.id, heldItem.version_id, JSON.stringify({ added: missing, decision: fullMockAuthorizationFor('PAA', PILOT_SCOPE)?.decisionId ?? null, scope: PILOT_SCOPE, itemKey: key })]);
+            report.usageAuthorized = (report.usageAuthorized ?? 0) + 1;
+          }
           report.itemsSkipped += 1; continue;
         }
         const lineage = { ...ci.lineage, policyVersion: PAA_PILOT_POLICY_VERSION, itemDigest: ci.itemDigest, stimulus: ci.item.stimulus };
@@ -102,7 +114,7 @@ export async function runPilotPublication(client: PoolClient, artefacts: readonl
           `INSERT INTO approved_items (learning_objective_id, question_type, content, created_by, status, published_at, content_origin, semantic_fingerprint, template_fingerprint, reasoning_fingerprint, stimulus_fingerprint,
                                        bank_item_id, version_number, bank_lifecycle_status, content_hash, target_difficulty, calibration_confidence, lifecycle_updated_at, usage_eligibility, exam_alignment, validation_report)
            VALUES ($1, $2, $3::jsonb, $4, 'APPROVED', NULL, 'GENERATED', $5, $6, $7, $8, $9, 1, 'VALIDATED', $10, $11, 'INSUFFICIENT_DATA', now(), $12::text[], 'MOCK_READY', $13::jsonb) RETURNING id`,
-          [target.objective_id, ci.content.type, JSON.stringify(ci.content), author, fp.semantic, fp.template, fp.reasoning, fp.stimulus, item!.id, hash, ci.content.difficulty, [...PAA_PILOT_USAGE], JSON.stringify(validation)]);
+          [target.objective_id, ci.content.type, JSON.stringify(ci.content), author, fp.semantic, fp.template, fp.reasoning, fp.stimulus, item!.id, hash, ci.content.difficulty, [...PILOT_USAGE], JSON.stringify(validation)]);
         await c.query(`INSERT INTO question_bank_content_rights (content_type, content_id, source_access, reuse_rights, rights_holder, permitted_use, attribution_text, recorded_by) VALUES ('ITEM_VERSION', $1, 'NOT_APPLICABLE', 'STUDYUS_OWNED', 'StudyUs', $2, $3, $4)`,
           [version!.id, 'Delivery to Students within StudyUs in PILOT_PREVIEW only (PAA pilot certification policy).', `${ci.item.rights.category}: ${ci.item.rights.basis}`, author]);
         await c.query(`INSERT INTO question_bank_item_concepts (approved_item_id, canonical_concept_id, role, attributed_by) VALUES ($1, $2, 'PRIMARY', $3)`, [version!.id, conceptId, author]);

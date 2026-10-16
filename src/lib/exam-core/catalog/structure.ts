@@ -149,10 +149,17 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
         key: 'paa', type: 'TEST', label: 'PAA (Prueba de Aptitud Académica)', frameworkVersion: '2021', firstAssessment: 2017, sourceKeys: ['cb-paa-guia-2021', 'cb-paa-preguntas-respuestas-2017', 'cb-paa-manual-latam-2024', 'cb-paa-usage-2024'],
         description: 'Una sola prueba integral: Lectura, Redacción, Matemáticas e Inglés.',
         children: [
+          // PAA_REDUCED_MOCK: the four sections as a REDUCED form (v2.paa, 36 of the 175 positions, the official pace per item)
           {
-            key: 'paa.full', type: 'VARIANT', label: 'Las cuatro secciones', labels: { en: 'All four sections' }, purpose: 'FULL_TEST', modes: ['MOCK', 'CHALLENGE'],
-            description: 'Las cuatro áreas en el orden oficial, con pausas.', facts: { minutes: 180, items: 175 },
+            key: 'paa.full', type: 'VARIANT', label: 'Simulacro reducido · las cuatro secciones', labels: { en: 'Reduced mock · all four sections' }, purpose: 'FULL_TEST', modes: ['MOCK', 'CHALLENGE'],
+            description: 'Las cuatro áreas en el orden oficial, en una forma reducida: 36 preguntas al ritmo oficial por pregunta.', facts: { minutes: 37, items: 36 },
             bind: { configKey: 'v2.paa' }, sourceKeys: ['cb-paa-guia-2021', 'cb-paa-manual-latam-2024'],
+          },
+          // PAA_FULL_LENGTH_MOCK: the four sections with their official length and time (v2.paa-full-length, 175 positions)
+          {
+            key: 'paa.full-length', type: 'VARIANT', label: 'Simulacro completo de preparación', labels: { en: 'Full-length preparation mock' }, purpose: 'FULL_TEST', modes: ['MOCK'],
+            description: 'Las cuatro secciones con su longitud y tiempo oficiales (175 preguntas, 180 min), con recesos. Contenido de preparación StudyUs: no es una prueba oficial del College Board.', facts: { minutes: 180, items: 175 },
+            bind: { configKey: 'v2.paa-full-length' }, sourceKeys: ['cb-paa-guia-2021', 'cb-paa-preguntas-respuestas-2017', 'cb-paa-practice-test-2018'],
           },
           {
             key: 'paa.practice', type: 'AREA', label: 'Practicar un área', description: 'Práctica adaptativa por área o por habilidad.',
