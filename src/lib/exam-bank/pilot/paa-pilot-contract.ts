@@ -45,11 +45,11 @@ export interface UnitSlot { slot: string; objectiveCode: string; conceptStableId
 export interface UnitPlan { unitId: string; component: PaaPilotComponent; language: 'es' | 'en'; stimulusKind: StimulusKind | null; stimulusBrief: string | null; slots: UnitSlot[] }
 
 const slot = (n: number, objectiveCode: string, conceptStableId: string, difficulty: number, focus: string): UnitSlot => ({ slot: `s${n}`, objectiveCode, conceptStableId, difficulty, focus });
-const EXPOSITORY_TOPICS = ['la restauración de un humedal costero y sus efectos sobre una comunidad de pescadores', 'la historia del reloj mecánico y cómo cambió la organización del trabajo', 'el uso de sensores de bajo costo para medir la calidad del aire en una ciudad intermedia', 'la conservación de semillas nativas en bancos comunitarios', 'la arquitectura de tierra y su comportamiento ante el calor', 'el papel de las bibliotecas móviles en zonas rurales'];
+const EXPOSITORY_TOPICS = ['la restauración de un humedal costero y sus efectos sobre una comunidad de pescadores', 'la historia del reloj mecánico y cómo cambió la organización del trabajo', 'el uso de sensores de bajo costo para medir la calidad del aire en una ciudad intermedia', 'la conservación de semillas nativas en bancos comunitarios', 'la arquitectura de tierra y su comportamiento ante el calor', 'el papel de las bibliotecas móviles en zonas rurales', 'la recuperación de las abejas nativas en zonas agrícolas y su efecto sobre las cosechas'];
 const LITERARY_SEEDS = ['una joven que regresa al taller de relojería de su abuelo', 'un pescador que espera el cambio de la marea junto a su hijo', 'una maestra que encuentra un cuaderno olvidado en un aula vacía', 'un viajero que cruza un puente al amanecer con una carta sin abrir', 'dos hermanos que cuidan un faro durante una tormenta', 'una música que afina un instrumento heredado antes de un concierto'];
 const TABLE_TOPICS = ['la producción mensual de una cooperativa de café durante un semestre', 'el consumo de agua por sector en un municipio durante cuatro años', 'las horas de lectura semanal por grupo de edad en una encuesta escolar', 'la asistencia a tres museos de una ciudad por trimestre', 'la generación de energía solar de una escuela a lo largo de seis meses', 'los tiempos de traslado por medio de transporte en un barrio'];
 const WRITING_TOPICS = ['un proyecto escolar de huerto urbano', 'la organización de una feria de ciencias', 'la recuperación de una plaza del barrio', 'un club de lectura juvenil', 'una campaña de reciclaje en un colegio', 'la visita a un observatorio astronómico', 'la creación de una biblioteca comunitaria en un barrio', 'un intercambio de semillas entre agricultores de una vereda', 'la renovación de una cancha deportiva por los vecinos'];
-const ENGLISH_TOPICS = ['a community garden started by high-school students', 'a small town that restored its old train station', 'a student who learns to repair bicycles', 'a school radio program run by teenagers', 'a volunteer group that cleans a local beach', 'a young inventor who builds a low-cost water filter'];
+const ENGLISH_TOPICS = ['a community garden started by high-school students', 'a small town that restored its old train station', 'a student who learns to repair bicycles', 'a school radio program run by teenagers', 'a volunteer group that cleans a local beach', 'a young inventor who builds a low-cost water filter', 'a family that turns an empty lot into a small neighbourhood library'];
 
 /** The unit plans of one round. Round n uses the n-th topic of each list: a later round never repeats an earlier text. */
 export function paaPilotRound(round: number): UnitPlan[] {
@@ -187,6 +187,16 @@ function paaFullLengthGapRound(_t: <T>(xs: readonly T[]) => T, id: (k: string) =
       slot(1, 'paa.red.cohesion', 'write.cohesion-connectors', 3, 'qué conector o transición une mejor dos oraciones numeradas según su relación lógica'),
       slot(2, 'paa.red.elision', 'write.concision-elision', 3, 'qué oración numerada puede eliminarse sin que el párrafo pierda información necesaria'),
       slot(3, 'paa.red.particularizacion', 'write.indirect-expression', 4, 'qué detalle concreto expresa de manera indirecta una característica afirmada en una oración numerada'),
+    ] },
+    { unitId: id('lect-exp'), component: 'lectura', language: 'es', stimulusKind: 'READING_PASSAGE', stimulusBrief: `Texto expositivo-argumentativo ORIGINAL de 320 a 400 palabras sobre ${EXPOSITORY_TOPICS[EXPOSITORY_TOPICS.length - 1]}. Debe tener una tesis reconocible, datos concretos y un párrafo final que resuma la propuesta del autor.`, slots: [
+      slot(1, 'paa.lect.explicitas', 'read.explicit-information', 2, 'un dato o detalle afirmado explícitamente en el texto'),
+      slot(2, 'paa.lect.explicitas', 'read.central-idea', 3, 'la tesis o idea central del texto'),
+      slot(3, 'paa.lect.explicitas', 'read.explicit-information', 3, 'qué enunciado resume mejor un párrafo concreto del texto (indica cuál)'),
+    ] },
+    { unitId: id('ing-read'), component: 'ingles', language: 'en', stimulusKind: 'READING_PASSAGE', stimulusBrief: `An ORIGINAL English passage of 180 to 240 words (CEFR B1) about ${ENGLISH_TOPICS[ENGLISH_TOPICS.length - 1]}. Clear main idea, concrete details and one implied attitude.`, slots: [
+      slot(1, 'paa.ing.lectura', 'efl.reading.literal', 2, 'a detail stated in the passage'),
+      slot(2, 'paa.ing.lectura', 'efl.reading.interpretive', 3, 'something the passage implies, or the writer\'s purpose'),
+      slot(3, 'paa.ing.lectura', 'efl.reading.literal', 3, 'the main idea of the passage'),
     ] },
     { unitId: id('ing-writ'), component: 'ingles', language: 'en', stimulusKind: null, stimulusBrief: null, slots: [
       slot(1, 'paa.ing.redaccion', 'efl.writing.complex-sentences', 3, 'which option best combines two given short sentences into one correct sentence (quote both sentences in the stem)'),
