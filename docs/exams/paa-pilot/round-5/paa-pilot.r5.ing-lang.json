@@ -1,0 +1,1103 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r5.ing-lang",
+    "component": "ingles",
+    "language": "en",
+    "stimulusKind": null,
+    "stimulusBrief": null,
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.ing.lenguaje",
+        "conceptStableId": "efl.grammar.verb-forms",
+        "difficulty": 2,
+        "focus": "choosing the correct verb tense or form to complete a sentence (one blank shown as ____)"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.ing.lenguaje",
+        "conceptStableId": "efl.grammar.verb-forms",
+        "difficulty": 3,
+        "focus": "choosing the correct verb form in a conditional or passive sentence (one blank shown as ____)"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.ing.lenguaje",
+        "conceptStableId": "efl.grammar.function-words",
+        "difficulty": 2,
+        "focus": "choosing the correct preposition to complete a sentence (one blank shown as ____)"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.ing.lenguaje",
+        "conceptStableId": "efl.grammar.function-words",
+        "difficulty": 3,
+        "focus": "choosing the correct article, pronoun or conjunction to complete a sentence (one blank shown as ____)"
+      },
+      {
+        "slot": "s5",
+        "objectiveCode": "paa.ing.lenguaje",
+        "conceptStableId": "efl.vocabulary",
+        "difficulty": 2,
+        "focus": "choosing the word that best fits the meaning of a sentence (one blank shown as ____)"
+      },
+      {
+        "slot": "s6",
+        "objectiveCode": "paa.ing.lenguaje",
+        "conceptStableId": "efl.vocabulary",
+        "difficulty": 3,
+        "focus": "choosing the phrase or collocation that best fits the meaning of a sentence (one blank shown as ____)"
+      },
+      {
+        "slot": "s7",
+        "objectiveCode": "paa.ing.lenguaje",
+        "conceptStableId": "efl.grammar.noun-adjective-forms",
+        "difficulty": 3,
+        "focus": "choosing the correct word form (noun, adjective or adverb) to complete a sentence (one blank shown as ____)"
+      },
+      {
+        "slot": "s8",
+        "objectiveCode": "paa.ing.lenguaje",
+        "conceptStableId": "efl.grammar.noun-adjective-forms",
+        "difficulty": 4,
+        "focus": "choosing the correct comparative or superlative form to complete a sentence (one blank shown as ____)"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": null,
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "By the time the ferry arrives, the crew ____ the safety checks.",
+        "options": [
+          {
+            "text": "will have completed",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The future perfect shows that the checks will be finished before the ferry arrives."
+          },
+          {
+            "text": "will complete",
+            "isKey": false,
+            "misconception": "USES_SIMPLE_FUTURE_INSTEAD_OF_FUTURE_PERFECT",
+            "rationale": "This form describes a future action but does not clearly show that it will finish before another future event."
+          },
+          {
+            "text": "have completed",
+            "isKey": false,
+            "misconception": "USES_PRESENT_PERFECT_FOR_FUTURE_EVENT",
+            "rationale": "The present perfect does not fit this future time relationship."
+          },
+          {
+            "text": "completed",
+            "isKey": false,
+            "misconception": "USES_PAST_TENSE_FOR_FUTURE_EVENT",
+            "rationale": "The past tense wrongly places the safety checks before the present time."
+          }
+        ],
+        "evidenceQuote": null
+      },
+      {
+        "slot": "s2",
+        "stem": "If the repairs ____ before Friday, the library can reopen for visitors.",
+        "options": [
+          {
+            "text": "are completed",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The passive present form is used correctly in the if-clause to describe a possible future result."
+          },
+          {
+            "text": "complete",
+            "isKey": false,
+            "misconception": "USES_ACTIVE_VERB_FOR_PASSIVE_MEANING",
+            "rationale": "Repairs cannot complete themselves; the sentence needs a passive form."
+          },
+          {
+            "text": "will be completed",
+            "isKey": false,
+            "misconception": "USES_WILL_IN_IF_CLAUSE",
+            "rationale": "This is tempting because the event is in the future, but future if-clauses usually use a present form."
+          },
+          {
+            "text": "were completing",
+            "isKey": false,
+            "misconception": "USES_INAPPROPRIATE_PAST_CONTINUOUS",
+            "rationale": "This form describes an ongoing past action, not a condition for reopening on Friday."
+          }
+        ],
+        "evidenceQuote": null
+      },
+      {
+        "slot": "s3",
+        "stem": "Mira is responsible ____ checking the equipment before each lesson.",
+        "options": [
+          {
+            "text": "for",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The standard pattern is “responsible for” followed by a noun or an -ing form."
+          },
+          {
+            "text": "at",
+            "isKey": false,
+            "misconception": "CONFUSES_PREPOSITION_AFTER_ADJECTIVE",
+            "rationale": "“Responsible at” is not the usual phrase for describing a duty."
+          },
+          {
+            "text": "by",
+            "isKey": false,
+            "misconception": "CONFUSES_AGENT_PREPOSITION",
+            "rationale": "“By” can identify an agent, but it does not follow “responsible” in this meaning."
+          },
+          {
+            "text": "with",
+            "isKey": false,
+            "misconception": "CONFUSES_SIMILAR_PREPOSITION",
+            "rationale": "“Responsible with” may seem possible because it relates to equipment, but it is not the correct collocation."
+          }
+        ],
+        "evidenceQuote": null
+      },
+      {
+        "slot": "s4",
+        "stem": "The guide spoke slowly ____ every visitor could follow the instructions.",
+        "options": [
+          {
+            "text": "so that",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "“So that” introduces the purpose or result of speaking slowly."
+          },
+          {
+            "text": "because",
+            "isKey": false,
+            "misconception": "CONFUSES_REASON_WITH_PURPOSE",
+            "rationale": "“Because” would give a reason for speaking slowly, rather than the intended result."
+          },
+          {
+            "text": "although",
+            "isKey": false,
+            "misconception": "CONFUSES_CONTRAST_WITH_PURPOSE",
+            "rationale": "“Although” introduces a contrast, which the sentence does not express."
+          },
+          {
+            "text": "unless",
+            "isKey": false,
+            "misconception": "CONFUSES_CONDITION_WITH_PURPOSE",
+            "rationale": "“Unless” introduces an exception or condition, not a purpose."
+          }
+        ],
+        "evidenceQuote": null
+      },
+      {
+        "slot": "s5",
+        "stem": "The path was so ____ after the rain that hikers had to walk carefully.",
+        "options": [
+          {
+            "text": "slippery",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "A wet path can be slippery, which explains why hikers needed to walk carefully."
+          },
+          {
+            "text": "silent",
+            "isKey": false,
+            "misconception": "SELECTS_UNRELATED_ADJECTIVE",
+            "rationale": "A path may be quiet, but silence does not explain the need for careful walking."
+          },
+          {
+            "text": "distant",
+            "isKey": false,
+            "misconception": "CONFUSES_LOCATION_WITH_CONDITION",
+            "rationale": "Distance describes how far away something is, not the condition of the path."
+          },
+          {
+            "text": "private",
+            "isKey": false,
+            "misconception": "CONFUSES_ACCESS_WITH_SURFACE_CONDITION",
+            "rationale": "A private path may have limited access, but this does not explain the effect of rain."
+          }
+        ],
+        "evidenceQuote": null
+      },
+      {
+        "slot": "s6",
+        "stem": "The clinic plans to ____ a new booking system next month.",
+        "options": [
+          {
+            "text": "put in place",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "“Put in place” means to establish or introduce a plan or system."
+          },
+          {
+            "text": "put up with",
+            "isKey": false,
+            "misconception": "CONFUSES_PHRASAL_VERB_MEANINGS",
+            "rationale": "“Put up with” means to tolerate something unpleasant, not to introduce a system."
+          },
+          {
+            "text": "put off",
+            "isKey": false,
+            "misconception": "CONFUSES_PHRASAL_VERB_MEANINGS",
+            "rationale": "“Put off” means to delay an action, which conflicts with the plan for next month."
+          },
+          {
+            "text": "put aside",
+            "isKey": false,
+            "misconception": "CONFUSES_PHRASAL_VERB_MEANINGS",
+            "rationale": "“Put aside” means to save or ignore something, not to establish a booking system."
+          }
+        ],
+        "evidenceQuote": null
+      },
+      {
+        "slot": "s7",
+        "stem": "The manager explained the changes ____ to avoid confusion.",
+        "options": [
+          {
+            "text": "clearly",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "An adverb is needed to describe how the manager explained the changes."
+          },
+          {
+            "text": "clear",
+            "isKey": false,
+            "misconception": "USES_ADJECTIVE_INSTEAD_OF_ADVERB",
+            "rationale": "“Clear” is an adjective, but the blank modifies the verb “explained.”"
+          },
+          {
+            "text": "clarity",
+            "isKey": false,
+            "misconception": "USES_NOUN_INSTEAD_OF_ADVERB",
+            "rationale": "“Clarity” is a noun and cannot directly describe the action of explaining."
+          },
+          {
+            "text": "clearest",
+            "isKey": false,
+            "misconception": "USES_SUPERLATIVE_ADJECTIVE_INSTEAD_OF_ADVERB",
+            "rationale": "“Clearest” is an adjective form and does not fit after the verb in this sentence."
+          }
+        ],
+        "evidenceQuote": null
+      },
+      {
+        "slot": "s8",
+        "stem": "Of the three routes, the coastal road is ____ for drivers in winter.",
+        "options": [
+          {
+            "text": "more reliable",
+            "isKey": false,
+            "misconception": "USES_COMPARATIVE_FOR_THREE_ITEMS",
+            "rationale": "A comparative form is generally used when comparing two items, not three routes."
+          },
+          {
+            "text": "the most reliable",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The superlative form correctly identifies one route as having the highest reliability among three."
+          },
+          {
+            "text": "reliably",
+            "isKey": false,
+            "misconception": "USES_ADVERB_INSTEAD_OF_ADJECTIVE",
+            "rationale": "An adjective is needed after “is” to describe the coastal road."
+          },
+          {
+            "text": "the more reliable",
+            "isKey": false,
+            "misconception": "USES_COMPARATIVE_FOR_THREE_ITEMS",
+            "rationale": "This comparative form suggests a comparison between two items rather than all three routes."
+          }
+        ],
+        "evidenceQuote": null
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "3721bc88-86f6-4afb-a7da-fd21e6e12517",
+    "generatedAt": "2026-10-16T03:40:56.429Z",
+    "unitId": "paa-pilot.r5.ing-lang"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "b6f099f0-61ce-41af-b863-8df8db513e0b",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 8,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "5887018e-febd-464c-8fac-cc67a2081d13",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 8,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": null,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "NONE",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.ing-lenguaje.f18090c45a40",
+        "slot": "s1",
+        "objectiveCode": "paa.ing.lenguaje",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lenguaje / efl.grammar.verb-forms"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lenguaje.19745a61c1e8",
+        "slot": "s2",
+        "objectiveCode": "paa.ing.lenguaje",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lenguaje / efl.grammar.verb-forms"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lenguaje.fc01871f3244",
+        "slot": "s3",
+        "objectiveCode": "paa.ing.lenguaje",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lenguaje / efl.grammar.function-words"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lenguaje.274c5f2de646",
+        "slot": "s4",
+        "objectiveCode": "paa.ing.lenguaje",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lenguaje / efl.grammar.function-words"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lenguaje.e49937ba8ef2",
+        "slot": "s5",
+        "objectiveCode": "paa.ing.lenguaje",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lenguaje / efl.vocabulary"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lenguaje.6300bfd92497",
+        "slot": "s6",
+        "objectiveCode": "paa.ing.lenguaje",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "STRUCTURE",
+          "SCORING_COMPATIBILITY"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": false,
+            "detail": "TOO_FEW_DISTINCT_MISCONCEPTIONS"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lenguaje / efl.vocabulary"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": false,
+            "detail": "SELECTED_RESPONSE_NOT_CERTIFIABLE: TOO_FEW_DISTINCT_MISCONCEPTIONS"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lenguaje.3f4520812f98",
+        "slot": "s7",
+        "objectiveCode": "paa.ing.lenguaje",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lenguaje / efl.grammar.noun-adjective-forms"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lenguaje.9cfadf05b36d",
+        "slot": "s8",
+        "objectiveCode": "paa.ing.lenguaje",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lenguaje / efl.grammar.noun-adjective-forms"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "self-contained"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "no stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "self-contained item written for this request"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

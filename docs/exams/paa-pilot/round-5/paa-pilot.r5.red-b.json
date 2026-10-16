@@ -1,0 +1,591 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r5.red-b",
+    "component": "redaccion",
+    "language": "es",
+    "stimulusKind": "SHORT_SOURCE_TEXT",
+    "stimulusBrief": "Párrafo ORIGINAL de 130 a 190 palabras sobre la organización de una feria de ciencias, con las oraciones NUMERADAS así: (1) ... (2) ... hasta (7) u (8). Debe presentar varios casos particulares de una idea general, admitir un título claro y tener una afirmación general que pueda ilustrarse.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.red.generalizacion",
+        "conceptStableId": "write.generalization",
+        "difficulty": 3,
+        "focus": "qué oración general recoge mejor los casos particulares de varias oraciones numeradas"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.red.integracion",
+        "conceptStableId": "write.global-synthesis",
+        "difficulty": 3,
+        "focus": "qué título u oración resume mejor el párrafo completo"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.red.particularizacion",
+        "conceptStableId": "write.indirect-expression",
+        "difficulty": 3,
+        "focus": "qué ejemplo o detalle concreto ilustra mejor una afirmación general de una oración numerada"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.red.adicion",
+        "conceptStableId": "write.stylistic-addition",
+        "difficulty": 4,
+        "focus": "qué oración conviene añadir al final para cerrar el párrafo con una idea que lo amplíe"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Preparación de una feria de ciencias",
+      "text": "(1) Para organizar la feria de ciencias del colegio, el comité estudiantil distribuyó responsabilidades entre varios equipos. (2) Un grupo elaboró un calendario con las fechas de inscripción, ensayo y montaje de los proyectos. (3) Otro equipo reservó el gimnasio y solicitó mesas, extensiones eléctricas y carteles para identificar cada área. (4) Las estudiantes de difusión diseñaron invitaciones digitales para las familias y avisos impresos para los salones. (5) El equipo de apoyo preparó una lista de voluntarios que orientarán a los visitantes durante la exposición. (6) Además, dos docentes revisarán que cada experimento cumpla las normas de seguridad antes de abrir las puertas. (7) Estas tareas muestran que una feria exitosa requiere planificación, colaboración y atención a las necesidades de quienes participan. (8) Con este trabajo previo, la comunidad escolar podrá conocer las investigaciones realizadas durante el semestre.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué oración general recoge mejor los casos particulares presentados en las oraciones (2) a (6)?",
+        "options": [
+          {
+            "text": "La preparación de la feria exige coordinar recursos, personas y actividades diversas.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La oración reúne el calendario, los materiales, la difusión, los voluntarios y la revisión de seguridad en una idea general."
+          },
+          {
+            "text": "La preparación de la feria depende principalmente de reservar el gimnasio escolar.",
+            "isKey": false,
+            "misconception": "GENERALIZA_UN_SOLO_EJEMPLO",
+            "rationale": "Reservar el gimnasio es una tarea concreta, pero el texto presenta varias responsabilidades adicionales."
+          },
+          {
+            "text": "La preparación de la feria consiste en elaborar invitaciones para las familias.",
+            "isKey": false,
+            "misconception": "CONFUNDE_PARTE_CONJUNTO",
+            "rationale": "Las invitaciones pertenecen al trabajo de difusión y no resumen toda la organización."
+          },
+          {
+            "text": "La preparación de la feria busca reemplazar las clases del semestre.",
+            "isKey": false,
+            "misconception": "INFIERE_FINALIDAD_AUSENTE",
+            "rationale": "El texto indica que se mostrarán investigaciones del semestre, no que las clases serán reemplazadas."
+          }
+        ],
+        "evidenceQuote": "Estas tareas muestran que una feria exitosa requiere planificación, colaboración y atención"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué título resume mejor el párrafo completo?",
+        "options": [
+          {
+            "text": "Organización colaborativa de una feria de ciencias escolar",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El título incluye el evento central y la distribución de tareas entre distintos equipos."
+          },
+          {
+            "text": "Reserva del gimnasio para una exposición estudiantil",
+            "isKey": false,
+            "misconception": "ENFOCA_DETALLE_SECUNDARIO",
+            "rationale": "La reserva del gimnasio es uno de varios preparativos descritos en el párrafo."
+          },
+          {
+            "text": "Diseño de invitaciones para las familias del colegio",
+            "isKey": false,
+            "misconception": "REDUCE_TEMA_A_SUBTAREA",
+            "rationale": "El diseño de invitaciones corresponde a un solo equipo y no abarca el texto completo."
+          },
+          {
+            "text": "Resultados de los experimentos realizados durante el semestre",
+            "isKey": false,
+            "misconception": "CONFUNDE_PREPARACION_CON_RESULTADO",
+            "rationale": "El párrafo explica la preparación de la feria, no los resultados de las investigaciones."
+          }
+        ],
+        "evidenceQuote": "el comité estudiantil distribuyó responsabilidades entre varios equipos"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué detalle del texto ilustra mejor la afirmación general de la oración (7) sobre atender las necesidades de quienes participan?",
+        "options": [
+          {
+            "text": "Preparar voluntarios para orientar a los visitantes durante la exposición",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La orientación ayuda directamente a los visitantes a desplazarse y participar en la feria."
+          },
+          {
+            "text": "Elaborar un calendario con fechas de inscripción, ensayo y montaje",
+            "isKey": false,
+            "misconception": "ILUSTRA_PLANIFICACION_EN_LUGAR_DE_ATENCION",
+            "rationale": "El calendario ilustra la planificación, pero no se enfoca de manera directa en las necesidades de los participantes."
+          },
+          {
+            "text": "Reservar mesas, extensiones eléctricas y carteles para cada área",
+            "isKey": false,
+            "misconception": "ILUSTRA_RECURSOS_EN_LUGAR_DE_ATENCION",
+            "rationale": "Estos recursos permiten el montaje, pero la atención a visitantes se ejemplifica mejor con la orientación."
+          },
+          {
+            "text": "Revisar las normas de seguridad antes de abrir las puertas",
+            "isKey": false,
+            "misconception": "ILUSTRA_SEGURIDAD_EN_LUGAR_DE_ATENCION",
+            "rationale": "La revisión de seguridad es importante, pero el detalle sobre voluntarios se relaciona más claramente con atender a quienes asisten."
+          }
+        ],
+        "evidenceQuote": "preparó una lista de voluntarios que orientarán a los visitantes durante la exposición"
+      },
+      {
+        "slot": "s4",
+        "stem": "¿Qué oración conviene añadir al final para ampliar el cierre del párrafo?",
+        "options": [
+          {
+            "text": "También puede motivar a nuevos estudiantes a compartir preguntas y proyectos científicos.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La oración amplía el efecto de la feria al proyectar cómo la exposición puede estimular futuras participaciones."
+          },
+          {
+            "text": "Por eso, el gimnasio tendrá mesas, extensiones eléctricas y carteles identificadores.",
+            "isKey": false,
+            "misconception": "REPETICION_DETALLE_PREVIO",
+            "rationale": "La oración repite recursos ya mencionados y no desarrolla la idea final sobre la comunidad."
+          },
+          {
+            "text": "De este modo, las invitaciones digitales llegarán a las familias del colegio.",
+            "isKey": false,
+            "misconception": "RETOMA_SUBTAREA_SECUNDARIA",
+            "rationale": "La difusión ya fue explicada y esta adición no amplía el cierre global del texto."
+          },
+          {
+            "text": "Así, los docentes revisarán las normas de seguridad antes de abrir las puertas.",
+            "isKey": false,
+            "misconception": "REITERACION_DE_ACCION_ANTERIOR",
+            "rationale": "La revisión de seguridad aparece antes como una tarea específica y no aporta una consecuencia nueva al final."
+          }
+        ],
+        "evidenceQuote": "la comunidad escolar podrá conocer las investigaciones realizadas durante el semestre"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "763724e5-aed1-4951-b5a1-ecd82da2e00b",
+    "generatedAt": "2026-10-16T03:39:48.791Z",
+    "unitId": "paa-pilot.r5.red-b"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "215bf16a-23f1-4349-bb6f-e42efc551116",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [
+              "A",
+              "B"
+            ],
+            "ambiguous": true,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "adb3296a-d3d6-46a0-a9e4-83ca8f77e2cf",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "D",
+            "otherDefensible": [
+              "A"
+            ],
+            "ambiguous": true,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.red-generalizacion.926c53b968c2",
+        "slot": "s1",
+        "objectiveCode": "paa.red.generalizacion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.generalizacion / write.generalization"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.e0659e4be049@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-integracion.df8000f780a7",
+        "slot": "s2",
+        "objectiveCode": "paa.red.integracion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.integracion / write.global-synthesis"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.e0659e4be049@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-particularizacion.72d9d9eb41b6",
+        "slot": "s3",
+        "objectiveCode": "paa.red.particularizacion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "SINGLE_DEFENSIBLE_ANSWER"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.particularizacion / write.indirect-expression"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.e0659e4be049@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": false,
+            "detail": "A:ambiguous other-defensible | B:ambiguous other-defensible"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-adicion.8580b81622fd",
+        "slot": "s4",
+        "objectiveCode": "paa.red.adicion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.adicion / write.stylistic-addition"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.e0659e4be049@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,584 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r4.red-b",
+    "component": "redaccion",
+    "language": "es",
+    "stimulusKind": "SHORT_SOURCE_TEXT",
+    "stimulusBrief": "Párrafo ORIGINAL de 130 a 190 palabras sobre la recuperación de una plaza del barrio, con las oraciones NUMERADAS así: (1) ... (2) ... hasta (7) u (8). Debe presentar varios casos particulares de una idea general, admitir un título claro y tener una afirmación general que pueda ilustrarse.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.red.generalizacion",
+        "conceptStableId": "write.generalization",
+        "difficulty": 3,
+        "focus": "qué oración general recoge mejor los casos particulares de varias oraciones numeradas"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.red.integracion",
+        "conceptStableId": "write.global-synthesis",
+        "difficulty": 3,
+        "focus": "qué título u oración resume mejor el párrafo completo"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.red.particularizacion",
+        "conceptStableId": "write.indirect-expression",
+        "difficulty": 3,
+        "focus": "qué ejemplo o detalle concreto ilustra mejor una afirmación general de una oración numerada"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.red.adicion",
+        "conceptStableId": "write.stylistic-addition",
+        "difficulty": 4,
+        "focus": "qué oración conviene añadir al final para cerrar el párrafo con una idea que lo amplíe"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "La plaza del Arrayán vuelve a reunirse",
+      "text": "(1) Durante años, la plaza del Arrayán tuvo juegos rotos, poca sombra y escasa iluminación, especialmente en las tardes. (2) Al iniciar la recuperación, vecinos retiraron escombros y sembraron árboles nativos alrededor de la cancha. (3) La escuela pintó murales con escenas del barrio y colocó macetas junto a la entrada. (4) Los comerciantes donaron lámparas solares para iluminar los senderos después del atardecer. (5) Un grupo juvenil construyó un pequeño escenario de madera para lecturas y conciertos comunitarios. (6) Además, se instaló una franja táctil desde la entrada hasta los juegos, pensada para orientar a personas con baja visión. (7) Las mejoras buscaron que la plaza sirviera a personas con distintas necesidades. (8) Ahora, un comité vecinal organiza jornadas mensuales de cuidado y recoge propuestas para mantener activo el espacio durante todo el año.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Cuál oración recoge mejor los casos particulares presentados en varias oraciones del párrafo?",
+        "options": [
+          {
+            "text": "Las mejoras buscaron que la plaza sirviera a personas con distintas necesidades.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Esta oración general reúne las acciones de limpieza, decoración, iluminación, actividades culturales y accesibilidad descritas antes."
+          },
+          {
+            "text": "Los comerciantes donaron lámparas solares para iluminar los senderos del lugar.",
+            "isKey": false,
+            "misconception": "CONFUSES_DETAIL_WITH_GENERALIZATION",
+            "rationale": "Menciona una acción concreta del párrafo, pero no integra los demás trabajos realizados."
+          },
+          {
+            "text": "La plaza tuvo juegos rotos, poca sombra y escasa iluminación durante años.",
+            "isKey": false,
+            "misconception": "SELECTS_INITIAL_PROBLEM",
+            "rationale": "Presenta la situación inicial que motivó el proyecto, no la idea que reúne las mejoras."
+          },
+          {
+            "text": "El comité vecinal organiza jornadas mensuales de cuidado en el espacio.",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_FINAL_DETAIL",
+            "rationale": "Describe una medida posterior de mantenimiento, pero no sintetiza todas las intervenciones anteriores."
+          }
+        ],
+        "evidenceQuote": "Las mejoras buscaron que la plaza sirviera a personas con distintas necesidades."
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué título resume mejor el contenido completo del párrafo?",
+        "options": [
+          {
+            "text": "Recuperación compartida de la plaza del Arrayán",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El título incluye el proceso de mejora y la participación de distintos integrantes de la comunidad."
+          },
+          {
+            "text": "Decoración escolar de la entrada principal",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_SINGLE_ACTION",
+            "rationale": "Se centra en los murales y las macetas, que constituyen una parte limitada de la recuperación."
+          },
+          {
+            "text": "Construcción de un escenario para conciertos",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_SINGLE_ACTION",
+            "rationale": "Destaca una actividad juvenil específica, pero deja fuera las demás mejoras y el cuidado posterior."
+          },
+          {
+            "text": "Iluminación comercial de los senderos",
+            "isKey": false,
+            "misconception": "NARROWS_SCOPE_TO_DETAIL",
+            "rationale": "Alude a la donación de lámparas, pero no representa el propósito general del texto."
+          }
+        ],
+        "evidenceQuote": "un comité vecinal organiza jornadas mensuales de cuidado y recoge propuestas para mantener activo el espacio"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué detalle concreto ilustra mejor la afirmación de la oración (7)?",
+        "options": [
+          {
+            "text": "La franja táctil destinada a orientar a personas con baja visión.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Este detalle muestra de manera directa una mejora diseñada para atender una necesidad específica de acceso y orientación."
+          },
+          {
+            "text": "El retiro de escombros y la siembra de árboles junto a la cancha.",
+            "isKey": false,
+            "misconception": "SELECTS_RELATED_BUT_LESS_DIRECT_EXAMPLE",
+            "rationale": "Estas acciones mejoran el lugar, pero no evidencian tan claramente la atención a necesidades particulares de las personas."
+          },
+          {
+            "text": "El diseño de murales y macetas frente a la entrada de la plaza.",
+            "isKey": false,
+            "misconception": "CONFUSES_AESTHETIC_IMPROVEMENT_WITH_ACCESSIBILITY",
+            "rationale": "La decoración embellece el espacio, aunque no se relaciona de forma directa con la diversidad de necesidades."
+          },
+          {
+            "text": "El montaje de un escenario para lecturas y conciertos comunitarios.",
+            "isKey": false,
+            "misconception": "SELECTS_RECREATIONAL_DETAIL",
+            "rationale": "El escenario amplía las actividades disponibles, pero ilustra menos directamente la idea de atender distintas necesidades."
+          }
+        ],
+        "evidenceQuote": "se instaló una franja táctil desde la entrada hasta los juegos, pensada para orientar a personas con baja visión"
+      },
+      {
+        "slot": "s4",
+        "stem": "¿Qué oración conviene añadir al final para cerrar el párrafo con una idea que lo amplíe?",
+        "options": [
+          {
+            "text": "El comité podría compartir su experiencia con barrios que impulsen iniciativas similares.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La oración prolonga de forma coherente el trabajo del comité y amplía el posible impacto de la recuperación."
+          },
+          {
+            "text": "El comité podría reemplazar los juegos por puestos de venta permanentes en la plaza.",
+            "isKey": false,
+            "misconception": "INTRODUCES_UNSUPPORTED_CHANGE",
+            "rationale": "La propuesta cambia el uso del espacio sin relación con las mejoras comunitarias descritas."
+          },
+          {
+            "text": "El comité podría reservar la plaza para actividades de quienes aportaron materiales.",
+            "isKey": false,
+            "misconception": "CONTRADICTS_INCLUSIVE_PURPOSE",
+            "rationale": "Restringir el acceso contradice la intención de que la plaza sirva a personas con distintas necesidades."
+          },
+          {
+            "text": "El comité podría suspender las jornadas después de terminar las primeras reparaciones.",
+            "isKey": false,
+            "misconception": "IGNORES_CONTINUING_MAINTENANCE",
+            "rationale": "El texto indica que las jornadas y propuestas buscan mantener el espacio activo durante todo el año."
+          }
+        ],
+        "evidenceQuote": "un comité vecinal organiza jornadas mensuales de cuidado y recoge propuestas"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "259cea22-bfcb-4409-a29f-eebbdb55223a",
+    "generatedAt": "2026-10-16T03:35:20.889Z",
+    "unitId": "paa-pilot.r4.red-b"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "6c57bc3c-32c2-4521-8d8c-1e7bd4305858",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "6264fec3-80c7-4777-8127-ddf7b7dc436a",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.red-generalizacion.61772f670bbb",
+        "slot": "s1",
+        "objectiveCode": "paa.red.generalizacion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.generalizacion / write.generalization"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.943abd234935@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-integracion.6a30c105e715",
+        "slot": "s2",
+        "objectiveCode": "paa.red.integracion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.integracion / write.global-synthesis"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.943abd234935@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-particularizacion.84bec1940122",
+        "slot": "s3",
+        "objectiveCode": "paa.red.particularizacion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.particularizacion / write.indirect-expression"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.943abd234935@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-adicion.0c890b5cb59a",
+        "slot": "s4",
+        "objectiveCode": "paa.red.adicion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.adicion / write.stylistic-addition"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.943abd234935@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

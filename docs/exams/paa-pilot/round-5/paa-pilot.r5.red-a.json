@@ -1,0 +1,595 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r5.red-a",
+    "component": "redaccion",
+    "language": "es",
+    "stimulusKind": "SHORT_SOURCE_TEXT",
+    "stimulusBrief": "Párrafo ORIGINAL de 130 a 190 palabras sobre una campaña de reciclaje en un colegio, escrito como borrador de estudiante con las oraciones NUMERADAS así: (1) ... (2) ... hasta (7) u (8). Debe contener una redundancia, una unión de oraciones mejorable con un conector y un punto donde convenga añadir una precisión.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.red.elision",
+        "conceptStableId": "write.concision-elision",
+        "difficulty": 3,
+        "focus": "qué parte de una oración numerada es redundante y debe eliminarse, o cuál es la versión más concisa sin perder información"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.red.cohesion",
+        "conceptStableId": "write.cohesion-connectors",
+        "difficulty": 3,
+        "focus": "qué conector o transición une mejor dos oraciones numeradas según su relación lógica"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.red.adicion",
+        "conceptStableId": "write.stylistic-addition",
+        "difficulty": 3,
+        "focus": "qué oración conviene añadir en un punto indicado para ampliar o precisar la idea"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.red.cohesion",
+        "conceptStableId": "write.cohesion-connectors",
+        "difficulty": 4,
+        "focus": "qué reordenamiento de dos oraciones numeradas mejora la coherencia del párrafo"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Borrador sobre la campaña Patio Circular",
+      "text": "(1) La campaña de reciclaje Patio Circular comenzó el lunes con el propósito de reducir los residuos del colegio. (2) Durante los recreos, los estudiantes depositaron papel, plástico y latas en tres contenedores del patio central. (3) Antes de iniciar las actividades, los voluntarios explicaron el significado de los colores asignados a cada contenedor. (4) Al final de la primera semana, cada grupo anotó por escrito sus resultados en una hoja de registro. (5) El informe mostró que la campaña reunió 48 kilogramos de materiales, cifra superior a la meta inicial. (6) Algunos cursos mezclaron envases con restos de comida entre los materiales limpios. (7) La directora felicitó a los participantes y propuso mantener los contenedores durante el siguiente mes. (8) Para la próxima jornada, el comité preparará carteles con instrucciones más claras cerca de cada recipiente.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Cuál versión de la oración (4) elimina información redundante sin perder datos importantes?",
+        "options": [
+          {
+            "text": "Al final de la primera semana, cada grupo anotó sus resultados en una hoja de registro.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La expresión «por escrito» es redundante porque anotar resultados en una hoja ya implica escribirlos."
+          },
+          {
+            "text": "Cada grupo anotó por escrito sus resultados en una hoja de registro.",
+            "isKey": false,
+            "misconception": "ELIMINA_MARCO_TEMPORAL",
+            "rationale": "Esta versión elimina el momento en que ocurrió el registro, un dato que aporta información al texto."
+          },
+          {
+            "text": "Al final de la primera semana, se anotaron por escrito los resultados en una hoja de registro.",
+            "isKey": false,
+            "misconception": "ELIMINA_RESPONSABLE_DE_LA_ACCION",
+            "rationale": "Esta versión omite que cada grupo realizó el registro, por lo que pierde información sobre los participantes."
+          },
+          {
+            "text": "Al final de la primera semana, cada grupo anotó por escrito sus resultados.",
+            "isKey": false,
+            "misconception": "ELIMINA_DETALLE_RELEVANTE",
+            "rationale": "Esta versión elimina el dato de que se utilizó una hoja de registro, que precisa cómo se organizaron los resultados."
+          }
+        ],
+        "evidenceQuote": "Al final de la primera semana, cada grupo anotó por escrito sus resultados en una hoja de registro."
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué conector conviene colocar al inicio de la oración (6) para relacionarla con la oración (5)?",
+        "options": [
+          {
+            "text": "Sin embargo,",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El conector presenta un contraste entre el resultado favorable de la campaña y el problema de separar materiales mezclados."
+          },
+          {
+            "text": "Por lo tanto,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CONTRASTE_CON_CONSECUENCIA",
+            "rationale": "La mezcla de envases no es una consecuencia del peso reunido, sino una dificultad que contrasta con ese logro."
+          },
+          {
+            "text": "Además,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CONTRASTE_CON_ADICION",
+            "rationale": "El problema no agrega otro logro equivalente, sino que introduce una situación desfavorable."
+          },
+          {
+            "text": "Por ejemplo,",
+            "isKey": false,
+            "misconception": "CONFUNDE_PROBLEMA_CON_EJEMPLO",
+            "rationale": "La oración (6) no ofrece un ejemplo de los kilogramos reunidos, sino información que cambia el sentido positivo anterior."
+          }
+        ],
+        "evidenceQuote": "El informe mostró que la campaña reunió 48 kilogramos de materiales, cifra superior a la meta inicial. Algunos cursos mezclaron envases con restos de comida"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué oración conviene añadir después de la oración (6) para precisar las consecuencias de la mezcla de materiales?",
+        "options": [
+          {
+            "text": "Esta mezcla obligó a los voluntarios a separar nuevamente parte de los materiales antes de pesarlos.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La oración explica una consecuencia concreta del problema mencionado y amplía la información de manera pertinente."
+          },
+          {
+            "text": "Los estudiantes comentaron sus meriendas favoritas mientras esperaban el recreo.",
+            "isKey": false,
+            "misconception": "AGREGA_DETALLE_IRRELEVANTE",
+            "rationale": "La oración se refiere al recreo, pero no explica la mezcla de materiales ni sus efectos."
+          },
+          {
+            "text": "Los contenedores tenían un tamaño adecuado para el patio central.",
+            "isKey": false,
+            "misconception": "DESARROLLA_ASPECTO_SECUNDARIO",
+            "rationale": "El tamaño de los contenedores no precisa la consecuencia de que hubiera envases con restos de comida."
+          },
+          {
+            "text": "El colegio organiza actividades culturales al comienzo de cada semestre.",
+            "isKey": false,
+            "misconception": "INTRODUCE_TEMA_AJENO",
+            "rationale": "La oración introduce un tema distinto que no se relaciona con la campaña ni con el problema descrito."
+          }
+        ],
+        "evidenceQuote": "Algunos cursos mezclaron envases con restos de comida entre los materiales limpios."
+      },
+      {
+        "slot": "s4",
+        "stem": "¿Qué reordenamiento mejora la secuencia lógica de las oraciones del párrafo?",
+        "options": [
+          {
+            "text": "Ubicar la oración (3) antes de la oración (2).",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Primero se explican los colores de los contenedores y después los estudiantes pueden usarlos durante los recreos."
+          },
+          {
+            "text": "Ubicar la oración (5) antes de la oración (4).",
+            "isKey": false,
+            "misconception": "ALTERA_SECUENCIA_DE_REGISTRO",
+            "rationale": "El informe debe basarse en los resultados que los grupos registraron, por lo que conviene mantener primero la oración (4)."
+          },
+          {
+            "text": "Ubicar la oración (6) antes de la oración (5).",
+            "isKey": false,
+            "misconception": "ANTICIPA_CONTRASTE",
+            "rationale": "La dificultad de la oración (6) funciona mejor después de presentar el resultado positivo de la campaña en la oración (5)."
+          },
+          {
+            "text": "Ubicar la oración (8) antes de la oración (7).",
+            "isKey": false,
+            "misconception": "ANTICIPA_PLAN_POSTERIOR",
+            "rationale": "La propuesta de mantener los contenedores en la oración (7) debe aparecer antes de detallar una acción para la próxima jornada."
+          }
+        ],
+        "evidenceQuote": "Antes de iniciar las actividades, los voluntarios explicaron el significado de los colores asignados a cada contenedor."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "3a860963-1580-431b-8543-0ae834136050",
+    "generatedAt": "2026-10-16T03:39:03.066Z",
+    "unitId": "paa-pilot.r5.red-a"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "b14ef97a-5558-4812-9cb7-843d2074e473",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [
+              "A"
+            ],
+            "ambiguous": true,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "2e72a388-6dfa-4da7-a8d5-03a1654d73f0",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "B",
+            "otherDefensible": [
+              "A"
+            ],
+            "ambiguous": true,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.red-elision.7e34cf0fbaa4",
+        "slot": "s1",
+        "objectiveCode": "paa.red.elision",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.elision / write.concision-elision"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.bd59c2a9aaa1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-cohesion.7e84bfc3110e",
+        "slot": "s2",
+        "objectiveCode": "paa.red.cohesion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "KEY_SUPPORTED_BY_STIMULUS"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.cohesion / write.cohesion-connectors"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.bd59c2a9aaa1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": false,
+            "detail": "the cited support is not in the stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-adicion.8a4fa32ac403",
+        "slot": "s3",
+        "objectiveCode": "paa.red.adicion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "STRUCTURE",
+          "SCORING_COMPATIBILITY"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": false,
+            "detail": "KEY_REPEATS_THE_STEM"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.adicion / write.stylistic-addition"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.bd59c2a9aaa1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": false,
+            "detail": "SELECTED_RESPONSE_NOT_CERTIFIABLE: KEY_REPEATS_THE_STEM"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-cohesion.73c5eb2eebcb",
+        "slot": "s4",
+        "objectiveCode": "paa.red.cohesion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "SINGLE_DEFENSIBLE_ANSWER"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.cohesion / write.cohesion-connectors"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.bd59c2a9aaa1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": false,
+            "detail": "A:ambiguous other-defensible | B:ambiguous other-defensible"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

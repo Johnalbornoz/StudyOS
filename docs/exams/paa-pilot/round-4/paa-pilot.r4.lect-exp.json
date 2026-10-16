@@ -1,0 +1,1104 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r4.lect-exp",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Texto expositivo-argumentativo ORIGINAL de 380 a 460 palabras sobre la conservación de semillas nativas en bancos comunitarios. Debe tener una tesis reconocible, datos concretos, al menos dos relaciones causa-efecto, una concesión o contraargumento y vocabulario preciso con al menos tres palabras cuyo sentido dependa del contexto.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.explicit-information",
+        "difficulty": 2,
+        "focus": "un dato o detalle afirmado explícitamente en el texto"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.central-idea",
+        "difficulty": 3,
+        "focus": "la tesis o idea central del texto"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.explicit-information",
+        "difficulty": 3,
+        "focus": "qué enunciado resume mejor un párrafo concreto del texto (indica cuál)"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.lect.inferencia",
+        "conceptStableId": "read.inference",
+        "difficulty": 3,
+        "focus": "una conclusión que el texto implica sin afirmarla"
+      },
+      {
+        "slot": "s5",
+        "objectiveCode": "paa.lect.inferencia",
+        "conceptStableId": "read.inference",
+        "difficulty": 4,
+        "focus": "la relación causa-efecto o la intención del autor, deducida del texto"
+      },
+      {
+        "slot": "s6",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 2,
+        "focus": "el sentido de una palabra o expresión tal como se usa en el texto (cítala entre comillas)"
+      },
+      {
+        "slot": "s7",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 3,
+        "focus": "el sentido contextual de otra palabra o expresión del texto (cítala entre comillas)"
+      },
+      {
+        "slot": "s8",
+        "objectiveCode": "paa.lect.evidencia",
+        "conceptStableId": "read.textual-evidence",
+        "difficulty": 4,
+        "focus": "qué fragmento del texto respalda mejor una afirmación dada sobre él"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Semillas que sostienen la diversidad local",
+      "text": "En la sierra de Loma Verde, varias familias cultivan maíz, frijol y calabaza a partir de semillas nativas. Sin embargo, durante la última década, la compra de variedades comerciales y las sequías irregulares redujeron la diversidad sembrada. Frente a esa merma, la comunidad creó en 2021 un banco de semillas: un espacio donde se reciben, clasifican y prestan semillas a quienes las necesitan. Estos bancos comunitarios no son depósitos pasivos; son una estrategia necesaria para conservar la diversidad agrícola y fortalecer la capacidad de las comunidades para enfrentar cambios ambientales.\n\nEl banco de Loma Verde comenzó con 18 variedades y, tres años después, resguarda 47. Cada lote lleva una etiqueta con el nombre local, la fecha de cosecha, el sitio donde se produjo y observaciones sobre su comportamiento. Esta información permite seleccionar semillas adecuadas para distintos suelos. Por ejemplo, una variedad de frijol que toleró una temporada seca puede distribuirse en parcelas con poca disponibilidad de agua. Así, el registro convierte la experiencia dispersa de cada agricultor en un acervo útil para toda la comunidad.\n\nLa conservación, además, exige que las semillas sigan circulando. Quien recibe un lote se compromete a devolver, después de la cosecha, una cantidad algo mayor que la recibida. Esa regla incrementa las existencias y evita que el banco dependa de compras externas. También se organizan jornadas de siembra comparativa: en ellas, los participantes observan cuáles variedades germinan mejor en cada zona. Si una semilla produce poco durante varias temporadas, no se elimina de inmediato; primero se revisa si el problema proviene del suelo, de una plaga o del manejo del cultivo.\n\nAlgunas personas objetan que almacenar semillas requiere tiempo, capacitación y recipientes que protejan de la humedad. La objeción es válida: sin control de temperatura y revisiones periódicas, los granos pueden perder viabilidad. Pero ese costo no invalida el proyecto. En Loma Verde, talleres mensuales enseñaron a secar los lotes antes de guardarlos, y las pérdidas por hongos bajaron del 14 % al 5 % en un año. Por ello, apoyar bancos comunitarios no significa rechazar toda innovación agrícola, sino asegurar que las decisiones de cultivo no dependan de un catálogo reducido ni de proveedores lejanos.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Cuál de los siguientes datos se afirma explícitamente sobre el banco de semillas de Loma Verde?",
+        "options": [
+          {
+            "text": "Pasó de 18 a 47 variedades en tres años.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El texto indica de manera directa ambas cantidades y el periodo transcurrido."
+          },
+          {
+            "text": "Repartió 47 variedades durante su primer año.",
+            "isKey": false,
+            "misconception": "CONFUSES_STOCK_WITH_DISTRIBUTION",
+            "rationale": "La cifra 47 corresponde a las variedades que resguarda, no a variedades repartidas en el primer año."
+          },
+          {
+            "text": "Reemplazó 18 variedades nativas por variedades comerciales.",
+            "isKey": false,
+            "misconception": "REVERSES_TEXTUAL_DETAIL",
+            "rationale": "El banco conserva semillas nativas; el texto no dice que las haya reemplazado."
+          },
+          {
+            "text": "Reunió 18 familias para clasificar 47 lotes.",
+            "isKey": false,
+            "misconception": "CONFUSES_QUANTIFIED_ENTITIES",
+            "rationale": "Los números del texto se refieren a variedades, no a familias ni a lotes."
+          }
+        ],
+        "evidenceQuote": "El banco de Loma Verde comenzó con 18 variedades y, tres años después, resguarda 47."
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Cuál enunciado expresa mejor la tesis central del texto?",
+        "options": [
+          {
+            "text": "Los bancos comunitarios ayudan a conservar semillas y a reforzar la autonomía local.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La tesis defiende estos bancos por su aporte a la diversidad agrícola y a la capacidad comunitaria."
+          },
+          {
+            "text": "Las variedades comerciales deben sustituir los cultivos de las comunidades rurales.",
+            "isKey": false,
+            "misconception": "OPPOSES_CENTRAL_CLAIM",
+            "rationale": "El texto presenta la reducción de diversidad asociada a esas variedades como un problema, no como una solución."
+          },
+          {
+            "text": "Los recipientes secos resuelven todas las dificultades de almacenamiento.",
+            "isKey": false,
+            "misconception": "OVERGENERALIZES_SUPPORTING_DETAIL",
+            "rationale": "El secado es una medida mencionada, pero no resume la postura completa del texto."
+          },
+          {
+            "text": "Las jornadas comparativas sirven para medir la producción de cada parcela.",
+            "isKey": false,
+            "misconception": "NARROWS_TO_SECONDARY_DETAIL",
+            "rationale": "Las jornadas son un procedimiento específico dentro de una argumentación más amplia."
+          }
+        ],
+        "evidenceQuote": "son una estrategia necesaria para conservar la diversidad agrícola y fortalecer la capacidad de las comunidades"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué enunciado resume mejor el tercer párrafo?",
+        "options": [
+          {
+            "text": "El intercambio regulado y la observación permiten mantener y evaluar las semillas.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El párrafo explica la devolución de lotes, el aumento de existencias y la evaluación de variedades en siembras comparativas."
+          },
+          {
+            "text": "La compra externa garantiza la renovación de las semillas almacenadas.",
+            "isKey": false,
+            "misconception": "REVERSES_CAUSAL_RELATION",
+            "rationale": "La regla de devolución busca precisamente evitar que el banco dependa de compras externas."
+          },
+          {
+            "text": "La eliminación rápida mejora la calidad de todas las variedades.",
+            "isKey": false,
+            "misconception": "IGNORES_QUALIFICATION",
+            "rationale": "El texto aclara que una semilla de bajo rendimiento no se elimina de inmediato."
+          },
+          {
+            "text": "La clasificación inicial reemplaza el trabajo de los agricultores.",
+            "isKey": false,
+            "misconception": "MISSTATES_ROLE_OF_PROCESS",
+            "rationale": "La clasificación y los registros aprovechan la experiencia de los agricultores; no la reemplazan."
+          }
+        ],
+        "evidenceQuote": "La conservación, además, exige que las semillas sigan circulando."
+      },
+      {
+        "slot": "s4",
+        "stem": "¿Qué conclusión se puede inferir razonablemente a partir del texto?",
+        "options": [
+          {
+            "text": "El banco puede ampliar las alternativas de siembra disponibles para la comunidad.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Si las decisiones no dependen de un catálogo reducido ni de proveedores lejanos, la comunidad dispone de más opciones locales."
+          },
+          {
+            "text": "El banco impedirá que ocurran nuevas temporadas de sequía.",
+            "isKey": false,
+            "misconception": "CONFUSES_ADAPTATION_WITH_PREVENTION",
+            "rationale": "El banco ayuda a enfrentar cambios ambientales, pero no puede evitar que haya sequías."
+          },
+          {
+            "text": "El banco eliminará la necesidad de revisar los lotes guardados.",
+            "isKey": false,
+            "misconception": "CONTRADICTS_EXPLICIT_CONDITION",
+            "rationale": "El texto señala que se requieren revisiones periódicas para conservar la viabilidad."
+          },
+          {
+            "text": "El banco hará innecesaria toda innovación agrícola posterior.",
+            "isKey": false,
+            "misconception": "IGNORES_CONCESSION",
+            "rationale": "El cierre afirma que apoyar estos bancos no equivale a rechazar toda innovación agrícola."
+          }
+        ],
+        "evidenceQuote": "las decisiones de cultivo no dependan de un catálogo reducido ni de proveedores lejanos."
+      },
+      {
+        "slot": "s5",
+        "stem": "¿Con qué propósito el autor incluye la reducción de pérdidas por hongos del 14 % al 5 %?",
+        "options": [
+          {
+            "text": "Demostrar que la capacitación puede responder a una dificultad real del almacenamiento.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El dato sigue a la descripción de talleres sobre secado y apoya la respuesta al contraargumento sobre las exigencias del resguardo."
+          },
+          {
+            "text": "Probar que las semillas nativas resisten cualquier condición de humedad.",
+            "isKey": false,
+            "misconception": "OVERGENERALIZES_EVIDENCE",
+            "rationale": "El dato muestra una disminución de pérdidas tras una práctica específica, no resistencia ante cualquier humedad."
+          },
+          {
+            "text": "Explicar que las compras externas reducen la presencia de hongos.",
+            "isKey": false,
+            "misconception": "ATTRIBUTES_UNSTATED_CAUSE",
+            "rationale": "La disminución se vincula con talleres y secado, no con compras externas."
+          },
+          {
+            "text": "Indicar que cada lote debe devolverse con catorce semillas adicionales.",
+            "isKey": false,
+            "misconception": "CONFUSES_PERCENTAGE_WITH_RULE",
+            "rationale": "El 14 % es una tasa de pérdidas por hongos, no una cantidad ligada a la devolución de lotes."
+          }
+        ],
+        "evidenceQuote": "las pérdidas por hongos bajaron del 14 % al 5 % en un año."
+      },
+      {
+        "slot": "s6",
+        "stem": "En el segundo párrafo, ¿qué significa “acervo” en el contexto del texto?",
+        "options": [
+          {
+            "text": "Conjunto de conocimientos y recursos compartidos.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La experiencia registrada de los agricultores se reúne para que la comunidad pueda utilizarla."
+          },
+          {
+            "text": "Recipiente destinado a secar los granos.",
+            "isKey": false,
+            "misconception": "CONFUSES_TERM_WITH_NEARBY_OBJECT",
+            "rationale": "Los recipientes se mencionan después, mientras que acervo se refiere a experiencia e información acumuladas."
+          },
+          {
+            "text": "Préstamo temporal de semillas para sembrar.",
+            "isKey": false,
+            "misconception": "CONFUSES_TERM_WITH_RELATED_ACTION",
+            "rationale": "El préstamo describe una actividad del banco, no el sentido de acervo."
+          },
+          {
+            "text": "Terreno reservado para cultivar variedades locales.",
+            "isKey": false,
+            "misconception": "CONFUSES_ABSTRACT_WITH_PHYSICAL_PLACE",
+            "rationale": "El término nombra un conjunto compartido de saberes y recursos, no una extensión de tierra."
+          }
+        ],
+        "evidenceQuote": "en un acervo útil para toda la comunidad."
+      },
+      {
+        "slot": "s7",
+        "stem": "En el primer párrafo, ¿qué sentido tiene “merma” en la expresión “Frente a esa merma”?",
+        "options": [
+          {
+            "text": "Disminución de la diversidad de cultivos sembrados.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La palabra retoma la reducción de la diversidad sembrada mencionada en la oración anterior."
+          },
+          {
+            "text": "Mejora de la calidad de las semillas guardadas.",
+            "isKey": false,
+            "misconception": "REVERSES_CONTEXTUAL_MEANING",
+            "rationale": "Merma alude a una reducción, no a una mejora de calidad."
+          },
+          {
+            "text": "Mezcla de especies dentro de una misma parcela.",
+            "isKey": false,
+            "misconception": "CONFUSES_RELATED_AGRICULTURAL_CONCEPT",
+            "rationale": "El contexto habla de cantidad y diversidad reducidas, no de combinar especies."
+          },
+          {
+            "text": "Reparto de lotes entre familias agricultoras.",
+            "isKey": false,
+            "misconception": "CONFUSES_CAUSE_WITH_RESPONSE",
+            "rationale": "El reparto o préstamo de semillas forma parte de la respuesta comunitaria, no de la merma."
+          }
+        ],
+        "evidenceQuote": "redujeron la diversidad sembrada. Frente a esa merma, la comunidad creó"
+      },
+      {
+        "slot": "s8",
+        "stem": "¿Qué fragmento respalda mejor la afirmación de que el banco busca reducir la dependencia de fuentes externas?",
+        "options": [
+          {
+            "text": "“Esa regla incrementa las existencias y evita que el banco dependa de compras externas”.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El fragmento vincula directamente la devolución de semillas con una menor dependencia de compras externas."
+          },
+          {
+            "text": "“Cada lote lleva una etiqueta con el nombre local, la fecha de cosecha”.",
+            "isKey": false,
+            "misconception": "SELECTS_RELATED_BUT_INSUFFICIENT_EVIDENCE",
+            "rationale": "La etiqueta documenta los lotes, pero no demuestra una reducción de la dependencia externa."
+          },
+          {
+            "text": "“los granos pueden perder viabilidad”",
+            "isKey": false,
+            "misconception": "SELECTS_CONTRASTING_DETAIL",
+            "rationale": "Este fragmento presenta un riesgo del almacenamiento, no evidencia sobre fuentes externas."
+          },
+          {
+            "text": "“los participantes observan cuáles variedades germinan mejor en cada zona”.",
+            "isKey": false,
+            "misconception": "SELECTS_PROCESS_NOT_CLAIM_SUPPORT",
+            "rationale": "La observación ayuda a evaluar variedades, pero no expresa el objetivo de evitar compras externas."
+          }
+        ],
+        "evidenceQuote": "Esa regla incrementa las existencias y evita que el banco dependa de compras externas."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "7b6b03ef-302b-40b4-bb42-576e9aec14ff",
+    "generatedAt": "2026-10-16T03:33:19.815Z",
+    "unitId": "paa-pilot.r4.lect-exp"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "63b538d5-f584-42d5-a72b-d54da0385a12",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 8,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "f36d0df7-249e-4778-8f45-ae3b97527a0b",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 8,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-explicitas.3432ff75609a",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.explicit-information"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.509d8254adb1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-explicitas.7c603f6b2936",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.central-idea"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.509d8254adb1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-explicitas.5d2417fe7c99",
+        "slot": "s3",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.explicit-information"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.509d8254adb1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-inferencia.8a60c3b68a91",
+        "slot": "s4",
+        "objectiveCode": "paa.lect.inferencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.inferencia / read.inference"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.509d8254adb1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-inferencia.09bd8d562f17",
+        "slot": "s5",
+        "objectiveCode": "paa.lect.inferencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.inferencia / read.inference"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.509d8254adb1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.da001544c50d",
+        "slot": "s6",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.509d8254adb1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.989e6f34f666",
+        "slot": "s7",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.509d8254adb1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-evidencia.1a21e7f12dd6",
+        "slot": "s8",
+        "objectiveCode": "paa.lect.evidencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.evidencia / read.textual-evidence"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.509d8254adb1@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

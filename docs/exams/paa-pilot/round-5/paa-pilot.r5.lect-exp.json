@@ -1,0 +1,1104 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r5.lect-exp",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Texto expositivo-argumentativo ORIGINAL de 380 a 460 palabras sobre la arquitectura de tierra y su comportamiento ante el calor. Debe tener una tesis reconocible, datos concretos, al menos dos relaciones causa-efecto, una concesión o contraargumento y vocabulario preciso con al menos tres palabras cuyo sentido dependa del contexto.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.explicit-information",
+        "difficulty": 2,
+        "focus": "un dato o detalle afirmado explícitamente en el texto"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.central-idea",
+        "difficulty": 3,
+        "focus": "la tesis o idea central del texto"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.explicit-information",
+        "difficulty": 3,
+        "focus": "qué enunciado resume mejor un párrafo concreto del texto (indica cuál)"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.lect.inferencia",
+        "conceptStableId": "read.inference",
+        "difficulty": 3,
+        "focus": "una conclusión que el texto implica sin afirmarla"
+      },
+      {
+        "slot": "s5",
+        "objectiveCode": "paa.lect.inferencia",
+        "conceptStableId": "read.inference",
+        "difficulty": 4,
+        "focus": "la relación causa-efecto o la intención del autor, deducida del texto"
+      },
+      {
+        "slot": "s6",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 2,
+        "focus": "el sentido de una palabra o expresión tal como se usa en el texto (cítala entre comillas)"
+      },
+      {
+        "slot": "s7",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 3,
+        "focus": "el sentido contextual de otra palabra o expresión del texto (cítala entre comillas)"
+      },
+      {
+        "slot": "s8",
+        "objectiveCode": "paa.lect.evidencia",
+        "conceptStableId": "read.textual-evidence",
+        "difficulty": 4,
+        "focus": "qué fragmento del texto respalda mejor una afirmación dada sobre él"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "La tierra frente al calor urbano",
+      "text": "En ciudades donde las olas de calor se prolongan, la arquitectura de tierra merece ser considerada una solución contemporánea y no una reliquia rural. Su principal aporte no consiste en enfriar mágicamente una vivienda, sino en reducir la rapidez con que el calor exterior altera la temperatura interior. Bien diseñada y mantenida, puede disminuir la necesidad de equipos mecánicos y aportar espacios más estables durante jornadas calurosas.\n\nLa clave está en la masa térmica de muros construidos con adobe, tapia o bloques de tierra comprimida. Cuando el sol incide sobre una pared gruesa, parte de la energía queda almacenada en el material antes de llegar al recinto. Ese desfase puede trasladar varias horas el momento de mayor calor interior. En una medición realizada en cuatro viviendas experimentales de San Lirio, muros de tierra de 45 centímetros registraron, a las 15:00, temperaturas interiores entre 4 y 6 °C menores que las de construcciones ligeras con lámina metálica, bajo la misma exposición solar.\n\nSin embargo, la masa por sí sola no resuelve el problema. Si un muro absorbe calor durante el día y no puede liberarlo cuando baja la temperatura exterior, acumula energía y pierde parte de su ventaja. Por eso, los proyectos eficaces combinan paredes térmicas con aleros, ventilación nocturna y aberturas ubicadas para captar brisas. En el mismo conjunto de viviendas, abrir conductos altos durante la noche redujo en promedio 2 °C la temperatura interior de la mañana siguiente. La tierra, entonces, amortigua los cambios térmicos; no reemplaza el diseño climático integral.\n\nAlgunas personas objetan que estos materiales son frágiles ante la lluvia o requieren demasiado mantenimiento. La objeción tiene fundamento cuando se emplea tierra sin protección: el agua persistente puede erosionar los paramentos. No obstante, cimentaciones elevadas, revoques transpirables y aleros amplios reducen ese riesgo sin sellar el muro con capas impermeables que atrapen humedad. Además, producir tierra cercana suele demandar menos energía de transporte y cocción que fabricar materiales industrializados. La tesis no es que toda construcción deba hacerse con tierra, sino que este recurso, adaptado al clima y ejecutado con cuidado, ofrece una respuesta sólida al calor urbano y al consumo energético asociado.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué dato se afirma explícitamente sobre las viviendas experimentales de San Lirio?",
+        "options": [
+          {
+            "text": "Los muros de tierra mostraron una diferencia interior de 4 a 6 °C a las 15:00.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El texto informa esa diferencia térmica para los muros de tierra de 45 centímetros a esa hora."
+          },
+          {
+            "text": "Los muros de tierra mostraron una diferencia interior de 2 °C a las 15:00.",
+            "isKey": false,
+            "misconception": "CONFUSES_SEPARATE_MEASUREMENTS",
+            "rationale": "Los 2 °C corresponden al efecto de abrir conductos altos durante la noche, no a la comparación de las 15:00."
+          },
+          {
+            "text": "Los muros metálicos mostraron una diferencia interior de 4 a 6 °C a las 15:00.",
+            "isKey": false,
+            "misconception": "REVERSES_COMPARISON",
+            "rationale": "La diferencia favorece a los interiores con muros de tierra frente a las construcciones ligeras con lámina metálica."
+          },
+          {
+            "text": "Los muros de tierra alcanzaron 45 °C en el interior a las 15:00.",
+            "isKey": false,
+            "misconception": "MISREADS_MEASUREMENT_UNIT",
+            "rationale": "El número 45 indica el grosor de los muros en centímetros, no una temperatura interior."
+          }
+        ],
+        "evidenceQuote": "muros de tierra de 45 centímetros registraron, a las 15:00, temperaturas interiores entre 4 y 6 °C menores"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Cuál expresa mejor la tesis central del texto?",
+        "options": [
+          {
+            "text": "La tierra ofrece una respuesta útil al calor urbano si se adapta al clima y se diseña con cuidado.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La conclusión sostiene que la arquitectura de tierra puede ser eficaz, pero condiciona su desempeño a una adaptación y ejecución adecuadas."
+          },
+          {
+            "text": "La tierra elimina la necesidad de planificar la ventilación en viviendas calurosas.",
+            "isKey": false,
+            "misconception": "IGNORES_QUALIFICATION",
+            "rationale": "El texto afirma que la ventilación nocturna forma parte del diseño climático integral."
+          },
+          {
+            "text": "La tierra debe sustituir los materiales industriales en toda ciudad calurosa.",
+            "isKey": false,
+            "misconception": "OVERGENERALIZES_CLAIM",
+            "rationale": "El autor aclara que no toda construcción debe hacerse con tierra."
+          },
+          {
+            "text": "La tierra resulta conveniente porque no necesita protección frente a la lluvia.",
+            "isKey": false,
+            "misconception": "CONTRADICTS_COUNTERARGUMENT",
+            "rationale": "El pasaje reconoce que el agua persistente puede erosionar los muros sin protección."
+          }
+        ],
+        "evidenceQuote": "este recurso, adaptado al clima y ejecutado con cuidado, ofrece una respuesta sólida al calor urbano"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué enunciado resume mejor el tercer párrafo?",
+        "options": [
+          {
+            "text": "La masa térmica funciona mejor cuando se integra con sombra y ventilación nocturna.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El párrafo explica que los muros almacenan calor y que requieren medidas complementarias para liberar esa energía."
+          },
+          {
+            "text": "La masa térmica evita que los muros absorban energía durante el día.",
+            "isKey": false,
+            "misconception": "DENIES_STATED_PROCESS",
+            "rationale": "El párrafo señala que el muro absorbe calor durante el día; el problema surge si no puede liberarlo."
+          },
+          {
+            "text": "La masa térmica depende principalmente de sellar los muros con capas impermeables.",
+            "isKey": false,
+            "misconception": "CONFUSES_PARAGRAPH_DETAILS",
+            "rationale": "Las capas impermeables aparecen en el párrafo siguiente y se presentan como un riesgo para la humedad."
+          },
+          {
+            "text": "La masa térmica reduce el transporte y la cocción de materiales industriales.",
+            "isKey": false,
+            "misconception": "SELECTS_OTHER_PARAGRAPH_IDEA",
+            "rationale": "Esa idea corresponde al beneficio energético de producir tierra cercana, tratado en el último párrafo."
+          }
+        ],
+        "evidenceQuote": "La tierra, entonces, amortigua los cambios térmicos; no reemplaza el diseño climático integral."
+      },
+      {
+        "slot": "s4",
+        "stem": "¿Qué conclusión se puede inferir razonablemente del texto?",
+        "options": [
+          {
+            "text": "Una vivienda de tierra puede perder confort térmico si carece de ventilación nocturna adecuada.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El texto indica que, sin liberar el calor acumulado, el muro pierde parte de su ventaja térmica."
+          },
+          {
+            "text": "Una vivienda de tierra conservará la misma temperatura durante toda la jornada.",
+            "isKey": false,
+            "misconception": "EXAGGERATES_STABILITY",
+            "rationale": "El pasaje habla de amortiguar y retrasar los cambios térmicos, no de mantener una temperatura invariable."
+          },
+          {
+            "text": "Una vivienda de tierra necesitará muros más delgados para disipar el calor.",
+            "isKey": false,
+            "misconception": "UNSUPPORTED_DESIGN_INFERENCE",
+            "rationale": "El texto atribuye el almacenamiento de energía a paredes gruesas y no propone reducir su espesor."
+          },
+          {
+            "text": "Una vivienda de tierra evitará por completo el uso de equipos mecánicos.",
+            "isKey": false,
+            "misconception": "OVERSTATES_BENEFIT",
+            "rationale": "El texto plantea que puede disminuir la necesidad de equipos mecánicos, no eliminarla por completo."
+          }
+        ],
+        "evidenceQuote": "Si un muro absorbe calor durante el día y no puede liberarlo cuando baja la temperatura exterior, acumula energía"
+      },
+      {
+        "slot": "s5",
+        "stem": "¿Por qué el autor menciona los conductos altos abiertos durante la noche?",
+        "options": [
+          {
+            "text": "Para demostrar que la ventilación nocturna ayuda a liberar el calor almacenado en los muros.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El dato cuantifica el enfriamiento posterior y apoya la relación entre ventilación nocturna y liberación del calor acumulado."
+          },
+          {
+            "text": "Para demostrar que los conductos altos aumentan la masa térmica de los muros.",
+            "isKey": false,
+            "misconception": "CONFUSES_DESIGN_FUNCTIONS",
+            "rationale": "Los conductos favorecen la ventilación; la masa térmica depende de la capacidad del material para almacenar energía."
+          },
+          {
+            "text": "Para demostrar que la ventilación nocturna protege los muros de la lluvia persistente.",
+            "isKey": false,
+            "misconception": "CONFUSES_CAUSAL_RELATIONSHIPS",
+            "rationale": "La protección frente a la lluvia se vincula con cimentaciones, revoques y aleros, no con los conductos."
+          },
+          {
+            "text": "Para demostrar que los conductos altos sustituyen los aleros en climas calurosos.",
+            "isKey": false,
+            "misconception": "FALSE_SUBSTITUTION",
+            "rationale": "El texto presenta aleros y ventilación nocturna como elementos que se combinan en un diseño eficaz."
+          }
+        ],
+        "evidenceQuote": "abrir conductos altos durante la noche redujo en promedio 2 °C la temperatura interior de la mañana siguiente"
+      },
+      {
+        "slot": "s6",
+        "stem": "En el texto, ¿qué significa “amortigua” en la expresión “amortigua los cambios térmicos”?",
+        "options": [
+          {
+            "text": "Reduce la intensidad y la rapidez de las variaciones de temperatura.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "En este contexto, amortiguar significa suavizar los cambios de temperatura que llegan al interior."
+          },
+          {
+            "text": "Elimina por completo las variaciones de temperatura interior.",
+            "isKey": false,
+            "misconception": "OVERSTATES_WORD_MEANING",
+            "rationale": "El texto describe una reducción y un retraso del calor, no la desaparición de toda variación."
+          },
+          {
+            "text": "Mide con precisión las variaciones de temperatura interior.",
+            "isKey": false,
+            "misconception": "CONFUSES_ACTION_WITH_MEASUREMENT",
+            "rationale": "Amortiguar describe un efecto físico del muro, no una actividad de medición."
+          },
+          {
+            "text": "Traslada al exterior las variaciones de temperatura interior.",
+            "isKey": false,
+            "misconception": "REVERSES_DIRECTION_OF_EFFECT",
+            "rationale": "El término se refiere a moderar la influencia del calor exterior sobre el espacio interior."
+          }
+        ],
+        "evidenceQuote": "La tierra, entonces, amortigua los cambios térmicos; no reemplaza el diseño climático integral."
+      },
+      {
+        "slot": "s7",
+        "stem": "En el último párrafo, ¿qué significa “paramentos”?",
+        "options": [
+          {
+            "text": "Las superficies verticales expuestas de los muros.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "En arquitectura, paramentos son las caras o superficies de una pared que pueden sufrir erosión."
+          },
+          {
+            "text": "Las bases elevadas que sostienen los muros.",
+            "isKey": false,
+            "misconception": "CONFUSES_ARCHITECTURAL_PARTS",
+            "rationale": "Las bases elevadas corresponden a las cimentaciones, mencionadas como una medida distinta."
+          },
+          {
+            "text": "Los conductos altos que permiten la ventilación nocturna.",
+            "isKey": false,
+            "misconception": "CONFUSES_ARCHITECTURAL_PARTS",
+            "rationale": "Los conductos son aberturas para el aire, mientras que los paramentos son superficies de los muros."
+          },
+          {
+            "text": "Los recintos interiores destinados al descanso.",
+            "isKey": false,
+            "misconception": "MISREADS_TECHNICAL_TERM",
+            "rationale": "El contexto relaciona los paramentos con la erosión causada por el agua en las paredes."
+          }
+        ],
+        "evidenceQuote": "el agua persistente puede erosionar los paramentos."
+      },
+      {
+        "slot": "s8",
+        "stem": "¿Qué fragmento respalda mejor la afirmación de que el texto no presenta la tierra como una solución suficiente por sí misma?",
+        "options": [
+          {
+            "text": "“La tierra, entonces, amortigua los cambios térmicos; no reemplaza el diseño climático integral.”",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El fragmento afirma directamente que las propiedades de la tierra deben integrarse con otras decisiones de diseño."
+          },
+          {
+            "text": "“parte de la energía queda almacenada en el material antes de llegar al recinto.”",
+            "isKey": false,
+            "misconception": "SELECTS_PARTIAL_SUPPORT",
+            "rationale": "El fragmento explica cómo actúa la masa térmica, pero no indica que requiera medidas complementarias."
+          },
+          {
+            "text": "“muros de tierra de 45 centímetros registraron, a las 15:00, temperaturas interiores entre 4 y 6 °C menores”",
+            "isKey": false,
+            "misconception": "CONFUSES_RESULT_WITH_LIMITATION",
+            "rationale": "El dato demuestra un beneficio comparativo, pero no sustenta la idea de que la tierra sea insuficiente por sí sola."
+          },
+          {
+            "text": "“producir tierra cercana suele demandar menos energía de transporte y cocción”",
+            "isKey": false,
+            "misconception": "SELECTS_IRRELEVANT_BENEFIT",
+            "rationale": "Este fragmento trata sobre energía de producción, no sobre la necesidad de un diseño climático integral."
+          }
+        ],
+        "evidenceQuote": "La tierra, entonces, amortigua los cambios térmicos; no reemplaza el diseño climático integral."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "71dee2ac-f5d0-487e-b64c-2d2e2e866208",
+    "generatedAt": "2026-10-16T03:37:49.258Z",
+    "unitId": "paa-pilot.r5.lect-exp"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "aba4a8a2-29e6-4dab-b1b4-aaf8143e19b0",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 8,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "0398dee1-0006-4b6e-b1f9-204de0361fbd",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 8,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-explicitas.e9c48fa28598",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.explicit-information"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.79340943a4a2@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-explicitas.3c13f3ad89f4",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.central-idea"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.79340943a4a2@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-explicitas.cb519012a834",
+        "slot": "s3",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.explicit-information"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.79340943a4a2@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-inferencia.16481d7dc7fc",
+        "slot": "s4",
+        "objectiveCode": "paa.lect.inferencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.inferencia / read.inference"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.79340943a4a2@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-inferencia.46537ee4e07e",
+        "slot": "s5",
+        "objectiveCode": "paa.lect.inferencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.inferencia / read.inference"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.79340943a4a2@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.bd07bbf20607",
+        "slot": "s6",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.79340943a4a2@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.e0c4e8305a85",
+        "slot": "s7",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.79340943a4a2@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-evidencia.ca83a1a76ed8",
+        "slot": "s8",
+        "objectiveCode": "paa.lect.evidencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.evidencia / read.textual-evidence"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.79340943a4a2@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

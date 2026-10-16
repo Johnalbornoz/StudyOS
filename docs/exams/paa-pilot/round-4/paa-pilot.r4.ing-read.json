@@ -1,0 +1,584 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r4.ing-read",
+    "component": "ingles",
+    "language": "en",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "An ORIGINAL English passage of 200 to 260 words (CEFR B1-B2) about a school radio program run by teenagers. Clear main idea, concrete details, one implied attitude or purpose, and two words whose meaning depends on context.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.literal",
+        "difficulty": 2,
+        "focus": "a detail stated in the passage"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.interpretive",
+        "difficulty": 3,
+        "focus": "something the passage implies, or the writer's purpose"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.literal",
+        "difficulty": 3,
+        "focus": "the main idea of the passage"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.interpretive",
+        "difficulty": 3,
+        "focus": "the meaning of a word or phrase as it is used in the passage (quote it)"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Voices from the Hallway",
+      "text": "Every Wednesday afternoon, a small room beside the library becomes the studio for Northbridge School Radio. The program is run by twelve teenagers, who plan a twenty-minute show for students, families, and nearby residents. Each week, two presenters introduce local news, interview a member of the school community, and choose music suggested by listeners.\n\nThe team did not begin with expensive equipment. Their first broadcasts used one borrowed microphone and a computer from the media classroom. At first, the sound was rough, and presenters sometimes spoke too quickly. Instead of hiding these mistakes, the group listened to recordings together and made a short list of improvements before the next show.\n\nNow the program has a regular audience. Last month, a gardener explained how students could grow food in small spaces, and the school nurse answered questions about sleep. The team also gives quiet students a chance to send in questions without using their names. For Maya, one of the producers, this is the most valuable part. “People hear problems they thought they had alone,” she says, “and they learn that someone can help.”\n\nAlthough the presenters enjoy choosing songs, they spend more time checking facts and arranging interviews. Their teacher gives advice but does not decide the content. The teenagers say the program belongs to the whole school, not just to the voices heard on air.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "What equipment did the team use for its first broadcasts?",
+        "options": [
+          {
+            "text": "A borrowed microphone and a classroom computer",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The passage directly states that the first broadcasts used these two pieces of equipment."
+          },
+          {
+            "text": "A new microphone and a library computer",
+            "isKey": false,
+            "misconception": "CHANGES_STATED_DETAIL",
+            "rationale": "This may seem plausible because the studio is beside the library, but the equipment was borrowed and came from the media classroom."
+          },
+          {
+            "text": "A borrowed camera and a classroom computer",
+            "isKey": false,
+            "misconception": "CONFUSES_MEDIA_TOOLS",
+            "rationale": "A computer is mentioned, but the passage identifies a microphone, not a camera."
+          },
+          {
+            "text": "A school microphone and a borrowed computer",
+            "isKey": false,
+            "misconception": "REVERSES_DETAIL",
+            "rationale": "This reverses the description: the microphone was borrowed, while the computer came from the media classroom."
+          }
+        ],
+        "evidenceQuote": "Their first broadcasts used one borrowed microphone and a computer from the media classroom."
+      },
+      {
+        "slot": "s2",
+        "stem": "What does the passage suggest about the program's purpose?",
+        "options": [
+          {
+            "text": "It helps members of the school share useful concerns",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The anonymous questions and practical interviews suggest that the program helps people raise concerns and find support."
+          },
+          {
+            "text": "It helps presenters become professional music performers",
+            "isKey": false,
+            "misconception": "OVEREMPHASIZES_MINOR_DETAIL",
+            "rationale": "Music is part of the show, but the passage gives greater attention to news, interviews, questions, and accurate information."
+          },
+          {
+            "text": "It helps teachers choose lessons for each class",
+            "isKey": false,
+            "misconception": "UNSUPPORTED_ROLE",
+            "rationale": "The teacher gives advice to the radio team, but there is no suggestion that the program plans classroom lessons."
+          },
+          {
+            "text": "It helps residents advertise services near the school",
+            "isKey": false,
+            "misconception": "CONFUSES_AUDIENCE_WITH_PURPOSE",
+            "rationale": "Nearby residents can listen, but the passage does not describe the program as advertising local services."
+          }
+        ],
+        "evidenceQuote": "The team also gives quiet students a chance to send in questions without using their names."
+      },
+      {
+        "slot": "s3",
+        "stem": "Which statement best expresses the main idea of the passage?",
+        "options": [
+          {
+            "text": "Teenagers create a radio show that connects their school community",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The passage describes students running a program that shares news, advice, questions, and voices from across the school."
+          },
+          {
+            "text": "Teenagers replace teachers in planning school activities",
+            "isKey": false,
+            "misconception": "OVERGENERALIZES_ROLE",
+            "rationale": "The team plans the radio content, but the passage does not say that students take over planning school activities."
+          },
+          {
+            "text": "Teenagers use radio equipment to improve music skills",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_MINOR_DETAIL",
+            "rationale": "The presenters choose songs, but music is not the central focus of the passage."
+          },
+          {
+            "text": "Teenagers collect gardening advice from nearby residents",
+            "isKey": false,
+            "misconception": "MISTAKES_EXAMPLE_FOR_MAIN_IDEA",
+            "rationale": "The gardening interview is one example of a topic, not the main point of the whole program."
+          }
+        ],
+        "evidenceQuote": "The teenagers say the program belongs to the whole school, not just to the voices heard on air."
+      },
+      {
+        "slot": "s4",
+        "stem": "In the passage, what does the word “rough” mean in the phrase “At first, the sound was rough”?",
+        "options": [
+          {
+            "text": "Not clear or fully polished",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The early broadcasts had sound problems and rushed speaking, so “rough” means not yet smooth or polished."
+          },
+          {
+            "text": "Loud enough for distant listeners",
+            "isKey": false,
+            "misconception": "CONFUSES_QUALITY_WITH_VOLUME",
+            "rationale": "The passage discusses the quality of the early sound, not how far it could be heard."
+          },
+          {
+            "text": "Recorded outside during bad weather",
+            "isKey": false,
+            "misconception": "LITERAL_WORD_ASSOCIATION",
+            "rationale": "“Rough” can describe weather or surfaces, but here it describes the imperfect sound of the broadcasts."
+          },
+          {
+            "text": "Chosen by listeners before each show",
+            "isKey": false,
+            "misconception": "CONFUSES_NEARBY_DETAIL",
+            "rationale": "Listeners suggest music, but that detail does not explain the quality of the early sound."
+          }
+        ],
+        "evidenceQuote": "At first, the sound was rough, and presenters sometimes spoke too quickly."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "966c047e-7fdc-43a0-a409-cda60b0d88c7",
+    "generatedAt": "2026-10-16T03:35:49.722Z",
+    "unitId": "paa-pilot.r4.ing-read"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "b15b0c39-2f16-4190-9d31-0453df0dbaad",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "7eb4c1c3-7942-4fd2-9715-c42135fd81eb",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.ing-lectura.69e8659e8367",
+        "slot": "s1",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.literal"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.a9a450ab6c66@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lectura.89009d911d22",
+        "slot": "s2",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.interpretive"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.a9a450ab6c66@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lectura.810bbb391cf6",
+        "slot": "s3",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.literal"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.a9a450ab6c66@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lectura.3a264eac56cb",
+        "slot": "s4",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.interpretive"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.a9a450ab6c66@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}
