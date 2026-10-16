@@ -21,7 +21,7 @@ import type { AssessmentAdapter } from '@/lib/assessment-instance/assessment-ada
 import type { CertificationRecord, ReviewerQualification } from '@/lib/assessment-instance/certification';
 import type { ConstructCoreRecord } from '@/lib/assessment-instance/construct-core';
 import type { CoreApplicabilityRecord } from '@/lib/assessment-instance/core-applicability';
-import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSION_BATCHES, libraryApplicability, PUBLICATION_APPLICABILITY, PUBLICATION_APPLICABILITY_2026_10_14, PUBLICATION_APPLICABILITY_2026_10_15_IB, PUBLICATION_APPLICABILITY_2026_10_15_ALL, PUBLICATION_APPLICABILITY_2026_10_15_P3, PUBLICATION_BLUEPRINTS_2026_10_15_P3, PUBLICATION_BLUEPRINTS, PUBLICATION_BLUEPRINTS_2026_10_15_ALL, PUBLICATION_BLUEPRINTS_2026_10_14, PUBLICATION_BLUEPRINTS_2026_10_15_IB, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
+import { LIBRARY, LIBRARY_APPLICABILITY, LIBRARY_BLUEPRINTS, LIBRARY_EXTENSION_BATCHES, libraryApplicability, PUBLICATION_APPLICABILITY, PUBLICATION_APPLICABILITY_2026_10_14, PUBLICATION_APPLICABILITY_2026_10_15_IB, PUBLICATION_APPLICABILITY_2026_10_15_ALL, PUBLICATION_APPLICABILITY_2026_10_15_P3, PUBLICATION_BLUEPRINTS_2026_10_15_P3, PUBLICATION_APPLICABILITY_2026_10_16, PUBLICATION_BLUEPRINTS_2026_10_16, PUBLICATION_BLUEPRINTS, PUBLICATION_BLUEPRINTS_2026_10_15_ALL, PUBLICATION_BLUEPRINTS_2026_10_14, PUBLICATION_BLUEPRINTS_2026_10_15_IB, type LibraryBlueprint, type LibraryEntry } from '@/lib/assessment-instance/library/catalogue';
 import { pilotApplicabilityHash } from '@/lib/assessment-instance/pilot/step4b-pilot-slice';
 import { STUDYUS_ASSESSMENT_REGISTRY, STUDYUS_ASSESSMENT_REGISTRY_2026_10_15, STUDYUS_ASSESSMENT_REGISTRY_2026_10_15_P3, V52_ASSESSMENT_REGISTRY } from '@/lib/assessment-instance/registered-systems';
 import type { AssessmentSystemRegistry } from '@/lib/assessment-instance/assessment-system-registry';
@@ -134,6 +134,9 @@ const ARCHIVED_BATCH_INPUTS: Readonly<Record<string, { blueprints: readonly Libr
   'TB-SABER-MATH-A2': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_15_ALL, register: PUBLICATION_APPLICABILITY_2026_10_15_ALL, registry: STUDYUS_ASSESSMENT_REGISTRY_2026_10_15, coreRegister: PUBLICATION_APPLICABILITY_2026_10_15_ALL },
   // published on DEV 2026-10-15 before the Saber boundary decision and the Cambridge 9709 P2/P4/P5 components
   'TB-IB-AAHL-P3-A1': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_15_P3, register: PUBLICATION_APPLICABILITY_2026_10_15_P3, registry: STUDYUS_ASSESSMENT_REGISTRY_2026_10_15_P3, coreRegister: PUBLICATION_APPLICABILITY_2026_10_15_P3 },
+  // published 2026-10-15/16 with the AICE P5 v1 classification and register (before the identity collision decision)
+  'AICE-9709-P2P4P5-A1': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_16, register: PUBLICATION_APPLICABILITY_2026_10_16, registry: STUDYUS_ASSESSMENT_REGISTRY, coreRegister: PUBLICATION_APPLICABILITY_2026_10_16 },
+  'TB-PAA-MATH-MC-A1': { blueprints: PUBLICATION_BLUEPRINTS_2026_10_16, register: PUBLICATION_APPLICABILITY_2026_10_16, registry: STUDYUS_ASSESSMENT_REGISTRY, coreRegister: PUBLICATION_APPLICABILITY_2026_10_16 },
 };
 
 /**

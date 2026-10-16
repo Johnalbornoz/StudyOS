@@ -144,3 +144,20 @@ export const CIE_9709_P2P4P5_ADOPTION_SPECS: readonly AdoptionSpec[] = [
 ];
 
 export const CIE_9709_P2P4P5_ENTRIES: readonly LibraryEntry[] = CIE_9709_P2P4P5_ADOPTION_SPECS.map((s) => adoptParametricConstruct(s, OPTIONS));
+
+/**
+ * AICE-9709-IDENTITY-COLLISION-2026-10-16: the two P5 constructs on the EXISTING canonical identities (PAA-certified,
+ * Spanish display labels) instead of the superseded duplicates. Families and construct / renderer identities of their
+ * own (an envelope already stored is never replaced); same construct functions, key, errors and certification route.
+ */
+const CANONICAL: Readonly<Record<string, { stableId: string; canonicalName: string }>> = {
+  'math.prob.permutations-combinations': { stableId: 'math.prob.counting', canonicalName: 'Técnicas de conteo' },
+  'math.prob.probability-events': { stableId: 'math.prob.probability', canonicalName: 'Probabilidad' },
+};
+export const CIE_9709_P5_CANONICAL_ENTRIES: readonly LibraryEntry[] = CIE_9709_P2P4P5_ADOPTION_SPECS.filter((s) => CANONICAL[s.concept.stableId]).map((s) => {
+  const x = s.construct as unknown as ParametricConstruct;
+  return adoptParametricConstruct({
+    ...s, familyId: `${s.familyId}-canonical`, concept: { ...CANONICAL[s.concept.stableId], canonicalSubject: 'Matemáticas' },
+    construct: c({ ...x, construct: `${x.construct}_CANONICAL`, rendererVersion: x.rendererVersion.replace(/@/, '-canonical@') }),
+  }, OPTIONS);
+});

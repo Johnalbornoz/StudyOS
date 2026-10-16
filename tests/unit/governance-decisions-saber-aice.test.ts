@@ -13,6 +13,7 @@ import { AICE_LEARNING_LINKS } from '@/lib/exam-core/catalog/aice-learning-links
 import { DEV_CANONICAL_CONCEPTS } from '@/lib/exam-core/catalog/dev-learning-catalog';
 import { AICE_9709_AS } from '@/lib/exam-core/verticals/v2/aice/aice-math-9709';
 import { ibGovernedConceptByStableId } from '@/lib/curriculum/ib/ib-aa-hl-concept-correspondence';
+import { PAA_CERTIFIED_CONCEPTS } from '@/lib/curriculum/paa/paa-certified-concepts';
 import { STUDYUS_ASSESSMENT_REGISTRY, TRACK_B_COMPONENT_PROFILES } from '@/lib/assessment-instance/registered-systems';
 import { adapterConflicts } from '@/lib/assessment-instance';
 import { governAdapter } from '@/lib/assessment-instance/v52';
@@ -63,13 +64,19 @@ describe('AICE 9709 AS Papers 2 / 4 / 5: source-backed component equivalence', (
   });
   it('the concept is the one the reviewed AICE link names, an existing catalogue row, through an existing or pilot identity (no new concept)', () => {
     for (const e of AICE_9709_P2P4P5_EQUIVALENCES) {
-      expect((AICE_LEARNING_LINKS[e.aiceObjectiveCode]?.concepts ?? []).map((c) => c.name), e.aiceObjectiveCode).toEqual([e.conceptName]);
-      expect(DEV_CANONICAL_CONCEPTS.some((c: any) => c.subject === 'Mathematics' && c.name === e.conceptName), e.conceptName).toBe(true);
-      const identity = ibGovernedConceptByStableId(e.conceptStableId) ?? CIE_9709_CONCEPT_IDENTITIES.find((x) => x.stableId === e.conceptStableId);
+      // a cross-curriculum identity is an EXISTING canonical identity; the AICE link names its English catalogue row
+      const linked = e.correspondence === 'CROSS_CURRICULUM_CANONICAL_IDENTITY' ? e.linkedCatalogueRow!.split(' / ')[1] : e.conceptName;
+      expect((AICE_LEARNING_LINKS[e.aiceObjectiveCode]?.concepts ?? []).map((c) => c.name), e.aiceObjectiveCode).toEqual([linked]);
+      expect(DEV_CANONICAL_CONCEPTS.some((c: any) => c.subject === 'Mathematics' && c.name === linked), linked).toBe(true);
+      const identity = e.correspondence === 'CROSS_CURRICULUM_CANONICAL_IDENTITY' ? PAA_CERTIFIED_CONCEPTS.find((x) => x.stableId === e.conceptStableId) : ibGovernedConceptByStableId(e.conceptStableId) ?? CIE_9709_CONCEPT_IDENTITIES.find((x) => x.stableId === e.conceptStableId && x.status === 'GOVERNED_PILOT');
       expect(identity?.canonicalName, e.conceptStableId).toBe(e.conceptName);
     }
-    expect(CIE_9709_CONCEPT_IDENTITIES.every((x) => x.status === 'GOVERNED_PILOT' && x.governedBy === AICE_9709_P2P4P5_DECISION.decisionId)).toBe(true);
-    expect(AICE_9709_P2P4P5_APPLICABILITY).toHaveLength(10);
+    // AICE-9709-IDENTITY-COLLISION-2026-10-16: the two duplicates are SUPERSEDED by the existing PAA identities
+    expect(CIE_9709_CONCEPT_IDENTITIES.filter((x) => x.status === 'SUPERSEDED').map((x) => [x.stableId, x.supersededBy])).toEqual([['math.prob.permutations-combinations', 'math.prob.counting'], ['math.prob.probability-events', 'math.prob.probability']]);
+    expect(CIE_9709_CONCEPT_IDENTITIES.filter((x) => x.status === 'GOVERNED_PILOT').map((x) => x.stableId)).toEqual(['math.calc.numerical-methods', 'math.mech.kinematics', 'math.mech.forces-equilibrium', 'math.mech.energy-work-power']);
+    expect(CIE_9709_CONCEPT_IDENTITIES.every((x) => x.governedBy === AICE_9709_P2P4P5_DECISION.decisionId)).toBe(true);
+    // live records + the two superseded records kept as history (their bank rows are retired)
+    expect(AICE_9709_P2P4P5_APPLICABILITY).toHaveLength(12);
   });
   it('CAMBRIDGE.9709.P2 / P4 / P5 restate the sourced component records and govern like P1 (official command words)', () => {
     const conflicts = adapterConflicts();
@@ -97,6 +104,8 @@ describe('AICE 9709 AS Papers 2 / 4 / 5: certified supply scored by the canonica
     const g = governLibrary(undefined, PUBLICATION_LIBRARY, PUBLICATION_BLUEPRINTS, PUBLICATION_APPLICABILITY);
     const batch = LIBRARY_EXTENSION_BATCHES.find((b) => b.batchId === 'AICE-9709-P2P4P5-A1')!;
     expect(batch.entries.map((e) => e.targets[0].objectiveCode)).toEqual(AICE_9709_P2P4P5_EQUIVALENCES.map((e) => e.aiceObjectiveCode));
+    const canon = LIBRARY_EXTENSION_BATCHES.find((b) => b.batchId === 'AICE-9709-P5-CANON-A2')!;
+    expect(canon.entries.map((e) => [e.targets[0].objectiveCode, e.core.primaryConceptStableId])).toEqual([['aice.9709.p5.permutations', 'math.prob.counting'], ['aice.9709.p5.probability', 'math.prob.probability']]);
     for (const e of batch.entries) for (const band of PLANNING_BANDS) {
       const cell = certifyCell(e, e.targets[0], band, 10, g, batch.batchId);
       expect(cell.certified, `${e.core.constructFamilyId} ${band}`).toHaveLength(10);
