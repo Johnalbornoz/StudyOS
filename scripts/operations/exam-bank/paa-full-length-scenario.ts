@@ -18,6 +18,8 @@ import { writeFileSync } from 'fs';
 
 process.env.EXAM_BANK_DELIVERY_SCOPE = 'PILOT_PREVIEW';
 process.env.QUESTION_BANK_READINESS_MODE = 'ENFORCE';
+// as the candidate deployment runs: the frozen assessment snapshot is written at start
+process.env.ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED = 'true';
 const TARGETS: Readonly<Record<string, string>> = { '2a29b99ee14a22b4': 'DEV', '4baac799b9bd2a6a': 'PILOT_CANDIDATE_20261015' };
 const CONFIG = 'v2.paa-full-length';
 const OFFICIAL: Readonly<Record<string, { order: number; items: number; minutes: number }>> = { lectura: { order: 1, items: 45, minutes: 50 }, redaccion: { order: 2, items: 25, minutes: 30 }, matematicas: { order: 3, items: 55, minutes: 60 }, ingles: { order: 4, items: 50, minutes: 40 } };
@@ -35,7 +37,7 @@ async function main(): Promise<number> {
   const { upsertStudentFromWebhook } = await import('@/lib/auth');
   const { assignSelfServiceRole } = await import('@/lib/identity/role-assignment.service');
   const { createExamInstance, startExamInstance, ensureExamProfile } = await import('@/lib/exam-core/exam-instance.service');
-  const { getNextSimulationItem, submitSimulationItemAnswer, finalizeOpenItemsForSubmission } = await import('@/lib/simulation/item-resolution.service');
+  const { getNextSimulationItem, submitSimulationItemAnswer, finalizeOpenItemsForSubmission, endSimulationBreak } = await import('@/lib/simulation/item-resolution.service');
   const { completeSimulationAttempt, getSimulationAttempt } = await import('@/lib/simulation/attempt.service');
   const { finalizeExamCompletion } = await import('@/lib/exam-core/post-completion');
   const { findAnswerKeyLeak } = await import('@/lib/exam-core/items');
@@ -58,7 +60,7 @@ async function main(): Promise<number> {
   check('R1  PAA_FULL_LENGTH_MOCK readiness = READY (engine), stored as a PREPARATION_MOCK', engine?.reducedMock === 'READY' && engine?.mockAttemptType === 'PREPARATION_MOCK', `${engine?.reducedMock} ${engine?.mockAttemptType}; ${JSON.stringify(engine?.practiceBySection)}`);
   const report: Record<string, unknown> = { kind: 'PAA_FULL_LENGTH_SCENARIO', run: RUN, database: TARGETS[fp], config: CONFIG, engine };
 
-  const clerk = `paa-full-${RUN}`;
+  const clerk = `ebr-paa-full-${RUN}`;
   const user = await getOrCreateCanonicalUser(clerk, `${clerk}@exam-bank.test`);
   const S = await upsertStudentFromWebhook(clerk, `${clerk}@exam-bank.test`, 'paa full-length scenario');
   const actor = user.id as string;
@@ -78,8 +80,11 @@ async function main(): Promise<number> {
       const sim = started.simulationAttemptId!;
       const row = await one(`SELECT ei.form_frozen_at, ei.assessment_snapshot IS NOT NULL AS snap, sa.simulation_type, sa.timing_mode, sa.navigation_state, sp.plan FROM exam_instances ei JOIN simulation_attempts sa ON sa.id = ei.simulation_attempt_id JOIN simulation_plans sp ON sp.id = sa.simulation_plan_id WHERE ei.id = $1`, [inst.id]);
       const served: { index: number; approvedItemId: string; section: string | null; objective: string; questionType: string; lineage: string; template: string; semantic: string; leak: string | null; feedback: unknown }[] = [];
-      for (let k = 0; k < 190; k++) {
+      const breaks: (string | null)[] = [];
+      for (let k = 0; k < 200; k++) {
         const next = await getNextSimulationItem(actor, sim);
+        // the official breaks (after Redacción, after Matemáticas): the Student ends each one and goes on
+        if (next.outcome === 'BREAK') { breaks.push(next.nextSectionName); await endSimulationBreak(actor, sim); continue; }
         if (next.outcome !== 'ITEM_READY') break;
         const state = (await one(`SELECT navigation_state FROM simulation_attempts WHERE id = $1`, [sim])).navigation_state.items[String(next.targetIndex)];
         const approvedItemId = state?.item?.exam?.approvedItemId as string;
@@ -93,7 +98,7 @@ async function main(): Promise<number> {
       await finalizeExamCompletion(sim, S, 'paa-full-length-scenario');
       const examAttemptId = (await getSimulationAttempt(sim))!.examAttemptId;
       const responses = (await db.query(`SELECT approved_item_id, score, max_score, review_status, grading_detail, evaluation_model_version FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [examAttemptId])).rows;
-      return { row, served, examAttemptId, responses };
+      return { row, served, examAttemptId, responses, breaks };
     };
 
     const a = await attempt('key', (c) => String(c.correctAnswer));
@@ -106,8 +111,9 @@ async function main(): Promise<number> {
     check('F4  PAA_FULL_SECTION_ORDER: positions run Lectura -> Redacción -> Matemáticas -> Inglés', order.every((o, k) => o > 0 && (k === 0 || o >= order[k - 1])), [...new Set(served.map((s) => s.section))].join(' > '));
     check('F5  certified lineage only (CORE_DERIVED / PILOT_CERTIFIED): no LEGACY content in the form', served.every((s) => s.lineage === 'CORE_DERIVED' || s.lineage === 'PILOT_CERTIFIED'), [...new Set(served.map((s) => s.lineage))].join(','));
     check('F6  no answer key on the wire; no coach, no per-item feedback, no hints while answering', served.every((s) => s.leak === null && s.feedback === null) && a.row?.navigation_state?.itemFeedback !== 'AFTER_EACH_ITEM', `itemFeedback ${a.row?.navigation_state?.itemFeedback ?? 'n/a'}`);
-    const sectionTimes = (a.row?.plan?.sections ?? a.row?.plan?.components ?? []) as any[];
-    check('F7  PAA_FULL_TIMING in the frozen plan (official minutes per section)', a.row?.timing_mode !== 'UNTIMED' && (sectionTimes.length === 0 || sectionTimes.every((x: any) => [50, 30, 60, 40].includes(Number(x.durationMinutes ?? x.minutes ?? x.timeLimitMinutes)))), `${a.row?.timing_mode}; ${sectionTimes.map((x: any) => x.durationMinutes ?? x.minutes ?? x.timeLimitMinutes).join('/')}`);
+    const sections = ((a.row?.plan?.sections ?? []) as any[]).sort((x, y) => x.order - y.order);
+    check('F7  PAA_FULL_TIMING in the frozen plan: each section timed at its official minutes, in the official order', a.row?.timing_mode === 'OFFICIAL_SIMULATION_TIMED' && sections.map((x) => `${x.key}:${Number(x.durationSeconds) / 60}`).join(',') === 'lectura:50,redaccion:30,matematicas:60,ingles:40', `${a.row?.timing_mode}; ${sections.map((x) => `${x.key}:${Number(x.durationSeconds) / 60}`).join(',')}`);
+    check('F8  the official breaks are held (after Redacción, after Matemáticas)', a.breaks.length === 2, `${a.breaks.length} breaks before ${a.breaks.join(', ')}`);
     const full = a.responses.every((r: any) => Number(r.score) === Number(r.max_score) && Number(r.max_score) > 0 && r.review_status === 'NONE' && !r.evaluation_model_version);
     check('S1  PAA_FULL_SCORING: keyed answers score full marks on every position (deterministic scorers, never a model)', a.responses.length === 175 && full, `${a.responses.filter((r: any) => Number(r.score) === Number(r.max_score)).length}/${a.responses.length}`);
     const b = await attempt('wrong', (c) => (Array.isArray(c.options) && c.options.length ? String(c.options.find((o: any) => o.id !== c.correctAnswer).id) : `${String(c.correctAnswer).includes('/') ? '1' : String(Number(c.correctAnswer) + 1)}`));
