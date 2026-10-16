@@ -36,7 +36,7 @@ async function main(): Promise<number> {
        WHERE qi.lineage_class = 'CORE_DERIVED' AND ai.bank_lifecycle_status = 'ACTIVE' AND i.primary_concept_stable_id = ANY($1::text[]) AND lo.code LIKE 'aice.9709.p5.%'`, [SUPERSEDED_IDS])).rows;
     for (const r of aice) {
       await c.query(`UPDATE approved_items SET bank_lifecycle_status = 'SUPERSEDED', status = 'RETIRED' WHERE id = $1`, [r.version_id]);
-      await c.query(`UPDATE question_bank_items SET retired_at = now(), updated_at = now() WHERE id = $1`, [r.item_id]);
+      await c.query(`UPDATE question_bank_items SET retired_at = now(), retire_reason = 'SUPERSEDED_BY_CANONICAL_IDENTITY: AICE-9709-IDENTITY-COLLISION-2026-10-16', updated_at = now() WHERE id = $1`, [r.item_id]);
       await event(r.item_id, r.version_id, 'SUPERSEDED', 'SUPERSEDED_BY_CANONICAL_IDENTITY', { decision: 'AICE-9709-IDENTITY-COLLISION-2026-10-16', supersededIdentity: r.concept, replacementBatch: 'AICE-9709-P5-CANON-A2' });
     }
     // ---- PAA duplicate-template language version
