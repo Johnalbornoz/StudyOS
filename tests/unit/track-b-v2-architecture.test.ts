@@ -3,6 +3,7 @@
  * structure catalogue, framework fidelity of the reference verticals, DEV
  * reset guard and route-level security invariants.
  */
+import { PREPARATION_FORM_VERTICALS } from '@/lib/exam-core/verticals/v2';
 import { EXAM_FAMILY_DESCRIPTORS } from '@/lib/exam-core/taxonomy';
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'fs';
@@ -138,7 +139,7 @@ describe('calibration suite', () => {
   });
 });
 
-const configs: ExamVerticalConfig[] = allV2Configs().map((v) => {
+const configs: ExamVerticalConfig[] = [...allV2Configs(), ...PREPARATION_FORM_VERTICALS].map((v) => {
   const p = parseExamVerticalConfig(v);
   if (!p.ok) throw new Error(p.issues.join(';'));
   return p.config;

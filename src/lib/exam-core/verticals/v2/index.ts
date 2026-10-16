@@ -40,5 +40,11 @@ export const V2_VERTICALS: ExamVerticalConfigInput[] = [IB_MATH_AA_HL_V2, IB_VIS
   // Cambridge AICE (AS & A Level reference subjects)
   AICE_9709_AS, AICE_9709_A, AICE_9702_AS, AICE_9702_A, AICE_9701_AS, AICE_9701_A, AICE_9700_AS, AICE_9700_A, AICE_9239_AS, AICE_9239_A, AICE_9093_AS, AICE_9093_A, AICE_9708_AS, AICE_9708_A,
   // Cambridge International AS & A Level 9709 (Cambridge system; Paper 1 pilot, Exam Bank supply only)
-  CAMBRIDGE_9709_AS_V2, PAA_FULL_LENGTH_V2];
+  CAMBRIDGE_9709_AS_V2];
+/**
+ * Configurations that are a further governed FORM of an exam another V2 configuration already defines (PAA full-length
+ * preparation mock beside the reduced v2.paa). Applied and bound like any configuration; kept out of V2_VERTICALS so
+ * the one-exam-one-configuration Blueprint V2 (shadow) corpus is not asked to model a second form of the same exam.
+ */
+export const PREPARATION_FORM_VERTICALS: ExamVerticalConfigInput[] = [PAA_FULL_LENGTH_V2];
 

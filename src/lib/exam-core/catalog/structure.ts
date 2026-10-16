@@ -11,7 +11,7 @@
  */
 import { ibCatalogTree } from './ib-dp';
 import { aiceCatalogTree } from './aice';
-import { V2_VERTICALS } from '../verticals/v2';
+import { PREPARATION_FORM_VERTICALS, V2_VERTICALS } from '../verticals/v2';
 
 export type NodeType =
   | 'PROGRAMME' | 'QUALIFICATION' | 'TEST' | 'SUBJECT' | 'AREA' | 'LEVEL' | 'VARIANT' | 'PAPER' | 'COMPONENT' | 'SECTION'
@@ -65,7 +65,7 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
     family: 'IB',
     // Generated from the reviewed IB DP research: every group, subject, version, level and real component.
     roots: [ibCatalogTree((configKey) => {
-      const cfg = V2_VERTICALS.find((v) => v.key === configKey);
+      const cfg = [...V2_VERTICALS, ...PREPARATION_FORM_VERTICALS].find((v) => v.key === configKey);
       return cfg ? cfg.sections.map((sec) => ({ key: sec.key, officialName: sec.definition?.officialName ?? sec.name })) : null;
     })],
   },
@@ -250,7 +250,7 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
         ],
       },
       // Cambridge AICE Diploma: Core + Groups 1-4 -> subject (syllabus code) -> AS / A Level -> official components.
-      aiceCatalogTree((configKey) => V2_VERTICALS.find((v) => v.key === configKey)?.sections.map((sec) => ({ key: sec.key })) ?? null),
+      aiceCatalogTree((configKey) => [...V2_VERTICALS, ...PREPARATION_FORM_VERTICALS].find((v) => v.key === configKey)?.sections.map((sec) => ({ key: sec.key })) ?? null),
     ],
   },
 ];
