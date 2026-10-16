@@ -355,7 +355,7 @@ async function publish(c: Q, plan: ReturnType<typeof mergedForPublication>, repo
           `INSERT INTO approved_items (learning_objective_id, question_type, content, created_by, status, published_at, content_origin, semantic_fingerprint, template_fingerprint, reasoning_fingerprint, stimulus_fingerprint,
                                        bank_item_id, version_number, bank_lifecycle_status, content_hash, target_difficulty, calibration_confidence, lifecycle_updated_at, usage_eligibility, exam_alignment, validation_report, supersedes_version_id)
            VALUES ($1, $2, $3::jsonb, $4, 'APPROVED', NULL, 'AUTHORED', $5, $6, $7, $8, $9, $10, 'VALIDATED', $11, $12, 'INSUFFICIENT_DATA', now(), $13::text[], $14, $15::jsonb, $16) RETURNING id`,
-          [target.objectiveId, content.type, JSON.stringify(content), author, fp.semantic, fp.template, fp.reasoning, fp.stimulus, itemId, versionNumber, hash, content.difficulty, [...coreDerivedUsageFor(i.systemId, plan.scope)], CORE_DERIVED_ALIGNMENT, JSON.stringify(validation), supersedes]);
+          [target.objectiveId, content.type, JSON.stringify(content), author, fp.semantic, fp.template, fp.reasoning, fp.stimulus, itemId, versionNumber, hash, content.difficulty, [...coreDerivedUsageFor(i.systemId, plan.scope, i.format)], CORE_DERIVED_ALIGNMENT, JSON.stringify(validation), supersedes]);
         await ensureRights(version!.id, p);
         await attribute(version!.id, conceptId);
         if (supersedes) {
@@ -385,13 +385,16 @@ async function publish(c: Q, plan: ReturnType<typeof mergedForPublication>, repo
         skip('conceptAttributions');
         // a governed full-length preparation mock authorisation widens the usage of the version in use (never narrows,
         // never touches content): recorded as a lifecycle event naming the decision
-        const governedUsage = coreDerivedUsageFor(i.systemId, plan.scope);
+        // the usage of the version in use is set to the GOVERNED usage (a recorded authorisation may widen it, or keep
+        // full-length-only content out of practice): never content; recorded as a lifecycle event naming the decision
+        const governedUsage = coreDerivedUsageFor(i.systemId, plan.scope, i.format);
         const missing = governedUsage.filter((u) => !(held.usage ?? []).includes(u));
-        if (missing.length > 0 && held.lifecycle === 'ACTIVE') {
+        const extra = (held.usage ?? []).filter((u) => !governedUsage.includes(u));
+        if ((missing.length > 0 || extra.length > 0) && held.lifecycle === 'ACTIVE') {
           const auth = fullMockAuthorizationFor(i.systemId, plan.scope);
-          await c.query(`UPDATE approved_items SET usage_eligibility = $2::text[] WHERE id = $1`, [held.version_id, [...new Set([...(held.usage ?? []), ...governedUsage])]]);
-          await c.query(`INSERT INTO question_bank_lifecycle_events (bank_item_id, approved_item_id, from_status, to_status, reason, actor_kind, actor_user_id, run_id, detail) VALUES ($1, $2, 'ACTIVE', 'ACTIVE', 'USAGE_AUTHORIZED_BY_GOVERNANCE', 'SYSTEM', NULL, NULL, $3::jsonb)`,
-            [held.id, held.version_id, JSON.stringify({ added: missing, decision: auth?.decisionId ?? null, scope: plan.scope, presentation: auth?.presentation ?? null, itemInstanceId: i.instanceId })]);
+          await c.query(`UPDATE approved_items SET usage_eligibility = $2::text[] WHERE id = $1`, [held.version_id, [...governedUsage]]);
+          await c.query(`INSERT INTO question_bank_lifecycle_events (bank_item_id, approved_item_id, from_status, to_status, reason, actor_kind, actor_user_id, run_id, detail) VALUES ($1, $2, 'ACTIVE', 'ACTIVE', $3, 'SYSTEM', NULL, NULL, $4::jsonb)`,
+            [held.id, held.version_id, extra.length > 0 ? 'USAGE_RESTRICTED_BY_GOVERNANCE' : 'USAGE_AUTHORIZED_BY_GOVERNANCE', JSON.stringify({ added: missing, removed: extra, decision: auth?.decisionId ?? null, scope: plan.scope, presentation: auth?.presentation ?? null, itemInstanceId: i.instanceId })]);
           report.materialized.usageAuthorized = (report.materialized.usageAuthorized ?? 0) + 1;
         }
         report.materialized.skipped += 1;

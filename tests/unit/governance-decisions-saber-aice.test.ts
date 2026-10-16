@@ -40,6 +40,10 @@ describe('Saber: full-length StudyUs preparation mock (PILOT_PREVIEW only)', () 
   it('the usage widens for Saber and PAA in PILOT_PREVIEW only; every other system and scope keeps PRACTICE + REDUCED_MOCK', () => {
     expect(coreDerivedUsageFor('ICFES', 'PILOT_PREVIEW')).toEqual([...CORE_DERIVED_USAGE, 'FULL_MOCK']);
     expect(coreDerivedUsageFor('PAA', 'PILOT_PREVIEW')).toEqual([...CORE_DERIVED_USAGE, 'FULL_MOCK']);
+    // PAA multiple choice serves the full-length form ONLY: the coached PAA practice and the reduced mock keep their certified bank
+    expect(coreDerivedUsageFor('PAA', 'PILOT_PREVIEW', 'SELECTED_RESPONSE')).toEqual(['FULL_MOCK']);
+    expect(coreDerivedUsageFor('PAA', 'PILOT_PREVIEW', 'NUMERIC_ENTRY')).toEqual([...CORE_DERIVED_USAGE, 'FULL_MOCK']);
+    expect(coreDerivedUsageFor('ICFES', 'PILOT_PREVIEW', 'SELECTED_RESPONSE')).toEqual([...CORE_DERIVED_USAGE, 'FULL_MOCK']);
     for (const [system, scope] of [['ICFES', 'PRODUCTION'], ['ICFES', 'DEV'], ['PAA', 'PRODUCTION'], ['IB', 'PILOT_PREVIEW'], ['CAMBRIDGE', 'PILOT_PREVIEW'], ['PISA', 'PILOT_PREVIEW']]) expect(coreDerivedUsageFor(system, scope)).toEqual(CORE_DERIVED_USAGE);
   });
   it('the mock setup says it is StudyUs preparation, not an official exam, in every locale', () => {

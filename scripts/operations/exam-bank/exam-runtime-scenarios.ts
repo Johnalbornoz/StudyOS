@@ -57,7 +57,9 @@ async function main(): Promise<void> {
   // the bank's readiness is a stored snapshot: refreshed after a publication, never recomputed on a Student request
   const health = await refreshVersionHealth(paa.version_id);
   const mathHealth = health?.health.components.find((c: any) => c.sectionKey === 'matematicas') as any;
-  check('H1  the bank health snapshot sees the persisted supply: Matemáticas practice ready, a REDUCED form assembles, a FULL form does not', !!mathHealth && mathHealth.practice === true && mathHealth.reducedAssembles === true && mathHealth.fullAssembles === false, JSON.stringify({ practice: mathHealth?.practice, reduced: mathHealth?.reducedAssembles, full: mathHealth?.fullAssembles, reducedForms: mathHealth?.reducedFormCapacity }));
+  // 2026-10-15: the certified multiple-choice supply (TB-PAA-MATH-MC-A1, FULL_MOCK usage under the PAA preparation authorisation) makes a
+  // complete 55-position Matemáticas form assemble; before it, it did not
+  check('H1  the bank health snapshot sees the persisted supply: Matemáticas practice ready, a REDUCED form assembles, a FULL form assembles', !!mathHealth && mathHealth.practice === true && mathHealth.reducedAssembles === true && mathHealth.fullAssembles === true, JSON.stringify({ practice: mathHealth?.practice, reduced: mathHealth?.reducedAssembles, full: mathHealth?.fullAssembles, reducedForms: mathHealth?.reducedFormCapacity }));
 
   const clerk = `ebr-${RUN}`;
   const user = await getOrCreateCanonicalUser(clerk, `${clerk}@exam-bank.test`);
@@ -97,7 +99,12 @@ async function main(): Promise<void> {
             if (again.outcome !== 'ITEM_READY' || !again.coach?.assisted || !again.coach.strategy) throw new Error('a revealed strategy is not held on the attempt');
           } catch (e: any) { out.revealRefusals.push(String(e?.code ?? e?.message ?? e)); }
         }
-        const answer = pattern(out.delivered) ? String(item.exam.acceptableAnswers?.[0] ?? item.correctAnswer) : '987654321';
+        // a selected-response item (PAA Matemáticas multiple choice, 2026-10-15) is answered with an option it offers
+        const content = (await one(`SELECT content FROM approved_items WHERE id = $1`, [item.exam.approvedItemId])).content;
+        const options: any[] = Array.isArray(content?.options) ? content.options : [];
+        const answer = options.length
+          ? String(pattern(out.delivered) ? content.correctAnswer : options.find((o) => o.id !== content.correctAnswer).id)
+          : pattern(out.delivered) ? String(item.exam.acceptableAnswers?.[0] ?? item.correctAnswer) : '987654321';
         const submitted = await submitSimulationItemAnswer(actor, simId, answer, `ebr:${simId}:${next.targetIndex}`, next.targetIndex);
         if (submitted.speedReview) out.reviews.push(submitted.speedReview);
         out.delivered += 1;
@@ -184,10 +191,10 @@ async function main(): Promise<void> {
     const { examItemFromApproved } = await import('@/lib/exam-core/items');
     const nsRows = (await db.query(`SELECT ai.id, ai.learning_objective_id, ai.content FROM approved_items ai JOIN question_bank_items qi ON qi.current_version_id = ai.id WHERE qi.lineage_class = 'CORE_DERIVED' AND ai.content->>'question' ~ '^Si x\\(' LIMIT 3`)).rows;
     const nsCoaches = nsRows.map((r: any) => { const it = examItemFromApproved(r); return it ? coachOfItem(it) : null; });
-    const allRows = (await db.query(`SELECT ai.id, ai.learning_objective_id, ai.content FROM approved_items ai JOIN question_bank_items qi ON qi.current_version_id = ai.id JOIN exam_versions v ON v.id = qi.exam_version_id JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE qi.lineage_class = 'CORE_DERIVED' AND d.config_key = 'v2.paa' AND ai.status = 'PUBLISHED'`)).rows;
+    const allRows = (await db.query(`SELECT ai.id, ai.learning_objective_id, ai.content FROM approved_items ai JOIN question_bank_items qi ON qi.current_version_id = ai.id JOIN exam_versions v ON v.id = qi.exam_version_id JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE qi.lineage_class = 'CORE_DERIVED' AND d.config_key = 'v2.paa' AND ai.status = 'PUBLISHED' AND 'PRACTICE' = ANY(ai.usage_eligibility)`)).rows; // the coached PRACTICE bank (multiple-choice items are full-length-only, 2026-10-15)
     const covered = allRows.filter((r: any) => { const it = examItemFromApproved(r); return !!it && !!coachOfItem(it); }).length;
     check('S6  NO_RELIABLE_SHORTCUT is a governed result: persisted items of that family resolve to it', nsRows.length === 3 && nsCoaches.every((c: any) => c?.strategy.strategyType === 'NO_RELIABLE_SHORTCUT'), `${nsCoaches.map((c: any) => c?.strategy.strategyId).join(',')}`);
-    check('S6b every persisted PAA Matemáticas Exam Bank item resolves to a certified, proven strategy', allRows.length === 296 && covered === 296, `${covered} of ${allRows.length}`);
+    check('S6b every PAA Matemáticas Exam Bank item served in practice resolves to a certified, proven strategy', allRows.length === 296 && covered === 296, `${covered} of ${allRows.length}`);
     check('P12 a second practice prefers items the Student has not met: none of the first 12 is repeated', p2Run.delivered === 12 && p2Run.approvedItemIds.every((id) => !pRun.approvedItemIds.includes(id)), `${p2Run.approvedItemIds.filter((id) => pRun.approvedItemIds.includes(id)).length} repeated`);
 
     /* ------------------------------------------------ M: Reduced Mock ------------------------------------------------ */
@@ -241,7 +248,8 @@ async function main(): Promise<void> {
     else check('C3  scored 12 of 12, completed, evidence EXAM_ASSESSMENT', Number((await one(`SELECT sum(score)::float AS earned FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [cExamAttempt])).earned) === 12 && (await getSimulationAttempt(cSim))!.status === 'COMPLETED' && cEvidence.length > 0 && cEvidence.every((e) => e.metadata?.assessment?.supply?.evidenceClass === 'EXAM_ASSESSMENT'), `${cEvidence.length} evidence rows`);
 
     /* ------------------------------------------------ F: Full Mock ------------------------------------------------ */
-    check('F1  the bank health says a FULL Matemáticas form does not assemble (55 official positions; the certified blueprint is REDUCED)', mathHealth?.fullAssembles === false && Number(mathHealth?.fullFormCapacity) === 0, `official ${mathHealth?.officialItemCount}, reduced positions ${mathHealth?.reducedPositions}`);
+    // 2026-10-15: the full-length-only multiple-choice supply now fills a complete 55-position Matemáticas form (FULL_MOCK use); the reduced blueprint stays REDUCED
+    check('F1  the bank health says a FULL Matemáticas form assembles from FULL_MOCK supply (55 official positions) while the certified v2.paa blueprint stays REDUCED', mathHealth?.fullAssembles === true && Number(mathHealth?.reducedPositions) === 12, `official ${mathHealth?.officialItemCount}, reduced positions ${mathHealth?.reducedPositions}`);
     check('F2  no attempt of this Student was ever started as FULL_MOCK', (await n(`SELECT count(*)::int AS n FROM simulation_attempts WHERE student_id = $1 AND simulation_type = 'FULL_MOCK'`, [S])) === 0);
     // The whole-PAA mock is the package of its four components: it is offered exactly when every one of them has
     // certified supply for a reduced form (Lectura, Redacción and Inglés got theirs from the PAA pilot publication).

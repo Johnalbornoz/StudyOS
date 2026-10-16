@@ -23,6 +23,12 @@ export interface FullMockAuthorization {
   positions: number;
   /** How the Student is told what the form is. */
   presentation: 'STUDYUS_PREPARATION_NOT_OFFICIAL';
+  /**
+   * Formats this authorisation admits for the FULL-LENGTH form ONLY (usage exactly FULL_MOCK): content that must not
+   * change an existing practice / reduced-mock experience (PAA: practice is coached with certified speed strategies,
+   * certified for the numeric bank only; the full-length mock has no coach).
+   */
+  fullLengthOnlyFormats?: readonly string[];
   runtimeGeneration: 0;
   humanReviewer: null;
   humanReviewStatus: 'PENDING';
@@ -40,7 +46,7 @@ export const FULL_MOCK_AUTHORIZATIONS: readonly FullMockAuthorization[] = [
   // per-category distribution, so the form is never an official PAA form; StudyUs preparation, not College Board.
   {
     decisionId: 'PAA-FULL-LENGTH-PREPARATION-MOCK-2026-10-15', decisionType: 'ARCHITECTURE_GOVERNANCE_DECISION', scope: 'PILOT', deliveryScope: 'PILOT_PREVIEW',
-    systemId: 'PAA', configKey: 'v2.paa-full-length', blueprintId: 'v2.paa-full-length', positions: 175,
+    systemId: 'PAA', configKey: 'v2.paa-full-length', blueprintId: 'v2.paa-full-length', positions: 175, fullLengthOnlyFormats: ['SELECTED_RESPONSE'],
     presentation: 'STUDYUS_PREPARATION_NOT_OFFICIAL', runtimeGeneration: 0, humanReviewer: null, humanReviewStatus: 'PENDING', decidedAt: '2026-10-15',
   },
 ];
@@ -50,6 +56,9 @@ export const fullMockAuthorizationFor = (systemId: string, deliveryScope: string
   FULL_MOCK_AUTHORIZATIONS.find((a) => a.systemId === systemId && a.deliveryScope === deliveryScope) ?? null;
 
 /** The usage a CORE_DERIVED bank version of this system is published with in this scope. */
-export function coreDerivedUsageFor(systemId: string, deliveryScope: string): readonly string[] {
-  return fullMockAuthorizationFor(systemId, deliveryScope) ? [...CORE_DERIVED_USAGE, 'FULL_MOCK'] : CORE_DERIVED_USAGE;
+export function coreDerivedUsageFor(systemId: string, deliveryScope: string, format?: string): readonly string[] {
+  const auth = fullMockAuthorizationFor(systemId, deliveryScope);
+  if (!auth) return CORE_DERIVED_USAGE;
+  if (format && auth.fullLengthOnlyFormats?.includes(format)) return ['FULL_MOCK'];
+  return [...CORE_DERIVED_USAGE, 'FULL_MOCK'];
 }
