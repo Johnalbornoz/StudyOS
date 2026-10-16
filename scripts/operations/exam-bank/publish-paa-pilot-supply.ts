@@ -27,7 +27,15 @@ async function main(): Promise<number> {
   const { db } = await import('@/lib/db');
   const client = await db.connect();
   try {
-    const report = await runPilotPublication(client, artefacts, { apply });
+    // the REMAINING gap of the 175-position form: rounds 7-8 already published Redacción cohesión 3 / elisión 1 /
+    // particularización 1, Inglés redacción 5 / lectura 1 and one Lectura item whose template the bank already held;
+    // what a form still lacks is ONE Lectura 'ideas explícitas' template (round 9). An item whose template the bank
+    // holds is never selected, so a re-run publishes nothing new.
+    const PAA_FULL_LENGTH_REMAINING_GAP = { 'paa.lect.explicitas': 1 };
+    // PAA full-length gap (2026-10-16): rounds 7-9 publish ONLY the 12 positions the 175-position form lacked, for the
+    // full-length preparation mock only (FULL_MOCK); practice and the reduced mock keep their prior bank
+    const gap = { unitPattern: /^paa-pilot\.r[789]\./, quota: PAA_FULL_LENGTH_REMAINING_GAP, usage: ['FULL_MOCK'] };
+    const report = await runPilotPublication(client, artefacts, { apply, gap });
     console.log(`paa pilot publication -- target ${target.name} db ${fp} -- ${report.mode} ${report.committed ? 'COMMITTED' : 'ROLLED BACK (nothing kept)'}`);
     console.log(`units ${report.units}; candidates ${report.candidates}; certified ${report.certified}; review required ${report.reviewRequired}`);
     console.log(`stimuli +${report.stimuliInserted} (=${report.stimuliSkipped}); items +${report.itemsInserted} (=${report.itemsSkipped}); usage authorised ${report.usageAuthorized ?? 0}; by objective ${JSON.stringify(report.byObjective)}`);

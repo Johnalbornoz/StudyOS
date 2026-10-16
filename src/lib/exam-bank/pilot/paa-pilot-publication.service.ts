@@ -38,8 +38,27 @@ export function certifyArtefacts(artefacts: readonly PilotArtefact[]): UnitCerti
 type Q = Pick<PoolClient, 'query'>;
 const one = async <T = Record<string, unknown>>(c: Q, sql: string, params: unknown[] = []): Promise<T | undefined> => (await c.query(sql, params)).rows[0] as T | undefined;
 
-export async function runPilotPublication(client: PoolClient, artefacts: readonly PilotArtefact[], opts: { apply: boolean }): Promise<PilotPublicationReport> {
-  const certs = certifyArtefacts(artefacts);
+/**
+ * A governed GAP selection (PAA full-length, 2026-10-16): of the certified items of the units matching `unitPattern`,
+ * only the first `quota[objective]` per objective (unit order, then slot order) are published, with `usage` exactly;
+ * the rest stay certified artefacts, unpublished. Units outside the pattern are published as before.
+ */
+export interface PilotGapSelection { unitPattern: RegExp; quota: Readonly<Record<string, number>>; usage: readonly string[] }
+export async function runPilotPublication(client: PoolClient, artefacts: readonly PilotArtefact[], opts: { apply: boolean; gap?: PilotGapSelection }): Promise<PilotPublicationReport> {
+  const all = certifyArtefacts(artefacts);
+  const left: Record<string, number> = { ...(opts.gap?.quota ?? {}) };
+  const inGap = (unitId: string) => !!opts.gap && opts.gap.unitPattern.test(unitId);
+  // wording uniqueness BEFORE publication: a gap item whose template (wording, numbers masked) the objective already
+  // holds adds no position to a form (a form never repeats a template), so it is not selected
+  const held = new Map<string, Set<string>>();
+  if (opts.gap) for (const r of (await client.query(`SELECT lo.code, ai.template_fingerprint AS t FROM approved_items ai JOIN learning_objectives lo ON lo.id = ai.learning_objective_id JOIN question_bank_items qi ON qi.id = ai.bank_item_id AND qi.current_version_id = ai.id WHERE lo.code = ANY($1::text[]) AND qi.lineage_class IN ('CORE_DERIVED', 'PILOT_CERTIFIED') AND ai.bank_lifecycle_status = 'ACTIVE'`, [Object.keys(opts.gap.quota)])).rows) { const s = held.get(r.code) ?? new Set<string>(); s.add(r.t); held.set(r.code, s); }
+  const certs = all.map((cert) => (inGap(cert.unitId) ? { ...cert, certified: cert.certified.filter((ci) => {
+    const t = itemFingerprints(ci.content as never).template; const seen = held.get(ci.objectiveCode) ?? new Set<string>();
+    if (seen.has(t)) return false; // an item already published keeps its row (skipped as identical later); never a new one
+    if ((left[ci.objectiveCode] ?? 0) <= 0) return false;
+    left[ci.objectiveCode] -= 1; seen.add(t); held.set(ci.objectiveCode, seen); return true;
+  }) } : cert));
+  const usageOf = (unitId: string): readonly string[] => (inGap(unitId) ? opts.gap!.usage : PILOT_USAGE);
   const report: PilotPublicationReport = { mode: opts.apply ? 'APPLY' : 'DRY_RUN', committed: false, units: certs.length, candidates: certs.reduce((n, x) => n + x.decisions.length, 0), certified: certs.reduce((n, x) => n + x.certified.length, 0), reviewRequired: certs.reduce((n, x) => n + x.decisions.filter((d) => d.state !== 'AUTOMATED_CERTIFIED_PILOT').length, 0), stimuliInserted: 0, stimuliSkipped: 0, itemsInserted: 0, itemsSkipped: 0, byObjective: {}, blocked: [], verification: {} };
   const c = client;
   await c.query('BEGIN');
@@ -94,9 +113,9 @@ export async function runPilotPublication(client: PoolClient, artefacts: readonl
         if (heldItem) {
           if (heldItem.lineage_class !== 'PILOT_CERTIFIED' || heldItem.provenance !== 'STUDYUS_GENERATED' || heldItem.current_hash !== hash) throw new Error(`PUBLICATION_CONFLICT: a bank item ${key} exists that is not this certified content`);
           // a governed full-length preparation mock authorisation widens the usage of the version in use (never its content)
-          const missing = PILOT_USAGE.filter((u) => !(heldItem.usage ?? []).includes(u));
+          const missing = usageOf(cert.unitId).filter((u) => !(heldItem.usage ?? []).includes(u));
           if (missing.length > 0 && heldItem.lifecycle === 'ACTIVE' && heldItem.version_id) {
-            await c.query(`UPDATE approved_items SET usage_eligibility = $2::text[] WHERE id = $1`, [heldItem.version_id, [...new Set([...(heldItem.usage ?? []), ...PILOT_USAGE])]]);
+            await c.query(`UPDATE approved_items SET usage_eligibility = $2::text[] WHERE id = $1`, [heldItem.version_id, [...new Set([...(heldItem.usage ?? []), ...usageOf(cert.unitId)])]]);
             await c.query(`INSERT INTO question_bank_lifecycle_events (bank_item_id, approved_item_id, from_status, to_status, reason, actor_kind, actor_user_id, run_id, detail) VALUES ($1, $2, 'ACTIVE', 'ACTIVE', 'USAGE_AUTHORIZED_BY_GOVERNANCE', 'SYSTEM', NULL, NULL, $3::jsonb)`,
               [heldItem.id, heldItem.version_id, JSON.stringify({ added: missing, decision: fullMockAuthorizationFor('PAA', PILOT_SCOPE)?.decisionId ?? null, scope: PILOT_SCOPE, itemKey: key })]);
             report.usageAuthorized = (report.usageAuthorized ?? 0) + 1;
@@ -114,7 +133,7 @@ export async function runPilotPublication(client: PoolClient, artefacts: readonl
           `INSERT INTO approved_items (learning_objective_id, question_type, content, created_by, status, published_at, content_origin, semantic_fingerprint, template_fingerprint, reasoning_fingerprint, stimulus_fingerprint,
                                        bank_item_id, version_number, bank_lifecycle_status, content_hash, target_difficulty, calibration_confidence, lifecycle_updated_at, usage_eligibility, exam_alignment, validation_report)
            VALUES ($1, $2, $3::jsonb, $4, 'APPROVED', NULL, 'GENERATED', $5, $6, $7, $8, $9, 1, 'VALIDATED', $10, $11, 'INSUFFICIENT_DATA', now(), $12::text[], 'MOCK_READY', $13::jsonb) RETURNING id`,
-          [target.objective_id, ci.content.type, JSON.stringify(ci.content), author, fp.semantic, fp.template, fp.reasoning, fp.stimulus, item!.id, hash, ci.content.difficulty, [...PILOT_USAGE], JSON.stringify(validation)]);
+          [target.objective_id, ci.content.type, JSON.stringify(ci.content), author, fp.semantic, fp.template, fp.reasoning, fp.stimulus, item!.id, hash, ci.content.difficulty, [...usageOf(cert.unitId)], JSON.stringify(validation)]);
         await c.query(`INSERT INTO question_bank_content_rights (content_type, content_id, source_access, reuse_rights, rights_holder, permitted_use, attribution_text, recorded_by) VALUES ('ITEM_VERSION', $1, 'NOT_APPLICABLE', 'STUDYUS_OWNED', 'StudyUs', $2, $3, $4)`,
           [version!.id, 'Delivery to Students within StudyUs in PILOT_PREVIEW only (PAA pilot certification policy).', `${ci.item.rights.category}: ${ci.item.rights.basis}`, author]);
         await c.query(`INSERT INTO question_bank_item_concepts (approved_item_id, canonical_concept_id, role, attributed_by) VALUES ($1, $2, 'PRIMARY', $3)`, [version!.id, conceptId, author]);

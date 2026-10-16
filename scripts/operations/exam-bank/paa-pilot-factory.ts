@@ -25,7 +25,7 @@ async function main(): Promise<number> {
   const round = Number(arg('--round') ?? '1') - 1;
   const only = (arg('--units') ?? '').split(',').filter(Boolean);
   const dry = process.argv.includes('--dry-run');
-  if (!Number.isInteger(round) || round < 0 || round > 6) { console.error('--round must be 1..7'); return 2; }
+  if (!Number.isInteger(round) || round < 0 || round > 8) { console.error('--round must be 1..9'); return 2; }
   const freeze = JSON.parse(readFileSync(join(ROOT, 'docs/audits/qb_review/GENERATION_FREEZE_EXCEPTION_PAA_PILOT.json'), 'utf8'));
   if (freeze.system !== 'PAA' || freeze.purpose !== PAA_PILOT_GENERATION_EXCEPTION.purpose || freeze.execution !== 'OFFLINE_PREPUBLICATION' || freeze.maxCostUsd !== PAA_PILOT_GENERATION_EXCEPTION.maxCostUsd) { console.error('REFUSING: the governed generation exception is not the recorded one'); return 3; }
   mkdirSync(join(DIR, `round-${round + 1}`), { recursive: true });

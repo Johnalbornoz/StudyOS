@@ -46,7 +46,7 @@ describe('PAA pilot certification policy', () => {
   it('every generation request is a governed gap of Reading, Writing or English; anything else is refused before a provider is paid', () => {
     expect(PAA_PILOT_BUCKETS.reduce((n, b) => n + b.positions, 0)).toBe(24);
     expect([...new Set(PAA_PILOT_BUCKETS.map((b) => b.component))].sort()).toEqual(['ingles', 'lectura', 'redaccion']);
-    for (const round of [0, 1, 2, 3, 4, 5, 6]) for (const p of paaPilotRound(round)) expect(unitPlanIssues(p), p.unitId).toEqual([]);
+    for (const round of [0, 1, 2, 3, 4, 5, 6, 7, 8]) for (const p of paaPilotRound(round)) expect(unitPlanIssues(p), p.unitId).toEqual([]);
     // one round asks for every uncovered bucket
     expect([...new Set(paaPilotRound(0).flatMap((p) => p.slots.map((s) => s.objectiveCode)))].sort()).toEqual(PAA_PILOT_BUCKETS.map((b) => b.objectiveCode).sort());
     expect(unitPlanIssues({ ...plan, slots: [{ ...plan.slots[0], objectiveCode: 'paa.mat.algebra' }] })).toContain('NOT_A_GOVERNED_GAP:paa.mat.algebra');

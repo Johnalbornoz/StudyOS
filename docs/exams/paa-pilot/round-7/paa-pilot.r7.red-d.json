@@ -1,0 +1,462 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r7.red-d",
+    "component": "redaccion",
+    "language": "es",
+    "stimulusKind": "SHORT_SOURCE_TEXT",
+    "stimulusBrief": "Párrafo ORIGINAL de 140 a 200 palabras sobre un intercambio de semillas entre agricultores de una vereda, con las oraciones NUMERADAS así: (1) ... (2) ... hasta (8). Debe contener una unión de oraciones mejorable con un conector, una oración con información prescindible y una afirmación general que pueda concretarse.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.red.cohesion",
+        "conceptStableId": "write.cohesion-connectors",
+        "difficulty": 3,
+        "focus": "qué conector o transición une mejor dos oraciones numeradas según su relación lógica"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.red.elision",
+        "conceptStableId": "write.concision-elision",
+        "difficulty": 3,
+        "focus": "qué oración numerada puede eliminarse sin que el párrafo pierda información necesaria"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.red.particularizacion",
+        "conceptStableId": "write.indirect-expression",
+        "difficulty": 4,
+        "focus": "qué detalle concreto expresa de manera indirecta una característica afirmada en una oración numerada"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Intercambio en El Arrayán",
+      "text": "(1) Cada julio, los agricultores de la vereda El Arrayán organizan un intercambio de semillas en el salón comunal. (2) Este año, una helada redujo la cosecha de varias huertas y dejó a algunas familias sin fríjol para la próxima siembra. (3) Varias familias llevaron sobres de fríjol, maíz y habas que habían guardado de temporadas anteriores. (4) Antes de abrir las mesas, Lucía explicó el origen de cada lote y pidió anotarlo en una libreta común. (5) La jornada mostró que la comunidad sabe cuidarse en momentos difíciles. (6) El salón comunal tenía paredes verdes y dos ventanas orientadas hacia el camino. (7) Al final, Marta entregó a Julián tres sobres de maíz amarillo y él compartió con ella semillas de calabaza resistente a la sequía. (8) Con los registros de la libreta, acordaron reunirse en noviembre para revisar qué variedades crecieron mejor en las parcelas más altas de la vereda.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Cuál transición une mejor las oraciones (2) y (3), de acuerdo con la relación lógica entre ellas?",
+        "options": [
+          {
+            "text": "Por eso,",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La escasez causada por la helada explica que las familias aportaran semillas guardadas para responder a esa necesidad."
+          },
+          {
+            "text": "Sin embargo,",
+            "isKey": false,
+            "misconception": "CONFUSES_CAUSE_WITH_CONTRAST",
+            "rationale": "Resulta tentador porque las dos oraciones presentan situaciones distintas, pero la segunda responde a la primera en vez de contradecirla."
+          },
+          {
+            "text": "Además,",
+            "isKey": false,
+            "misconception": "CONFUSES_CAUSE_WITH_ADDITION",
+            "rationale": "Este conector sumaría información sin expresar que el intercambio surge como consecuencia de la helada."
+          },
+          {
+            "text": "Mientras tanto,",
+            "isKey": false,
+            "misconception": "CONFUSES_CAUSE_WITH_SIMULTANEITY",
+            "rationale": "Puede parecer adecuado porque ambos hechos ocurren durante la jornada, pero no indica la relación de causa y consecuencia."
+          }
+        ],
+        "evidenceQuote": "una helada redujo la cosecha de varias huertas y dejó a algunas familias sin fríjol para la próxima siembra. Varias familias llevaron sobres"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué oración puede eliminarse sin que el párrafo pierda información necesaria sobre el intercambio de semillas?",
+        "options": [
+          {
+            "text": "La oración (1).",
+            "isKey": false,
+            "misconception": "REMOVES_CONTEXT_SETTING",
+            "rationale": "Presenta la actividad y el lugar donde ocurre, por lo que aporta el contexto básico del párrafo."
+          },
+          {
+            "text": "La oración (4).",
+            "isKey": false,
+            "misconception": "REMOVES_PROCESS_DETAIL",
+            "rationale": "Explica cómo se registró el origen de las semillas, información que se relaciona con el acuerdo final."
+          },
+          {
+            "text": "La oración (6).",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La descripción de las paredes y las ventanas no aporta datos necesarios sobre el intercambio, sus participantes ni sus acuerdos."
+          },
+          {
+            "text": "La oración (8).",
+            "isKey": false,
+            "misconception": "REMOVES_OUTCOME_DETAIL",
+            "rationale": "Expone el acuerdo alcanzado al final de la jornada y completa la secuencia de acciones del párrafo."
+          }
+        ],
+        "evidenceQuote": "El salón comunal tenía paredes verdes y dos ventanas orientadas hacia el camino."
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Cuál detalle concreta de manera indirecta la idea expresada en la oración (5)?",
+        "options": [
+          {
+            "text": "La explicación de Lucía sobre el origen de cada lote.",
+            "isKey": false,
+            "misconception": "CONFUSES_ORGANIZATION_WITH_MUTUAL_SUPPORT",
+            "rationale": "Muestra organización durante la jornada, pero no evidencia de forma directa el apoyo recíproco entre agricultores."
+          },
+          {
+            "text": "La descripción de las paredes verdes del salón comunal.",
+            "isKey": false,
+            "misconception": "CONFUSES_SETTING_WITH_CHARACTERIZATION",
+            "rationale": "Aporta una característica del lugar, no una acción que revele cómo se cuida la comunidad."
+          },
+          {
+            "text": "El intercambio de maíz amarillo por semillas de calabaza.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El gesto recíproco de compartir semillas muestra concretamente que los participantes se apoyan ante las dificultades."
+          },
+          {
+            "text": "El acuerdo de reunirse en noviembre para revisar variedades.",
+            "isKey": false,
+            "misconception": "CONFUSES_FUTURE_PLANNING_WITH_PRESENT_SUPPORT",
+            "rationale": "Expresa planificación colectiva, pero no ilustra tan claramente el cuidado mutuo mostrado durante el intercambio."
+          }
+        ],
+        "evidenceQuote": "Marta entregó a Julián tres sobres de maíz amarillo y él compartió con ella semillas de calabaza resistente a la sequía."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "0db94bdf-8c63-458a-8395-da282cfa2e50",
+    "generatedAt": "2026-10-16T14:03:10.883Z",
+    "unitId": "paa-pilot.r7.red-d"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "344c3b32-4937-4931-8be1-3f229088cc7c",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "D",
+            "otherDefensible": [
+              "C"
+            ],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "6f061968-3571-464d-8009-d75d2fe82d79",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [
+              "A"
+            ],
+            "ambiguous": true,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.red-cohesion.a26b609a0cd3",
+        "slot": "s1",
+        "objectiveCode": "paa.red.cohesion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "KEY_SUPPORTED_BY_STIMULUS",
+          "ANSWER_VALIDITY",
+          "SINGLE_DEFENSIBLE_ANSWER"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.cohesion / write.cohesion-connectors"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.857f2524e401@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": false,
+            "detail": "the cited support is not in the stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": false,
+            "detail": "A:key B:other"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": false,
+            "detail": "A:other-defensible | B:ambiguous"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-elision.10f0c20456f3",
+        "slot": "s2",
+        "objectiveCode": "paa.red.elision",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.elision / write.concision-elision"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.857f2524e401@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-particularizacion.84a5290b8c72",
+        "slot": "s3",
+        "objectiveCode": "paa.red.particularizacion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.particularizacion / write.indirect-expression"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.857f2524e401@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}
