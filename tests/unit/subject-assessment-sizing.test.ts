@@ -26,6 +26,41 @@ describe('subject mock: the operator count table, uniform and representative', (
   });
 });
 
+describe('APPROVED 2026-10-17: mock with 16+ manually selected concepts (OVER_15_PARTIAL) = ~2/concept, max 50', () => {
+  for (const [n, count] of [[18, 36], [22, 44], [30, 50]] as const) {
+    it(`${n} concepts -> ${count} questions, every concept at least once, uniform`, () => {
+      const p = planSubjectMock(ids(n), false);
+      expect(p.band).toBe('OVER_15_PARTIAL');
+      expect(p.rule).toBe('MOCK_OVER_15_PARTIAL');
+      expect(p.questionCount).toBe(count);
+      expect(sum(p.distribution)).toBe(count);
+      expect(Object.keys(p.distribution)).toEqual(ids(n));
+      expect(Math.min(...Object.values(p.distribution))).toBeGreaterThanOrEqual(1);
+      expect(Math.max(...Object.values(p.distribution)) - Math.min(...Object.values(p.distribution))).toBeLessThanOrEqual(1);
+      expect(p.uncovered).toEqual([]);
+    });
+  }
+  it('30 concepts: each gets 1 first, then the 20 remaining follow the uniform coverage in subject order', () => {
+    const p = planSubjectMock(ids(30), false);
+    expect(ids(30).map((c) => p.distribution[c])).toEqual([...Array(20).fill(2), ...Array(10).fill(1)]);
+  });
+  it('the >= 1 guarantee holds for every selection up to 50 concepts (partial or whole subject)', () => {
+    for (let n = 1; n <= 50; n++) for (const all of [false, true]) {
+      const p = planSubjectMock(ids(n), all);
+      expect(Object.keys(p.distribution)).toHaveLength(n);
+      expect(Math.min(...Object.values(p.distribution))).toBeGreaterThanOrEqual(1);
+      expect(sum(p.distribution)).toBe(p.questionCount);
+      expect(p.questionCount).toBeLessThanOrEqual(50);
+    }
+  });
+  it('beyond 50 concepts the existing behaviour stays: 50 covered once, the rest uncovered (refused by the caller)', () => {
+    const p = planSubjectMock(ids(55), false);
+    expect(p.questionCount).toBe(50);
+    expect(Object.values(p.distribution).every((x) => x === 1)).toBe(true);
+    expect(p.uncovered).toEqual(['c51', 'c52', 'c53', 'c54', 'c55']);
+  });
+});
+
 describe('subject test: adaptive, every concept at least once, min 4, max 50', () => {
   it('one per concept, a second for concepts with need; never fewer than 4', () => {
     const p = planSubjectTest([{ conceptId: 'a', needsReinforcement: true }, { conceptId: 'b', needsReinforcement: false }, { conceptId: 'c', needsReinforcement: false }]);

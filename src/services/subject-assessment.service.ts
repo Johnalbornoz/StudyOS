@@ -37,13 +37,23 @@ import {
   SUBJECT_ASSESSMENT_MAX_QUESTIONS, planSubjectMock, planSubjectTest, subjectAssessmentPassed, SUBJECT_ASSESSMENT_PASS_PERCENT,
 } from '@/lib/subject-assessment/sizing';
 import {
-  QUIZ_MODE_OF, SETUP_KIND_OF, STUDENT_MAX_ATTEMPTS, DIFFICULTY_BAND_LEVELS, answerCountsAt, blueprintMatches, buildSchedule,
-  buildSubjectReport, conceptNeedsReinforcement, feedbackPolicyFor, kindOfQuizMode, lifecycleState, readSetup, remainingSeconds,
-  resolveStudentTimezone, sessionExpiresAt, splitByLevels, startTiming, studentTimingFor, recommendedMockDurationMinutes,
+  QUIZ_MODE_OF, SETUP_KIND_OF, STUDENT_MAX_ATTEMPTS, DIFFICULTY_PLAN_METHOD, answerCountsAt, assignLevelsAcrossConcepts, blueprintMatches, buildSchedule,
+  buildSubjectReport, conceptNeedsReinforcement, feedbackPolicyFor, kindOfQuizMode, lifecycleState, mixedLevelCounts, normalizeDifficultyBand, readSetup, remainingSeconds,
+  resolveTimezoneAuthority, sessionExpiresAt, startTiming, studentTimingFor, recommendedMockDurationMinutes,
   validateExplicitPlan, rankReuseCandidates,
-  type CompletionReason, type ReuseSource, type DifficultyBand, type ExplicitPlan, type GradedItem, type LifecycleState, type SubjectAssessmentKind, type SubjectAssessmentOrigin,
-  type SubjectAssessmentSetup, type TimingSpec,
+  type CompletionReason, type ReuseSource, type DifficultyBand, type ExplicitPlan, type GradedItem, type LegacyDifficultyBand, type LifecycleState, type SubjectAssessmentKind, type SubjectAssessmentOrigin,
+  type SubjectAssessmentSetup, type TimezoneAuthority, type TimingSpec,
 } from '@/lib/subject-assessment/lifecycle';
+import { knowledgeProfile, type KnowledgeProfile } from '@/lib/subject-assessment/knowledge-bucket';
+import { ABANDONMENT_TOLERANCE_SECONDS } from '@/lib/teacher/subject-assessment-assignment.rules';
+
+/** A frozen item: the generated question plus the level it was generated at (additive jsonb field, set at creation). */
+type FrozenQuestion = GeneratedQuestion & { plannedDifficultyLevel?: number };
+/** The level an item was generated at, else its recorded difficulty (rows frozen before 2026-10-17). */
+export const itemLevel = (q: FrozenQuestion): number | null => {
+  const v = typeof q.plannedDifficultyLevel === 'number' ? q.plannedDifficultyLevel : Number(q.difficulty);
+  return Number.isFinite(v) ? v : null;
+};
 
 // ------------------------------------------------------------------ types ----------------------------------------------------------------
 
@@ -55,9 +65,15 @@ export interface CreateSubjectAssessmentParams {
   conceptIds: string[];
   /** TEACHER: the fixed group plan (planGroupAssessment). Omitted for STUDENT: StudyUs plans it (sizing.ts). */
   plan?: { questionCount: number; distribution: Record<string, number>; rule: string };
-  /** TEACHER: explicit band. Omitted for STUDENT: AUTO (per-concept Knowledge State target difficulty). */
-  difficultyBand?: 'LOW' | 'MEDIUM' | 'HIGH' | 'MIXED';
-  /** NOW, or SCHEDULED for a local date (timezone = student_availability.timezone, else `browserTimezone`, recorded as assumed). */
+  /**
+   * TEACHER: explicit band (BASIC / INTERMEDIATE / ADVANCED / MIXED; the legacy LOW / MEDIUM / HIGH of rows frozen before
+   * 2026-10-17 are read as BASIC / INTERMEDIATE / ADVANCED). Omitted for STUDENT: AUTO (per-concept Knowledge State).
+   */
+  difficultyBand?: DifficultyBand | LegacyDifficultyBand;
+  /**
+   * NOW, or SCHEDULED for a local date: expires at 21:00 of that date in the authoritative timezone
+   * (student_availability.timezone, else the Student's institution); none -> TIMEZONE_AUTHORITY_BLOCKER.
+   */
   schedule: { mode: 'NOW' } | { mode: 'SCHEDULED'; date: string };
   /**
    * TEACHER: { timed, durationMinutes } (durationMinutes null -> the nominal recommendation). STUDENT: ignored -- the
@@ -70,8 +86,6 @@ export interface CreateSubjectAssessmentParams {
   avoidFingerprints?: string[];
   /** Optional: language of the items (default: the subject's resolved language, else 'es'). */
   language?: string;
-  /** Optional: the browser's IANA timezone, used only when the Student has none recorded. */
-  browserTimezone?: string;
   /** TEACHER: attempts allowed by the assignment (recorded in the setup; enforcement belongs to the assignment). */
   maxAttempts?: number;
   /**
@@ -183,7 +197,9 @@ export async function planSubjectAssessment(params: Pick<CreateSubjectAssessment
   if (!subjectConcepts) return fail(403, 'FORBIDDEN', 'Cannot access this subject.');
   if (conceptIds.some((c) => !subjectConcepts.includes(c))) return fail(403, 'FORBIDDEN', 'A selected concept is not part of this subject.');
   const allSubject = subjectConcepts.length > 0 && subjectConcepts.every((c) => conceptIds.includes(c));
-  const difficulty: SubjectAssessmentSetup['difficulty'] = params.difficultyBand ? { band: params.difficultyBand } : { mode: 'AUTO' };
+  const band = params.difficultyBand === undefined ? null : normalizeDifficultyBand(params.difficultyBand);
+  if (params.difficultyBand !== undefined && !band) return fail(400, 'DIFFICULTY_INVALID', 'Unknown difficulty band.');
+  const difficulty: SubjectAssessmentSetup['difficulty'] = band ? { band } : { mode: 'AUTO' };
   const timed = params.kind === 'MOCK';
 
   if (params.plan) {
@@ -261,26 +277,26 @@ const GENERATION_CONCURRENCY = 6;
  */
 async function generateExactDistribution(input: {
   studentId: string; subjectId: string; quizMode: 'cumulative_assessment' | 'exam_simulation'; language: string; parentOperationId: string;
-  distribution: Record<string, number>; levelsOf: (conceptId: string) => Promise<number[]>; seen: Map<string, Set<string>>; avoid: Set<string>;
+  distribution: Record<string, number>; levelPlanOf: (conceptId: string) => Promise<Array<{ level: number; count: number }>>; seen: Map<string, Set<string>>; avoid: Set<string>;
   generate: GeneratorDeps['generate'];
   /** Reuse ranking (teacher assignments): the previous attempt's items, and when each seen item was last served. */
   previousAttempt?: Set<string>; lastServedMs?: Map<string, number>;
-}): Promise<{ ok: true; questions: GeneratedQuestion[]; reused: SubjectAssessmentSetup['reusedItems'] } | { ok: false; shortConcepts: Array<{ conceptId: string; planned: number; generated: number }> }> {
+}): Promise<{ ok: true; questions: FrozenQuestion[]; reused: SubjectAssessmentSetup['reusedItems'] } | { ok: false; shortConcepts: Array<{ conceptId: string; planned: number; generated: number }> }> {
   const concepts = Object.keys(input.distribution);
   const results = await pool(concepts, GENERATION_CONCURRENCY, async (conceptId) => {
     const planned = input.distribution[conceptId];
-    const levels = await input.levelsOf(conceptId);
+    const levelPlan = await input.levelPlanOf(conceptId);
     const exclude = new Set<string>([...(input.seen.get(conceptId) ?? []), ...input.avoid]);
-    const accepted: GeneratedQuestion[] = [];
-    const reusable: GeneratedQuestion[] = [];
+    const accepted: FrozenQuestion[] = [];
+    const reusable: FrozenQuestion[] = [];
     const acceptedFp = new Set<string>();
-    for (const { level, count } of splitByLevels(planned, levels)) {
+    for (const { level, count } of levelPlan) {
       let got = 0;
       for (let round = 0; round < GENERATION_ROUNDS && got < count; round++) {
         const batch = await input.generate({ conceptId, studentId: input.studentId, subjectId: input.subjectId, count: count - got, difficulty: level, quizMode: input.quizMode, language: input.language, parentOperationId: input.parentOperationId }).catch(() => [] as GeneratedQuestion[]);
         for (const q of batch) {
           if (got >= count) break;
-          const item = { ...q, conceptId };
+          const item: FrozenQuestion = { ...q, conceptId, plannedDifficultyLevel: level };
           const fp = fingerprintQuestion(item);
           if (acceptedFp.has(fp)) continue;
           if (exclude.has(fp)) { reusable.push(item); continue; }
@@ -320,9 +336,19 @@ function interleaveByConcept(questions: GeneratedQuestion[]): GeneratedQuestion[
   return out;
 }
 
-async function loadStudentTimezone(studentId: string): Promise<string | null> {
-  const r = await db.query(`SELECT timezone FROM student_availability WHERE student_id = $1`, [studentId]).catch(() => ({ rows: [] as Array<{ timezone: string | null }> }));
-  return r.rows[0]?.timezone ?? null;
+/**
+ * The Student's timezone authority (APPROVED 2026-10-17): student_availability.timezone, else the timezone of the
+ * Student's institution -- the distinct institutions.timezone of the Student's ACTIVE class enrollments (exactly one).
+ * No authority -> TIMEZONE_AUTHORITY_BLOCKER (never the browser's, never UTC).
+ */
+export async function loadTimezoneAuthority(studentId: string): Promise<TimezoneAuthority> {
+  const own = await db.query(`SELECT timezone FROM student_availability WHERE student_id = $1`, [studentId]).catch(() => ({ rows: [] as Array<{ timezone: string | null }> }));
+  const inst = await db.query(
+    `SELECT DISTINCT i.timezone FROM class_enrollments ce JOIN classes c ON c.id = ce.class_id JOIN institutions i ON i.id = c.institution_id
+      WHERE ce.student_id = $1 AND ce.status = 'ACTIVE' AND i.timezone IS NOT NULL`,
+    [studentId],
+  ).catch(() => ({ rows: [] as Array<{ timezone: string | null }> }));
+  return resolveTimezoneAuthority(own.rows[0]?.timezone ?? null, inst.rows.map((r: { timezone: string | null }) => r.timezone));
 }
 
 // ----------------------------------------------------------------- create ----------------------------------------------------------------
@@ -349,8 +375,11 @@ export async function createSubjectAssessmentSession(
   const plan = planned.plan;
 
   const now = await dbNow();
-  const tz = resolveStudentTimezone(await loadStudentTimezone(params.studentId), params.browserTimezone);
-  const sched = buildSchedule(params.schedule, tz.timezone, now);
+  const tz = await loadTimezoneAuthority(params.studentId);
+  const sched = buildSchedule(params.schedule, tz.ok ? tz.timezone : null, now);
+  if (!sched.ok && sched.error === 'TIMEZONE_AUTHORITY_BLOCKER') {
+    return fail(409, 'TIMEZONE_AUTHORITY_BLOCKER', 'No timezone is recorded for this student or their institution, so a scheduled assessment cannot be given its 21:00 expiry. Do it now, or ask for the timezone to be set.', { reason: tz.ok ? 'INVALID_TIMEZONE' : tz.reason });
+  }
   if (!sched.ok) return fail(400, sched.error, 'The selected date is not valid.');
 
   const quizMode = QUIZ_MODE_OF[params.kind];
@@ -361,20 +390,22 @@ export async function createSubjectAssessmentSession(
   }
 
   // difficulty levels per concept: AUTO = the canonical target-difficulty authority over the concept's Knowledge State;
-  // an explicit band = its level table (no Knowledge State adaptation).
+  // an explicit band = the approved level table, assigned deterministically across concepts (assignLevelsAcrossConcepts:
+  // MIXED is exactly 30 / 50 / 20 over the whole assessment). No Knowledge State adaptation for a band.
   const activityType = activityTypeForQuizMode(quizMode);
-  const levelsOf = async (conceptId: string): Promise<number[]> => {
-    if ('band' in plan.difficulty) return DIFFICULTY_BAND_LEVELS[plan.difficulty.band as DifficultyBand];
+  const bandPlan = 'band' in plan.difficulty ? assignLevelsAcrossConcepts(plan.distribution, plan.difficulty.band as DifficultyBand) : null;
+  const levelPlanOf = async (conceptId: string): Promise<Array<{ level: number; count: number }>> => {
+    if (bandPlan) return bandPlan[conceptId] ?? [];
     const { getConceptKnowledgeState } = await import('@/services/knowledge-state.service');
     const ks = await getConceptKnowledgeState(params.studentId, conceptId).catch(() => null);
-    return [resolveTargetDifficulty({ activityType, knowledgeState: ks ? { masteryState: ks.masteryState, criticalMisconceptionCount: ks.criticalMisconceptionCount } : null }).level];
+    return [{ level: resolveTargetDifficulty({ activityType, knowledgeState: ks ? { masteryState: ks.masteryState, criticalMisconceptionCount: ks.criticalMisconceptionCount } : null }).level, count: plan.distribution[conceptId] }];
   };
 
   const { seen, lastServedMs } = await loadSeenWithRecency(params.studentId, plan.conceptIds);
   const previousAttempt = params.previousAttemptFingerprints ? new Set(params.previousAttemptFingerprints) : undefined;
   const generated = await generateExactDistribution({
     studentId: params.studentId, subjectId: params.subjectId, quizMode, language, parentOperationId: randomUUID(),
-    distribution: plan.distribution, levelsOf, seen, avoid: new Set([...(params.avoidFingerprints ?? []), ...(params.previousAttemptFingerprints ?? [])]), generate: deps.generate ?? defaultGenerate,
+    distribution: plan.distribution, levelPlanOf, seen, avoid: new Set([...(params.avoidFingerprints ?? []), ...(params.previousAttemptFingerprints ?? [])]), generate: deps.generate ?? defaultGenerate,
     ...(params.origin === 'TEACHER' ? { previousAttempt: previousAttempt ?? new Set<string>(), lastServedMs } : {}),
   });
   if (!generated.ok) {
@@ -388,8 +419,9 @@ export async function createSubjectAssessmentSession(
   }
 
   // timing: STUDENT Mock = nominal sum (always timed), STUDENT Test = untimed; TEACHER = as assigned (Mock always timed;
-  // durationMinutes null -> the nominal recommendation).
-  const items = questions.map((q) => ({ type: q.type, difficulty: q.difficulty }));
+  // the Teacher's duration -- frozen on the assignment at publication -- is authoritative and never recomputed here;
+  // durationMinutes null -> the nominal recommendation over these frozen items, adjusted by each item's level).
+  const items = questions.map((q) => ({ type: q.type, difficulty: itemLevel(q) }));
   let timing: TimingSpec;
   if (params.origin === 'STUDENT') timing = studentTimingFor(params.kind, items);
   else if (params.timing.timed) {
@@ -418,7 +450,10 @@ export async function createSubjectAssessmentSession(
     feedbackPolicy: feedbackPolicyFor(params.kind),
     maxAttempts: params.origin === 'STUDENT' ? STUDENT_MAX_ATTEMPTS : params.maxAttempts,
     frozenAt: now.toISOString(),
-    timezoneSource: tz.source,
+    timezoneSource: tz.ok ? tz.source : null,
+    ...(bandPlan && 'band' in plan.difficulty
+      ? { difficultyPlan: { counts: plan.difficulty.band === 'MIXED' ? mixedLevelCounts(plan.questionCount) : { BASIC: 0, INTERMEDIATE: 0, ADVANCED: 0, [plan.difficulty.band]: plan.questionCount } as Record<'BASIC' | 'INTERMEDIATE' | 'ADVANCED', number>, perConcept: bandPlan, method: DIFFICULTY_PLAN_METHOD } }
+      : {}),
     ...(plan.knowledgeSignals ? { knowledgeSignals: plan.knowledgeSignals } : {}),
     ...(plan.mockBand ? { mockBand: plan.mockBand } : {}),
     allSubject: plan.allSubject,
@@ -429,7 +464,7 @@ export async function createSubjectAssessmentSession(
   };
 
   const quizId = await storeQuiz(params.studentId, null, params.subjectId, questions, language, quizMode, plan.conceptIds, null);
-  const expiresAt = sessionExpiresAt(setup, tz.timezone, now);
+  const expiresAt = sessionExpiresAt(setup, now);
   await db.query(`UPDATE quiz_sessions SET subject_assessment_setup = $2::jsonb, expires_at = $3::timestamptz WHERE id = $1`, [quizId, JSON.stringify(setup), expiresAt.toISOString()]);
 
   const state: LifecycleState = startsNow ? 'ACTIVE' : 'SCHEDULED_NOT_STARTED';
@@ -491,19 +526,17 @@ async function savedResponses(quizId: string): Promise<Map<number, { answer: str
   return out;
 }
 
-async function setupTimezone(setup: SubjectAssessmentSetup, studentId: string): Promise<string> {
-  if (setup.schedule.mode === 'SCHEDULED') return setup.schedule.timezone;
-  return resolveStudentTimezone(await loadStudentTimezone(studentId), null).timezone;
-}
-
 async function markExpired(quizId: string): Promise<void> {
   await db.query(`UPDATE quiz_sessions SET status = 'expired' WHERE id = $1 AND status = 'active'`, [quizId]);
 }
 
 // ------------------------------------------------- teacher assignment attempts (rule V) -------------------------------------------------
 
-/** "The same continuous session" after the window close: last activity within this many seconds (interpretation, see teacher rules). */
-export const ASSIGNMENT_LIVENESS_WINDOW_SECONDS = 90;
+/**
+ * "The same continuous session" after the window close (APPROVED 2026-10-17): the last activity within 180 s (heartbeat
+ * every 30 s). More than 180 s without activity after the 21:00 close = LEFT: closed as is, never resumed.
+ */
+export const ASSIGNMENT_LIVENESS_WINDOW_SECONDS = ABANDONMENT_TOLERANCE_SECONDS;
 
 /** The attempt's last activity: its start, the latest saved answer, or the latest runner heartbeat. */
 async function lastActivityAt(quizId: string, setup: SubjectAssessmentSetup): Promise<Date | null> {
@@ -532,11 +565,10 @@ async function assignmentAttemptGate(row: SessionRow, setup: SubjectAssessmentSe
   return last && now.getTime() - last.getTime() <= ASSIGNMENT_LIVENESS_WINDOW_SECONDS * 1000 ? 'OK' : 'CLOSE_AS_IS';
 }
 
-async function reviveAssignmentAttempt(quizId: string, setup: SubjectAssessmentSetup, studentId: string, now: Date): Promise<void> {
-  const tz = await setupTimezone(setup, studentId);
+async function reviveAssignmentAttempt(quizId: string, setup: SubjectAssessmentSetup, _studentId: string, now: Date): Promise<void> {
   await db.query(
     `UPDATE quiz_sessions SET status = 'active', expires_at = $2::timestamptz WHERE id = $1 AND status IN ('active', 'expired')`,
-    [quizId, sessionExpiresAt(setup, tz, now).toISOString()],
+    [quizId, sessionExpiresAt(setup, now).toISOString()],
   );
 }
 
@@ -628,11 +660,10 @@ export async function startSubjectAssessmentSession(studentId: string, quizId: s
   const now = new Date(row.db_now);
   const state = lifecycleState(setup, row.status, new Date(row.expires_at), now);
   if (state === 'COMPLETED') return fail(409, 'ATTEMPT_ALREADY_USED', 'This assessment was already completed. Create a new one to try again.');
-  if (state === 'EXPIRED') { await markExpired(quizId); return fail(410, 'ASSESSMENT_EXPIRED', 'This assessment expired at the end of its scheduled date.'); }
+  if (state === 'EXPIRED') { await markExpired(quizId); return fail(410, 'ASSESSMENT_EXPIRED', 'This assessment expired (21:00 of its scheduled date, or 45 minutes without activity).'); }
   if (state !== 'SCHEDULED_NOT_STARTED') return readSubjectAssessmentSession(studentId, quizId); // already active: resume, never restart
-  const tz = await setupTimezone(setup, studentId);
   const started: SubjectAssessmentSetup = { ...setup, timing: startTiming(setup.timing, now) };
-  const expiresAt = sessionExpiresAt(started, tz, now);
+  const expiresAt = sessionExpiresAt(started, now);
   const upd = await db.query(
     `UPDATE quiz_sessions SET subject_assessment_setup = $2::jsonb, expires_at = $3::timestamptz
       WHERE id = $1 AND status = 'active' AND (subject_assessment_setup->'timing'->>'startedAt') IS NULL`,
@@ -679,10 +710,9 @@ export async function recordSubjectAssessmentAnswer(
   const { questionFingerprint } = await import('@/services/quiz-response-audit.service');
   const evidenceMode = row.evidence_mode ?? evidenceModeForQuizMode(row.quiz_mode as never);
 
-  // an untimed attempt in progress: each saved answer extends its inactivity window (never shortens it)
+  // an untimed attempt in progress: each saved answer resets its 45-minute inactivity window (never shortens it)
   if (!setup.timing.timed) {
-    const tz = await setupTimezone(setup, input.studentId);
-    await db.query(`UPDATE quiz_sessions SET expires_at = GREATEST(expires_at, $2::timestamptz) WHERE id = $1 AND status = 'active'`, [input.quizId, sessionExpiresAt(setup, tz, now).toISOString()]);
+    await db.query(`UPDATE quiz_sessions SET expires_at = GREATEST(expires_at, $2::timestamptz) WHERE id = $1 AND status = 'active'`, [input.quizId, sessionExpiresAt(setup, now).toISOString()]);
   }
 
   if (setup.feedbackPolicy === 'MOCK_NONE') {
@@ -730,6 +760,8 @@ export interface SubjectSubmissionData {
     conceptsToReinforce: Array<{ conceptId: string; conceptLabel: string }>;
     completionReason: CompletionReason;
     oneAttempt: boolean;
+    /** Diagnostic knowledge bucket + per-difficulty scores (knowledge-bucket.ts), derived from the frozen items. */
+    knowledge: KnowledgeProfile;
   };
   /** Teacher assignments (rule AB): FULL, or SCORE_ONLY with the per-question review held until `releaseAt`. */
   feedbackRelease?: { level: 'FULL'; reason: string } | { level: 'SCORE_ONLY'; reason: string; releaseAt: string };
@@ -904,7 +936,8 @@ export async function submitSubjectAssessmentSession(
     perConceptResults.push({ conceptId: pc.conceptId, conceptLabel: labels.get(pc.conceptId) ?? pc.conceptId, score: pc.scorePercent, previousMastery: r.oldMastery, newMastery: r.newMastery, delta: r.delta });
   }
 
-  const completion = { completedAt: now.toISOString(), reason, scorePercent: report.scorePercent, passed: report.passed };
+  const knowledge = knowledgeProfile(graded.map((g) => ({ conceptId: g.question.conceptId, level: itemLevel(g.question), correct: g.grade ? g.grade.correct : null })));
+  const completion = { completedAt: now.toISOString(), reason, scorePercent: report.scorePercent, passed: report.passed, knowledge };
   await completeQuiz(input.quizId);
   await db.query(`UPDATE quiz_sessions SET subject_assessment_setup = subject_assessment_setup || jsonb_build_object('completion', $2::jsonb) WHERE id = $1`, [input.quizId, JSON.stringify(completion)]);
 
@@ -955,6 +988,8 @@ function buildSubmissionData(
       conceptsToReinforce: report.conceptsToReinforce.map((id) => ({ conceptId: id, conceptLabel: label(id) })),
       completionReason: setup.completion?.reason ?? 'SUBMITTED',
       oneAttempt: setup.origin === 'STUDENT',
+      // derived at read time from the frozen items + recorded grades (rows completed before 2026-10-17 included)
+      knowledge: knowledgeProfile(items.map((it) => ({ conceptId: it.conceptId, level: itemLevel(row.questions[it.questionIndex]), correct: it.correct }))),
     },
     perConceptResults: report.perConcept.map((c) => ({ conceptId: c.conceptId, conceptLabel: label(c.conceptId), score: c.scorePercent })),
     review,

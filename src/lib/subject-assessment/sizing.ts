@@ -6,6 +6,9 @@
  *     user and never concentrated on weak concepts:
  *       1 concept -> 5 | 2-5 -> ~2/concept, max 10 | 6-10 -> ~2/concept, max 20 | 11-15 -> ~2/concept, max 30
  *       ALL SUBJECT -> every eligible concept, ~2/concept where coverage allows, absolute max 50
+ *       16+ manually selected concepts (not the whole subject) -> OVER_15_PARTIAL, APPROVED 2026-10-17: ~2/concept,
+ *         absolute max 50 (18 -> 36, 22 -> 44, 30 -> 50); every concept gets 1 first, the remainder follows the
+ *         uniform mock coverage (subject order)
  *   SUBJECT TEST ("Prueba por materia"): adaptive to the selected concept volume and the Knowledge State; minimum 4,
  *     absolute maximum 50; EVERY selected concept appears at least once; additional questions go to concepts whose
  *     Knowledge State shows need (weaker mastery, recent errors, IN PROCESS, insufficient evidence, need validation).
@@ -48,8 +51,7 @@ export function distributeUniform(conceptIds: readonly string[], count: number):
 
 /**
  * Mock count band (operator table). `allSubject` = the selection is every eligible concept of the subject.
- * Beyond 15 concepts that are NOT the whole subject the table is silent: OVER_15_PARTIAL applies the all-subject rule
- * (~2/concept, max 50) and is reported so the operator can confirm it.
+ * 16+ concepts that are NOT the whole subject: OVER_15_PARTIAL (APPROVED 2026-10-17) = ~2/concept, absolute max 50.
  */
 export function mockQuestionCount(selectedCount: number, allSubject: boolean): { count: number; band: MockCountBand } {
   const n = Math.max(0, Math.floor(selectedCount));
@@ -61,11 +63,19 @@ export function mockQuestionCount(selectedCount: number, allSubject: boolean): {
   return { count: Math.min(2 * n, SUBJECT_ASSESSMENT_MAX_QUESTIONS), band: allSubject ? 'ALL_SUBJECT' : 'OVER_15_PARTIAL' };
 }
 
-/** Representative mock: the operator count, spread uniformly (never weighted by weakness). */
+/**
+ * Representative mock: the operator count, spread uniformly (never weighted by weakness).
+ * Up to 50 concepts: EVERY concept gets 1 question first; the remainder (count - concepts) follows the uniform mock
+ * coverage, one more per concept in order (so ~2/concept, capped at 50 in total). Beyond 50 concepts the absolute
+ * maximum cannot cover them all: the first 50 get one each and the rest are `uncovered` (the caller refuses).
+ */
 export function planSubjectMock(conceptIds: readonly string[], allSubject: boolean): CountDecision & { band: MockCountBand } {
   const { count, band } = mockQuestionCount(conceptIds.length, allSubject);
   const covered = conceptIds.slice(0, count);
-  const distribution = distributeUniform(covered, count);
+  const distribution: Record<string, number> = {};
+  for (const id of covered) distribution[id] = 1;
+  const extra = distributeUniform(covered, count - covered.length);
+  for (const [id, n] of Object.entries(extra)) distribution[id] += n;
   return { questionCount: count, distribution, uncovered: conceptIds.slice(covered.length), rule: `MOCK_${band}`, band };
 }
 

@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildAssignmentWindow, zonedWallTimeToUtc, windowPhase, windowDays, decideAttemptAction, latestCompletedAttempt, effectiveAssignmentStatus,
   attemptContinuable, sessionAlive, crossStudentSharedFingerprints, feedbackReleaseFor, planForLearner, plansEquivalent, validateTiming,
-  resultDistribution, aggregateGroup, UI_DIFFICULTY_TO_BAND, LIVENESS_WINDOW_SECONDS, type AttemptSummary,
+  resultDistribution, aggregateGroup, UI_DIFFICULTY_TO_BAND, LIVENESS_WINDOW_SECONDS, MAX_ATTEMPTS_LIMIT, type AttemptSummary,
 } from '@/lib/teacher/subject-assessment-assignment.rules';
 import { rankReuseCandidates } from '@/lib/subject-assessment/lifecycle';
 import { planGroupAssessment } from '@/lib/subject-assessment/sizing';
@@ -98,7 +98,11 @@ describe('attempts (rules S, T, V)', () => {
     const after = new Date('2026-10-18T02:05:00Z');
     expect(decideAttemptAction({ cancelled: false, window: win, maxAttempts: 2, attempts: [active(1, '2026-10-18T02:04:30Z')], now: after })).toEqual({ action: 'RESUME', quizId: 'q1', attemptNumber: 1 });
     expect(decideAttemptAction({ cancelled: false, window: win, maxAttempts: 2, attempts: [active(1, '2026-10-18T01:59:00Z')], now: after })).toEqual({ action: 'NONE', reason: 'WINDOW_CLOSED_AFTER_EXIT' });
+    // 170 s without activity after the close: still the same session; 181 s: left, never resumed
+    expect(decideAttemptAction({ cancelled: false, window: win, maxAttempts: 2, attempts: [active(1, '2026-10-18T02:02:10Z')], now: after })).toEqual({ action: 'RESUME', quizId: 'q1', attemptNumber: 1 });
+    expect(decideAttemptAction({ cancelled: false, window: win, maxAttempts: 2, attempts: [active(1, '2026-10-18T02:01:59Z')], now: after })).toEqual({ action: 'NONE', reason: 'WINDOW_CLOSED_AFTER_EXIT' });
     expect(attemptContinuable(new Date(win.closesAt), new Date('2026-10-18T01:00:00Z'), new Date('2026-10-18T01:30:00Z'))).toEqual({ ok: true });
+    expect(LIVENESS_WINDOW_SECONDS).toBe(180); // APPROVED 2026-10-17: abandonment tolerance after the 21:00 close
     expect(sessionAlive(new Date(after.getTime() - LIVENESS_WINDOW_SECONDS * 1000), after)).toBe(true);
     expect(sessionAlive(new Date(after.getTime() - LIVENESS_WINDOW_SECONDS * 1000 - 1), after)).toBe(false);
   });
@@ -153,7 +157,7 @@ describe('group plan equivalence (rule N) and teacher inputs (rule M)', () => {
     if (!r.ok) throw new Error(r.error);
     expect(r.config.conceptIds).toEqual(['c1', 'c3']);
     expect(r.config.plan).toEqual((({ questionCount, distribution, rule }) => ({ questionCount, distribution, rule }))(planGroupAssessment('TEST', ['c1', 'c3'], false)));
-    expect(r.config.difficultyBand).toBe('MEDIUM');
+    expect(r.config.difficultyBand).toBe('INTERMEDIATE');
     expect(r.config.allSubject).toBe(false);
   });
 
@@ -167,8 +171,18 @@ describe('group plan equivalence (rule N) and teacher inputs (rule M)', () => {
     expect(planForLearner(plan, { c1: 'a1' })).toEqual({ ok: false, missing: ['c2', 'c3'] });
   });
 
-  it('difficulty labels map onto the existing governed bands only', () => {
-    expect(UI_DIFFICULTY_TO_BAND).toEqual({ BASICO: 'LOW', INTERMEDIO: 'MEDIUM', AVANZADO: 'HIGH', MIXTO: 'MIXED' });
+  it('difficulty labels map onto the APPROVED bands; legacy band names are still accepted and written as the new ones', () => {
+    expect(UI_DIFFICULTY_TO_BAND).toEqual({ BASICO: 'BASIC', INTERMEDIO: 'INTERMEDIATE', AVANZADO: 'ADVANCED', MIXTO: 'MIXED' });
+    const legacy = buildGroupConfig({ ...draft, difficulty: 'HIGH' }, { subjectId: 's', eligible, timezone: 'UTC' }, T0);
+    if (!legacy.ok) throw new Error(legacy.error);
+    expect(legacy.config.difficultyBand).toBe('ADVANCED');
+  });
+
+  it('APPROVED max attempts 1-3 only: 1, 2, 3 accepted; 0 and 4+ rejected', () => {
+    const ctx = { subjectId: 's', eligible, timezone: 'UTC' };
+    expect(MAX_ATTEMPTS_LIMIT).toBe(3);
+    for (const n of [1, 2, 3]) expect(buildGroupConfig({ ...draft, maxAttempts: n }, ctx, T0).ok).toBe(true);
+    for (const n of [0, 4, 10, 2.5]) expect(buildGroupConfig({ ...draft, maxAttempts: n }, ctx, T0)).toEqual({ ok: false, error: 'MAX_ATTEMPTS_INVALID' });
   });
 
   it('refuses: no concept, a concept outside the class subject, bad attempts, an untimed mock, a bad duration, no timezone', () => {
@@ -183,7 +197,7 @@ describe('group plan equivalence (rule N) and teacher inputs (rule M)', () => {
   });
 
   it('MOCK: StudyUs recommended duration (nominal sum over the planned items) is the default; a teacher value is frozen as adjusted', () => {
-    const rec = recommendedDurationForPlan(6, 'MEDIUM');
+    const rec = recommendedDurationForPlan(6, 'INTERMEDIATE');
     expect(rec.minutes).toBe(12); // 6 planned open-response items x 120 s at difficulty 3
     const m = buildGroupConfig({ ...draft, kind: 'MOCK', conceptIds: ['c1', 'c2', 'c3'], timing: { timed: true, durationMinutes: null } }, { subjectId: 's', eligible, timezone: 'UTC' }, T0);
     if (!m.ok) throw new Error(m.error);

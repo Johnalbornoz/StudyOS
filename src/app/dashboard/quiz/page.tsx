@@ -49,6 +49,7 @@ import { resolveResultMilestone } from '@/lib/experience/result-milestone';
 import { isMathCapableContext } from '@/lib/lx/math-response-contract';
 import { deserializeResponseDocument, isEmptyResponseDocument, toGraderText } from '@/lib/lx/response-document';
 import { InlineAlert } from '@/components/ui/InlineAlert';
+import { KNOWLEDGE_BUCKET_LABEL_KEY, type KnowledgeBucket } from '@/lib/subject-assessment/knowledge-bucket';
 import { studentRuntimeMayGenerateQuestions } from '@/lib/student-runtime/question-supply-policy';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SessionHeader } from '@/components/learning/SessionHeader';
@@ -341,10 +342,6 @@ interface SubjectAssessmentViewLite {
     schedule: { mode: 'NOW' } | { mode: 'SCHEDULED'; date: string; timezone: string; expiresAt: string };
     timing: { timed: boolean; durationMinutes: number | null; deadlineAt?: string };
   };
-}
-
-function browserTimeZone(): string | undefined {
-  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined; } catch { return undefined; }
 }
 
 function localToday(): string {
@@ -804,7 +801,7 @@ function QuizPageContent() {
       fetch(`/api/quizzes/session/${encodeURIComponent(heartbeatQuizId)}/heartbeat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId }) }).catch(() => {});
     };
     beat();
-    const h = setInterval(beat, 30_000);
+    const h = setInterval(beat, 30_000); // HEARTBEAT_INTERVAL_SECONDS (abandonment tolerance after close: 180 s)
     return () => clearInterval(h);
   }, [heartbeatQuizId, studentId]);
 
@@ -813,7 +810,8 @@ function QuizPageContent() {
       // Overnight 2026-10-16 subject Test / Mock: never a count (StudyUs plans it server-side) -- concepts + NOW / SCHEDULE only
       ? {
           studentId: sid, subjectId, conceptIds: selectedConceptIds, quizMode,
-          subjectAssessment: { mode: scheduleMode, ...(scheduleMode === 'SCHEDULED' ? { scheduledDate } : {}), timezone: browserTimeZone() },
+          // the timezone is never sent: the server uses the Student's / institution's authority (TIMEZONE_AUTHORITY_BLOCKER)
+          subjectAssessment: { mode: scheduleMode, ...(scheduleMode === 'SCHEDULED' ? { scheduledDate } : {}) },
           ...(languageOverride ? { language: languageOverride } : {}),
         }
       : ({
@@ -2069,6 +2067,7 @@ function QuizPageContent() {
                     {subjectCreateError === 'TOO_MANY_CONCEPTS' ? t['quiz.subjectSetup.tooMany']
                       : subjectCreateError === 'SCHEDULE_DATE_IN_PAST' || subjectCreateError === 'SCHEDULE_DATE_INVALID' || subjectCreateError === 'SCHEDULE_DATE_REQUIRED' ? t['quiz.subjectSetup.dateInPast']
                       : subjectCreateError === 'GENERATION_INSUFFICIENT' ? t['quiz.subjectSetup.createFailed']
+                      : subjectCreateError === 'TIMEZONE_AUTHORITY_BLOCKER' ? t['quiz.subjectSetup.timezoneBlocker']
                       : t['common.error']}
                   </p>
                 )}
@@ -2388,6 +2387,7 @@ function QuizPageContent() {
         scorePercent: number; passed: boolean; total: number; correct: number; incorrect: number; unanswered: number; oneAttempt: boolean;
         completionReason: string; perConcept: Array<{ conceptId: string; conceptLabel: string; scorePercent: number; correct: number; total: number; passed: boolean }>;
         conceptsToReinforce: Array<{ conceptId: string; conceptLabel: string }>;
+        knowledge?: { knowledgeBucket: KnowledgeBucket | null };
       };
       return (
         <div className="ls" data-kind={activityKind} data-testid="subject-results">
@@ -2411,6 +2411,11 @@ function QuizPageContent() {
               ))}
             </ul>
           </div>
+          {sa.knowledge && (
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 'var(--space-4)' }} data-testid="subject-knowledge-bucket">
+              {at['kb.title']}: <strong>{at[KNOWLEDGE_BUCKET_LABEL_KEY[sa.knowledge.knowledgeBucket ?? 'UNCLASSIFIED']]}</strong>
+            </p>
+          )}
           <div className="card" style={{ padding: 'var(--space-4)', marginTop: 'var(--space-4)' }} data-testid="subject-reinforce">
             <p className="label" style={{ margin: '0 0 8px' }}>{at['quiz.subject.toReinforce']}</p>
             {sa.conceptsToReinforce.length === 0 ? (

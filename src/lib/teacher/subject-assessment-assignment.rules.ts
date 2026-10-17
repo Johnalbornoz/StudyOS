@@ -8,44 +8,50 @@
  *   U  window: every calendar day from startDate to endDate inclusive; opens 00:00 of startDate and closes 21:00 of
  *      endDate in the AUTHORITATIVE timezone = the class's institution `institutions.timezone`. No timezone -> the
  *      assignment is refused (TIMEZONE_AUTHORITY_BLOCKER). Never a hard-coded timezone.
- *   S  up to maxAttempts; none is required; retry after a pass is allowed; the result = the LAST COMPLETED attempt
+ *   S  up to maxAttempts (1-3, APPROVED 2026-10-17); none is required; retry after a pass is allowed; the result = the LAST COMPLETED attempt
  *      (not the best, not the average); history kept.
  *   V  an attempt STARTED before the close may be finished after it while the session lives; after the close an
  *      attempt whose session was left (no activity within the liveness window) cannot be resumed and is closed as is
  *      (answered graded, unanswered in the denominator); no new attempt starts after the close. Before the close a
  *      left attempt is resumed (same attempt, saved answers kept, no extra attempt consumed).
- *      INTERPRETATION (ATTEMPT_LIVENESS_AFTER_CLOSE, operator confirmation): "the same continuous session" = the
- *      attempt's last activity (start, a saved answer, or a runner heartbeat every HEARTBEAT_INTERVAL_SECONDS) is
- *      within LIVENESS_WINDOW_SECONDS of now. After the close, a resume / answer / submit with a stale last activity
- *      is refused and the attempt is closed as is.
+ *      APPROVED 2026-10-17: "the same continuous session" = the attempt's last activity (start, a saved answer, or a
+ *      runner heartbeat every HEARTBEAT_INTERVAL_SECONDS = 30) is within ABANDONMENT_TOLERANCE_SECONDS = 180 of now.
+ *      After the 21:00 close, more than 180 s without activity counts as LEFT: a resume / answer / submit is refused
+ *      and the attempt is closed as is. A reconnect before 21:00 may still resume.
  *   AB feedback release: full feedback immediately when the versions are truly diverse (no item fingerprint served to
  *      two different students of the assignment); otherwise score + general performance now, correct answers and
  *      explanations held until the window closes. Computed at read time from the items actually served.
  *   Y  pass >= 80 inclusive (sizing.ts).
  */
 import { subjectAssessmentPassed } from '@/lib/subject-assessment/sizing';
-import { isIsoDate, isValidTimeZone } from '@/lib/subject-assessment/lifecycle';
+import { isIsoDate, isValidTimeZone, zonedWallTimeToUtc, type DifficultyBand } from '@/lib/subject-assessment/lifecycle';
+import { bucketDistribution, type KnowledgeBucket } from '@/lib/subject-assessment/knowledge-bucket';
+
+export { zonedWallTimeToUtc };
+export type { DifficultyBand };
 
 export type SubjectAssignmentKind = 'TEST' | 'MOCK';
 export type SubjectAssignmentInterventionType = 'SUBJECT_TEST' | 'SUBJECT_MOCK';
-export type DifficultyBand = 'LOW' | 'MEDIUM' | 'HIGH' | 'MIXED';
 
 export const INTERVENTION_TYPE_OF: Record<SubjectAssignmentKind, SubjectAssignmentInterventionType> = { TEST: 'SUBJECT_TEST', MOCK: 'SUBJECT_MOCK' };
 export const kindOfInterventionType = (t: string): SubjectAssignmentKind | null => (t === 'SUBJECT_TEST' ? 'TEST' : t === 'SUBJECT_MOCK' ? 'MOCK' : null);
 export const SUBJECT_ASSIGNMENT_TYPES: readonly SubjectAssignmentInterventionType[] = ['SUBJECT_TEST', 'SUBJECT_MOCK'];
 
-/** UI difficulty -> the existing governed bands (no new taxonomy). */
-export const UI_DIFFICULTY_TO_BAND = { BASICO: 'LOW', INTERMEDIO: 'MEDIUM', AVANZADO: 'HIGH', MIXTO: 'MIXED' } as const satisfies Record<string, DifficultyBand>;
+/** UI difficulty -> the approved bands (APPROVED 2026-10-17: BASIC 2, INTERMEDIATE 3, ADVANCED 4, MIXED 30/50/20). */
+export const UI_DIFFICULTY_TO_BAND = { BASICO: 'BASIC', INTERMEDIO: 'INTERMEDIATE', AVANZADO: 'ADVANCED', MIXTO: 'MIXED' } as const satisfies Record<string, DifficultyBand>;
 export type UiDifficulty = keyof typeof UI_DIFFICULTY_TO_BAND;
 
 /** Closing wall-clock time on endDate in the institution's timezone (operator rule U). */
 export const WINDOW_CLOSE_HOUR = 21;
 export const WINDOW_CLOSE_MINUTE = 0;
-/** Teacher-chosen attempts allowed. No governed maximum exists; 10 bounds the input (OPERATOR_DECISION_REQUIRED). */
-export const MAX_ATTEMPTS_LIMIT = 10;
-/** Runner heartbeat cadence and the liveness window that defines "the same continuous session" (interpretation). */
+/** Teacher-chosen attempts allowed: 1, 2 or 3 (APPROVED 2026-10-17); the server rejects any other value. */
+export const MAX_ATTEMPTS_LIMIT = 3;
+export const MAX_ATTEMPTS_OPTIONS = [1, 2, 3] as const;
+/** Runner heartbeat cadence and the abandonment tolerance after the 21:00 close (APPROVED 2026-10-17). */
 export const HEARTBEAT_INTERVAL_SECONDS = 30;
-export const LIVENESS_WINDOW_SECONDS = 90;
+export const ABANDONMENT_TOLERANCE_SECONDS = 180;
+/** The window that defines "the same continuous session" = the abandonment tolerance. */
+export const LIVENESS_WINDOW_SECONDS = ABANDONMENT_TOLERANCE_SECONDS;
 
 export interface AssignmentWindow {
   startDate: string;
@@ -82,26 +88,6 @@ export interface SubjectAssessmentAssignmentConfig {
 }
 
 // ------------------------------------------------------------------ time -----------------------------------------------------------------
-
-function tzOffsetMs(tz: string, utcMs: number): number {
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(utcMs));
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
-  const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
-  return asUtc - Math.floor(utcMs / 1000) * 1000;
-}
-
-/**
- * The UTC instant of local wall time `hour:minute` on `date` in `tz` (DST-safe: the offset is the one in force at that
- * local time, found by two Intl iterations). A wall time inside a spring-forward gap resolves to the instant after the
- * gap; an ambiguous fall-back time resolves to its first occurrence.
- */
-export function zonedWallTimeToUtc(date: string, hour: number, minute: number, tz: string): Date {
-  const [y, m, d] = date.split('-').map(Number);
-  const guess = Date.UTC(y, m - 1, d, hour, minute);
-  let t = guess - tzOffsetMs(tz, guess);
-  t = guess - tzOffsetMs(tz, t);
-  return new Date(t);
-}
 
 /** The local calendar date (YYYY-MM-DD) of `now` in `tz`. */
 export function localDateIn(tz: string, now: Date): string {
@@ -290,6 +276,8 @@ export interface StudentLatestReport {
   scorePercent: number;
   perConcept: Array<{ conceptKey: string; total: number; correct: number; unanswered: number }>;
   items: Array<{ conceptKey: string; questionKey: string; status: 'CORRECT' | 'INCORRECT' | 'UNANSWERED' }>;
+  /** The attempt's knowledge bucket (knowledge-bucket.ts; null = the unclassified edge case). */
+  knowledgeBucket?: KnowledgeBucket | null;
 }
 
 /**
@@ -333,5 +321,7 @@ export function aggregateGroup(reports: readonly StudentLatestReport[], opts: { 
     largestGaps: [...byScore].reverse().filter((c) => !c.passed).slice(0, 3).map((c) => c.conceptKey),
     highErrorQuestions,
     highErrorAreas,
+    /** Diagnostic: how many latest completed attempts fall in each knowledge bucket (B1..B4, UNCLASSIFIED). */
+    bucketDistribution: bucketDistribution(reports.map((r) => r.knowledgeBucket ?? null)),
   };
 }

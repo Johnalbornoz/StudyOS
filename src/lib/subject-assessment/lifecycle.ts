@@ -5,12 +5,17 @@
  *   - StudyUs decides count, distribution and difficulty (sizing.ts); the Student only picks concepts and NOW / SCHEDULE.
  *   - The configuration is frozen before the attempt (`SubjectAssessmentSetup`, quiz_sessions.subject_assessment_setup).
  *   - Student-created: ONE attempt. NOW starts immediately. SCHEDULED may be started early; once started it is active;
- *     if it is not completed on the selected date it EXPIRES at the end of that local date in the Student's timezone
- *     (interpretation SELF_SCHEDULED_EXPIRY_TIME = the date boundary, reported for confirmation).
+ *     if it is not started by the selected date it EXPIRES at 21:00 of that date in the AUTHORITATIVE timezone
+ *     (APPROVED 2026-10-17): student_availability.timezone, else the timezone of the Student's institution (active
+ *     class enrollment -> classes.institution_id -> institutions.timezone, exactly one distinct value). No authority
+ *     -> SCHEDULED is refused with TIMEZONE_AUTHORITY_BLOCKER (never a browser / UTC guess); NOW still works.
  *   - Feedback: Test = correct / incorrect only after each answer; Mock = none during the attempt; both = full final
  *     feedback.
- *   - Timing: Mock ALWAYS timed, duration = sum of the frozen items' nominal response seconds rounded up to minutes
- *     (rule NOMINAL_RESPONSE_TIME_SUM, OPERATOR_DECISION_REQUIRED). Student Test untimed. Wall clock from startedAt; a
+ *   - Timing: Mock ALWAYS timed, duration = sum of the frozen items' nominal response seconds (adjusted by each item's
+ *     difficulty) rounded up to minutes (rule NOMINAL_RESPONSE_TIME_SUM, APPROVED 2026-10-17). Before items exist a
+ *     planning estimate over the planned levels may be shown. The recommendation is advisory: a Teacher-chosen duration
+ *     is authoritative and frozen in the setup (never overwritten). Student Test untimed: it closes after 45 minutes
+ *     without saved activity (APPROVED 2026-10-17), saved responses kept, no resume. Wall clock from startedAt; a
  *     lost connection never pauses it; at zero the attempt is submitted (answered graded, unanswered in the denominator).
  *   - Pass >= 80 inclusive (sizing.ts subjectAssessmentPassed).
  */
@@ -20,7 +25,18 @@ import { SUBJECT_ASSESSMENT_MAX_QUESTIONS, subjectAssessmentPassed, subjectAsses
 export type SubjectAssessmentKind = 'TEST' | 'MOCK';
 export type SubjectAssessmentOrigin = 'STUDENT' | 'TEACHER';
 export type SubjectAssessmentSetupKind = 'SUBJECT_CUMULATIVE_TEST' | 'SUBJECT_MOCK_EXAM';
-export type DifficultyBand = 'LOW' | 'MEDIUM' | 'HIGH' | 'MIXED';
+/** APPROVED 2026-10-17: BASIC = level 2, INTERMEDIATE = 3, ADVANCED = 4, MIXED = 30 / 50 / 20 of the question count. */
+export type DifficultyBand = 'BASIC' | 'INTERMEDIATE' | 'ADVANCED' | 'MIXED';
+/** Names written by the 2026-10-16 build (still present in frozen jsonb rows): read, never written. */
+export type LegacyDifficultyBand = 'LOW' | 'MEDIUM' | 'HIGH';
+export const LEGACY_DIFFICULTY_BAND_ALIAS: Record<LegacyDifficultyBand, DifficultyBand> = { LOW: 'BASIC', MEDIUM: 'INTERMEDIATE', HIGH: 'ADVANCED' };
+export const DIFFICULTY_BANDS: readonly DifficultyBand[] = ['BASIC', 'INTERMEDIATE', 'ADVANCED', 'MIXED'];
+/** Read a band from any source (new name, legacy name): the new name, or null when it is neither. */
+export function normalizeDifficultyBand(x: unknown): DifficultyBand | null {
+  if (typeof x !== 'string') return null;
+  if ((DIFFICULTY_BANDS as readonly string[]).includes(x)) return x as DifficultyBand;
+  return (LEGACY_DIFFICULTY_BAND_ALIAS as Record<string, DifficultyBand>)[x] ?? null;
+}
 export type FeedbackPolicy = 'TEST_CORRECTNESS_ONLY' | 'MOCK_NONE';
 
 export const SETUP_KIND_OF: Record<SubjectAssessmentKind, SubjectAssessmentSetupKind> = { TEST: 'SUBJECT_CUMULATIVE_TEST', MOCK: 'SUBJECT_MOCK_EXAM' };
@@ -32,8 +48,16 @@ export const feedbackPolicyFor = (kind: SubjectAssessmentKind): FeedbackPolicy =
 export const STUDENT_MAX_ATTEMPTS = 1;
 /** A timed attempt's submission may arrive this long after the deadline (transport only; answers saved after the deadline never count). */
 export const SUBJECT_SUBMIT_GRACE_SECONDS = 120;
-/** An untimed attempt's inactivity window: the ordinary quiz session lifetime (QUIZ_SESSION_TTL_MINUTES), extended by each saved answer. */
-export const SUBJECT_NOW_MIN_WINDOW_MINUTES = 45;
+/**
+ * An untimed attempt's inactivity window (APPROVED 2026-10-17): 45 minutes, reset by every saved answer. Past it the
+ * attempt is closed (EXPIRED), its saved responses are kept, and it cannot be resumed.
+ */
+export const SUBJECT_UNTIMED_INACTIVITY_MINUTES = 45;
+/** @deprecated name kept for callers: the untimed inactivity window. */
+export const SUBJECT_NOW_MIN_WINDOW_MINUTES = SUBJECT_UNTIMED_INACTIVITY_MINUTES;
+/** A self-scheduled assessment not started by its date expires at this local wall time of that date (APPROVED 2026-10-17). */
+export const SELF_SCHEDULED_EXPIRY_HOUR = 21;
+export const SELF_SCHEDULED_EXPIRY_MINUTE = 0;
 export const MOCK_DURATION_RULE = 'NOMINAL_RESPONSE_TIME_SUM' as const;
 
 export type ScheduleSpec = { mode: 'NOW' } | { mode: 'SCHEDULED'; date: string; timezone: string; expiresAt: string };
@@ -64,8 +88,13 @@ export interface SubjectAssessmentSetup {
   feedbackPolicy: FeedbackPolicy;
   maxAttempts?: number;
   frozenAt: string;
-  /** Where the timezone came from: the Student's record, or the browser's (recorded as assumed). */
-  timezoneSource?: 'STUDENT_AVAILABILITY' | 'BROWSER_ASSUMED' | 'DEFAULT_UTC_ASSUMED';
+  /**
+   * Where the timezone authority came from (null: none -- only a NOW assessment can exist without one). The legacy
+   * values BROWSER_ASSUMED / DEFAULT_UTC_ASSUMED may appear on rows frozen before 2026-10-17; they are never written.
+   */
+  timezoneSource?: TimezoneSource | 'BROWSER_ASSUMED' | 'DEFAULT_UTC_ASSUMED' | null;
+  /** Explicit band: the per-concept level plan the items were generated at (assignLevelsAcrossConcepts). */
+  difficultyPlan?: { counts: Record<'BASIC' | 'INTERMEDIATE' | 'ADVANCED', number>; perConcept: Record<string, Array<{ level: number; count: number }>>; method: string };
   /** Test only: the Knowledge State signal per concept that sized the plan (STUDENT origin). */
   knowledgeSignals?: Record<string, { needsReinforcement: boolean; reasons: string[] }>;
   /** Mock only: the operator band and whether the selection is the whole subject. */
@@ -86,8 +115,10 @@ export interface SubjectAssessmentSetup {
   /** Teacher assignment attempts: the last runner activity (heartbeat), for the "same continuous session" rule. */
   liveness?: { lastActivityAt: string };
   /** Set when the attempt is closed. */
-  completion?: { completedAt: string; reason: CompletionReason; scorePercent: number; passed: boolean };
+  completion?: { completedAt: string; reason: CompletionReason; scorePercent: number; passed: boolean; knowledge?: import('./knowledge-bucket').KnowledgeProfile };
 }
+
+export type TimezoneSource = 'STUDENT_AVAILABILITY' | 'INSTITUTION';
 
 export type ReuseSource = 'OWN_LEAST_RECENTLY_USED' | 'ASSIGNMENT_GROUP' | 'PREVIOUS_ATTEMPT';
 /** WINDOW_CLOSED_AFTER_EXIT: a teacher-assigned attempt left before / across the window close, closed as is. */
@@ -128,24 +159,22 @@ function tzOffsetMs(tz: string, utcMs: number): number {
   return asUtc - Math.floor(utcMs / 1000) * 1000;
 }
 
-/** The UTC instant of local midnight at the START of `date` (YYYY-MM-DD) in `tz` (DST-safe). */
-export function localMidnightUtc(date: string, tz: string): Date {
+/**
+ * The UTC instant of local wall time `hour:minute` on `date` in `tz` (DST-safe: the offset is the one in force at that
+ * local time, found by two Intl iterations). A wall time inside a spring-forward gap resolves to the instant after the
+ * gap; an ambiguous fall-back time resolves to its first occurrence.
+ */
+export function zonedWallTimeToUtc(date: string, hour: number, minute: number, tz: string): Date {
   const [y, m, d] = date.split('-').map(Number);
-  const guess = Date.UTC(y, m - 1, d);
+  const guess = Date.UTC(y, m - 1, d, hour, minute);
   let t = guess - tzOffsetMs(tz, guess);
   t = guess - tzOffsetMs(tz, t);
   return new Date(t);
 }
 
-const nextDate = (date: string): string => {
-  const [y, m, d] = date.split('-').map(Number);
-  const n = new Date(Date.UTC(y, m - 1, d + 1));
-  return `${n.getUTCFullYear()}-${String(n.getUTCMonth() + 1).padStart(2, '0')}-${String(n.getUTCDate()).padStart(2, '0')}`;
-};
-
-/** End of the selected local date = the next local midnight (exclusive). SELF_SCHEDULED_EXPIRY_TIME interpretation. */
-export function endOfLocalDateUtc(date: string, tz: string): Date {
-  return localMidnightUtc(nextDate(date), tz);
+/** A self-scheduled assessment's expiry: 21:00 of the selected date in the authoritative timezone (APPROVED 2026-10-17). */
+export function selfScheduledExpiryUtc(date: string, tz: string): Date {
+  return zonedWallTimeToUtc(date, SELF_SCHEDULED_EXPIRY_HOUR, SELF_SCHEDULED_EXPIRY_MINUTE, tz);
 }
 
 /** The local calendar date (YYYY-MM-DD) of `now` in `tz`. */
@@ -157,19 +186,37 @@ export function localDateIn(tz: string, now: Date): string {
 
 export const isIsoDate = (s: unknown): s is string => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`));
 
-/** Resolve the timezone authority: the Student's record first; the browser's only when absent (recorded as assumed). */
-export function resolveStudentTimezone(studentTz: string | null | undefined, browserTz: string | null | undefined): { timezone: string; source: NonNullable<SubjectAssessmentSetup['timezoneSource']> } {
-  if (isValidTimeZone(studentTz)) return { timezone: studentTz, source: 'STUDENT_AVAILABILITY' };
-  if (isValidTimeZone(browserTz)) return { timezone: browserTz, source: 'BROWSER_ASSUMED' };
-  return { timezone: 'UTC', source: 'DEFAULT_UTC_ASSUMED' };
+export type TimezoneAuthority =
+  | { ok: true; timezone: string; source: TimezoneSource }
+  | { ok: false; error: 'TIMEZONE_AUTHORITY_BLOCKER'; reason: 'NO_TIMEZONE_AUTHORITY' | 'INSTITUTION_TIMEZONES_CONFLICT' };
+
+/**
+ * The authoritative timezone of a Student (APPROVED 2026-10-17): student_availability.timezone first; else the
+ * timezone of the Student's institution (`institutionTimezones` = the distinct institutions.timezone values of the
+ * Student's ACTIVE class enrollments) when exactly one valid value exists. Several different institution timezones
+ * are a conflict, not a choice. Nothing found -> TIMEZONE_AUTHORITY_BLOCKER: never the browser's, never UTC.
+ */
+export function resolveTimezoneAuthority(studentTz: string | null | undefined, institutionTimezones: ReadonlyArray<string | null | undefined> = []): TimezoneAuthority {
+  if (isValidTimeZone(studentTz)) return { ok: true, timezone: studentTz, source: 'STUDENT_AVAILABILITY' };
+  const valid = [...new Set(institutionTimezones.filter(isValidTimeZone))];
+  if (valid.length === 1) return { ok: true, timezone: valid[0], source: 'INSTITUTION' };
+  return { ok: false, error: 'TIMEZONE_AUTHORITY_BLOCKER', reason: valid.length > 1 ? 'INSTITUTION_TIMEZONES_CONFLICT' : 'NO_TIMEZONE_AUTHORITY' };
 }
 
-/** A SCHEDULED date must be today or later in the Student's timezone. */
-export function buildSchedule(input: { mode: 'NOW' } | { mode: 'SCHEDULED'; date: string }, tz: string, now: Date): { ok: true; schedule: ScheduleSpec } | { ok: false; error: 'SCHEDULE_DATE_INVALID' | 'SCHEDULE_DATE_IN_PAST' } {
+export type ScheduleError = 'SCHEDULE_DATE_INVALID' | 'SCHEDULE_DATE_IN_PAST' | 'TIMEZONE_AUTHORITY_BLOCKER';
+
+/**
+ * NOW needs no timezone. SCHEDULED needs the timezone authority (`tz` null -> TIMEZONE_AUTHORITY_BLOCKER) and a date
+ * whose 21:00 local expiry is still ahead (today before 21:00, or a later date).
+ */
+export function buildSchedule(input: { mode: 'NOW' } | { mode: 'SCHEDULED'; date: string }, tz: string | null, now: Date): { ok: true; schedule: ScheduleSpec } | { ok: false; error: ScheduleError } {
   if (input.mode === 'NOW') return { ok: true, schedule: { mode: 'NOW' } };
   if (!isIsoDate(input.date)) return { ok: false, error: 'SCHEDULE_DATE_INVALID' };
+  if (!isValidTimeZone(tz)) return { ok: false, error: 'TIMEZONE_AUTHORITY_BLOCKER' };
   if (input.date < localDateIn(tz, now)) return { ok: false, error: 'SCHEDULE_DATE_IN_PAST' };
-  return { ok: true, schedule: { mode: 'SCHEDULED', date: input.date, timezone: tz, expiresAt: endOfLocalDateUtc(input.date, tz).toISOString() } };
+  const expiresAt = selfScheduledExpiryUtc(input.date, tz);
+  if (expiresAt.getTime() <= now.getTime()) return { ok: false, error: 'SCHEDULE_DATE_IN_PAST' };
+  return { ok: true, schedule: { mode: 'SCHEDULED', date: input.date, timezone: tz, expiresAt: expiresAt.toISOString() } };
 }
 
 // ------------------------------------------------------------------ timing ---------------------------------------------------------------
@@ -178,10 +225,12 @@ export function buildSchedule(input: { mode: 'NOW' } | { mode: 'SCHEDULED'; date
 export interface TimedItem { type: string | null | undefined; difficulty: number | null | undefined }
 
 /**
- * Mock duration recommendation: the sum of the frozen items' nominal response seconds, rounded UP to whole minutes.
- * The only existing per-item planning algorithm (assessment-foundation/nominal-response-time.ts). A generated item's
- * difficulty is clamped to the 1-5 scale before the lookup; an item that still cannot be planned is counted in
- * `unplannedItems` (never silently zero).
+ * Mock duration recommendation (APPROVED 2026-10-17): the sum of the frozen items' nominal response seconds, rounded
+ * UP to whole minutes -- assessment-foundation/nominal-response-time.ts, which adjusts each item's base time by its
+ * difficulty (factor 0.75 / 0.85 / 1 / 1.25 / 1.5 for levels 1-5). The caller passes each item's planned level (the
+ * level it was generated at) as `difficulty`. A difficulty is clamped to the 1-5 scale before the lookup; an item that
+ * still cannot be planned is counted in `unplannedItems` (never silently zero). Advisory only: a Teacher-chosen
+ * duration is authoritative and frozen.
  */
 export function recommendedMockDurationMinutes(items: readonly TimedItem[]): { minutes: number; totalSeconds: number; unplannedItems: number; rule: typeof MOCK_DURATION_RULE } {
   let total = 0;
@@ -210,23 +259,21 @@ export function startTiming(timing: TimingSpec, startedAt: Date): TimingSpec {
 }
 
 /**
- * The session's own expiry (quiz_sessions.expires_at) -- never the ordinary 45-minute TTL counted from creation:
- *   not started + SCHEDULED -> end of the selected local date (SELF_SCHEDULED_EXPIRY_TIME interpretation)
+ * The session's own expiry (quiz_sessions.expires_at) -- never the ordinary TTL counted from creation:
+ *   not started + SCHEDULED -> 21:00 of the selected date in the authoritative timezone (frozen in schedule.expiresAt)
  *   started + timed         -> deadline + grace (the deadline itself is the wall clock from startedAt)
- *   started + untimed       -> `now` (the last activity: start or a saved answer) + 45 min, an inactivity window
- *                              that each saved answer extends (SUBJECT_TEST_INACTIVITY_WINDOW interpretation: the
- *                              ordinary quiz TTL, sliding, so an untimed Test in progress is never cut off and an
- *                              abandoned one stops restricting the Tutor 45 minutes after the last answer)
- * `tz` is kept for callers; the date boundary is already frozen in `schedule.expiresAt`.
+ *   started + untimed       -> `now` (the last saved activity: start or a saved answer) + 45 min (APPROVED
+ *                              2026-10-17): each saved answer resets it; past it the attempt is closed, its saved
+ *                              responses kept, no resume
  */
-export function sessionExpiresAt(setup: Pick<SubjectAssessmentSetup, 'schedule' | 'timing'>, _tz: string, now: Date): Date {
+export function sessionExpiresAt(setup: Pick<SubjectAssessmentSetup, 'schedule' | 'timing'>, now: Date): Date {
   const { schedule, timing } = setup;
   if (!timing.startedAt) {
     if (schedule.mode === 'SCHEDULED') return new Date(schedule.expiresAt);
-    return new Date(now.getTime() + SUBJECT_NOW_MIN_WINDOW_MINUTES * 60_000);
+    return new Date(now.getTime() + SUBJECT_UNTIMED_INACTIVITY_MINUTES * 60_000);
   }
   if (timing.timed && timing.deadlineAt) return new Date(new Date(timing.deadlineAt).getTime() + SUBJECT_SUBMIT_GRACE_SECONDS * 1000);
-  return new Date(now.getTime() + SUBJECT_NOW_MIN_WINDOW_MINUTES * 60_000);
+  return new Date(now.getTime() + SUBJECT_UNTIMED_INACTIVITY_MINUTES * 60_000);
 }
 
 export type LifecycleState = 'SCHEDULED_NOT_STARTED' | 'ACTIVE' | 'TIME_UP' | 'EXPIRED' | 'COMPLETED';
@@ -307,10 +354,69 @@ export function validateExplicitPlan(plan: ExplicitPlan, conceptIds: readonly st
 }
 
 /**
- * Explicit difficulty band -> generator difficulty levels (1-5 scale). OPERATOR_DECISION_REQUIRED: no governed band
- * table exists; LOW = 2, MEDIUM = 3, HIGH = 4, MIXED = 2 / 3 / 4 in rotation.
+ * Explicit difficulty band -> generator difficulty levels (1-5 scale), APPROVED 2026-10-17: BASIC = 2,
+ * INTERMEDIATE = 3, ADVANCED = 4; MIXED = all three in the MIXED_SHARE proportions (30 / 50 / 20).
  */
-export const DIFFICULTY_BAND_LEVELS: Record<DifficultyBand, number[]> = { LOW: [2], MEDIUM: [3], HIGH: [4], MIXED: [2, 3, 4] };
+export const DIFFICULTY_LEVEL_OF = { BASIC: 2, INTERMEDIATE: 3, ADVANCED: 4 } as const;
+export type DifficultyLevelName = keyof typeof DIFFICULTY_LEVEL_OF;
+export const DIFFICULTY_BAND_LEVELS: Record<DifficultyBand, number[]> = { BASIC: [2], INTERMEDIATE: [3], ADVANCED: [4], MIXED: [2, 3, 4] };
+/** MIXED / Balanced shares in percent of the question count (APPROVED 2026-10-17). */
+export const MIXED_SHARE_PERCENT: Record<DifficultyLevelName, number> = { BASIC: 30, INTERMEDIATE: 50, ADVANCED: 20 };
+/** Remainder / tie preference: Intermediate first, so Intermediate stays the largest share. */
+const MIXED_TIE_ORDER: readonly DifficultyLevelName[] = ['INTERMEDIATE', 'BASIC', 'ADVANCED'];
+export const DIFFICULTY_PLAN_METHOD = 'LARGEST_REMAINDER_30_50_20_INTERMEDIATE_FIRST:EVEN_SPREAD_OVER_ROUND_ROBIN_SLOTS' as const;
+
+/**
+ * MIXED counts for `count` questions: largest-remainder (Hamilton) over 30 / 50 / 20 percent in integer arithmetic,
+ * the total exact; remainder seats go to the largest fractional parts, ties broken Intermediate > Basic > Advanced; then
+ * Intermediate is guaranteed to be at least as large as each other level (a seat moves to it if a tiny count left it
+ * behind). 4 -> 1/2/1, 5 -> 1/3/1, 10 -> 3/5/2, 14 -> 4/7/3, 36 -> 11/18/7, 50 -> 15/25/10.
+ */
+export function mixedLevelCounts(count: number): Record<DifficultyLevelName, number> {
+  const n = Math.max(0, Math.floor(count));
+  const out: Record<DifficultyLevelName, number> = { BASIC: 0, INTERMEDIATE: 0, ADVANCED: 0 };
+  const rem: Record<DifficultyLevelName, number> = { BASIC: 0, INTERMEDIATE: 0, ADVANCED: 0 };
+  for (const k of MIXED_TIE_ORDER) { out[k] = Math.floor((n * MIXED_SHARE_PERCENT[k]) / 100); rem[k] = (n * MIXED_SHARE_PERCENT[k]) % 100; }
+  let left = n - out.BASIC - out.INTERMEDIATE - out.ADVANCED;
+  const order = [...MIXED_TIE_ORDER].sort((a, b) => rem[b] - rem[a] || MIXED_TIE_ORDER.indexOf(a) - MIXED_TIE_ORDER.indexOf(b));
+  for (let i = 0; left > 0; i++, left--) out[order[i % order.length]]++;
+  for (const k of ['BASIC', 'ADVANCED'] as const) while (out[k] > out.INTERMEDIATE) { out[k]--; out.INTERMEDIATE++; }
+  return out;
+}
+
+/** The level counts of a band for `count` questions (only non-zero), lowest level first. */
+export function bandLevelCounts(band: DifficultyBand, count: number): Array<{ level: number; count: number }> {
+  if (band !== 'MIXED') return count > 0 ? [{ level: DIFFICULTY_LEVEL_OF[band], count }] : [];
+  const c = mixedLevelCounts(count);
+  return (['BASIC', 'INTERMEDIATE', 'ADVANCED'] as const).map((k) => ({ level: DIFFICULTY_LEVEL_OF[k], count: c[k] })).filter((x) => x.count > 0);
+}
+
+/**
+ * Deterministic level assignment across concepts (APPROVED band table). Method (DIFFICULTY_PLAN_METHOD):
+ *   1. the session's level counts = bandLevelCounts(band, total) -- MIXED is exact over the whole assessment, not per
+ *      concept;
+ *   2. the items are laid out as round-robin slots over the concepts in the plan's order (round 0: one slot per
+ *      concept, round 1: one per concept with >= 2 items, ...), the same interleaving the runner shows;
+ *   3. a level sequence of the same length spreads every level evenly: the j-th item of a level with k items sits at
+ *      position (2j + 1) / 2k, merged in position order (exact integer comparison; ties Intermediate > Basic >
+ *      Advanced);
+ *   4. slot i takes the i-th level of the sequence.
+ * Returns concept id -> [{ level, count }] (lowest level first, only non-zero); the per-concept sums equal the plan.
+ */
+export function assignLevelsAcrossConcepts(distribution: Record<string, number>, band: DifficultyBand): Record<string, Array<{ level: number; count: number }>> {
+  const concepts = Object.keys(distribution).filter((c) => distribution[c] > 0);
+  const total = concepts.reduce((a, c) => a + distribution[c], 0);
+  const slots: string[] = [];
+  for (let r = 0; slots.length < total; r++) for (const c of concepts) if (distribution[c] > r) slots.push(c);
+  const tieRank = (level: number) => MIXED_TIE_ORDER.findIndex((k) => DIFFICULTY_LEVEL_OF[k] === level);
+  const seq = bandLevelCounts(band, total)
+    .flatMap(({ level, count }) => Array.from({ length: count }, (_, j) => ({ level, num: 2 * j + 1, den: 2 * count })))
+    .sort((a, b) => a.num * b.den - b.num * a.den || tieRank(a.level) - tieRank(b.level))
+    .map((x) => x.level);
+  const out: Record<string, Map<number, number>> = {};
+  slots.forEach((c, i) => { const m = (out[c] ??= new Map()); m.set(seq[i], (m.get(seq[i]) ?? 0) + 1); });
+  return Object.fromEntries(concepts.map((c) => [c, [...(out[c] ?? new Map()).entries()].sort((a, b) => a[0] - b[0]).map(([level, count]) => ({ level, count }))]));
+}
 
 /** Split `count` questions over `levels` round-robin -> [{ level, count }] (only non-zero). */
 export function splitByLevels(count: number, levels: readonly number[]): Array<{ level: number; count: number }> {
@@ -372,6 +478,13 @@ export function blueprintMatches(distribution: Record<string, number>, blueprint
 export function readSetup(raw: unknown): SubjectAssessmentSetup | null {
   if (!raw || typeof raw !== 'object') return null;
   const s = raw as Record<string, unknown>;
-  if (s.version === 'subject-assessment-v2') return s as unknown as SubjectAssessmentSetup;
-  return null;
+  if (s.version !== 'subject-assessment-v2') return null;
+  const setup = s as unknown as SubjectAssessmentSetup;
+  // read old band names (LOW / MEDIUM / HIGH) as the approved ones; the stored row is never rewritten here
+  const d = setup.difficulty as { band?: unknown } | undefined;
+  if (d && 'band' in d) {
+    const band = normalizeDifficultyBand(d.band);
+    if (band && band !== d.band) return { ...setup, difficulty: { band } };
+  }
+  return setup;
 }

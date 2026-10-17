@@ -174,7 +174,7 @@ export function SubjectAssessmentComposer({
         </fieldset>
 
         <div className="ta-row">
-          <label className="ta-field">{t['tsa.maxAttempts']} <input type="number" min={1} max={10} value={maxAttempts} onChange={(e) => setMaxAttempts(Math.max(1, Math.min(10, Number(e.target.value) || 1)))} /></label>
+          <label className="ta-field">{t['tsa.maxAttempts']} <select value={maxAttempts} onChange={(e) => setMaxAttempts(Number(e.target.value))} data-testid="tsa-max-attempts">{[1, 2, 3].map((n) => <option key={n} value={n}>{n}</option>)}</select></label>
         </div>
 
         <fieldset className="ta-choices">

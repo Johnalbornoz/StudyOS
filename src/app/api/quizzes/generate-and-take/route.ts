@@ -224,8 +224,9 @@ const GenerateQuizSchema = z.object({
   /**
    * Overnight 2026-10-16 subject test / mock (cumulative_assessment / exam_simulation): the Student picks DO NOW or
    * SCHEDULE (a local date). StudyUs plans count, distribution, difficulty and timing (services/subject-assessment.service);
-   * `maxQuestions` is never read for these modes. `timezone` = the browser's IANA zone, used only when the Student has no
-   * student_availability.timezone (recorded as assumed).
+   * `maxQuestions` is never read for these modes. The timezone is never taken from the client (APPROVED 2026-10-17): a
+   * SCHEDULED assessment uses the Student's or institution's timezone authority, else TIMEZONE_AUTHORITY_BLOCKER. A
+   * `timezone` key sent by an older client is accepted and ignored.
    */
   subjectAssessment: z.object({
     mode: z.enum(['NOW', 'SCHEDULED']).default('NOW'),
@@ -366,7 +367,6 @@ async function handleSubjectAssessmentCreate(validated: z.infer<typeof GenerateQ
     schedule: sa.mode === 'SCHEDULED' ? { mode: 'SCHEDULED', date: sa.scheduledDate! } : { mode: 'NOW' },
     timing: { timed: validated.quizMode === 'exam_simulation', durationMinutes: null },
     language: isLocale(validated.language) ? validated.language : undefined,
-    browserTimezone: sa.timezone,
   });
   if (!created.ok) {
     return NextResponse.json({ error: created.error, message: created.message, ...(created.detail ? { detail: created.detail } : {}) }, { status: created.status });

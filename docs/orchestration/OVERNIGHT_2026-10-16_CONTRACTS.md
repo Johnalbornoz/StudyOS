@@ -79,11 +79,15 @@ learning_evidence.metadata.transferLadder = {
 ```
 { kind: 'SUBJECT_CUMULATIVE_TEST'|'SUBJECT_MOCK_EXAM', origin: 'STUDENT'|'TEACHER', assignmentId?: string, attemptNumber?: number,
   selectedConceptIds: string[], questionCount: number, distribution: Record<conceptId, number>, rule: string,
-  difficulty: { mode: 'AUTO' } | { band: 'LOW'|'MEDIUM'|'HIGH'|'MIXED' },
-  schedule: { mode: 'NOW' } | { mode: 'SCHEDULED', date: 'YYYY-MM-DD', timezone: IANA, expiresAt: ISO },
+  difficulty: { mode: 'AUTO' } | { band: 'BASIC'|'INTERMEDIATE'|'ADVANCED'|'MIXED' },   // legacy rows: LOW|MEDIUM|HIGH, read as BASIC|INTERMEDIATE|ADVANCED
+  difficultyPlan?: { counts: { BASIC, INTERMEDIATE, ADVANCED }, perConcept: Record<conceptId, [{ level, count }]>, method },
+  schedule: { mode: 'NOW' } | { mode: 'SCHEDULED', date: 'YYYY-MM-DD', timezone: IANA, expiresAt: ISO /* 21:00 local of date */ },
+  timezoneSource: 'STUDENT_AVAILABILITY'|'INSTITUTION'|null,
   timing: { timed: boolean, durationMinutes: number|null, startedAt?: ISO, deadlineAt?: ISO },
   feedbackPolicy: 'TEST_CORRECTNESS_ONLY'|'MOCK_NONE',
-  maxAttempts?: number, frozenAt: ISO }
+  maxAttempts?: number, frozenAt: ISO,
+  completion?: { completedAt, reason, scorePercent, passed, knowledge?: KnowledgeProfile } }
+// every frozen item (quiz_sessions.questions[]) carries plannedDifficultyLevel = the level it was generated at
 ```
 
 - **Generation entry point the TEACHER workstream calls:** for a frozen group plan, call the same generation path with the explicit `{ conceptIds, distribution, difficulty, assignmentId, attemptNumber }`. The SUBJECT workstream exposes it as an exported service function `createSubjectAssessmentSession(params)` in `src/services/subject-assessment.service.ts`, and the route uses that function too.
@@ -94,14 +98,29 @@ learning_evidence.metadata.transferLadder = {
 - **Timing:**
   - A timed attempt has a wall-clock deadline `startedAt + duration`; connection loss does not pause it.
   - At zero, the attempt auto-submits on the server (lazy, on the next read/submit, plus the client countdown). Answered items are graded; unanswered are UNANSWERED and counted in the denominator.
-  - The Mock is always timed. There is NO governed recommendation formula.
-    - The only existing algorithm is the per-item planned time of `assessment-foundation/nominal-response-time.ts` (already used for blueprint time budgets).
-    - The recommendation is therefore the sum of the frozen items' nominal seconds, rounded up to whole minutes. It is exposed as `recommendedMockDurationMinutes()` with `rule: 'NOMINAL_RESPONSE_TIME_SUM'` and reported as OPERATOR_DECISION_REQUIRED for confirmation.
-    - Teacher mocks start from it and the teacher may adjust it. Student-created mocks use it as is.
+  - The Mock is always timed. **APPROVED 2026-10-17:** the recommendation is the sum over the frozen items of `assessment-foundation/nominal-response-time.ts`, adjusted by each item's difficulty (the level it was generated at), rounded up to whole minutes: `recommendedMockDurationMinutes()`, `rule: 'NOMINAL_RESPONSE_TIME_SUM'`.
+    - Before items exist, a planning estimate over the planned level counts is used (`recommendedDurationForPlan`, rule `NOMINAL_RESPONSE_TIME_SUM:PLANNED_ITEMS_DEFAULT_TYPE`).
+    - The recommendation is advisory. The Teacher's chosen duration is authoritative, frozen on the assignment and in every attempt's setup, and never overwritten. Student-created mocks use the recommendation as is.
+  - **Untimed Test inactivity (APPROVED 2026-10-17):** 45 minutes, reset by every saved answer. Past it the attempt is closed (EXPIRED), its saved responses are kept, and it cannot be resumed. A teacher-assigned attempt before the window close follows §3 (resume).
+- **Difficulty (APPROVED 2026-10-17):** BASIC = level 2, INTERMEDIATE = 3, ADVANCED = 4. MIXED / Balanced = 30% Basic, 50% Intermediate, 20% Advanced of the question count, by largest remainder; the total is exact and ties / remainder prefer Intermediate, so Intermediate is the largest share (4 → 1/2/1, 5 → 1/3/1, 10 → 3/5/2, 14 → 4/7/3, 36 → 11/18/7, 50 → 15/25/10). Levels are assigned deterministically across concepts (`assignLevelsAcrossConcepts`: the items are laid out as round-robin slots over the concepts; an even-spread level sequence is merged in position order; slot i takes level i). Legacy LOW / MEDIUM / HIGH rows are read as BASIC / INTERMEDIATE / ADVANCED; new rows are written with the new names.
+- **Knowledge buckets (APPROVED 2026-10-17, diagnostic only, never erase evidence):** for each completed attempt, `src/lib/subject-assessment/knowledge-bucket.ts` derives at read time from the frozen items and the recorded grades:
+  - overallScore, basicScore, intermediateScore and advancedScore. A level score is null when the attempt has no item at that level.
+  - highestDifficultyDemonstrated (the highest level scoring >= 80), conceptScore, and knowledgeBucket.
+  - The profile is also persisted in `completion.knowledge`.
+  - The buckets:
+    - B1 CRITICAL_GAP: overall < 60.
+    - B2 DEVELOPING: 60–79.
+    - B3 COMPETENT: overall >= 80 AND intermediate >= 80.
+    - B4 ADVANCED: overall >= 80 AND advanced >= 80.
+    - null (UNCLASSIFIED): overall >= 80 with no qualifying level score. See §5.
+  - The Teacher group view shows the B1..B4 distribution. The drill-down shows the bucket and the per-difficulty scores. The Student's final feedback shows the bucket label.
 - **Student-created assessments:**
   - ONE attempt per assessment. Another attempt means a new assessment.
   - NOW starts immediately.
-  - SCHEDULED may start early. If not taken on the selected date (end of that local date in the student's timezone `student_availability.timezone`), it EXPIRES.
+  - SCHEDULED may start early. **APPROVED 2026-10-17:** if it is not started by the selected date, it EXPIRES at 21:00 on that date (DST-correct) in the authoritative timezone.
+    - The authority is `student_availability.timezone`. Failing that, it is the Student's institution timezone (`institutions.timezone` via active class enrollments, exactly one distinct value).
+    - No authority → SCHEDULED is refused with `TIMEZONE_AUTHORITY_BLOCKER` (409) and a truthful UI message. There is no browser or UTC fallback. NOW still works.
+    - A date whose 21:00 has already passed is refused (`SCHEDULE_DATE_IN_PAST`).
   - No reminders.
 - **Evidence:** both write per-concept `learning_evidence` (Test: CUMULATIVE_ASSESSMENT; Mock: MOCK_EXAM, explicitly MOCK). Origin and assignment id go in metadata. They never write Exam Readiness.
 
@@ -113,11 +132,13 @@ learning_evidence.metadata.transferLadder = {
 - **Targeting:** one, several or a whole class, through `publishClassAssignment` (`studentIds` empty = class). One row per student, grouped by `assignment_group_id`.
 - **Group equivalence:** every student shares the same plan (count, distribution, difficulty, scoring, window). Each attempt generates its own questions (different items), avoiding that student's previously seen fingerprints. Reuse is allowed only when supply is insufficient: least recently used, avoiding the previous attempt, and recorded.
 - **Attempts:**
-  - Up to `maxAttempts`, and none is required.
+  - Up to `maxAttempts`, which is 1, 2 or 3 (**APPROVED 2026-10-17**). The UI offers 1 / 2 / 3, and the server rejects any other value (`MAX_ATTEMPTS_INVALID`). None is required.
   - The result is the LAST COMPLETED attempt; history is kept.
   - Retry after a pass is allowed.
   - Resume of an active attempt before close does not consume an attempt.
   - After close: an active attempt may be finished while the session lives, but cannot be resumed after exit, and no new attempt starts.
+  - **Heartbeat (APPROVED 2026-10-17):** the runner sends a heartbeat every 30 s. The abandonment tolerance after the 21:00 close is 180 s: more than 180 s without activity after the close counts as left, and the attempt is closed as is with no resume. A reconnect before 21:00 may still resume.
+  - Difficulty bands: see §2 (the UI's Básico / Intermedio / Avanzado / Mixto map to BASIC / INTERMEDIATE / ADVANCED / MIXED).
 - **Feedback release:** immediate full feedback when the student versions are truly diverse (no shared item fingerprints across the group's sessions). Otherwise show score and general performance now, and hold answers and explanations until `closesAt`. This is computed from the actual items served.
 - **Teacher results:**
   - Group: per-student score, average, distribution, per-concept performance, difficulty, high-error questions/areas, strongest and weakest concepts.
@@ -131,6 +152,16 @@ learning_evidence.metadata.transferLadder = {
 
 ## 5. Operator decisions recorded (not invented)
 
-- **Mock duration recommendation:** no governed recommendation formula exists. The existing per-item planning algorithm (`nominal-response-time.ts`) is used as the sum over the frozen items, never a new formula. OPERATOR_DECISION_REQUIRED (confirm or replace).
-- **Self-scheduled expiry:** interpreted as the end of the selected local date (the date boundary, not an invented clock time). Reported for confirmation.
-- **Mock band beyond 15 concepts that are not the whole subject:** OVER_15_PARTIAL (~2/concept, max 50). Reported for confirmation.
+- **Mock duration recommendation:** APPROVED 2026-10-17. It is the sum of `nominal-response-time.ts` over the frozen items, adjusted by difficulty, with a planning estimate before the items exist. It is advisory: the teacher's duration is authoritative and frozen.
+- **Self-scheduled expiry:** APPROVED 2026-10-17. The assessment expires at 21:00 on the scheduled date in the student or institution timezone. With no authority → `TIMEZONE_AUTHORITY_BLOCKER`.
+- **Mock band beyond 15 concepts that are not the whole subject:** APPROVED 2026-10-17. OVER_15_PARTIAL: ~2/concept, max 50 (18 → 36, 22 → 44, 30 → 50). Every concept gets at least 1; the remainder is uniform.
+- **Heartbeat / abandonment:** APPROVED 2026-10-17. The interval is 30 s and the tolerance after close is 180 s (it replaces 90 s).
+- **Teacher max attempts:** APPROVED 2026-10-17. 1–3. The last completed attempt wins, a retry after a pass is allowed, and history is kept.
+- **Difficulty bands and MIXED split:** APPROVED 2026-10-17. Level 2 / 3 / 4; MIXED is 30 / 50 / 20 by largest remainder, Intermediate first.
+- **Knowledge buckets:** APPROVED 2026-10-17 (B1..B4, diagnostic).
+- **Untimed Test inactivity:** APPROVED 2026-10-17. 45 min, reset on saved activity; then closed, responses kept, no resume.
+- **OPERATOR_DECISION_REQUIRED (open):**
+  - The knowledge bucket when overall >= 80 but neither intermediate >= 80 nor advanced >= 80. This covers intermediate below 80, and a Basic-only attempt with no intermediate or advanced items. It is labelled null / UNCLASSIFIED with `unclassifiedReason`, never invented.
+  - Items generated at level 1 or 5 (AUTO difficulty only) count in the overall and concept scores but in no level score.
+  - Teacher-assigned untimed attempts idle for more than 45 min before the window close are resumed (rule V, decision 4), not closed (decision 8). Decision 8 is applied to Student-created untimed Tests.
+  - Several distinct institution timezones for one Student (no `student_availability.timezone`) → `TIMEZONE_AUTHORITY_BLOCKER` (`INSTITUTION_TIMEZONES_CONFLICT`).
