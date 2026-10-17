@@ -1,13 +1,21 @@
 /**
- * Pilot exposure of the exam catalogue to Students (contract OVERNIGHT_2026-10-16 section 4).
+ * Pilot exposure of the exam catalogue to Students (contract OVERNIGHT_2026-10-16 section 4, revised by the FINAL
+ * PRODUCT-DECISION DELTA of 2026-10-17).
  *
  *   STUDENT_CATALOG_EXPOSURE=PILOT   -> the pilot policy below (hide, never delete)
  *   unset / any other value          -> FULL: today's behaviour, unchanged (fail-open to current)
  *
  * The repository rule "show as not available, never hidden" (ExamCatalogBrowser) stays the FULL behaviour.
- * For the pilot the operator overrides it: PISA, ICFES (Saber 11), unfinished IB capability, the Challenge mode
- * where it is unfinished, and Cambridge qualifications the pilot school has not confirmed are NOT offered to
- * Students. Nothing is deleted: catalogue rows, configurations, preparations, instances and history stay where
+ * For the pilot the operator overrides it. Product decision 2026-10-17 (supersedes the overnight hiding of PISA and
+ * ICFES): AICE 9709 AS, PISA and ICFES (Saber 11) ARE offered to Students, as truthfully labelled StudyUs samples
+ * (see sample-disclosure.ts), and only where they are functional -- visible must equal functional:
+ *   - AICE 9709 AS: Papers 1 / 2 / 4 / 5 (practice + the reduced StudyUs mock).
+ *   - PISA: the Mathematics domain only (the one domain with governed, ready supply). Reading, Science and the
+ *     three-domain benchmark have no ready supply and are not listed.
+ *   - ICFES: Saber 11 Matematicas only (the one area configured). The other areas are not listed.
+ * Still hidden: unfinished IB capability, the Challenge mode where it is unfinished (IB, Cambridge incl. AICE; and
+ * PISA / ICFES, whose Challenge has no certified supply), and Cambridge qualifications the pilot school has not
+ * confirmed. Nothing is deleted: catalogue rows, configurations, preparations, instances and history stay where
  * they are, and lookups by key (objectiveByKey, history views) stay complete -- only the Student-facing lists,
  * resolvers and creation paths consult this policy.
  *
@@ -16,6 +24,8 @@
  * Allowlist semantics (per gated family): each entry is a catalogue NODE key. That node and every node under it
  * (papers, components) are in the Student scope; its ancestors are listed only as navigation (so the Student can
  * walk down to it) and are never resolvable as an exam level of their own. Everything else in that family is hidden.
+ * A whole-test preparation objective (PISA 2022, Saber 11: the test is the objective, its domains live inside) is
+ * offered when it contains an in-scope node.
  */
 import { flattenCatalog } from './catalog/structure';
 
@@ -24,8 +34,12 @@ export type ExposureMode = 'PRACTICE' | 'MOCK' | 'CHALLENGE';
 
 export const STUDENT_CATALOG_EXPOSURE_ENV = 'STUDENT_CATALOG_EXPOSURE';
 
-/** Families never offered to a Student in the pilot (catalogue structure family = exam_definitions.exam_family). */
-export const PILOT_HIDDEN_FAMILIES: readonly string[] = ['PISA', 'ICFES'];
+/**
+ * Families never offered to a Student in the pilot (catalogue structure family = exam_definitions.exam_family).
+ * Empty since the 2026-10-17 product decision: PISA and ICFES are restricted by allowlist instead (below). The
+ * mechanism stays: an operator may hide a whole family again here, in one place.
+ */
+export const PILOT_HIDDEN_FAMILIES: readonly string[] = [];
 
 /**
  * IB in the pilot: the implemented IB scope only -- Mathematics: Analysis and Approaches HL (Paper 1 / 2 / 3
@@ -44,11 +58,23 @@ export const PILOT_IB_VISIBLE_NODE_KEYS: readonly string[] = ['ib.dp.math-aa.hl'
 export const SCHOOL_CONFIRMATION_REQUIRED = 'SCHOOL_CONFIRMATION_REQUIRED' as const;
 export const PILOT_CAMBRIDGE_VISIBLE_NODE_KEYS: readonly string[] = [
   'cie.asal.cambridge.9709.as', // pending school confirmation (SCHOOL_CONFIRMATION_REQUIRED)
-  'cie.aice.g1.9709.as', // pending school confirmation (SCHOOL_CONFIRMATION_REQUIRED)
+  'cie.aice.g1.9709.as', // AICE 9709 AS Papers 1 / 2 / 4 / 5 -- product decision 2026-10-17: offered (StudyUs sample forms)
 ];
 
-/** Modes not offered in the pilot, per family. Challenge is unfinished for IB and Cambridge (AICE included). */
-export const PILOT_HIDDEN_MODES: Readonly<Record<string, readonly ExposureMode[]>> = { IB: ['CHALLENGE'], CAMBRIDGE: ['CHALLENGE'] };
+/**
+ * PISA in the pilot: a StudyUs PISA-style sample of the Mathematics domain (and its processes) only -- the one
+ * domain with governed, ready Exam Bank supply. Reading, Science and the three-domain benchmark are not offered.
+ */
+export const PILOT_PISA_VISIBLE_NODE_KEYS: readonly string[] = ['pisa.2022.math'];
+
+/** ICFES in the pilot: StudyUs Saber 11 preparation, Matematicas only (the one configured area). */
+export const PILOT_ICFES_VISIBLE_NODE_KEYS: readonly string[] = ['saber11.math'];
+
+/**
+ * Modes not offered in the pilot, per family. Challenge is unfinished for IB and Cambridge (AICE included) and has
+ * no certified supply for PISA / ICFES.
+ */
+export const PILOT_HIDDEN_MODES: Readonly<Record<string, readonly ExposureMode[]>> = { IB: ['CHALLENGE'], CAMBRIDGE: ['CHALLENGE'], PISA: ['CHALLENGE'], ICFES: ['CHALLENGE'] };
 
 /** exam_definitions.exam_family values that are governed by another family's policy (AICE lives in the CAMBRIDGE catalogue). */
 const POLICY_FAMILY: Readonly<Record<string, string>> = { AICE: 'CAMBRIDGE' };
@@ -65,7 +91,7 @@ export const FULL_EXPOSURE_POLICY: StudentExposurePolicy = Object.freeze({ expos
 export const PILOT_EXPOSURE_POLICY: StudentExposurePolicy = Object.freeze({
   exposure: 'PILOT',
   hiddenFamilies: PILOT_HIDDEN_FAMILIES,
-  allowlists: { IB: PILOT_IB_VISIBLE_NODE_KEYS, CAMBRIDGE: PILOT_CAMBRIDGE_VISIBLE_NODE_KEYS },
+  allowlists: { IB: PILOT_IB_VISIBLE_NODE_KEYS, CAMBRIDGE: PILOT_CAMBRIDGE_VISIBLE_NODE_KEYS, PISA: PILOT_PISA_VISIBLE_NODE_KEYS, ICFES: PILOT_ICFES_VISIBLE_NODE_KEYS },
   hiddenModes: PILOT_HIDDEN_MODES,
 });
 
@@ -157,21 +183,26 @@ export function isNavigationOnlyNode(family: string, nodeKey: string, policy: St
   return !!allow && !scopeOf(f, allow).inScope.has(nodeKey) && scopeOf(f, allow).navigation.has(nodeKey);
 }
 
-/** A preparation objective a Student may list, choose or be assigned. */
-export function isObjectiveExposed(o: { family: string; nodeKeys: readonly string[] }, policy: StudentExposurePolicy = studentExposurePolicy()): boolean {
+/**
+ * A preparation objective a Student may list, choose or be assigned: one of its nodes is allowlisted, or it is a
+ * whole-test objective (kind EXAM: PISA 2022, Saber 11) whose node contains an allowlisted one. A programme planner
+ * (AICE Diploma, kind PROGRAMME_PLAN) is never exposed through containment.
+ */
+export function isObjectiveExposed(o: { family: string; nodeKeys: readonly string[]; kind?: string }, policy: StudentExposurePolicy = studentExposurePolicy()): boolean {
   if (policy.exposure === 'FULL') return true;
   if (!isFamilyExposed(o.family, policy)) return false;
   const f = policyFamily(o.family);
   const allow = policy.allowlists[f];
-  return !allow || o.nodeKeys.some((k) => allow.includes(k));
+  if (!allow || o.nodeKeys.some((k) => allow.includes(k))) return true;
+  return o.kind === 'EXAM' && o.nodeKeys.some((k) => scopeOf(f, allow).navigation.has(k));
 }
 
 /** The objective list a Student surface shows. `objectiveByKey` stays complete (history, existing preparations). */
-export function studentObjectives<T extends { family: string; nodeKeys: readonly string[] }>(list: readonly T[], policy: StudentExposurePolicy = studentExposurePolicy()): T[] {
+export function studentObjectives<T extends { family: string; nodeKeys: readonly string[]; kind?: string }>(list: readonly T[], policy: StudentExposurePolicy = studentExposurePolicy()): T[] {
   return policy.exposure === 'FULL' ? [...list] : list.filter((o) => isObjectiveExposed(o, policy));
 }
 
-/** Defence in depth for instance creation: the exam's family and configuration must be in the Student scope. */
+/** Defence in depth for instance creation: the exam's family and configuration must be in the Student scope (a retired configuration of an allowlisted family, e.g. v2.pisa.math, is not). */
 export function isExamConfigExposed(examFamily: string | null | undefined, configKey: string | null | undefined, policy: StudentExposurePolicy = studentExposurePolicy()): boolean {
   if (policy.exposure === 'FULL') return true;
   if (!isFamilyExposed(examFamily, policy)) return false;

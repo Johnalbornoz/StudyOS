@@ -5,6 +5,8 @@ import {
   PILOT_EXPOSURE_POLICY,
   PILOT_HIDDEN_FAMILIES,
   PILOT_IB_VISIBLE_NODE_KEYS,
+  PILOT_ICFES_VISIBLE_NODE_KEYS,
+  PILOT_PISA_VISIBLE_NODE_KEYS,
   exposedModes,
   isExamConfigExposed,
   isFamilyExposed,
@@ -21,8 +23,10 @@ import { examObjectives, objectiveByKey } from '@/lib/exam-core/objectives/objec
 import { flattenCatalog } from '@/lib/exam-core/catalog/structure';
 
 /**
- * Pilot exposure (OVERNIGHT_2026-10-16 contracts, section 4): STUDENT_CATALOG_EXPOSURE=PILOT hides PISA, ICFES,
- * unfinished IB, Challenge for IB / Cambridge and the unconfirmed Cambridge qualifications; unset = no change.
+ * Pilot exposure (OVERNIGHT_2026-10-16 contracts, section 4, revised by the product decision of 2026-10-17):
+ * STUDENT_CATALOG_EXPOSURE=PILOT offers AICE 9709 AS (P1/P2/P4/P5), PISA Mathematics and Saber 11 Matematicas as
+ * StudyUs samples; it hides unfinished IB, the Challenge mode of IB / Cambridge / PISA / ICFES, the PISA / Saber
+ * domains without ready supply and the unconfirmed Cambridge qualifications; unset = no change.
  */
 const P = PILOT_EXPOSURE_POLICY;
 const F = FULL_EXPOSURE_POLICY;
@@ -55,19 +59,43 @@ describe('student exposure -- env selection (fail-open to the current behaviour)
 describe('student exposure -- PILOT policy', () => {
   it('the allowlists name real catalogue nodes (a typo would silently hide a qualification)', () => {
     const keys = new Set(flattenCatalog().map((f) => f.node.key));
-    for (const k of [...PILOT_IB_VISIBLE_NODE_KEYS, ...PILOT_CAMBRIDGE_VISIBLE_NODE_KEYS]) expect(keys.has(k)).toBe(true);
-    expect(PILOT_HIDDEN_FAMILIES).toEqual(['PISA', 'ICFES']);
+    for (const k of [...PILOT_IB_VISIBLE_NODE_KEYS, ...PILOT_CAMBRIDGE_VISIBLE_NODE_KEYS, ...PILOT_PISA_VISIBLE_NODE_KEYS, ...PILOT_ICFES_VISIBLE_NODE_KEYS]) expect(keys.has(k)).toBe(true);
+    // product decision 2026-10-17: no whole family is hidden any more (the mechanism stays)
+    expect(PILOT_HIDDEN_FAMILIES).toEqual([]);
   });
 
-  it('PISA and ICFES (Saber 11) are hidden: objectives, nodes, configs', () => {
-    expect(isFamilyExposed('PISA', P)).toBe(false);
-    expect(isFamilyExposed('ICFES', P)).toBe(false);
-    expect(isObjectiveExposed(objectiveByKey('pisa.2022')!, P)).toBe(false);
-    expect(isObjectiveExposed(objectiveByKey('saber11')!, P)).toBe(false);
-    expect(isNodeListedForStudent('PISA', 'pisa.2022', P)).toBe(false);
-    expect(isNodeSelectableForStudent('ICFES', 'saber11.math', P)).toBe(false);
-    expect(isExamConfigExposed('ICFES', 'v2.saber11.math', P)).toBe(false);
-    expect(isExamConfigExposed('PISA', 'v2.pisa.2022', P)).toBe(false);
+  it('PISA is re-exposed: Mathematics (and its processes) only; Reading, Science and the three-domain benchmark are not listed', () => {
+    expect(isFamilyExposed('PISA', P)).toBe(true);
+    expect(isObjectiveExposed(objectiveByKey('pisa.2022')!, P)).toBe(true);
+    for (const k of ['pisa.2022.math', 'pisa.2022.math.reason', 'pisa.2022.math.formulate', 'pisa.2022.math.employ', 'pisa.2022.math.interpret']) {
+      expect(isNodeListedForStudent('PISA', k, P)).toBe(true);
+      expect(isNodeSelectableForStudent('PISA', k, P)).toBe(true);
+    }
+    // the test root is navigation only (never an exam level of its own)
+    expect(isNodeListedForStudent('PISA', 'pisa.2022', P)).toBe(true);
+    expect(isNavigationOnlyNode('PISA', 'pisa.2022', P)).toBe(true);
+    expect(isNodeSelectableForStudent('PISA', 'pisa.2022', P)).toBe(false);
+    for (const k of ['pisa.2022.reading', 'pisa.2022.reading.locate', 'pisa.2022.science', 'pisa.2022.science.explain', 'pisa.2022.full']) {
+      expect(isNodeListedForStudent('PISA', k, P)).toBe(false);
+      expect(isNodeSelectableForStudent('PISA', k, P)).toBe(false);
+    }
+    expect(isExamConfigExposed('PISA', 'v2.pisa.2022', P)).toBe(true);
+    expect(isExamConfigExposed('PISA', 'v2.pisa.math', P)).toBe(false); // retired configuration
+    expect(exposedModes('PISA', ['PRACTICE', 'MOCK', 'CHALLENGE'], P)).toEqual(['PRACTICE', 'MOCK']);
+  });
+
+  it('ICFES (Saber 11) is re-exposed: Matematicas only; the unconfigured areas are not listed', () => {
+    expect(isFamilyExposed('ICFES', P)).toBe(true);
+    expect(isObjectiveExposed(objectiveByKey('saber11')!, P)).toBe(true);
+    expect(isNodeSelectableForStudent('ICFES', 'saber11.math', P)).toBe(true);
+    expect(isNavigationOnlyNode('ICFES', 'saber11', P)).toBe(true);
+    for (const k of ['saber11.lectura', 'saber11.sociales', 'saber11.ciencias', 'saber11.ingles']) expect(isNodeListedForStudent('ICFES', k, P)).toBe(false);
+    expect(isExamConfigExposed('ICFES', 'v2.saber11.math', P)).toBe(true);
+    expect(exposedModes('ICFES', ['PRACTICE', 'MOCK', 'CHALLENGE'], P)).toEqual(['PRACTICE', 'MOCK']);
+  });
+
+  it('a programme planner is never exposed through containment (the AICE Diploma planner stays hidden)', () => {
+    expect(isObjectiveExposed(objectiveByKey('cie.aice.diploma')!, P)).toBe(false);
   });
 
   it('PAA stays fully visible (practice, mock and its Challenge)', () => {
@@ -113,10 +141,10 @@ describe('student exposure -- PILOT policy', () => {
     expect(isModeExposed('CAMBRIDGE', 'MOCK', P)).toBe(true);
   });
 
-  it('the Student objective list is exactly PAA + IB AA HL + the two Cambridge entries; objectiveByKey stays complete', () => {
+  it('the Student objective list is exactly PAA + IB AA HL + the two Cambridge entries + PISA + Saber 11; objectiveByKey stays complete', () => {
     const all = examObjectives();
     const shown = studentObjectives(all, P).map((o) => o.key).sort();
-    expect(shown).toEqual(['cie.asal.9709.as', 'cie.asal.cambridge.9709.as', 'ib.dp.math-aa.hl', 'paa'].sort());
+    expect(shown).toEqual(['cie.asal.9709.as', 'cie.asal.cambridge.9709.as', 'ib.dp.math-aa.hl', 'paa', 'pisa.2022', 'saber11'].sort());
     // nothing is deleted: history / existing preparations still resolve every key
     for (const o of all) expect(objectiveByKey(o.key)).toBe(o);
   });

@@ -11,6 +11,7 @@ import { db } from '@/lib/db';
 import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
 import { PageIntro } from '@/components/ui/PageIntro';
 import { ExamCatalogBrowser } from './ExamCatalogBrowser';
+import { SAMPLE_DISCLOSURE_KEYS } from '@/lib/exam-core/sample-disclosure';
 import { InstanceCard } from './InstanceCard';
 import { PreparationChooser } from '../exam-prep/PreparationChooser';
 import { loadPickerData } from '@/lib/exam-core/objectives/picker';
@@ -36,6 +37,7 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
   const t = getMessages(locale) as Record<string, string>;
   const labels: Record<string, string> = Object.fromEntries(Object.entries(t).filter(([k]) => k.startsWith('exv2.')));
   for (const f of EXAM_FAMILIES) labels[`exv2.family.${f}`] = t[`exam.family.${f}`] ?? f;
+  for (const k of SAMPLE_DISCLOSURE_KEYS) labels[k] = t[k];
 
   const instances = await Promise.all((await listExamInstances(studentId)).map(toInstanceView));
   // Deep link to one selectable exam level (validated: it must exist and be selectable).

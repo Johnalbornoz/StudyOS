@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { InstanceCard, type InstanceView } from './InstanceCard';
+import { sampleDisclosureKeyFor } from '@/lib/exam-core/sample-disclosure';
 
 type L = Record<string, string>;
 
@@ -308,6 +309,8 @@ export function ExamCatalogBrowser({ labels: l, language, initialNode }: { label
           </p>
         </section>
       )}
+
+      {level && !created && (() => { const k = sampleDisclosureKeyFor({ family: level.family, nodeKey: level.nodeKey }); return k ? <p className="ui-hint" data-testid="exam-sample-disclosure">{l[k]}</p> : null; })()}
 
       {level && !created && (
         <div className="exv2-setup">
