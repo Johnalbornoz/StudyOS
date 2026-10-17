@@ -16,6 +16,12 @@
  * launches of the same activity: a double click or a refresh waits for the
  * first launch and then RESUMES its session -- never a second one.
  * Launching writes no learning evidence.
+ *
+ * PRACTICE (requirement §22): the latest LEARN weaknesses of the concept are
+ * read once (learn-weakness.service) and reach the delivered set -- the bank
+ * assembly prioritises matching items (BANK_PRIORITY); a READY set was
+ * prioritised when prepared and its match is re-measured here
+ * (CACHE_PRIORITY). Either way the session records `learnWeaknessProvenance`.
  */
 import { db } from '@/lib/db';
 import { currentAiCallCount } from '@/lib/ai/request-metrics';
@@ -38,6 +44,8 @@ import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
 import { addValidatedCandidates, recordBankDeliveries } from '@/services/question-bank.service';
 import { computeAskConfidenceFlags } from '@/services/ask-confidence.service';
 import { acquireLaunchLock, launchLockKey, type LaunchLock } from '@/services/activity-launch-lock.service';
+import { getLearnWeaknessesForConcept, recordLearnWeaknessProvenance } from '@/services/learn-weakness.service';
+import { buildLearnWeaknessProvenance, matchLearnFocusItems, type LearnWeaknessProvenance } from '@/lib/learn-guided/weakness-focus';
 
 export { launchLockId, type LaunchLock } from '@/services/activity-launch-lock.service';
 
@@ -64,7 +72,15 @@ export interface DeliveryInput {
 }
 
 export type DeliveryResult =
-  | { status: 'DELIVERED'; source: Exclude<DeliverySource, 'EMERGENCY_AI'>; quizId: string; questions: GeneratedQuestion[]; timings: LaunchTimings }
+  | {
+      status: 'DELIVERED';
+      source: Exclude<DeliverySource, 'EMERGENCY_AI'>;
+      quizId: string;
+      questions: GeneratedQuestion[];
+      timings: LaunchTimings;
+      /** PRACTICE with a LEARN focus: what this delivery recorded (absent otherwise, and for RESUMED). */
+      learnWeaknessProvenance?: LearnWeaknessProvenance;
+    }
   | { status: 'EMERGENCY_REQUIRED'; lock: LaunchLock; timings: LaunchTimings; bank: { available: number; needed: number } };
 
 /** Creates the session for a delivered set (same persistence as every session) and records its provenance. */
@@ -75,6 +91,7 @@ async function openSession(
   candidateIds: string[],
   askConfidence: boolean,
   consumedPreparedId: string | null,
+  learnWeaknessProvenance: LearnWeaknessProvenance | null = null,
 ): Promise<{ quizId: string; questions: GeneratedQuestion[] }> {
   const ordered = shuffleArray(questions.map((q) => ({ ...q, conceptId: q.conceptId ?? input.conceptId })));
   if (ordered.length > 0 && askConfidence) ordered[0] = { ...ordered[0], askConfidence: true };
@@ -89,6 +106,7 @@ async function openSession(
     db.query(`UPDATE quiz_sessions SET delivery_source = $2 WHERE id = $1`, [quizId, source]),
     recordBankDeliveries(candidateIds, quizId, input.studentId),
     consumedPreparedId ? linkConsumedActivity(consumedPreparedId, quizId) : Promise.resolve(),
+    learnWeaknessProvenance ? recordLearnWeaknessProvenance(quizId, learnWeaknessProvenance) : Promise.resolve(),
   ]);
   return { quizId, questions: ordered };
 }
@@ -141,7 +159,7 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
     // 1. an equivalent open session is THE session (double click, refresh, back to the concept).
     //    Independent reads run in the same round trip.
     t = Date.now();
-    const [resumed, snapshot, askFlags, reserved] = await Promise.all([
+    const [resumed, snapshot, askFlags, reserved, learnFocus] = await Promise.all([
       findResumableCanonicalSession({
         studentId: input.studentId,
         conceptId: input.conceptId,
@@ -159,6 +177,7 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
       loadLearnerStateSnapshot(input.studentId, input.conceptId),
       computeAskConfidenceFlags(input.studentId, [input.conceptId], input.quizMode),
       reservedCandidateIds(input.studentId, input.conceptId),
+      input.activityType === 'PRACTICE' ? getLearnWeaknessesForConcept(input.studentId, input.conceptId) : Promise.resolve(null),
     ]);
     timings.resumeMs = Date.now() - t;
     if (resumed) return { status: 'DELIVERED', source: 'RESUMED', quizId: resumed.quizId, questions: resumed.questions, timings };
@@ -177,20 +196,33 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
     timings.inventoryMs = Date.now() - t;
     if (consumed && consumed.questions.length === input.contract.itemCount) {
       t = Date.now();
-      const session = await openSession(input, consumed.questions, 'INVENTORY', consumed.candidateIds, askConfidence, consumed.id);
+      // the READY set was prioritised when it was assembled; its match is re-measured on what is delivered
+      const aligned = consumed.candidateIds.length === consumed.questions.length;
+      const provenance = learnFocus
+        ? buildLearnWeaknessProvenance(
+            learnFocus,
+            'CACHE_PRIORITY',
+            matchLearnFocusItems(consumed.questions.map((q, i) => ({ id: aligned ? consumed.candidateIds[i] : q.id, question: q })), learnFocus),
+          )
+        : null;
+      const session = await openSession(input, consumed.questions, 'INVENTORY', consumed.candidateIds, askConfidence, consumed.id, provenance);
       timings.sessionMs = Date.now() - t;
-      return { status: 'DELIVERED', source: 'INVENTORY', ...session, timings };
+      return { status: 'DELIVERED', source: 'INVENTORY', ...session, timings, ...(provenance ? { learnWeaknessProvenance: provenance } : {}) };
     }
 
     // 3. cold miss: assemble from the VALIDATED bank
     t = Date.now();
-    const assembly = await assembleActivityForLearner({ studentId: input.studentId, contract: input.contract, academic: input.academic, reservedCandidateIds: reserved });
+    const assembly = await assembleActivityForLearner({
+      studentId: input.studentId, contract: input.contract, academic: input.academic, reservedCandidateIds: reserved,
+      ...(input.activityType === 'PRACTICE' ? { learnFocus } : {}),
+    });
     timings.bankMs = Date.now() - t;
     if (assembly.status === 'ASSEMBLED') {
       t = Date.now();
-      const session = await openSession(input, assembly.questions, 'BANK', assembly.candidateIds, askConfidence, null);
+      const provenance = assembly.learnFocus ? buildLearnWeaknessProvenance(assembly.learnFocus.focus, 'BANK_PRIORITY', assembly.learnFocus.matchedCandidateIds) : null;
+      const session = await openSession(input, assembly.questions, 'BANK', assembly.candidateIds, askConfidence, null, provenance);
       timings.sessionMs = Date.now() - t;
-      return { status: 'DELIVERED', source: 'BANK', ...session, timings };
+      return { status: 'DELIVERED', source: 'BANK', ...session, timings, ...(provenance ? { learnWeaknessProvenance: provenance } : {}) };
     }
 
     // 4. neither: the certified content cannot supply this launch. The lock stays held until the caller

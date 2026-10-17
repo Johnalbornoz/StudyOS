@@ -48,6 +48,7 @@ import { dispatchDeliveryWorker } from '@/services/worker-dispatch.service';
 import { addValidatedCandidates } from '@/services/question-bank.service';
 import { generateActivityCandidates } from '@/services/activity-candidate-generation.service';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
+import { getLearnWeaknessesForConcept } from '@/services/learn-weakness.service';
 
 /** Most candidates requested from a generator in one job round. */
 const BATCH_CAP: Record<DeliveryActivityType, number> = { LEARN_CHECK: 10, PRACTICE: 9, PROVE: 10, RETAIN: 10, TRANSFER: 3 };
@@ -155,9 +156,12 @@ export const bankReplenishHandler: JobHandler = async (job: GenerationJob) => {
     activityType: DeliveryActivityType; language: string; academic: AcademicContext; difficulty: number; needed: number; round: number;
   };
   const count = Math.min(p.needed, BATCH_CAP[p.activityType]);
+  // requirement §22: PRACTICE candidates for this Student's concept are generated with the latest LEARN weaknesses
+  const learnFocus = p.activityType === 'PRACTICE' ? await getLearnWeaknessesForConcept(p.studentId, p.conceptId) : null;
   const generated = await generateActivityCandidates({
     activityType: p.activityType, conceptId: p.conceptId, studentId: p.studentId, subjectId: p.subjectId, count,
     difficulty: p.difficulty, language: p.language, ibContext: await getSubjectIBContext(p.subjectId), parentOperationId: randomUUID(),
+    ...(learnFocus && learnFocus.weaknesses.length > 0 ? { learnWeaknesses: learnFocus.weaknesses } : {}),
   });
   const banked = await addValidatedCandidates(generated.questions, {
     studentId: p.studentId, conceptId: p.conceptId, activityType: p.activityType, language: p.language, academic: p.academic, generator: generated.generator,

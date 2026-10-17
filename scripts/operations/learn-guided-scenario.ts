@@ -6,7 +6,8 @@
  *   B  wrong answers at 3 and 4      -> no close at 4 (a wrong answer is always followed by another interaction)
  *   C  every answer wrong            -> CAP at 7 (closedBy CAP), weaknesses recorded
  *   E  exactly one learning_evidence row per session, contract 1.1 shape; nothing in mastery_records
- *   P  the latest LEARN weaknesses are what a canonical PRACTICE generation receives as extra guidance
+ *   P  the latest LEARN weaknesses are what a canonical PRACTICE generation receives as extra guidance;
+ *      P2/P3 (requirement §22): the shared accessor + a bank-delivered PRACTICE records BANK_PRIORITY provenance (0 AI calls)
  *
  * Learning runtime provider usage is allowed (this is Learning, not a standardized exam). DEV only.
  * The fixture Student (`cfl-lg-<run>`) and everything that references it are removed at the end.
@@ -124,6 +125,53 @@ async function main() {
       const weaknesses = await svc.loadLatestLearnWeaknesses(S, concepts[2].learner);
       const guidance = practiceGuidanceWithLearnWeaknesses('BASE', weaknesses);
       check('P1  the latest LEARN weaknesses are read back for PRACTICE generation guidance', weaknesses.length > 0 && weaknesses.every((w) => guidance.includes(w)), JSON.stringify(weaknesses));
+
+      // P2/P3 (requirement §22): a PRACTICE delivered from the VALIDATED bank (0 AI calls) prioritises the item that
+      // addresses the LEARN weakness and records `learnWeaknessProvenance` on the session. The v1 marker is a DEV
+      // fixture (the delivery service never decides authority; the route verifies it before delivering).
+      const { getLearnWeaknessesForConcept } = await import('@/services/learn-weakness.service');
+      const { addValidatedCandidates } = await import('@/services/question-bank.service');
+      const { loadAcademicContext } = await import('@/services/activity-delivery-context.service');
+      const { buildDeliveryInput, deliverCanonicalActivity } = await import('@/services/activity-delivery.service');
+      const { currentAiCallCount, runWithAiMetrics } = await import('@/lib/ai/request-metrics');
+      const focus = await getLearnWeaknessesForConcept(S, concepts[2].learner);
+      const learnEvidenceId = (await one(`SELECT id FROM learning_evidence WHERE operation_key = $1`, [`LEARN_GUIDED:${C.sessionId}`]))?.id ?? null;
+      check('P2  the shared accessor returns the latest LEARN focus with its evidence id', !!focus && focus.weaknesses.length > 0 && focus.learnEvidenceIds.includes(String(learnEvidenceId)), JSON.stringify(focus));
+      if (focus && weaknesses.length > 0) {
+        const academic = await loadAcademicContext(S, subjectId);
+        const mk = (i: number, type: string, question: string): any => ({
+          id: `p2-${RUN}-${i}`, conceptId: concepts[2].learner, type, answerFormat: 'text', difficulty: 3, question, correctAnswer: 'x', explanation: 'Fixture explanation.',
+        });
+        const fixtures = [
+          mk(0, 'short_answer', 'Resuelve 3x + 4 = 19 y comprueba el resultado.'),
+          mk(1, 'numeric_problem', 'Un tren recorre 240 km en 3 horas. ¿Cuál es su velocidad media?'),
+          mk(2, 'open_ended', 'Explica con tus palabras por qué al despejar se aplica la misma operación a ambos lados.'),
+          mk(3, 'comparison', 'Compara 2(x - 1) = 8 con 2x - 1 = 8: ¿tienen la misma solución?'),
+          mk(4, 'prediction', 'Si duplicas ambos miembros de una igualdad, ¿qué le pasa a la solución?'),
+          mk(5, 'justification', `Practica este punto: ${weaknesses[0]}. Justifica cada paso.`),
+        ];
+        const banked = await addValidatedCandidates(fixtures, {
+          studentId: S, conceptId: concepts[2].learner, activityType: 'PRACTICE', language: 'es', academic,
+          generator: { provider: null, model: null, promptId: 'fixture', promptVersion: 'fixture', operationId: null },
+        });
+        const matchingCandidateId = banked.ids[5];
+        const marker: any = {
+          pedagogicalPolicyVersion: 'studyus-canonical-v1', canonicalRevision: `fixture-${RUN}`, canonicalStage: 'PRACTICE', canonicalActivityType: 'PRACTICE',
+          itemCount: { min: 4, max: 4, authorized: 4 }, difficulty: { min: 2, max: 4, target: 3 }, assistanceAllowed: true, independence: false, supportLevel: 'ASSISTED', minimumScorePercent: 80,
+        };
+        const input = await buildDeliveryInput({ studentId: S, subjectId, conceptId: concepts[2].learner, quizMode: 'topic_practice', activityType: 'PRACTICE', v1Marker: marker, language: 'es', itemCount: 4 });
+        const { delivery, ai } = await runWithAiMetrics('learn-guided-scenario P3', async () => ({ delivery: await deliverCanonicalActivity(input), ai: currentAiCallCount() }));
+        const stored = delivery.status === 'DELIVERED' ? await one(`SELECT canonical_activity_contract->'learnWeaknessProvenance' AS p FROM quiz_sessions WHERE id = $1`, [delivery.quizId]) : null;
+        const p = stored?.p;
+        check(
+          'P3  a bank-delivered PRACTICE prioritises the weakness item and records BANK_PRIORITY provenance (0 AI calls)',
+          delivery.status === 'DELIVERED' && delivery.source === 'BANK' && delivery.questions.length === 4 && ai.executions + ai.providerCalls === 0 &&
+            p?.appliedVia === 'BANK_PRIORITY' && p.learnEvidenceIds?.includes(String(learnEvidenceId)) && p.matchedItemIds?.includes(matchingCandidateId) &&
+            JSON.stringify(p.weaknesses) === JSON.stringify(focus.weaknesses),
+          JSON.stringify({ source: delivery.status === 'DELIVERED' ? delivery.source : delivery.status, ai, provenance: p ?? null }),
+        );
+        if (delivery.status === 'EMERGENCY_REQUIRED') await delivery.lock.release();
+      }
       const after = (await getCanonicalPedagogicalDecision({ studentId: S, conceptId: concepts[2].learner })).decision;
       info(`after the CAP close the canonical decision reads ${after.stage}/${after.actionState} (advancing to PRACTICE depends on the ENGINE workstream reading learnSession)`);
     } else check('C   all-wrong session', false, C.reason);

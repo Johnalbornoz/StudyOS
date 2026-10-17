@@ -10,11 +10,16 @@
  *  - semantic diversity through the SAME selector the Prove pipeline uses
  *    (PROVE_INTRA_SESSION_NOVELTY, question-diversity.ts) -- no second copy;
  *  - TRANSFER: exactly one challenge per depth (NEAR, CONTEXTUAL, HIGHER);
- *  - an incomplete set is never returned: SHORT means "not enough".
+ *  - an incomplete set is never returned: SHORT means "not enough";
+ *  - PRACTICE only: candidates that address the latest LEARN weaknesses
+ *    (`priorityCandidateIds`, requirement §22) are brought forward in the
+ *    order, up to `priorityCap` -- the same filters, count and diversity
+ *    selection apply, so nothing else changes.
  */
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { selectDiverse } from '@/lib/lx/question-diversity';
 import type { DeliveryActivityType } from './contract';
+import { prioritiseOrder } from '@/lib/learn-guided/weakness-focus';
 
 export interface BankCandidate {
   id: string;
@@ -36,6 +41,10 @@ export interface AssemblyRequest {
   excludeFingerprints: ReadonlySet<string>;
   /** Candidates reserved by other READY prepared activities. */
   reservedCandidateIds: ReadonlySet<string>;
+  /** PRACTICE only (assisted): candidates matching the latest LEARN weaknesses, brought forward (never added, never forced). */
+  priorityCandidateIds?: ReadonlySet<string>;
+  /** Most prioritised candidates brought forward (default: all of them). */
+  priorityCap?: number;
 }
 
 export type AssemblyResult =
@@ -64,6 +73,10 @@ export function assembleFromBank(candidates: BankCandidate[], req: AssemblyReque
         a.i - b.i,
     )
     .map((x) => x.c);
+  const ordered =
+    req.activityType === 'PRACTICE' && req.priorityCandidateIds && req.priorityCandidateIds.size > 0
+      ? prioritiseOrder(eligible, (c) => req.priorityCandidateIds!.has(c.id), req.priorityCap ?? req.itemCount)
+      : eligible;
 
   if (req.activityType === 'TRANSFER') {
     const picked: BankCandidate[] = [];
@@ -75,8 +88,8 @@ export function assembleFromBank(candidates: BankCandidate[], req: AssemblyReque
     return { status: 'ASSEMBLED', questions: picked.map((c) => ({ ...c.question, transferDepth: c.transferDepth! })), candidateIds: picked.map((c) => c.id) };
   }
 
-  const byQuestion = new Map(eligible.map((c) => [c.question, c]));
-  const selection = selectDiverse(eligible.map((c) => c.question), req.itemCount, req.language);
+  const byQuestion = new Map(ordered.map((c) => [c.question, c]));
+  const selection = selectDiverse(ordered.map((c) => c.question), req.itemCount, req.language);
   if (selection.kept.length < req.itemCount) return { status: 'SHORT', available: selection.kept.length, needed: req.itemCount };
   const chosen = selection.kept.slice(0, req.itemCount).map((q) => byQuestion.get(q)!);
   return { status: 'ASSEMBLED', questions: chosen.map((c) => c.question), candidateIds: chosen.map((c) => c.id) };

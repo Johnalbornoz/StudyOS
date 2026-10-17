@@ -74,7 +74,7 @@ describe('1. idempotent Prove launch (same quiz for a re-launch)', () => {
   it('the launch resumes BEFORE inventory, bank or any generation, returns the same session, and writes no evidence (now for every canonical activity -- LEARNING_ACTIVITY_DELIVERY)', () => {
     const svc = read('src/services/activity-delivery.service.ts');
     // resume is read in the same round trip as the learner-state reads, before anything is consumed or assembled
-    const resumeIdx = svc.indexOf('const [resumed, snapshot, askFlags, reserved] = await Promise.all([\n      findResumableCanonicalSession({');
+    const resumeIdx = svc.indexOf('const [resumed, snapshot, askFlags, reserved, learnFocus] = await Promise.all([\n      findResumableCanonicalSession({');
     expect(resumeIdx).toBeGreaterThan(-1);
     expect(resumeIdx).toBeLessThan(svc.indexOf('await consumeCompatibleInventory('));
     expect(resumeIdx).toBeLessThan(svc.indexOf('await assembleActivityForLearner('));

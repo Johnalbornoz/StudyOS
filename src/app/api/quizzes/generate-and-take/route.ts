@@ -42,7 +42,8 @@
 
 import { executionAuthorityOfQuizSession } from '@/lib/assessment-execution/assessment-start.service';
 import { LEARN_GUIDED_QUIZ_MODE, practiceGuidanceWithLearnWeaknesses } from '@/lib/learn-guided/policy';
-import { loadLatestLearnWeaknesses } from '@/services/learn-guided.service';
+import { getLearnWeaknessesForConcept, recordLearnWeaknessProvenance } from '@/services/learn-weakness.service';
+import { buildLearnWeaknessProvenance, matchLearnFocusItems } from '@/lib/learn-guided/weakness-focus';
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
@@ -881,10 +882,13 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // concept detected are carried into a CANONICAL Practice generation as extra guidance. Read directly from
     // that LEARN_GUIDED evidence row's metadata (contract 1.1) -- independent of the engine. Only for a
     // verified v1 topic_practice request; every other mode/request keeps its guidance byte-identical.
-    const learnWeaknesses =
+    // Requirement §22: read through the ONE shared accessor (the bank / READY paths use the same one) and
+    // recorded on the session as `learnWeaknessProvenance` (appliedVia LIVE_PROMPT) once it exists.
+    const learnFocus =
       validated.quizMode === 'topic_practice' && v1Marker && validated.conceptId
-        ? await loadLatestLearnWeaknesses(validated.studentId, validated.conceptId)
-        : [];
+        ? await getLearnWeaknessesForConcept(validated.studentId, validated.conceptId)
+        : null;
+    const learnWeaknesses = learnFocus?.weaknesses ?? [];
     const [questionArrays, askConfidenceFlags] = await Promise.all([
       validated.quizMode === 'quick_check'
         ? generateQuickCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
@@ -1425,6 +1429,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       v1MarkerToPersist
     );
     persistenceMs = Date.now() - persistenceStartedAt;
+    if (learnFocus) {
+      await recordLearnWeaknessProvenance(
+        quizId,
+        buildLearnWeaknessProvenance(learnFocus, 'LIVE_PROMPT', matchLearnFocusItems(questions.map((q) => ({ id: q.id, question: q })), learnFocus)),
+      );
+    }
     if (emergencyLaunch) {
       await completeEmergencyDelivery({ input: emergencyLaunch.input, quizId, questions, generator: questionGeneratorIdentity(parentOperationId) }).catch((err) => console.error('[activity-launch] emergency banking failed', err));
       logActivityLaunch({

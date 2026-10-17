@@ -43,13 +43,13 @@ import { gradeQuizAnswer } from '@/lib/quiz/grade-question';
 import { stripAnswerReveals } from '@/lib/quiz/feedback-leak-guard';
 import { retrieveContext } from '@/services/rag.service';
 import { recordDiagnosticEvidence } from '@/services/mastery.service';
+import { getLearnWeaknessesForConcept } from '@/services/learn-weakness.service';
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { isCanonicalEngineV1Enabled } from '@/lib/pedagogical-decision/feature-gate';
 import { verifyV1PracticeLaunchMarker, type V1PracticeLaunchMarker } from '@/lib/pedagogical-decision/v1-practice-launch-marker';
 import {
   LEARN_GUIDED_QUIZ_MODE,
   LEARN_GUIDED_SESSION_TTL_HOURS,
-  LEARN_GUIDED_SOURCE_TYPE,
   LEARN_GUIDED_VERSION,
   LEARN_MAX_INTERACTIONS,
   LEARN_MIN_INTERACTIONS,
@@ -59,7 +59,6 @@ import {
   decideTurnOutcome,
   toClientInteraction,
   toLearnQuestion,
-  weaknessesFromEvidenceMetadata,
   type ClientLearnInteraction,
   type LearnClosedBy,
   type LearnFeedback,
@@ -677,15 +676,6 @@ export async function submitGuidedLearnTurn(params: { studentId: string; session
  * Never throws: a read failure means "no extra guidance".
  */
 export async function loadLatestLearnWeaknesses(studentId: string, conceptId: string): Promise<string[]> {
-  try {
-    const r = await db.query(
-      `SELECT metadata FROM learning_evidence
-        WHERE student_id = $1 AND concept_id = $2 AND source_type = $3 AND metadata->>'activityType' = 'LEARN_CHECK'
-        ORDER BY timestamp DESC LIMIT 1`,
-      [studentId, conceptId, LEARN_GUIDED_SOURCE_TYPE],
-    );
-    return r.rows[0] ? weaknessesFromEvidenceMetadata(r.rows[0].metadata) : [];
-  } catch {
-    return [];
-  }
+  // The ONE accessor (services/learn-weakness.service) -- shared by live generation, the bank and READY sets.
+  return (await getLearnWeaknessesForConcept(studentId, conceptId))?.weaknesses ?? [];
 }
