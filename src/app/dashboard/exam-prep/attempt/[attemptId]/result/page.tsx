@@ -82,7 +82,7 @@ export default async function AttemptResultPage({ params }: { params: Promise<{ 
     <div className="xp-page xp-page--wide">
       <PageIntro
         crumb={<Link href={`/dashboard/exam-prep/${view.examProfileId}`}>{view.exam.definitionName || t['examPrep.title']}</Link>}
-        title={t['examPrep.result.title']}
+        title={view.simulationType === 'EXAM_PRACTICE' || instance?.mode === 'PRACTICE' ? t['examPrep.result.title.practice'] : t['examPrep.result.title']}
         lead={[tr[attemptKindLabelKey({ simulationType: view.simulationType, instanceMode: instance?.mode, instanceFidelity: instance?.form?.fidelity })] ?? view.simulationType, tr[`ex.timing.${view.timingMode}`] ?? view.timingMode, sitting].filter(Boolean).join(' · ')}
       />
 

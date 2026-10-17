@@ -67,6 +67,6 @@ export async function applyBankReadinessOverlay<T extends OverlayRow>(input: T[]
     const e = restrictNodeByEngine({ state: out.state, modes: out.modes, selectable: out.selectable, components: healthComponents }, sectionKeys, engine);
     if (!out.changed && !engine) return row;
     const components = healthComponents.map((c: any) => ({ ...c, state: e.components.find((x) => x.sectionKey === c.sectionKey)?.state ?? c.state }));
-    return { ...row, selectable: e.selectable, metadata: { ...row.metadata, readiness: { ...r, state: e.state, modes: e.modes, components, bankDerived: true, ...(engine ? { engineVerdict: true } : {}) } } };
+    return { ...row, selectable: e.selectable, metadata: { ...row.metadata, readiness: { ...r, state: e.state, modes: e.modes, components, bankDerived: true, ...(engine ? { engineVerdict: true, ...(engine.mockAttemptType ? { mockAttemptType: engine.mockAttemptType } : {}) } : {}) } } };
   });
 }

@@ -20,7 +20,7 @@ export async function CanonicalExamAvailability({ examVersionId, t, catalogNode 
   const availability = await examAvailabilityForVersion(examVersionId);
   // R-1: under ENFORCE the cards say what the Exam Bank Readiness Engine says (and what the preparation offers)
   const engine = examVersionId && readinessMode() === 'ENFORCE' ? await engineReadinessForVersion(examVersionId).catch(() => null) : null;
-  const options = engine ? examAttemptOptionsUnderEngine(availability.options, { anyPractice: Object.values(engine.practiceBySection).some((s) => s !== 'NOT_READY'), reducedMock: engine.reducedMock, fullMock: engine.fullMock, challenge: engine.challenge, mockAttemptType: engine.mockAttemptType }, { reducedMock: !!activities?.canRunReducedMock, fullMock: !!activities?.canRunFullMock }) : availability.options;
+  const options = engine ? examAttemptOptionsUnderEngine(availability.options, { anyPractice: Object.values(engine.practiceBySection).some((s) => s !== 'NOT_READY'), reducedMock: engine.reducedMock, fullMock: engine.fullMock, challenge: engine.challenge, mockAttemptType: engine.mockAttemptType }, { reducedMock: !!activities?.canRunReducedMock, fullMock: !!activities?.canRunFullMock, preparationForm: !!examVersionId && !!activities?.fullMocks.some((e) => e.mockAttemptType === 'PREPARATION_MOCK' && !!e.examVersionId && e.examVersionId !== examVersionId) }) : availability.options;
   return (
     <div data-testid="canonical-exam-availability" data-evaluated={availability.evaluated} data-eligible={availability.eligibleQuestions}>
       <ExamAttemptOptions options={options} t={t} hrefs={examEntryHrefs(catalogNode, activities, focusArea)} />

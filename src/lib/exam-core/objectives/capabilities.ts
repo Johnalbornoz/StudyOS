@@ -44,9 +44,13 @@ export interface ObjectiveEntry {
   /** Bound to a single component (area / domain / paper) rather than the whole exam. */
   sectionBound: boolean;
   lengthCoveragePercent: number | null;
+  /** The published version the entry is bound to (a preparation can hold more than one governed form). */
+  examVersionId?: string | null;
+  /** How that version's mock is stored, as its own Readiness Engine says (absent: not evaluated). */
+  mockAttemptType?: 'REDUCED_MOCK' | 'FULL_MOCK' | 'PREPARATION_MOCK' | null;
 }
 
-export interface ActivityEntry { nodeKey: string; label: string; purpose: ObjectiveEntry['purpose']; lengthCoveragePercent: number | null }
+export interface ActivityEntry { nodeKey: string; label: string; purpose: ObjectiveEntry['purpose']; lengthCoveragePercent: number | null; examVersionId?: string | null; mockAttemptType?: ObjectiveEntry['mockAttemptType'] }
 
 export interface ExamPreparationCapabilities {
   objectiveKey: string;
@@ -81,7 +85,7 @@ export function computeCapabilities(objective: Pick<ExamObjective, 'key' | 'kind
   const readiness = entries.reduce<ReadinessState>((best, e) => (rank(e.state) > rank(best) ? e.state : best), 'CATALOG_ONLY');
   // Launchable entries: the exam / level / area / skill nodes the instance API accepts (never a lone paper node).
   const launchable = entries.filter((e) => e.selectable && !COMPONENT_TYPES.has(e.type));
-  const entry = (e: ObjectiveEntry): ActivityEntry => ({ nodeKey: e.key, label: e.label, purpose: e.purpose, lengthCoveragePercent: e.lengthCoveragePercent });
+  const entry = (e: ObjectiveEntry): ActivityEntry => ({ nodeKey: e.key, label: e.label, purpose: e.purpose, lengthCoveragePercent: e.lengthCoveragePercent, ...(e.examVersionId !== undefined ? { examVersionId: e.examVersionId } : {}), ...(e.mockAttemptType !== undefined ? { mockAttemptType: e.mockAttemptType } : {}) });
 
   const practiceModes = launchable.filter((e) => e.modes.includes('PRACTICE') && atLeast(e.state, 'PRACTICE_READY')).map(entry);
   const mocks = launchable.filter((e) => e.modes.includes('MOCK'));
@@ -168,17 +172,23 @@ export function examEntryHrefs(objectiveNode: string | null, c: Pick<ExamPrepara
  * R-1: the Exam Bank Readiness Engine RESTRICTS the activities the catalogue offers (never adds one). A mock entry
  * stays only when the engine says READY for that mock; practice stays unless the engine says NOT_READY for every
  * section. `engine` null = not evaluated (SHADOW, or no governed blueprint): unchanged.
+ *
+ * `engineVersionId`: the version `engine` evaluated. An entry bound to ANOTHER governed form of the exam (a
+ * preparation form beside the reduced one) was already restricted by its own version's engine in the bank overlay;
+ * judging it by this version's verdict would reuse the wrong form's readiness, so it is left as its own engine left it.
  */
 export interface EngineModeVerdicts { anyPractice: boolean; reducedMock: 'READY' | 'PARTIAL' | 'NOT_READY'; fullMock: 'READY' | 'PARTIAL' | 'NOT_READY' }
-export function restrictByReadinessEngine(c: ExamPreparationCapabilities, engine: EngineModeVerdicts | null): ExamPreparationCapabilities {
+export function restrictByReadinessEngine(c: ExamPreparationCapabilities, engine: EngineModeVerdicts | null, engineVersionId: string | null = null): ExamPreparationCapabilities {
   if (!engine) return c;
   const reasons = [...c.unavailableReasons];
-  const practiceModes = engine.anyPractice ? c.practiceModes : [];
-  const reducedMocks = engine.reducedMock === 'READY' ? c.reducedMocks : [];
-  const fullMocks = engine.fullMock === 'READY' ? c.fullMocks : [];
+  const ownForm = (e: ActivityEntry) => !engineVersionId || !e.examVersionId || e.examVersionId === engineVersionId;
+  const keep = (list: ActivityEntry[], ready: boolean) => list.filter((e) => ready || !ownForm(e));
+  const practiceModes = keep(c.practiceModes, engine.anyPractice);
+  const reducedMocks = keep(c.reducedMocks, engine.reducedMock === 'READY');
+  const fullMocks = keep(c.fullMocks, engine.fullMock === 'READY');
   const add = (capability: Capability) => { if (!reasons.some((r) => r.capability === capability)) reasons.push({ capability, reason: 'READINESS_ENGINE_NOT_READY' }); };
-  if (c.practiceModes.length && !practiceModes.length) add('PRACTICE');
-  if (c.reducedMocks.length && !reducedMocks.length) add('REDUCED_MOCK');
-  if (c.fullMocks.length && !fullMocks.length) add('FULL_MOCK');
+  if (c.practiceModes.length > practiceModes.length && !practiceModes.length) add('PRACTICE');
+  if (c.reducedMocks.length > reducedMocks.length && !reducedMocks.length) add('REDUCED_MOCK');
+  if (c.fullMocks.length > fullMocks.length && !fullMocks.length) add('FULL_MOCK');
   return { ...c, practiceModes, canPractice: practiceModes.length > 0, canRunDiagnostic: c.canRunDiagnostic && practiceModes.length > 0, reducedMocks, canRunReducedMock: reducedMocks.length > 0, fullMocks, canRunFullMock: fullMocks.length > 0, unavailableReasons: reasons };
 }

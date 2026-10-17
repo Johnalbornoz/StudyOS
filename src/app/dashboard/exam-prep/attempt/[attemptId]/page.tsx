@@ -45,12 +45,14 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
   // The content-origin label names the framework ("Práctica generada por StudyUs, alineada al formato de IB").
   const familyRow = await db.query(`SELECT d.exam_family FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE v.id = $1`, [attempt.examVersionId]).catch(() => ({ rows: [] as any[] }));
   const frameworkName = (t as Record<string, string>)[`exam.family.${familyRow.rows[0]?.exam_family}`] ?? familyRow.rows[0]?.exam_family ?? '';
+  // P1-2: the persisted, governed activity mode drives the copy -- a practice attempt is never presented as a mock
+  const practice = attempt.simulationType === 'EXAM_PRACTICE' || instance?.mode === 'PRACTICE';
   const v2Labels: Record<string, string> = Object.fromEntries(Object.entries(t as Record<string, string>).filter(([k]) => k.startsWith('exv2.')).map(([k, v]) => [k, v.replace('{framework}', frameworkName)]));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <PageHeader
-        title={t['examPrep.attempt.title']}
+        title={practice ? t['examPrep.attempt.title.practice'] : t['examPrep.attempt.title']}
         subtitle={label(attemptKindLabelKey({ simulationType: attempt.simulationType, instanceMode: instance?.mode, instanceFidelity: instance?.form?.fidelity }), attempt.simulationType)}
         breadcrumb={<Link href={`/dashboard/exam-prep/${attempt.examProfileId}`}>{t['examPrep.title']}</Link>}
       />
@@ -86,7 +88,7 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
             },
             skip: t['examPrep.attempt.skip'],
             skipping: t['examPrep.attempt.skipping'],
-            complete: t['examPrep.attempt.complete'],
+            complete: practice ? t['examPrep.attempt.complete.practice'] : t['examPrep.attempt.complete'],
             completeBody: t['examPrep.attempt.completeBody'],
             finalize: t['examPrep.attempt.finalize'],
             finalizing: t['examPrep.attempt.finalizing'],
@@ -105,7 +107,7 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
             breakTitle: t['examPrep.run.breakTitle'],
             breakBody: t['examPrep.run.breakBody'],
             endBreak: t['examPrep.run.endBreak'],
-            handIn: t['examPrep.run.handIn'],
+            handIn: practice ? t['examPrep.run.handIn.practice'] : t['examPrep.run.handIn'],
             handInConfirm: t['examPrep.run.handInConfirm'],
             handingIn: t['examPrep.run.handingIn'],
             navLabel: t['examPrep.run.navLabel'],
@@ -117,7 +119,7 @@ export default async function SimulationAttemptPage({ params }: { params: Promis
               SKIPPED: t['examPrep.run.status.SKIPPED'],
               MISSING: t['examPrep.run.status.MISSING'],
             },
-            integrity: t['examPrep.run.integrity'],
+            integrity: practice ? t['examPrep.run.integrity.practice'] : t['examPrep.run.integrity'],
             answerRecorded: t['examPrep.run.answerRecorded'],
             invalidAnswer: t['examPrep.run.invalidAnswer'],
             part: t['examPrep.run.part'],

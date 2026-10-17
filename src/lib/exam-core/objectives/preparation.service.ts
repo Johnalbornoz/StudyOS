@@ -70,6 +70,8 @@ function toEntry(row: any, language: string): ObjectiveEntry {
     bankInProgress: !!r.bankInProgress,
     sectionBound: !!row.metadata?.bind?.sectionKey,
     lengthCoveragePercent: comps.length && lengths.length === comps.length ? Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length) : null,
+    examVersionId: row.exam_version_id ?? null,
+    mockAttemptType: r.mockAttemptType === 'REDUCED_MOCK' || r.mockAttemptType === 'FULL_MOCK' || r.mockAttemptType === 'PREPARATION_MOCK' ? r.mockAttemptType : null,
   };
 }
 
@@ -501,7 +503,7 @@ export async function getPreparationView(studentId: string, profileId: string, l
   const objective = await profileObjective(profile);
   if (!objective) return null;
   // R-1: under ENFORCE the Exam Bank Readiness Engine restricts what the catalogue offers (never adds)
-  const capabilities = restrictByReadinessEngine(await objectiveCapabilities(objective, language), await engineVerdictsFor(profile.examVersionId ?? null));
+  const capabilities = restrictByReadinessEngine(await objectiveCapabilities(objective, language), await engineVerdictsFor(profile.examVersionId ?? null), profile.examVersionId ?? null);
   const [plan, open, diag] = await Promise.all([
     buildProfilePlan(studentId, profile, objective, capabilities, language),
     findOpenSimulationAttemptForProfile(profile.id),

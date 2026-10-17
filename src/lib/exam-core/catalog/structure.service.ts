@@ -22,13 +22,13 @@ import { assessExam } from '../question-bank/mock-certification';
 import { certificationInputFromConfig } from '../question-bank/certification-input';
 import type { ContentReadiness, EngineCapability } from '../fidelity';
 import { parseExamVerticalConfig, type ExamVerticalConfig } from '../vertical-config';
-import { allV2Configs } from '../verticals/v2/all';
+import { catalogueConfigs } from '../verticals/v2/all';
 import { applyBankReadinessOverlay, readinessMode } from '../question-bank/capability-overlay.service';
 
 /** Parsed configurations by key (the catalogue binds to these). */
 export function configsByKey(): Map<string, ExamVerticalConfig> {
   const out = new Map<string, ExamVerticalConfig>();
-  for (const v of allV2Configs()) {
+  for (const v of catalogueConfigs()) {
     const p = parseExamVerticalConfig(v);
     if (p.ok) out.set(p.config.key, p.config);
   }

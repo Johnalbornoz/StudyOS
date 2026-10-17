@@ -355,6 +355,9 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
   const [safety, setSafety] = useState<SafetyNoticeData | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [lastFeedback, setLastFeedback] = useState<string | null>(null);
+  // The governed delivery policy's item feedback (AFTER_EACH_ITEM): the grade of the previous answer. Independent of the
+  // Practice Coach (a certified speed strategy is a separate capability); never sent by the server in a mock.
+  const [lastEvaluation, setLastEvaluation] = useState<{ score: number; maxScore: number } | null>(null);
   const [coach, setCoach] = useState<CoachView | null>(null);
   const [coachSince, setCoachSince] = useState<number | null>(null);
   const [revealing, setRevealing] = useState(false);
@@ -526,6 +529,7 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
         return;
       }
       setLastFeedback(body.data.evaluation?.feedback ?? null);
+      setLastEvaluation(body.data.evaluation ? { score: Number(body.data.evaluation.score), maxScore: Number(body.data.evaluation.maxScore) } : null);
       setLastReview(body.data.speedReview ?? null);
       setNotice(body.data.evaluation ? null : labels.answerRecorded);
       if (body.data.done) setPhase('complete');
@@ -672,8 +676,9 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
   if (phase === 'complete' || phase === 'handingIn') {
     return (
       <div className="card xr-card">
-        <h2 className="xr-section-name">{labels.complete}</h2>
-        <p className="ui-hint">{labels.completeBody}</p>
+        <h2 className="xr-section-name">{phase === 'handingIn' ? labels.handingIn : labels.complete}</h2>
+        {/* "you answered every available question" is true only when the runner reached the end, never on an early hand-in */}
+        {phase === 'complete' && <p className="ui-hint">{labels.completeBody}</p>}
         <button type="button" className="btn btn-primary btn-lg" disabled={phase === 'handingIn'} onClick={() => onHandIn(false)}>
           {phase === 'handingIn' ? labels.finalizing : labels.finalize}
         </button>
@@ -728,6 +733,22 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
       {notice && <p className="xr-notice" role="status">{notice}</p>}
       {safety && <SafetyNotice safety={safety} />}
       {navStrip}
+      {!lastReview && lastEvaluation && labels.v2 && (
+        <section className="card xr-coach xr-coach-review" aria-label={labels.v2['exv2.coach.review']} data-testid="item-feedback">
+          <div className="xr-coach-head">
+            <strong>{labels.v2['exv2.coach.review']}</strong>
+            {lastEvaluation.maxScore > 0 && lastEvaluation.score >= lastEvaluation.maxScore ? (
+              <span className="xr-pill is-correct">{labels.v2['exv2.coach.correct']}</span>
+            ) : lastEvaluation.score <= 0 ? (
+              <span className="xr-pill is-incorrect">{labels.v2['exv2.coach.incorrect']}</span>
+            ) : (
+              <span className="xr-pill">{`${lastEvaluation.score} / ${labels.marks.replace('{n}', String(lastEvaluation.maxScore))}`}</span>
+            )}
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setLastEvaluation(null); setLastFeedback(null); }}>{labels.v2['exv2.coach.dismiss']}</button>
+          </div>
+          {lastFeedback && <p>{lastFeedback}</p>}
+        </section>
+      )}
       {lastReview && labels.v2 && (
         <section className="card xr-coach xr-coach-review" aria-label={labels.v2['exv2.coach.review']}>
           <div className="xr-coach-head">
@@ -811,7 +832,7 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
           <strong>{labels.resources}:</strong> {resources.join(' · ')}
         </p>
       )}
-      {lastFeedback && <p className="ui-hint">{labels.lastFeedback}: {lastFeedback}</p>}
+      {lastFeedback && (lastReview || !lastEvaluation || !labels.v2) && <p className="ui-hint">{labels.lastFeedback}: {lastFeedback}</p>}
       <button type="button" className="btn btn-primary btn-lg xr-submit" disabled={!canSubmit} onClick={onSubmit}>
         {phase === 'submitting' ? labels.submitting : labels.submit}
       </button>

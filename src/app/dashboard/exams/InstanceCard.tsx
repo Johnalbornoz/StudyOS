@@ -128,15 +128,14 @@ export function InstanceCard({ instance: initial, labels: l, language, highlight
       {instance.mode === 'PRACTICE' && instance.practiceLevel && <p className="ui-hint">{fmt(l['exv2.instance.level'], { level: l[`exv2.level.${instance.practiceLevel}`] ?? instance.practiceLevel })}</p>}
       {instance.frozen && <p className="ui-hint">{l['exv2.instance.frozen']}</p>}
 
-      {f && (
+      {/* form fidelity (reduced / full length of the official exam) describes a mock form, never a practice set */}
+      {f && instance.mode !== 'PRACTICE' && (
         <div className="exv2-fidelity">
           <p className="exv2-fidelity-main">
             {f.fidelity === 'FULL' ? l['exv2.fidelity.full'] : fmt(l['exv2.fidelity.reduced'], { pct: f.coveragePercent, n: f.filled })}
           </p>
           {f.notes.includes('UNFILLED_POSITIONS') && <p className="ui-hint">{fmt(l['exv2.fidelity.unfilled'], { n: f.positions - f.filled })}</p>}
-          {instance.mode !== 'PRACTICE' && (
-            <p className="ui-hint">{!f.difficultyBandMet ? l['exv2.difficulty.bandNotMet'] : instance.contentCertified ? null : instance.mode === 'CHALLENGE' ? l['exv2.difficulty.challenge'] : l['exv2.difficulty.mock']}</p>
-          )}
+          <p className="ui-hint">{!f.difficultyBandMet ? l['exv2.difficulty.bandNotMet'] : instance.contentCertified ? null : instance.mode === 'CHALLENGE' ? l['exv2.difficulty.challenge'] : l['exv2.difficulty.mock']}</p>
         </div>
       )}
       <p className="ui-hint">{instance.contentCertified

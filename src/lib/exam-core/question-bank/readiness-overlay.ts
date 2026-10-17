@@ -101,7 +101,7 @@ export function shadowDirection(persisted: ReadinessState, calculated: Readiness
  *   - MOCK stays only when the engine's reduced (or full) mock is READY; CHALLENGE only when its challenge is READY;
  *   - the state follows the modes left; a node with no mode is not selectable.
  */
-export interface EngineNodeVerdict { practiceBySection: Record<string, 'READY' | 'PARTIAL' | 'NOT_READY'>; reducedMock: string; fullMock: string; challenge: string }
+export interface EngineNodeVerdict { practiceBySection: Record<string, 'READY' | 'PARTIAL' | 'NOT_READY'>; reducedMock: string; fullMock: string; challenge: string; /** how this version's mock is stored (a preparation form says PREPARATION_MOCK) */ mockAttemptType?: 'REDUCED_MOCK' | 'FULL_MOCK' | 'PREPARATION_MOCK' }
 export function restrictNodeByEngine(n: { state: string; modes: string[]; selectable: boolean; components: { sectionKey: string; state: string }[] }, sectionKeys: readonly string[] | null, engine: EngineNodeVerdict | null): { state: string; modes: string[]; selectable: boolean; components: { sectionKey: string; state: string }[] } {
   if (!engine) return n;
   const order = ['CATALOG_ONLY', 'STRUCTURE_READY', 'PRACTICE_READY', 'REDUCED_MOCK_READY', 'FULL_MOCK_READY'];

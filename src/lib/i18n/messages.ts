@@ -1091,6 +1091,8 @@ export type MessageKey =
   | 'examPrep.run.status.SKIPPED'
   | 'examPrep.run.status.MISSING'
   | 'examPrep.run.integrity'
+  // P1-2: an EXAM_PRACTICE attempt is never presented with mock copy
+  | 'examPrep.attempt.title.practice' | 'examPrep.attempt.complete.practice' | 'examPrep.run.handIn.practice' | 'examPrep.run.integrity.practice' | 'examPrep.result.title.practice'
   | 'examPrep.run.answerRecorded'
   | 'examPrep.run.invalidAnswer'
   | 'examPrep.run.part'
@@ -3376,7 +3378,7 @@ const es: Messages = {
   'exam.family.AICE': 'Cambridge AICE',
   'exam.family.ICFES': 'ICFES · Saber 11',
   'exam.family.OTHER': 'Otros exámenes',
-  'exam.contentStatus.STUDYUS_CERTIFIED': 'Práctica certificada por StudyUs',
+  'exam.contentStatus.STUDYUS_CERTIFIED': 'Contenido certificado por StudyUs',
   'exam.contentStatus.DEV_CERT_FIXTURE': 'Contenido de práctica (DEV), no oficial',
   'exam.contentStatus.ORIGINAL': 'Contenido original de StudyUs',
   'exam.contentStatus.OFFICIAL_LICENSED': 'Contenido oficial con licencia',
@@ -3407,6 +3409,8 @@ const es: Messages = {
   'examPrep.run.status.SKIPPED': 'Omitida',
   'examPrep.run.status.MISSING': 'Sin respuesta',
   'examPrep.run.integrity': 'Simulacro en curso: el Tutor no está disponible hasta que lo entregues o lo abandones.',
+  'examPrep.attempt.title.practice': 'Práctica de examen', 'examPrep.attempt.complete.practice': 'Práctica completada', 'examPrep.run.handIn.practice': 'Entregar práctica',
+  'examPrep.run.integrity.practice': 'Práctica en curso: el Tutor no está disponible hasta que la entregues o la abandones.', 'examPrep.result.title.practice': 'Resultado de la práctica',
   'examPrep.run.answerRecorded': 'Respuesta registrada.',
   'examPrep.run.invalidAnswer': 'Esa respuesta no es válida para esta pregunta.',
   'examPrep.run.part': 'Parte {id}',
@@ -5690,7 +5694,7 @@ const en: Messages = {
   'exam.family.AICE': 'Cambridge AICE',
   'exam.family.ICFES': 'ICFES · Saber 11',
   'exam.family.OTHER': 'Other exams',
-  'exam.contentStatus.STUDYUS_CERTIFIED': 'Practice certified by StudyUs',
+  'exam.contentStatus.STUDYUS_CERTIFIED': 'Content certified by StudyUs',
   'exam.contentStatus.DEV_CERT_FIXTURE': 'Practice content (DEV), not official',
   'exam.contentStatus.ORIGINAL': 'Original StudyUs content',
   'exam.contentStatus.OFFICIAL_LICENSED': 'Licensed official content',
@@ -5721,6 +5725,8 @@ const en: Messages = {
   'examPrep.run.status.SKIPPED': 'Skipped',
   'examPrep.run.status.MISSING': 'No answer',
   'examPrep.run.integrity': 'Simulation in progress: the Tutor is unavailable until you hand it in or leave it.',
+  'examPrep.attempt.title.practice': 'Exam practice', 'examPrep.attempt.complete.practice': 'Practice complete', 'examPrep.run.handIn.practice': 'Hand in practice',
+  'examPrep.run.integrity.practice': 'Practice in progress: the Tutor is unavailable until you hand it in or leave it.', 'examPrep.result.title.practice': 'Practice result',
   'examPrep.run.answerRecorded': 'Answer recorded.',
   'examPrep.run.invalidAnswer': 'That answer is not valid for this question.',
   'examPrep.run.part': 'Part {id}',
@@ -8004,7 +8010,7 @@ const de: Messages = {
   'exam.family.AICE': 'Cambridge AICE',
   'exam.family.ICFES': 'ICFES · Saber 11',
   'exam.family.OTHER': 'Weitere Prüfungen',
-  'exam.contentStatus.STUDYUS_CERTIFIED': 'Von StudyUs zertifizierte Übung',
+  'exam.contentStatus.STUDYUS_CERTIFIED': 'Von StudyUs zertifizierte Inhalte',
   'exam.contentStatus.DEV_CERT_FIXTURE': 'Übungsinhalt (DEV), nicht offiziell',
   'exam.contentStatus.ORIGINAL': 'Originalinhalt von StudyUs',
   'exam.contentStatus.OFFICIAL_LICENSED': 'Lizenzierter offizieller Inhalt',
@@ -8035,6 +8041,8 @@ const de: Messages = {
   'examPrep.run.status.SKIPPED': 'Übersprungen',
   'examPrep.run.status.MISSING': 'Keine Antwort',
   'examPrep.run.integrity': 'Simulation läuft: Der Tutor ist erst nach Abgabe oder Abbruch wieder verfügbar.',
+  'examPrep.attempt.title.practice': 'Prüfungsübung', 'examPrep.attempt.complete.practice': 'Übung abgeschlossen', 'examPrep.run.handIn.practice': 'Übung abgeben',
+  'examPrep.run.integrity.practice': 'Übung läuft: Der Tutor ist erst nach Abgabe oder Abbruch wieder verfügbar.', 'examPrep.result.title.practice': 'Ergebnis der Übung',
   'examPrep.run.answerRecorded': 'Antwort gespeichert.',
   'examPrep.run.invalidAnswer': 'Diese Antwort ist für diese Frage nicht gültig.',
   'examPrep.run.part': 'Teil {id}',
@@ -10318,7 +10326,7 @@ const fr: Messages = {
   'exam.family.AICE': 'Cambridge AICE',
   'exam.family.ICFES': 'ICFES · Saber 11',
   'exam.family.OTHER': 'Autres examens',
-  'exam.contentStatus.STUDYUS_CERTIFIED': 'Entraînement certifié par StudyUs',
+  'exam.contentStatus.STUDYUS_CERTIFIED': 'Contenu certifié par StudyUs',
   'exam.contentStatus.DEV_CERT_FIXTURE': 'Contenu d\'entraînement (DEV), non officiel',
   'exam.contentStatus.ORIGINAL': 'Contenu original StudyUs',
   'exam.contentStatus.OFFICIAL_LICENSED': 'Contenu officiel sous licence',
@@ -10349,6 +10357,8 @@ const fr: Messages = {
   'examPrep.run.status.SKIPPED': 'Ignorée',
   'examPrep.run.status.MISSING': 'Pas de réponse',
   'examPrep.run.integrity': 'Simulation en cours : le Tuteur est indisponible jusqu\'à ta remise ou ton abandon.',
+  'examPrep.attempt.title.practice': 'Entraînement à l\'examen', 'examPrep.attempt.complete.practice': 'Entraînement terminé', 'examPrep.run.handIn.practice': 'Remettre l\'entraînement',
+  'examPrep.run.integrity.practice': 'Entraînement en cours : le Tuteur est indisponible jusqu\'à ta remise ou ton abandon.', 'examPrep.result.title.practice': 'Résultat de l\'entraînement',
   'examPrep.run.answerRecorded': 'Réponse enregistrée.',
   'examPrep.run.invalidAnswer': 'Cette réponse n\'est pas valide pour cette question.',
   'examPrep.run.part': 'Partie {id}',
@@ -12632,7 +12642,7 @@ const pt: Messages = {
   'exam.family.AICE': 'Cambridge AICE',
   'exam.family.ICFES': 'ICFES · Saber 11',
   'exam.family.OTHER': 'Outros exames',
-  'exam.contentStatus.STUDYUS_CERTIFIED': 'Prática certificada pela StudyUs',
+  'exam.contentStatus.STUDYUS_CERTIFIED': 'Conteúdo certificado pela StudyUs',
   'exam.contentStatus.DEV_CERT_FIXTURE': 'Conteúdo de prática (DEV), não oficial',
   'exam.contentStatus.ORIGINAL': 'Conteúdo original da StudyUs',
   'exam.contentStatus.OFFICIAL_LICENSED': 'Conteúdo oficial licenciado',
@@ -12663,6 +12673,8 @@ const pt: Messages = {
   'examPrep.run.status.SKIPPED': 'Ignorada',
   'examPrep.run.status.MISSING': 'Sem resposta',
   'examPrep.run.integrity': 'Simulado em andamento: o Tutor fica indisponível até você entregar ou abandonar.',
+  'examPrep.attempt.title.practice': 'Prática de exame', 'examPrep.attempt.complete.practice': 'Prática concluída', 'examPrep.run.handIn.practice': 'Entregar prática',
+  'examPrep.run.integrity.practice': 'Prática em andamento: o Tutor fica indisponível até você entregar ou abandonar.', 'examPrep.result.title.practice': 'Resultado da prática',
   'examPrep.run.answerRecorded': 'Resposta registrada.',
   'examPrep.run.invalidAnswer': 'Essa resposta não é válida para esta pergunta.',
   'examPrep.run.part': 'Parte {id}',
