@@ -323,7 +323,21 @@ export type DifficultyReasonCode =
   | 'PRACTICE_EXPOSURE_PLUS_ONE'
   | 'PRACTICE_EXPOSURE_SUPPRESSED'
   | 'PRACTICE_EXPOSURE_NONE'
-  | 'REINFORCE_AT_CURRENT_PRACTICE_BASE';
+  | 'REINFORCE_AT_CURRENT_PRACTICE_BASE'
+  // D79 (2026-10-17) -- PROVE level mix
+  | 'PROVE_LEVEL_MIX_BASE'
+  | 'PROVE_LEVEL_MIX_ADVANCED_PRACTICE_EVIDENCE';
+
+/**
+ * D79 -- the per-level composition of a PROVE: 10 at level 3 without qualifying advanced Practice
+ * evidence; 7 at level 3 + 3 at level 4 with it. `difficulty.target` stays 3 for compatibility.
+ */
+export interface ProveMix {
+  items: Array<{ level: number; count: number }>;
+  reasonCode: DifficultyReasonCode;
+  /** The Practice evidence row that qualified the advanced mix (null for the base mix). */
+  qualifyingEvidenceId: string | null;
+}
 
 /**
  * D78 -- what a Practice-shaped session should contain, level by level. `baseLevel` is the
@@ -349,6 +363,12 @@ export interface PracticeExposure {
   plusOneItems: number;
   plusOneLevel: number | null;
   plusOneCorrect: number;
+  /**
+   * D79/D80 -- whether the session recorded a practiceMixFallback (served levels differed from the
+   * plan). Written on every exposure since D79; ABSENT on D78-only rows, which therefore never count
+   * as advanced Practice evidence (conservative: the flag cannot be proven false).
+   */
+  mixFallback?: boolean;
 }
 
 export interface DifficultyDecision {
@@ -373,6 +393,8 @@ export interface ActivityContract {
   transferDepth?: TransferLevel[];
   /** D78 -- PRACTICE / REINFORCE only: the per-level item mix (`difficulty.target` stays = base). */
   practiceMix?: PracticeMix;
+  /** D79 -- PROVE only: the per-level item composition (`difficulty.target` stays 3). */
+  proveMix?: ProveMix;
 }
 
 /**

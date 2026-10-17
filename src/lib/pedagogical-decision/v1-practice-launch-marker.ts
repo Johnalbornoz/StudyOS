@@ -34,7 +34,7 @@
  * constants).
  */
 import { V1_POLICY_VERSION } from '@/lib/pedagogical-migration';
-import type { PedagogicalStage, PedagogicalActivityType, PracticeMix } from '@/lib/pedagogical-engine';
+import type { PedagogicalStage, PedagogicalActivityType, PracticeMix, ProveMix } from '@/lib/pedagogical-engine';
 import { getCanonicalPedagogicalDecision, CanonicalDecisionUnavailableError } from './canonical-decision.service';
 import { resolveV1PracticeEligibility, resolveAuthorizedItemCount } from './canonical-session-launch';
 import { validateCanonicalActivityContract } from './canonical-contract-validator';
@@ -86,6 +86,8 @@ export interface V1PracticeLaunchMarker {
   minimumScorePercent: number;
   /** D78 -- PRACTICE / REINFORCE only: `activityContract.practiceMix` verbatim (absent for every other activity). */
   practiceMix?: PracticeMix;
+  /** D79 -- PROVE only: `activityContract.proveMix` verbatim (absent for every other activity). */
+  proveMix?: ProveMix;
 }
 
 /**
@@ -159,6 +161,7 @@ export async function verifyV1PracticeLaunchMarker(params: {
     // completed with >= 4.
     minimumScorePercent: contract.minimumScorePercent ?? 80,
     ...(contract.practiceMix ? { practiceMix: contract.practiceMix } : {}),
+    ...(contract.proveMix ? { proveMix: contract.proveMix } : {}),
   };
 }
 

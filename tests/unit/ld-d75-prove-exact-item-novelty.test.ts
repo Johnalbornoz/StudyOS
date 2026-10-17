@@ -230,6 +230,7 @@ describe('D75 -- explicit shortage outcome', () => {
 
   it('a prepared batch that falls short for exact novelty is FAILED with the same reason', () => {
     const svc = read('src/services/canonical-prepared-activity.service.ts');
-    expect(svc).toMatch(/const reason = result\.exactNoveltySupplyShortage \? PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE : 'GENERATION_INCOMPLETE';/);
+    // D79 adds the level-mix reason after the exact-novelty one (exact novelty still wins)
+    expect(svc).toMatch(/const reason = result\.exactNoveltySupplyShortage\s*\? PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE\s*: result\.levelMixSupplyShortage\s*\? PROVE_LEVEL_MIX_SUPPLY_SHORTAGE\s*: 'GENERATION_INCOMPLETE';/);
   });
 });

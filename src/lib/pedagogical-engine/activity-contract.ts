@@ -14,7 +14,7 @@
  * support level, minimum score, and the evidence contract label.
  */
 import { CANONICAL_POLICY } from './policy';
-import type { ActivityContract, DifficultyReasonCode, PedagogicalStage } from './types';
+import type { ActivityContract, DifficultyReasonCode, PedagogicalStage, ProveMix } from './types';
 import type { DifficultyResolution } from './difficulty-policy';
 import { practiceMixForItemCount } from './difficulty-policy';
 
@@ -30,6 +30,8 @@ export function buildActivityContract(
   intervention: 'REINFORCE' | null,
   difficulty: DifficultyResolution,
   practiceExposure: PracticeExposureDecision | null = null,
+  /** D79 -- PROVE only: the per-level composition resolved from Practice evidence (resolveProveLevelMix). */
+  proveMix: ProveMix | null = null,
 ): ActivityContract | null {
   if (intervention !== 'REINFORCE' && stage === 'CONSOLIDATED') return null;
 
@@ -93,6 +95,7 @@ export function buildActivityContract(
         supportLevel: 'NONE',
         minimumScorePercent: p.minimumScorePercent,
         evidenceContract: 'PROVE_NO_HINTS_NO_TUTOR_NO_WORKED_EXAMPLES',
+        ...(proveMix ? { proveMix: { items: proveMix.items.map((i) => ({ ...i })), reasonCode: proveMix.reasonCode, qualifyingEvidenceId: proveMix.qualifyingEvidenceId } } : {}),
       };
     }
     case 'RETAIN': {

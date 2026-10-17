@@ -31,12 +31,18 @@ export {
   plannedPlusOneItems,
   computePracticeExposure,
   PRACTICE_MAX_BASE,
+  resolveProveLevelMix,
+  isAdvancedPracticeEvidence,
+  servedLevelCounts,
+  PROVE_ADVANCED_LEVEL4_COUNT,
+  PROVE_BASE_LEVEL,
+  PROVE_ADVANCED_LEVEL,
   resolveProveDifficulty,
   resolveReinforceDifficulty,
   resolveRetentionDifficulty,
   resolveTransferDifficulty,
 } from './difficulty-policy';
-export type { DifficultyResolution, PracticeBaseResolution } from './difficulty-policy';
+export type { DifficultyResolution, PracticeBaseResolution, ProveLevelMixResolution } from './difficulty-policy';
 
 export { evaluateCanonicalLearningState, rebuildConceptCanonicalState, STAGE_ORDER } from './engine';
 
@@ -48,6 +54,7 @@ export type {
   DifficultyReasonCode,
   PracticeExposure,
   PracticeMix,
+  ProveMix,
   EvidenceQualificationReasonCode,
   EvidenceQualificationResult,
   NextCanonicalAction,

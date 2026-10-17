@@ -184,7 +184,12 @@ export function parsePracticeExposure(raw: unknown): PracticeExposure | null {
   if (plusOneItems < 0 || plusOneCorrect < 0 || plusOneCorrect > plusOneItems) return null;
   if (plusOneLevel !== null && !(isFiniteNumber(plusOneLevel) && plusOneLevel === baseLevel + 1)) return null;
   if ((plusOneItems > 0) !== (plusOneLevel !== null)) return null;
-  return { baseLevel, plusOneItems, plusOneLevel: plusOneLevel as number | null, plusOneCorrect };
+  // D79/D80 -- optional on D78-only rows (absent = unknown, never advanced evidence); a boolean otherwise
+  if (raw.mixFallback !== undefined && typeof raw.mixFallback !== 'boolean') return null;
+  return {
+    baseLevel, plusOneItems, plusOneLevel: plusOneLevel as number | null, plusOneCorrect,
+    ...(typeof raw.mixFallback === 'boolean' ? { mixFallback: raw.mixFallback } : {}),
+  };
 }
 
 /** 2026-10-16 contract 1.1 -- a learn-guided-v1 session, or null when malformed (shape only; the 4..7 range is the engine's rule). */

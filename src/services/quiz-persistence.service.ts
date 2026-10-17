@@ -11,7 +11,7 @@ import { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
 import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
 import type { ExactDuplicateNoveltyMarker } from '@/lib/lx/novelty-marker';
-import type { PracticeMix } from '@/lib/pedagogical-engine/types';
+import type { PracticeMix, ProveMix } from '@/lib/pedagogical-engine/types';
 
 export type QuizMode =
   | 'topic_practice'
@@ -138,6 +138,13 @@ export interface QuizSessionV1Marker {
   novelty?: ExactDuplicateNoveltyMarker | null;
   /** D78 -- PRACTICE / REINFORCE sessions only: the per-level mix this session was built for (absent on pre-D78 rows). */
   practiceMix?: PracticeMix | null;
+  /** D79 -- PROVE sessions only: the per-level composition this session was built for. */
+  proveMix?: ProveMix | null;
+  /**
+   * D79/D80 -- READ-ONLY on a loaded session: the `practiceMixFallback` record the delivery wrote
+   * into canonical_activity_contract after the session was stored (never written by storeQuiz).
+   */
+  practiceMixFallback?: unknown;
 }
 
 export interface QuizSession {
@@ -263,6 +270,8 @@ export async function storeQuiz(
           novelty: v1Marker.novelty ?? undefined,
           // D78 -- additive; omitted for every non-Practice marker.
           practiceMix: v1Marker.practiceMix ?? undefined,
+          // D79 -- additive; omitted for every non-Prove marker.
+          proveMix: v1Marker.proveMix ?? undefined,
         })
       : null;
 
@@ -639,6 +648,8 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
         minimumScorePercent: contract.minimumScorePercent ?? 80,
         novelty: contract.novelty ?? null,
         ...(contract.practiceMix ? { practiceMix: contract.practiceMix } : {}),
+        ...(contract.proveMix ? { proveMix: contract.proveMix } : {}),
+        ...(contract.practiceMixFallback ? { practiceMixFallback: contract.practiceMixFallback } : {}),
       };
     }
 

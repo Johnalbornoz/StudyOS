@@ -61,6 +61,7 @@ async function loadAssemblyInputs(params: AssemblyParams, client: DbExecutor): P
       excludeFingerprints: exclude,
       reservedCandidateIds: params.reservedCandidateIds,
       ...(contract.practiceMix ? { practiceMix: contract.practiceMix } : {}),
+      ...(contract.proveMix ? { proveMix: contract.proveMix } : {}),
     },
   };
 }

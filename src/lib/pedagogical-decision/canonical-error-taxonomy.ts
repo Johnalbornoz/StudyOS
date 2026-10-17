@@ -75,6 +75,8 @@ const LEGACY_TO_CANONICAL: Record<string, CanonicalErrorCode> = {
   // D75: candidates came back, but exact-novelty filtering (prior Practice +
   // prior Prove items) left too few after every bounded regeneration round.
   PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE: 'AI_GENERATION_INVALID',
+  // D79: candidates came back, but too few at the PROVE level mix's required levels (never relabelled).
+  PROVE_LEVEL_MIX_SUPPLY_SHORTAGE: 'AI_GENERATION_INVALID',
 
   // Contract mismatch -- the administered activity didn't match its own
   // authorized contract (item count, difficulty, independence).

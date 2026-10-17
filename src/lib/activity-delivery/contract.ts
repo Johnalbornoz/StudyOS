@@ -91,6 +91,21 @@ export interface ActivityContract {
    * is never served for another. Absent = no per-level contract (every other activity).
    */
   practiceMix?: DeliveryPracticeMix;
+  /**
+   * D79 -- PROVE only: exact per-level counts (10 x L3, or 7 x L3 + 3 x L4). Part of the contract
+   * fingerprint: a set prepared for one mix is never served for another. No fallback: a set that
+   * cannot meet every level count is never assembled.
+   */
+  proveMix?: DeliveryLevelMix;
+}
+
+export interface DeliveryLevelMix {
+  items: Array<{ level: number; count: number }>;
+}
+
+/** D79 -- the engine's PROVE mix as a delivery contract field (only the per-level counts govern delivery). */
+export function deliveryProveMix(mix: { items: Array<{ level: number; count: number }> } | null | undefined): DeliveryLevelMix | undefined {
+  return mix ? { items: [...mix.items].sort((a, b) => a.level - b.level).map((i) => ({ level: i.level, count: i.count })) } : undefined;
 }
 
 export interface DeliveryPracticeMix {
@@ -105,8 +120,9 @@ export function deliveryPracticeMix(mix: PracticeMix | null | undefined, itemCou
   return { baseLevel: sized.baseLevel, items: sized.items.map((i) => ({ level: i.level, count: i.count })) };
 }
 
-const practiceMixKey = (m: DeliveryPracticeMix): string =>
-  `base${m.baseLevel}:` + [...m.items].sort((a, b) => a.level - b.level).map((i) => `${i.level}x${i.count}`).join(',');
+const levelMixKey = (items: Array<{ level: number; count: number }>): string =>
+  [...items].sort((a, b) => a.level - b.level).map((i) => `${i.level}x${i.count}`).join(',');
+const practiceMixKey = (m: DeliveryPracticeMix): string => `base${m.baseLevel}:` + levelMixKey(m.items);
 
 export function difficultyBand(d: { min: number; max: number }): string {
   return `${d.min}-${d.max}`;
@@ -128,6 +144,8 @@ export function activityContractFingerprint(c: ActivityContract): string {
     GRADER_VERSION,
     // D78 -- appended only when present, so every contract without a mix keeps its fingerprint.
     ...(c.practiceMix ? [`practiceMix:${practiceMixKey(c.practiceMix)}`] : []),
+    // D79 -- same rule for the PROVE level mix
+    ...(c.proveMix ? [`proveMix:${levelMixKey(c.proveMix.items)}`] : []),
   ]);
 }
 

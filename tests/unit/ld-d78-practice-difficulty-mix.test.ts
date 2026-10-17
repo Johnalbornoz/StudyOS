@@ -30,6 +30,8 @@ const h = vi.hoisted(() => ({
   resume: vi.fn(),
   storeQuiz: vi.fn(),
   practiceGen: vi.fn(),
+  chunked: vi.fn(),
+  recovery: vi.fn(),
 }));
 
 vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => h.query(...a) }, query: (...a: any[]) => h.query(...a) }));
@@ -76,6 +78,14 @@ vi.mock('@/services/quiz-generation.service', async (orig) => ({
   ...(await orig<typeof import('@/services/quiz-generation.service')>()),
   generatePracticeQuestions: (...a: any[]) => h.practiceGen(...a),
 }));
+vi.mock('@/services/gated-question-generation.service', () => ({
+  generateConcurrentChunkedBatch: (...a: any[]) => h.chunked(...a),
+  generateBoundedRecoveryBatch: (...a: any[]) => h.recovery(...a),
+}));
+vi.mock('@/services/prove-exact-novelty.service', () => ({
+  loadProveExactNoveltyExclusions: async () => ({ fingerprints: new Set<string>(), priorProveCount: 0 }),
+  PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE: 'PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE',
+}));
 vi.mock('@/services/quiz-persistence.service', async (orig) => ({
   ...(await orig<typeof import('@/services/quiz-persistence.service')>()),
   findResumableCanonicalSession: (...a: any[]) => h.resume(...a),
@@ -91,7 +101,14 @@ import {
   resolveProveDifficulty,
   resolveReinforceDifficulty,
   PRACTICE_MAX_BASE,
+  isAdvancedPracticeEvidence,
+  resolveProveLevelMix,
+  PROVE_ADVANCED_LEVEL4_COUNT,
 } from '@/lib/pedagogical-engine';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { isPreparedActivityContractCompatible } from '@/services/canonical-prepared-activity.service';
+import { generateCanonicalProveQuestions, PROVE_LEVEL_MIX_SUPPLY_SHORTAGE } from '@/services/canonical-prove-generation.service';
 import { buildActivityContract } from '@/lib/pedagogical-engine/activity-contract';
 import type { PracticeExposure, RawEvidenceItem } from '@/lib/pedagogical-engine/types';
 import { assembleFromBank, countValidCandidates, practiceMixFallback, type BankCandidate } from '@/lib/activity-delivery/assembly';
@@ -252,16 +269,17 @@ describe('D78 engine -- contract carries base + mix; Prove derivation', () => {
     expect(d.activityContract?.practiceMix?.items).toEqual([{ level: 3, count: 3 }]);
   });
 
-  it('Prove: a session with the +1 item counts at its BASE (one level-4 item at base 3 never makes Prove "practice at 4")', () => {
-    // even if a row's aggregate difficulty were recorded as 4, its exposure base (3) is what qualifies
+  it('Prove: a session with the +1 item never makes Prove "practice at 4" -- target stays 3 (D79: the L4 share comes only from the PROVE mix)', () => {
+    // even if a row's aggregate difficulty were recorded as 4, PROVE's target is 3
     const ev = [...LEARN(), P(100, { exposure: X(2) }), P(100, { exposure: X(2, 1, 1) }), P(100, { exposure: X(3, 1, 1), difficulty: 4 })];
     const d = decide(ev);
     expect(d.stage).toBe('PROVE');
     expect(d.activityContract?.difficulty.target).toBe(3);
-    // legacy rows (no exposure) keep their administered difficulty -- history is not rewritten
+    // legacy rows (no exposure) are never advanced evidence: target 3, 10 x L3 (D79 supersedes the D78 legacy-4 note)
     const legacy = decide([...LEARN(), P(100, { difficulty: 4 }), P(100, { difficulty: 4 }), P(100, { difficulty: 4 })]);
     expect(legacy.stage).toBe('PROVE');
-    expect(legacy.activityContract?.difficulty.target).toBe(4);
+    expect(legacy.activityContract?.difficulty.target).toBe(3);
+    expect(legacy.activityContract?.proveMix?.items).toEqual([{ level: 3, count: 10 }]);
     expect(resolveProveDifficulty(3).target).toBe(3);
   });
 });
@@ -487,16 +505,135 @@ describe('D80 -- practiceMixFallback never creates +1 evidence or a base promoti
   });
 });
 
-describe('D79 -- PROVE level mix (OPERATOR_DECISION_REQUIRED: no governed level-4 count for PROVE exists)', () => {
-  it('without the decision, PROVE keeps its single target: base-3 Practice evidence -> PROVE level 3 (never forced higher, never a guessed mix)', () => {
-    const ev = [...LEARN(), P(100, { exposure: X(2) }), P(100, { exposure: X(2, 1, 1) }), P(100, { exposure: X(3, 1, 1) })];
-    const d = decide(ev);
+describe('D79 -- PROVE level mix (approved 2026-10-17)', () => {
+  const XA = (o: Partial<PracticeExposure> = {}): PracticeExposure => ({ baseLevel: 3, plusOneItems: 1, plusOneLevel: 4, plusOneCorrect: 1, mixFallback: false, ...o });
+  const earned = () => [P(100, { exposure: { ...X(2), mixFallback: false } }), P(100, { exposure: { ...X(2, 1, 1), mixFallback: false } })];
+  const proveOf = (practice: RawEvidenceItem[]) => {
+    const d = decide([...LEARN(), ...practice]);
     expect(d.stage).toBe('PROVE');
-    expect(d.activityContract?.difficulty.target).toBe(3);
-    expect((d.activityContract as any)?.proveMix).toBeUndefined();
+    return d.activityContract!;
+  };
+
+  it('no advanced Practice evidence -> PROVE = 10 x L3 (target 3)', () => {
+    const c = proveOf([...earned(), P(100, { exposure: { ...X(3), mixFallback: false } })]);
+    expect(c.difficulty).toMatchObject({ target: 3, min: 3, max: 4, reasonCode: 'PROVE_LEVEL_MIX_BASE' });
+    expect(c.proveMix?.items).toEqual([{ level: 3, count: 10 }]);
   });
-  it('the persistent Practice base never persists as 4 even with correct level-4 exposures', () => {
-    const ev = [P(100, { exposure: X(2) }), P(100, { exposure: X(2, 1, 1) }), P(100, { exposure: X(3, 1, 1) }), P(100, { exposure: X(3, 1, 1) })];
-    expect(resolvePracticeBase(ev).base).toBe(3);
+
+  it('one qualifying session (base 3, >= 80, served L4 answered correct, no fallback) -> 7 x L3 + 3 x L4; target stays 3', () => {
+    const q = P(100, { exposure: XA() });
+    const c = proveOf([...earned(), q]);
+    expect(c.difficulty).toMatchObject({ target: 3, min: 3, max: 4, reasonCode: 'PROVE_LEVEL_MIX_ADVANCED_PRACTICE_EVIDENCE' });
+    expect(c.proveMix).toEqual({ items: [{ level: 3, count: 7 }, { level: 4, count: 3 }], reasonCode: 'PROVE_LEVEL_MIX_ADVANCED_PRACTICE_EVIDENCE', qualifyingEvidenceId: q.id });
+    expect(PROVE_ADVANCED_LEVEL4_COUNT).toBe(3);
+  });
+
+  it('L4 answered incorrect -> 10 x L3', () => {
+    expect(isAdvancedPracticeEvidence(P(80, { exposure: XA({ plusOneCorrect: 0 }), itemCount: 5 }))).toBe(false);
+    expect(resolveProveLevelMix([...earned(), P(80, { exposure: XA({ plusOneCorrect: 0 }), itemCount: 5 })]).mix.items).toEqual([{ level: 3, count: 10 }]);
+  });
+
+  it('a fallback replacing the L4 (no L4 served, or mixFallback true) -> 10 x L3 (D80)', () => {
+    expect(resolveProveLevelMix([...earned(), P(100, { exposure: XA({ plusOneItems: 0, plusOneLevel: null, plusOneCorrect: 0, mixFallback: true }) })]).mix.items).toEqual([{ level: 3, count: 10 }]);
+    expect(resolveProveLevelMix([...earned(), P(100, { exposure: XA({ mixFallback: true }) })]).mix.items).toEqual([{ level: 3, count: 10 }]);
+  });
+
+  it('a row WITHOUT the mixFallback flag (D78-only) never qualifies (conservative)', () => {
+    const { mixFallback: _omit, ...noFlag } = XA();
+    expect(isAdvancedPracticeEvidence(P(100, { exposure: noFlag }))).toBe(false);
+  });
+
+  it('other disqualifiers: score < 80, base 2, a critical misconception', () => {
+    expect(isAdvancedPracticeEvidence(P(67, { exposure: XA() }))).toBe(false);
+    expect(isAdvancedPracticeEvidence(P(100, { exposure: XA({ baseLevel: 2, plusOneLevel: 3 }) }))).toBe(false);
+    expect(isAdvancedPracticeEvidence(P(100, { exposure: XA(), misconception: true }))).toBe(false);
+    expect(isAdvancedPracticeEvidence(P(100, { exposure: XA() }))).toBe(true);
+  });
+
+  it('the persistent Practice base stays 3 even with qualifying level-4 sessions', () => {
+    expect(resolvePracticeBase([...earned(), P(100, { exposure: XA() }), P(100, { exposure: XA() })]).base).toBe(3);
+  });
+
+  it('the submission writes mixFallback into practiceExposure; the adapter keeps it (and rejects a non-boolean)', () => {
+    expect(computePracticeExposure(3, [{ difficulty: 3, correct: true }, { difficulty: 3, correct: true }, { difficulty: 4, correct: true }], false)).toEqual(XA());
+    expect(parsePracticeExposure({ ...XA(), mixFallback: true })?.mixFallback).toBe(true);
+    expect(parsePracticeExposure({ ...XA(), mixFallback: 'no' })).toBeNull();
+    const route = readFileSync(join(process.cwd(), 'src/app/api/quizzes/generate-and-take/route.ts'), 'utf-8');
+    expect(route).toMatch(/!!quizSession\.v1Marker!\.practiceMixFallback,/);
+    expect(route).toMatch(/proveLevelMix: \{\s*planned: quizSession\.v1Marker!\.proveMix\.items,\s*served: servedLevelCounts\(bucket\.questionDifficulties\)/);
+  });
+
+  it('the PROVE mix is part of the delivery and prepared-batch contract fingerprints', () => {
+    const base: ActivityContract = {
+      conceptId: 'c1', activityType: 'PROVE', language: 'es', academic: { curriculum: null, programme: 'none', year: null, subjectGroup: null, level: null },
+      difficulty: { min: 3, max: 4, target: 3 }, itemCount: 10, independence: true, policyVersion: 'v1',
+    };
+    const all3 = activityContractFingerprint({ ...base, proveMix: { items: [{ level: 3, count: 10 }] } });
+    const mixed = activityContractFingerprint({ ...base, proveMix: { items: [{ level: 3, count: 7 }, { level: 4, count: 3 }] } });
+    expect(all3).not.toBe(mixed);
+    expect(activityContractFingerprint({ ...base, proveMix: undefined })).toBe(activityContractFingerprint(base));
+    const snap = { canonicalActivityType: 'PROVE', itemCount: { min: 10, max: 10, authorized: 10 }, difficulty: { min: 3, max: 4, target: 3 }, independence: true, supportLevel: 'NONE' as const, minimumScorePercent: 80 };
+    expect(isPreparedActivityContractCompatible({ ...snap, proveMix: { items: [{ level: 3, count: 10 }] } }, { ...snap, proveMix: { items: [{ level: 3, count: 7 }, { level: 4, count: 3 }] } })).toBe(false);
+    expect(isPreparedActivityContractCompatible(snap, { ...snap, proveMix: { items: [{ level: 3, count: 7 }, { level: 4, count: 3 }] } })).toBe(false);
+    expect(isPreparedActivityContractCompatible({ ...snap, proveMix: { items: [{ level: 4, count: 3 }, { level: 3, count: 7 }] } }, { ...snap, proveMix: { items: [{ level: 3, count: 7 }, { level: 4, count: 3 }] } })).toBe(true);
+  });
+
+  it('bank assembly: exactly 7 x L3 + 3 x L4, never another level; short of L4 -> SHORT (no all-L3 substitute)', () => {
+    const MIX = { items: [{ level: 3, count: 7 }, { level: 4, count: 3 }] };
+    const req = (proveMix: any) => ({ activityType: 'PROVE' as const, itemCount: 10, difficulty: { min: 3, max: 4, target: 3 }, language: 'es', excludeFingerprints: new Set<string>(), reservedCandidateIds: new Set<string>(), proveMix });
+    const pool = [...Array.from({ length: 12 }, (_, i) => cand(i, 3)), ...Array.from({ length: 4 }, (_, i) => cand(20 + i, 4))];
+    const r = assembleFromBank(pool, req(MIX));
+    expect(levels(r, pool)).toEqual([3, 3, 3, 3, 3, 3, 3, 4, 4, 4]);
+    expect(levels(assembleFromBank(pool, req({ items: [{ level: 3, count: 10 }] })), pool)).toEqual(Array(10).fill(3));
+    const noL4 = [...Array.from({ length: 12 }, (_, i) => cand(i, 3)), cand(30, 4)];
+    expect(assembleFromBank(noL4, req(MIX))).toMatchObject({ status: 'SHORT' });
+  });
+
+  it('live generation: 7 at L3 + 3 at L4 by the generator OWN reported level; off-level items are discarded, never relabelled; short -> levelMixSupplyShortage', async () => {
+    const mk = (n: number, level: number, tag: string) => Array.from({ length: n }, (_, i) => Q(1000 + i + (tag === 'b' ? 100 : 0) + level * 10_000, level));
+    h.chunked.mockImplementation(async (_c: string, _s: string, _sub: string, o: any) => ({ accepted: o.difficulty === 4 ? [...mk(2, 4, 'a'), ...mk(1, 3, 'a')] : mk(o.count, 3, 'a'), chunkPlan: [o.count], chunkDiagnostics: [] }));
+    h.recovery.mockImplementation(async (_c: string, _s: string, _sub: string, o: any) => ({ accepted: o.difficulty === 4 ? mk(o.count, 4, 'b') : [], diagnostics: {} }));
+    const r = await generateCanonicalProveQuestions({
+      conceptId: 'c1', studentId: 's1', subjectId: 'sub1', targetCount: 10, difficulty: 3, guidance: 'g', language: 'es', visualAidRate: 0, ibContext: null,
+      activityType: 'SOLO_CHECK', quizMode: 'canonical_prove', parentOperationId: 'op', levelMix: [{ level: 3, count: 7 }, { level: 4, count: 3 }],
+    });
+    expect(r.levelCounts).toEqual([{ level: 3, count: 7 }, { level: 4, count: 3 }]);
+    expect(r.levelRejectedCount).toBeGreaterThanOrEqual(1); // the L3 item the L4 call returned
+    expect(r.levelMixSupplyShortage).toBe(false);
+    // no L4 supply at all -> short, flagged, never filled with L3
+    h.chunked.mockImplementation(async (_c: string, _s: string, _sub: string, o: any) => ({ accepted: mk(o.count, 3, o.difficulty === 4 ? 'b' : 'a'), chunkPlan: [o.count], chunkDiagnostics: [] }));
+    h.recovery.mockImplementation(async () => ({ accepted: [], diagnostics: {} }));
+    const short = await generateCanonicalProveQuestions({
+      conceptId: 'c1', studentId: 's1', subjectId: 'sub1', targetCount: 10, difficulty: 3, guidance: 'g', language: 'es', visualAidRate: 0, ibContext: null,
+      activityType: 'SOLO_CHECK', quizMode: 'canonical_prove', parentOperationId: 'op', levelMix: [{ level: 3, count: 7 }, { level: 4, count: 3 }],
+    });
+    expect(short.finalQuestionCount).toBe(7);
+    expect(short.levelMixSupplyShortage).toBe(true);
+    expect(short.questions.every((q) => q.difficulty === 3)).toBe(true);
+    expect(PROVE_LEVEL_MIX_SUPPLY_SHORTAGE).toBe('PROVE_LEVEL_MIX_SUPPLY_SHORTAGE');
+    const route = readFileSync(join(process.cwd(), 'src/app/api/quizzes/generate-and-take/route.ts'), 'utf-8');
+    expect(route).toMatch(/else if \(proveShortageCheck\.levelMixSupplyShortage\) proveReasonCode = PROVE_LEVEL_MIX_SUPPLY_SHORTAGE;/);
+  });
+
+  it('replenishment: a mixed PROVE short of L4 requests level-4 candidates under its own key (no extra L3 for an L4-only shortage)', async () => {
+    for (const f of Object.values(h)) f.mockReset();
+    h.query.mockResolvedValue({ rows: [] });
+    h.reconcile.mockResolvedValue({ readyCompatible: 0, usedSlots: [] });
+    h.reserved.mockResolvedValue(new Set());
+    h.assemble.mockResolvedValue({ status: 'SHORT', available: 7, needed: 10 });
+    h.spare.mockResolvedValue(2);
+    h.inFlight.mockResolvedValue(0);
+    h.enqueue.mockResolvedValue(true);
+    h.depthAt.mockResolvedValue(0);
+    h.launch.mockReturnValue({ launchStatus: 'READY', launchParams: { mode: 'canonical_prove' } });
+    h.decision.mockResolvedValue({
+      decision: { activityContract: { difficulty: { min: 3, max: 4, target: 3 }, itemCount: { min: 10, max: 10 }, independence: true, proveMix: { items: [{ level: 3, count: 7 }, { level: 4, count: 3 }] } }, policyVersion: 'v1', canonicalRevision: 'r' },
+    });
+    const r = await prepareInventoryHandler({ id: 'j1', kind: 'PREPARE_INVENTORY', dedupKey: 'prepare:s1:c1', payload: { studentId: 's1', subjectId: 'sub1', conceptId: 'c1' }, attempts: 1, maxAttempts: 3 } as any);
+    const jobs = h.enqueue.mock.calls.filter((c) => c[0] === 'BANK_REPLENISH');
+    expect(jobs).toHaveLength(1);
+    expect(String(jobs[0][1])).toMatch(/^bank-l4:/);
+    expect(jobs[0][2]).toMatchObject({ difficulty: 4, needed: 6, activityType: 'PROVE' });
+    expect(r).toMatchObject({ ok: true, result: { proveLevelFour: { level: 4, validLevelFour: 0, needed: 6 } } });
   });
 });

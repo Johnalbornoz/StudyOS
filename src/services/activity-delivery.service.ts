@@ -31,6 +31,7 @@ import {
   activityContractFingerprint,
   bankDepthTarget,
   deliveryPracticeMix,
+  deliveryProveMix,
   learnerStateFingerprint,
   PRACTICE_BANK_DEPTH_INSUFFICIENT,
   STAGE_FOR_ACTIVITY,
@@ -194,6 +195,7 @@ export async function buildDeliveryInput(p: {
       independence: p.v1Marker.independence,
       policyVersion: p.v1Marker.pedagogicalPolicyVersion,
       ...(p.v1Marker.practiceMix ? { practiceMix: deliveryPracticeMix(p.v1Marker.practiceMix, p.itemCount) } : {}),
+      ...(p.activityType === 'PROVE' && p.v1Marker.proveMix ? { proveMix: deliveryProveMix(p.v1Marker.proveMix) } : {}),
     },
   };
 }

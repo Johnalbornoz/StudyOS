@@ -22,11 +22,12 @@ import {
   resolveLearnDifficulty,
   practiceSessionBaseLevel,
   resolvePracticeBase,
-  resolveProveDifficulty,
+  resolveProveLevelMix,
   resolveReinforceDifficulty,
   resolveRetentionDifficulty,
   resolveTransferDifficulty,
   type DifficultyResolution,
+  type ProveLevelMixResolution,
 } from './difficulty-policy';
 import { STAGE_ORDER } from './types';
 import type {
@@ -721,6 +722,7 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
   // D78: the earned Practice BASE (floor 2, cap 3, never lowered) + the bounded +1 exposure decision.
   const practiceDifficulty = resolvePracticeBase(state.sorted.filter((e) => e.activityType === 'PRACTICE'));
   let difficultyResolution: DifficultyResolution;
+  let proveLevelMix: ProveLevelMixResolution | null = null;
   if (applyReinforceShape) {
     difficultyResolution = resolveReinforceDifficulty(practiceDifficulty.base);
   } else {
@@ -732,7 +734,10 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
         difficultyResolution = practiceDifficulty;
         break;
       case 'PROVE':
-        difficultyResolution = resolveProveDifficulty(state.highestQualifyingPracticeDifficulty);
+        // D79: PROVE = 10 x L3, or 7 x L3 + 3 x L4 with qualifying advanced Practice evidence;
+        // difficulty.target stays 3 (resolveProveDifficulty is no longer consulted by the engine).
+        proveLevelMix = resolveProveLevelMix(state.sorted.filter((e) => e.activityType === 'PRACTICE'));
+        difficultyResolution = proveLevelMix;
         break;
       case 'RETAIN':
         difficultyResolution = resolveRetentionDifficulty(state.proveQualifyingDifficulty);
@@ -759,7 +764,7 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
   const activityContract = buildActivityContract(stage, applyReinforceShape ? 'REINFORCE' : null, difficultyResolution, {
     plusOneEligible: practiceDifficulty.exposure.plusOneEligible,
     reasonCode: practiceDifficulty.exposure.reasonCode,
-  });
+  }, proveLevelMix?.mix ?? null);
 
   // CANON-R2R1 Part 21 -- a closed enum, never left for a consumer to
   // infer from `stage` alone.

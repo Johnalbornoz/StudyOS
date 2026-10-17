@@ -30,6 +30,7 @@ import {
   bankChunks,
   bankDepthTarget,
   deliveryPracticeMix,
+  deliveryProveMix,
   SPARE_ASSEMBLABLE_SETS,
   DELIVERY_QUIZ_MODES,
   inventoryTarget,
@@ -52,6 +53,7 @@ import { addValidatedCandidates } from '@/services/question-bank.service';
 import { generateActivityCandidates } from '@/services/activity-candidate-generation.service';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
 import { getLearnWeaknessesForConcept } from '@/services/learn-weakness.service';
+import { PROVE_BASE_LEVEL } from '@/lib/pedagogical-engine/difficulty-policy';
 
 /** Most candidates requested from a generator in one job round. */
 const BATCH_CAP: Record<DeliveryActivityType, number> = { LEARN_CHECK: 10, PRACTICE: 9, PROVE: 10, RETAIN: 10, TRANSFER: 3 };
@@ -91,6 +93,8 @@ export async function resolveNextActivityContract(target: ReplenishTarget, langu
   };
   // D78: the same per-level mix a launch builds (buildDeliveryInput), so READY sets match its fingerprint
   if (c.practiceMix) contract.practiceMix = deliveryPracticeMix(c.practiceMix, contract.itemCount);
+  // D79: the PROVE level mix, exactly as a launch builds it
+  if (activityType === 'PROVE' && c.proveMix) contract.proveMix = deliveryProveMix(c.proveMix);
   return { launchable: true, activityType, quizMode: mode, contract, academic, canonicalRevision: decision.canonicalRevision };
 }
 
@@ -148,15 +152,25 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
   // same BANK_REPLENISH path; at or above it nothing is requested unless an
   // assembly actually came up short.
   const key = bankKey(contract);
+  // D79: a PROVE level mix with level-4 items keeps two supplies: the level-3 supply is measured
+  // in complete all-L3 sets (the base contract), the level-4 supply by its own valid count and its
+  // own job key (so neither one's in-flight work hides the other's shortage).
+  const l4 = activityType === 'PROVE' ? contract.proveMix?.items.find((i) => i.level > PROVE_BASE_LEVEL) ?? null : null;
+  const supplyContract: ActivityContract = l4
+    ? { ...contract, proveMix: { items: [{ level: PROVE_BASE_LEVEL, count: contract.itemCount }] } }
+    : contract;
+  const validL4 = l4 ? await countValidBankDepthAtLevel({ studentId: p.studentId, contract, academic }, l4.level) : null;
   const [spareSets, inFlight] = await Promise.all([
-    countSpareSets({ studentId: p.studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds(p.studentId, p.conceptId), maxSets: SPARE_ASSEMBLABLE_SETS }),
+    countSpareSets({ studentId: p.studentId, contract: supplyContract, academic, reservedCandidateIds: await reservedCandidateIds(p.studentId, p.conceptId), maxSets: SPARE_ASSEMBLABLE_SETS }),
     openBankSupply(key),
   ]);
   const missing =
     depthTarget === null || validDepth === null
       ? (SPARE_ASSEMBLABLE_SETS - spareSets) * contract.itemCount - inFlight
       : depthTarget - validDepth - inFlight;
-  const needed = bankShort ? Math.max(missing, contract.itemCount - inFlight) : missing;
+  // a PROVE shortage caused by level 4 alone is answered by the level-4 job below, not by more level-3 items
+  const baseShort = bankShort && !(l4 && validL4 !== null && validL4 < l4.count);
+  const needed = baseShort ? Math.max(missing, contract.itemCount - inFlight) : missing;
   const chunks = bankChunks(needed, BATCH_CAP[activityType]);
   for (let i = 0; i < chunks.length; i++) {
     await enqueueGenerationJob('BANK_REPLENISH', `${key}:c${i}`, {
@@ -180,12 +194,25 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
       plusOneJob = { level: plus.level, validPlusOne };
     }
   }
+  let levelFourJob: { level: number; validLevelFour: number; needed: number } | null = null;
+  if (l4 && validL4 !== null) {
+    const l4Key = `bank-l${l4.level}:${key.slice('bank:'.length)}`;
+    const l4InFlight = await openBankSupply(l4Key);
+    // enough level-4 items for SPARE_ASSEMBLABLE_SETS mixed sets
+    const l4Needed = l4.count * SPARE_ASSEMBLABLE_SETS - validL4 - l4InFlight;
+    if (l4Needed > 0) {
+      await enqueueGenerationJob('BANK_REPLENISH', `${l4Key}:c0`, {
+        ...p, activityType, language: contract.language, academic, difficulty: l4.level, needed: Math.min(l4Needed, BATCH_CAP[activityType]), round: 1,
+      });
+    }
+    levelFourJob = { level: l4.level, validLevelFour: validL4, needed: Math.max(0, l4Needed) };
+  }
   if (bankShort) {
     await enqueueGenerationJob('PREPARE_INVENTORY', `prepare:${p.studentId}:${p.conceptId}:followup`, { ...p }, { delayMs: FOLLOW_UP_DELAY_MS });
   }
   return {
     ok: true,
-    result: { activityType, prepared, readyCompatible, bankShort, spareSets, inFlight, bankJobs: chunks.length, ...(depthTarget !== null ? { validDepth, depthTarget } : {}), ...(plusOneJob ? { plusOne: plusOneJob } : {}) },
+    result: { activityType, prepared, readyCompatible, bankShort, spareSets, inFlight, bankJobs: chunks.length, ...(depthTarget !== null ? { validDepth, depthTarget } : {}), ...(plusOneJob ? { plusOne: plusOneJob } : {}), ...(levelFourJob ? { proveLevelFour: levelFourJob } : {}) },
   };
 };
 
