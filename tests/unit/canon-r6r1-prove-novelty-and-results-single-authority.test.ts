@@ -353,7 +353,7 @@ describe('19-24/29 -- Results UI: canonicalResults is the sole next-step authori
   });
 
   it('24. the factual score/correct/incorrect outcome card is NOT gated on isV1Result -- it renders unconditionally, before any v1-specific block', () => {
-    const scoreIdx = QUIZ_PAGE_SRC.indexOf('{results.results.score}%');
+    const scoreIdx = QUIZ_PAGE_SRC.indexOf('{resultDisplay.scorePercent}%'); // BR-SCORE P1-01: the one display source
     const firstV1BlockIdx = QUIZ_PAGE_SRC.indexOf("results.canonicalResultsStatus === 'OK' && results.canonicalResults && (");
     expect(scoreIdx).toBeGreaterThan(-1);
     // the score card renders before any v1-specific block in the JSX...
