@@ -14,6 +14,9 @@ import { ClassAssignmentComposer } from '../ClassAssignmentComposer';
 import { InstitutionTaskCard, EditOwnTaskDue } from './InstitutionTasksPanel';
 import { listClassInstitutionAssignments } from '@/lib/institution/institution-governance.service';
 import { ClassChrome } from '../class-chrome';
+import { SubjectAssessmentComposer } from '../SubjectAssessmentComposer';
+import { getSubjectAssessmentComposerContext, listClassSubjectAssessmentAssignments } from '@/lib/teacher/subject-assessment-assignment.service';
+import { localDateIn } from '@/lib/teacher/subject-assessment-assignment.rules';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -36,11 +39,13 @@ export default async function TeacherClassAssignmentsPage({ params }: { params: 
   const t = getMessages(locale);
   const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale) : null);
 
-  const [roster, assignable, assignments, institutionTasks] = await Promise.all([
+  const [roster, assignable, assignments, institutionTasks, subjectComposer, subjectAssignments] = await Promise.all([
     listClassRosterForInstitution(klass.institutionId, classId),
     listAssignableConceptsForClass(actor.id, classId),
     listClassAssignments(actor.id, classId),
     listClassInstitutionAssignments(actor.id, classId, locale).catch(() => []),
+    getSubjectAssessmentComposerContext(actor.id, classId).catch(() => null),
+    listClassSubjectAssessmentAssignments(actor.id, classId).catch(() => []),
   ]);
   const taskLabels: Record<string, string> = {
     badge: t['cur2.lock.badge'],
@@ -122,6 +127,42 @@ export default async function TeacherClassAssignmentsPage({ params }: { params: 
           },
         }}
       />
+
+      {subjectComposer && (
+        <SubjectAssessmentComposer
+          classId={classId}
+          locale={locale}
+          subjectName={subjectComposer.subjectName}
+          concepts={subjectComposer.concepts}
+          learners={subjectComposer.activeLearners}
+          timezone={subjectComposer.timezone}
+          timezoneBlocker={subjectComposer.timezoneBlocker}
+          today={subjectComposer.timezone && !subjectComposer.timezoneBlocker ? localDateIn(subjectComposer.timezone, new Date()) : null}
+        />
+      )}
+
+      <section aria-labelledby="subject-assessments-title" className="ta-stack" style={{ gap: 'var(--space-3)' }} data-testid="teacher-subject-assessments">
+        <h2 id="subject-assessments-title" style={{ fontSize: 18 }}>{t['tsa.list.title']}</h2>
+        {subjectAssignments.length === 0 ? (
+          <EmptyState title={t['tsa.list.empty']} />
+        ) : (
+          subjectAssignments.map((g) => (
+            <article key={g.assignmentGroupId} className="card" aria-label={g.title ?? t[`tsa.kind.${g.kind}`]}>
+              <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <strong>{g.title ?? t[`tsa.kind.${g.kind}`]}</strong>
+                <span className="ta-msg">
+                  {[t[`tsa.kind.${g.kind}`], fillMessage(t['tsa.previewCount'], { n: g.questionCount }), g.timed && g.durationMinutes ? `${g.durationMinutes} min` : t['tsa.untimed'], t[`tsa.phase.${g.windowPhase}`]].join(' · ')}
+                </span>
+                <span className="ta-msg">{fillMessage(t['tsa.student.windowLine'], { start: g.window.startDate, end: g.window.endDate, tz: g.window.timezone })}</span>
+                <span className="ta-msg">
+                  {[fillMessage(t['tsa.completed'], { n: g.completedStudents, total: g.recipients }), g.averageScorePercent !== null ? fillMessage(t['tsa.average'], { n: g.averageScorePercent }) : null].filter(Boolean).join(' · ')}
+                </span>
+                <Link className="btn btn-ghost btn-sm" href={`/dashboard/teacher/classes/${classId}/subject-assessments/${g.assignmentGroupId}`}>{t['tsa.list.results']}</Link>
+              </div>
+            </article>
+          ))
+        )}
+      </section>
 
       <section aria-labelledby="assignments-title" className="ta-stack" style={{ gap: 'var(--space-3)' }}>
         <h2 id="assignments-title" style={{ fontSize: 18 }}>{t['teacherClass.assignmentsTitle']}</h2>
