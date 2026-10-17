@@ -529,3 +529,35 @@ describe('adapter -- contracts 1.1 / 1.2 / 1.3 row shapes', () => {
     expect(r.unresolved.find((u) => u.evidenceId === 'd1')?.reason).toBe('UNSUPPORTED_ACTIVITY_TYPE');
   });
 });
+
+describe('Candidate #12 follow-up B -- FAR is reachable for a NEW learner (PROVE at level 3, no legacy level-4 rows)', () => {
+  // post-D78/D79 evidence shape: Practice base 2 -> 3 through correct +1 exposure, a 10xL3 PROVE (difficulty 3), RETAIN at 3
+  const exp = (baseLevel: number, plusOneItems: number, plusOneCorrect: number) => ({ baseLevel, plusOneItems, plusOneLevel: plusOneItems > 0 ? baseLevel + 1 : null, plusOneCorrect, mixFallback: false });
+  const pr = (ts: string, base: number, plus: number, plusCorrect: number) =>
+    item({ activityType: 'PRACTICE', timestamp: ts, itemCount: 3, correctCount: 3, scorePercent: 100, difficulty: base, practiceExposure: exp(base, plus, plusCorrect) } as Partial<RawEvidenceItem>);
+  const NEW_PRACTICE = [LEARNED, pr(T(2, 0), 2, 0, 0), pr(T(2, 1), 2, 1, 1), pr(T(2, 2), 3, 0, 0)];
+  const NEW_PROVE = item({ activityType: 'PROVE', timestamp: PROVE_AT, itemCount: 10, correctCount: 9, scorePercent: 90, difficulty: 3, independent: true });
+  const NEW_RETAIN = item({ activityType: 'RETENTION_CHECK', timestamp: RETAIN_AT, itemCount: 5, correctCount: 5, scorePercent: 100, difficulty: 3, independent: true, novel: true });
+  const NEW_RETAINED = [...NEW_PRACTICE, NEW_PROVE, NEW_RETAIN];
+
+  it('after a level-3 PROVE and a level-3 RETAIN the concept is in TRANSFER and APPLY is executable', () => {
+    const d = decide(NEW_RETAINED, plusMs(RETAIN_AT, 60_000));
+    expect(d.stage).toBe('TRANSFER');
+    expect(d.actionState).toBe('EXECUTABLE');
+    // the "advanced TRANSFER" branch is only the activity contract's difficulty label (5 vs 4); the ladder does not read it
+    expect(d.activityContract?.difficulty.reasonCode).toBe('TRANSFER_BASE_DIFFICULTY');
+  });
+  it('NEAR -> MID -> FAR -> CONSOLIDATED HIGH; NEAR -> MID -> CONSOLIDATED MEDIUM (no PROVE-level-4 requirement)', () => {
+    const far = decide([...NEW_RETAINED, ladder(APPLY_AT(0), [ch('NEAR', 90), ch('MID', 85), ch('FAR', 80)])], NOW);
+    expect(far.stage).toBe('CONSOLIDATED');
+    expect(far.transferLevelReached).toBe('FAR');
+    expect(far.consolidationLevel).toBe('HIGH');
+    const mid = decide([...NEW_RETAINED, ladder(APPLY_AT(0), [ch('NEAR', 90), ch('MID', 85), ch('FAR', 60)])], NOW);
+    expect(mid.stage).toBe('CONSOLIDATED');
+    expect(mid.consolidationLevel).toBe('MEDIUM');
+  });
+  it('a failed challenge retries the same level; never down', () => {
+    const d = decide([...NEW_RETAINED, ladder(APPLY_AT(0), [ch('NEAR', 90), ch('MID', 60), ch('MID', 85), ch('FAR', 50), ch('FAR', 90)])], NOW);
+    expect(d.consolidationLevel).toBe('HIGH');
+  });
+});
