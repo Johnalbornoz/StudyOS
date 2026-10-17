@@ -16,7 +16,7 @@
 export { CANONICAL_POLICY, POLICY_VERSION } from './policy';
 export type { CanonicalPolicy, DifficultyRange } from './policy';
 
-export { qualifyEvidence } from './evidence-qualification';
+export { qualifyEvidence, meetsTransferLevel, transferLevelRank } from './evidence-qualification';
 export type { EvidenceQualificationVerdict, QualificationContext } from './evidence-qualification';
 
 export { buildActivityContract } from './activity-contract';
@@ -55,7 +55,11 @@ export type {
   RollbackCase,
   RollbackDecision,
   SatisfactionBasis,
+  StageActivityType,
   TransferChallengeDepth,
+  TransferLadderChallenge,
+  TransferLevel,
+  ConsolidationLevel,
   TransferFailureDiagnostic,
   WaitingReason,
 } from './types';

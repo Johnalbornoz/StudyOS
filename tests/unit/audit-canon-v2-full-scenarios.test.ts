@@ -9,10 +9,11 @@
  * (happy path) and Scenario 3 (Prove failure -> retry), recorded here as
  * golden-path regression coverage. Test-only.
  *
- * 2026-10-17 pilot pass policy: PRACTICE needs the last 3 valid attempts
- * each >=80% (average >=80%), so the happy path carries 3 Practices; a
- * failed PROVE stays in PROVE with an immediate retry (no Practice
- * requalification cycle); RETAIN is a 5-item check.
+ * 2026-10-17 pilot pass policy as amended by the overnight 2026-10-16
+ * contracts: PRACTICE needs the average of the last 3 valid attempts >=80%
+ * AND the latest >=80%, so the happy path carries 3 Practices; a failed
+ * PROVE stays in PROVE with an immediate retry (no Practice requalification
+ * cycle); RETAIN is a 5-item check; APPLY is the NEAR/MID/FAR ladder.
  */
 import { describe, it, expect } from 'vitest';
 import { evaluateCanonicalLearningState, type RawEvidenceItem, type PedagogicalEngineInput } from '@/lib/pedagogical-engine';
@@ -47,12 +48,16 @@ function prove(ts: string, score: number) {
 function retain(ts: string, score: number) {
   return item({ activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 5, correctCount: Math.round((score / 100) * 5), scorePercent: score, difficulty: 3.5, independent: true, novel: true });
 }
-function transfer(ts: string, scores: number[]) {
+/** An APPLY ladder NEAR -> MID -> FAR with these scores (a challenge passes, certified, at >= 80). */
+function transfer(ts: string, scores: [number, number, number]) {
+  const levels = ['NEAR', 'MID', 'FAR'] as const;
+  const ladder = scores.map((scorePercent, i) => ({ level: levels[i], scorePercent, passed: scorePercent >= 80, certified: true, taskId: `t${i}`, contextDomain: null }));
+  const passed = ladder.filter((c) => c.passed).map((c) => c.level);
   const overall = scores.reduce((a, b) => a + b, 0) / scores.length;
-  return item({ activityType: 'TRANSFER', timestamp: ts, itemCount: 3, correctCount: scores.filter((s) => s >= 80).length, scorePercent: overall, difficulty: 4.5, independent: true, perChallengeScores: scores, reasoningProvided: true });
+  return item({ activityType: 'TRANSFER', timestamp: ts, itemCount: 3, correctCount: passed.length, scorePercent: overall, difficulty: 4.5, independent: true, transferLadder: ladder, transferHighestLevel: passed.length ? passed[passed.length - 1] : null });
 }
 
-describe('SCENARIO 1 -- HAPPY PATH: LEARN -> PRACTICE(x3) -> PROVE -> wait 3 days -> RETAIN -> TRANSFER -> CONSOLIDATED', () => {
+describe('SCENARIO 1 -- HAPPY PATH: LEARN -> PRACTICE(x3) -> PROVE -> wait 3 days -> RETAIN -> APPLY ladder to FAR -> CONSOLIDATED (HIGH)', () => {
   const evidence = [
     learnCheck('2026-01-01T00:00:00.000Z', 90),
     practice('2026-01-02T00:00:00.000Z', 90),
@@ -94,6 +99,7 @@ describe('SCENARIO 1 -- HAPPY PATH: LEARN -> PRACTICE(x3) -> PROVE -> wait 3 day
     expect(d.stage).toBe('CONSOLIDATED');
     expect(d.actionState).toBe('CONSOLIDATED');
     expect(d.journeyProgressPercent).toBe(100);
+    expect(d.consolidationLevel).toBe('HIGH');
   });
 
   it('every requirement in the final decision carries satisfactionBasis V1_EVIDENCE (no fabrication anywhere in the happy path)', () => {

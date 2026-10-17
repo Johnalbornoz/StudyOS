@@ -35,6 +35,8 @@ export interface ConceptJourney {
   reasonCode: string;
   /** UX-4: verbatim `LearnerJourneyResult.engineHasEvidence` (canonical path only). */
   engineHasEvidence?: boolean;
+  /** 2026-10-16 contract 1.2: verbatim `LearnerJourneyResult.consolidationLevel` (canonical path only). */
+  consolidationLevel?: 'MEDIUM' | 'HIGH' | null;
 }
 
 /** Adapts one LX-1B `LearnerJourneyResult` into My Path's flat rendering line. */
@@ -48,6 +50,7 @@ export function conceptJourneyFromResult(result: LearnerJourneyResult): ConceptJ
       intervention: result.intervention,
       reasonCode: result.reason,
       ...(result.engineHasEvidence !== undefined ? { engineHasEvidence: result.engineHasEvidence } : {}),
+      ...(result.consolidationLevel !== undefined ? { consolidationLevel: result.consolidationLevel } : {}),
     };
   }
   const idx = currentRungIndex(result.stage);

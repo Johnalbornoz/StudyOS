@@ -1,5 +1,14 @@
 /**
- * CANON-V2-ARCH-CLEANUP Section 10/11 -- THE ONE canonical Transfer
+ * RETIRED AS A GATE (2026-10-16 overnight contract 1.2): APPLY is now the
+ * adaptive NEAR/MID/FAR ladder (3-5 challenges, each passing at >= 80,
+ * consolidating at MID). The canonical engine treats every 3-challenge
+ * NEAR/CONTEXTUAL/HIGHER row this module grades as UNRESOLVED -- the 70%
+ * per-challenge floor and the 80% mean below never qualify, fail, or roll
+ * back a concept any more. This module stays only so the legacy
+ * `canonical_transfer` flow can still grade and display its own attempts
+ * (and History stays readable); it is not a pedagogical authority.
+ *
+ * CANON-V2-ARCH-CLEANUP Section 10/11 -- (formerly) THE ONE canonical Transfer
  * grading/diagnosis authority.
  *
  * Section 10 (grading): nearScore/contextualScore/higherScore are

@@ -248,13 +248,14 @@ describe('CANON-R4R1A Part 24 -- required test matrix (1-27)', () => {
     expect(src).toMatch(/guard\.environment !== 'preview'/);
   });
 
-  it('19. the engine policy (CANONICAL_POLICY) is the governed 2026-10-17 pilot pass policy -- this population-only fix never changes it', () => {
-    expect(CANONICAL_POLICY.learn.minimumScorePercent).toBe(80);
-    expect(CANONICAL_POLICY.learn.itemCount).toBe(5);
+  it('19. the engine policy (CANONICAL_POLICY) is the governed overnight 2026-10-16 pilot policy -- this population-only fix never changes it', () => {
+    expect(CANONICAL_POLICY.learn.minInteractions).toBe(4);
+    expect(CANONICAL_POLICY.learn.maxInteractions).toBe(7);
     expect(CANONICAL_POLICY.practice.minimumScorePercent).toBe(80);
     expect(CANONICAL_POLICY.prove.itemCount).toBe(10);
     expect(CANONICAL_POLICY.retention.itemCount).toBe(5);
-    expect(CANONICAL_POLICY.transfer.challengeCount).toBe(3);
+    expect(CANONICAL_POLICY.transfer.minChallenges).toBe(3);
+    expect(CANONICAL_POLICY.transfer.maxChallenges).toBe(5);
   });
 
   it('20. R4R1\'s recognizedRequirements engine semantics are unchanged -- LEARN-only recognition still does not satisfy Practice', () => {

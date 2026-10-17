@@ -44,13 +44,15 @@ export function buildActivityContract(
     case 'LEARN':
       return {
         activityType: 'LEARN_CHECK',
-        // Fixed comprehension check: 5 questions (operator decision 2026-10-17; previously ungoverned).
-        itemCount: { min: CANONICAL_POLICY.learn.itemCount, max: CANONICAL_POLICY.learn.itemCount },
+        // Contract 1.1: a guided session of 4-7 interactions (the AI closes between 4 and 7; the cap is 7). There is
+        // no score gate, so `minimumScorePercent` is null. A launcher that needs ONE count (resolveAuthorizedItemCount)
+        // gets `max` = 7, the session cap.
+        itemCount: { min: CANONICAL_POLICY.learn.minInteractions, max: CANONICAL_POLICY.learn.maxInteractions },
         difficulty: difficultyDecision,
         independence: false,
         supportLevel: 'ASSISTED',
-        minimumScorePercent: CANONICAL_POLICY.learn.minimumScorePercent,
-        evidenceContract: 'LEARN_COMPREHENSION_CHECK_5_SCORE_AT_LEAST_80',
+        minimumScorePercent: null,
+        evidenceContract: 'LEARN_GUIDED_UNDERSTANDING_4_TO_7_NO_SCORE_GATE',
       };
     case 'PRACTICE': {
       const p = CANONICAL_POLICY.practice;
@@ -93,13 +95,14 @@ export function buildActivityContract(
       const p = CANONICAL_POLICY.transfer;
       return {
         activityType: 'TRANSFER',
-        itemCount: { min: p.challengeCount, max: p.challengeCount },
+        // Contract 1.2: an adaptive ladder of 3-5 challenges over NEAR/MID/FAR; each challenge passes at >= 80.
+        itemCount: { min: p.minChallenges, max: p.maxChallenges },
         difficulty: difficultyDecision,
         independence: true,
         supportLevel: 'NONE',
-        minimumScorePercent: p.minimumOverallScorePercent,
-        evidenceContract: 'TRANSFER_NO_COMPLETE_CHALLENGE_FAILURE_EACH_CHALLENGE_MIN_70',
-        transferDepth: [...p.depths],
+        minimumScorePercent: p.perChallengePassPercent,
+        evidenceContract: 'TRANSFER_ADAPTIVE_LADDER_3_TO_5_PER_CHALLENGE_80',
+        transferDepth: [...p.levels],
       };
     }
     case 'CONSOLIDATED':

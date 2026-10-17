@@ -137,10 +137,12 @@ describe('CANON-R3 Part 38 -- Evidence Adapter tests (1-17)', () => {
     expect('activeCriticalMisconception' in result).toBe(false);
   });
 
-  it('17. an unsupported activity type becomes an explicit unresolved mapping, never a guess', () => {
-    const result = mapStudyUSEvidenceToPedagogicalEvidence([row({ activityType: 'CUMULATIVE_ASSESSMENT' })]);
+  it('17. an unsupported activity type becomes an explicit unresolved mapping, never a guess (DIAGNOSTIC_CHECK; CUMULATIVE_ASSESSMENT is INTERNAL_ASSESSMENT since 2026-10-16)', () => {
+    const result = mapStudyUSEvidenceToPedagogicalEvidence([row({ activityType: 'DIAGNOSTIC_CHECK' })]);
     expect(result.items).toHaveLength(0);
     expect(result.unresolved.some((u) => u.reason === 'UNSUPPORTED_ACTIVITY_TYPE')).toBe(true);
+    const assessment = mapStudyUSEvidenceToPedagogicalEvidence([row({ activityType: 'CUMULATIVE_ASSESSMENT' })]);
+    expect(assessment.items.map((i) => i.activityType)).toEqual(['INTERNAL_ASSESSMENT']);
   });
 });
 
@@ -309,23 +311,26 @@ describe('CANON-R3 Part 41 -- Safety tests (28-36)', () => {
 });
 
 describe('CANON-R3 Part 42 -- Engine Frozen verification (37-44)', () => {
-  it('37. the policy version string is the governed 2026-10-17 pilot pass policy (bumped from studyus-canonical-v1 by explicit operator decision)', () => {
-    expect(ENGINE_POLICY_VERSION).toBe('studyus-canonical-v2-pilot-2026-10-17');
-    expect(ENGINE_POLICY.version).toBe('studyus-canonical-v2-pilot-2026-10-17');
+  it('37. the policy version string is the governed overnight 2026-10-16 pilot policy (bumped from studyus-canonical-v2-pilot-2026-10-17 by the overnight contracts)', () => {
+    expect(ENGINE_POLICY_VERSION).toBe('studyus-canonical-v3-pilot-2026-10-16');
+    expect(ENGINE_POLICY.version).toBe('studyus-canonical-v3-pilot-2026-10-16');
   });
 
-  it('38. LEARN >=80 (inclusive) on an exactly-5-item check (2026-10-17 pilot policy; was >80 exclusive)', () => {
-    expect(ENGINE_POLICY.learn.minimumScorePercent).toBe(80);
-    expect(ENGINE_POLICY.learn.itemCount).toBe(5);
+  it('38. LEARN is a guided 4-7 interaction session with no score gate (overnight 2026-10-16 contract 1.1; was >=80 on an exactly-5-item check)', () => {
+    expect(ENGINE_POLICY.learn.minInteractions).toBe(4);
+    expect(ENGINE_POLICY.learn.maxInteractions).toBe(7);
+    expect('minimumScorePercent' in ENGINE_POLICY.learn).toBe(false);
+    expect('itemCount' in ENGINE_POLICY.learn).toBe(false);
     expect('minimumScorePercentExclusive' in ENGINE_POLICY.learn).toBe(false);
   });
 
-  it('39. Practice >=80, difficulty [2,4]; 2026-10-17 window: last 3 valid attempts, all 3 passing, average >=80', () => {
+  it('39. Practice >=80, difficulty [2,4]; overnight 2026-10-16 window: average of the last 3 valid attempts >=80 AND the latest >=80', () => {
     expect(ENGINE_POLICY.practice.minimumScorePercent).toBe(80);
     expect(ENGINE_POLICY.practice.difficulty).toEqual({ min: 2, max: 4 });
     expect(ENGINE_POLICY.practice.windowSize).toBe(3);
-    expect(ENGINE_POLICY.practice.requiredPassesInWindow).toBe(3);
+    expect(ENGINE_POLICY.practice.latestMustPass).toBe(true);
     expect(ENGINE_POLICY.practice.minimumWindowAveragePercent).toBe(80);
+    expect('requiredPassesInWindow' in ENGINE_POLICY.practice).toBe(false);
   });
 
   it('40. Prove exactly 10 items, >=80%, difficulty [3,4] is unchanged; a failure stays in PROVE (2026-10-17)', () => {
@@ -342,10 +347,14 @@ describe('CANON-R3 Part 42 -- Engine Frozen verification (37-44)', () => {
     expect(ENGINE_POLICY.retention.difficulty).toEqual({ min: 3, max: 4 });
   });
 
-  it('42. Transfer exactly 3 challenges, overall >=80%, per-challenge >=70%, difficulty [4,5] is unchanged', () => {
-    expect(ENGINE_POLICY.transfer.challengeCount).toBe(3);
-    expect(ENGINE_POLICY.transfer.minimumOverallScorePercent).toBe(80);
-    expect(ENGINE_POLICY.transfer.perChallengeMinimumScorePercent).toBe(70);
+  it('42. Transfer is the APPLY ladder (overnight 2026-10-16 contract 1.2): 3-5 challenges NEAR/MID/FAR, each passing at >=80, consolidating at MID; no 70% floor, no overall mean; difficulty [4,5] is unchanged', () => {
+    expect(ENGINE_POLICY.transfer.minChallenges).toBe(3);
+    expect(ENGINE_POLICY.transfer.maxChallenges).toBe(5);
+    expect(ENGINE_POLICY.transfer.perChallengePassPercent).toBe(80);
+    expect(ENGINE_POLICY.transfer.levels).toEqual(['NEAR', 'MID', 'FAR']);
+    expect(ENGINE_POLICY.transfer.consolidatedMinimumLevel).toBe('MID');
+    expect('perChallengeMinimumScorePercent' in ENGINE_POLICY.transfer).toBe(false);
+    expect('minimumOverallScorePercent' in ENGINE_POLICY.transfer).toBe(false);
     expect(ENGINE_POLICY.transfer.difficulty).toEqual({ min: 4, max: 5 });
   });
 

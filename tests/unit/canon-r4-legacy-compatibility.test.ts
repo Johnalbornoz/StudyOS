@@ -18,7 +18,7 @@ import {
   V1_POLICY_VERSION,
   LEGACY_UNVERSIONED,
 } from '@/lib/pedagogical-migration';
-import { evaluateCanonicalLearningState, CANONICAL_POLICY, type RawEvidenceItem } from '@/lib/pedagogical-engine';
+import { evaluateCanonicalLearningState, qualifyEvidence, CANONICAL_POLICY, type RawEvidenceItem } from '@/lib/pedagogical-engine';
 import type { ConceptKnowledgeState, MasteryPolicy } from '@/services/knowledge-state.service';
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8');
@@ -217,8 +217,10 @@ describe('CANON-R4 Part 48 -- Versioning tests (16-23)', () => {
     expect(decision.requirements.find((r) => r.stage === 'RETAIN')?.status).not.toBe('SATISFIED');
   });
 
-  it('22. v1 Transfer still requires the frozen engine\'s own 3-challenge structure regardless of migration', () => {
-    expect(CANONICAL_POLICY.transfer.challengeCount).toBe(3);
+  it('22. v1 Transfer requires the engine\'s own APPLY ladder structure (3-5 challenges, NEAR/MID/FAR) regardless of migration -- a legacy 3-challenge row never qualifies', () => {
+    expect(CANONICAL_POLICY.transfer).toMatchObject({ minChallenges: 3, maxChallenges: 5, levels: ['NEAR', 'MID', 'FAR'] });
+    const legacy: RawEvidenceItem = { id: 't', activityType: 'TRANSFER', timestamp: '2026-07-01T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 100, independent: true, difficulty: 4.5, hasCriticalMisconception: false, perChallengeScores: [100, 100, 100] };
+    expect(qualifyEvidence(legacy, { targetStage: 'TRANSFER', prerequisiteSatisfied: true })).toEqual({ result: 'UNRESOLVED', reasonCode: 'UNRESOLVED_POLICY' });
   });
 
   it('23. the cutover boundary deterministically separates legacy/new evidence -- identical inputs always classify the same', () => {

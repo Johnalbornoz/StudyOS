@@ -125,7 +125,8 @@ export function buildProgressExplanation(decision: DecisionInput, formatDate: (i
   let after: LocalizedLine | null;
   switch (stage) {
     case 'LEARN':
-      remaining = { key: 'progress.remaining.LEARN', params: { min: String(P.learn.minimumScorePercent) } };
+      // 2026-10-16 contract 1.1: a guided 4-7 interaction session, no score gate.
+      remaining = { key: 'progress.remaining.LEARN', params: { min: String(P.learn.minInteractions), max: String(P.learn.maxInteractions) } };
       after = { key: 'progress.after.LEARN', params: {} };
       break;
     case 'PRACTICE':
@@ -149,7 +150,8 @@ export function buildProgressExplanation(decision: DecisionInput, formatDate: (i
     case 'TRANSFER':
       remaining = {
         key: 'progress.remaining.TRANSFER',
-        params: { count: String(P.transfer.challengeCount), min: String(P.transfer.minimumOverallScorePercent), per: String(P.transfer.perChallengeMinimumScorePercent) },
+        // 2026-10-16 contract 1.2: an adaptive ladder of 3-5 challenges (near -> mid -> far), each passing at 80%.
+        params: { min: String(P.transfer.minChallenges), max: String(P.transfer.maxChallenges), per: String(P.transfer.perChallengePassPercent) },
       };
       after = { key: 'progress.after.TRANSFER', params: {} };
       break;

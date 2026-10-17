@@ -48,12 +48,15 @@ describe('the learner-facing journey is a deterministic projection of the canoni
 });
 
 describe('pilot pass policy constants (one policy object)', () => {
-  it('80% inclusive everywhere; Learn 5, Prove 10, Retain 5; practice 3 of 3 with average', () => {
-    expect(CANONICAL_POLICY.learn).toMatchObject({ minimumScorePercent: 80, itemCount: 5 });
-    expect(CANONICAL_POLICY.practice).toMatchObject({ minimumScorePercent: 80, windowSize: 3, requiredPassesInWindow: 3, minimumWindowAveragePercent: 80 });
+  it('80% inclusive everywhere; Learn guided 4-7 (no score gate), Prove 10, Retain 5; practice last-3 average + latest; Apply ladder 3-5 at 80 per challenge', () => {
+    expect(CANONICAL_POLICY.learn).toMatchObject({ minInteractions: 4, maxInteractions: 7 });
+    expect(CANONICAL_POLICY.learn).not.toHaveProperty('minimumScorePercent');
+    expect(CANONICAL_POLICY.practice).toMatchObject({ minimumScorePercent: 80, windowSize: 3, minimumWindowAveragePercent: 80, latestMustPass: true });
     expect(CANONICAL_POLICY.prove).toMatchObject({ itemCount: 10, minimumScorePercent: 80, independenceRequired: true, failureStaysInProve: true });
     expect(CANONICAL_POLICY.retention).toMatchObject({ itemCount: 5, minimumWaitDays: 3, minimumScorePercent: 80, independenceRequired: true });
-    expect(CANONICAL_POLICY.transfer).toMatchObject({ minimumOverallScorePercent: 80, perChallengeMinimumScorePercent: 70 });
+    expect(CANONICAL_POLICY.transfer).toMatchObject({ minChallenges: 3, maxChallenges: 5, perChallengePassPercent: 80, consolidatedMinimumLevel: 'MID' });
+    expect(CANONICAL_POLICY.transfer).not.toHaveProperty('perChallengeMinimumScorePercent');
+    expect(CANONICAL_POLICY.transfer).not.toHaveProperty('minimumOverallScorePercent');
   });
   it('the Knowledge State mastery policy v2 migration sets every dimension to 80 and keeps v1', () => {
     const m = src('database/migrations/20261127_1000_mastery_policy_v2_pilot_pass_80.sql');
