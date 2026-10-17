@@ -96,6 +96,8 @@ export interface LearnerJourneyResult {
    * own existing signal).
    */
   engineHasEvidence?: boolean;
+  /** 2026-10-16 contract 1.2: verbatim `decision.consolidationLevel` (canonical path only). */
+  consolidationLevel?: 'MEDIUM' | 'HIGH' | null;
 }
 
 const BLOCKED_OR_REPAIR: ReadonlySet<LearningState> = new Set<LearningState>([

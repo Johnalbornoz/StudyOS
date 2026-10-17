@@ -281,6 +281,8 @@ async function resolveJourneyResultAuthoritative(
         // UX-4: an existing engine fact, not a derivation -- any attempt the
         // engine replayed for this concept, qualifying or not.
         engineHasEvidence: decision.qualifiedEvidence.some((q) => q.qualifyingEvidenceIds.length + q.nonQualifyingEvidenceIds.length > 0),
+        // 2026-10-16 contract 1.2: the engine's own consolidation level (MEDIUM / HIGH), never derived here.
+        consolidationLevel: decision.consolidationLevel ?? null,
       };
     } catch (error) {
       if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;

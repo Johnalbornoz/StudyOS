@@ -9,6 +9,8 @@ import { loadMyPathContext, buildSubjectPathView, type ConceptPathView, type Sub
 import {
   KNOWLEDGE_STATES,
   countKnowledgeStates,
+  knowledgeConsolidationKey,
+  knowledgeConsolidationLevelOf,
   knowledgeMeaningKey,
   knowledgeMeaningOf,
   knowledgeStateKey,
@@ -105,6 +107,10 @@ export default async function KnowledgePage() {
         </summary>
         <div className="kn-detail">
           <p className="kn-detail-meaning">{t[knowledgeMeaningKey(knowledgeMeaningOf(c.concept.journey, workedOn(c.concept)))]}</p>
+          {(() => {
+            const level = knowledgeConsolidationLevelOf(c.concept.journey);
+            return level ? <p className="kn-detail-consolidation" data-level={level}>{t[knowledgeConsolidationKey(level)]}</p> : null;
+          })()}
           <StageTrack journey={c.concept.journey} t={t} variant="light" />
           <div className="kn-detail-actions">
             {c.isFocus && (

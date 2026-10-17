@@ -73,10 +73,11 @@ describe('verifyV1PracticeLaunchMarker -- trust model', () => {
     expect(marker).not.toBeNull();
     expect(marker?.canonicalActivityType).toBe('LEARN_CHECK');
     expect(marker?.canonicalStage).toBe('LEARN');
-    // 2026-10-17 pilot policy: the LEARN check is a governed, fixed
-    // 5-question check (previously ungoverned, itemCount null) -- the
-    // marker carries exactly that authority, never an invented count.
-    expect(marker?.itemCount).toEqual({ min: 5, max: 5, authorized: 5 });
+    // Overnight 2026-10-16 contract 1.1: LEARN is a guided session of
+    // 4-7 interactions -- the marker carries exactly that range, and the
+    // single authorized count is the session cap (7, the `max` that
+    // resolveAuthorizedItemCount always picks), never an invented count.
+    expect(marker?.itemCount).toEqual({ min: 4, max: 7, authorized: 7 });
     expect(marker?.assistanceAllowed).toBe(true);
   });
 

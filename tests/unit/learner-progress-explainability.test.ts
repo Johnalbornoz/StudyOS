@@ -3,11 +3,12 @@
  * Dónde estoy -> Qué llevo -> Qué falta -> Qué pasa después from the REAL
  * canonical engine decision (no second rule, no hardcoded numbers).
  *
- * Canonical PRACTICE rule (2026-10-17 pilot pass policy, superseding CANON-V2
- * "2 of the last 3"): the LAST 3 valid Practice attempts must EACH score
- * >= 80% AND their average must be >= 80%; fewer than 3 never satisfies.
- * Help during Practice does not disqualify an attempt. The LEARN check is a
- * fixed 5-item check passed at >= 80% (inclusive).
+ * Canonical PRACTICE rule (overnight 2026-10-16 contract section 0,
+ * superseding "each of the last 3 >= 80"): the AVERAGE of the LAST 3 valid
+ * Practice attempts must be >= 80% AND the LATEST must be >= 80%; fewer than
+ * 3 never satisfies. Help during Practice does not disqualify an attempt.
+ * LEARN (contract 1.1) is a guided 4-7 interaction session with no score
+ * gate; a legacy LEARN check quiz qualifies once completed with >= 4 items.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
@@ -15,7 +16,7 @@ import { join } from 'path';
 import { evaluateCanonicalLearningState } from '@/lib/pedagogical-engine';
 import { CANONICAL_POLICY } from '@/lib/pedagogical-engine/policy';
 import type { RawEvidenceItem } from '@/lib/pedagogical-engine/types';
-import { buildProgressExplanation, fillLine, isFutureStage, remainingPassesFor } from '@/lib/lx/progress-explanation';
+import { buildProgressExplanation, fillLine, isFutureStage, remainingPassesFor, remainingPracticesFor } from '@/lib/lx/progress-explanation';
 import { getMessages, LOCALES } from '@/lib/i18n/messages';
 
 const es = getMessages('es') as unknown as Record<string, string>;
@@ -25,7 +26,7 @@ const at = (min: number) => new Date(Date.UTC(2026, 8, 27, 4, min)).toISOString(
 
 function item(activityType: RawEvidenceItem['activityType'], scorePercent: number, over: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
   seq++;
-  // 2026-10-17 pilot policy: the LEARN check is exactly 5 items; Prove exactly 10.
+  // Legacy LEARN check quizzes of 5 items (qualify once completed, any score -- contract 1.1); Prove exactly 10.
   const itemCount = activityType === 'PROVE' ? 10 : activityType === 'LEARN_CHECK' ? 5 : 9;
   return {
     id: `ev-${seq}`, activityType, timestamp: at(seq), itemCount, correctCount: Math.round((scorePercent / 100) * itemCount),
@@ -52,15 +53,15 @@ describe('Student E2E equivalent (Regla de tres simple directa, DEV)', () => {
     expect(isFutureStage(x, 'TRANSFER')).toBe(true);
   });
 
-  it('1 of 3 required passed practices (78% ✗, 100% ✓) -- the LEARN checks never count as practices; no rolling average until 3 practices', () => {
-    expect(x.practice).toMatchObject({ passes: 1, required: 3, windowSize: 3, minimumScorePercent: 80, remainingPasses: 2, satisfied: false, averagePercent: null, minimumAveragePercent: 80 });
+  it('2 of the 3 practices the window needs (78% ✗, 100% ✓) -- the LEARN checks never count as practices; no rolling average until 3 practices', () => {
+    expect(x.practice).toMatchObject({ passes: 2, required: 3, windowSize: 3, minimumScorePercent: 80, remainingPasses: 1, satisfied: false, averagePercent: null, minimumAveragePercent: 80 });
     expect(x.practice!.attempts).toEqual([{ scorePercent: 78, passed: false }, { scorePercent: 100, passed: true }]);
-    expect(x.steps[1].counter).toEqual({ done: 1, required: 3 });
+    expect(x.steps[1].counter).toEqual({ done: 2, required: 3 });
   });
 
-  it('reads as: faltan 2 prácticas aprobadas (two more passes roll the 78 out of the last-3 window); al completarlas StudyUs vuelve a evaluar Demostrar', () => {
-    expect(fillLine(es, x.remaining)).toBe('Te faltan 2 prácticas aprobadas (≥80%).');
-    expect(fillLine(es, x.after!)).toBe('Al completarlas, StudyUs volverá a evaluar si estás listo para Demostrar.');
+  it('reads as: falta 1 práctica (one more passing practice gives 78, 100, 100 -> average 92.7 and latest >= 80); al completarla StudyUs vuelve a evaluar Demostrar', () => {
+    expect(fillLine(es, x.remaining)).toBe('Te falta 1 práctica (media ≥80% y la última ≥80%).');
+    expect(fillLine(es, x.after!)).toBe('Al completarla, StudyUs volverá a evaluar si estás listo para Demostrar.');
   });
 });
 
@@ -69,18 +70,18 @@ describe('practice window cases', () => {
     const x = explain(learned());
     expect(x.stage).toBe('PRACTICE');
     expect(x.practice).toMatchObject({ passes: 0, remainingPasses: 3, attempts: [] });
-    expect(fillLine(es, x.remaining)).toBe('Te faltan 3 prácticas aprobadas (≥80%).');
+    expect(fillLine(es, x.remaining)).toBe('Te faltan 3 prácticas (media ≥80% y la última ≥80%).');
   });
 
   it('1 passed practice: 1 of 3, 2 missing', () => {
     expect(explain([...learned(), item('PRACTICE', 100)]).practice).toMatchObject({ passes: 1, remainingPasses: 2 });
   });
 
-  it('2 passed practices: NOT yet enough (2026-10-17: 2 of 2 no longer satisfies) -- 1 missing', () => {
+  it('2 passed practices: NOT yet enough (the window needs 3 completed practices) -- 1 missing', () => {
     const x = explain([...learned(), item('PRACTICE', 90), item('PRACTICE', 85)]);
     expect(x.stage).toBe('PRACTICE');
     expect(x.practice).toMatchObject({ passes: 2, remainingPasses: 1, averagePercent: null });
-    expect(fillLine(es, x.remaining)).toBe('Te falta 1 práctica aprobada (≥80%).');
+    expect(fillLine(es, x.remaining)).toBe('Te falta 1 práctica (media ≥80% y la última ≥80%).');
   });
 
   it('3 passed practices (each >= 80, average >= 80): requirement met -> PRACTICE -> PROVE transition', () => {
@@ -92,16 +93,18 @@ describe('practice window cases', () => {
     expect(fillLine(es, x.after!)).toBe('Si lo superas, pasarás a Retener.');
   });
 
-  it('3 attempts with a sufficient AVERAGE but only 1 pass is NOT enough (every attempt in the window must pass; the average alone never satisfies)', () => {
+  it('3 attempts with a sufficient AVERAGE but a failing LATEST is NOT enough (the average alone never satisfies)', () => {
     const x = explain([...learned(), item('PRACTICE', 100), item('PRACTICE', 75), item('PRACTICE', 70)]);
-    // average 81.7% >= 80 -- still PRACTICE
+    // average 81.7% >= 80 but the latest 70 < 80 -- still PRACTICE
     expect(x.stage).toBe('PRACTICE');
-    expect(x.practice).toMatchObject({ passes: 1, remainingPasses: 3, averagePercent: 81.7 }); // [✓✗✗] needs 3 fresh passes
+    // one more passing practice slides the window to [75, 70, 100]: average 81.7 and latest 100 -> 1 missing
+    expect(x.practice).toMatchObject({ passes: 3, remainingPasses: 1, averagePercent: 81.7, satisfied: false });
   });
 
-  it('3 attempts with 2 passes is NOT enough any more (2026-10-17); 3 of 3 passes meets the threshold', () => {
-    expect(explain([...learned(), item('PRACTICE', 70), item('PRACTICE', 90), item('PRACTICE', 85)]).stage).toBe('PRACTICE');
-    expect(explain([...learned(), item('PRACTICE', 80), item('PRACTICE', 90), item('PRACTICE', 85)]).stage).toBe('PROVE');
+  it('the two older practices need not pass individually: [70, 90, 85] (average 81.7, latest 85) meets the rule; [70, 90, 75] (latest fails) and [60, 90, 85] (average 78.3) do not', () => {
+    expect(explain([...learned(), item('PRACTICE', 70), item('PRACTICE', 90), item('PRACTICE', 85)]).stage).toBe('PROVE');
+    expect(explain([...learned(), item('PRACTICE', 70), item('PRACTICE', 90), item('PRACTICE', 75)]).stage).toBe('PRACTICE');
+    expect(explain([...learned(), item('PRACTICE', 60), item('PRACTICE', 90), item('PRACTICE', 85)]).stage).toBe('PRACTICE');
   });
 
   it('help used during practice still counts (Practice is assisted)', () => {
@@ -123,9 +126,10 @@ describe('practice window cases', () => {
     const x = explain([]);
     expect(x.stage).toBe('LEARN');
     expect(x.practice).toBeNull();
-    // The line carries the engine's own (inclusive) Learn bar. (Copy wording is owned by messages.ts.)
-    expect(x.remaining).toEqual({ key: 'progress.remaining.LEARN', params: { min: String(CANONICAL_POLICY.learn.minimumScorePercent) } });
-    expect(fillLine(es, x.remaining)).toContain(`${CANONICAL_POLICY.learn.minimumScorePercent}%`);
+    // The line carries the engine's own guided-LEARN range (4-7 interactions, no score gate). (Copy wording is owned by messages.ts.)
+    expect(x.remaining).toEqual({ key: 'progress.remaining.LEARN', params: { min: String(CANONICAL_POLICY.learn.minInteractions), max: String(CANONICAL_POLICY.learn.maxInteractions) } });
+    expect(fillLine(es, x.remaining)).toContain(`entre ${CANONICAL_POLICY.learn.minInteractions} y ${CANONICAL_POLICY.learn.maxInteractions}`);
+    expect(fillLine(es, x.remaining)).not.toContain('%');
   });
 
   it('remainingPassesFor follows the sliding window', () => {
@@ -133,13 +137,16 @@ describe('practice window cases', () => {
     expect(remainingPassesFor([false, true], 3, 2)).toBe(1);
     expect(remainingPassesFor([true, false, false], 3, 2)).toBe(2);
     expect(remainingPassesFor([false, false, true], 3, 2)).toBe(1);
-    // with the governed 2026-10-17 parameters (3 of the last 3)
-    const { windowSize, requiredPassesInWindow } = CANONICAL_POLICY.practice;
-    expect(remainingPassesFor([], windowSize, requiredPassesInWindow)).toBe(3);
-    expect(remainingPassesFor([true, true], windowSize, requiredPassesInWindow)).toBe(1);
-    expect(remainingPassesFor([true, false, true], windowSize, requiredPassesInWindow)).toBe(2);
-    expect(remainingPassesFor([true, false, false], windowSize, requiredPassesInWindow)).toBe(3);
-    expect(remainingPassesFor([false, true, true], windowSize, requiredPassesInWindow)).toBe(1);
+  });
+
+  it('remainingPracticesFor follows the governed rolling rule (last 3: average >= 80 AND latest >= 80)', () => {
+    const { windowSize, minimumWindowAveragePercent } = CANONICAL_POLICY.practice;
+    expect(remainingPracticesFor([], windowSize, minimumWindowAveragePercent)).toBe(3);
+    expect(remainingPracticesFor([90, 85], windowSize, minimumWindowAveragePercent)).toBe(1);
+    expect(remainingPracticesFor([75, 82, 88], windowSize, minimumWindowAveragePercent)).toBe(0);
+    expect(remainingPracticesFor([100, 100, 50], windowSize, minimumWindowAveragePercent)).toBe(1); // [100, 50, 100] -> 83.3
+    expect(remainingPracticesFor([10, 10, 10], windowSize, minimumWindowAveragePercent)).toBe(3); // +2 -> [10, 100, 100] = 70 (not enough); +3 -> [100, 100, 100]
+    expect(remainingPracticesFor([40, 40, 100], windowSize, minimumWindowAveragePercent)).toBe(1); // [40, 100, 100] -> 80.0 inclusive
   });
 });
 
@@ -155,14 +162,16 @@ describe('the explanation mirrors the engine (never a second rule)', () => {
           const window = [scores[a], scores[b], scores[c]];
           expect(d.practiceProgress!.passesInWindow).toBe(window.filter((s) => s >= 80).length);
           expect(d.practiceProgress!.windowAveragePercent).toBe(Math.round((window.reduce((x, y) => x + y, 0) / 3) * 10) / 10);
-          // the governed rule, stated independently: all 3 pass AND average >= 80
-          expect(req.status === 'SATISFIED').toBe(window.every((s) => s >= 80) && window.reduce((x, y) => x + y, 0) / 3 >= 80);
+          // the governed rule, stated independently: average of the 3 >= 80 AND the latest >= 80
+          expect(req.status === 'SATISFIED').toBe(window[2] >= 80 && window.reduce((x, y) => x + y, 0) / 3 >= 80);
         }
   });
 
-  it('the policy values are the governed 2026-10-17 pilot values (3 of the last 3, average >= 80)', () => {
+  it('the policy values are the governed overnight 2026-10-16 values (last 3, average >= 80, latest must pass)', () => {
     expect(CANONICAL_POLICY.practice.minimumScorePercent).toBe(80);
-    expect(decide([]).practiceProgress).toMatchObject({ windowSize: 3, requiredPasses: 3, minimumWindowAveragePercent: 80, windowAveragePercent: null });
+    expect(CANONICAL_POLICY.practice.latestMustPass).toBe(true);
+    // requiredPasses 1 = only the LATEST practice must pass individually
+    expect(decide([]).practiceProgress).toMatchObject({ windowSize: 3, requiredPasses: 1, minimumWindowAveragePercent: 80, windowAveragePercent: null });
   });
 
   it('RETAIN waiting shows the concrete date', () => {

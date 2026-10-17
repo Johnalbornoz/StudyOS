@@ -38,10 +38,12 @@ describe('POST_PRACTICE_NEXT_STEP -- the real E2E session', () => {
   const d = decide(E2E());
   const launch = resolveCanonicalLaunch({ subjectId: SUBJECT, conceptId: CONCEPT, decision: d });
 
-  it('a 100% practice does NOT imply PROVE: 1 of 3 required passes (2026-10-17 pilot policy: last 3 each >= 80) -> still PRACTICE, executable', () => {
+  it('a 100% practice does NOT imply PROVE: only 2 of the 3 practices the window needs (overnight 2026-10-16 policy: average of the last 3 >= 80 AND latest >= 80) -> still PRACTICE, executable', () => {
     expect(d.stage).toBe('PRACTICE');
     expect(d.actionState).toBe('EXECUTABLE');
-    expect(d.practiceProgress).toMatchObject({ passesInWindow: 1, requiredPasses: 3, windowAveragePercent: null });
+    // requiredPasses 1 = the LATEST practice must pass; no rolling average until 3 practices exist
+    expect(d.practiceProgress).toMatchObject({ passesInWindow: 1, requiredPasses: 1, windowSize: 3, windowAveragePercent: null, satisfied: false });
+    expect(d.practiceProgress!.recentValidAttempts.map((a) => a.scorePercent)).toEqual([78, 100]);
   });
 
   it('the continuation LAUNCHes the same stage Results announces (PRACTICE), at the contract difficulty 3', () => {
@@ -79,10 +81,10 @@ describe('PRACTICE_SESSION_RESTART -- continuing always starts a fresh session w
     expect(pushed).toContain(`${RELAUNCH_NONCE_PARAM}=n2`);
   });
 
-  it('PRACTICE -> PROVE (the last 3 practices all pass) is also a fresh instance on the same page', () => {
-    // [78, 100, 90] is not yet a passing window; [100, 90, 92] is.
-    expect(decide([...E2E(), item('PRACTICE', 90, 3)]).stage).toBe('PRACTICE');
-    const d2 = decide([...E2E(), item('PRACTICE', 90, 3), item('PRACTICE', 92, 3)]);
+  it('PRACTICE -> PROVE (average of the last 3 >= 80 and latest >= 80) is also a fresh instance on the same page', () => {
+    // [78, 100, 70] is not yet a passing window (average 82.7 but the latest 70 fails); [100, 70, 92] is (87.3, latest 92).
+    expect(decide([...E2E(), item('PRACTICE', 70, 3)]).stage).toBe('PRACTICE');
+    const d2 = decide([...E2E(), item('PRACTICE', 70, 3), item('PRACTICE', 92, 3)]);
     expect(d2.stage).toBe('PROVE');
     const l2 = resolveCanonicalLaunch({ subjectId: SUBJECT, conceptId: CONCEPT, decision: d2 });
     expect(l2).toMatchObject({ launchStatus: 'READY', activityType: 'PROVE' });

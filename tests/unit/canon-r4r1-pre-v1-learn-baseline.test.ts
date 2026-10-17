@@ -462,7 +462,7 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
     expect(decision.nextCanonicalAction).toBe('LEARN');
   });
 
-  it('26. Learn 80% (4/5) PASSES (2026-10-17 pilot policy: inclusive bar); 79% still FAILS', () => {
+  it('26. a completed legacy Learn check PASSES whatever its score (overnight 2026-10-16 contract 1.1: no score gate) -- 80% and 79% both qualify; a check of < 4 items stays UNRESOLVED', () => {
     const decision = evaluateCanonicalLearningState({
       conceptId: 'c1',
       studentId: 's1',
@@ -478,7 +478,17 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
       evidence: [item({ activityType: 'LEARN_CHECK', timestamp: '2026-09-10T00:00:00.000Z', itemCount: 5, correctCount: 4, scorePercent: 79, difficulty: 1.5 })],
       activeCriticalMisconception: false,
     });
-    expect(below.requirements.find((r) => r.stage === 'LEARN')?.status).toBe('UNSATISFIED');
+    expect(below.requirements.find((r) => r.stage === 'LEARN')?.status).toBe('SATISFIED');
+    expect(below.requirements.find((r) => r.stage === 'LEARN')?.reasonCodes).toEqual(['LEARN_COMPLETED']);
+    const tooShort = evaluateCanonicalLearningState({
+      conceptId: 'c1',
+      studentId: 's1',
+      now: NOW,
+      evidence: [item({ activityType: 'LEARN_CHECK', timestamp: '2026-09-10T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 100, difficulty: 1.5 })],
+      activeCriticalMisconception: false,
+    });
+    expect(tooShort.requirements.find((r) => r.stage === 'LEARN')?.status).toBe('UNSATISFIED');
+    expect(tooShort.requirements.find((r) => r.stage === 'LEARN')?.reasonCodes).toEqual(['UNRESOLVED_POLICY']);
   });
 
   it('27. Learn 81% PASSES', () => {
@@ -493,17 +503,18 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
     expect(decision.requirements.find((r) => r.stage === 'LEARN')?.satisfactionBasis).toBe('V1_EVIDENCE');
   });
 
-  it('28. the governed thresholds (CANON-R2R1 as amended by the 2026-10-17 pilot pass policy)', () => {
-    expect(CANONICAL_POLICY.learn.minimumScorePercent).toBe(80);
-    expect(CANONICAL_POLICY.learn.itemCount).toBe(5);
+  it('28. the governed thresholds (CANON-R2R1 as amended by the 2026-10-17 pilot pass policy and the overnight 2026-10-16 contracts)', () => {
+    expect(CANONICAL_POLICY.learn.minInteractions).toBe(4);
+    expect(CANONICAL_POLICY.learn.maxInteractions).toBe(7);
     expect(CANONICAL_POLICY.practice.minimumScorePercent).toBe(80);
     expect(CANONICAL_POLICY.prove.itemCount).toBe(10);
     expect(CANONICAL_POLICY.prove.minimumScorePercent).toBe(80);
     expect(CANONICAL_POLICY.retention.itemCount).toBe(5);
     expect(CANONICAL_POLICY.retention.minimumWaitDays).toBe(3);
-    expect(CANONICAL_POLICY.transfer.challengeCount).toBe(3);
-    expect(CANONICAL_POLICY.transfer.minimumOverallScorePercent).toBe(80);
-    expect(CANONICAL_POLICY.transfer.perChallengeMinimumScorePercent).toBe(70);
+    expect(CANONICAL_POLICY.transfer.minChallenges).toBe(3);
+    expect(CANONICAL_POLICY.transfer.maxChallenges).toBe(5);
+    expect(CANONICAL_POLICY.transfer.perChallengePassPercent).toBe(80);
+    expect(CANONICAL_POLICY.transfer.consolidatedMinimumLevel).toBe('MID');
   });
 
   it('29. the Difficulty Policy is unchanged -- a zero-evidence LEARN decision still reports the same default reasonCode', () => {

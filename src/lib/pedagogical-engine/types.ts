@@ -10,6 +10,7 @@
  * value this module hands back (a decision, a contract) -- never a
  * React prop, a DB row, or a provider response shape.
  */
+import type { TransferLevel } from './policy';
 
 /** The five learner-visible progression rungs, plus the terminal state. Deliberately the SAME vocabulary as `LearnerJourneyStage` (src/lib/lx/learner-journey-contract.ts) -- this is not a second, competing taxonomy; it IS the taxonomy, moved to its canonical, isolated home. */
 export type PedagogicalStage = 'LEARN' | 'PRACTICE' | 'PROVE' | 'RETAIN' | 'TRANSFER' | 'CONSOLIDATED';
@@ -56,12 +57,46 @@ export type EvidenceQualificationReasonCode =
   | 'TEMPORALLY_INELIGIBLE'
   | 'MISSING_REQUIRED_REASONING'
   | 'NOT_APPLICABLE'
-  | 'UNRESOLVED_POLICY';
+  | 'UNRESOLVED_POLICY'
+  /** Contract 1.1: a guided LEARN session (4-7 interactions, closed by AI or CAP) or a completed legacy LEARN_CHECK quiz of >= 4 items. No score gate. */
+  | 'LEARN_COMPLETED'
+  /** Contract 1.2: an APPLY ladder whose highest passed and certified level is MID or FAR. */
+  | 'TRANSFER_LEVEL_REACHED'
+  /** Contract 1.2: an APPLY ladder that reached only NEAR (or nothing). Never a FAILED_ATTEMPT: no rollback, no prior stage lost. */
+  | 'TRANSFER_LEVEL_BELOW_CONSOLIDATION'
+  /** Contract 1.3: an internal assessment score below `strongContradictionBelow` (60). */
+  | 'INTERNAL_ASSESSMENT_STRONG_CONTRADICTION'
+  /** Contract 1.3: `consecutiveAlertsForRevalidation` (2) consecutive internal-assessment scores in [60, 80). */
+  | 'INTERNAL_ASSESSMENT_CONSECUTIVE_ALERTS';
 
 /** The declared purpose of one historical attempt -- distinct from the app's own `ActivityType` (src/lib/activity-taxonomy.ts), which this module never imports. A future integration adapter (documented, not built in this phase) maps app ActivityType -> this vocabulary. */
-export type PedagogicalActivityType = 'LEARN_CHECK' | 'PRACTICE' | 'PROVE' | 'RETENTION_CHECK' | 'TRANSFER' | 'REINFORCE';
+export type PedagogicalActivityType = 'LEARN_CHECK' | 'PRACTICE' | 'PROVE' | 'RETENTION_CHECK' | 'TRANSFER' | 'REINFORCE' | 'INTERNAL_ASSESSMENT';
 
+/**
+ * Contract 1.3: INTERNAL_ASSESSMENT (subject Test / Mock evidence) is a replayed EVIDENCE type only -- never the
+ * activity of a journey stage, never an `ActivityContract`, never launched by the engine. Every launchable activity
+ * is one of these.
+ */
+export type StageActivityType = Exclude<PedagogicalActivityType, 'INTERNAL_ASSESSMENT'>;
+
+/** LEGACY (pre-2026-10-16) 3-challenge Transfer depth vocabulary. Rows carrying it are UNRESOLVED under the ladder policy; it is never mapped onto NEAR/MID/FAR. */
 export type TransferChallengeDepth = 'NEAR' | 'CONTEXTUAL' | 'HIGHER';
+
+/** Contract 1.2: the APPLY ladder levels (ascending). Re-exported from the policy so there is one vocabulary. */
+export type { TransferLevel };
+
+/** Contract 1.2: one administered APPLY ladder challenge (opaque facts only -- never learner text). */
+export interface TransferLadderChallenge {
+  level: TransferLevel;
+  scorePercent: number;
+  passed: boolean;
+  certified: boolean;
+  taskId: string;
+  contextDomain: string | null;
+}
+
+/** Contract 1.2: the consolidation level a CONSOLIDATED concept reached (MID -> MEDIUM, FAR -> HIGH). */
+export type ConsolidationLevel = 'MEDIUM' | 'HIGH';
 
 /**
  * ONE raw, immutable ledger entry. The engine NEVER deletes, rewrites,
@@ -87,13 +122,31 @@ export interface RawEvidenceItem {
   hasCriticalMisconception: boolean;
   /** TRANSFER attempts only. */
   transferDepth?: TransferChallengeDepth;
-  /** TRANSFER attempts only -- exactly 3 scores (0-100), one per structured challenge, in the same order the challenges were administered. */
+  /** LEGACY TRANSFER attempts only -- exactly 3 scores (0-100), one per structured challenge. Under the 2026-10-16 ladder policy such rows are UNRESOLVED (never qualify, never roll back); kept so historical rows stay replayable. */
   perChallengeScores?: number[];
+  /**
+   * Contract 1.1 -- LEARN_CHECK rows from a guided LEARN session only (`metadata.learnSession`). Absent on legacy
+   * LEARN_CHECK quiz rows; their presence is what distinguishes a guided session from a legacy quiz.
+   */
+  learnInteractionCount?: number;
+  learnClosedBy?: 'AI' | 'CAP';
+  /** Short, learner-safe descriptions of detected confusions, carried to PRACTICE generation. */
+  learnWeaknesses?: string[];
+  /**
+   * Contract 1.2 -- TRANSFER rows from the adaptive ladder only (`metadata.transferLadder`). `transferLadder` present
+   * (even empty) marks a ladder row; absent means a legacy row. `transferHighestLevel` is the highest level with a
+   * passed AND certified challenge (`null` when none).
+   */
+  transferLadder?: TransferLadderChallenge[];
+  transferHighestLevel?: TransferLevel | null;
   /** Whether this attempt satisfied a response contract requiring shown reasoning (SHOW_WORK / EXPLAIN / JUSTIFY). Undefined when no such contract applied. */
   reasoningProvided?: boolean;
   /** RETENTION_CHECK attempts only: whether the item set was genuinely novel (never previously seen by this learner) -- required for a Retention attempt to even be eligible for qualification. */
   novel?: boolean;
   /**
+   * RETIRED (2026-10-16 contract 1.2): no longer consulted by the engine -- legacy 3-challenge rows are UNRESOLVED and
+   * an APPLY ladder below MID is never a failure, so Cases A/B/C cannot arise. Kept so historical rows stay typed.
+   *
    * CANON-V2-REMEDIATION Part 4 -- TRANSFER attempts only. The ONE
    * trusted, EXPLICIT diagnostic signal for a non-qualifying Transfer
    * attempt, never inferred by this engine from `perChallengeScores` or
@@ -228,10 +281,12 @@ export type RollbackCase =
   | 'TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS'
   | 'TRANSFER_CASE_B_RETENTION_WEAKNESS'
   | 'TRANSFER_CASE_C_FOUNDATIONAL_PROCEDURAL_FAILURE'
-  | 'TRANSFER_CASE_D_CRITICAL_MISCONCEPTION';
+  | 'TRANSFER_CASE_D_CRITICAL_MISCONCEPTION'
+  /** Contract 1.3: an internal assessment (subject Test / Mock) contradicted the concept -- back to PRACTICE with REINFORCE; LEARN kept. */
+  | 'INTERNAL_ASSESSMENT_REVALIDATION';
 
 export interface RollbackDecision {
-  triggeredBy: Exclude<PedagogicalStage, 'CONSOLIDATED' | 'LEARN'>;
+  triggeredBy: Exclude<PedagogicalStage, 'CONSOLIDATED' | 'LEARN'> | 'INTERNAL_ASSESSMENT';
   case: RollbackCase;
   rolledBackTo: Exclude<PedagogicalStage, 'CONSOLIDATED'>;
   reasonCodes: EvidenceQualificationReasonCode[];
@@ -267,7 +322,7 @@ export interface DifficultyDecision {
 }
 
 export interface ActivityContract {
-  activityType: PedagogicalActivityType;
+  activityType: StageActivityType;
   /** null for LEARN (no canonical item-count authority exists for the comprehension check -- never an invented number) and CONSOLIDATED (no activity). */
   itemCount: { min: number; max: number } | null;
   difficulty: DifficultyDecision;
@@ -277,7 +332,8 @@ export interface ActivityContract {
   minimumScorePercent: number | null;
   evidenceContract: string;
   noveltyRequirements?: 'NOVEL_ITEMS_REQUIRED';
-  transferDepth?: TransferChallengeDepth[];
+  /** TRANSFER only: the APPLY ladder levels (NEAR, MID, FAR). */
+  transferDepth?: TransferLevel[];
 }
 
 /**
@@ -399,4 +455,20 @@ export interface CanonicalPedagogicalDecision {
   proveAttemptsInCycle?: number;
   /** Explains the PRACTICE window (see `PracticeProgress`). Always set by the engine; optional only so decisions built elsewhere (fixtures, older snapshots) stay valid -- consumers must degrade when absent. */
   practiceProgress?: PracticeProgress;
+  /**
+   * Contract 1.1 -- the weaknesses of the LATEST qualifying guided LEARN session (`[]` when none), so PRACTICE
+   * generation can target them. Always set by the engine; optional for the same reason as `practiceProgress`.
+   */
+  learnWeaknesses?: string[];
+  /**
+   * Contract 1.2 -- the best APPLY ladder level reached in the current cycle (never lowered by a weaker later
+   * attempt; reset only by a rollback that invalidates TRANSFER). `null` when no ladder attempt counted.
+   */
+  transferLevelReached?: TransferLevel | null;
+  /** Contract 1.2 -- MEDIUM (MID) / HIGH (FAR) when stage is CONSOLIDATED from real ladder evidence; `null` otherwise (including a legacy-recognized TRANSFER, which carries no level). */
+  consolidationLevel?: ConsolidationLevel | null;
+  /** Contract 1.3 -- consecutive internal-assessment alerts (60-79) since the last reset. */
+  internalAssessmentAlertCount?: number;
+  /** Contract 1.3 -- true while an internal-assessment revalidation is in effect (PRACTICE not yet re-satisfied). */
+  revalidationRequired?: boolean;
 }

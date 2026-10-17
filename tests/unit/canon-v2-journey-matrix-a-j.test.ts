@@ -20,11 +20,15 @@
  * mock-based harness this phase's own canon-v2-retain-generation.test.ts
  * / canon-v2-transfer-generation.test.ts already established.
  *
- * 2026-10-17 pilot pass policy (POLICY_VERSION
- * 'studyus-canonical-v2-pilot-2026-10-17'): PRACTICE needs the last 3 valid
- * attempts each >=80% (average >=80%) -- fixtures carry 3 passing
- * Practices; a failed PROVE stays in PROVE with an immediate retry
- * (Scenario C rewritten); the Retention check is 5 items.
+ * 2026-10-17 pilot pass policy as amended by the overnight 2026-10-16
+ * contracts (POLICY_VERSION 'studyus-canonical-v3-pilot-2026-10-16'):
+ * PRACTICE needs the AVERAGE of the last 3 valid attempts >=80% AND the
+ * LATEST >=80% -- fixtures carry 3 passing Practices; a failed PROVE stays
+ * in PROVE with an immediate retry (Scenario C); the Retention check is 5
+ * items; APPLY (TRANSFER) is the NEAR/MID/FAR ladder -- reaching only NEAR
+ * stays in TRANSFER with no rollback (Scenario F), the old Transfer Cases
+ * B/C are retired (Scenarios G/H rewritten: legacy rows are UNRESOLVED and
+ * the only Transfer rollback left is Case D, a critical misconception).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
@@ -79,13 +83,23 @@ function prove(ts: string, score: number) {
 function retain(ts: string, score: number) {
   return item({ activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 5, correctCount: Math.round((score / 100) * 5), scorePercent: score, difficulty: 3.5, independent: true, novel: true });
 }
-function transfer(ts: string, scores: number[], opts: Partial<RawEvidenceItem> = {}) {
+/** An APPLY ladder: NEAR, MID, FAR challenges with these scores (each passes and is certified at >= 80). */
+function transfer(ts: string, scores: [number, number, number], opts: Partial<RawEvidenceItem> = {}) {
+  const levels = ['NEAR', 'MID', 'FAR'] as const;
+  const ladder = scores.map((scorePercent, i) => ({ level: levels[i], scorePercent, passed: scorePercent >= 80, certified: true, taskId: `task-${i}`, contextDomain: null }));
+  const passed = ladder.filter((c) => c.passed).map((c) => c.level);
+  const highest = passed.length ? passed[passed.length - 1] : null;
+  const overall = scores.reduce((a, b) => a + b, 0) / scores.length;
+  return item({ activityType: 'TRANSFER', timestamp: ts, itemCount: 3, correctCount: passed.length, scorePercent: overall, difficulty: 4.5, independent: true, transferLadder: ladder, transferHighestLevel: highest, ...opts });
+}
+/** A LEGACY (pre-2026-10-16) 3-challenge NEAR/CONTEXTUAL/HIGHER Transfer row. */
+function legacyTransfer(ts: string, scores: number[], opts: Partial<RawEvidenceItem> = {}) {
   const overall = scores.reduce((a, b) => a + b, 0) / scores.length;
   return item({ activityType: 'TRANSFER', timestamp: ts, itemCount: 3, correctCount: scores.filter((s) => s >= 80).length, scorePercent: overall, difficulty: 4.5, independent: true, perChallengeScores: scores, reasoningProvided: true, ...opts });
 }
 
 describe('SCENARIO A -- HAPPY PATH (see also audit-canon-v2-full-scenarios.test.ts Scenario 1)', () => {
-  it('LEARN pass -> Practice 85 -> Practice 90 -> Practice 88 -> Prove pass -> Retain WAITING -> +3 days -> Retain pass -> Transfer pass -> CONSOLIDATED', () => {
+  it('LEARN pass -> Practice 85 -> Practice 90 -> Practice 88 -> Prove pass -> Retain WAITING -> +3 days -> Retain pass -> APPLY to FAR -> CONSOLIDATED (HIGH)', () => {
     const evidence = [
       learnCheck('2026-01-01T00:00:00.000Z', 90),
       practice('2026-01-02T00:00:00.000Z', 85),
@@ -107,11 +121,12 @@ describe('SCENARIO A -- HAPPY PATH (see also audit-canon-v2-full-scenarios.test.
     const finalDecision = evaluateCanonicalLearningState(baseInput({ evidence: withTransfer, now: '2026-01-11T00:00:00.000Z' }));
     expect(finalDecision.stage).toBe('CONSOLIDATED');
     expect(finalDecision.actionState).toBe('CONSOLIDATED');
+    expect(finalDecision.consolidationLevel).toBe('HIGH');
   });
 });
 
 describe('SCENARIO B -- PRACTICE CONSISTENCY (see also audit-canon-v2-practice-consistency.test.ts AUDIT-001)', () => {
-  it('100 -> still PRACTICE; 40 -> still PRACTICE; 40 -> still PRACTICE; 100 -> still PRACTICE; 100 -> still PRACTICE (last 3 = 40,100,100); 100 -> PROVE (last 3 all pass)', () => {
+  it('100 -> still PRACTICE; 40 -> still PRACTICE; 40 -> still PRACTICE (average 60); 100 -> still PRACTICE (40,40,100: average 60); 100 -> PROVE (40,100,100: average 80.0, latest 100); 100 -> PROVE', () => {
     const learned = learnCheck('2025-12-31T00:00:00.000Z', 90);
     const scores = [100, 40, 40, 100, 100, 100];
     const evidence: RawEvidenceItem[] = [learned];
@@ -121,7 +136,15 @@ describe('SCENARIO B -- PRACTICE CONSISTENCY (see also audit-canon-v2-practice-c
       const d = evaluateCanonicalLearningState(baseInput({ evidence: [...evidence], now: `2026-01-0${i + 1}T12:00:00.000Z` }));
       stagesAfterEach.push(d.stage);
     });
-    expect(stagesAfterEach).toEqual(['PRACTICE', 'PRACTICE', 'PRACTICE', 'PRACTICE', 'PRACTICE', 'PROVE']);
+    expect(stagesAfterEach).toEqual(['PRACTICE', 'PRACTICE', 'PRACTICE', 'PRACTICE', 'PROVE', 'PROVE']);
+  });
+
+  it('the LATEST must pass: 90 -> 95 -> 60 stays PRACTICE (average 81.7); one more 85 -> PROVE (95,60,85: average 80, latest 85)', () => {
+    const learned = learnCheck('2025-12-31T00:00:00.000Z', 90);
+    const evidence = [learned, practice('2026-01-01T00:00:00.000Z', 90), practice('2026-01-02T00:00:00.000Z', 95), practice('2026-01-03T00:00:00.000Z', 60)];
+    expect(evaluateCanonicalLearningState(baseInput({ evidence, now: '2026-01-03T12:00:00.000Z' })).stage).toBe('PRACTICE');
+    const more = [...evidence, practice('2026-01-04T00:00:00.000Z', 85)];
+    expect(evaluateCanonicalLearningState(baseInput({ evidence: more, now: '2026-01-04T12:00:00.000Z' })).stage).toBe('PROVE');
   });
 });
 
@@ -192,40 +215,57 @@ const READY_FOR_TRANSFER = [
   retain('2026-01-10T00:00:00.000Z', 90),
 ];
 
-describe('SCENARIO F -- TRANSFER APPLICATION FAILURE (see also audit-canon-v2-transfer-classification.test.ts Case A)', () => {
-  it('Transfer fail with APPLICATION_CONTEXT_WEAKNESS (default/no explicit signal) -> stay TRANSFER, immediate retry, no 3-day wait', () => {
-    const failedTransfer = transfer('2026-01-13T00:00:00.000Z', [60, 60, 60]);
-    const d = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, failedTransfer], now: '2026-01-13T01:00:00.000Z' }));
-    expect(d.rollback?.case).toBe('TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS');
+describe('SCENARIO F -- TRANSFER APPLICATION FAILURE (see also audit-canon-v2-transfer-classification.test.ts)', () => {
+  it('APPLY reaches only NEAR -> stay TRANSFER, immediately executable (repeat APPLY), no rollback, no REINFORCE, no 3-day wait', () => {
+    const nearOnly = transfer('2026-01-13T00:00:00.000Z', [90, 60, 60]);
+    const d = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, nearOnly], now: '2026-01-13T01:00:00.000Z' }));
+    expect(d.rollback).toBeNull();
+    expect(d.intervention).toBeNull();
     expect(d.stage).toBe('TRANSFER');
     expect(d.actionState).toBe('EXECUTABLE');
+    expect(d.nextCanonicalAction).toBe('TRANSFER');
     expect(d.waitingReason).toBeNull();
+    expect(d.transferLevelReached).toBe('NEAR');
+    expect(d.requirements.find((r) => r.stage === 'TRANSFER')!.reasonCodes).toEqual(['TRANSFER_LEVEL_BELOW_CONSOLIDATION']);
+
+    const retry = transfer('2026-01-13T02:00:00.000Z', [90, 85, 60]);
+    const afterRetry = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, nearOnly, retry], now: '2026-01-13T03:00:00.000Z' }));
+    expect(afterRetry.stage).toBe('CONSOLIDATED');
+    expect(afterRetry.consolidationLevel).toBe('MEDIUM');
   });
 });
 
-describe('SCENARIO G -- TRANSFER RETENTION FAILURE (see also audit-canon-v2-transfer-classification.test.ts Case B)', () => {
-  it('Transfer fail with RETENTION_WEAKNESS -> RETAIN immediate (no wait), PROVE remains valid -> Retain pass -> TRANSFER again', () => {
-    const failedTransfer = transfer('2026-01-13T00:00:00.000Z', [40, 40, 40], { transferFailureDiagnostic: 'RETENTION_WEAKNESS' });
-    const afterFail = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, failedTransfer], now: '2026-01-13T01:00:00.000Z' }));
-    expect(afterFail.rollback?.case).toBe('TRANSFER_CASE_B_RETENTION_WEAKNESS');
-    expect(afterFail.stage).toBe('RETAIN');
-    expect(afterFail.actionState).toBe('EXECUTABLE');
-    expect(afterFail.waitingReason).toBeNull();
-    expect(afterFail.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('SATISFIED');
+describe('SCENARIO G -- TRANSFER RETENTION FAILURE (Case B retired by the 2026-10-16 APPLY ladder)', () => {
+  it('a weak APPLY never rolls back to RETAIN any more: a NEAR-less ladder and a legacy RETENTION_WEAKNESS row both keep PROVE and RETAIN satisfied and stay in TRANSFER', () => {
+    const weakLadder = transfer('2026-01-13T00:00:00.000Z', [40, 40, 40]);
+    const afterLadder = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, weakLadder], now: '2026-01-13T01:00:00.000Z' }));
+    expect(afterLadder.rollback).toBeNull();
+    expect(afterLadder.stage).toBe('TRANSFER');
+    expect(afterLadder.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('SATISFIED');
+    expect(afterLadder.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('SATISFIED');
 
-    const requalifyingRetain = retain('2026-01-14T00:00:00.000Z', 90);
-    const afterRetain = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, failedTransfer, requalifyingRetain], now: '2026-01-14T01:00:00.000Z' }));
-    expect(afterRetain.rollback).toBeNull();
-    expect(afterRetain.stage).toBe('TRANSFER');
-    expect(afterRetain.actionState).toBe('EXECUTABLE');
+    const legacyFail = legacyTransfer('2026-01-13T00:00:00.000Z', [40, 40, 40], { transferFailureDiagnostic: 'RETENTION_WEAKNESS' });
+    const afterLegacy = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, legacyFail], now: '2026-01-13T01:00:00.000Z' }));
+    expect(afterLegacy.rollback).toBeNull();
+    expect(afterLegacy.stage).toBe('TRANSFER');
+    expect(afterLegacy.requirements.find((r) => r.stage === 'TRANSFER')!.reasonCodes).toEqual(['UNRESOLVED_POLICY']);
+    expect(afterLegacy.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('SATISFIED');
   });
 });
 
-describe('SCENARIO H -- TRANSFER FOUNDATION FAILURE (see also audit-canon-v2-transfer-classification.test.ts Case C)', () => {
-  it('Transfer fail with FOUNDATIONAL_PROCEDURAL_FAILURE -> PRACTICE (window reset) -> 3 new qualifying Practices -> new Prove -> new 3-day wait -> Retain -> Transfer', () => {
-    const failedTransfer = transfer('2026-01-13T00:00:00.000Z', [40, 40, 40], { transferFailureDiagnostic: 'FOUNDATIONAL_PROCEDURAL_FAILURE' });
+describe('SCENARIO H -- TRANSFER FOUNDATION FAILURE (Case C retired; the foundational rollback left is Case D, a critical misconception)', () => {
+  it('a legacy FOUNDATIONAL_PROCEDURAL_FAILURE row no longer rolls back (UNRESOLVED)', () => {
+    const legacyFail = legacyTransfer('2026-01-13T00:00:00.000Z', [40, 40, 40], { transferFailureDiagnostic: 'FOUNDATIONAL_PROCEDURAL_FAILURE' });
+    const d = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, legacyFail], now: '2026-01-13T01:00:00.000Z' }));
+    expect(d.rollback).toBeNull();
+    expect(d.stage).toBe('TRANSFER');
+    expect(d.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('SATISFIED');
+  });
+
+  it('APPLY with a critical misconception -> PRACTICE (window reset) -> 3 new qualifying Practices -> new Prove -> new 3-day wait -> Retain -> Transfer', () => {
+    const failedTransfer = transfer('2026-01-13T00:00:00.000Z', [40, 40, 40], { hasCriticalMisconception: true });
     const afterFail = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, failedTransfer], now: '2026-01-13T01:00:00.000Z' }));
-    expect(afterFail.rollback?.case).toBe('TRANSFER_CASE_C_FOUNDATIONAL_PROCEDURAL_FAILURE');
+    expect(afterFail.rollback?.case).toBe('TRANSFER_CASE_D_CRITICAL_MISCONCEPTION');
     expect(afterFail.stage).toBe('PRACTICE');
     expect(afterFail.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('LOCKED');
     expect(afterFail.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('LOCKED');
@@ -233,7 +273,7 @@ describe('SCENARIO H -- TRANSFER FOUNDATION FAILURE (see also audit-canon-v2-tra
     const newP1 = practice('2026-01-14T00:00:00.000Z', 90);
     const newP2 = practice('2026-01-14T01:00:00.000Z', 90);
     const afterTwoNew = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, failedTransfer, newP1, newP2], now: '2026-01-14T02:00:00.000Z' }));
-    expect(afterTwoNew.stage).toBe('PRACTICE'); // the reset window holds only 2 passes
+    expect(afterTwoNew.stage).toBe('PRACTICE'); // the reset window holds only 2 practices
     const newP3 = practice('2026-01-14T01:30:00.000Z', 90);
     const afterRequalified = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, failedTransfer, newP1, newP2, newP3], now: '2026-01-14T02:00:00.000Z' }));
     expect(afterRequalified.stage).toBe('PROVE');

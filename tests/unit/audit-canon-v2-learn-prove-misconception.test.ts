@@ -39,21 +39,36 @@ function baseInput(overrides: Partial<PedagogicalEngineInput> = {}): Pedagogical
   return { conceptId: 'concept-1', studentId: 'student-1', now: '2026-01-01T00:00:00.000Z', evidence: [], activeCriticalMisconception: false, ...overrides };
 }
 
-describe('LEARN boundaries -- 2026-10-17 pilot policy (score >= 80 INCLUSIVE on an exactly-5-item check; superseding Policy V2 Section 2\'s exclusive bar)', () => {
-  it('79 -> FAILS', () => {
-    const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 79 })] }));
-    expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('UNSATISFIED');
+describe('LEARN boundaries -- overnight 2026-10-16 contract 1.1 (a completed check of >= 4 items, or a guided 4-7 interaction session, qualifies; NO score gate -- superseding the 2026-10-17 ">= 80 on exactly 5 items")', () => {
+  it('79 -> PASSES (no score gate any more), and so does 0', () => {
+    for (const scorePercent of [79, 0]) {
+      const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent })] }));
+      expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('SATISFIED');
+      expect(d.requirements.find((r) => r.stage === 'LEARN')!.reasonCodes).toEqual(['LEARN_COMPLETED']);
+    }
   });
-  it('80 -> PASSES (the bar is INCLUSIVE -- exactly 80% now passes)', () => {
+  it('80 -> PASSES (completed check; the score is not a gate)', () => {
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 80, correctCount: 4 })] }));
     expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('SATISFIED');
   });
-  it('a check that is not exactly 5 items (4 or 10) -> UNRESOLVED_POLICY, never a pass even at 100%', () => {
+  it('a legacy check of 4 or 10 items qualifies; one of fewer than 4 items (3, or an unknown 0) -> UNRESOLVED_POLICY, never a pass even at 100%', () => {
     for (const itemCount of [4, 10]) {
+      const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 50, itemCount, correctCount: 0 })] }));
+      expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('SATISFIED');
+    }
+    for (const itemCount of [0, 3]) {
       const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 100, itemCount, correctCount: itemCount })] }));
       expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('UNSATISFIED');
       expect(d.requirements.find((r) => r.stage === 'LEARN')!.reasonCodes).toContain('UNRESOLVED_POLICY');
     }
+  });
+
+  it('a guided session qualifies at 4-7 interactions closed by the AI, or at 7 by the CAP; anything else is UNRESOLVED', () => {
+    const status = (n: number, closedBy: 'AI' | 'CAP') =>
+      evaluateCanonicalLearningState(baseInput({ evidence: [item({ itemCount: 0, scorePercent: 0, learnInteractionCount: n, learnClosedBy: closedBy })] })).requirements.find((r) => r.stage === 'LEARN')!.status;
+    for (const n of [4, 5, 6, 7]) expect(status(n, 'AI')).toBe('SATISFIED');
+    expect(status(7, 'CAP')).toBe('SATISFIED');
+    for (const [n, by] of [[3, 'AI'], [8, 'AI'], [6, 'CAP'], [8, 'CAP']] as const) expect(status(n, by)).toBe('UNSATISFIED');
   });
   it('81 -> PASSES', () => {
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 81 })] }));
@@ -67,15 +82,15 @@ describe('LEARN boundaries -- 2026-10-17 pilot policy (score >= 80 INCLUSIVE on 
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ activityType: 'PRACTICE', scorePercent: 100, itemCount: 3, correctCount: 3, difficulty: 3 })] }));
     expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('UNSATISFIED');
   });
-  it('81 WITH a per-item critical misconception on that same attempt -> still does not qualify (misconception check runs before the score check)', () => {
+  it('81 WITH a per-item critical misconception on that same attempt -> still does not qualify (the misconception check runs before the completion check)', () => {
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 100, hasCriticalMisconception: true })] }));
     expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('UNSATISFIED');
   });
   it('a live, ACTIVE global critical misconception does NOT override an in-progress LEARN stage (the exemption is `stage !== "LEARN"`)', () => {
-    // LEARN itself not yet satisfied (score 70, below the 80 bar) -- stage naturally computes as LEARN even absent any
-    // misconception. Confirms the override's own `stage !== 'LEARN'`
+    // LEARN itself not yet satisfied (a 3-item check is below the 4-interaction minimum) -- stage naturally computes as
+    // LEARN even absent any misconception. Confirms the override's own `stage !== 'LEARN'`
     // guard is a genuine no-op here, not merely untested.
-    const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 70 })], activeCriticalMisconception: true }));
+    const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 70, itemCount: 3, correctCount: 2 })], activeCriticalMisconception: true }));
     expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('UNSATISFIED');
     expect(d.stage).toBe('LEARN'); // never forced to PRACTICE when the journey has not even started
     expect(d.intervention).toBeNull();
@@ -204,7 +219,11 @@ describe('Critical misconception blocking -- Policy V2 Section 9 (global flag)',
     const p3 = practiceItem('2025-12-31T02:00:00.000Z', 90);
     const prove = proveItem('2026-01-01T00:00:00.000Z', 90);
     const retain = item({ activityType: 'RETENTION_CHECK', timestamp: '2026-01-10T00:00:00.000Z', itemCount: 5, correctCount: 5, scorePercent: 90, difficulty: 3.5, independent: true, novel: true });
-    const transfer = item({ activityType: 'TRANSFER', timestamp: '2026-01-20T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 4.5, independent: true, perChallengeScores: [90, 90, 90], reasoningProvided: true });
+    const transfer = item({
+      activityType: 'TRANSFER', timestamp: '2026-01-20T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 4.5, independent: true,
+      transferLadder: (['NEAR', 'MID', 'FAR'] as const).map((level, i) => ({ level, scorePercent: 90, passed: true, certified: true, taskId: `t${i}`, contextDomain: null })),
+      transferHighestLevel: 'FAR',
+    });
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, p1, p2, p3, prove, retain, transfer], activeCriticalMisconception: true }));
     // every requirement is genuinely evidence-satisfied -- only the live flag forces PRACTICE
     expect(d.requirements.every((r) => r.status === 'SATISFIED')).toBe(true);

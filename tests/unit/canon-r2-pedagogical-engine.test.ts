@@ -29,6 +29,13 @@
  * never undoes a pass; RETAIN is 5 items (was 10). Fixtures below now carry
  * three qualifying Practice attempts and 5-item Retention checks, and tests
  * that certified a superseded rule now certify the new one explicitly.
+ * OVERNIGHT 2026-10-16 UPDATE (POLICY_VERSION 'studyus-canonical-v3-pilot-2026-10-16'):
+ * PRACTICE needs the AVERAGE of the last 3 >= 80% AND the LATEST >= 80%;
+ * LEARN is a guided 4-7 interaction session with no score gate (a legacy
+ * check qualifies once completed with >= 4 items); APPLY (TRANSFER) is the
+ * NEAR/MID/FAR ladder -- `transferItem` below builds a ladder row and
+ * `legacyTransferItem` a pre-2026-10-16 3-challenge row (now UNRESOLVED);
+ * the retired Transfer Cases A/B/C are certified as retired.
  * The full CANON-R2R1-specific test matrix (Parts 29-33 of that spec)
  * lives in its own file, tests/unit/canon-r2r1-engine-contract-closure.test.ts.
  */
@@ -126,7 +133,27 @@ function retentionItem(ts: string, score: number, opts: Partial<RawEvidenceItem>
   });
 }
 
-function transferItem(ts: string, perChallengeScores: number[], opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
+/** Overnight 2026-10-16 APPLY ladder row: NEAR, MID, FAR challenges with these scores (each passes and is certified at >= 80). */
+function transferItem(ts: string, scores: [number, number, number], opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
+  const levels = ['NEAR', 'MID', 'FAR'] as const;
+  const ladder = scores.map((scorePercent, i) => ({ level: levels[i], scorePercent, passed: scorePercent >= 80, certified: true, taskId: `task-${i}`, contextDomain: null }));
+  const passed = ladder.filter((c) => c.passed).map((c) => c.level);
+  return item({
+    activityType: 'TRANSFER',
+    timestamp: ts,
+    itemCount: 3,
+    correctCount: passed.length,
+    scorePercent: scores.reduce((a, b) => a + b, 0) / 3,
+    difficulty: 4.5,
+    independent: true,
+    transferLadder: ladder,
+    transferHighestLevel: passed.length ? passed[passed.length - 1] : null,
+    ...opts,
+  });
+}
+
+/** A LEGACY (pre-2026-10-16) 3-challenge NEAR/CONTEXTUAL/HIGHER Transfer row -- UNRESOLVED under the ladder policy. */
+function legacyTransferItem(ts: string, perChallengeScores: number[], opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
   const overall = perChallengeScores.reduce((a, b) => a + b, 0) / perChallengeScores.length;
   return item({
     activityType: 'TRANSFER',
@@ -535,82 +562,100 @@ describe('CANON-R2 Transfer (34-43)', () => {
     expect(requirement(decision, 'TRANSFER').status).toBe('LOCKED');
   });
 
-  it('35. Transfer requires exactly 3 structured challenges -- a 2-challenge attempt is UNRESOLVED', () => {
-    const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [90, 90])], now: '2026-01-10T00:00:00.000Z' }),
-    );
-    expect(requirement(decision, 'TRANSFER').reasonCodes).toContain('UNRESOLVED_POLICY');
+  it('35. a Transfer row without an APPLY ladder (a legacy 3- or 2-challenge row) is UNRESOLVED -- never a pass, never a failure', () => {
+    for (const scores of [[90, 90], [90, 90, 90]]) {
+      const decision = evaluateCanonicalLearningState(
+        baseInput({ evidence: [...retainedLedger(), legacyTransferItem('2026-01-10T00:00:00.000Z', scores)], now: '2026-01-10T00:00:00.000Z' }),
+      );
+      expect(requirement(decision, 'TRANSFER').reasonCodes).toEqual(['UNRESOLVED_POLICY']);
+      expect(requirement(decision, 'TRANSFER').status).toBe('UNSATISFIED');
+      expect(decision.rollback).toBeNull();
+    }
   });
 
-  it("36. the contract's transfer depths are exactly NEAR/CONTEXTUAL/HIGHER", () => {
+  it("36. the contract's transfer depths are exactly the ladder levels NEAR/MID/FAR, 3-5 challenges", () => {
     const decision = evaluateCanonicalLearningState(baseInput({ evidence: retainedLedger(), now: '2026-01-10T00:00:00.000Z' }));
-    expect(decision.activityContract?.transferDepth).toEqual(['NEAR', 'CONTEXTUAL', 'HIGHER']);
+    expect(decision.activityContract?.transferDepth).toEqual(['NEAR', 'MID', 'FAR']);
+    expect(decision.activityContract?.itemCount).toEqual({ min: 3, max: 5 });
   });
 
-  it('37. Transfer requires difficulty in [4,5]', () => {
-    const decision = evaluateCanonicalLearningState(
+  it('37. the Transfer contract still targets difficulty [4,5]; qualification is decided by the ladder level reached, not by the row\'s aggregate difficulty (contract 1.2 names no difficulty gate)', () => {
+    const decision = evaluateCanonicalLearningState(baseInput({ evidence: retainedLedger(), now: '2026-01-10T00:00:00.000Z' }));
+    expect(decision.activityContract?.difficulty.min).toBe(4);
+    expect(decision.activityContract?.difficulty.max).toBe(5);
+    const lowAggregate = evaluateCanonicalLearningState(
       baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [90, 90, 90], { difficulty: 3 })], now: '2026-01-10T00:00:00.000Z' }),
     );
-    expect(requirement(decision, 'TRANSFER').status).not.toBe('SATISFIED');
+    expect(requirement(lowAggregate, 'TRANSFER').status).toBe('SATISFIED');
+    const nearOnly = evaluateCanonicalLearningState(
+      baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [90, 40, 40], { difficulty: 5 })], now: '2026-01-10T00:00:00.000Z' }),
+    );
+    expect(requirement(nearOnly, 'TRANSFER').status).toBe('UNSATISFIED');
   });
 
-  it("38. CANON-R2R1: the spec's own 100/100/20 example still FAILS Transfer under the new 70% per-challenge floor (a single challenge below 70% fails the attempt regardless of the overall average) -- it now defaults to Case A (application-weak) rather than the superseded automatic Case B, since no explicit foundational-failure signal was supplied", () => {
+  it("38. the spec's old 100/100/20 example (which FAILED the retired 70% floor) now reaches MID on the ladder -> SATISFIED, CONSOLIDATED MEDIUM (no overall mean, no 70% floor)", () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [100, 100, 20])], now: '2026-01-10T00:00:00.000Z' }),
     );
-    expect(requirement(decision, 'TRANSFER').status).not.toBe('SATISFIED');
-    expect(requirement(decision, 'TRANSFER').reasonCodes).toContain('FAILED_ATTEMPT');
-    expect(decision.rollback?.case).toBe('TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS');
+    expect(requirement(decision, 'TRANSFER').status).toBe('SATISFIED');
+    expect(requirement(decision, 'TRANSFER').reasonCodes).toEqual(['TRANSFER_LEVEL_REACHED']);
+    expect(decision.consolidationLevel).toBe('MEDIUM');
+    expect(decision.rollback).toBeNull();
   });
 
-  it('39. an overall >=80% attempt with every challenge >=70% SATISFIES Transfer and reaches CONSOLIDATED', () => {
+  it('39. a ladder that passes NEAR, MID and FAR SATISFIES Transfer and reaches CONSOLIDATED HIGH', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [90, 85, 80])], now: '2026-01-10T00:00:00.000Z' }),
     );
     expect(requirement(decision, 'TRANSFER').status).toBe('SATISFIED');
     expect(decision.currentStage).toBe('CONSOLIDATED');
+    expect(decision.consolidationLevel).toBe('HIGH');
   });
 
-  it('40. a response contract requiring shown reasoning (SHOW_WORK/EXPLAIN/JUSTIFY) rejects an attempt missing it', () => {
+  it('40. shown reasoning is graded inside each ladder challenge (its `passed`), not by a row flag: a legacy row missing reasoning is UNRESOLVED (no MISSING_REQUIRED_REASONING failure, no rollback)', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({
-        evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [90, 90, 90], { reasoningProvided: false })],
+        evidence: [...retainedLedger(), legacyTransferItem('2026-01-10T00:00:00.000Z', [90, 90, 90], { reasoningProvided: false })],
         now: '2026-01-10T00:00:00.000Z',
       }),
     );
-    expect(requirement(decision, 'TRANSFER').reasonCodes).toContain('MISSING_REQUIRED_REASONING');
+    expect(requirement(decision, 'TRANSFER').reasonCodes).toEqual(['UNRESOLVED_POLICY']);
     expect(requirement(decision, 'TRANSFER').status).not.toBe('SATISFIED');
+    expect(decision.rollback).toBeNull();
   });
 
-  it('41. Case A (application-weak, knowledge intact) is the DEFAULT diagnosis for any Transfer failure with no explicit foundational signal: Prove/Retention remain valid and only a Transfer-focused retry is required', () => {
+  it('41. reaching only NEAR is never a failed attempt: Prove/Retention remain valid, the concept stays in TRANSFER, no rollback and no REINFORCE (the retired Case A)', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [90, 55, 90])], now: '2026-01-10T00:00:00.000Z' }),
+      baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [90, 55, 55])], now: '2026-01-10T00:00:00.000Z' }),
     );
-    expect(decision.rollback?.case).toBe('TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS');
+    expect(decision.rollback).toBeNull();
+    expect(requirement(decision, 'TRANSFER').reasonCodes).toEqual(['TRANSFER_LEVEL_BELOW_CONSOLIDATION']);
     expect(requirement(decision, 'PROVE').status).toBe('SATISFIED');
     expect(requirement(decision, 'RETAIN').status).toBe('SATISFIED');
     expect(decision.currentStage).toBe('TRANSFER');
-    expect(decision.intervention).toBe('REINFORCE');
+    expect(decision.intervention).toBeNull();
+    expect(decision.transferLevelReached).toBe('NEAR');
   });
 
-  it('42. CANON-R2R1 Part 2 / CANON-V2-REMEDIATION Part 4: Case C (foundational/procedural failure) is superseded from an automatic "<50% on every challenge" inference -- it now requires an EXPLICIT `transferFailureDiagnostic` signal, never a numeric score pattern alone, before rolling all the way back to PRACTICE', () => {
+  it('42. the retired Case C: an explicit FOUNDATIONAL_PROCEDURAL_FAILURE diagnostic on a legacy row no longer rolls back to PRACTICE (the row is UNRESOLVED)', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({
-        evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [20, 30, 10], { transferFailureDiagnostic: 'FOUNDATIONAL_PROCEDURAL_FAILURE' })],
+        evidence: [...retainedLedger(), legacyTransferItem('2026-01-10T00:00:00.000Z', [20, 30, 10], { transferFailureDiagnostic: 'FOUNDATIONAL_PROCEDURAL_FAILURE' })],
         now: '2026-01-10T00:00:00.000Z',
       }),
     );
-    expect(decision.rollback?.case).toBe('TRANSFER_CASE_C_FOUNDATIONAL_PROCEDURAL_FAILURE');
-    expect(requirement(decision, 'PROVE').status).toBe('LOCKED');
-    expect(requirement(decision, 'RETAIN').status).toBe('LOCKED');
-    expect(decision.currentStage).toBe('PRACTICE');
+    expect(decision.rollback).toBeNull();
+    expect(requirement(decision, 'PROVE').status).toBe('SATISFIED');
+    expect(requirement(decision, 'RETAIN').status).toBe('SATISFIED');
+    expect(decision.currentStage).toBe('TRANSFER');
   });
 
-  it('42b. CANON-R2R1 Part 2 regression guard: that SAME [20,30,10] score pattern WITHOUT the explicit foundational signal defaults to Case A -- proving low scores alone never imply foundational rollback', () => {
+  it('42b. a ladder with no passed level at all ([20,30,10]) is also below consolidation -- low scores alone never imply any rollback', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({ evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [20, 30, 10])], now: '2026-01-10T00:00:00.000Z' }),
     );
-    expect(decision.rollback?.case).toBe('TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS');
+    expect(decision.rollback).toBeNull();
+    expect(decision.transferLevelReached).toBeNull();
     expect(requirement(decision, 'PROVE').status).toBe('SATISFIED');
     expect(requirement(decision, 'RETAIN').status).toBe('SATISFIED');
   });
@@ -673,7 +718,7 @@ describe('CANON-R2 Journey (44-50)', () => {
           evidence: [
             ...provenLedger(),
             retentionItem('2026-01-06T00:00:00.000Z', 90),
-            transferItem('2026-01-10T00:00:00.000Z', [20, 30, 10], { transferFailureDiagnostic: 'FOUNDATIONAL_PROCEDURAL_FAILURE' }),
+            transferItem('2026-01-10T00:00:00.000Z', [20, 30, 10], { hasCriticalMisconception: true }),
           ],
           now: '2026-01-10T00:00:00.000Z',
         }),
@@ -683,8 +728,9 @@ describe('CANON-R2 Journey (44-50)', () => {
       expect(['LEARN', 'PRACTICE', 'PROVE', 'RETAIN', 'TRANSFER', 'CONSOLIDATED']).toContain(d.currentStage);
     }
     // The second decision specifically exercises a genuine rollback to
-    // PRACTICE (a foundational Transfer failure; since 2026-10-17 a failed
-    // Prove no longer rolls back) -- confirm REINFORCE shows up only as
+    // PRACTICE (Case D, a critical misconception during Transfer; since
+    // 2026-10-17 a failed Prove no longer rolls back, and since 2026-10-16
+    // the foundational Case C is retired) -- confirm REINFORCE shows up only as
     // `intervention`, never as `currentStage`.
     expect(decisions[1].intervention).toBe('REINFORCE');
     expect(decisions[1].currentStage).toBe('PRACTICE');
@@ -898,11 +944,11 @@ describe('CANON-R2 Recalculation (73-80)', () => {
     expect(decision.policyVersion).toBe('studyus-canonical-v1-dry-run');
   });
 
-  it('78. malformed evidence (a Transfer item with only 2 of the required 3 challenge scores) resolves to UNRESOLVED without throwing', () => {
+  it('78. malformed evidence (a legacy Transfer item with only 2 challenge scores and no ladder) resolves to UNRESOLVED without throwing', () => {
     const retained = [...provenLedger(), retentionItem('2026-01-06T00:00:00.000Z', 90)];
     expect(() =>
       evaluateCanonicalLearningState(
-        baseInput({ evidence: [...retained, transferItem('2026-01-10T00:00:00.000Z', [90, 90])], now: '2026-01-10T00:00:00.000Z' }),
+        baseInput({ evidence: [...retained, legacyTransferItem('2026-01-10T00:00:00.000Z', [90, 90])], now: '2026-01-10T00:00:00.000Z' }),
       ),
     ).not.toThrow();
   });
