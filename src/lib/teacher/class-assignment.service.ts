@@ -243,35 +243,14 @@ export class InvalidClassAssignmentError extends Error {
 const PG_UNIQUE_VIOLATION = '23505';
 
 /**
- * Publish one class assignment of a catalog concept of the class's subject.
- *
- * Every check runs before any write. Then, per recipient (ACTIVE learner of
- * this class the Teacher genuinely teaches):
- *  - if the learner already has the concept, it is reused untouched;
- *  - otherwise the concept is added to the learner's plan
- *    (`ensureConceptInLearnerPlan`, provenance TEACHER_ASSIGNMENT, no
- *    evidence / progress);
- *  - the per-learner row is created through `assignTeacherIntervention`.
- * A mixed selection never blocks. With a `requestId`, a retry returns the
- * existing assignment and only completes recipients still missing.
+ * The recipients and group of one class-level publication (shared by every assignment kind): the ACTIVE learners of
+ * the class (all, or the selected ones -- a selected learner not ACTIVE here refuses the whole request), the group id
+ * (= the client's request id: idempotent replay), and the rows a retry already created. Nothing is written.
  */
-export async function publishClassAssignment(actorUserId: string, input: PublishClassAssignmentInput): Promise<PublishClassAssignmentResult> {
-  await requireTeacherOfClass(actorUserId, input.classId);
-
-  const klass = await db.query(`SELECT canonical_subject_id FROM classes WHERE id = $1`, [input.classId]);
-  const classSubjectId: string | null = klass.rows[0]?.canonical_subject_id ?? null;
-  if (!classSubjectId) throw new InvalidClassAssignmentError('CLASS_SUBJECT_REQUIRED');
-  const canonical = await db.query(
-    `SELECT id, name FROM canonical_concepts WHERE id = $1 AND status = 'ACTIVE' AND canonical_subject_id = $2`,
-    [input.canonicalConceptId, classSubjectId]
-  );
-  if (canonical.rows.length === 0) throw new InvalidClassAssignmentError('CONCEPT_NOT_IN_CLASS_SUBJECT');
-  const conceptName: string = canonical.rows[0].name;
-  const title = input.title?.trim() || conceptName;
-  if (input.startsAt && input.dueAt && new Date(input.dueAt).getTime() <= new Date(input.startsAt).getTime()) {
-    throw new InvalidClassAssignmentError('INVALID_DATES');
-  }
-
+export async function resolvePublishRecipients(
+  actorUserId: string,
+  input: Pick<PublishClassAssignmentInput, 'classId' | 'studentIds' | 'requestId' | 'governed'>
+): Promise<{ learners: { rows: any[] }; assignmentGroupId: string; existingRows: { rows: any[] }; existingByStudent: Map<string, any> }> {
   const learners = await db.query(
     `SELECT s.id, s.name, s.email, s.user_id FROM class_enrollments ce JOIN students s ON s.id = ce.student_id
      WHERE ce.class_id = $1 AND ce.status = 'ACTIVE' ORDER BY s.name NULLS LAST, s.email`,
@@ -302,6 +281,40 @@ export async function publishClassAssignment(actorUserId: string, input: Publish
     throw new InvalidClassAssignmentError('REQUEST_CONFLICT');
   }
   const existingByStudent = new Map<string, any>(existingRows.rows.map((r: any) => [r.student_id, r]));
+  return { learners, assignmentGroupId, existingRows, existingByStudent };
+}
+
+/**
+ * Publish one class assignment of a catalog concept of the class's subject.
+ *
+ * Every check runs before any write. Then, per recipient (ACTIVE learner of
+ * this class the Teacher genuinely teaches):
+ *  - if the learner already has the concept, it is reused untouched;
+ *  - otherwise the concept is added to the learner's plan
+ *    (`ensureConceptInLearnerPlan`, provenance TEACHER_ASSIGNMENT, no
+ *    evidence / progress);
+ *  - the per-learner row is created through `assignTeacherIntervention`.
+ * A mixed selection never blocks. With a `requestId`, a retry returns the
+ * existing assignment and only completes recipients still missing.
+ */
+export async function publishClassAssignment(actorUserId: string, input: PublishClassAssignmentInput): Promise<PublishClassAssignmentResult> {
+  await requireTeacherOfClass(actorUserId, input.classId);
+
+  const klass = await db.query(`SELECT canonical_subject_id FROM classes WHERE id = $1`, [input.classId]);
+  const classSubjectId: string | null = klass.rows[0]?.canonical_subject_id ?? null;
+  if (!classSubjectId) throw new InvalidClassAssignmentError('CLASS_SUBJECT_REQUIRED');
+  const canonical = await db.query(
+    `SELECT id, name FROM canonical_concepts WHERE id = $1 AND status = 'ACTIVE' AND canonical_subject_id = $2`,
+    [input.canonicalConceptId, classSubjectId]
+  );
+  if (canonical.rows.length === 0) throw new InvalidClassAssignmentError('CONCEPT_NOT_IN_CLASS_SUBJECT');
+  const conceptName: string = canonical.rows[0].name;
+  const title = input.title?.trim() || conceptName;
+  if (input.startsAt && input.dueAt && new Date(input.dueAt).getTime() <= new Date(input.startsAt).getTime()) {
+    throw new InvalidClassAssignmentError('INVALID_DATES');
+  }
+
+  const { learners, assignmentGroupId, existingRows, existingByStudent } = await resolvePublishRecipients(actorUserId, input);
 
   const assigned: PublishClassAssignmentResult['assigned'] = [];
   const skipped: PublishClassAssignmentResult['skipped'] = [];
@@ -442,6 +455,8 @@ export async function listClassAssignments(actorUserId: string, classId: string)
       WHERE teacher_intervention_id = ti.id ORDER BY (status = 'COMPLETED') DESC, created_at DESC LIMIT 1
     ) tie ON true
     WHERE ti.class_id = $1 AND ti.status <> 'CANCELLED'
+      -- teacher-assigned subject Tests / Mocks have their own read model (subject-assessment-assignment.service.ts)
+      AND ti.intervention_type NOT IN ('SUBJECT_TEST', 'SUBJECT_MOCK')
     ORDER BY ti.assigned_at DESC, s.name NULLS LAST
     `,
     [classId]
