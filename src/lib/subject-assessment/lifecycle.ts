@@ -73,11 +73,39 @@ export interface SubjectAssessmentSetup {
   allSubject?: boolean;
   /** The per-concept blueprint of the generated items (must equal `distribution`). */
   blueprint: Record<string, number>;
-  /** Items served although the Student had seen them before (supply short of novel items), recorded, never silent. */
-  reusedItems: Array<{ conceptId: string; fingerprint: string }>;
+  /**
+   * Items served although the Student had seen them before (supply short of novel items), recorded, never silent.
+   * `source` / `lastServedAt` (teacher assignments): which pool the reused item came from -- the Student's own older
+   * items first (least recently used), then items served to other students of the assignment, the immediately previous
+   * attempt last.
+   */
+  reusedItems: Array<{ conceptId: string; fingerprint: string; source?: ReuseSource; lastServedAt?: string | null }>;
   priorFingerprintCount: number;
+  /** Teacher assignment attempts: the assignment window close (operator rule V) -- frozen at the attempt's creation. */
+  assignmentWindow?: { closesAt: string };
+  /** Teacher assignment attempts: the last runner activity (heartbeat), for the "same continuous session" rule. */
+  liveness?: { lastActivityAt: string };
   /** Set when the attempt is closed. */
-  completion?: { completedAt: string; reason: 'SUBMITTED' | 'TIME_UP_AUTO_SUBMIT'; scorePercent: number; passed: boolean };
+  completion?: { completedAt: string; reason: CompletionReason; scorePercent: number; passed: boolean };
+}
+
+export type ReuseSource = 'OWN_LEAST_RECENTLY_USED' | 'ASSIGNMENT_GROUP' | 'PREVIOUS_ATTEMPT';
+/** WINDOW_CLOSED_AFTER_EXIT: a teacher-assigned attempt left before / across the window close, closed as is. */
+export type CompletionReason = 'SUBMITTED' | 'TIME_UP_AUTO_SUBMIT' | 'WINDOW_CLOSED_AFTER_EXIT';
+
+/**
+ * Controlled reuse order (operator rule T): a candidate the Student has seen is ranked by its pool -- the Student's own
+ * older items (OWN_LEAST_RECENTLY_USED), then items served to other students of the same assignment
+ * (ASSIGNMENT_GROUP), and the immediately previous attempt's items last (PREVIOUS_ATTEMPT) -- and inside a pool by
+ * least recently used (never served = oldest).
+ */
+export function rankReuseCandidates<T extends { fingerprint: string }>(candidates: readonly T[], ctx: { previousAttempt: ReadonlySet<string>; group: ReadonlySet<string>; lastServedMs: ReadonlyMap<string, number> }): Array<T & { source: ReuseSource; lastServedMs: number | null }> {
+  const tier = (fp: string): ReuseSource => (ctx.previousAttempt.has(fp) ? 'PREVIOUS_ATTEMPT' : ctx.lastServedMs.has(fp) ? 'OWN_LEAST_RECENTLY_USED' : ctx.group.has(fp) ? 'ASSIGNMENT_GROUP' : 'OWN_LEAST_RECENTLY_USED');
+  const order: Record<ReuseSource, number> = { OWN_LEAST_RECENTLY_USED: 0, ASSIGNMENT_GROUP: 1, PREVIOUS_ATTEMPT: 2 };
+  return candidates
+    .map((c, i) => ({ ...c, source: tier(c.fingerprint), lastServedMs: ctx.lastServedMs.get(c.fingerprint) ?? null, i }))
+    .sort((a, b) => order[a.source] - order[b.source] || (a.lastServedMs ?? -Infinity) - (b.lastServedMs ?? -Infinity) || a.i - b.i)
+    .map(({ i: _i, ...rest }) => rest as T & { source: ReuseSource; lastServedMs: number | null });
 }
 
 // ----------------------------------------------------------------- timezone --------------------------------------------------------------

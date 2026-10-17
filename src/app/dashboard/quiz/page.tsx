@@ -335,6 +335,8 @@ interface SubjectAssessmentViewLite {
   results?: any;
   setup: {
     kind: 'SUBJECT_CUMULATIVE_TEST' | 'SUBJECT_MOCK_EXAM';
+    /** TEACHER = a teacher-assigned attempt (window close rule: the runner sends a liveness heartbeat). */
+    origin?: 'STUDENT' | 'TEACHER';
     questionCount: number;
     schedule: { mode: 'NOW' } | { mode: 'SCHEDULED'; date: string; timezone: string; expiresAt: string };
     timing: { timed: boolean; durationMinutes: number | null; deadlineAt?: string };
@@ -792,6 +794,19 @@ function QuizPageContent() {
     setSubjectView(view);
     setSubjectDeadlineMs(typeof view.remainingSeconds === 'number' && view.state === 'ACTIVE' ? Date.now() + view.remainingSeconds * 1000 : null);
   }, []);
+
+  // Overnight 2026-10-16 -- a TEACHER-assigned attempt in progress keeps its session alive (every 30 s): an attempt
+  // started before the window close may be finished after it while this page is open; once left, the server closes it.
+  const heartbeatQuizId = subjectView?.state === 'ACTIVE' && subjectView.setup.origin === 'TEACHER' ? subjectView.quizId : null;
+  useEffect(() => {
+    if (!heartbeatQuizId || !studentId) return;
+    const beat = () => {
+      fetch(`/api/quizzes/session/${encodeURIComponent(heartbeatQuizId)}/heartbeat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId }) }).catch(() => {});
+    };
+    beat();
+    const h = setInterval(beat, 30_000);
+    return () => clearInterval(h);
+  }, [heartbeatQuizId, studentId]);
 
   const genBody = useCallback(
     (sid: string, languageOverride?: Locale) => allowsTopicSelection
@@ -2369,6 +2384,7 @@ function QuizPageContent() {
     // explanation, why) is one click away. One attempt: the next try is a NEW assessment.
     if (results.subjectAssessment) {
       const sa = results.subjectAssessment as {
+        origin?: 'STUDENT' | 'TEACHER';
         scorePercent: number; passed: boolean; total: number; correct: number; incorrect: number; unanswered: number; oneAttempt: boolean;
         completionReason: string; perConcept: Array<{ conceptId: string; conceptLabel: string; scorePercent: number; correct: number; total: number; passed: boolean }>;
         conceptsToReinforce: Array<{ conceptId: string; conceptLabel: string }>;
@@ -2383,7 +2399,7 @@ function QuizPageContent() {
           <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
             {at['quiz.subject.scoreLine'].replace('{correct}', String(sa.correct)).replace('{incorrect}', String(sa.incorrect)).replace('{unanswered}', String(sa.unanswered)).replace('{total}', String(sa.total))}
           </p>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{at['quiz.subject.passRule']}{sa.completionReason === 'TIME_UP_AUTO_SUBMIT' ? ` ${at['quiz.subject.autoSubmitted']}` : ''}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{at['quiz.subject.passRule']}{sa.completionReason === 'TIME_UP_AUTO_SUBMIT' ? ` ${at['quiz.subject.autoSubmitted']}` : ''}{sa.origin === 'TEACHER' ? ` ${at['tsa.student.resultNote']}` : ''}</p>
           <div className="card" style={{ padding: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
             <p className="label" style={{ margin: '0 0 8px' }}>{at['quiz.subject.perConcept']}</p>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
@@ -2404,9 +2420,18 @@ function QuizPageContent() {
             )}
           </div>
           {sa.oneAttempt && <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 'var(--space-4)' }}>{at['quiz.subject.oneAttemptNote']}</p>}
+          {results.feedbackRelease?.level === 'SCORE_ONLY' && (
+            <p role="status" className="card" style={{ padding: 'var(--space-4)', marginTop: 'var(--space-4)', fontSize: 14 }} data-testid="subject-feedback-held">
+              {at['tsa.quiz.feedbackHeld'].replace('{date}', new Date(results.feedbackRelease.releaseAt).toLocaleString(quizLanguage))}
+            </p>
+          )}
           <div className="ls-secondary">
-            <button className="btn btn-secondary" onClick={() => setReviewing(true)}>{at['xs.review']}</button>
-            <Link href={`/dashboard/quiz?subjectId=${subjectId}&mode=${quizMode}`} className="btn btn-primary" data-testid="subject-create-new">{at['quiz.subject.createNew']}</Link>
+            {results.feedbackRelease?.level !== 'SCORE_ONLY' && <button className="btn btn-secondary" onClick={() => setReviewing(true)}>{at['xs.review']}</button>}
+            {sa.origin === 'TEACHER' ? (
+              <Link href="/dashboard/assignments" className="btn btn-primary" data-testid="subject-back-assignments">{at['tsa.student.title']}</Link>
+            ) : (
+              <Link href={`/dashboard/quiz?subjectId=${subjectId}&mode=${quizMode}`} className="btn btn-primary" data-testid="subject-create-new">{at['quiz.subject.createNew']}</Link>
+            )}
             <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-ghost">{at['quiz.backToSubject']}</Link>
           </div>
         </div>

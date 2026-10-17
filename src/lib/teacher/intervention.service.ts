@@ -53,7 +53,7 @@ export class TeacherInterventionExamProfileMismatchError extends Error {
 
 const PG_FOREIGN_KEY_VIOLATION = '23503';
 
-export type TeacherInterventionType = 'CONCEPT_REINFORCEMENT' | 'SKILL_PRACTICE' | 'COMPETENCY_PRACTICE' | 'EXAM_PRACTICE';
+export type TeacherInterventionType = 'CONCEPT_REINFORCEMENT' | 'SKILL_PRACTICE' | 'COMPETENCY_PRACTICE' | 'EXAM_PRACTICE' | 'SUBJECT_TEST' | 'SUBJECT_MOCK';
 export type TeacherInterventionStatus = 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
 
 export type TeacherInterventionTarget =
@@ -61,6 +61,8 @@ export type TeacherInterventionTarget =
   | { targetType: 'SKILL'; skillId: string }
   | { targetType: 'COMPETENCY'; competencyId: string }
   | { targetType: 'LEARNING_OBJECTIVE'; learningObjectiveId: string }
+  /** Overnight 2026-10-16: a teacher-assigned subject Test / Mock -- the subject and concepts live in `subjectAssessmentAssignment`. */
+  | { targetType: 'SUBJECT' }
   | (
       | { targetType: 'EXAM'; examProfileId: string; simulationType: 'TOPIC_EXAM'; learningObjectiveId: string }
       | { targetType: 'EXAM'; examProfileId: string; simulationType: 'DOMAIN_EXAM'; academicSubjectId: string }
@@ -83,6 +85,8 @@ export interface AssignTeacherInterventionParams {
   startsAt?: string;
   /** Track A: publishing this assignment put the concept into the learner's plan. */
   addedToPlan?: boolean;
+  /** SUBJECT_TEST / SUBJECT_MOCK only: the frozen assignment configuration (required for them, refused for every other type). */
+  subjectAssessmentAssignment?: Record<string, unknown>;
 }
 
 export interface TeacherIntervention {
@@ -180,12 +184,13 @@ async function requireAssignmentAuthorization(actorUserId: string, classId: stri
  * to be accepted and then sat NOT_EXECUTABLE_YET forever on the Student's
  * list. Refused up front as an invalid target.
  */
-const TYPE_FOR_TARGET: Record<TeacherInterventionTarget['targetType'], TeacherInterventionType | null> = {
-  CONCEPT: 'CONCEPT_REINFORCEMENT',
-  SKILL: 'SKILL_PRACTICE',
-  COMPETENCY: 'COMPETENCY_PRACTICE',
-  EXAM: 'EXAM_PRACTICE',
-  LEARNING_OBJECTIVE: null,
+const TYPE_FOR_TARGET: Record<TeacherInterventionTarget['targetType'], readonly TeacherInterventionType[]> = {
+  CONCEPT: ['CONCEPT_REINFORCEMENT'],
+  SKILL: ['SKILL_PRACTICE'],
+  COMPETENCY: ['COMPETENCY_PRACTICE'],
+  EXAM: ['EXAM_PRACTICE'],
+  LEARNING_OBJECTIVE: [],
+  SUBJECT: ['SUBJECT_TEST', 'SUBJECT_MOCK'],
 };
 
 export async function assignTeacherIntervention(actorUserId: string, params: AssignTeacherInterventionParams): Promise<TeacherIntervention> {
@@ -216,7 +221,11 @@ export async function assignInstitutionDirectIntervention(
 }
 
 async function insertIntervention(actorUserId: string, institutionId: string, params: AssignTeacherInterventionParams): Promise<TeacherIntervention> {
-  if (TYPE_FOR_TARGET[params.target.targetType] !== params.interventionType) {
+  if (!TYPE_FOR_TARGET[params.target.targetType]?.includes(params.interventionType)) {
+    throw new TeacherInterventionInvalidTargetError(params.target.targetType);
+  }
+  // a subject Test / Mock carries its frozen configuration; no other type may
+  if ((params.target.targetType === 'SUBJECT') !== Boolean(params.subjectAssessmentAssignment)) {
     throw new TeacherInterventionInvalidTargetError(params.target.targetType);
   }
   // A CONCEPT target is a per-learner concept: it must be THIS learner's own.
@@ -262,8 +271,8 @@ async function insertIntervention(actorUserId: string, institutionId: string, pa
         assigned_by_user_id, institution_id, class_id, student_id,
         target_type, concept_id, skill_id, competency_id, learning_objective_id,
         exam_profile_id, simulation_type, academic_subject_id,
-        intervention_type, reason, instructions, due_at, assignment_group_id, title, starts_at, concept_added_to_plan
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        intervention_type, reason, instructions, due_at, assignment_group_id, title, starts_at, concept_added_to_plan${params.subjectAssessmentAssignment ? ', subject_assessment_assignment' : ''}
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20${params.subjectAssessmentAssignment ? ', $21::jsonb' : ''})
       RETURNING *
       `,
       [
@@ -287,6 +296,7 @@ async function insertIntervention(actorUserId: string, institutionId: string, pa
         params.title ?? null,
         params.startsAt ?? null,
         params.addedToPlan ?? false,
+        ...(params.subjectAssessmentAssignment ? [JSON.stringify(params.subjectAssessmentAssignment)] : []),
       ]
     );
     return toIntervention(result.rows[0]);

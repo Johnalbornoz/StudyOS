@@ -17,6 +17,8 @@
  *                                    lazy TIME_UP auto-submit
  *   readSubjectAssessmentSession     state for a read (lazily auto-submits a timed attempt past its deadline)
  *   listStudentSubjectAssessments    the Student's scheduled / open / recent subject assessments
+ *   heartbeatSubjectAssessmentSession  teacher-assigned attempts: the runner's liveness signal (window-close rule V)
+ *   readCompletedSubjectAssessmentForStaff  full final feedback for an already-authorized Teacher drill-down
  */
 import { randomUUID } from 'crypto';
 import { db } from '@/lib/db';
@@ -38,8 +40,8 @@ import {
   QUIZ_MODE_OF, SETUP_KIND_OF, STUDENT_MAX_ATTEMPTS, DIFFICULTY_BAND_LEVELS, answerCountsAt, blueprintMatches, buildSchedule,
   buildSubjectReport, conceptNeedsReinforcement, feedbackPolicyFor, kindOfQuizMode, lifecycleState, readSetup, remainingSeconds,
   resolveStudentTimezone, sessionExpiresAt, splitByLevels, startTiming, studentTimingFor, recommendedMockDurationMinutes,
-  validateExplicitPlan,
-  type DifficultyBand, type ExplicitPlan, type GradedItem, type LifecycleState, type SubjectAssessmentKind, type SubjectAssessmentOrigin,
+  validateExplicitPlan, rankReuseCandidates,
+  type CompletionReason, type ReuseSource, type DifficultyBand, type ExplicitPlan, type GradedItem, type LifecycleState, type SubjectAssessmentKind, type SubjectAssessmentOrigin,
   type SubjectAssessmentSetup, type TimingSpec,
 } from '@/lib/subject-assessment/lifecycle';
 
@@ -72,6 +74,13 @@ export interface CreateSubjectAssessmentParams {
   browserTimezone?: string;
   /** TEACHER: attempts allowed by the assignment (recorded in the setup; enforcement belongs to the assignment). */
   maxAttempts?: number;
+  /**
+   * TEACHER: the immediately previous attempt's items. Avoided like every seen item; when supply forces a reuse they are
+   * the LAST candidates (operator rule T).
+   */
+  previousAttemptFingerprints?: string[];
+  /** TEACHER: the assignment window close, frozen into the attempt (resume / close-after-exit rule V). */
+  assignmentWindow?: { closesAt: string };
 }
 
 export type ServiceError = { ok: false; status: number; error: string; message: string; detail?: Record<string, unknown> };
@@ -209,14 +218,25 @@ export async function planSubjectAssessment(params: Pick<CreateSubjectAssessment
 
 /** Every question text the Student has been served for these concepts, in any quiz session (exact-novelty fingerprints). */
 export async function loadSeenFingerprints(studentId: string, conceptIds: string[]): Promise<Map<string, Set<string>>> {
+  return (await loadSeenWithRecency(studentId, conceptIds)).seen;
+}
+
+/** The same, plus when each fingerprint was last served to the Student (session creation time; for least-recently-used reuse). */
+async function loadSeenWithRecency(studentId: string, conceptIds: string[]): Promise<{ seen: Map<string, Set<string>>; lastServedMs: Map<string, number> }> {
   const out = new Map<string, Set<string>>(conceptIds.map((c) => [c, new Set<string>()]));
-  const r = await db.query(`SELECT questions FROM quiz_sessions WHERE student_id = $1 AND concept_ids && $2::uuid[]`, [studentId, conceptIds]);
+  const lastServedMs = new Map<string, number>();
+  const r = await db.query(`SELECT questions, created_at FROM quiz_sessions WHERE student_id = $1 AND concept_ids && $2::uuid[]`, [studentId, conceptIds]);
   for (const row of r.rows) {
+    const at = row.created_at ? new Date(row.created_at).getTime() : 0;
     for (const q of (row.questions || []) as GeneratedQuestion[]) {
-      if (q && typeof q.question === 'string' && out.has(q.conceptId)) out.get(q.conceptId)!.add(fingerprintQuestion(q));
+      if (q && typeof q.question === 'string' && out.has(q.conceptId)) {
+        const fp = fingerprintQuestion(q);
+        out.get(q.conceptId)!.add(fp);
+        if (!(lastServedMs.get(fp)! >= at)) lastServedMs.set(fp, at);
+      }
     }
   }
-  return out;
+  return { seen: out, lastServedMs };
 }
 
 async function pool<T, R>(items: readonly T[], size: number, fn: (t: T) => Promise<R>): Promise<R[]> {
@@ -243,7 +263,9 @@ async function generateExactDistribution(input: {
   studentId: string; subjectId: string; quizMode: 'cumulative_assessment' | 'exam_simulation'; language: string; parentOperationId: string;
   distribution: Record<string, number>; levelsOf: (conceptId: string) => Promise<number[]>; seen: Map<string, Set<string>>; avoid: Set<string>;
   generate: GeneratorDeps['generate'];
-}): Promise<{ ok: true; questions: GeneratedQuestion[]; reused: Array<{ conceptId: string; fingerprint: string }> } | { ok: false; shortConcepts: Array<{ conceptId: string; planned: number; generated: number }> }> {
+  /** Reuse ranking (teacher assignments): the previous attempt's items, and when each seen item was last served. */
+  previousAttempt?: Set<string>; lastServedMs?: Map<string, number>;
+}): Promise<{ ok: true; questions: GeneratedQuestion[]; reused: SubjectAssessmentSetup['reusedItems'] } | { ok: false; shortConcepts: Array<{ conceptId: string; planned: number; generated: number }> }> {
   const concepts = Object.keys(input.distribution);
   const results = await pool(concepts, GENERATION_CONCURRENCY, async (conceptId) => {
     const planned = input.distribution[conceptId];
@@ -268,14 +290,18 @@ async function generateExactDistribution(input: {
         }
       }
     }
-    const reused: Array<{ conceptId: string; fingerprint: string }> = [];
-    for (const q of reusable) {
+    // controlled reuse (only when supply is short of novel items): the Student's own older items first (least recently
+    // used), then items of other students of the assignment, the immediately previous attempt last -- each recorded
+    const reused: SubjectAssessmentSetup['reusedItems'] = [];
+    const ranked = input.previousAttempt || input.lastServedMs
+      ? rankReuseCandidates(reusable.map((q) => ({ q, fingerprint: fingerprintQuestion(q) })), { previousAttempt: input.previousAttempt ?? new Set(), group: input.avoid, lastServedMs: input.lastServedMs ?? new Map() })
+      : reusable.map((q) => ({ q, fingerprint: fingerprintQuestion(q), source: undefined as ReuseSource | undefined, lastServedMs: null as number | null }));
+    for (const { q, fingerprint: fp, source, lastServedMs } of ranked) {
       if (accepted.length >= planned) break;
-      const fp = fingerprintQuestion(q);
       if (acceptedFp.has(fp)) continue;
       acceptedFp.add(fp);
       accepted.push(q);
-      reused.push({ conceptId, fingerprint: fp });
+      reused.push({ conceptId, fingerprint: fp, ...(source ? { source, lastServedAt: lastServedMs ? new Date(lastServedMs).toISOString() : null } : {}) });
     }
     return { conceptId, planned, questions: accepted.slice(0, planned), reused };
   });
@@ -344,10 +370,12 @@ export async function createSubjectAssessmentSession(
     return [resolveTargetDifficulty({ activityType, knowledgeState: ks ? { masteryState: ks.masteryState, criticalMisconceptionCount: ks.criticalMisconceptionCount } : null }).level];
   };
 
-  const seen = await loadSeenFingerprints(params.studentId, plan.conceptIds);
+  const { seen, lastServedMs } = await loadSeenWithRecency(params.studentId, plan.conceptIds);
+  const previousAttempt = params.previousAttemptFingerprints ? new Set(params.previousAttemptFingerprints) : undefined;
   const generated = await generateExactDistribution({
     studentId: params.studentId, subjectId: params.subjectId, quizMode, language, parentOperationId: randomUUID(),
-    distribution: plan.distribution, levelsOf, seen, avoid: new Set(params.avoidFingerprints ?? []), generate: deps.generate ?? defaultGenerate,
+    distribution: plan.distribution, levelsOf, seen, avoid: new Set([...(params.avoidFingerprints ?? []), ...(params.previousAttemptFingerprints ?? [])]), generate: deps.generate ?? defaultGenerate,
+    ...(params.origin === 'TEACHER' ? { previousAttempt: previousAttempt ?? new Set<string>(), lastServedMs } : {}),
   });
   if (!generated.ok) {
     return fail(500, 'GENERATION_INSUFFICIENT', 'Could not prepare every planned question. Nothing was created; try again later.', { shortConcepts: generated.shortConcepts, questionCount: plan.questionCount });
@@ -397,6 +425,7 @@ export async function createSubjectAssessmentSession(
     blueprint,
     reusedItems: generated.reused,
     priorFingerprintCount: [...seen.values()].reduce((a, s) => a + s.size, 0),
+    ...(params.origin === 'TEACHER' && params.assignmentWindow ? { assignmentWindow: { closesAt: params.assignmentWindow.closesAt } } : {}),
   };
 
   const quizId = await storeQuiz(params.studentId, null, params.subjectId, questions, language, quizMode, plan.conceptIds, null);
@@ -471,6 +500,88 @@ async function markExpired(quizId: string): Promise<void> {
   await db.query(`UPDATE quiz_sessions SET status = 'expired' WHERE id = $1 AND status = 'active'`, [quizId]);
 }
 
+// ------------------------------------------------- teacher assignment attempts (rule V) -------------------------------------------------
+
+/** "The same continuous session" after the window close: last activity within this many seconds (interpretation, see teacher rules). */
+export const ASSIGNMENT_LIVENESS_WINDOW_SECONDS = 90;
+
+/** The attempt's last activity: its start, the latest saved answer, or the latest runner heartbeat. */
+async function lastActivityAt(quizId: string, setup: SubjectAssessmentSetup): Promise<Date | null> {
+  const r = await db.query(`SELECT max(created_at) AS at FROM quiz_responses WHERE quiz_session_id = $1`, [quizId]);
+  const times = [setup.timing.startedAt, setup.liveness?.lastActivityAt, r.rows[0]?.at ? new Date(r.rows[0].at).toISOString() : null]
+    .filter((x): x is string => !!x).map((x) => new Date(x).getTime());
+  return times.length ? new Date(Math.max(...times)) : null;
+}
+
+/**
+ * Operator rule V for a TEACHER-assigned attempt (setup.assignmentWindow present), decided on every read / answer /
+ * submit / heartbeat:
+ *   before the close   an attempt left idle (untimed inactivity expiry) is REVIVED: the same attempt, saved answers
+ *                      kept, no extra attempt consumed;
+ *   after the close    an attempt still in its continuous session continues (it may be finished after 21:00); one
+ *                      whose session was left (no activity within ASSIGNMENT_LIVENESS_WINDOW_SECONDS), or one already
+ *                      idle-expired, is CLOSED AS IS (answered graded, unanswered in the denominator).
+ * A timed attempt past its deadline is the ordinary TIME_UP auto-submit, untouched. Every other session: OK.
+ */
+async function assignmentAttemptGate(row: SessionRow, setup: SubjectAssessmentSetup, state: LifecycleState, now: Date): Promise<'OK' | 'REVIVE' | 'CLOSE_AS_IS'> {
+  if (setup.origin !== 'TEACHER' || !setup.assignmentWindow || !setup.timing.startedAt) return 'OK';
+  const closed = now.getTime() >= new Date(setup.assignmentWindow.closesAt).getTime();
+  if (state === 'EXPIRED') return closed ? 'CLOSE_AS_IS' : 'REVIVE';
+  if (state !== 'ACTIVE' || !closed) return 'OK';
+  const last = await lastActivityAt(row.id, setup);
+  return last && now.getTime() - last.getTime() <= ASSIGNMENT_LIVENESS_WINDOW_SECONDS * 1000 ? 'OK' : 'CLOSE_AS_IS';
+}
+
+async function reviveAssignmentAttempt(quizId: string, setup: SubjectAssessmentSetup, studentId: string, now: Date): Promise<void> {
+  const tz = await setupTimezone(setup, studentId);
+  await db.query(
+    `UPDATE quiz_sessions SET status = 'active', expires_at = $2::timestamptz WHERE id = $1 AND status IN ('active', 'expired')`,
+    [quizId, sessionExpiresAt(setup, tz, now).toISOString()],
+  );
+}
+
+/**
+ * The runner's heartbeat for a TEACHER-assigned attempt in progress (every ~30 s while the attempt is open): records
+ * the last activity, so the attempt may be finished after the window close while its session lives. Owner only (the
+ * caller authorizes); any other session -> no-op.
+ */
+export async function heartbeatSubjectAssessmentSession(studentId: string, quizId: string): Promise<{ ok: true; data: { alive: boolean; state: LifecycleState } } | ServiceError> {
+  const row = await loadSession(quizId);
+  const setup = row ? readSetup(row.setup) : null;
+  if (!row || row.student_id !== studentId || !setup) return fail(404, 'NOT_FOUND', 'Assessment not found.');
+  const now = new Date(row.db_now);
+  const state = lifecycleState(setup, row.status, new Date(row.expires_at), now);
+  if (setup.origin !== 'TEACHER' || !setup.assignmentWindow) return { ok: true, data: { alive: state === 'ACTIVE', state } };
+  const gate = await assignmentAttemptGate(row, setup, state, now);
+  if (gate === 'CLOSE_AS_IS') {
+    const closed = await submitSubjectAssessmentSession({ studentId, quizId });
+    if (!closed.ok) return closed;
+    return { ok: true, data: { alive: false, state: 'COMPLETED' } };
+  }
+  if (gate === 'REVIVE') await reviveAssignmentAttempt(quizId, setup, studentId, now);
+  if (state !== 'ACTIVE' && gate !== 'REVIVE') return { ok: true, data: { alive: false, state } };
+  await db.query(
+    `UPDATE quiz_sessions SET subject_assessment_setup = subject_assessment_setup || jsonb_build_object('liveness', jsonb_build_object('lastActivityAt', $2::text))
+      WHERE id = $1 AND status = 'active'`,
+    [quizId, now.toISOString()],
+  );
+  return { ok: true, data: { alive: true, state: 'ACTIVE' } };
+}
+
+/**
+ * Operator rule AB for a TEACHER-assigned attempt's final feedback: full when the assignment's versions are truly
+ * diverse (or the window has closed); otherwise the score and general performance (per concept, concepts to
+ * reinforce) now, and the per-question review (questions, answers, expected answers, explanations) held until the
+ * window closes. Every other session: unchanged.
+ */
+async function applyFeedbackRelease(data: SubjectSubmissionData, setup: SubjectAssessmentSetup, now: Date): Promise<SubjectSubmissionData> {
+  if (setup.origin !== 'TEACHER' || !setup.assignmentId || !setup.assignmentWindow) return data;
+  const { resolveAssignmentFeedbackRelease } = await import('@/lib/teacher/subject-assessment-release.service');
+  const release = await resolveAssignmentFeedbackRelease(setup.assignmentId, setup.assignmentWindow.closesAt, now);
+  if (release.level === 'FULL') return { ...data, feedbackRelease: { level: 'FULL', reason: release.reason } };
+  return { ...data, review: [], feedbackRelease: { level: 'SCORE_ONLY', reason: release.reason, releaseAt: release.releaseAt } };
+}
+
 /**
  * The state of one subject assessment for its Student. A timed attempt past its deadline is auto-submitted here
  * (server-side, lazily, on this read). Questions are only sent while the attempt is ACTIVE.
@@ -486,6 +597,16 @@ export async function readSubjectAssessmentSession(studentId: string, quizId: st
     if (!sub.ok) return sub;
     return readSubjectAssessmentSession(studentId, quizId, deps);
   }
+  const gate = await assignmentAttemptGate(row, setup, state, now);
+  if (gate === 'CLOSE_AS_IS') {
+    const closed = await submitSubjectAssessmentSession({ studentId, quizId }, deps);
+    if (!closed.ok) return closed;
+    return readSubjectAssessmentSession(studentId, quizId, deps);
+  }
+  if (gate === 'REVIVE') {
+    await reviveAssignmentAttempt(quizId, setup, studentId, now);
+    return readSubjectAssessmentSession(studentId, quizId, deps);
+  }
   if (state === 'EXPIRED') await markExpired(quizId);
   const view: SubjectAssessmentView = { quizId, state, setup, expiresAt: new Date(row.expires_at).toISOString(), remainingSeconds: remainingSeconds(setup.timing, now) };
   if (state === 'ACTIVE') {
@@ -493,7 +614,7 @@ export async function readSubjectAssessmentSession(studentId: string, quizId: st
     view.questions = row.questions.map((q, i) => toClientQuestion(q, i));
     view.answered = [...saved.entries()].map(([questionIndex, s]) => ({ questionIndex, ...(setup.feedbackPolicy === 'TEST_CORRECTNESS_ONLY' && s.grade ? { correct: s.grade.correct } : {}) }));
   }
-  if (state === 'COMPLETED') view.results = await rebuildResults(row, setup);
+  if (state === 'COMPLETED') view.results = await applyFeedbackRelease(await rebuildResults(row, setup), setup, now);
   return { ok: true, view };
 }
 
@@ -541,6 +662,16 @@ export async function recordSubjectAssessmentAnswer(
     const sub = await submitSubjectAssessmentSession({ studentId: input.studentId, quizId: input.quizId }, deps);
     if (!sub.ok) return sub;
     return { ok: true, data: { timeUp: true, results: sub.data } };
+  }
+  const gate = await assignmentAttemptGate(row, setup, state, now);
+  if (gate === 'CLOSE_AS_IS') {
+    const closed = await submitSubjectAssessmentSession({ studentId: input.studentId, quizId: input.quizId }, deps);
+    if (!closed.ok) return closed;
+    return fail(409, 'WINDOW_CLOSED_AFTER_EXIT', 'The assignment window closed after this attempt was left; it was closed with the answers saved before.', { state: 'COMPLETED' });
+  }
+  if (gate === 'REVIVE') {
+    await reviveAssignmentAttempt(input.quizId, setup, input.studentId, now);
+    return recordSubjectAssessmentAnswer(input, deps);
   }
   if (state !== 'ACTIVE') return fail(409, 'SESSION_NOT_ACTIVE', `This assessment is ${state}.`, { state });
   const question = row.questions[input.questionIndex];
@@ -597,9 +728,11 @@ export interface SubjectSubmissionData {
     scorePercent: number; passed: boolean; passPercent: number; total: number; correct: number; incorrect: number; unanswered: number;
     perConcept: Array<{ conceptId: string; conceptLabel: string; total: number; correct: number; incorrect: number; unanswered: number; scorePercent: number; passed: boolean }>;
     conceptsToReinforce: Array<{ conceptId: string; conceptLabel: string }>;
-    completionReason: 'SUBMITTED' | 'TIME_UP_AUTO_SUBMIT';
+    completionReason: CompletionReason;
     oneAttempt: boolean;
   };
+  /** Teacher assignments (rule AB): FULL, or SCORE_ONLY with the per-question review held until `releaseAt`. */
+  feedbackRelease?: { level: 'FULL'; reason: string } | { level: 'SCORE_ONLY'; reason: string; releaseAt: string };
   perConceptResults: Array<{ conceptId: string; conceptLabel: string; score: number; previousMastery?: number; newMastery?: number; delta?: number }>;
   review: SubjectReviewItem[];
   messageKey: 'excellent' | 'good' | 'keep_going';
@@ -662,11 +795,15 @@ export async function submitSubjectAssessmentSession(
   if (!row || row.student_id !== input.studentId || !setup) return fail(404, 'NOT_FOUND', 'Assessment not found.');
   const now = new Date(row.db_now);
   const state = lifecycleState(setup, row.status, new Date(row.expires_at), now);
-  if (state === 'COMPLETED') return { ok: true, alreadySubmitted: true, data: await rebuildResults(row, setup) };
+  if (state === 'COMPLETED') return { ok: true, alreadySubmitted: true, data: await applyFeedbackRelease(await rebuildResults(row, setup), setup, now) };
   if (state === 'SCHEDULED_NOT_STARTED') return fail(409, 'ASSESSMENT_NOT_STARTED', 'Start this assessment before submitting it.');
-  if (state === 'EXPIRED') { await markExpired(input.quizId); return fail(410, 'SESSION_EXPIRED', 'This assessment expired; no result was recorded.'); }
-  const timeUp = state === 'TIME_UP';
-  const reason: 'SUBMITTED' | 'TIME_UP_AUTO_SUBMIT' = timeUp ? 'TIME_UP_AUTO_SUBMIT' : 'SUBMITTED';
+  // a teacher-assigned attempt: left across the window close -> closed as is (client answers not saved before do not
+  // count); idle before the close -> the same attempt continues
+  const gate = state === 'TIME_UP' ? 'OK' : await assignmentAttemptGate(row, setup, state, now);
+  if (state === 'EXPIRED' && gate === 'OK') { await markExpired(input.quizId); return fail(410, 'SESSION_EXPIRED', 'This assessment expired; no result was recorded.'); }
+  const closedAsIs = gate === 'CLOSE_AS_IS';
+  const timeUp = state === 'TIME_UP' || closedAsIs;
+  const reason: CompletionReason = closedAsIs ? 'WINDOW_CLOSED_AFTER_EXIT' : state === 'TIME_UP' ? 'TIME_UP_AUTO_SUBMIT' : 'SUBMITTED';
 
   const saved = await savedResponses(input.quizId);
   const evidenceMode = row.evidence_mode ?? evidenceModeForQuizMode(row.quiz_mode as never);
@@ -773,7 +910,19 @@ export async function submitSubjectAssessmentSession(
 
   const data = buildSubmissionData(input.quizId, row, { ...setup, completion }, graded.map((g) => ({ questionIndex: g.questionIndex, raw: g.raw, grade: g.grade })), labels);
   data.perConceptResults = perConceptResults;
-  return { ok: true, data };
+  return { ok: true, data: await applyFeedbackRelease(data, setup, now) };
+}
+
+/**
+ * The final feedback of a COMPLETED subject assessment for an already-authorized STAFF reader (the Teacher's
+ * drill-down of their own assignment): full detail, never the Student's release gate. The caller must have authorized
+ * the reader for this Student AND this assignment; this function checks nothing but the session itself.
+ */
+export async function readCompletedSubjectAssessmentForStaff(quizId: string): Promise<{ setup: SubjectAssessmentSetup; studentId: string; data: SubjectSubmissionData; questions: GeneratedQuestion[] } | null> {
+  const row = await loadSession(quizId);
+  const setup = row ? readSetup(row.setup) : null;
+  if (!row || !setup || row.status !== 'completed') return null;
+  return { setup, studentId: row.student_id, data: await rebuildResults(row, setup), questions: row.questions };
 }
 
 function buildSubmissionData(
@@ -833,7 +982,11 @@ export interface SubjectAssessmentListItem {
   remainingSeconds: number | null; scorePercent: number | null; passed: boolean | null; createdAt: string;
 }
 
-/** The Student's subject assessments (scheduled, open, and the last completed / expired ones) -- "Mis evaluaciones programadas". */
+/**
+ * The Student's OWN subject assessments (scheduled, open, and the last completed / expired ones) -- "Mis evaluaciones
+ * programadas". Teacher-assigned attempts are listed with their assignment (window, attempts) on the Student's
+ * assignments page instead (src/lib/teacher/subject-assessment-assignment.service.ts), never here.
+ */
 export async function listStudentSubjectAssessments(studentId: string, subjectId?: string | null, limit = 20, finalizeTimeUp = true): Promise<SubjectAssessmentListItem[]> {
   let rows: Array<{ id: string; subject_id: string; status: string; expires_at: string; created_at: string; db_now: string; setup: unknown }> = [];
   try {
@@ -842,6 +995,7 @@ export async function listStudentSubjectAssessments(studentId: string, subjectId
          FROM quiz_sessions
         WHERE student_id = $1 AND quiz_mode IN ('cumulative_assessment', 'exam_simulation')
           AND subject_assessment_setup->>'version' = 'subject-assessment-v2'
+          AND COALESCE(subject_assessment_setup->>'origin', 'STUDENT') <> 'TEACHER'
           AND ($2::uuid IS NULL OR subject_id = $2::uuid)
         ORDER BY created_at DESC LIMIT $3`,
       [studentId, subjectId ?? null, limit],

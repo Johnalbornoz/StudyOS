@@ -79,6 +79,7 @@ export const LEARNING_ROUTE_POLICY: readonly LearningRoutePolicy[] = [
   { route: 'cognitive/explain/submit', rule: 'PAID_UNLESS_OPEN_ATTEMPT', note: "open = the Student's own task, not expired, not yet answered" },
   { route: 'cognitive/transfer/submit', rule: 'PAID_UNLESS_OPEN_ATTEMPT', note: "open = the Student's own server-minted task and its exact prompt" },
   { route: 'student/teacher-interventions/[id]/start', rule: 'PAID_UNLESS_OPEN_ATTEMPT', note: 'open = an execution already exists for this task and key (RECOVERED, nothing generated)' },
+  { route: 'student/subject-assessment-assignments/[interventionId]/attempts', rule: 'PAID_UNLESS_OPEN_ATTEMPT', note: 'open = an attempt of this teacher-assigned Test / Mock is active (RESUMED, nothing generated)' },
 
   // (b) FREE_IN_DEMO -- AI-assisted content setup.
   { route: 'concepts/suggest', rule: 'FREE_IN_DEMO' },

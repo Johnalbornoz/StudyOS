@@ -10,6 +10,8 @@ import { StatusBadge, toneForInterventionStatus } from '@/components/ui/StatusBa
 import { StartAssignmentButton } from './StartAssignmentButton';
 import { db } from '@/lib/db';
 import { fillMessage } from '@/lib/i18n/roles-messages';
+import { listStudentSubjectAssignments } from '@/lib/teacher/subject-assessment-assignment.service';
+import { StartSubjectAssessmentButton } from './StartSubjectAssessmentButton';
 
 const TYPE_LABEL_KEY = {
   CONCEPT_REINFORCEMENT: 'teacher.interventions.type.concept',
@@ -36,7 +38,12 @@ export default async function AssignmentsPage() {
   const locale = await getInterfaceLanguage(studentId).catch(() => 'es' as const);
   const t = getMessages(locale);
 
-  const interventions = await getStudentPendingTeacherInterventions(studentId);
+  // teacher-assigned subject Tests / Mocks have their own section (window, attempts, latest completed result)
+  const interventions = (await getStudentPendingTeacherInterventions(studentId)).filter((i) => i.interventionType !== 'SUBJECT_TEST' && i.interventionType !== 'SUBJECT_MOCK');
+  const subjectAssignments = await listStudentSubjectAssignments(studentId).catch((error) => {
+    console.error('[assignments] subject assessment assignments failed', (error as Error)?.message);
+    return [];
+  });
   // Track A: show WHAT to practise (the learner's own topic, in their
   // language) rather than only the assignment type. Read-only lookup.
   const topicRows = interventions.length
@@ -56,9 +63,55 @@ export default async function AssignmentsPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <PageHeader title={t['assignments.title']} subtitle={t['assignments.subtitle']} />
 
-      {interventions.length === 0 ? (
+      {subjectAssignments.length > 0 && (
+        <section aria-labelledby="student-tsa-title" className="card" data-testid="student-subject-assignments" style={{ padding: 'var(--space-4)' }}>
+          <h2 id="student-tsa-title" style={{ fontSize: 16, margin: '0 0 8px' }}>{t['tsa.student.title']}</h2>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 'var(--space-3)' }}>
+            {subjectAssignments.map((a) => {
+              const act = a.action;
+              const label = act.action === 'RESUME' ? t['tsa.student.resume'] : act.action === 'START' && act.attemptNumber > 1 ? fillMessage(t['tsa.student.retry'], { n: act.attemptNumber, max: a.maxAttempts }) : t['tsa.student.start'];
+              return (
+                <li key={a.interventionId} className="list-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 'var(--space-2)' }} data-status={a.status}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div className="row-main">
+                      <div className="row-title">{a.title || `${t[`tsa.kind.${a.kind}`]}${a.subjectName ? ` · ${a.subjectName}` : ''}`}</div>
+                      {a.className && <div className="row-sub">{fillMessage(t['studentAssign.assignedBy'], { className: a.className })}</div>}
+                      <div className="row-sub">{[t[`tsa.kind.${a.kind}`], fillMessage(t['tsa.previewCount'], { n: a.questionCount }), a.timed && a.durationMinutes ? `${a.durationMinutes} min` : t['tsa.untimed']].join(' · ')}</div>
+                      <div className="row-sub">{fillMessage(t['tsa.student.windowLine'], { start: a.window.startDate, end: a.window.endDate, tz: a.window.timezone })}</div>
+                      <div className="row-sub">{fillMessage(t['tsa.attempts'], { used: a.attemptsUsed, max: a.maxAttempts })}</div>
+                      {a.instructions && <div className="row-sub">{a.instructions}</div>}
+                      {a.result && (
+                        <div className="row-sub" data-testid="tsa-result">
+                          <strong>{fillMessage(t['tsa.student.result'], { score: a.result.scorePercent, n: a.result.attemptNumber })}</strong> · {a.result.passed ? t['quiz.subject.passed'] : t['quiz.subject.notPassed']} · {t['tsa.student.resultNote']}
+                        </div>
+                      )}
+                      {act.action === 'NONE' && <div className="row-sub">{fillMessage(t[`tsa.student.reason.${act.reason}`], { date: a.window.startDate })}</div>}
+                    </div>
+                    <StatusBadge label={t[`assignments.status.${a.status}`] ?? a.status} tone={toneForInterventionStatus(a.status)} />
+                  </div>
+                  {act.action !== 'NONE' && (
+                    <StartSubjectAssessmentButton interventionId={a.interventionId} label={label} locale={locale} labels={{ starting: t['tsa.student.starting'], error: t['tsa.student.error'] }} />
+                  )}
+                  {a.history.filter((h) => h.state === 'COMPLETED').length > 0 && (
+                    <div className="row-sub">
+                      {t['tsa.student.history']}:{' '}
+                      {a.history.filter((h) => h.state === 'COMPLETED').map((h) => (
+                        <a key={h.quizId} href={`/dashboard/quiz?subjectId=${encodeURIComponent(a.subjectId)}&mode=${a.quizMode}&subjectSessionId=${encodeURIComponent(h.quizId)}`} style={{ marginRight: 8 }}>
+                          {fillMessage(t['tsa.drill.attempt'], { n: h.attemptNumber })}: {h.scorePercent} %
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {interventions.length === 0 && subjectAssignments.length === 0 ? (
         <EmptyState title={t['assignments.empty']} body={t['assignments.emptyBody']} />
-      ) : (
+      ) : interventions.length === 0 ? null : (
         <ul className="list-card card">
           {interventions.map((i) => (
             <li key={i.id} className="list-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 'var(--space-2)' }}>

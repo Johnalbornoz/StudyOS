@@ -41,7 +41,7 @@ describe('the written definition (D-8) and the routes agree', () => {
   });
 
   it('every PAID_UNLESS_OPEN_ATTEMPT route enforces through the open-attempt form of the shared gate (D-8c)', () => {
-    expect(rulesFor('PAID_UNLESS_OPEN_ATTEMPT').map((p) => p.route).sort()).toEqual(['cognitive/explain/submit', 'cognitive/transfer/submit', 'student/teacher-interventions/[id]/start']);
+    expect(rulesFor('PAID_UNLESS_OPEN_ATTEMPT').map((p) => p.route).sort()).toEqual(['cognitive/explain/submit', 'cognitive/transfer/submit', 'student/subject-assessment-assignments/[interventionId]/attempts', 'student/teacher-interventions/[id]/start']);
     for (const p of rulesFor('PAID_UNLESS_OPEN_ATTEMPT')) expect(source(p.route), `${p.route} must enforce unless an open attempt`).toMatch(/learningLicenceRequiredUnlessOpenAttempt(ForActor)?\(/);
   });
 
