@@ -118,6 +118,7 @@ import type { LearningEvidence } from '@/lib/algorithms/mastery';
 import { normalizeResponseTiming, toResponseTimingEntries, withBehaviorMetadata, type ResponseTiming } from '@/lib/algorithms/response-timing';
 import type { AIProvenance } from '@/lib/ai';
 import { recordDecisionEvent } from '@/lib/audit';
+import { createSubjectAssessmentSession, isSubjectAssessmentSession, submitSubjectAssessmentSession } from '@/services/subject-assessment.service';
 import { estimateDPGrade, estimateMYPBand } from '@/lib/ib';
 import { resolveDiagnosticCheck } from '@/services/cognitive-diagnosis.service';
 import { completeRemediationStep } from '@/services/remediation.service';
@@ -218,8 +219,17 @@ const GenerateQuizSchema = z.object({
     'canonical_learn_check',
   ]).default('topic_practice'),
   maxQuestions: z.number().int().min(1).max(20).optional(),
-  /** 2026-10-17 subject test / mock: the actual planned date (Student's local day). Frozen with the session. */
-  subjectAssessment: z.object({ scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).optional(),
+  /**
+   * Overnight 2026-10-16 subject test / mock (cumulative_assessment / exam_simulation): the Student picks DO NOW or
+   * SCHEDULE (a local date). StudyUs plans count, distribution, difficulty and timing (services/subject-assessment.service);
+   * `maxQuestions` is never read for these modes. `timezone` = the browser's IANA zone, used only when the Student has no
+   * student_availability.timezone (recorded as assumed).
+   */
+  subjectAssessment: z.object({
+    mode: z.enum(['NOW', 'SCHEDULED']).default('NOW'),
+    scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    timezone: z.string().max(64).optional(),
+  }).optional(),
   difficulty: z.number().int().min(1).max(5).optional(),
   language: z.string().optional(),
   /**
@@ -330,6 +340,53 @@ async function selectConceptsForQuizMode(
     .slice(0, maxConcepts);
 }
 
+/**
+ * Overnight 2026-10-16 -- subject Test ("Prueba por materia") / Mock ("Simulacro por materia"), STUDENT origin. The
+ * Student chose the concepts (all by default) and DO NOW or SCHEDULE; StudyUs plans everything else
+ * (createSubjectAssessmentSession). No concept list = every concept of the subject (the setup's default).
+ */
+async function handleSubjectAssessmentCreate(validated: z.infer<typeof GenerateQuizSchema>) {
+  let conceptIds = validated.conceptIds ?? [];
+  if (conceptIds.length === 0) {
+    const all = await db.query(`SELECT id FROM concepts WHERE subject_id = $1 ORDER BY created_at ASC NULLS LAST, id ASC`, [validated.subjectId]);
+    conceptIds = all.rows.map((r: { id: string }) => r.id);
+  }
+  const sa = validated.subjectAssessment ?? { mode: 'NOW' as const };
+  if (sa.mode === 'SCHEDULED' && !sa.scheduledDate) {
+    return NextResponse.json({ error: 'SCHEDULE_DATE_REQUIRED', message: 'Choose the date of the scheduled assessment.' }, { status: 400 });
+  }
+  const created = await createSubjectAssessmentSession({
+    studentId: validated.studentId,
+    subjectId: validated.subjectId,
+    kind: validated.quizMode === 'exam_simulation' ? 'MOCK' : 'TEST',
+    origin: 'STUDENT',
+    conceptIds,
+    schedule: sa.mode === 'SCHEDULED' ? { mode: 'SCHEDULED', date: sa.scheduledDate! } : { mode: 'NOW' },
+    timing: { timed: validated.quizMode === 'exam_simulation', durationMinutes: null },
+    language: isLocale(validated.language) ? validated.language : undefined,
+    browserTimezone: sa.timezone,
+  });
+  if (!created.ok) {
+    return NextResponse.json({ error: created.error, message: created.message, ...(created.detail ? { detail: created.detail } : {}) }, { status: created.status });
+  }
+  const { view } = created;
+  const language = (await db.query(`SELECT language FROM quiz_sessions WHERE id = $1`, [created.quizId])).rows[0]?.language ?? 'es';
+  return NextResponse.json({
+    success: true,
+    data: {
+      quizId: created.quizId,
+      language,
+      quizMode: validated.quizMode,
+      maxQuestions: created.setup.questionCount,
+      countAuthority: { status: 'SUBJECT_ASSESSMENT_PLAN', rule: created.setup.rule },
+      subjectAssessment: { ...view, questions: undefined },
+      ...(view.questions
+        ? { quiz: { questions: view.questions, count: view.questions.length }, message: 'Assessment started. Submit answers with this quizId to complete.' }
+        : { scheduled: true, message: 'Assessment created and frozen. Start it from your subject page.' }),
+    },
+  });
+}
+
 /** A submission re-asks the original question for verification; it does not ask a provider for a variant. */
 const SUBMISSION_GENERATES_VARIANTS: boolean = false;
 
@@ -409,6 +466,13 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     );
     if (!subjectOwned || !conceptsOwned) {
       return NextResponse.json({ error: 'FORBIDDEN', message: 'Cannot access this subject or concept' }, { status: 403 });
+    }
+
+    // Overnight 2026-10-16: a subject Test / Mock is created ONLY through the subject assessment service (StudyUs plans
+    // count, distribution, difficulty and timing; the setup is frozen; NOW starts it, SCHEDULED waits for the Student).
+    // The same service is the TEACHER workstream's entry point. `maxQuestions` is never read for these modes.
+    if (validated.quizMode === 'cumulative_assessment' || validated.quizMode === 'exam_simulation') {
+      return await handleSubjectAssessmentCreate(validated);
     }
 
     if (isSingleConceptMode(validated.quizMode) && !validated.conceptId) {
@@ -577,10 +641,6 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         : validated.quizMode === 'diagnostic_check'
         ? Math.max(2, Math.min(4, validated.maxQuestions ?? config.defaultMax))
         : Math.max(1, Math.min(20, validated.maxQuestions ?? config.defaultMax));
-    // 2026-10-17: the subject mock has no governed default size -- its question count is an explicit setup choice.
-    if (validated.quizMode === 'exam_simulation' && !validated.maxQuestions) {
-      return NextResponse.json({ error: 'QUESTION_COUNT_REQUIRED', message: 'A subject mock needs an explicit question count.' }, { status: 400 });
-    }
 
     // LX-4R R8: for a canonical single-concept PRACTICE / PROVE flow the
     // question count derives from the CANONICAL evidence gap
@@ -766,12 +826,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       primaryConceptId = validated.conceptId!;
     } else if (validated.conceptIds && validated.conceptIds.length > 0) {
       // Student picked specific topics instead of the automatic
-      // weakest-first/scheduled-exam selection below.
-      // 2026-10-17: every selected concept is assessed -- never silently dropped. More concepts than questions is a
-      // setup error the Student fixes (the questions are then distributed across ALL selected concepts).
-      if (validated.conceptIds.length > maxQuestions) {
-        return NextResponse.json({ error: 'MORE_CONCEPTS_THAN_QUESTIONS', message: `Selected ${validated.conceptIds.length} concepts for ${maxQuestions} questions.` }, { status: 400 });
-      }
+      // weakest-first/scheduled-exam selection below. (Subject Test / Mock never reach this point: they are created by
+      // handleSubjectAssessmentCreate, which covers every selected concept with its planned distribution.)
       conceptIds = [...validated.conceptIds];
       primaryConceptId = null;
     } else {
@@ -1359,30 +1415,6 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       v1MarkerToPersist
     );
     persistenceMs = Date.now() - persistenceStartedAt;
-    // 2026-10-17 subject test / mock: freeze the setup with the session -- the exact selected concepts, the question
-    // count, the planned date, the (not yet governed) recommended date and the per-concept blueprint of the questions.
-    if (validated.quizMode === 'cumulative_assessment' || validated.quizMode === 'exam_simulation') {
-      const blueprint: Record<string, number> = {};
-      for (const q of questions as Array<{ conceptId?: string }>) if (q.conceptId) blueprint[q.conceptId] = (blueprint[q.conceptId] ?? 0) + 1;
-      const setup = {
-        kind: validated.quizMode === 'exam_simulation' ? 'SUBJECT_MOCK_EXAM' : 'SUBJECT_CUMULATIVE_TEST',
-        quizMode: validated.quizMode,
-        subjectId: validated.subjectId,
-        selectedConceptIds: conceptIds,
-        selectionSource: validated.conceptIds && validated.conceptIds.length > 0 ? 'STUDENT_SELECTED' : 'AUTOMATIC',
-        questionCount: questions.length,
-        requestedQuestionCount: maxQuestions,
-        scheduledDate: validated.subjectAssessment?.scheduledDate ?? null,
-        recommendedDate: null,
-        recommendedDateStatus: 'NOT_AVAILABLE_NO_GOVERNED_RULE',
-        blueprint,
-        frozenAt: new Date().toISOString(),
-      };
-      await db.query(`UPDATE quiz_sessions SET subject_assessment_setup = $2::jsonb WHERE id = $1 AND subject_assessment_setup IS NULL`, [quizId, JSON.stringify(setup)]).catch((e: { code?: string; message?: string }) => {
-        console.warn('[subject-assessment-setup]', JSON.stringify({ quizId, reason: e?.code === '42703' ? 'COLUMN_NOT_MIGRATED' : (e?.message ?? '').slice(0, 120) }));
-      });
-    }
-
     if (emergencyLaunch) {
       await completeEmergencyDelivery({ input: emergencyLaunch.input, quizId, questions, generator: questionGeneratorIdentity(parentOperationId) }).catch((err) => console.error('[activity-launch] emergency banking failed', err));
       logActivityLaunch({
@@ -1613,6 +1645,18 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     // model sees a signalled answer and nothing is recorded for it.
     const safetyBlock = await studentTextSafetyResponse(validated.answers.map((a) => a.answer), { studentId: validated.studentId, surface: 'QUIZ_ANSWER', locale: quizSession.language });
     if (safetyBlock) return safetyBlock;
+
+    // Overnight 2026-10-16: a v2 subject Test / Mock is graded and closed by the subject assessment service (answered +
+    // UNANSWERED in the denominator, per-concept CUMULATIVE_ASSESSMENT / MOCK_EXAM evidence with its scorePercent, a
+    // timed attempt past its deadline counts only answers saved before it, one attempt). Legacy subject sessions (no v2
+    // setup) keep the path below.
+    if ((quizSession.quizMode === 'cumulative_assessment' || quizSession.quizMode === 'exam_simulation') && (await isSubjectAssessmentSession(validated.quizId))) {
+      const submitted = await submitSubjectAssessmentSession({ studentId: validated.studentId, quizId: validated.quizId, answers: validated.answers });
+      if (!submitted.ok) {
+        return NextResponse.json({ error: submitted.error, message: submitted.message }, { status: submitted.status });
+      }
+      return NextResponse.json({ success: true, ...(submitted.alreadySubmitted ? { alreadySubmitted: true } : {}), data: submitted.data });
+    }
 
     if (quizSession.status === 'completed') {
       return NextResponse.json({

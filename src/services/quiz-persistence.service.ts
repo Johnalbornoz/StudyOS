@@ -630,20 +630,31 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
 /**
  * Get all active quizzes for a student
  */
+/**
+ * Overnight 2026-10-16: a SCHEDULED subject Test / Mock that the Student has not started yet is frozen but not being
+ * taken -- it must not restrict the Tutor all day. Every other active session (including a started subject attempt)
+ * is listed exactly as before.
+ */
+export const NOT_STARTED_SUBJECT_ASSESSMENT_PREDICATE = `(subject_assessment_setup IS NOT NULL AND subject_assessment_setup->>'version' = 'subject-assessment-v2' AND (subject_assessment_setup->'timing'->>'startedAt') IS NULL)`;
+
 export async function getStudentActiveQuizzes(studentId: string): Promise<QuizSession[]> {
   try {
-    const result = await db.query(
-      `
+    const listSql = (excludeNotStarted: boolean) => `
       SELECT id, student_id, concept_id, subject_id,
              questions, status, created_at, expires_at, quiz_mode, concept_ids, activity_type, evidence_mode
       FROM quiz_sessions
       WHERE student_id = $1
       AND status = 'active'
       AND expires_at > NOW()
+      ${excludeNotStarted ? `AND NOT ${NOT_STARTED_SUBJECT_ASSESSMENT_PREDICATE}` : ''}
       ORDER BY created_at DESC
-      `,
-      [studentId]
-    );
+      `;
+    // A schema without subject_assessment_setup (migration 20261127_1100 not applied) has no such sessions: fall back to
+    // the unfiltered listing rather than failing open (an error here would return [] and lift every restriction).
+    const result = await db.query(listSql(true), [studentId]).catch((e: { code?: string }) => {
+      if (e?.code === '42703') return db.query(listSql(false), [studentId]);
+      throw e;
+    });
 
     return result.rows.map((row) => {
       const quizMode: QuizMode = row.quiz_mode || 'topic_practice';

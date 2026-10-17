@@ -19,6 +19,7 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { isOwner } from '@/lib/authorization';
 import { getQuizSession } from '@/services/quiz-persistence.service';
+import { isSubjectAssessmentSession, readSubjectAssessmentSession } from '@/services/subject-assessment.service';
 import { toClientQuestion } from '@/lib/quiz/client-question';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -38,6 +39,23 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<{ q
   const session = await getQuizSession(quizId);
   if (!session || session.studentId !== studentId) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+  }
+
+  // Overnight 2026-10-16: a subject Test / Mock answers with its lifecycle (scheduled / active / time up / expired /
+  // completed), the true remaining time, the saved answers and -- once closed -- the final feedback. A timed attempt
+  // past its deadline is auto-submitted HERE, on this read. Questions are sent only while the attempt is active.
+  if ((session.quizMode === 'cumulative_assessment' || session.quizMode === 'exam_simulation') && (await isSubjectAssessmentSession(quizId))) {
+    const read = await readSubjectAssessmentSession(studentId, quizId);
+    if (!read.ok) return NextResponse.json({ error: read.error, message: read.message }, { status: read.status });
+    return NextResponse.json({
+      success: true,
+      data: {
+        quizId: session.id, subjectId: session.subjectId, conceptId: null, quizMode: session.quizMode, language: session.language,
+        status: read.view.state === 'COMPLETED' ? 'completed' : read.view.state === 'EXPIRED' ? 'expired' : 'active',
+        questions: read.view.questions ?? [],
+        subjectAssessment: { ...read.view, questions: undefined },
+      },
+    });
   }
 
   return NextResponse.json({
