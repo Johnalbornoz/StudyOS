@@ -90,25 +90,25 @@ describe('PED-05 subject test / subject mock', () => {
     // standardized exam modes are unchanged: an unknown mode still fails closed as standardized
     expect(supplyFamilyOf(supplyIntentOfQuizMode('not-a-mode'))).toBe('STANDARDIZED_EXAM');
   });
-  it('setup: every concept enabled by default, select / deselect all, at least one, count >= concepts, explicit mock count, dates, preview', () => {
+  // Superseded by the overnight 2026-10-16 operator rules (StudyUs decides count / distribution; DO NOW or SCHEDULE; no
+  // recommended date). The full rule set is tested in tests/unit/subject-assessment-lifecycle.test.ts.
+  it('setup: every concept enabled by default, select / deselect all, at least one, NO user count, DO NOW / SCHEDULE, preview, no recommended date', () => {
     const p = src('src/app/dashboard/quiz/page.tsx');
     expect(p).toMatch(/setSelectedConceptIds\(all\.map\(\(c\) => c\.id\)\)/);
     expect(p).toMatch(/t\['quiz\.subjectSetup\.selectAll'\]/);
     expect(p).toMatch(/t\['quiz\.subjectSetup\.deselectAll'\]/);
     expect(p).toMatch(/const noConcept = subjectSetup && subjectConcepts\.length > 0 && selectedConceptIds\.length === 0/);
-    expect(p).toMatch(/const countBelow = subjectSetup && !countMissing && selectedConceptIds\.length > maxQuestions/);
-    expect(p).toMatch(/exam_simulation: 0,/);
+    expect(p).not.toMatch(/quiz\.subjectSetup\.questionCount/);
     expect(p).toMatch(/data-testid="subject-scheduled-date"/);
-    expect(p).toMatch(/data-testid="subject-recommended-date"/);
+    expect(p).not.toMatch(/subject-recommended-date|recommendedDate/);
     expect(p).toMatch(/data-testid="subject-assessment-preview"/);
   });
-  it('server: explicit mock count, no silently dropped concept, frozen setup (selected ids, count, dates, blueprint)', () => {
+  it('server: subject modes are created by the subject assessment service (no user count, no recommended date)', () => {
     const r = src('src/app/api/quizzes/generate-and-take/route.ts');
-    expect(r).toMatch(/error: 'QUESTION_COUNT_REQUIRED'/);
-    expect(r).toMatch(/error: 'MORE_CONCEPTS_THAN_QUESTIONS'/);
+    expect(r).not.toMatch(/error: 'QUESTION_COUNT_REQUIRED'/);
     expect(r).not.toMatch(/conceptIds = validated\.conceptIds\.slice\(0, maxQuestions\)/);
-    expect(r).toMatch(/UPDATE quiz_sessions SET subject_assessment_setup = \$2::jsonb/);
-    expect(r).toMatch(/recommendedDateStatus: 'NOT_AVAILABLE_NO_GOVERNED_RULE'/);
+    expect(r).toMatch(/return await handleSubjectAssessmentCreate\(validated\)/);
+    expect(r).not.toMatch(/recommendedDateStatus/);
     expect(src('database/migrations/20261127_1100_quiz_session_subject_assessment_setup.sql')).toMatch(/ADD COLUMN IF NOT EXISTS subject_assessment_setup jsonb/);
   });
   it('labels: "Prueba por materia" / "Simulacro por materia"', () => {
