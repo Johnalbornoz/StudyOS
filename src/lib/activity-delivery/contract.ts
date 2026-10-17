@@ -17,6 +17,8 @@
  */
 import { createHash } from 'crypto';
 import { PROMPT_REGISTRY } from '@/lib/ai/prompt-registry';
+import { practiceMixForItemCount } from '@/lib/pedagogical-engine/difficulty-policy';
+import type { PracticeMix } from '@/lib/pedagogical-engine/types';
 
 export type DeliveryActivityType = 'LEARN_CHECK' | 'PRACTICE' | 'PROVE' | 'RETAIN' | 'TRANSFER';
 export type DeliveryStage = 'LEARN' | 'PRACTICE' | 'PROVE' | 'RETAIN' | 'TRANSFER';
@@ -83,7 +85,28 @@ export interface ActivityContract {
   itemCount: number;
   independence: boolean;
   policyVersion: string;
+  /**
+   * D78 -- PRACTICE (and REINFORCE, delivered as PRACTICE) only: the exact per-level item counts
+   * (e.g. 2 at base + 1 at base+1). Part of the contract fingerprint: a set prepared for one mix
+   * is never served for another. Absent = no per-level contract (every other activity).
+   */
+  practiceMix?: DeliveryPracticeMix;
 }
+
+export interface DeliveryPracticeMix {
+  baseLevel: number;
+  items: Array<{ level: number; count: number }>;
+}
+
+/** D78 -- the engine's mix re-sized for the delivered item count (the +1 item exists only for a 3-item session). */
+export function deliveryPracticeMix(mix: PracticeMix | null | undefined, itemCount: number): DeliveryPracticeMix | undefined {
+  if (!mix) return undefined;
+  const sized = practiceMixForItemCount(mix.baseLevel, mix.plusOneEligible, itemCount, mix.exposureReasonCode);
+  return { baseLevel: sized.baseLevel, items: sized.items.map((i) => ({ level: i.level, count: i.count })) };
+}
+
+const practiceMixKey = (m: DeliveryPracticeMix): string =>
+  `base${m.baseLevel}:` + [...m.items].sort((a, b) => a.level - b.level).map((i) => `${i.level}x${i.count}`).join(',');
 
 export function difficultyBand(d: { min: number; max: number }): string {
   return `${d.min}-${d.max}`;
@@ -103,6 +126,8 @@ export function activityContractFingerprint(c: ActivityContract): string {
     c.policyVersion,
     GENERATOR_VERSION,
     GRADER_VERSION,
+    // D78 -- appended only when present, so every contract without a mix keeps its fingerprint.
+    ...(c.practiceMix ? [`practiceMix:${practiceMixKey(c.practiceMix)}`] : []),
   ]);
 }
 

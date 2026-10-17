@@ -14,24 +14,35 @@
  * support level, minimum score, and the evidence contract label.
  */
 import { CANONICAL_POLICY } from './policy';
-import type { ActivityContract, PedagogicalStage } from './types';
+import type { ActivityContract, DifficultyReasonCode, PedagogicalStage } from './types';
 import type { DifficultyResolution } from './difficulty-policy';
+import { practiceMixForItemCount } from './difficulty-policy';
+
+/** D78 -- the Practice exposure decision the caller resolved from evidence (PRACTICE / REINFORCE only). */
+export interface PracticeExposureDecision {
+  plusOneEligible: boolean;
+  reasonCode: DifficultyReasonCode;
+}
 
 /** Pure. Deterministic. `intervention` always wins when active -- REINFORCE is an overlay, never a journey stage (see engine.ts). `difficulty` is always the caller's already-resolved, evidence-driven decision -- this function never derives one of its own. */
 export function buildActivityContract(
   stage: PedagogicalStage,
   intervention: 'REINFORCE' | null,
   difficulty: DifficultyResolution,
+  practiceExposure: PracticeExposureDecision | null = null,
 ): ActivityContract | null {
   if (intervention !== 'REINFORCE' && stage === 'CONSOLIDATED') return null;
 
   const d = CANONICAL_POLICY[intervention === 'REINFORCE' ? 'reinforce' : stageDifficultyKey(stage)].difficulty;
   const difficultyDecision = { target: difficulty.target, min: d.min, max: d.max, reasonCode: difficulty.reasonCode };
 
+  // D78: the mix is sized for the AUTHORIZED item count (resolveAuthorizedItemCount = itemCount.max).
   if (intervention === 'REINFORCE') {
     return {
       activityType: 'REINFORCE',
       itemCount: { min: CANONICAL_POLICY.practice.minItems, max: CANONICAL_POLICY.practice.maxItems },
+      // REINFORCE is all at its target (= the current Practice base): never a +1 item.
+      practiceMix: practiceMixForItemCount(difficulty.target, false, CANONICAL_POLICY.practice.maxItems, 'PRACTICE_EXPOSURE_SUPPRESSED'),
       difficulty: difficultyDecision,
       independence: false,
       supportLevel: 'ASSISTED',
@@ -64,6 +75,12 @@ export function buildActivityContract(
         supportLevel: 'ASSISTED',
         minimumScorePercent: p.minimumScorePercent,
         evidenceContract: 'PRACTICE_ESTABLISHED_CHALLENGE',
+        practiceMix: practiceMixForItemCount(
+          difficulty.target,
+          practiceExposure?.plusOneEligible ?? false,
+          p.maxItems,
+          practiceExposure?.reasonCode ?? 'PRACTICE_EXPOSURE_NONE',
+        ),
       };
     }
     case 'PROVE': {

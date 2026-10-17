@@ -20,7 +20,8 @@ import { CANONICAL_POLICY, type TransferLevel } from './policy';
 import { buildActivityContract } from './activity-contract';
 import {
   resolveLearnDifficulty,
-  resolvePracticeDifficulty,
+  practiceSessionBaseLevel,
+  resolvePracticeBase,
   resolveProveDifficulty,
   resolveReinforceDifficulty,
   resolveRetentionDifficulty,
@@ -290,8 +291,12 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
       if (verdict.result === 'QUALIFIES') {
         acc.PRACTICE.qualifyingCount++;
         acc.PRACTICE.qualifyingIds.push(item.id);
+        // D78: a session that carried the +1 exposure item counts at its BASE level -- one +1 item
+        // never makes it "practice at base+1". Legacy rows (no exposure record) keep their
+        // administered difficulty (history is not rewritten).
+        const qualifyingLevel = item.practiceExposure ? practiceSessionBaseLevel(item) : item.difficulty;
         highestQualifyingPracticeDifficulty =
-          highestQualifyingPracticeDifficulty == null ? item.difficulty : Math.max(highestQualifyingPracticeDifficulty, item.difficulty);
+          highestQualifyingPracticeDifficulty == null ? qualifyingLevel : Math.max(highestQualifyingPracticeDifficulty, qualifyingLevel);
       } else {
         acc.PRACTICE.nonQualifyingCount++;
         acc.PRACTICE.nonQualifyingIds.push(item.id);
@@ -713,10 +718,11 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
   // never a static stage-only midpoint. `practiceDifficulty` is computed
   // unconditionally because REINFORCE's own target derives from it
   // regardless of which stage the rollback landed on.
-  const practiceDifficulty = resolvePracticeDifficulty(state.sorted.filter((e) => e.activityType === 'PRACTICE'));
+  // D78: the earned Practice BASE (floor 2, cap 3, never lowered) + the bounded +1 exposure decision.
+  const practiceDifficulty = resolvePracticeBase(state.sorted.filter((e) => e.activityType === 'PRACTICE'));
   let difficultyResolution: DifficultyResolution;
   if (applyReinforceShape) {
-    difficultyResolution = resolveReinforceDifficulty(practiceDifficulty.target);
+    difficultyResolution = resolveReinforceDifficulty(practiceDifficulty.base);
   } else {
     switch (stage) {
       case 'LEARN':
@@ -750,7 +756,10 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
     }
   }
 
-  const activityContract = buildActivityContract(stage, applyReinforceShape ? 'REINFORCE' : null, difficultyResolution);
+  const activityContract = buildActivityContract(stage, applyReinforceShape ? 'REINFORCE' : null, difficultyResolution, {
+    plusOneEligible: practiceDifficulty.exposure.plusOneEligible,
+    reasonCode: practiceDifficulty.exposure.reasonCode,
+  });
 
   // CANON-R2R1 Part 21 -- a closed enum, never left for a consumer to
   // infer from `stage` alone.

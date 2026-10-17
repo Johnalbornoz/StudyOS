@@ -145,6 +145,8 @@ export interface StudyUSEvidenceRow {
    * (source_type 'LEARN_GUIDED', metadata.activityType 'LEARN_CHECK'). Raw jsonb, validated by the adapter.
    */
   learnSession?: unknown;
+  /** D78 -- raw `metadata.practiceExposure` (PRACTICE rows written since D78), validated by the adapter (parsePracticeExposure). */
+  practiceExposure?: unknown;
   /**
    * 2026-10-16 contract 1.2 -- `learning_evidence.metadata.transferLadder`, written by the APPLY ladder flow
    * (metadata.activityType 'TRANSFER'). Raw jsonb, validated by the adapter.

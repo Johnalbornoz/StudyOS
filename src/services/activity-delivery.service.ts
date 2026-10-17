@@ -30,6 +30,7 @@ import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import {
   activityContractFingerprint,
   bankDepthTarget,
+  deliveryPracticeMix,
   learnerStateFingerprint,
   PRACTICE_BANK_DEPTH_INSUFFICIENT,
   STAGE_FOR_ACTIVITY,
@@ -42,7 +43,7 @@ import { buildExactDuplicateNoveltyMarker } from '@/lib/lx/novelty-marker';
 import { loadAcademicContext, loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { consumeCompatibleInventory, linkConsumedActivity, reservedCandidateIds } from '@/services/activity-inventory.service';
 import { assembleActivityForLearner } from '@/services/activity-assembly.service';
-import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
+import { isIndependentActivity, practiceMixFallback, type PracticeMixFallback } from '@/lib/activity-delivery/assembly';
 import { addValidatedCandidates, recordBankDeliveries } from '@/services/question-bank.service';
 import { computeAskConfidenceFlags } from '@/services/ask-confidence.service';
 import { acquireLaunchLock, launchLockKey, type LaunchLock } from '@/services/activity-launch-lock.service';
@@ -106,6 +107,26 @@ async function recordBankDepthShortfall(quizId: string, shortfall: BankDepthShor
   }
 }
 
+/**
+ * D78 -- when the served Practice levels differ from the planned mix (no valid base+1 item, base
+ * slots filled below base, generator levels off), the session records why. Never blocks.
+ */
+export async function recordPracticeMixFallback(quizId: string, mix: ActivityContract['practiceMix'], servedDifficulties: number[]): Promise<PracticeMixFallback | null> {
+  const fallback = practiceMixFallback(mix, servedDifficulties);
+  if (!fallback) return null;
+  try {
+    await db.query(
+      `UPDATE quiz_sessions SET canonical_activity_contract = canonical_activity_contract || jsonb_build_object('practiceMixFallback', $2::jsonb)
+        WHERE id = $1 AND canonical_activity_contract IS NOT NULL`,
+      [quizId, JSON.stringify(fallback)],
+    );
+    console.warn('[activity-launch] PRACTICE_MIX_FALLBACK', JSON.stringify({ quizId, ...fallback }));
+  } catch (err) {
+    console.error('[activity-launch] practice mix fallback record failed', err);
+  }
+  return fallback;
+}
+
 /** Creates the session for a delivered set (same persistence as every session) and records its provenance. */
 async function openSession(
   input: DeliveryInput,
@@ -134,6 +155,7 @@ async function openSession(
   ]);
   // after the provenance write (both merge into canonical_activity_contract)
   if (bankDepthShortfall) await recordBankDepthShortfall(quizId, bankDepthShortfall);
+  if (input.contract.practiceMix) await recordPracticeMixFallback(quizId, input.contract.practiceMix, ordered.map((q) => q.difficulty));
   return { quizId, questions: ordered };
 }
 
@@ -171,6 +193,7 @@ export async function buildDeliveryInput(p: {
       itemCount: p.itemCount,
       independence: p.v1Marker.independence,
       policyVersion: p.v1Marker.pedagogicalPolicyVersion,
+      ...(p.v1Marker.practiceMix ? { practiceMix: deliveryPracticeMix(p.v1Marker.practiceMix, p.itemCount) } : {}),
     },
   };
 }

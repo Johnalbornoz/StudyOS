@@ -24,12 +24,19 @@ export { buildActivityContract } from './activity-contract';
 export {
   resolveLearnDifficulty,
   resolvePracticeDifficulty,
+  resolvePracticeBase,
+  practiceMixForItemCount,
+  practiceSessionBaseLevel,
+  practiceSessionEarnedRise,
+  plannedPlusOneItems,
+  computePracticeExposure,
+  PRACTICE_MAX_BASE,
   resolveProveDifficulty,
   resolveReinforceDifficulty,
   resolveRetentionDifficulty,
   resolveTransferDifficulty,
 } from './difficulty-policy';
-export type { DifficultyResolution } from './difficulty-policy';
+export type { DifficultyResolution, PracticeBaseResolution } from './difficulty-policy';
 
 export { evaluateCanonicalLearningState, rebuildConceptCanonicalState, STAGE_ORDER } from './engine';
 
@@ -39,6 +46,8 @@ export type {
   CanonicalPedagogicalDecision,
   DifficultyDecision,
   DifficultyReasonCode,
+  PracticeExposure,
+  PracticeMix,
   EvidenceQualificationReasonCode,
   EvidenceQualificationResult,
   NextCanonicalAction,

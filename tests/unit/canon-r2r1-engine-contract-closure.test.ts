@@ -269,7 +269,8 @@ describe('CANON-R2R1 Part 31 -- Practice difficulty tests (17-26)', () => {
     const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED] }));
     expect(decision.currentStage).toBe('PRACTICE');
     expect(decision.activityContract?.difficulty.target).toBe(2);
-    expect(decision.activityContract?.difficulty.reasonCode).toBe('PRACTICE_DEFAULT_DIFFICULTY');
+    // D78: the engine now resolves the Practice BASE (resolvePracticeBase); same default level 2.
+    expect(decision.activityContract?.difficulty.reasonCode).toBe('PRACTICE_BASE_DEFAULT');
   });
 
   it('18. a qualifying D2 attempt -> next target D3', () => {
