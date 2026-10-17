@@ -40,6 +40,7 @@ export const STUDENT_FACING_PROMPT_IDS = [
   'formula.interactive_widget',
   'error_intelligence.pattern_guidance',
   'learning.guided_practice',
+  'learning.guided_understanding_turn',
   'quiz.question_hint',
   'quiz.question_generation',
   'quiz.free_text_grading',

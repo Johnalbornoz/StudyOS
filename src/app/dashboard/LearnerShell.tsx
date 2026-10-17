@@ -77,6 +77,8 @@ const FOCUS_MODE_PREFIXES = [
   '/dashboard/cognitive/transfer',
   '/dashboard/assignments/practice',
   '/dashboard/exam-prep/attempt',
+  // LEARN guided understanding (2026-10-16) -- an active activity.
+  '/dashboard/learn/guided',
 ] as const;
 
 const ICONS: Record<string, ReactNode> = {

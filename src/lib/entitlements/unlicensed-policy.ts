@@ -69,6 +69,7 @@ export const LEARNING_ROUTE_POLICY: readonly LearningRoutePolicy[] = [
   { route: 'tutor/video', rule: 'PAID' },
   // (a) PAID -- enforced by L11 (audit L4-10).
   { route: 'learning/guided-practice', rule: 'PAID' },
+  { route: 'learning/guided-understanding/start', rule: 'PAID', note: 'LEARN guided understanding: starts an AI-tutored session (2026-10-16)' },
   { route: 'concepts/[id]/explanation', rule: 'PAID' },
   { route: 'concepts/[id]/interactive-formula', rule: 'PAID' },
   { route: 'learning-debt/error-guidance', rule: 'PAID' },
@@ -89,6 +90,7 @@ export const LEARNING_ROUTE_POLICY: readonly LearningRoutePolicy[] = [
   // (c) CONTINUATION -- only ever act on an existing attempt.
   { route: 'quizzes/session/[quizId]', rule: 'CONTINUATION', note: 'reopen an existing quiz' },
   { route: 'quizzes/session/[quizId]/check', rule: 'CONTINUATION', note: 'answer inside an active, unexpired quiz session' },
+  { route: 'learning/guided-understanding/turn', rule: 'CONTINUATION', note: 'answer inside an active, unexpired guided LEARN session' },
   { route: 'simulation/attempts/[id]', rule: 'CONTINUATION', note: 'reopen an existing attempt' },
   { route: 'simulation/attempts/[id]/result', rule: 'CONTINUATION', note: 'result of the same attempt' },
   { route: 'exams/attempts/[id]', rule: 'CONTINUATION' },

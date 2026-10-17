@@ -41,6 +41,8 @@
  */
 
 import { executionAuthorityOfQuizSession } from '@/lib/assessment-execution/assessment-start.service';
+import { LEARN_GUIDED_QUIZ_MODE, practiceGuidanceWithLearnWeaknesses } from '@/lib/learn-guided/policy';
+import { loadLatestLearnWeaknesses } from '@/services/learn-guided.service';
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
@@ -819,6 +821,14 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // keeping questionArrays' shape (one array per concept) identical
     // for the flatten/askConfidence logic below regardless of which
     // path ran.
+    // LEARN -> PRACTICE (operator rule 2026-10-16): the weaknesses the latest guided LEARN session of this
+    // concept detected are carried into a CANONICAL Practice generation as extra guidance. Read directly from
+    // that LEARN_GUIDED evidence row's metadata (contract 1.1) -- independent of the engine. Only for a
+    // verified v1 topic_practice request; every other mode/request keeps its guidance byte-identical.
+    const learnWeaknesses =
+      validated.quizMode === 'topic_practice' && v1Marker && validated.conceptId
+        ? await loadLatestLearnWeaknesses(validated.studentId, validated.conceptId)
+        : [];
     const [questionArrays, askConfidenceFlags] = await Promise.all([
       validated.quizMode === 'quick_check'
         ? generateQuickCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
@@ -840,7 +850,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             // comment above. `undefined` for every other mode/request,
             // so this is byte-identical to before this phase there.
             difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 3,
-            guidance: config.guidance,
+            guidance: practiceGuidanceWithLearnWeaknesses(config.guidance, learnWeaknesses),
             language,
             visualAidRate: config.visualAidRate,
             ibContext,
@@ -1586,6 +1596,12 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     // canonical evidence loop; this legacy submission path never grades or writes evidence for it.
     if ((await executionAuthorityOfQuizSession(validated.quizId)) === 'CANONICAL') {
       return NextResponse.json({ error: 'ASSESSMENT_EXECUTION_AUTHORITY_CANONICAL', message: 'This assessment is completed through the canonical path.' }, { status: 409 });
+    }
+    // LEARN (2026-10-16): a guided LEARN session lives in quiz_sessions but is completed ONLY through
+    // /api/learning/guided-understanding/turn (one evidence row on close). This legacy path would otherwise
+    // grade it with the topic_practice fallback config and write Practice evidence -- never.
+    if ((quizSession.quizMode as string) === LEARN_GUIDED_QUIZ_MODE) {
+      return NextResponse.json({ error: 'LEARN_GUIDED_SESSION', message: 'This guided LEARN session is completed through its own path.' }, { status: 409 });
     }
     // STUDENT E2E security: a diagnosis / remediation step named by the
     // client must be the authenticated Student's own -- otherwise this
