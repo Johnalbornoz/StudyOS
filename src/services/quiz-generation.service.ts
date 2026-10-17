@@ -2920,13 +2920,17 @@ Mathematical check of the final value: ${MATH_CHECK_FACT[det.result]}`;
         // its own verdict exactly as before (clamped) -- the model never
         // invents a stricter or looser grade from less information.
         if (!structured && det.result === 'UNDECIDABLE') {
+          // D77: correctness is the grader's explicit boolean verdict only (the same `=== true` reading the composed
+          // pedagogical grade uses) -- a truthy non-boolean or a high partial `score` (0.9 "Casi") never makes an
+          // answer CORRECT; the score stays secondary evidence.
+          const legacyCorrect = g.correct === true;
           const value: Omit<GradeAnswerResult, 'aiExecution'> = {
-            correct: g.correct,
+            correct: legacyCorrect,
             score: clamp(Number(g.score) || 0, 0, 1),
             feedback: g.feedback || '',
             confidence,
-            errorType: g.correct ? null : g.errorType || null,
-            reasoningValid: typeof g.reasoningValid === 'boolean' ? g.reasoningValid : !!g.correct,
+            errorType: legacyCorrect ? null : g.errorType || null,
+            reasoningValid: typeof g.reasoningValid === 'boolean' ? g.reasoningValid : legacyCorrect,
             pedagogical: grade,
           };
           return { value, errors: [] };
