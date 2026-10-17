@@ -258,10 +258,20 @@ export async function publishSubjectAssessmentAssignment(actorUserId: string, in
   const eligibleRows = await eligibleConcepts(ctx.subjectId);
   const now = deps.now ?? (await dbNow());
   const { learners, assignmentGroupId, existingRows, existingByStudent } = await resolvePublishRecipients(actorUserId, input);
-  // D71: every new recipient needs a timezone authority (own timezone first, else the class institution's) before any write
-  const tzByStudent = await recipientTimezones(learners.rows.filter((l: any) => !existingByStudent.has(l.id)).map((l: any) => l.id), ctx.timezone);
-  const unresolved = [...tzByStudent.entries()].filter(([, tz]) => !tz.ok).map(([id]) => id);
-  if (unresolved.length > 0) throw new SubjectAssignmentError('TIMEZONE_AUTHORITY_BLOCKER', 409, { studentIds: unresolved });
+  // D71 + D73: PRE-PUBLICATION validation -- every intended new recipient needs a timezone authority (own timezone
+  // first, else the class institution's) BEFORE any write. One invalid recipient blocks the whole publication (never a
+  // partial one): 0 recipient writes, and the teacher is told which students need correcting. A retry re-validates.
+  const newRecipients = learners.rows.filter((l: any) => !existingByStudent.has(l.id));
+  const tzByStudent = await recipientTimezones(newRecipients.map((l: any) => l.id), ctx.timezone);
+  const invalid = newRecipients.filter((l: any) => !tzByStudent.get(l.id)?.ok);
+  if (invalid.length > 0) {
+    throw new SubjectAssignmentError('TIMEZONE_AUTHORITY_BLOCKER', 409, {
+      reason: 'INVALID_TIMEZONE_RECIPIENT',
+      invalidRecipientIds: invalid.map((l: any) => l.id),
+      invalidRecipientCount: invalid.length,
+      invalidRecipients: invalid.map((l: any) => ({ studentId: l.id, name: l.name || l.email || '' })),
+    });
+  }
   const firstResolved = [...tzByStudent.values()].find((tz) => tz.ok);
   // the group reference (validation + preview): the class institution's timezone, else a recipient's own
   const referenceTz = ctx.timezone ?? (firstResolved?.ok ? firstResolved.timezone : null);
@@ -272,7 +282,7 @@ export async function publishSubjectAssessmentAssignment(actorUserId: string, in
   const windowByStudent = new Map<string, SubjectAssessmentAssignmentConfig['window']>();
   for (const [id, tz] of tzByStudent) {
     const w = recipientAssignmentWindow(config.window, tz, now);
-    if (!w.ok) throw new SubjectAssignmentError(w.error, w.error === 'TIMEZONE_AUTHORITY_BLOCKER' ? 409 : 422, { studentIds: [id] });
+    if (!w.ok) throw new SubjectAssignmentError(w.error, w.error === 'TIMEZONE_AUTHORITY_BLOCKER' ? 409 : 422, { invalidRecipientIds: [id], invalidRecipientCount: 1 });
     windowByStudent.set(id, w.window);
   }
   if (existingRows.rows.length > 0) {

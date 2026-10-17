@@ -108,7 +108,7 @@ describe('write discipline', () => {
     expect(e).toBeInstanceOf(SubjectAssignmentError);
     expect(e.code).toBe('TIMEZONE_AUTHORITY_BLOCKER');
     expect(e.status).toBe(409);
-    expect(e.detail).toEqual({ studentIds: ['s1'] });
+    expect(e.detail).toEqual({ reason: 'INVALID_TIMEZONE_RECIPIENT', invalidRecipientIds: ['s1'], invalidRecipientCount: 1, invalidRecipients: [{ studentId: 's1', name: 'A' }] });
     expect(ensureMock).not.toHaveBeenCalled();
     expect(assignMock).not.toHaveBeenCalled();
   });
@@ -130,6 +130,34 @@ describe('write discipline', () => {
     world({ institutionTz: null, studentTz: 'America/Mexico_City' });
     await publishSubjectAssessmentAssignment('t1', DRAFT);
     expect(frozenWindow()).toMatchObject({ timezone: 'America/Mexico_City', timezoneSource: 'STUDENT_AVAILABILITY' });
+  });
+
+  it('D73: 20 recipients, 19 valid + 1 invalid -> publication blocked, 0 recipient writes, the invalid student named', async () => {
+    const rows = Array.from({ length: 20 }, (_, i) => ({ id: `s${i + 1}`, name: `Estudiante ${i + 1}`, email: `e${i + 1}`, user_id: null }));
+    let validIds = new Set(rows.slice(0, 19).map((r) => r.id));
+    const base = dbQueryMock.getMockImplementation()!;
+    dbQueryMock.mockImplementation(async (sql: string, params?: unknown[]) => {
+      if (sql.includes('FROM classes c JOIN institutions i')) return { rows: [{ id: 'k1', name: 'K', institution_id: 'i1', canonical_subject_id: 'subj', subject_name: 'Mat', timezone: null }] };
+      if (sql.includes('FROM student_availability')) return { rows: ((params?.[0] as string[]) ?? []).filter((id) => validIds.has(id)).map((id) => ({ student_id: id, timezone: 'America/Bogota' })) };
+      if (sql.includes('SELECT DISTINCT subject_id FROM concepts')) return { rows: [{ subject_id: 'ls' }] };
+      return base(sql, params);
+    });
+    ensureMock.mockResolvedValue({ conceptId: 'lc1', added: false });
+    assignMock.mockResolvedValue({ id: 'iv-new' });
+    resolveRecipientsMock.mockResolvedValue({ learners: { rows }, assignmentGroupId: 'g20', existingRows: { rows: [] }, existingByStudent: new Map() });
+    const e = await publishSubjectAssessmentAssignment('t1', { ...DRAFT, studentIds: rows.map((r) => r.id) }).catch((x) => x);
+    expect(e).toBeInstanceOf(SubjectAssignmentError);
+    expect(e).toMatchObject({ code: 'TIMEZONE_AUTHORITY_BLOCKER', status: 409 });
+    expect(e.detail).toMatchObject({ reason: 'INVALID_TIMEZONE_RECIPIENT', invalidRecipientIds: ['s20'], invalidRecipientCount: 1, invalidRecipients: [{ studentId: 's20', name: 'Estudiante 20' }] });
+    // partial publication forbidden: no recipient write of any kind, not even for the 19 valid ones
+    expect(ensureMock).not.toHaveBeenCalled();
+    expect(assignMock).not.toHaveBeenCalled();
+    expect(sqls().some((q) => /INSERT|UPDATE|DELETE/i.test(q))).toBe(false);
+    // the profile is corrected -> the teacher retries -> validation re-runs -> all 20 published normally
+    validIds = new Set(rows.map((r) => r.id));
+    const ok = await publishSubjectAssessmentAssignment('t1', { ...DRAFT, studentIds: rows.map((r) => r.id) });
+    expect(ok.assigned).toHaveLength(20);
+    expect(assignMock).toHaveBeenCalledTimes(20);
   });
 
   it('D70: resumeAfterInactivity is frozen into the assignment (default false; only an untimed Test may set it)', async () => {

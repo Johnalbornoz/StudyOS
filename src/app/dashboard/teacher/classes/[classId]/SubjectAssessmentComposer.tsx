@@ -57,7 +57,7 @@ export function SubjectAssessmentComposer({
   const [preview, setPreview] = useState<Preview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
+  const [message, setMessage] = useState<{ text: string; error: boolean; names?: string[] } | null>(null);
   const [requestId, setRequestId] = useState(newRequestId);
   const isTimed = kind === 'MOCK' || timed;
   const names = useMemo(() => new Map(concepts.map((c) => [c.id, c.name])), [concepts]);
@@ -113,7 +113,15 @@ export function SubjectAssessmentComposer({
         body: JSON.stringify({ ...draft, studentIds: wholeClass ? [] : recipients, requestId, title: title.trim() || null, instructions: instructions.trim() || null }),
       });
       const body = await res.json().catch(() => null);
-      if (!res.ok) { setMessage({ text: errorText(body?.error), error: true }); return; }
+      if (!res.ok) {
+        // D73: name the students whose timezone must be corrected (names only, never internal ids)
+        if (body?.error === 'TIMEZONE_AUTHORITY_BLOCKER' && Array.isArray(body?.invalidRecipients)) {
+          setMessage({ text: fillMessage(t['tsa.err.timezoneRecipients'], { n: body.invalidRecipientCount ?? body.invalidRecipients.length }), error: true, names: body.invalidRecipients.map((r: { name: string }) => r.name) });
+          return;
+        }
+        setMessage({ text: errorText(body?.error), error: true });
+        return;
+      }
       const parts = [fillMessage(t['tsa.published'], { n: body.data.assigned.length })];
       if (body.data.skipped.length > 0) parts.push(fillMessage(t['tsa.skipped'], { n: body.data.skipped.length }));
       setMessage({ text: parts.join(' '), error: false });
@@ -242,7 +250,17 @@ export function SubjectAssessmentComposer({
           </button>
         </div>
       </form>
-      {message && <p role={message.error ? 'alert' : 'status'} className={message.error ? 'ta-msg ta-msg-error' : 'ta-msg'}>{message.text}</p>}
+      {message && (
+        <div role={message.error ? 'alert' : 'status'} className={message.error ? 'ta-msg ta-msg-error' : 'ta-msg'} data-testid="tsa-publish-message">
+          <p>{message.text}</p>
+          {message.names && message.names.length > 0 && (
+            <>
+              <ul data-testid="tsa-invalid-timezone-recipients">{message.names.map((n, i) => <li key={i}>{n}</li>)}</ul>
+              <p>{t['tsa.err.timezoneRecipientsFix']}</p>
+            </>
+          )}
+        </div>
+      )}
     </section>
   );
 }

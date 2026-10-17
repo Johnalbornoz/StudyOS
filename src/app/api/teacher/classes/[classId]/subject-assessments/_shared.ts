@@ -41,6 +41,12 @@ export function mapAssignmentError(error: unknown): NextResponse {
   if (error instanceof TeacherClassAccessDeniedError) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   if (error instanceof NoLearnersToAssignError) return NextResponse.json({ error: 'NO_LEARNERS_TO_ASSIGN' }, { status: 422 });
   if (error instanceof InvalidClassAssignmentError) return NextResponse.json({ error: error.code }, { status: error.code === 'FIELD_LOCKED_BY_INSTITUTION' ? 403 : 422 });
-  if (error instanceof SubjectAssignmentError) return NextResponse.json({ error: error.code }, { status: error.status });
+  if (error instanceof SubjectAssignmentError) {
+    // D73: the pre-publication timezone validation names the students to correct (teacher of the class only)
+    if (error.code === 'TIMEZONE_AUTHORITY_BLOCKER' && Array.isArray(error.detail?.invalidRecipients)) {
+      return NextResponse.json({ error: error.code, reason: error.detail.reason, invalidRecipientCount: error.detail.invalidRecipientCount, invalidRecipients: error.detail.invalidRecipients }, { status: error.status });
+    }
+    return NextResponse.json({ error: error.code }, { status: error.status });
+  }
   throw error;
 }

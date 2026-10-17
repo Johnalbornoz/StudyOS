@@ -11,6 +11,8 @@ import {
 } from '@/lib/teacher/subject-assessment-assignment.rules';
 import { resolveTimezoneAuthority, SUBJECT_UNTIMED_INACTIVITY_MINUTES } from '@/lib/subject-assessment/lifecycle';
 import { MESSAGES } from '@/lib/i18n/messages';
+import { decideAttemptAction, latestCompletedAttempt, type AttemptSummary } from '@/lib/teacher/subject-assessment-assignment.rules';
+import { subjectAssessmentScorePercent } from '@/lib/subject-assessment/sizing';
 
 const src = (p: string) => readFileSync(join(process.cwd(), p), 'utf8');
 
@@ -101,5 +103,64 @@ describe('D71 -- timezone authority', () => {
       expect(code, f).not.toMatch(/'America\/Mexico_City'/);
     }
     expect(src('src/app/dashboard/quiz/page.tsx')).not.toMatch(/resolvedOptions\(\)\.timeZone/);
+  });
+});
+
+describe('D72 -- INACTIVITY_CLOSED is a completed attempt (untimed Teacher Test, resumeAfterInactivity false)', () => {
+  const window = { opensAt: '2026-10-17T05:00:00.000Z', closesAt: '2026-10-19T02:00:00.000Z' };
+  const now = new Date('2026-10-17T18:00:00Z');
+  const closed: AttemptSummary = { attemptNumber: 1, quizId: 'q1', state: 'COMPLETED', startedAt: '2026-10-17T16:00:00Z', completedAt: '2026-10-17T16:50:00Z', scorePercent: 60, passed: false, completionReason: 'INACTIVITY_CLOSED' };
+  it('D72_CLOSE_REASON: the idle-expired attempt before the close is closed as is with INACTIVITY_CLOSED', () => {
+    expect(decideAssignmentAttemptGate({ state: 'EXPIRED', closed: false, resumeAfterInactivity: false, liveSession: false })).toBe('CLOSE_AS_IS');
+    const svc = src('src/services/subject-assessment.service.ts');
+    expect(svc).toMatch(/closedAsIs \? \(inactivityClose\(setup, state, now\) \? 'INACTIVITY_CLOSED' : 'WINDOW_CLOSED_AFTER_EXIT'\)/);
+    expect(svc).toMatch(/return state === 'EXPIRED' && !!setup\.assignmentWindow && now\.getTime\(\) < new Date\(setup\.assignmentWindow\.closesAt\)\.getTime\(\);/);
+  });
+  it('D72_SCORE_SAVED_RESPONSES + D72_UNANSWERED_DENOMINATOR: 12 correct, 3 incorrect, 5 unanswered of 20 = 60%', () => {
+    expect(subjectAssessmentScorePercent(12, 20)).toBe(60);
+    // the closing submit grades the SAVED responses only and scores over the frozen total (unanswered stay in it)
+    const svc = src('src/services/subject-assessment.service.ts');
+    expect(svc).toMatch(/const closedAsIs = gate === 'CLOSE_AS_IS';/);
+    expect(svc).toMatch(/const saved = await savedResponses\(input\.quizId\);/);
+  });
+  it('D72_ATTEMPT_CONSUMED: the closed attempt counts against maxAttempts; it is the result when it is the last completed', () => {
+    expect(decideAttemptAction({ cancelled: false, window, maxAttempts: 1, attempts: [closed], now })).toEqual({ action: 'NONE', reason: 'ATTEMPTS_EXHAUSTED' });
+    expect(latestCompletedAttempt([closed])).toBe(closed);
+  });
+  it('D72_NEW_ATTEMPT_IF_AVAILABLE: with attempts left a NEW attempt starts (attempt 2)', () => {
+    expect(decideAttemptAction({ cancelled: false, window, maxAttempts: 2, attempts: [closed], now })).toEqual({ action: 'START', attemptNumber: 2 });
+  });
+  it('D72_SAME_ATTEMPT_NO_RESUME: a COMPLETED attempt is never resumed', () => {
+    const d = decideAttemptAction({ cancelled: false, window, maxAttempts: 3, attempts: [closed], now });
+    expect(d.action).not.toBe('RESUME');
+    // TRUE keeps its behaviour: revive before the close only, never after it
+    expect(decideAssignmentAttemptGate({ state: 'EXPIRED', closed: false, resumeAfterInactivity: true, liveSession: false })).toBe('REVIVE');
+    expect(decideAssignmentAttemptGate({ state: 'EXPIRED', closed: true, resumeAfterInactivity: true, liveSession: false })).toBe('CLOSE_AS_IS');
+  });
+});
+
+describe('D73 -- pre-publication timezone validation (teacher-facing)', () => {
+  it('the service validates every intended recipient BEFORE any write and never publishes partially', () => {
+    const svc = src('src/lib/teacher/subject-assessment-assignment.service.ts');
+    const validate = svc.indexOf("reason: 'INVALID_TIMEZONE_RECIPIENT'");
+    expect(validate).toBeGreaterThan(0);
+    expect(validate).toBeLessThan(svc.indexOf('await ensureConceptInLearnerPlan('));
+    expect(validate).toBeLessThan(svc.indexOf('await assignTeacherIntervention('));
+  });
+  it('the API returns the structured result; the composer lists the students by NAME (no internal ids shown)', () => {
+    expect(src('src/app/api/teacher/classes/[classId]/subject-assessments/_shared.ts')).toMatch(/invalidRecipientCount: error\.detail\.invalidRecipientCount, invalidRecipients: error\.detail\.invalidRecipients/);
+    const ui = src('src/app/dashboard/teacher/classes/[classId]/SubjectAssessmentComposer.tsx');
+    expect(ui).toMatch(/names: body\.invalidRecipients\.map\(\(r: \{ name: string \}\) => r\.name\)/);
+    expect(ui).toMatch(/data-testid="tsa-invalid-timezone-recipients">\{message\.names\.map\(\(n, i\) => <li key=\{i\}>\{n\}<\/li>\)\}/);
+    expect((MESSAGES.es as Record<string, string>)['tsa.err.timezoneRecipients']).toMatch(/^No se puede publicar todavía\. \{n\} estudiante/);
+    for (const [locale, m] of Object.entries(MESSAGES)) {
+      expect((m as Record<string, string>)['tsa.err.timezoneRecipients'], locale).toMatch(/\{n\}/);
+      expect((m as Record<string, string>)['tsa.err.timezoneRecipientsFix'], locale).toBeTruthy();
+    }
+  });
+  it('composer / preview without any valid reference shows a configuration message (never the browser / server zone)', () => {
+    const ui = src('src/app/dashboard/teacher/classes/[classId]/SubjectAssessmentComposer.tsx');
+    expect(ui).toMatch(/data-code="TIMEZONE_AUTHORITY_BLOCKER">\{t\['tsa\.timezoneBlocker'\]\}/);
+    expect(ui).not.toMatch(/resolvedOptions\(\)\.timeZone/);
   });
 });

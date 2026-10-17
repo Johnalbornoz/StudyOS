@@ -35,6 +35,7 @@ async function main() {
   const svc = await import('@/lib/teacher/subject-assessment-assignment.service');
   const rules = await import('@/lib/teacher/subject-assessment-assignment.rules');
   const subject = await import('@/services/subject-assessment.service');
+  const { subjectAssessmentScorePercent: subjectScore } = await import('@/lib/subject-assessment/sizing');
   const { fingerprintQuestion } = await import('@/lib/lx/exact-duplicate-novelty');
   const { TeacherClassAccessDeniedError } = await import('@/lib/teacher/class-assignment.service');
   const one = async (sql: string, p: unknown[] = []) => (await db.query(sql, p)).rows[0];
@@ -259,14 +260,21 @@ async function main() {
     // (INACTIVITY_CLOSED, the saved answer graded and kept), the same attempt never resumes; a new attempt may start
     const c2 = classAttempts[1].quizId;
     await subject.recordSubjectAssessmentAnswer({ studentId: S2.id, quizId: c2, questionIndex: 0, answer: 'a' }, deps);
+    await subject.recordSubjectAssessmentAnswer({ studentId: S2.id, quizId: c2, questionIndex: 1, answer: 'b' }, deps);
     await db.query(`UPDATE quiz_sessions SET status = 'expired', expires_at = now() - interval '1 minute' WHERE id = $1`, [c2]);
     const c2frozen = (await one(`SELECT subject_assessment_setup s FROM quiz_sessions WHERE id = $1`, [c2])).s;
     const next = await svc.startSubjectAssignmentAttempt(S2.userId, ivOf(pClass, S2), deps);
     const c2read = await subject.readSubjectAssessmentSession(S2.id, c2, deps);
     check('D70 DEFAULT FALSE  idle 45 min before the close -> closed with the saved answer (INACTIVITY_CLOSED), the same attempt is not resumed; a new attempt starts',
       c2frozen.assignmentWindow?.resumeAfterInactivity === false && next.outcome === 'STARTED' && next.quizId !== c2 && next.attemptNumber === 2 && c2read.ok && c2read.view.state === 'COMPLETED'
-        && c2read.view.results?.subjectAssessment.completionReason === 'INACTIVITY_CLOSED' && c2read.view.results.subjectAssessment.unanswered === c2read.view.results.subjectAssessment.total - 1,
+        && c2read.view.results?.subjectAssessment.completionReason === 'INACTIVITY_CLOSED',
       c2read.ok ? JSON.stringify({ o: next.outcome, r: c2read.view.results?.subjectAssessment.completionReason }) : c2read.error);
+    const c2sa = c2read.ok ? c2read.view.results?.subjectAssessment : null;
+    check('D72 SCORE  the saved answers are graded (1 correct, 1 incorrect) and the unanswered stay in the denominator',
+      !!c2sa && c2sa.correct === 1 && c2sa.incorrect === 1 && c2sa.unanswered === c2sa.total - 2 && c2sa.scorePercent === subjectScore(1, c2sa.total), JSON.stringify(c2sa && { c: c2sa.correct, i: c2sa.incorrect, u: c2sa.unanswered, t: c2sa.total, s: c2sa.scorePercent }));
+    let c2again = '';
+    const c2resume = await svc.startSubjectAssignmentAttempt(S2.userId, ivOf(pClass, S2), deps).catch((e: any) => { c2again = e.code; return null; });
+    check('D72 CONSUMED + NO RESUME  the closed attempt used 1 of 2 attempts; starting again resumes the NEW attempt, never the closed one', !!c2resume && c2resume.outcome === 'RESUMED' && c2resume.quizId === next.quizId && c2resume.attemptNumber === 2, c2again);
     await answerAll(S2.id, next.quizId, () => 'a');
     await subject.submitSubjectAssessmentSession({ studentId: S2.id, quizId: next.quizId }, deps);
 
@@ -319,12 +327,32 @@ async function main() {
     check('ISOLATION  a student\'s list holds only their own assignments', s2list.length === 3 && !s2list.some((x) => x.interventionId === ivT));
     const ownList = await subject.listStudentSubjectAssessments(S1.id);
     check('SEPARATION  teacher-assigned attempts are not in the Student\'s own "Mis evaluaciones programadas"', ownList.every((i) => i.origin !== 'TEACHER'));
+
+    /* ------------------------------------- D73: pre-publication timezone validation, no partial publication ------------------------------------- */
+    // the no-timezone institution's class gets a second learner who HAS their own timezone; S1 has none -> blocked
+    await db.query(`INSERT INTO class_enrollments (class_id, student_id, status) VALUES ($1, $2, 'ACTIVE')`, [klassNoTz, S2.id]);
+    await db.query(`INSERT INTO student_availability (student_id, timezone) VALUES ($1, 'America/Lima') ON CONFLICT (student_id) DO UPDATE SET timezone = EXCLUDED.timezone`, [S2.id]);
+    const d73draft = { classId: klassNoTz, kind: 'TEST' as const, conceptIds: concepts, difficulty: 'BASICO' as const, startDate: today, endDate: plusDays(today, 1), maxAttempts: 1, timing: { timed: false, durationMinutes: null } };
+    let d73err: any = null;
+    try { await svc.publishSubjectAssessmentAssignment(teacher, { ...d73draft, requestId: randomUUID() }); } catch (e: any) { d73err = e; }
+    const d73rows = Number((await one(`SELECT count(*) n FROM teacher_interventions WHERE class_id = $1`, [klassNoTz])).n);
+    check('D73 BLOCKED  1 valid + 1 invalid recipient -> the publication is blocked, the invalid student is named, 0 recipient rows (no partial publication)',
+      d73err?.code === 'TIMEZONE_AUTHORITY_BLOCKER' && d73err?.detail?.invalidRecipientCount === 1 && d73err?.detail?.invalidRecipientIds?.[0] === S1.id && typeof d73err?.detail?.invalidRecipients?.[0]?.name === 'string' && d73rows === 0,
+      JSON.stringify({ code: d73err?.code, n: d73err?.detail?.invalidRecipientCount, rows: d73rows }));
+    // the profile is corrected -> the teacher retries -> validation re-runs -> published, each window in the student's own zone
+    await db.query(`INSERT INTO student_availability (student_id, timezone) VALUES ($1, 'America/Bogota') ON CONFLICT (student_id) DO UPDATE SET timezone = EXCLUDED.timezone`, [S1.id]);
+    const d73ok = await svc.publishSubjectAssessmentAssignment(teacher, { ...d73draft, requestId: randomUUID() });
+    const d73windows = (await db.query(`SELECT student_id, subject_assessment_assignment->'window'->>'timezone' AS tz, subject_assessment_assignment->'window'->>'timezoneSource' AS src FROM teacher_interventions WHERE class_id = $1`, [klassNoTz])).rows;
+    check('D73 RETRY  after the correction the retry publishes to every recipient, each window in their own timezone (STUDENT_AVAILABILITY)',
+      d73ok.assigned.length === 2 && d73windows.length === 2 && d73windows.every((w: any) => w.src === 'STUDENT_AVAILABILITY') && d73windows.find((w: any) => w.student_id === S2.id)?.tz === 'America/Lima' && d73windows.find((w: any) => w.student_id === S1.id)?.tz === 'America/Bogota',
+      JSON.stringify(d73windows.map((w: any) => w.tz)));
   } finally {
     // --------------------------------------------------------------- cleanup
     const { removeFixtureStudent } = await import('./curriculum-first-fixture-cleanup');
     let remaining = 0;
     await db.query(`DELETE FROM teacher_intervention_executions WHERE teacher_intervention_id IN (SELECT id FROM teacher_interventions WHERE class_id = ANY($1::uuid[]))`, [created.classes]);
     await db.query(`DELETE FROM student_concept_sources WHERE class_id = ANY($1::uuid[])`, [created.classes]).catch(() => {});
+    await db.query(`DELETE FROM student_availability WHERE student_id = ANY($1::uuid[])`, [created.students]).catch(() => {});
     for (const s of created.students) remaining += await removeFixtureStudent(db, s);
     await db.query(`DELETE FROM teacher_interventions WHERE class_id = ANY($1::uuid[])`, [created.classes]);
     await db.query(`DELETE FROM notifications WHERE recipient_user_id = ANY($1::uuid[])`, [created.users]);

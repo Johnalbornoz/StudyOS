@@ -185,3 +185,14 @@ learning_evidence.metadata.transferLadder = {
   - For Student-created assessments, the fallback is the single distinct timezone across the student's active institutions, and conflicting values block.
   - Each recipient row is frozen with its own window (00:00 / 21:00 in that zone, `timezoneSource` `STUDENT_AVAILABILITY` or `INSTITUTION`).
   - There is no browser, server or fixture default. QA Institution `America/Mexico_City` is `QA_FIXTURE_ONLY`.
+- **D72 — `INACTIVITY_CLOSED` is a completed attempt (APPROVED).**
+  - Scope: a Teacher-assigned untimed Test with `resumeAfterInactivity` false.
+  - After 45 minutes idle, the attempt is closed as is with `closeReason` `INACTIVITY_CLOSED`.
+  - The saved answers are graded and the unanswered ones stay in the denominator (12/20 = 60%). The attempt is COMPLETED and consumes one attempt.
+  - The same attempt never resumes. A NEW attempt may start when attempts remain.
+- **D73 — pre-publication timezone validation (APPROVED).**
+  - Before any recipient write, every intended new recipient is validated: own timezone, else the class institution's, else `INVALID_TIMEZONE_RECIPIENT`.
+  - One invalid recipient blocks the whole publication: no partial publication and 0 recipient writes.
+  - The API returns `{ error: TIMEZONE_AUTHORITY_BLOCKER, reason: INVALID_TIMEZONE_RECIPIENT, invalidRecipientCount, invalidRecipients: [{ studentId, name }] }`. The composer lists the students by name only and asks the teacher to correct them and publish again.
+  - A retry re-validates.
+  - Composer / preview: they use a reference timezone (the institution's, else a common student one). Without one they show a configuration message, never a browser or server zone.
