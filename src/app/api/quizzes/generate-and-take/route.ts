@@ -60,6 +60,7 @@ import { verifyAuth, verifyStudentAccess, verifySubjectAccess, verifyConceptsAcc
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
 import { db } from '@/lib/db';
+import { canonicalAttemptGate, isCorrectnessGatedActivity, resolveQuizConceptEvidenceScore, toCorrectnessGatedStage } from '@/lib/quiz/canonical-gate-score';
 import { getMessages } from '@/lib/i18n/messages';
 import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 import {
@@ -1960,7 +1961,15 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       }
     }
 
-    const totalQuestions = validated.answers.length;
+    // BR-SCORE P1-01: for a correctness-gated canonical activity (PRACTICE / PROVE / RETAIN) the learner-visible
+    // score is correct / ADMINISTERED (an unanswered item stays in the denominator) -- the exact same value persisted
+    // below as the evidence's canonical scorePercent (resolveQuizConceptEvidenceScore). Other modes are unchanged.
+    const correctnessGated = isCorrectnessGatedActivity(quizSession.activityType, quizSession.quizMode);
+    const administeredByConcept = new Map<string, number>();
+    for (const q of cachedQuestions) {
+      if (q?.conceptId) administeredByConcept.set(q.conceptId, (administeredByConcept.get(q.conceptId) ?? 0) + 1);
+    }
+    const totalQuestions = correctnessGated ? Math.max(validated.answers.length, cachedQuestions.length) : validated.answers.length;
     const score = totalQuestions ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
     const conceptLabels = await getConceptLabels(Array.from(byConcept.keys()), language);
@@ -2040,7 +2049,19 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // previous `bucket.correct`-based ratio silently defeated by
         // collapsing every question to a binary hit/miss before
         // averaging.
-        const conceptScore = transferGrading ? transferGrading.overallScore : Math.round((bucket.scoreSum / bucket.total) * 100);
+        // BR-SCORE P1-01 (supersedes CV2-07 for correctness-gated canonical stages ONLY): PRACTICE / PROVE / RETAIN
+        // evidence persists the binary correctness score the learner sees (correct / administered); the partial-credit
+        // rubric mean is preserved separately as metadata.rubricScorePercent and never gates. Every other quiz mode
+        // keeps the CV2-07 rubric mean unchanged.
+        const evidenceScore = resolveQuizConceptEvidenceScore({
+          activityType: quizSession.activityType,
+          quizMode: quizSession.quizMode,
+          correct: bucket.correct,
+          gradedTotal: bucket.total,
+          scoreSum: bucket.scoreSum,
+          administeredCount: administeredByConcept.get(conceptId),
+        });
+        const conceptScore = transferGrading ? transferGrading.overallScore : evidenceScore.scorePercent;
         // LX-4J / LX-1R evidence-consistency contract: the actual mean
         // generated difficulty of this concept's questions, never a
         // hardcoded constant. CANON-R5R1A: this SAME real value is also
@@ -2148,6 +2169,10 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
                 ? { competencyIds: quizSession.targetCompetencyIds }
                 : {}),
               ...(bucket.questionSemantics.length > 0 ? { questionSemantics: bucket.questionSemantics } : {}),
+              // BR-SCORE P1-01: the partial-credit rubric mean, preserved for analysis -- NEVER the gate score.
+              ...(!transferGrading && evidenceScore.scoreBasis === 'CORRECTNESS'
+                ? { scoreBasis: 'CORRECTNESS', rubricScorePercent: evidenceScore.rubricScorePercent }
+                : {}),
               // Phase 0E1: AI provenance for any free-text-graded question
               // in this concept's evidence -- additive, doesn't change the
               // meaning of any existing metadata field.
@@ -2620,11 +2645,26 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       }
     }
 
+    // BR-SCORE P1-01 / P2: the per-attempt canonical gate for the ONE authorized concept of a correctness-gated v1
+    // attempt -- the SAME correctness score persisted as that concept's evidence scorePercent, with the stage's own
+    // pass bar. The results headline and score read this; it never decides the next step (canonicalResults does).
+    const gateStage = toCorrectnessGatedStage(quizSession.v1Marker?.canonicalStage);
+    const gateBucket = quizSession.conceptId ? byConcept.get(quizSession.conceptId) : undefined;
+    const canonicalGate =
+      gateStage && gateBucket && authorizedResult?.v1Qualifies && correctnessGated
+        ? canonicalAttemptGate(gateStage, gateBucket.correct, Math.max(gateBucket.total, administeredByConcept.get(quizSession.conceptId!) ?? 0))
+        : null;
+    if (canonicalGate && authorizedResult && canonicalGate.scorePercent !== authorizedResult.score) {
+      // Structurally unreachable (both come from correctnessScorePercent over the same counts) -- logged, never hidden.
+      console.error('[br-score] CANONICAL_GATE_SCORE_MISMATCH', JSON.stringify({ quizId: validated.quizId, gate: canonicalGate.scorePercent, evidence: authorizedResult.score }));
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         quizId: validated.quizId,
         results: { score, correctCount, incorrectCount, totalQuestions },
+        canonicalGate,
         proveSufficiency,
         canonicalResults,
         canonicalResultsStatus,

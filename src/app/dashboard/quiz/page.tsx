@@ -53,6 +53,7 @@ import { KNOWLEDGE_BUCKET_LABEL_KEY, type KnowledgeBucket } from '@/lib/subject-
 import { studentRuntimeMayGenerateQuestions } from '@/lib/student-runtime/question-supply-policy';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SessionHeader } from '@/components/learning/SessionHeader';
+import { resultScoreDisplay } from '@/lib/quiz/canonical-gate-score';
 import {
   activityKindForMode,
   kindLabelKey,
@@ -2272,6 +2273,8 @@ function QuizPageContent() {
     // legacy next-step line is suppressed. Legacy (non-v1) attempts
     // keep rendering it exactly as before this phase.
     const isV1Result = results.canonicalResultsStatus !== 'NOT_V1';
+    const resultDisplay = resultScoreDisplay(results);
+    const isCanonicalV1 = typeof results.canonicalResultsStatus === 'string' && results.canonicalResultsStatus !== 'NOT_V1';
 
     if (reviewing) {
       const review: (ReviewItem & { errorType?: string | null; reasoningValid?: boolean | null })[] = results.review || [];
@@ -2452,6 +2455,7 @@ function QuizPageContent() {
       canonicalResults: results.canonicalResults,
       proveSufficiency: results.proveSufficiency,
       milestone,
+      attemptPassed: results.canonicalGate ? results.canonicalGate.passed === true : null,
     });
     const outcomeTitle = outcome === 'RECORDED' ? at[kindDoneKey(activityKind)] : at[outcomeKey(outcome)];
     const outcomeBody =
@@ -2486,7 +2490,7 @@ function QuizPageContent() {
           variant={inline ? 'inline' : 'card'}
           showHeadline={!inline}
           note={
-            results.proveSufficiency && !results.proveSufficiency.sufficient
+            !isCanonicalV1 && results.proveSufficiency && !results.proveSufficiency.sufficient
               ? at['prove.moreNeededBody'].replace('{n}', String(results.proveSufficiency.remainingGap))
               : undefined
           }
@@ -2501,8 +2505,9 @@ function QuizPageContent() {
           <h1 className="ls-outcome-title" tabIndex={-1} ref={resultsHeadingRef}>{outcomeTitle}</h1>
           {outcomeBody && !(!isV1Result && outcomeBody === messageText) && <p className="ls-outcome-body">{outcomeBody}</p>}
           <div className="ls-fact">
-            <span className="ls-fact-value">{at['xs.resultFact'].replace('{correct}', String(results.results.correctCount)).replace('{total}', String(results.results.totalQuestions))}</span>
-            <span className="ls-fact-label">{at['quiz.score']}: <span className="tabular">{results.results.score}%</span></span>
+            {/* BR-SCORE P1-01: a canonical attempt shows the SAME gate score the engine and the evidence use. */}
+            <span className="ls-fact-value" data-testid="results-correct-total">{at['xs.resultFact'].replace('{correct}', String(resultDisplay.correct)).replace('{total}', String(resultDisplay.total))}</span>
+            <span className="ls-fact-label">{at['quiz.score']}: <span className="tabular" data-testid="results-score">{resultDisplay.scorePercent}%</span></span>
           </div>
           {/* CANON-R6R1: the legacy next-step line only ever renders for a
               non-v1 attempt -- never alongside canonicalResults. */}
@@ -2814,7 +2819,9 @@ function QuizPageContent() {
             evidence -- one correct answer is not "Prove complete". The
             server re-read the mastery-policy gap; this only presents it
             and NEVER decides the next activity (LX-5). */}
-        {results.proveSufficiency && (
+        {/* BR-SCORE P2: the legacy independent-evidence count is NOT the canonical Prove verdict -- for a v1 attempt
+            canonicalResults is the only authority, so a failed canonical Prove can never read "Enough evidence". */}
+        {!isCanonicalV1 && results.proveSufficiency && (
           <div
             className="card ls-panel"
             style={{ borderColor: results.proveSufficiency.sufficient ? 'var(--success)' : 'var(--warning)' }}

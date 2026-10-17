@@ -186,17 +186,27 @@ describe('CV2-07: aggregate scoring must agree with each question\'s own correct
     expect(q1.correct).toBe(true);
   });
 
-  it('the persisted evidence scorePercent reflects the REAL mean score (partial credit included), never the old threshold-count ratio', async () => {
+  it('BR-SCORE P1-01 (supersedes the CV2-07 rubric-mean evidence score for correctness-gated stages): a PRACTICE quiz persists the learner-visible correctness score; the partial-credit mean is preserved separately', async () => {
     await POST(makeRequest(submitBody()));
 
     expect(updateMasteryMock).toHaveBeenCalledTimes(1);
     const call = updateMasteryMock.mock.calls[0][0];
-    // Mean of [1, 1, 0.6] * 100, rounded -- NOT the old
-    // count-of-thresholds ratio (which would have produced 100, since
-    // all three scores individually cleared 0.5).
-    const expectedMean = Math.round(((1 + 1 + 0.6) / 3) * 100);
-    expect(call.evidence.scorePercent).toBe(expectedMean);
+    // 2 correct of 3 -- the same 67 the results screen shows; never the
+    // old threshold-count 100, and never the rubric mean 87 either.
+    expect(call.evidence.scorePercent).toBe(Math.round((2 / 3) * 100));
     expect(call.evidence.scorePercent).not.toBe(100);
+    // Mean of [1, 1, 0.6] * 100, rounded -- kept as analysis data only.
+    expect(call.metadata.rubricScorePercent).toBe(Math.round(((1 + 1 + 0.6) / 3) * 100));
+    expect(call.metadata.scoreBasis).toBe('CORRECTNESS');
+  });
+
+  it('a non-gated quiz activity (e.g. CUMULATIVE_ASSESSMENT legacy path) still persists the CV2-07 partial-credit mean', async () => {
+    getQuizSessionMock.mockReset().mockResolvedValue(session({ quizMode: 'cumulative_assessment', activityType: 'CUMULATIVE_ASSESSMENT', evidenceMode: 'ASSESSMENT' }));
+    await POST(makeRequest(submitBody()));
+    expect(updateMasteryMock).toHaveBeenCalledTimes(1);
+    const call = updateMasteryMock.mock.calls[0][0];
+    expect(call.evidence.scorePercent).toBe(Math.round(((1 + 1 + 0.6) / 3) * 100));
+    expect(call.metadata.rubricScorePercent).toBeUndefined();
   });
 
   it('a genuinely perfect PRACTICE (3/3 fully correct) still reports 100% -- the fix only corrects the CASI/partial case, it does not deflate a real perfect score', async () => {

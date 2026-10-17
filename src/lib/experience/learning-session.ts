@@ -106,6 +106,11 @@ export interface ActivityOutcomeInput {
   proveSufficiency?: { sufficient?: boolean } | null;
   /** `resolveResultMilestone(...)` -- already server-status based (UX-2). */
   milestone?: string | null;
+  /**
+   * BR-SCORE P2: the server's per-attempt canonical gate (`results.canonicalGate.passed`) -- whether THIS attempt met
+   * its own pass rule (the engine's own rule, decided server-side). Absent for non-canonical attempts.
+   */
+  attemptPassed?: boolean | null;
 }
 
 function requirementStatus(requirements: unknown, stage: string): string | null {
@@ -134,7 +139,10 @@ export function resolveActivityOutcome(input: ActivityOutcomeInput): ActivityOut
   if (fresh && stage) {
     const status = requirementStatus(fresh.requirements, stage);
     if (status === 'SATISFIED') return 'SATISFIED';
-    if (status === 'UNSATISFIED') return 'NOT_YET';
+    // BR-SCORE P2: an attempt that MET its own pass rule is never headlined "Not yet" just because the stage needs
+    // more evidence (e.g. the Practice window needs 3 attempts) -- it is a neutral "done"; the next-step card says
+    // what is still needed. A failed attempt (or no per-attempt gate) keeps NOT_YET.
+    if (status === 'UNSATISFIED') return input.attemptPassed === true ? 'RECORDED' : 'NOT_YET';
     return 'RECORDED';
   }
   if (input.milestone) return 'SATISFIED';

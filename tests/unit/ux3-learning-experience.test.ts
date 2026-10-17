@@ -159,8 +159,10 @@ describe('UX-3 outcome -- the server decides; the score never does', () => {
   });
 
   it('the results page feeds the resolver only server fields and shows the score as a plain fact', () => {
-    expect(QUIZ_CODE).toMatch(/resolveActivityOutcome\(\{\s*kind: activityKind,\s*canonicalResultsStatus: results\.canonicalResultsStatus,\s*canonicalResults: results\.canonicalResults,\s*proveSufficiency: results\.proveSufficiency,\s*milestone,\s*\}\)/);
-    expect(QUIZ_CODE).toMatch(/at\['xs\.resultFact'\]\.replace\('\{correct\}', String\(results\.results\.correctCount\)\)/);
+    // BR-SCORE P2: plus the server's own per-attempt gate verdict (results.canonicalGate.passed) -- still a server field.
+    expect(QUIZ_CODE).toMatch(/resolveActivityOutcome\(\{\s*kind: activityKind,\s*canonicalResultsStatus: results\.canonicalResultsStatus,\s*canonicalResults: results\.canonicalResults,\s*proveSufficiency: results\.proveSufficiency,\s*milestone,\s*attemptPassed: results\.canonicalGate \? results\.canonicalGate\.passed === true : null,\s*\}\)/);
+    // BR-SCORE P1-01: the fact reads the one display source (canonical gate when present, else results.results).
+    expect(QUIZ_CODE).toMatch(/at\['xs\.resultFact'\]\.replace\('\{correct\}', String\(resultDisplay\.correct\)\)/);
     // the canonical next step is still the ONLY next-step authority, and its CTA sits with it
     expect(QUIZ_CODE).toMatch(/const canonicalNextShown = results\.canonicalResultsStatus === 'OK' && !!results\.canonicalResults;/);
     expect(QUIZ_CODE).toMatch(/\{continuation\(true\)\}\s*<\/section>/);

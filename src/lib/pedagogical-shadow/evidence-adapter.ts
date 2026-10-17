@@ -17,6 +17,7 @@
  * with whatever metadata/quiz_sessions context is available).
  */
 import { fnv1aHex } from './fingerprint';
+import { correctnessScorePercent } from '@/lib/quiz/canonical-gate-score';
 import { CANONICAL_POLICY, transferLevelRank } from '@/lib/pedagogical-engine';
 import type { PedagogicalActivityType, RawEvidenceItem, TransferLadderChallenge, TransferLevel } from '@/lib/pedagogical-engine';
 import type {
@@ -252,7 +253,14 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
     return null;
   }
 
-  const scorePercent =
+  // BR-SCORE P1-01 -- a correctness-gated stage (PRACTICE / PROVE / RETENTION_CHECK) gates on the BINARY correctness
+  // score the learner saw. When the row carries its own administered/correct counts (every v1 row stamps
+  // metadata.itemCount + correctCount), the gate score is derived from them, so a legacy row whose score_percent was
+  // the partial-credit rubric mean (e.g. 2/3 persisted as 83) can never inflate the gate. A row WITHOUT both counts
+  // is never re-scored (its stored score_percent is used as before) -- history is not guessed.
+  const correctnessGated = resolved === 'PRACTICE' || resolved === 'PROVE' || resolved === 'RETENTION_CHECK';
+  const countsPresent = row.correctCount != null && row.itemCount != null && row.itemCount > 0;
+  const storedScorePercent =
     row.scorePercent != null
       ? normalizeScorePercent(row.scorePercent, row.scoreShape ?? 'PERCENT_0_100')
       : row.correctCount != null && row.itemCount
@@ -262,6 +270,12 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
           : row.result === 'partial'
             ? 50
             : 0;
+  const scorePercent = correctnessGated && countsPresent ? correctnessScorePercent(row.correctCount!, row.itemCount!) : storedScorePercent;
+  if (correctnessGated && countsPresent && row.scorePercent != null && scorePercent !== storedScorePercent) {
+    warnings.push(
+      `Row ${row.id}: stored score_percent=${storedScorePercent} disagrees with its own counts ${row.correctCount}/${row.itemCount}; the canonical ${resolved} gate uses the correctness score ${scorePercent} (BR-SCORE P1-01).`,
+    );
+  }
 
   let ladder: ReturnType<typeof parseTransferLadder> = null;
   if (resolved === 'TRANSFER' && row.transferLadder != null) {

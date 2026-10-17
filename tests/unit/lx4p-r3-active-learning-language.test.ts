@@ -295,7 +295,7 @@ describe('LX-4P-R3 R8 -- the language rule is structural across every learning s
   });
 
   it('the ContinuationPanel Prove-insufficiency note passed from this page also uses activity language, matching the panel\'s own copy', () => {
-    expect(QUIZ).toMatch(/note=\{\s*results\.proveSufficiency[\s\S]*?at\['prove\.moreNeededBody'\]/);
+    expect(QUIZ).toMatch(/note=\{\s*(?:!isCanonicalV1 && )?results\.proveSufficiency[\s\S]*?at\['prove\.moreNeededBody'\]/);
   });
 });
 
