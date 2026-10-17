@@ -50,12 +50,14 @@ export type AdminAuditAction =
   // Question Bank -- a reviewer's concept attribution of an item version (reviewed content).
   | 'QUESTION_BANK_ITEM_ATTRIBUTION_SET'
   // L10 SF-7 -- a platform administrator ended a parent-learner relationship.
-  | 'PARENT_RELATIONSHIP_ENDED';
+  | 'PARENT_RELATIONSHIP_ENDED'
+  // Pilot QA -- scripts/operations/pilot-qa-retain-time.ts moved a synthetic QA student's concept evidence back in time.
+  | 'PILOT_QA_RETAIN_TIME_SHIFT';
 
 export interface RecordAdminActionInput {
   actorUserId: string;
   action: AdminAuditAction;
-  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING' | 'QUESTION_BANK_ITEM_VERSION' | 'PARENT_RELATIONSHIP';
+  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING' | 'QUESTION_BANK_ITEM_VERSION' | 'PARENT_RELATIONSHIP' | 'LEARNING_EVIDENCE';
   targetId?: string | null;
   previousState?: unknown;
   newState?: unknown;
