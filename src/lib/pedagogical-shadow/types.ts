@@ -149,6 +149,12 @@ export interface StudyUSEvidenceRow {
    * 2026-10-16 contract 1.2 -- `learning_evidence.metadata.transferLadder`, written by the APPLY ladder flow
    * (metadata.activityType 'TRANSFER'). Raw jsonb, validated by the adapter.
    */
+  /**
+   * metadata.assignmentId -- the teacher assignment (teacher_interventions.id) a subject Test / Mock attempt belongs to.
+   * Overnight rule S (2026-10-16): only the LATEST completed attempt of an assignment counts for the Knowledge State
+   * and the revalidation alerts; earlier attempts stay in History.
+   */
+  assignmentId?: string | null;
   transferLadder?: unknown;
 }
 
@@ -173,6 +179,8 @@ export type ScoreShape = 'PERCENT_0_100' | 'FRACTION_0_1' | 'RATIO';
 /** The ONE closed vocabulary for "why this row could not be mapped (fully or at all)." Every gap the adapter finds cites one of these -- never a bespoke ad hoc string, and never silence. */
 export type AdapterUnresolvedReason =
   | 'LEARN_CHECK_SOURCE_UNAVAILABLE'
+  /** Overnight rule S: an earlier attempt of the same teacher assignment (only the latest completed attempt counts). */
+  | 'SUPERSEDED_BY_LATER_ATTEMPT'
   | 'UNSUPPORTED_ACTIVITY_TYPE'
   | 'UNKNOWN_SOURCE'
   | 'ITEM_COUNT_NOT_AVAILABLE'

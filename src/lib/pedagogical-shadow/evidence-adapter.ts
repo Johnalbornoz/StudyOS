@@ -374,7 +374,20 @@ export function mapStudyUSEvidenceToPedagogicalEvidence(rows: StudyUSEvidenceRow
     });
   }
 
+  // Overnight rule S (2026-10-16): for a teacher-assigned subject Test / Mock, the current result is the LAST completed
+  // attempt -- not the best, not an average. Earlier attempts of the same assignment stay in History (never deleted)
+  // but are not replayed, so an early weak attempt never counts as a revalidation alert once a later attempt exists.
+  const latestOfAssignment = new Map<string, StudyUSEvidenceRow>();
   for (const row of rows) {
+    if (!row.assignmentId) continue;
+    const prev = latestOfAssignment.get(row.assignmentId);
+    if (!prev || new Date(row.timestamp).getTime() > new Date(prev.timestamp).getTime()) latestOfAssignment.set(row.assignmentId, row);
+  }
+  for (const row of rows) {
+    if (row.assignmentId && latestOfAssignment.get(row.assignmentId) !== row) {
+      unresolved.push({ reason: 'SUPERSEDED_BY_LATER_ATTEMPT', evidenceId: row.id, detail: 'An earlier attempt of the same teacher assignment; the latest completed attempt is the current result.' });
+      continue;
+    }
     const mapped = mapOneRow(row, unresolved, warnings);
     if (mapped) items.push(mapped);
   }

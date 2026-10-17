@@ -64,6 +64,7 @@ export async function fetchStudyUSEvidenceRows(
       le.metadata->>'transferFailureDiagnostic' AS transfer_failure_diagnostic,
       le.metadata->'learnSession' AS learn_session,
       le.metadata->'transferLadder' AS transfer_ladder,
+      le.metadata->>'assignmentId' AS assignment_id,
       EXISTS (
         SELECT 1 FROM student_misconceptions sm
         JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id
@@ -134,6 +135,7 @@ export function mapStudyUSEvidenceRow(row: any): StudyUSEvidenceRow {
       // parseTransferLadder). NULL on every row the guided LEARN / APPLY ladder flows did not write.
       learnSession: parseJsonb(row.learn_session),
       transferLadder: parseJsonb(row.transfer_ladder),
+      assignmentId: row.assignment_id ?? null,
       // CANON-V2-REMEDIATION Part 7 (AUDIT-005 closed): wired to the
       // REAL per-attempt link `mastery.service.ts`'s own `updateMastery`
       // already writes -- `recordStudentMisconception`'s
@@ -186,6 +188,7 @@ export async function fetchStudyUSEvidenceRowsForPairs(
       le.metadata->>'transferFailureDiagnostic' AS transfer_failure_diagnostic,
       le.metadata->'learnSession' AS learn_session,
       le.metadata->'transferLadder' AS transfer_ladder,
+      le.metadata->>'assignmentId' AS assignment_id,
       EXISTS (
         SELECT 1 FROM student_misconceptions sm
         JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id

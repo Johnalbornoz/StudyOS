@@ -411,6 +411,21 @@ describe('REVALIDATION -- subject Test / Mock past PRACTICE', () => {
     expect(d.revalidationRequired).toBe(false);
   });
 
+  it('rule S: only the LAST completed attempt of a teacher assignment is replayed (an early 65 never counts once a later 90 exists)', () => {
+    const base = { sourceType: 'CUMULATIVE_ASSESSMENT', difficulty: 3, hintsUsed: 0, aiAssistanceType: 'NONE', activityType: 'CUMULATIVE_ASSESSMENT' } as const;
+    const rows: StudyUSEvidenceRow[] = [
+      { ...base, id: 'att-1', result: 'partial', scorePercent: 65, timestamp: IA_AT(0), assignmentId: 'asg-1' },
+      { ...base, id: 'att-2', result: 'correct', scorePercent: 90, timestamp: IA_AT(1), assignmentId: 'asg-1' },
+      { ...base, id: 'own', result: 'partial', scorePercent: 70, timestamp: IA_AT(2) },
+    ];
+    const mapped = mapStudyUSEvidenceToPedagogicalEvidence(rows);
+    expect(mapped.items.map((i) => i.id)).toEqual(['att-2', 'own']);
+    expect(mapped.unresolved.filter((u) => u.reason === 'SUPERSEDED_BY_LATER_ATTEMPT').map((u) => u.evidenceId)).toEqual(['att-1']);
+    // a LATER, lower attempt replaces the earlier pass (last wins, not best)
+    const lower = mapStudyUSEvidenceToPedagogicalEvidence([rows[1], { ...base, id: 'att-3', result: 'incorrect', scorePercent: 50, timestamp: IA_AT(3), assignmentId: 'asg-1' }]);
+    expect(lower.items.map((i) => i.id)).toEqual(['att-3']);
+  });
+
   it('subject Test and subject Mock share ONE history (via the real adapter): Test 70 then Mock 65 revalidates', () => {
     const rows: StudyUSEvidenceRow[] = [
       { id: 'row-test', sourceType: 'CUMULATIVE_ASSESSMENT', result: 'partial', scorePercent: 70, difficulty: 3, timestamp: IA_AT(0), hintsUsed: 0, aiAssistanceType: 'NONE', activityType: 'CUMULATIVE_ASSESSMENT' },
