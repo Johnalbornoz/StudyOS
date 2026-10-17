@@ -113,7 +113,7 @@ async function main() {
 
     /* ----------------------------------------------- preview: plan, recommended duration, window ----------------------------------------------- */
     const pv = await svc.previewSubjectAssessmentAssignment(teacher, { classId: klass, kind: 'MOCK', conceptIds: concepts, difficulty: 'INTERMEDIO', startDate: today, endDate: today, maxAttempts: 2, timing: { timed: true, durationMinutes: null } });
-    check('PREVIEW  MOCK plan = planGroupAssessment (3 concepts -> 6 items, 2 each), band MEDIUM from "Intermedio"', pv.plan.questionCount === 6 && Object.values(pv.plan.distribution).every((n) => n === 2) && pv.difficultyBand === 'MEDIUM', JSON.stringify(pv.plan));
+    check('PREVIEW  MOCK plan = planGroupAssessment (3 concepts -> 6 items, 2 each), band INTERMEDIATE from "Intermedio"', pv.plan.questionCount === 6 && Object.values(pv.plan.distribution).every((n) => n === 2) && pv.difficultyBand === 'INTERMEDIATE', JSON.stringify(pv.plan));
     check('PREVIEW  MOCK always timed with the StudyUs recommended duration (nominal sum over the planned items)', pv.timing.timed && (pv.timing.recommendedDurationMinutes ?? 0) >= 1 && pv.timing.durationMinutes === pv.timing.recommendedDurationMinutes && pv.timing.durationSource === 'STUDYUS_RECOMMENDED', `${pv.timing.recommendedDurationMinutes} min ${pv.timing.recommendationRule}`);
     const expectedClose = rules.zonedWallTimeToUtc(today, 21, 0, TZ).toISOString();
     check('WINDOW  closes 21:00 of endDate in the institution timezone (Bogota = 02:00Z next day), opens 00:00 of startDate', pv.window.closesAt === expectedClose && new Date(pv.window.closesAt).getUTCHours() === 2 && pv.window.opensAt === rules.zonedWallTimeToUtc(today, 0, 0, TZ).toISOString() && pv.closesAtLocal.time === '21:00' && pv.closesAtLocal.timezone === TZ, `${pv.window.opensAt} .. ${pv.window.closesAt}`);
@@ -165,7 +165,7 @@ async function main() {
     const a1b = await svc.startSubjectAssignmentAttempt(S1.userId, ivT, deps);
     check('RESUME  starting again while an attempt is active RESUMES it (same quiz, no extra attempt)', a1.outcome === 'STARTED' && a1.attemptNumber === 1 && a1b.outcome === 'RESUMED' && a1b.quizId === a1.quizId);
     const s1setup = (await one(`SELECT subject_assessment_setup s FROM quiz_sessions WHERE id = $1`, [a1.quizId])).s;
-    check('FROZEN VERSION  the attempt freezes the group plan on the learner\'s concepts, band LOW, origin TEACHER, assignmentId = intervention id, attempt 1', s1setup.origin === 'TEACHER' && s1setup.assignmentId === ivT && s1setup.attemptNumber === 1 && s1setup.difficulty.band === 'LOW' && s1setup.questionCount === 4 && s1setup.maxAttempts === 3 && s1setup.assignmentWindow.closesAt === pOne.preview.window.closesAt);
+    check('FROZEN VERSION  the attempt freezes the group plan on the learner\'s concepts, band BASIC, origin TEACHER, assignmentId = intervention id, attempt 1', s1setup.origin === 'TEACHER' && s1setup.assignmentId === ivT && s1setup.attemptNumber === 1 && s1setup.difficulty.band === 'BASIC' && s1setup.questionCount === 4 && s1setup.maxAttempts === 3 && s1setup.assignmentWindow.closesAt === pOne.preview.window.closesAt);
     const n1 = await answerAll(S1.id, a1.quizId, () => 'a');
     const sub1 = await subject.submitSubjectAssessmentSession({ studentId: S1.id, quizId: a1.quizId }, deps);
     check('ATTEMPT 1  100% -> passed (>= 80 inclusive)', sub1.ok && sub1.data.subjectAssessment.scorePercent === 100 && sub1.data.subjectAssessment.passed, `${n1} items`);

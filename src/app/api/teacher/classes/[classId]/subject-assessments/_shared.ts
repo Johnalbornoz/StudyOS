@@ -14,10 +14,12 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 export const DraftSchema = z.object({
   kind: z.enum(['TEST', 'MOCK']),
   conceptIds: z.array(z.string().uuid()).min(1).max(200),
-  difficulty: z.enum(['BASICO', 'INTERMEDIO', 'AVANZADO', 'MIXTO', 'LOW', 'MEDIUM', 'HIGH', 'MIXED']),
+  // UI names, the approved bands, and the legacy band names (read as BASIC / INTERMEDIATE / ADVANCED)
+  difficulty: z.enum(['BASICO', 'INTERMEDIO', 'AVANZADO', 'MIXTO', 'BASIC', 'INTERMEDIATE', 'ADVANCED', 'MIXED', 'LOW', 'MEDIUM', 'HIGH']),
   startDate: isoDate,
   endDate: isoDate,
-  maxAttempts: z.number().int().min(1).max(10),
+  // 1, 2 or 3 (APPROVED 2026-10-17); the service re-validates (MAX_ATTEMPTS_INVALID)
+  maxAttempts: z.number().int().min(1).max(3),
   timing: z.object({ timed: z.boolean(), durationMinutes: z.number().int().min(1).max(600).nullable() }),
 });
 

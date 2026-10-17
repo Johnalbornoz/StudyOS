@@ -10,9 +10,10 @@ import { getSubjectAssessmentGroupResults, SubjectAssignmentError } from '@/lib/
 import { StatusBadge, toneForInterventionStatus } from '@/components/ui/StatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ClassChrome } from '../../class-chrome';
+import { KNOWLEDGE_BUCKET_LABEL_KEY, KNOWLEDGE_BUCKETS } from '@/lib/subject-assessment/knowledge-bucket';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const BAND_LABEL = { LOW: 'tsa.difficulty.BASICO', MEDIUM: 'tsa.difficulty.INTERMEDIO', HIGH: 'tsa.difficulty.AVANZADO', MIXED: 'tsa.difficulty.MIXTO' } as const;
+const BAND_LABEL = { BASIC: 'tsa.difficulty.BASICO', INTERMEDIATE: 'tsa.difficulty.INTERMEDIO', ADVANCED: 'tsa.difficulty.AVANZADO', MIXED: 'tsa.difficulty.MIXTO' } as const;
 
 /**
  * Overnight 2026-10-16 -- the Teacher's GROUP view of one subject Test / Mock assignment: per student the LATEST
@@ -67,10 +68,19 @@ export default async function SubjectAssessmentGroupPage({ params }: { params: P
               <Link href={`/dashboard/teacher/classes/${classId}/subject-assessments/${groupId}/students/${s.studentId}`}>{s.name}</Link>
               <StatusBadge label={t[`assignments.status.${s.status}`] ?? s.status} tone={toneForInterventionStatus(s.status)} />
             </span>
-            <span>{s.latest ? `${s.latest.scorePercent} % · ${s.latest.passed ? t['quiz.subject.passed'] : t['quiz.subject.notPassed']} · ${fillMessage(t['tsa.drill.attempt'], { n: s.latest.attemptNumber })}` : t['tsa.group.noResult']}</span>
+            <span data-testid="tsa-student-bucket">{s.latest ? `${s.latest.scorePercent} % · ${s.latest.passed ? t['quiz.subject.passed'] : t['quiz.subject.notPassed']} · ${fillMessage(t['tsa.drill.attempt'], { n: s.latest.attemptNumber })} · ${t[KNOWLEDGE_BUCKET_LABEL_KEY[s.latest.knowledge.knowledgeBucket ?? 'UNCLASSIFIED']]}` : t['tsa.group.noResult']}</span>
             <span>{fillMessage(t['tsa.attempts'], { used: s.attemptsUsed, max: s.maxAttempts })}</span>
           </div>
         ))}
+      </section>
+
+      <section className="card ta-card" aria-labelledby="tsa-kb-title" data-testid="tsa-bucket-distribution">
+        <h3 id="tsa-kb-title" style={{ fontSize: 16 }}>{t['kb.distribution']}</h3>
+        <ul className="ta-msg" style={{ margin: 0, paddingLeft: 18 }}>
+          {KNOWLEDGE_BUCKETS.map((b) => <li key={b}>{t[KNOWLEDGE_BUCKET_LABEL_KEY[b]]}: {g.bucketDistribution[b]}</li>)}
+          {g.bucketDistribution.UNCLASSIFIED > 0 && <li>{t[KNOWLEDGE_BUCKET_LABEL_KEY.UNCLASSIFIED]}: {g.bucketDistribution.UNCLASSIFIED}</li>}
+        </ul>
+        <p className="ta-msg">{t['kb.note']}</p>
       </section>
 
       <section className="card ta-card" aria-labelledby="tsa-dist-title">

@@ -7,10 +7,11 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  answerCountsAt, blueprintMatches, buildSchedule, buildSubjectReport, conceptNeedsReinforcement, endOfLocalDateUtc, feedbackPolicyFor,
-  isValidTimeZone, lifecycleState, localDateIn, localMidnightUtc, readSetup, recommendedMockDurationMinutes, remainingSeconds,
-  resolveStudentTimezone, sessionExpiresAt, splitByLevels, startTiming, studentTimingFor, validateExplicitPlan, DIFFICULTY_BAND_LEVELS,
-  SUBJECT_SUBMIT_GRACE_SECONDS, STUDENT_MAX_ATTEMPTS, MOCK_DURATION_RULE,
+  answerCountsAt, blueprintMatches, buildSchedule, buildSubjectReport, conceptNeedsReinforcement, feedbackPolicyFor,
+  isValidTimeZone, lifecycleState, localDateIn, readSetup, recommendedMockDurationMinutes, remainingSeconds,
+  resolveTimezoneAuthority, selfScheduledExpiryUtc, sessionExpiresAt, splitByLevels, startTiming, studentTimingFor, validateExplicitPlan, DIFFICULTY_BAND_LEVELS,
+  SUBJECT_SUBMIT_GRACE_SECONDS, STUDENT_MAX_ATTEMPTS, MOCK_DURATION_RULE, SUBJECT_UNTIMED_INACTIVITY_MINUTES,
+  mixedLevelCounts, bandLevelCounts, assignLevelsAcrossConcepts, normalizeDifficultyBand, DIFFICULTY_LEVEL_OF,
 } from '@/lib/subject-assessment/lifecycle';
 import { planGroupAssessment, planSubjectMock, planSubjectTest, subjectAssessmentPassed } from '@/lib/subject-assessment/sizing';
 import { nominalResponseSeconds } from '@/lib/assessment-foundation/nominal-response-time';
@@ -85,40 +86,113 @@ describe('explicit (TEACHER) plans and difficulty bands', () => {
     expect(validateExplicitPlan({ questionCount: 51, distribution: { a: 51 }, rule: 'x' }, ['a'])).toMatchObject({ ok: false, error: 'PLAN_COUNT_OUT_OF_RANGE' });
     expect(validateExplicitPlan({ questionCount: 2, distribution: { a: 1, z: 1 }, rule: 'x' }, ['a'])).toMatchObject({ ok: false, error: 'PLAN_CONCEPT_NOT_SELECTED' });
   });
-  it('bands map to generator levels; MIXED rotates; the split is exact', () => {
-    expect(DIFFICULTY_BAND_LEVELS).toEqual({ LOW: [2], MEDIUM: [3], HIGH: [4], MIXED: [2, 3, 4] });
+  it('bands map to the APPROVED levels: BASIC 2, INTERMEDIATE 3, ADVANCED 4; the round-robin split stays exact', () => {
+    expect(DIFFICULTY_LEVEL_OF).toEqual({ BASIC: 2, INTERMEDIATE: 3, ADVANCED: 4 });
+    expect(DIFFICULTY_BAND_LEVELS).toEqual({ BASIC: [2], INTERMEDIATE: [3], ADVANCED: [4], MIXED: [2, 3, 4] });
     expect(splitByLevels(5, [2, 3, 4])).toEqual([{ level: 2, count: 2 }, { level: 3, count: 2 }, { level: 4, count: 1 }]);
-    expect(splitByLevels(1, [2, 3, 4])).toEqual([{ level: 2, count: 1 }]);
     expect(splitByLevels(3, [3]).reduce((a, x) => a + x.count, 0)).toBe(3);
+  });
+  it('legacy band names (frozen jsonb rows) are read as the approved names; the new names are written', () => {
+    expect(normalizeDifficultyBand('LOW')).toBe('BASIC');
+    expect(normalizeDifficultyBand('MEDIUM')).toBe('INTERMEDIATE');
+    expect(normalizeDifficultyBand('HIGH')).toBe('ADVANCED');
+    expect(normalizeDifficultyBand('MIXED')).toBe('MIXED');
+    expect(normalizeDifficultyBand('ADVANCED')).toBe('ADVANCED');
+    expect(normalizeDifficultyBand('EXTREME')).toBeNull();
+    const legacy = readSetup({ version: 'subject-assessment-v2', kind: 'SUBJECT_CUMULATIVE_TEST', difficulty: { band: 'HIGH' } });
+    expect(legacy?.difficulty).toEqual({ band: 'ADVANCED' });
+    expect(readSetup({ version: 'subject-assessment-v2', kind: 'SUBJECT_CUMULATIVE_TEST', difficulty: { mode: 'AUTO' } })?.difficulty).toEqual({ mode: 'AUTO' });
   });
 });
 
-describe('timezone and schedule (SELF_SCHEDULED_EXPIRY_TIME = end of the selected local date)', () => {
-  it('end of a local date is the next local midnight, DST-safe', () => {
-    expect(endOfLocalDateUtc('2026-10-17', 'America/Bogota').toISOString()).toBe('2026-10-18T05:00:00.000Z');
-    expect(endOfLocalDateUtc('2026-10-17', 'UTC').toISOString()).toBe('2026-10-18T00:00:00.000Z');
-    // Madrid leaves summer time on 2026-10-25: that day is 25 h long
-    expect(endOfLocalDateUtc('2026-10-24', 'Europe/Madrid').toISOString()).toBe('2026-10-24T22:00:00.000Z');
-    expect(endOfLocalDateUtc('2026-10-25', 'Europe/Madrid').toISOString()).toBe('2026-10-25T23:00:00.000Z');
-    expect(localMidnightUtc('2026-10-25', 'Europe/Madrid').toISOString()).toBe('2026-10-24T22:00:00.000Z');
+describe('MIXED / Balanced = 30% Basic / 50% Intermediate / 20% Advanced (largest remainder, Intermediate first)', () => {
+  const cases: Array<[number, [number, number, number]]> = [[4, [1, 2, 1]], [5, [1, 3, 1]], [10, [3, 5, 2]], [14, [4, 7, 3]], [36, [11, 18, 7]], [50, [15, 25, 10]]];
+  for (const [n, [b, i, a]] of cases) {
+    it(`${n} questions -> ${b} Basic / ${i} Intermediate / ${a} Advanced, total exact, Intermediate the largest`, () => {
+      const c = mixedLevelCounts(n);
+      expect(c).toEqual({ BASIC: b, INTERMEDIATE: i, ADVANCED: a });
+      expect(c.BASIC + c.INTERMEDIATE + c.ADVANCED).toBe(n);
+      expect(c.INTERMEDIATE).toBeGreaterThanOrEqual(Math.max(c.BASIC, c.ADVANCED));
+      expect(bandLevelCounts('MIXED', n)).toEqual([{ level: 2, count: b }, { level: 3, count: i }, { level: 4, count: a }].filter((x) => x.count > 0));
+    });
+  }
+  it('every count 1..50 is exact and keeps Intermediate the largest share', () => {
+    for (let n = 1; n <= 50; n++) {
+      const c = mixedLevelCounts(n);
+      expect(c.BASIC + c.INTERMEDIATE + c.ADVANCED).toBe(n);
+      expect(c.INTERMEDIATE).toBeGreaterThanOrEqual(Math.max(c.BASIC, c.ADVANCED));
+    }
+  });
+  it('a single band puts every item at its level', () => {
+    expect(bandLevelCounts('BASIC', 6)).toEqual([{ level: 2, count: 6 }]);
+    expect(bandLevelCounts('ADVANCED', 3)).toEqual([{ level: 4, count: 3 }]);
+  });
+  it('levels are assigned deterministically across concepts: exact session totals, per-concept sums = plan, spread', () => {
+    const dist = { a: 2, b: 2, c: 2, d: 2, e: 2 };
+    const plan = assignLevelsAcrossConcepts(dist, 'MIXED');
+    expect(assignLevelsAcrossConcepts(dist, 'MIXED')).toEqual(plan); // deterministic
+    const totals: Record<number, number> = {};
+    for (const [c, levels] of Object.entries(plan)) {
+      expect(levels.reduce((s, x) => s + x.count, 0)).toBe(dist[c as keyof typeof dist]);
+      for (const { level, count } of levels) totals[level] = (totals[level] ?? 0) + count;
+    }
+    expect(totals).toEqual({ 2: 3, 3: 5, 4: 2 });
+    // a 36-item plan over 18 concepts keeps the exact 11 / 18 / 7 totals
+    const big = Object.fromEntries(Array.from({ length: 18 }, (_, i) => [`k${i}`, 2]));
+    const bigPlan = assignLevelsAcrossConcepts(big, 'MIXED');
+    const bt: Record<number, number> = {};
+    for (const levels of Object.values(bigPlan)) for (const { level, count } of levels) bt[level] = (bt[level] ?? 0) + count;
+    expect(bt).toEqual({ 2: 11, 3: 18, 4: 7 });
+    expect(assignLevelsAcrossConcepts({ a: 3, b: 1 }, 'INTERMEDIATE')).toEqual({ a: [{ level: 3, count: 3 }], b: [{ level: 3, count: 1 }] });
+  });
+});
+
+describe('timezone and schedule (APPROVED 2026-10-17: expires at 21:00 of the selected date, authoritative timezone)', () => {
+  it('the expiry is 21:00 local on the selected date, DST-correct', () => {
+    expect(selfScheduledExpiryUtc('2026-10-17', 'America/Bogota').toISOString()).toBe('2026-10-18T02:00:00.000Z');
+    expect(selfScheduledExpiryUtc('2026-10-17', 'UTC').toISOString()).toBe('2026-10-17T21:00:00.000Z');
+    // Madrid leaves summer time on 2026-10-25 (03:00 -> 02:00): 21:00 is UTC+2 the day before and UTC+1 that day
+    expect(selfScheduledExpiryUtc('2026-10-24', 'Europe/Madrid').toISOString()).toBe('2026-10-24T19:00:00.000Z');
+    expect(selfScheduledExpiryUtc('2026-10-25', 'Europe/Madrid').toISOString()).toBe('2026-10-25T20:00:00.000Z');
+    // New York enters summer time on 2027-03-14
+    expect(selfScheduledExpiryUtc('2027-03-13', 'America/New_York').toISOString()).toBe('2027-03-14T02:00:00.000Z');
+    expect(selfScheduledExpiryUtc('2027-03-14', 'America/New_York').toISOString()).toBe('2027-03-15T01:00:00.000Z');
   });
   it('local date of an instant', () => {
     expect(localDateIn('America/Bogota', new Date('2026-10-18T03:00:00Z'))).toBe('2026-10-17');
     expect(localDateIn('Asia/Tokyo', new Date('2026-10-17T16:00:00Z'))).toBe('2026-10-18');
   });
-  it('timezone authority: student_availability first, the browser only as an assumption, else UTC (assumed)', () => {
-    expect(resolveStudentTimezone('America/Bogota', 'Europe/Madrid')).toEqual({ timezone: 'America/Bogota', source: 'STUDENT_AVAILABILITY' });
-    expect(resolveStudentTimezone(null, 'Europe/Madrid')).toEqual({ timezone: 'Europe/Madrid', source: 'BROWSER_ASSUMED' });
-    expect(resolveStudentTimezone('Not/AZone', undefined)).toEqual({ timezone: 'UTC', source: 'DEFAULT_UTC_ASSUMED' });
+  it('timezone authority: student_availability, else the one institution timezone; nothing -> TIMEZONE_AUTHORITY_BLOCKER (no browser, no UTC)', () => {
+    expect(resolveTimezoneAuthority('America/Bogota', ['Europe/Madrid'])).toEqual({ ok: true, timezone: 'America/Bogota', source: 'STUDENT_AVAILABILITY' });
+    expect(resolveTimezoneAuthority(null, ['Europe/Madrid', 'Europe/Madrid'])).toEqual({ ok: true, timezone: 'Europe/Madrid', source: 'INSTITUTION' });
+    expect(resolveTimezoneAuthority('Not/AZone', [null, 'x'])).toEqual({ ok: false, error: 'TIMEZONE_AUTHORITY_BLOCKER', reason: 'NO_TIMEZONE_AUTHORITY' });
+    expect(resolveTimezoneAuthority(null)).toEqual({ ok: false, error: 'TIMEZONE_AUTHORITY_BLOCKER', reason: 'NO_TIMEZONE_AUTHORITY' });
+    expect(resolveTimezoneAuthority(null, ['Europe/Madrid', 'America/Bogota'])).toEqual({ ok: false, error: 'TIMEZONE_AUTHORITY_BLOCKER', reason: 'INSTITUTION_TIMEZONES_CONFLICT' });
     expect(isValidTimeZone('America/Bogota')).toBe(true);
     expect(isValidTimeZone('x')).toBe(false);
   });
-  it('a scheduled date today or later is accepted with its frozen expiry; a past date is refused', () => {
+  it('a scheduled date today (before 21:00) or later is accepted with its frozen 21:00 expiry; a past date / past 21:00 is refused', () => {
     const now = new Date('2026-10-17T15:00:00Z');
     expect(buildSchedule({ mode: 'NOW' }, 'UTC', now)).toEqual({ ok: true, schedule: { mode: 'NOW' } });
-    expect(buildSchedule({ mode: 'SCHEDULED', date: '2026-10-17' }, 'America/Bogota', now)).toEqual({ ok: true, schedule: { mode: 'SCHEDULED', date: '2026-10-17', timezone: 'America/Bogota', expiresAt: '2026-10-18T05:00:00.000Z' } });
+    expect(buildSchedule({ mode: 'SCHEDULED', date: '2026-10-17' }, 'America/Bogota', now)).toEqual({ ok: true, schedule: { mode: 'SCHEDULED', date: '2026-10-17', timezone: 'America/Bogota', expiresAt: '2026-10-18T02:00:00.000Z' } });
+    // 21:30 in Bogota: today's 21:00 already passed
+    expect(buildSchedule({ mode: 'SCHEDULED', date: '2026-10-17' }, 'America/Bogota', new Date('2026-10-18T02:30:00Z'))).toEqual({ ok: false, error: 'SCHEDULE_DATE_IN_PAST' });
     expect(buildSchedule({ mode: 'SCHEDULED', date: '2026-10-16' }, 'America/Bogota', now)).toEqual({ ok: false, error: 'SCHEDULE_DATE_IN_PAST' });
     expect(buildSchedule({ mode: 'SCHEDULED', date: '17/10/2026' }, 'UTC', now)).toEqual({ ok: false, error: 'SCHEDULE_DATE_INVALID' });
+  });
+  it('no timezone authority: SCHEDULED is refused with TIMEZONE_AUTHORITY_BLOCKER; NOW still works', () => {
+    const now = new Date('2026-10-17T15:00:00Z');
+    expect(buildSchedule({ mode: 'SCHEDULED', date: '2026-10-18' }, null, now)).toEqual({ ok: false, error: 'TIMEZONE_AUTHORITY_BLOCKER' });
+    expect(buildSchedule({ mode: 'NOW' }, null, now)).toEqual({ ok: true, schedule: { mode: 'NOW' } });
+  });
+  it('the service never assumes a browser / UTC timezone and refuses SCHEDULED with the blocker; the UI shows it', () => {
+    expect(SERVICE).not.toMatch(/BROWSER_ASSUMED'|DEFAULT_UTC_ASSUMED'|browserTimezone/);
+    expect(SERVICE).toMatch(/fail\(409, 'TIMEZONE_AUTHORITY_BLOCKER'/);
+    expect(SERVICE).toMatch(/class_enrollments ce JOIN classes c ON c\.id = ce\.class_id JOIN institutions i/);
+    expect(ROUTE).not.toMatch(/browserTimezone/);
+    expect(PAGE).not.toMatch(/browserTimeZone\(\)/);
+    expect(PAGE).toMatch(/subjectCreateError === 'TIMEZONE_AUTHORITY_BLOCKER' \? t\['quiz\.subjectSetup\.timezoneBlocker'\]/);
+    for (const m of Object.values(MESSAGES)) expect(m['quiz.subjectSetup.timezoneBlocker']).toMatch(/21/);
   });
 });
 
@@ -131,6 +205,19 @@ describe('timing: Mock always timed (NOMINAL_RESPONSE_TIME_SUM), Student Test un
     // an out-of-scale generated difficulty is clamped to 1-5 before the lookup, never silently zero
     expect(recommendedMockDurationMinutes([{ type: 'multiple_choice', difficulty: 7 }]).totalSeconds).toBe(nominalResponseSeconds('multiple_choice', 5));
     expect(recommendedMockDurationMinutes([{ type: null, difficulty: 3 }]).unplannedItems).toBe(1);
+  });
+  it('APPROVED: the recommendation is adjusted by difficulty (a harder item plans more time)', () => {
+    const at = (d: number) => recommendedMockDurationMinutes(Array.from({ length: 10 }, () => ({ type: 'multiple_choice', difficulty: d }))).totalSeconds;
+    expect(at(2)).toBeLessThan(at(3));
+    expect(at(3)).toBeLessThan(at(4));
+    expect(at(3)).toBe(10 * (nominalResponseSeconds('multiple_choice', 3) ?? 0));
+    // the service passes each item's planned (generated-at) level to the recommendation
+    expect(SERVICE).toMatch(/questions\.map\(\(q\) => \(\{ type: q\.type, difficulty: itemLevel\(q\) \}\)\)/);
+    expect(SERVICE).toMatch(/plannedDifficultyLevel: level/);
+  });
+  it('APPROVED: a Teacher-chosen duration is authoritative and frozen (never replaced by the recommendation)', () => {
+    expect(SERVICE).toMatch(/durationMinutes: params\.timing\.durationMinutes \?\? Math\.max\(1, rec\.minutes\)/);
+    expect(SERVICE).not.toMatch(/OPERATOR_DECISION_REQUIRED/);
   });
   it('Student timing: Mock timed with the recommendation; Test untimed', () => {
     expect(studentTimingFor('MOCK', [{ type: 'multiple_choice', difficulty: 3 }])).toEqual({ timed: true, durationMinutes: 1, durationRule: 'NOMINAL_RESPONSE_TIME_SUM' });
@@ -145,14 +232,29 @@ describe('timing: Mock always timed (NOMINAL_RESPONSE_TIME_SUM), Student Test un
     expect(answerCountsAt(t, new Date('2026-10-17T10:10:01Z'))).toBe(false);
     expect(answerCountsAt({ timed: false, durationMinutes: null, startedAt: 'x' }, new Date())).toBe(true);
   });
-  it('own expiry (never the 45-min creation TTL): scheduled = end of date; timed = deadline + grace; untimed = inactivity window', () => {
+  it('own expiry (never the creation TTL): scheduled = 21:00 of the date; timed = deadline + grace; untimed = 45-min inactivity window', () => {
     const now = new Date('2026-10-17T10:00:00Z');
-    const sched = { schedule: { mode: 'SCHEDULED' as const, date: '2026-10-18', timezone: 'UTC', expiresAt: '2026-10-19T00:00:00.000Z' }, timing: { timed: false, durationMinutes: null } };
-    expect(sessionExpiresAt(sched, 'UTC', now).toISOString()).toBe('2026-10-19T00:00:00.000Z');
+    const sched = { schedule: { mode: 'SCHEDULED' as const, date: '2026-10-18', timezone: 'UTC', expiresAt: '2026-10-18T21:00:00.000Z' }, timing: { timed: false, durationMinutes: null } };
+    expect(sessionExpiresAt(sched, now).toISOString()).toBe('2026-10-18T21:00:00.000Z');
     const timed = { schedule: { mode: 'NOW' as const }, timing: startTiming({ timed: true, durationMinutes: 90 }, now) };
-    expect(sessionExpiresAt(timed, 'UTC', now).getTime()).toBe(now.getTime() + 90 * 60_000 + SUBJECT_SUBMIT_GRACE_SECONDS * 1000);
+    expect(sessionExpiresAt(timed, now).getTime()).toBe(now.getTime() + 90 * 60_000 + SUBJECT_SUBMIT_GRACE_SECONDS * 1000);
     const untimed = { schedule: { mode: 'NOW' as const }, timing: startTiming({ timed: false, durationMinutes: null }, now) };
-    expect(sessionExpiresAt(untimed, 'UTC', new Date('2026-10-17T10:30:00Z')).toISOString()).toBe('2026-10-17T11:15:00.000Z');
+    expect(sessionExpiresAt(untimed, new Date('2026-10-17T10:30:00Z')).toISOString()).toBe('2026-10-17T11:15:00.000Z');
+  });
+  it('APPROVED untimed inactivity = 45 min: reset by each saved answer; past it EXPIRED (no resume), saved responses kept', () => {
+    expect(SUBJECT_UNTIMED_INACTIVITY_MINUTES).toBe(45);
+    const start = new Date('2026-10-17T10:00:00Z');
+    const untimed = { schedule: { mode: 'NOW' as const }, timing: startTiming({ timed: false, durationMinutes: null }, start) };
+    // a saved answer at 10:40 resets the window to 11:25
+    const afterAnswer = sessionExpiresAt(untimed, new Date('2026-10-17T10:40:00Z'));
+    expect(afterAnswer.toISOString()).toBe('2026-10-17T11:25:00.000Z');
+    expect(lifecycleState(untimed, 'active', afterAnswer, new Date('2026-10-17T11:24:59Z'))).toBe('ACTIVE');
+    expect(lifecycleState(untimed, 'active', afterAnswer, new Date('2026-10-17T11:25:00Z'))).toBe('EXPIRED');
+    // the answer path resets (GREATEST, never shortens); an expired attempt is marked, never deleted, never restarted
+    expect(SERVICE).toMatch(/each saved answer resets its 45-minute inactivity window[\s\S]{0,200}GREATEST\(expires_at/);
+    expect(SERVICE).toMatch(/UPDATE quiz_sessions SET status = 'expired' WHERE id = \$1 AND status = 'active'/);
+    expect(SERVICE).not.toMatch(/DELETE FROM quiz_responses/);
+    expect(SERVICE).toMatch(/if \(state === 'EXPIRED'\) \{ await markExpired\(quizId\); return fail\(410, 'ASSESSMENT_EXPIRED'/);
   });
 });
 
@@ -204,7 +306,7 @@ describe('final report: UNANSWERED in the denominator, per concept, pass, concep
 describe('service and route contract (source)', () => {
   it('exports createSubjectAssessmentSession with both origins, explicit plan, band, schedule, timing, assignment, attempt, novelty', () => {
     expect(SERVICE).toMatch(/export async function createSubjectAssessmentSession\(/);
-    for (const field of ['studentId: string', "kind: 'TEST' | 'MOCK'", "origin: 'STUDENT' | 'TEACHER'", 'conceptIds: string[]', 'plan?: { questionCount: number; distribution: Record<string, number>; rule: string }', "difficultyBand?: 'LOW' | 'MEDIUM' | 'HIGH' | 'MIXED'", 'timing: { timed: boolean; durationMinutes: number | null }', 'assignmentId?: string', 'attemptNumber?: number', 'avoidFingerprints?: string[]']) {
+    for (const field of ['studentId: string', "kind: 'TEST' | 'MOCK'", "origin: 'STUDENT' | 'TEACHER'", 'conceptIds: string[]', 'plan?: { questionCount: number; distribution: Record<string, number>; rule: string }', 'difficultyBand?: DifficultyBand | LegacyDifficultyBand', 'timing: { timed: boolean; durationMinutes: number | null }', 'assignmentId?: string', 'attemptNumber?: number', 'avoidFingerprints?: string[]']) {
       expect(SERVICE).toContain(field);
     }
     expect(SERVICE).toMatch(/if \(params\.origin === 'TEACHER' && \(!params\.plan \|\| !params\.difficultyBand\)\) return fail\(400, 'PLAN_REQUIRED'/);

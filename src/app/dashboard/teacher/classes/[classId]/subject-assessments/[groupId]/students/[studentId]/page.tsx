@@ -8,6 +8,7 @@ import { fillMessage } from '@/lib/i18n/roles-messages';
 import { getTeacherClass } from '@/lib/teacher/class-assignment.service';
 import { getSubjectAssessmentStudentResult, SubjectAssignmentError } from '@/lib/teacher/subject-assessment-assignment.service';
 import { ClassChrome } from '../../../../class-chrome';
+import { DIFFICULTY_LEVEL_LABEL_KEY, KNOWLEDGE_BUCKET_LABEL_KEY } from '@/lib/subject-assessment/knowledge-bucket';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -54,6 +55,17 @@ export default async function SubjectAssessmentStudentPage({ params }: { params:
       </section>
       {r && (
         <>
+          <section className="card ta-card" aria-labelledby="tsa-drill-kb" data-testid="tsa-drill-bucket">
+            <h3 id="tsa-drill-kb" style={{ fontSize: 16 }}>{t['kb.title']}: {t[KNOWLEDGE_BUCKET_LABEL_KEY[r.knowledge.knowledgeBucket ?? 'UNCLASSIFIED']]}</h3>
+            <ul className="ta-msg" style={{ margin: 0, paddingLeft: 18 }}>
+              {(['BASIC', 'INTERMEDIATE', 'ADVANCED'] as const).map((lv) => {
+                const score = lv === 'BASIC' ? r.knowledge.basicScore : lv === 'INTERMEDIATE' ? r.knowledge.intermediateScore : r.knowledge.advancedScore;
+                return <li key={lv}>{t[DIFFICULTY_LEVEL_LABEL_KEY[lv]]}: {score === null ? t['kb.noItems'] : `${score} % (${r.knowledge.levelCounts[lv]})`}</li>;
+              })}
+            </ul>
+            <p className="ta-msg">{t['kb.highest']}: {r.knowledge.highestDifficultyDemonstrated ? t[DIFFICULTY_LEVEL_LABEL_KEY[r.knowledge.highestDifficultyDemonstrated]] : '—'}</p>
+            <p className="ta-msg">{t['kb.note']}</p>
+          </section>
           <section className="card ta-card" aria-labelledby="tsa-drill-concepts">
             <h3 id="tsa-drill-concepts" style={{ fontSize: 16 }}>{t['quiz.subject.perConcept']}</h3>
             <ul className="ta-msg" style={{ margin: 0, paddingLeft: 18 }}>

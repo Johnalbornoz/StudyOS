@@ -161,10 +161,10 @@ async function main() {
     const today = life.localDateIn('America/Bogota', new Date());
     const tomorrow = new Date(Date.now() + 36 * 3600_000);
     const tomorrowLocal = life.localDateIn('America/Bogota', tomorrow);
-    const sched = await svc.createSubjectAssessmentSession({ studentId: S, subjectId: A.subject, kind: 'TEST', origin: 'STUDENT', conceptIds: A.concepts.slice(0, 2), schedule: { mode: 'SCHEDULED', date: tomorrowLocal }, timing: { timed: false, durationMinutes: null }, language: 'es', browserTimezone: 'Europe/Madrid' }, deps);
+    const sched = await svc.createSubjectAssessmentSession({ studentId: S, subjectId: A.subject, kind: 'TEST', origin: 'STUDENT', conceptIds: A.concepts.slice(0, 2), schedule: { mode: 'SCHEDULED', date: tomorrowLocal }, timing: { timed: false, durationMinutes: null }, language: 'es' }, deps);
     const sRow = sched.ok ? await one(`SELECT subject_assessment_setup AS s, expires_at FROM quiz_sessions WHERE id = $1`, [sched.quizId]) : null;
     check('SCHEDULED  created and frozen, not started, no questions served yet', sched.ok && sched.view.state === 'SCHEDULED_NOT_STARTED' && !sched.view.questions && !!sRow && !sRow.s.timing.startedAt);
-    check('SCHEDULED  expires at the END of the selected local date in the Student\'s timezone (student_availability, not the browser)', !!sRow && sRow.s.schedule.timezone === 'America/Bogota' && sRow.s.timezoneSource === 'STUDENT_AVAILABILITY' && new Date(sRow.expires_at).toISOString() === life.endOfLocalDateUtc(tomorrowLocal, 'America/Bogota').toISOString(), sRow ? new Date(sRow.expires_at).toISOString() : '');
+    check('SCHEDULED  expires at 21:00 of the selected date in the Student\'s timezone authority (student_availability, never the browser)', !!sRow && sRow.s.schedule.timezone === 'America/Bogota' && sRow.s.timezoneSource === 'STUDENT_AVAILABILITY' && new Date(sRow.expires_at).toISOString() === life.selfScheduledExpiryUtc(tomorrowLocal, 'America/Bogota').toISOString(), sRow ? new Date(sRow.expires_at).toISOString() : '');
     const guardSched = await getStudentActiveQuizzes(S);
     check('SCHEDULED  a not-started scheduled assessment does not restrict the Tutor', sched.ok && !guardSched.some((q) => q.id === sched.quizId));
     const ansBefore = sched.ok ? await svc.recordSubjectAssessmentAnswer({ studentId: S, quizId: sched.quizId, questionIndex: 0, answer: 'a' }, deps) : null;
@@ -227,13 +227,13 @@ async function main() {
     const gp = planGroupAssessment('MOCK', A.concepts.slice(1, 3), false);
     const teacher = await svc.createSubjectAssessmentSession({
       studentId: S, subjectId: A.subject, kind: 'MOCK', origin: 'TEACHER', conceptIds: A.concepts.slice(1, 3),
-      plan: { questionCount: gp.questionCount, distribution: gp.distribution, rule: gp.rule }, difficultyBand: 'HIGH',
+      plan: { questionCount: gp.questionCount, distribution: gp.distribution, rule: gp.rule }, difficultyBand: 'ADVANCED',
       schedule: { mode: 'NOW' }, timing: { timed: true, durationMinutes: 25 }, assignmentId: `assign-${RUN}`, attemptNumber: 2, language: 'es',
     }, deps);
-    check('TEACHER ORIGIN  explicit fixed plan + band (no Knowledge State adaptation), assignmentId / attemptNumber, teacher duration', teacher.ok && teacher.setup.origin === 'TEACHER' && 'band' in teacher.setup.difficulty && teacher.setup.difficulty.band === 'HIGH' && !teacher.setup.knowledgeSignals && teacher.setup.assignmentId === `assign-${RUN}` && teacher.setup.attemptNumber === 2 && teacher.setup.timing.durationMinutes === 25 && (teacher.questions ?? []).every((q) => q.difficulty === 4));
+    check('TEACHER ORIGIN  explicit fixed plan + band (no Knowledge State adaptation), assignmentId / attemptNumber, teacher duration', teacher.ok && teacher.setup.origin === 'TEACHER' && 'band' in teacher.setup.difficulty && teacher.setup.difficulty.band === 'ADVANCED' && !teacher.setup.knowledgeSignals && teacher.setup.assignmentId === `assign-${RUN}` && teacher.setup.attemptNumber === 2 && teacher.setup.timing.durationMinutes === 25 && (teacher.questions ?? []).every((q) => q.difficulty === 4));
     const teacherNoPlan = await svc.createSubjectAssessmentSession({ studentId: S, subjectId: A.subject, kind: 'TEST', origin: 'TEACHER', conceptIds: A.concepts, schedule: { mode: 'NOW' }, timing: { timed: false, durationMinutes: null } }, deps);
     check('TEACHER ORIGIN  a teacher session without its fixed plan is refused', !teacherNoPlan.ok && teacherNoPlan.error === 'PLAN_REQUIRED');
-    const teacherUntimedMock = await svc.createSubjectAssessmentSession({ studentId: S, subjectId: A.subject, kind: 'MOCK', origin: 'TEACHER', conceptIds: A.concepts.slice(1, 3), plan: { questionCount: gp.questionCount, distribution: gp.distribution, rule: gp.rule }, difficultyBand: 'MEDIUM', schedule: { mode: 'NOW' }, timing: { timed: false, durationMinutes: null } }, deps);
+    const teacherUntimedMock = await svc.createSubjectAssessmentSession({ studentId: S, subjectId: A.subject, kind: 'MOCK', origin: 'TEACHER', conceptIds: A.concepts.slice(1, 3), plan: { questionCount: gp.questionCount, distribution: gp.distribution, rule: gp.rule }, difficultyBand: 'INTERMEDIATE', schedule: { mode: 'NOW' }, timing: { timed: false, durationMinutes: null } }, deps);
     check('ALWAYS TIMED  an untimed teacher mock is refused', !teacherUntimedMock.ok && teacherUntimedMock.error === 'MOCK_MUST_BE_TIMED');
     if (teacher.ok) {
       for (let i = 0; i < teacher.setup.questionCount; i++) await svc.recordSubjectAssessmentAnswer({ studentId: S, quizId: teacher.quizId, questionIndex: i, answer: 'a' }, deps);

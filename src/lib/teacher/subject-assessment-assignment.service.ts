@@ -28,7 +28,8 @@ import { canTeacherAccessLearner, isOwner } from '@/lib/authorization';
 import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
 import { notifyUser } from '@/lib/notifications/role-notifications.service';
 import { planGroupAssessment, subjectAssessmentPassed, SUBJECT_ASSESSMENT_PASS_PERCENT } from '@/lib/subject-assessment/sizing';
-import { DIFFICULTY_BAND_LEVELS, feedbackPolicyFor, recommendedMockDurationMinutes, splitByLevels, readSetup } from '@/lib/subject-assessment/lifecycle';
+import { bandLevelCounts, feedbackPolicyFor, normalizeDifficultyBand, recommendedMockDurationMinutes, readSetup, type LegacyDifficultyBand } from '@/lib/subject-assessment/lifecycle';
+import { knowledgeProfile } from '@/lib/subject-assessment/knowledge-bucket';
 import { ensureConceptInLearnerPlan } from './plan-enrollment.service';
 import { assignTeacherIntervention, TeacherInterventionAccessDeniedError } from './intervention.service';
 import { isTeacherOfClass, resolvePublishRecipients, TeacherClassAccessDeniedError, InvalidClassAssignmentError } from './class-assignment.service';
@@ -84,8 +85,8 @@ export interface SubjectAssignmentDraft {
   kind: SubjectAssignmentKind;
   /** Canonical concept ids of the class's subject (>= 1). */
   conceptIds: string[];
-  /** Básico / Intermedio / Avanzado / Mixto, or the band itself. */
-  difficulty: keyof typeof UI_DIFFICULTY_TO_BAND | DifficultyBand;
+  /** Básico / Intermedio / Avanzado / Mixto, or the band itself (legacy LOW / MEDIUM / HIGH read as the approved names). */
+  difficulty: keyof typeof UI_DIFFICULTY_TO_BAND | DifficultyBand | LegacyDifficultyBand;
   startDate: string;
   endDate: string;
   maxAttempts: number;
@@ -108,16 +109,17 @@ export interface SubjectAssignmentPreview {
   feedbackPolicy: SubjectAssessmentAssignmentConfig['feedbackPolicy'];
 }
 
-const toBand = (d: string): DifficultyBand | null => (d in UI_DIFFICULTY_TO_BAND ? UI_DIFFICULTY_TO_BAND[d as keyof typeof UI_DIFFICULTY_TO_BAND] : ['LOW', 'MEDIUM', 'HIGH', 'MIXED'].includes(d) ? (d as DifficultyBand) : null);
+const toBand = (d: string): DifficultyBand | null => (d in UI_DIFFICULTY_TO_BAND ? UI_DIFFICULTY_TO_BAND[d as keyof typeof UI_DIFFICULTY_TO_BAND] : normalizeDifficultyBand(d));
 
 /**
- * StudyUs recommended duration BEFORE generation (the teacher sees and may adjust it; the final value is frozen for the
- * whole group): the subject service's nominal recommendation (NOMINAL_RESPONSE_TIME_SUM) over the PLANNED items -- the
- * planned count at the band's difficulty levels. The item types are not known before generation, so each item is
- * planned with nominal-response-time's own default for an unnamed type (an open response).
+ * StudyUs recommended duration BEFORE generation -- the approved planning estimate (APPROVED 2026-10-17): the subject
+ * service's nominal recommendation (NOMINAL_RESPONSE_TIME_SUM, difficulty-adjusted) over the PLANNED items -- the
+ * planned count at the band's approved level counts (MIXED 30 / 50 / 20). The item types are not known before
+ * generation, so each item is planned with nominal-response-time's own default for an unnamed type (an open response).
+ * Advisory: the Teacher's chosen duration is authoritative and frozen on the assignment for the whole group.
  */
 export function recommendedDurationForPlan(questionCount: number, band: DifficultyBand): { minutes: number; rule: string } {
-  const items = splitByLevels(questionCount, DIFFICULTY_BAND_LEVELS[band]).flatMap(({ level, count }) => Array.from({ length: count }, () => ({ type: 'PLANNED_UNSPECIFIED_TYPE', difficulty: level })));
+  const items = bandLevelCounts(band, questionCount).flatMap(({ level, count }) => Array.from({ length: count }, () => ({ type: 'PLANNED_UNSPECIFIED_TYPE', difficulty: level })));
   const rec = recommendedMockDurationMinutes(items);
   return { minutes: Math.max(1, rec.minutes), rule: `${rec.rule}:PLANNED_ITEMS_DEFAULT_TYPE` };
 }
@@ -297,9 +299,12 @@ export async function publishSubjectAssessmentAssignment(actorUserId: string, in
 
 interface InterventionRow { id: string; student_id: string; class_id: string; assignment_group_id: string | null; intervention_type: string; status: string; title: string | null; instructions: string | null; assigned_at: string; config: SubjectAssessmentAssignmentConfig }
 
+/** Backward-compatible read: rows frozen with LOW / MEDIUM / HIGH read as BASIC / INTERMEDIATE / ADVANCED (never rewritten). */
 function readConfig(raw: unknown): SubjectAssessmentAssignmentConfig | null {
   const c = raw as SubjectAssessmentAssignmentConfig | null;
-  return c && c.version === 'teacher-subject-assessment-v1' ? c : null;
+  if (!c || c.version !== 'teacher-subject-assessment-v1') return null;
+  const band = normalizeDifficultyBand(c.difficultyBand);
+  return band && band !== c.difficultyBand ? { ...c, difficultyBand: band } : c;
 }
 
 export interface AttemptRecord extends AttemptSummary { questionCount: number; timed: boolean; durationMinutes: number | null; deadlineAt: string | null; reusedItemCount: number }
@@ -638,6 +643,7 @@ async function latestDetail(row: InterventionRow, attempts: AttemptRecord[]): Pr
       scorePercent: read.data.subjectAssessment.scorePercent,
       perConcept: read.data.subjectAssessment.perConcept.map((c) => ({ conceptKey: ck(c.conceptId), total: c.total, correct: c.correct, unanswered: c.unanswered })),
       items: read.data.review.map((it) => ({ conceptKey: ck(it.conceptId), questionKey: fingerprintQuestion(read.questions[it.questionIndex]), status: it.status })),
+      knowledgeBucket: read.data.subjectAssessment.knowledge.knowledgeBucket,
     },
   };
 }
@@ -654,7 +660,7 @@ export async function getSubjectAssessmentGroupResults(actorUserId: string, clas
   const { ctx, rows } = await requireGroupInClass(actorUserId, classId, groupId);
   const now = opts.now ?? (await dbNow());
   const config = rows[0].config;
-  const students: Array<{ studentId: string; name: string; interventionId: string; status: AssignmentEffectiveStatus; attemptsUsed: number; maxAttempts: number; latest: { attemptNumber: number; scorePercent: number; passed: boolean; completedAt: string } | null }> = [];
+  const students: Array<{ studentId: string; name: string; interventionId: string; status: AssignmentEffectiveStatus; attemptsUsed: number; maxAttempts: number; latest: { attemptNumber: number; scorePercent: number; passed: boolean; completedAt: string; knowledge: ReturnType<typeof knowledgeProfile> } | null }> = [];
   const reports: StudentLatestReport[] = [];
   const difficulties: number[] = [];
   let reusedItems = 0;
@@ -667,7 +673,7 @@ export async function getSubjectAssessmentGroupResults(actorUserId: string, clas
     if (detail) { reports.push(detail.report); difficulties.push(...detail.servedDifficulty); }
     students.push({
       studentId: row.student_id, name: row.student_name, interventionId: row.id, status, attemptsUsed: attempts.length, maxAttempts: row.config.maxAttempts,
-      latest: detail ? { attemptNumber: detail.attempt.attemptNumber, scorePercent: detail.report.scorePercent, passed: subjectAssessmentPassed(detail.report.scorePercent), completedAt: detail.attempt.completedAt! } : null,
+      latest: detail ? { attemptNumber: detail.attempt.attemptNumber, scorePercent: detail.report.scorePercent, passed: subjectAssessmentPassed(detail.report.scorePercent), completedAt: detail.attempt.completedAt!, knowledge: detail.data.subjectAssessment.knowledge } : null,
     });
   }
   const aggregate = aggregateGroup(reports);
@@ -734,6 +740,8 @@ export async function getSubjectAssessmentStudentResult(actorUserId: string, cla
           unanswered: detail.data.subjectAssessment.unanswered,
           perConcept: detail.data.subjectAssessment.perConcept,
           conceptsToReinforce: detail.data.subjectAssessment.conceptsToReinforce,
+          /** Diagnostic: knowledge bucket, per-difficulty scores, highest difficulty demonstrated (never alters evidence). */
+          knowledge: detail.data.subjectAssessment.knowledge,
           responses: detail.data.review,
           errors: detail.data.review.filter((r) => r.status !== 'CORRECT'),
         }
