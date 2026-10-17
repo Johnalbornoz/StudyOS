@@ -50,12 +50,14 @@ export type AdminAuditAction =
   // Question Bank -- a reviewer's concept attribution of an item version (reviewed content).
   | 'QUESTION_BANK_ITEM_ATTRIBUTION_SET'
   // L10 SF-7 -- a platform administrator ended a parent-learner relationship.
-  | 'PARENT_RELATIONSHIP_ENDED';
+  | 'PARENT_RELATIONSHIP_ENDED'
+  // P1-03 -- a governed operator script quarantined Learning content that fails item validation.
+  | 'LEARNING_ITEM_QUARANTINED';
 
 export interface RecordAdminActionInput {
   actorUserId: string;
   action: AdminAuditAction;
-  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING' | 'QUESTION_BANK_ITEM_VERSION' | 'PARENT_RELATIONSHIP';
+  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING' | 'QUESTION_BANK_ITEM_VERSION' | 'PARENT_RELATIONSHIP' | 'QUESTION_BANK_CANDIDATE' | 'PREPARED_ACTIVITY' | 'QUIZ_SESSION';
   targetId?: string | null;
   previousState?: unknown;
   newState?: unknown;

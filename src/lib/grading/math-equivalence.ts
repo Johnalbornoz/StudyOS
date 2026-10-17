@@ -321,9 +321,23 @@ export function solveEquation(equation: string, convention: DecimalConvention = 
   if (!pl || !pr) return null;
   const variable = pl.variable ?? pr.variable;
   if (!variable || (pl.variable && pr.variable && pl.variable !== pr.variable)) return null;
+  // compiled once: the solver evaluates each side many times
+  const side = (p: { node: MathNode; variable: string | null }) => {
+    const compiled = p.node.compile();
+    return (x: number): number | null => {
+      try {
+        const v = compiled.evaluate(p.variable ? { [p.variable]: x } : {});
+        return typeof v === 'number' && Number.isFinite(v) ? v : null;
+      } catch {
+        return null;
+      }
+    };
+  };
+  const lhs = side(pl);
+  const rhs = side(pr);
   const f = (x: number) => {
-    const l = evalAt(pl.node, pl.variable, x);
-    const r = evalAt(pr.node, pr.variable, x);
+    const l = lhs(x);
+    const r = rhs(x);
     return l === null || r === null ? null : l - r;
   };
   for (const start of [1, 10, 100, -10, 0.5, 1000]) {
@@ -339,8 +353,38 @@ export function solveEquation(equation: string, convention: DecimalConvention = 
       x1 = x2;
       if (Math.abs(x1 - x0) < 1e-12 * Math.max(1, Math.abs(x1))) break;
     }
-    const fx = f(x1);
-    if (fx !== null && Math.abs(fx) < 1e-7 * Math.max(1, Math.abs(x1))) return { variable, value: x1 };
+    // verified by substitution: the residual is judged against the size of the two SIDES, never of
+    // x (scaling by x accepted a diverging run, e.g. 2/(x-1) = 1 "solved" at x = 2.4e32)
+    const l = lhs(x1);
+    const r = rhs(x1);
+    if (l !== null && r !== null && Math.abs(l - r) < 1e-7 * Math.max(1, Math.abs(l), Math.abs(r)) && Math.abs(x1) < 1e12) return { variable, value: x1 };
+  }
+  // fallback for what the secant misses (rational equations): a sign change on a grid, then
+  // bisection -- a sign change across a pole never verifies, so it is never returned
+  let prevX = -200;
+  let prevF = f(prevX);
+  for (let x = -199.75; x <= 200; x += 0.25) {
+    const fx = f(x);
+    if (fx !== null && prevF !== null && Math.sign(fx) !== Math.sign(prevF)) {
+      let a = prevX;
+      let b = x;
+      let fa = prevF;
+      for (let i = 0; i < 100; i++) {
+        const m = (a + b) / 2;
+        const fm = f(m);
+        if (fm === null) break;
+        if (Math.sign(fm) === Math.sign(fa)) {
+          a = m;
+          fa = fm;
+        } else b = m;
+      }
+      const root = (a + b) / 2;
+      const l = lhs(root);
+      const r = rhs(root);
+      if (l !== null && r !== null && Math.abs(l - r) < 1e-7 * Math.max(1, Math.abs(l), Math.abs(r))) return { variable, value: root };
+    }
+    prevX = x;
+    prevF = fx;
   }
   return null;
 }
@@ -374,4 +418,106 @@ export function extractEquations(raw: string, convention: DecimalConvention = 'c
     }
   }
   return found;
+}
+
+/* ------------------------------------------------------------------ */
+/* Solved value + shown work (P1-02)                                   */
+/* ------------------------------------------------------------------ */
+
+/** Arrows and single-letter conjunctions ("y", "o", "e", "u") that are not the unknown separate statements. */
+function statementSegments(text: string, variable: string | null): string[] {
+  const out: string[] = [];
+  for (const seg of mathSegments(text.replace(/-+>|=+>|[→⇒⟹⟶]/g, '|'))) {
+    // "13(62.5) = 812.5 y 11(72.5)+15 = 812.5": a stand-alone letter that is not the unknown is a word
+    let cur = '';
+    for (const tok of seg.split(/(\s+[a-zA-Z]\s+)/)) {
+      const letter = tok.trim();
+      if (tok !== letter && /^[a-zA-Z]$/.test(letter) && letter !== variable) {
+        out.push(cur);
+        cur = '';
+      } else cur += tok;
+    }
+    out.push(cur);
+  }
+  return out.map((s) => s.trim()).filter(Boolean);
+}
+
+/** `x = <number>` commitments written in a text, in order (`x = 145/2 = 72,5` commits x to 72.5). */
+export function extractSolutionCommitments(raw: string, convention: DecimalConvention = 'comma'): Array<{ variable: string; value: number; decimals: number }> {
+  const out: Array<{ variable: string; value: number; decimals: number }> = [];
+  for (const seg of statementSegments(normalizeMathText(raw, convention), null)) {
+    const parts = seg.split('=').map((p) => p.trim());
+    for (let i = 0; i + 1 < parts.length; i++) {
+      if (!/^[a-zA-Z]$/.test(parts[i])) continue;
+      for (let j = i + 1; j < parts.length; j++) {
+        const v = evaluateExpression(parts[j]);
+        if (v !== null) {
+          out.push({ variable: parts[i], value: v, decimals: decimalsOf(parts[j]) });
+          break;
+        }
+      }
+    }
+  }
+  return out;
+}
+
+export interface WorkCheck {
+  /** Equalities in the learner's text that could be evaluated at the solution. */
+  checked: number;
+  /** Of those, the ones that are false (a real slip in the shown work). */
+  falseStatements: string[];
+}
+
+/**
+ * Checks every equality the learner wrote (`13(62,5) = 812,5`, `13x - 130 = 11x + 15`,
+ * `2x = 145`) at the verified solution: variable-free equalities must be true, equations in
+ * the unknown must hold at the solution. Anything not parseable is ignored, never guessed.
+ */
+export function checkShownWork(raw: string, variable: string, solution: number, convention: DecimalConvention = 'comma'): WorkCheck {
+  let checked = 0;
+  const falseStatements: string[] = [];
+  for (const seg of statementSegments(normalizeMathText(raw, convention), variable)) {
+    const parts = seg.split('=').map((p) => p.trim());
+    for (let i = 0; i + 1 < parts.length; i++) {
+      const l = parseSafeExpression(parts[i]);
+      const r = parseSafeExpression(parts[i + 1]);
+      if (!l || !r) continue;
+      if ((l.variable && l.variable !== variable) || (r.variable && r.variable !== variable)) continue;
+      const lv = evalAt(l.node, l.variable, solution);
+      const rv = evalAt(r.node, r.variable, solution);
+      if (lv === null || rv === null) continue;
+      checked++;
+      const decimals = Math.max(decimalsOf(parts[i]), decimalsOf(parts[i + 1]));
+      if (!numbersEquivalent(lv, rv, decimals) && !numbersEquivalent(rv, lv, decimals)) falseStatements.push(`${parts[i]} = ${parts[i + 1]}`);
+    }
+  }
+  return { checked, falseStatements };
+}
+
+export interface SolvedWorkEquivalence {
+  status: EquivalenceStatus;
+  variable: string | null;
+  expected: number | null;
+  student: number | null;
+  work: WorkCheck | null;
+}
+
+/**
+ * The learner's solution commitment (`x = 72,5`) against the canonical one, with the shown
+ * work verified at that solution. EQUIVALENT only when the last commitment for the unknown
+ * matches AND no written equality is false -- then a grader's "slip" claim is contradicted by
+ * the mathematics and cannot reduce the grade. DIFFERENT when the commitment is another value.
+ */
+export function solvedWorkEquivalent(studentRaw: string, expectedRaw: string, convention: DecimalConvention = 'comma'): SolvedWorkEquivalence {
+  const none: SolvedWorkEquivalence = { status: 'UNDECIDABLE', variable: null, expected: null, student: null, work: null };
+  const expCommit = extractSolutionCommitments(expectedRaw, convention);
+  const last = expCommit[expCommit.length - 1];
+  const expectedValue = last?.value ?? extractFinalValue(expectedRaw, convention)?.value ?? null;
+  if (expectedValue === null) return none;
+  const studentCommit = extractSolutionCommitments(studentRaw, convention).filter((c) => !last || c.variable === last.variable);
+  const mine = studentCommit[studentCommit.length - 1];
+  if (!mine) return { ...none, expected: expectedValue };
+  if (!numbersEquivalent(mine.value, expectedValue, mine.decimals)) return { status: 'DIFFERENT', variable: mine.variable, expected: expectedValue, student: mine.value, work: null };
+  const work = checkShownWork(studentRaw, mine.variable, expectedValue, convention);
+  return { status: work.falseStatements.length === 0 ? 'EQUIVALENT' : 'UNDECIDABLE', variable: mine.variable, expected: expectedValue, student: mine.value, work };
 }

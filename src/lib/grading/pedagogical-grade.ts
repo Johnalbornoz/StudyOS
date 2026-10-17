@@ -24,6 +24,7 @@ import {
   equationsEquivalent,
   extractEquations,
   finalValuesEquivalent,
+  solvedWorkEquivalent,
   type EquivalenceStatus,
 } from './math-equivalence';
 import { deriveTaskRequirements, type TaskRequirement, type TaskRequirementId } from './task-requirements';
@@ -98,6 +99,12 @@ export function deterministicEvidence(question: GradingQuestion, studentAnswer: 
   const convention = decimalConventionFor(language);
   const hasResult = requirements.some((r) => RESULT_IDS.includes(r.id));
   let result: EquivalenceStatus = hasResult ? finalValuesEquivalent(studentAnswer, question.correctAnswer, convention).status : 'UNDECIDABLE';
+  // P1-02: "the last number written" is not the learner's answer when they solve for the unknown
+  // and then check it ("x = 72,5. Comprobación: 13(62,5) = 812,5"). When the canonical answer
+  // commits the unknown to a value, the learner's own commitment decides -- and only with every
+  // equality of the shown work verified true at that value, so a grader "slip" claim the
+  // mathematics contradicts can never cost the point.
+  if (hasResult && result !== 'EQUIVALENT' && solvedWorkEquivalent(studentAnswer, question.correctAnswer, convention).status === 'EQUIVALENT') result = 'EQUIVALENT';
   // Asymmetric authority: EQUIVALENT is conclusive (notation never costs a
   // point). DIFFERENT is conclusive only for a purely mathematical answer --
   // picking "the final value" out of prose is heuristic ("64 € y no 25 €"),
@@ -202,7 +209,8 @@ export function composePedagogicalGrade(det: DeterministicEvidence, ai: GraderAs
     errorType,
     score: Math.round(score * 1000) / 1000,
     mathCheck: { result: det.result, setup: det.setup },
-    feedback: { didWell: ai.didWell?.trim() || null, missing: [], toFix: finalJudgment === 'CORRECT' ? null : ai.toFix?.trim() || null },
+    // a did-well line written for a verdict the math check overrode ("revisa el cálculo final") is not kept
+    feedback: { didWell: math === 'CORRECT' && ai.mathematicalCorrectness && ai.mathematicalCorrectness !== 'CORRECT' ? null : ai.didWell?.trim() || null, missing: [], toFix: finalJudgment === 'CORRECT' ? null : ai.toFix?.trim() || null },
   };
 }
 

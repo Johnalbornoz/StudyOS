@@ -14,6 +14,7 @@
  * workstream's (src/lib/pedagogical-engine/*, evidence-adapter.ts) -- nothing here touches it.
  */
 import type { GeneratedQuestion, QuestionType } from '@/services/quiz-generation.service';
+import { isDeliverableChoiceItem } from '@/lib/lx/choice-item-validator';
 
 export const LEARN_MIN_INTERACTIONS = 4;
 export const LEARN_MAX_INTERACTIONS = 7;
@@ -249,7 +250,10 @@ export function toLearnQuestion(raw: RawGeneratedInteraction | null | undefined,
     return { ...base, correctAnswer: answer, type: 'true_false' as QuestionType, answerFormat: 'single_choice', options };
   }
   if (options.length < 3 || options.length > 5 || !ids.has(correctAnswer)) return null;
-  return { ...base, type: 'multiple_choice' as QuestionType, answerFormat: 'single_choice', options };
+  const mcq: GeneratedQuestion = { ...base, type: 'multiple_choice' as QuestionType, answerFormat: 'single_choice', options };
+  // P1-03: an interaction whose key is not the right option (or that its own explanation refutes)
+  // is invalid -- the turn is regenerated, never shown.
+  return isDeliverableChoiceItem(mcq) ? mcq : null;
 }
 
 /** What the client may see of an interaction: never the answer key, never the explanation before answering. */

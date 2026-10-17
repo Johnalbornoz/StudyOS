@@ -24,6 +24,7 @@ import { runWithAiMetrics } from '@/lib/ai/request-metrics';
 import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } from '@/services/canonical-prove-generation.service';
 import { loadPriorPracticeQuestionFingerprints } from '@/services/quiz-persistence.service';
 import { filterExactDuplicates } from '@/lib/lx/exact-duplicate-novelty';
+import { isDeliverableChoiceItem } from '@/lib/lx/choice-item-validator';
 import { ALL_QUESTION_TYPES, type GeneratedQuestion, type IBContext } from '@/services/quiz-generation.service';
 
 /**
@@ -379,7 +380,7 @@ export function isPreparedActivityContractCompatible(
 
 export interface PreparedActivityRevalidation {
   valid: boolean;
-  reason?: 'EXPIRED' | 'INCOMPATIBLE_CONTRACT' | 'NOT_READY' | 'NOVELTY_STALE';
+  reason?: 'EXPIRED' | 'INCOMPATIBLE_CONTRACT' | 'NOT_READY' | 'NOVELTY_STALE' | 'ITEM_INVALID';
 }
 
 /**
@@ -404,6 +405,11 @@ export async function revalidatePreparedActivity(
   }
   if (!isPreparedActivityContractCompatible(prepared.activityContract, currentContract)) {
     return { valid: false, reason: 'INCOMPATIBLE_CONTRACT' };
+  }
+
+  // P1-03: an item whose key is not the right option invalidates the whole prepared batch
+  if (!prepared.questions.every((q) => isDeliverableChoiceItem(q))) {
+    return { valid: false, reason: 'ITEM_INVALID' };
   }
 
   const freshFingerprints = await loadPriorPracticeQuestionFingerprints(prepared.studentId, prepared.conceptId);

@@ -13,6 +13,7 @@ import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
 import { questionSignature } from '@/lib/lx/question-diversity';
 import { academicContextFingerprint, type AcademicContext, type DeliveryActivityType } from '@/lib/activity-delivery/contract';
 import type { BankCandidate } from '@/lib/activity-delivery/assembly';
+import { validateChoiceItem } from '@/lib/lx/choice-item-validator';
 
 export interface BankInsertMeta {
   studentId: string;
@@ -39,6 +40,14 @@ export async function addValidatedCandidates(questions: GeneratedQuestion[], met
   const academicFp = academicContextFingerprint(meta.academic);
   for (const q of questions) {
     if (!q || typeof q.question !== 'string' || !q.question.trim()) {
+      ids.push(null);
+      continue;
+    }
+    // P1-03: bank admission re-checks the choice key -- an item whose key is not the right option
+    // (or contradicts its explanation) is never admitted, whatever pipeline produced it.
+    const choice = validateChoiceItem(q);
+    if (!choice.ok) {
+      console.warn('[question-bank] CANDIDATE_REJECTED', JSON.stringify({ conceptId: meta.conceptId, activityType: meta.activityType, failures: choice.failures.map((f) => f.code) }));
       ids.push(null);
       continue;
     }
