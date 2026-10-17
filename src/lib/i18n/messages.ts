@@ -1,4 +1,5 @@
 import { ROLES_MESSAGES, type RolesMessageKey } from './roles-messages';
+import { APPLY_MESSAGES, type ApplyMessageKey } from './apply-messages';
 
 export type Locale = 'es' | 'en' | 'de' | 'fr' | 'pt';
 
@@ -1703,7 +1704,9 @@ export type MessageKey =
   | 'prep.onboarding.learnBody'
   | 'prep.onboarding.exam'
   | 'prep.onboarding.examBody'
-  | RolesMessageKey;
+  | RolesMessageKey
+  // APPLY -- adaptive transfer ladder (src/lib/i18n/apply-messages.ts).
+  | ApplyMessageKey;
 
 type Messages = Record<MessageKey, string>;
 
@@ -3371,6 +3374,7 @@ const es: Messages = {
   'di.summaryReuseOne': '1 ya lo tienes y se reutiliza.',
   // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
   ...ROLES_MESSAGES.es,
+  ...APPLY_MESSAGES.es,
   'workspace.addRole': 'Añadir otro rol',
   'exam.family.PAA': 'PAA',
   'exam.family.PISA': 'PISA',
@@ -5689,6 +5693,7 @@ const en: Messages = {
   'di.summaryReuseOne': '1 you already have will be reused.',
   // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
   ...ROLES_MESSAGES.en,
+  ...APPLY_MESSAGES.en,
   'workspace.addRole': 'Add another role',
   'exam.family.PAA': 'PAA',
   'exam.family.PISA': 'PISA',
@@ -8007,6 +8012,7 @@ const de: Messages = {
   'di.summaryReuseOne': '1 hast du schon; es wird wiederverwendet.',
   // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
   ...ROLES_MESSAGES.de,
+  ...APPLY_MESSAGES.de,
   'workspace.addRole': 'Weitere Rolle hinzufügen',
   'exam.family.PAA': 'PAA',
   'exam.family.PISA': 'PISA',
@@ -10325,6 +10331,7 @@ const fr: Messages = {
   'di.summaryReuseOne': '1 que tu as déjà sera réutilisé.',
   // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
   ...ROLES_MESSAGES.fr,
+  ...APPLY_MESSAGES.fr,
   'workspace.addRole': 'Ajouter un autre rôle',
   'exam.family.PAA': 'PAA',
   'exam.family.PISA': 'PISA',
@@ -12643,6 +12650,7 @@ const pt: Messages = {
   'di.summaryReuseOne': '1 que você já tem será reutilizado.',
   // Track A -- role experiences (src/lib/i18n/roles-messages.ts).
   ...ROLES_MESSAGES.pt,
+  ...APPLY_MESSAGES.pt,
   'workspace.addRole': 'Adicionar outra função',
   'exam.family.PAA': 'PAA',
   'exam.family.PISA': 'PISA',
