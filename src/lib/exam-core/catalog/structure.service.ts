@@ -24,6 +24,7 @@ import type { ContentReadiness, EngineCapability } from '../fidelity';
 import { parseExamVerticalConfig, type ExamVerticalConfig } from '../vertical-config';
 import { catalogueConfigs } from '../verticals/v2/all';
 import { applyBankReadinessOverlay, readinessMode } from '../question-bank/capability-overlay.service';
+import { FULL_EXPOSURE_POLICY, exposedModes, isFamilyExposed, isNavigationOnlyNode, isNodeListedForStudent, isNodeSelectableForStudent, studentExposurePolicy, type StudentExposurePolicy } from '../student-exposure';
 
 /** Parsed configurations by key (the catalogue binds to these). */
 export function configsByKey(): Map<string, ExamVerticalConfig> {
@@ -216,18 +217,40 @@ async function overlaidFamily(family: string | null, audience: ContentAudience):
   return { byId, descendants };
 }
 
+/** Pilot exposure applies to the Student view only (in-process engine scenarios keep the whole catalogue). */
+const exposureFor = (audience: ContentAudience): StudentExposurePolicy => (audience === 'STUDENT' ? studentExposurePolicy() : FULL_EXPOSURE_POLICY);
+
+/**
+ * Pilot exposure: every ACTIVE row of a family as the Student view sees it (the overlaid rows under ENFORCE, the
+ * audience's persisted view otherwise), so a restricted family's aggregate badges count only its in-scope nodes.
+ */
+async function studentViewRows(family: string, audience: ContentAudience, ov: Awaited<ReturnType<typeof overlaidFamily>>): Promise<Array<{ id: string; parent_id: string | null; node_key: string; selectable: boolean; state: string | null; bankInProgress: boolean }>> {
+  const rows = ov
+    ? [...ov.byId.values()].filter((x) => x.family === family)
+    : (await db.query(`SELECT id, parent_id, family, node_key, selectable, metadata, exam_version_id FROM assessment_structure_nodes WHERE status = 'ACTIVE' AND family = $1`, [family])).rows.map((x: any) => { const v = readinessFor(x, audience); return { ...x, selectable: v.selectable, metadata: { ...x.metadata, readiness: v.readiness } }; });
+  return rows.map((x: any) => ({ id: x.id, parent_id: x.parent_id, node_key: x.node_key, selectable: !!x.selectable, state: x.metadata?.readiness?.state ?? null, bankInProgress: !!x.metadata?.readiness?.bankInProgress }));
+}
+
 export async function listStructureFamilies(audience: ContentAudience = 'STUDENT'): Promise<Array<{ family: string; roots: number; available: boolean }>> {
+  const policy = exposureFor(audience);
   const r = await db.query(
     `SELECT n.family, count(*) FILTER (WHERE n.parent_id IS NULL)::int AS roots, bool_or(${selectableSql('n', audience)}) AS available
        FROM assessment_structure_nodes n WHERE n.status = 'ACTIVE' GROUP BY n.family ORDER BY n.family`
   );
   const ov = await overlaidFamily(null, audience);
   // R-1: a family offers activities when one of its nodes is selectable as the engine allows (ENFORCE, Student view)
-  return r.rows.map((x: any) => ({ family: x.family, roots: x.roots, available: ov ? [...ov.byId.values()].some((n) => n.family === x.family && n.selectable) : !!x.available }));
+  const out = r.rows.map((x: any) => ({ family: x.family as string, roots: x.roots as number, available: ov ? [...ov.byId.values()].some((n) => n.family === x.family && n.selectable) : !!x.available }));
+  if (policy.exposure === 'FULL') return out;
+  // Pilot exposure: hidden families are not listed; a restricted family is available only through its in-scope nodes.
+  const shown = out.filter((x) => isFamilyExposed(x.family, policy));
+  return Promise.all(shown.map(async (x) => (policy.allowlists[x.family] ? { ...x, available: (await studentViewRows(x.family, audience, ov)).some((n) => n.selectable && isNodeSelectableForStudent(x.family, n.node_key, policy)) } : x)));
 }
 
 export async function listStructureChildren(params: { family: string; parentKey: string | null; language: string; /** In-process scenarios only: the engine view. */ audience?: ContentAudience }): Promise<StructureNodeView[]> {
   const audience = params.audience ?? 'STUDENT';
+  const policy = exposureFor(audience);
+  // Pilot exposure: a hidden family lists nothing.
+  if (!isFamilyExposed(params.family, policy)) return [];
   const r = await db.query(
     `SELECT n.*, (SELECT count(*) FROM assessment_structure_nodes c WHERE c.parent_id = n.id AND c.status = 'ACTIVE')::int AS child_count,
             (WITH RECURSIVE sub AS (
@@ -254,7 +277,7 @@ export async function listStructureChildren(params: { family: string; parentKey:
     [params.family, params.parentKey]
   );
   const ov = await overlaidFamily(params.family, audience);
-  return r.rows.map((row0: any) => {
+  const views: StructureNodeView[] = r.rows.map((row0: any) => {
     // R-1: under ENFORCE (Student view) the node and its descendants read the overlaid rows (bank health + engine)
     const o = ov?.byId.get(row0.id);
     const desc = o ? ov!.descendants(row0.id) : null;
@@ -289,6 +312,27 @@ export async function listStructureChildren(params: { family: string; parentKey:
       versioning: { curriculumVersion: n.curriculum_version, firstAssessment: n.first_assessment, lastAssessment: n.last_assessment, syllabusCode: n.syllabus_code, frameworkVersion: n.framework_version },
       sources: n.sources ?? [],
     };
+  });
+  if (policy.exposure === 'FULL') return views;
+  // Pilot exposure: only the restricted family's in-scope nodes and their navigation ancestors are listed. A
+  // navigation ancestor is never an exam level, and its badges aggregate only the in-scope nodes below it.
+  const listed = views.filter((v) => isNodeListedForStudent(params.family, v.key, policy));
+  if (!listed.some((v) => isNavigationOnlyNode(params.family, v.key, policy))) return listed;
+  const rows = await studentViewRows(params.family, audience, ov);
+  const byKey = new Map(rows.map((x) => [x.node_key, x]));
+  const kids = new Map<string, typeof rows>();
+  for (const x of rows) if (x.parent_id) kids.set(x.parent_id, [...(kids.get(x.parent_id) ?? []), x]);
+  const inScopeBelow = (key: string) => {
+    const out: typeof rows = [];
+    const stack = [...(kids.get(byKey.get(key)?.id ?? '') ?? [])];
+    while (stack.length) { const c = stack.pop()!; if (isNodeSelectableForStudent(params.family, c.node_key, policy)) out.push(c); stack.push(...(kids.get(c.id) ?? [])); }
+    return out;
+  };
+  return listed.map((v) => {
+    if (!isNavigationOnlyNode(params.family, v.key, policy)) return v;
+    const below = inScopeBelow(v.key);
+    const readiness = below.map((x) => x.state).filter((x): x is ReadinessState => READINESS_ORDER.includes(x as ReadinessState)).reduce<ReadinessState>((best, x) => (READINESS_ORDER.indexOf(x) > READINESS_ORDER.indexOf(best) ? x : best), 'CATALOG_ONLY');
+    return { ...v, readiness, available: below.some((x) => x.selectable), isExamLevel: false, bankInProgress: readiness === 'STRUCTURE_READY' && below.some((x) => x.bankInProgress), bank: null };
   });
 }
 
@@ -340,6 +384,9 @@ export async function resolveExamLevel(nodeKey: string, language: string, intern
   // Question Bank: in ENFORCE mode a node's readiness / selectability comes from the latest bank-health snapshot (same overlay as the capabilities).
   const enforce = readinessMode() === 'ENFORCE';
   const raw = (await db.query(`SELECT * FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE' AND (selectable = true OR $2) LIMIT 1`, [nodeKey, enforce || audience === 'TECHNICAL_DEMO'])).rows[0];
+  // Pilot exposure (Student view): a node outside the Student scope never resolves (NOT_AVAILABLE), whatever its readiness.
+  const policy = exposureFor(audience);
+  if (raw && !isNodeSelectableForStudent(raw.family, raw.node_key, policy)) return null;
   // Student: the QB-1 view (fixture-derived rows never offer modes) + the bank overlay. Technical demo: the engine view.
   const n = !raw ? null : audience === 'TECHNICAL_DEMO' ? (() => { const v = readinessFor(raw, 'TECHNICAL_DEMO'); return { ...raw, selectable: v.selectable, metadata: { ...raw.metadata, readiness: v.readiness } }; })() : (await applyBankReadinessOverlay([raw]))[0];
   if (!n || !n.selectable || !n.exam_version_id) return null;
@@ -381,7 +428,8 @@ export async function resolveExamLevel(nodeKey: string, language: string, intern
     purpose: n.metadata?.purpose ?? null,
     examDefinitionId: n.exam_definition_id,
     examVersionId: n.exam_version_id,
-    modes: await offeredModes(readiness.modes ?? [], n.exam_version_id, audience),
+    // Pilot exposure: a mode not offered in the pilot (Challenge for IB / Cambridge) is not offered here either.
+    modes: exposedModes(n.family, await offeredModes(readiness.modes ?? [], n.exam_version_id, audience), policy),
     readiness: readiness.state,
     focusObjectiveIds,
     componentsFixed: n.metadata?.purpose === 'FULL_TEST',

@@ -16,6 +16,7 @@ import { db } from '@/lib/db';
 import { recordGovernanceEvent } from '@/lib/institution/academic-governance';
 import { examObjectives, objectiveByKey, type ExamObjective, type ObjectiveFramework } from '../objectives/objective-catalog';
 import { loadEligibilityGraph } from './graph';
+import { isObjectiveExposed, studentObjectives } from '../student-exposure';
 import { NON_CURRICULUM_FRAMEWORKS, programmeFrameworks, type EligibilityGraph } from './rules';
 
 export type ExamAssignmentErrorCode = 'NOT_FOUND' | 'OBJECTIVE_NOT_FOUND' | 'OBJECTIVE_NOT_COMPATIBLE' | 'CLASS_NOT_ACTIVE';
@@ -77,7 +78,8 @@ export async function listClassExamAssignments(institutionId: string, classId: s
       const o = objectiveByKey(r.objective_key);
       return { id: r.id, objectiveKey: r.objective_key, label: o?.label ?? r.objective_key, framework: o?.framework ?? null, assignedByScope: r.assigned_by_scope, createdAt: new Date(r.created_at).toISOString() };
     }),
-    assignable: examObjectives()
+    // Pilot exposure: an objective hidden from Students is never offered for assignment (existing rows stay listed above).
+    assignable: studentObjectives(examObjectives())
       .filter((o) => allowed.has(o.framework) && !active.has(o.key))
       .map((o) => ({ key: o.key, label: o.label, framework: o.framework, kind: o.kind })),
   };
@@ -99,7 +101,8 @@ export async function assignExamToClass(input: { institutionId: string; classId:
       newValues: { classId: input.classId, objectiveKey: input.objectiveKey, ...extra },
       outcome,
     });
-  if (!objective) throw new ExamAssignmentError('OBJECTIVE_NOT_FOUND');
+  // Pilot exposure: an objective hidden from Students cannot be assigned (indistinguishable from an unknown one).
+  if (!objective || !isObjectiveExposed(objective)) throw new ExamAssignmentError('OBJECTIVE_NOT_FOUND');
   if (klass.status !== 'ACTIVE') {
     await audit('ASSIGN', 'DENIED', null, { reason: 'CLASS_NOT_ACTIVE' });
     throw new ExamAssignmentError('CLASS_NOT_ACTIVE');

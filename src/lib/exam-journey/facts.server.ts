@@ -25,6 +25,7 @@ import { examAttemptEvidenceSql } from '@/lib/exam-core/evidence-scope';
 import { listStudentExamProfiles } from '@/lib/assessment/student-exam-profile.service';
 import { buildProfilePlan, objectiveCapabilities, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
 import { objectiveByKey, type ExamObjective } from '@/lib/exam-core/objectives/objective-catalog';
+import { isObjectiveExposed } from '@/lib/exam-core/student-exposure';
 import type { ExamPreparationCapabilities } from '@/lib/exam-core/objectives/capabilities';
 import type { PreparationPlan } from '@/lib/exam-core/objectives/preparation-plan';
 import { learningFactsFromPlan } from './plan-facts';
@@ -214,7 +215,8 @@ export async function loadStudentExamJourneyFacts(studentId: string, asOf: strin
   const learner = await loadLearnerFacts(studentId, profiles.length);
   const objectives = await Promise.all(profiles.map((p) => profileObjective(p).catch(() => null)));
   const preparedKeys = new Set(profiles.map((p, i) => objectives[i]?.key ?? p.objectiveKey ?? '').filter(Boolean));
-  const pendingAssignments = learner.institution.assignedObjectiveKeys.filter((k) => !preparedKeys.has(k));
+  // Pilot exposure: an assignment of an objective hidden from Students is not surfaced as a new target.
+  const pendingAssignments = learner.institution.assignedObjectiveKeys.filter((k) => !preparedKeys.has(k)).filter((k) => { const o = objectiveByKey(k); return !o || isObjectiveExposed(o); });
   // Whole rows as JSON: columns a database has not migrated yet read as absent (UNKNOWN), never as an error.
   const rows = new Map<string, ExamTargetRow>(
     profiles.length

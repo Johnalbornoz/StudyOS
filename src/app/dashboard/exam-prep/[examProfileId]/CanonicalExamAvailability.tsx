@@ -6,6 +6,7 @@ import { examAttemptOptionsUnderEngine } from '@/lib/assessment-experience/views
 import { readinessMode } from '@/lib/exam-core/question-bank/capability-overlay.service';
 import { engineReadinessForVersion } from '@/lib/exam-bank/readiness/readiness-authority.service';
 import { examEntryHrefs, type ExamPreparationCapabilities } from '@/lib/exam-core/objectives/capabilities';
+import { isModeExposed } from '@/lib/exam-core/student-exposure';
 
 /**
  * B5-D -- Exam Prep's canonical availability, under ASSESSMENT_SNAPSHOT_EXECUTION_ENABLED.
@@ -15,12 +16,14 @@ import { examEntryHrefs, type ExamPreparationCapabilities } from '@/lib/exam-cor
  * authority: an available attempt links to the existing exam entry, never to a start of its own.
  * With the flag off this renders nothing.
  */
-export async function CanonicalExamAvailability({ examVersionId, t, catalogNode = null, activities = null, focusArea = null }: { examVersionId: string | null; t: ReturnType<typeof getMessages>; /** The catalogue node of this preparation's exam: the entry opens the exam itself, not the generic chooser. */ catalogNode?: string | null; /** F5: this preparation's governed activities; each mode opens its own. */ activities?: ExamPreparationCapabilities | null; /** the area the plan most recommends practising */ focusArea?: string | null }) {
+export async function CanonicalExamAvailability({ examVersionId, t, catalogNode = null, activities = null, focusArea = null, family = null }: { examVersionId: string | null; t: ReturnType<typeof getMessages>; /** The catalogue node of this preparation's exam: the entry opens the exam itself, not the generic chooser. */ catalogNode?: string | null; /** F5: this preparation's governed activities; each mode opens its own. */ activities?: ExamPreparationCapabilities | null; /** the area the plan most recommends practising */ focusArea?: string | null; /** Pilot exposure: the exam's family (a mode the pilot hides for it is not offered). */ family?: string | null }) {
   if (!isSnapshotExecutionEnabled()) return null;
   const availability = await examAvailabilityForVersion(examVersionId);
   // R-1: under ENFORCE the cards say what the Exam Bank Readiness Engine says (and what the preparation offers)
   const engine = examVersionId && readinessMode() === 'ENFORCE' ? await engineReadinessForVersion(examVersionId).catch(() => null) : null;
-  const options = engine ? examAttemptOptionsUnderEngine(availability.options, { anyPractice: Object.values(engine.practiceBySection).some((s) => s !== 'NOT_READY'), reducedMock: engine.reducedMock, fullMock: engine.fullMock, challenge: engine.challenge, mockAttemptType: engine.mockAttemptType }, { reducedMock: !!activities?.canRunReducedMock, fullMock: !!activities?.canRunFullMock, preparationForm: !!examVersionId && !!activities?.fullMocks.some((e) => e.mockAttemptType === 'PREPARATION_MOCK' && !!e.examVersionId && e.examVersionId !== examVersionId) }) : availability.options;
+  const engineOptions = engine ? examAttemptOptionsUnderEngine(availability.options, { anyPractice: Object.values(engine.practiceBySection).some((s) => s !== 'NOT_READY'), reducedMock: engine.reducedMock, fullMock: engine.fullMock, challenge: engine.challenge, mockAttemptType: engine.mockAttemptType }, { reducedMock: !!activities?.canRunReducedMock, fullMock: !!activities?.canRunFullMock, preparationForm: !!examVersionId && !!activities?.fullMocks.some((e) => e.mockAttemptType === 'PREPARATION_MOCK' && !!e.examVersionId && e.examVersionId !== examVersionId) }) : availability.options;
+  // Pilot exposure (STUDENT_CATALOG_EXPOSURE=PILOT): Challenge is not offered where the pilot hides it (IB / Cambridge).
+  const options = engineOptions.filter((o) => o.type !== 'EXAM_CHALLENGE' || isModeExposed(family, 'CHALLENGE'));
   return (
     <div data-testid="canonical-exam-availability" data-evaluated={availability.evaluated} data-eligible={availability.eligibleQuestions}>
       <ExamAttemptOptions options={options} t={t} hrefs={examEntryHrefs(catalogNode, activities, focusArea)} />

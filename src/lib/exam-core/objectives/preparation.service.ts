@@ -38,6 +38,7 @@ import { READINESS_ORDER, type ReadinessState, type ComponentReadiness } from '.
 import { addConceptToStudentLearning } from '../catalog/learning-links.service';
 import { createExamInstance, toInstanceView } from '../exam-instance.service';
 import { examObjectives, objectiveByKey, objectiveForConfig, type ExamObjective } from './objective-catalog';
+import { isObjectiveExposed } from '../student-exposure';
 import { computeCapabilities, objectiveStatusKey, type ExamPreparationCapabilities, type ObjectiveEntry, restrictByReadinessEngine, type EngineModeVerdicts } from './capabilities';
 import { buildPreparationPlan, nextStep, type ExamEvidence, type LearnerConceptState, type PreparationPlan, type RequirementInput, examReadinessEvidenceOf, type ExamReadinessCellSummary } from './preparation-plan';
 import { applyBankReadinessOverlay } from '../question-bank/capability-overlay.service';
@@ -172,7 +173,8 @@ export interface CreatePreparationInput {
 
 export async function createObjectivePreparation(studentId: string, input: CreatePreparationInput): Promise<{ profile: StudentExamProfile; created: boolean; capabilities: ExamPreparationCapabilities }> {
   const o = objectiveByKey(input.objectiveKey);
-  if (!o) throw new PreparationError('OBJECTIVE_NOT_FOUND');
+  // Pilot exposure: an objective hidden from Students is not created (existing preparations stay readable).
+  if (!o || !isObjectiveExposed(o)) throw new PreparationError('OBJECTIVE_NOT_FOUND');
   const [def, node, capabilities, eligibility] = await Promise.all([
     startableDefinition(o),
     db.query(`SELECT id FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE'`, [o.nodeKey]),
