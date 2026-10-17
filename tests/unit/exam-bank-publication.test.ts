@@ -79,7 +79,9 @@ describe('the plan is derived from the artefacts, and only from them', () => {
     expect(edited.preflight.filter((p) => p.startsWith('HUMAN_CERTIFIED_WITHOUT_A_RECORDED_DECISION'))).toEqual([]);
     // a decision by someone who is not the recorded reviewer is refused outright
     expect(buildPublicationPlan({ ...human, records: human.records.map((r, n) => (n === 0 ? { ...r, record: { ...r.record, reviewerId: 'someone-else' } } : r)) }).preflight.some((p) => p.startsWith('HUMAN_DECISION_BY_ANOTHER_REVIEWER'))).toBe(true);
-  }, 60_000);
+    // Three DIFFERENT inputs, three offline plan builds (nothing to memoise): 8.1-8.4 s measured alone. The previous
+    // 60_000 was exceeded in a full parallel run at load average ~21; 120000 = governance-decisions-saber-aice.test.ts precedent.
+  }, 120_000);
 
   it('every instance is an Exam Bank item, certified by inherited deterministic certification, with complete lineage, rights and a 1-5 difficulty', () => {
     for (const p of plan.instances) {

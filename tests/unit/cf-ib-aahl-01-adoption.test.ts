@@ -70,7 +70,10 @@ describe('IB_PARAMETRIC_SHORT_RESPONSE: CF-IB-AAHL-01 / QUADRATIC_MINIMUM_VALUE 
     const one = certifyCell(live, live.targets[0], 'CHALLENGE', 10, gp, CF_IB_AAHL_01.batchId);
     expect(one.certified.map((i) => i.key.answers[0])).toEqual(['83/4']);
     for (const band of ['FOUNDATIONAL', 'STANDARD'] as const) expect(certifyCell(live, live.targets[0], band, 10, gp, CF_IB_AAHL_01.batchId).certified).toHaveLength(0);
-  });
+    // Per-test timeout: governLibrary over the whole PUBLICATION_LIBRARY is the same deterministic, CPU-bound offline
+    // governance computation the publication plan runs (1.1-1.3 s measured alone); it timed out at 5 s only in a full
+    // parallel run on a loaded machine. Never a request path. Precedent: qf52-certification-coverage-supply.test.ts (60_000).
+  }, 60_000);
 });
 
 describe('package-seed capability (proven on an already governed PAA entry, copied in memory)', () => {
