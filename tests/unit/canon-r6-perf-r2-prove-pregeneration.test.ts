@@ -29,9 +29,14 @@ vi.mock('@/services/canonical-prove-generation.service', () => ({
 }));
 
 const loadFingerprintsMock = vi.fn();
+const loadProveFingerprintsMock = vi.fn(async (..._a: any[]) => new Set<string>());
 vi.mock('@/services/quiz-persistence.service', async () => {
   const actual = await vi.importActual<typeof import('@/services/quiz-persistence.service')>('@/services/quiz-persistence.service');
-  return { ...actual, loadPriorPracticeQuestionFingerprints: (...a: any[]) => loadFingerprintsMock(...a) };
+  return {
+    ...actual,
+    loadPriorPracticeQuestionFingerprints: (...a: any[]) => loadFingerprintsMock(...a),
+    loadPriorProveQuestionFingerprints: (...a: any[]) => loadProveFingerprintsMock(...a),
+  };
 });
 
 import {
@@ -187,6 +192,21 @@ describe('prepareCanonicalProveActivity -- Part 1/2/3/6/14', () => {
     expect(updateCall[1]).toContain('GENERATION_INCOMPLETE');
   });
 
+  it('D75 -- a short result caused by exact prior-item rejections is FAILED with PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE (never READY with a reused item)', async () => {
+    mockNoStaleRows();
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'prep-1' }] });
+    queryMock.mockResolvedValueOnce({ rows: [] }); // the UPDATE ... FAILED
+    generateMock.mockResolvedValue({ questions: [Q('a')], finalQuestionCount: 1, priorPracticeFingerprintCount: 10, aggregateRecoveryUsed: true, exactNoveltySupplyShortage: true });
+    await prepareCanonicalProveActivity({
+      studentId: 's1', conceptId: 'c1', subjectId: 'subj1',
+      pedagogicalPolicyVersion: 'v1', canonicalRevision: 'rev1', contract: CONTRACT,
+      language: 'en', guidance: 'g', visualAidRate: 0, ibContext: null,
+    });
+    const updateCall = queryMock.mock.calls[3];
+    expect(updateCall[0]).toMatch(/SET status = 'FAILED'/);
+    expect(updateCall[1]).toContain('PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE');
+  });
+
   it('Part 14 -- an unexpected error during generation is caught internally and never rethrown to the caller (background failure safety)', async () => {
     mockNoStaleRows();
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'prep-1' }] });
@@ -267,10 +287,20 @@ describe('revalidatePreparedActivity -- Part 8 (status/expiry/contract cheap-fir
     expect(result.reason).toBe('NOVELTY_STALE');
   });
 
+  it('D75 -- a batch prepared BEFORE a later Prove attempt is re-checked against that attempt: an exact prior-PROVE item invalidates the whole batch (NOVELTY_STALE)', async () => {
+    loadFingerprintsMock.mockResolvedValue(new Set()); // no Practice collision
+    loadProveFingerprintsMock.mockResolvedValueOnce(new Set(['a'])); // the later Prove attempt administered 'a'
+    const result = await revalidatePreparedActivity(toRow(row()), CONTRACT);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe('NOVELTY_STALE');
+    expect(loadProveFingerprintsMock).toHaveBeenCalledWith('s1', 'c1');
+  });
+
   it('always re-fetches FRESH fingerprints -- never trusts the stored priorPracticeFingerprintBasis hash alone to decide validity', () => {
     const idx = PREPARED_ACTIVITY_SRC.indexOf('export async function revalidatePreparedActivity');
     const block = PREPARED_ACTIVITY_SRC.slice(idx);
-    expect(block).toMatch(/const freshFingerprints = await loadPriorPracticeQuestionFingerprints\(/);
+    // D75: the CURRENT Practice AND Prove history
+    expect(block).toMatch(/const freshFingerprints = \(await loadProveExactNoveltyExclusions\(prepared\.studentId, prepared\.conceptId\)\)\.fingerprints;/);
   });
 });
 

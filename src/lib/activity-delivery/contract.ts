@@ -144,6 +144,25 @@ export function inventoryTarget(activityType: DeliveryActivityType): number {
  */
 export const SPARE_ASSEMBLABLE_SETS = 2;
 
+/**
+ * D76 -- governed minimum bank depth in DISTINCT VALID candidates for one
+ * learner + concept + activity (the learner's own question_bank_candidates).
+ * PRACTICE = 9: 3 sessions x 3 questions see up to 9 distinct items before
+ * any controlled reuse. For an activity listed here this target is THE
+ * replenishment threshold (prepareInventoryHandler): below it the existing
+ * BANK_REPLENISH path generates toward it; at or above it nothing is
+ * requested unless an assembly actually came up short. Every other activity
+ * keeps the set-based SPARE_ASSEMBLABLE_SETS policy unchanged.
+ */
+export const BANK_DEPTH_TARGET: Readonly<Partial<Record<DeliveryActivityType, number>>> = { PRACTICE: 9 };
+
+export function bankDepthTarget(activityType: DeliveryActivityType): number | null {
+  return BANK_DEPTH_TARGET[activityType] ?? null;
+}
+
+/** D76 -- recorded on a session delivered while the bank is below its depth target (controlled reuse). */
+export const PRACTICE_BANK_DEPTH_INSUFFICIENT = 'PRACTICE_BANK_DEPTH_INSUFFICIENT' as const;
+
 /** Splits a candidate need into generator-sized chunks (one BANK_REPLENISH job each, run in parallel). */
 export function bankChunks(needed: number, batchCap: number): number[] {
   const out: number[] = [];

@@ -54,7 +54,9 @@ export type AdminAuditAction =
   // P1-03 -- a governed operator script quarantined Learning content that fails item validation.
   | 'LEARNING_ITEM_QUARANTINED'
   // Pilot QA -- scripts/operations/pilot-qa-retain-time.ts moved a synthetic QA student's concept evidence back in time.
-  | 'PILOT_QA_RETAIN_TIME_SHIFT';
+  | 'PILOT_QA_RETAIN_TIME_SHIFT'
+  // Pilot QA (D76) -- scripts/operations/pilot-qa-practice-depth.ts ran the existing PRACTICE bank replenishment toward the depth target.
+  | 'PILOT_QA_PRACTICE_DEPTH_REPLENISH';
 
 export interface RecordAdminActionInput {
   actorUserId: string;

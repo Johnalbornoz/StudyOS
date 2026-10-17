@@ -82,6 +82,7 @@ import {
   type GatedBatchInvocationDiagnostics,
 } from '@/services/gated-question-generation.service';
 import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } from '@/services/canonical-prove-generation.service';
+import { PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE } from '@/services/prove-exact-novelty.service';
 import { generateCanonicalRetainQuestions, type CanonicalRetainGenerationResult } from '@/services/canonical-retain-generation.service';
 import { generateCanonicalTransferChallenges, type CanonicalTransferGenerationResult } from '@/services/canonical-transfer-generation.service';
 import { gradeCanonicalTransferAttempt } from '@/lib/lx/canonical-transfer-grading';
@@ -1304,6 +1305,13 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // generic gated-batch/legacy path), which keeps its own existing
     // generic error shape untouched.
     let canonicalGenerationErrorCode: CanonicalErrorCode | null = null;
+    // D75: a canonical_prove shortfall caused by exact prior-item (Practice / Prove) rejections is
+    // reported explicitly -- an exact prior Prove item is never reused to fill the set.
+    let proveReasonCode: 'V1_PROVE_GENERATION_INCOMPLETE' | typeof PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE = 'V1_PROVE_GENERATION_INCOMPLETE';
+    if (validated.quizMode === 'canonical_prove' && proveGenerationResult !== null && questions.length < maxQuestions) {
+      const proveShortageCheck: CanonicalProveGenerationResult = proveGenerationResult;
+      if (proveShortageCheck.exactNoveltySupplyShortage) proveReasonCode = PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE;
+    }
     if (questions.length < maxQuestions) {
       try {
         // CANON-V2-PREVIEW-CERT -- `!== null` (never a truthy `&&`
@@ -1357,7 +1365,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           errorCode: 'QUESTION_COUNT_INSUFFICIENT',
         }));
       } catch { /* logging must never break the response */ }
-      emitCanonicalProveSummary('INCOMPLETE', questions.length, 'V1_PROVE_GENERATION_INCOMPLETE');
+      emitCanonicalProveSummary('INCOMPLETE', questions.length, proveReasonCode);
       emitCanonicalProveCacheSummary();
       // CANON-R6/CANON-V2-ARCH-CLEANUP Part 5/29 -- a v1 Prove/Retain
       // request may NEVER silently administer fewer than its own
@@ -1368,7 +1376,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       // every other mode already gets.
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_PROVE_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, independent 10-question Prove check.' }
+          ? { error: 'GENERATION_FAILED', reason: proveReasonCode, canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode(proveReasonCode).code, message: proveReasonCode === PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE ? 'Not enough new questions are available yet for another Prove check.' : 'Could not generate a complete, independent 10-question Prove check.' }
           : validated.quizMode === 'canonical_retain'
           ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_RETAIN_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, novel 10-question Retain check.' }
           : validated.quizMode === 'canonical_transfer'
@@ -1395,11 +1403,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           errorCode: 'GENERATION_FAILED',
         }));
       } catch { /* logging must never break the response */ }
-      emitCanonicalProveSummary('INCOMPLETE', questions.length, 'V1_PROVE_GENERATION_INCOMPLETE');
+      emitCanonicalProveSummary('INCOMPLETE', questions.length, proveReasonCode);
       emitCanonicalProveCacheSummary();
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_PROVE_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, independent 10-question Prove check.' }
+          ? { error: 'GENERATION_FAILED', reason: proveReasonCode, canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode(proveReasonCode).code, message: proveReasonCode === PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE ? 'Not enough new questions are available yet for another Prove check.' : 'Could not generate a complete, independent 10-question Prove check.' }
           : validated.quizMode === 'canonical_retain'
           ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_RETAIN_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, novel 10-question Retain check.' }
           : validated.quizMode === 'canonical_transfer'

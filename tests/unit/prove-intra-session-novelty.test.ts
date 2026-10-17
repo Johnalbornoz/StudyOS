@@ -14,7 +14,7 @@ vi.mock('@/services/gated-question-generation.service', () => ({
   generateConcurrentChunkedBatch: (...a: any[]) => chunkMock(...a),
   generateBoundedRecoveryBatch: (...a: any[]) => recoveryMock(...a),
 }));
-vi.mock('@/services/quiz-persistence.service', () => ({ loadPriorPracticeQuestionFingerprints: vi.fn().mockResolvedValue(new Set()) }));
+vi.mock('@/services/quiz-persistence.service', () => ({ loadPriorPracticeQuestionFingerprints: vi.fn().mockResolvedValue(new Set()), loadPriorProveQuestionFingerprints: vi.fn().mockResolvedValue(new Set()) }));
 vi.mock('@/lib/db', () => ({ db: { query: vi.fn() }, query: vi.fn() }));
 
 import { questionSignature, compareQuestions, selectDiverse, diversityReport, leastSimilarFirst, TEMPLATE_CAP } from '@/lib/lx/question-diversity';

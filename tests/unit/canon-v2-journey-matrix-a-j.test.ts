@@ -47,7 +47,7 @@ vi.mock('@/services/gated-question-generation.service', () => ({
 }));
 vi.mock('@/services/quiz-persistence.service', async () => {
   const actual = await vi.importActual<typeof import('@/services/quiz-persistence.service')>('@/services/quiz-persistence.service');
-  return { ...actual, loadPriorCanonicalQuestionFingerprintsForRetain: (...a: any[]) => h.priorFingerprints(...a), loadPriorPracticeQuestionFingerprints: (...a: any[]) => h.priorFingerprints(...a) };
+  return { ...actual, loadPriorCanonicalQuestionFingerprintsForRetain: (...a: any[]) => h.priorFingerprints(...a), loadPriorPracticeQuestionFingerprints: (...a: any[]) => h.priorFingerprints(...a), loadPriorProveQuestionFingerprints: async () => new Set<string>() };
 });
 vi.mock('@/services/quiz-generation.service', async () => {
   const actual = await vi.importActual<typeof import('@/services/quiz-generation.service')>('@/services/quiz-generation.service');
@@ -374,8 +374,10 @@ describe('SCENARIO J -- AI FAILURE SAFETY (across LEARN_CHECK, PRACTICE, PROVE, 
   });
 
   it('every canonical_* generation-incomplete response carries a real, diagnostics-derived canonicalErrorCode (AI_GENERATION_FAILED / AI_GENERATION_INVALID / AI_VALIDATION_FAILED via classifyProveRetainGenerationFailure/classifyTransferGenerationFailure), falling back to the generic AI_GENERATION_FAILED mapping only when no generation-result diagnostics are available -- proven at the unit level in canon-v2-generation-failure-classifier.test.ts; this test only confirms the route actually wires the classifier in for all 3 generation-incomplete branches', () => {
-    const occurrences = (ROUTE_SRC.match(/canonicalErrorCode: canonicalGenerationErrorCode \?\? toCanonicalErrorCode\('V1_(PROVE|RETAIN|TRANSFER)_GENERATION_INCOMPLETE'\)\.code/g) ?? []).length;
-    expect(occurrences).toBe(6); // 3 modes x 2 guard sites (short-of-target, totally-empty)
+    const occurrences = (ROUTE_SRC.match(/canonicalErrorCode: canonicalGenerationErrorCode \?\? toCanonicalErrorCode\('V1_(RETAIN|TRANSFER)_GENERATION_INCOMPLETE'\)\.code/g) ?? []).length;
+    expect(occurrences).toBe(4); // RETAIN + TRANSFER x 2 guard sites (short-of-target, totally-empty)
+    // D75: PROVE derives the same fallback from its reason code (V1_PROVE_GENERATION_INCOMPLETE or PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE)
+    expect((ROUTE_SRC.match(/canonicalErrorCode: canonicalGenerationErrorCode \?\? toCanonicalErrorCode\(proveReasonCode\)\.code/g) ?? []).length).toBe(2);
     expect(ROUTE_SRC).toMatch(/import \{ classifyProveRetainGenerationFailure, classifyTransferGenerationFailure \} from '@\/lib\/lx\/canonical-generation-failure-classifier';/);
   });
 

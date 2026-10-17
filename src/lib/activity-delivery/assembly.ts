@@ -31,6 +31,8 @@ export interface BankCandidate {
   usageCount: number;
   /** Already delivered to this learner in some session. */
   delivered: boolean;
+  /** D76: when this learner was last given it (epoch ms); null/absent = never. Assisted reuse takes the least recent first. */
+  lastDeliveredAt?: number | null;
 }
 
 export interface AssemblyRequest {
@@ -71,6 +73,8 @@ export function assembleFromBank(candidates: BankCandidate[], req: AssemblyReque
     .sort(
       (a, b) =>
         Number(a.c.delivered) - Number(b.c.delivered) ||
+        // D76: among already-delivered items (assisted reuse), least recently delivered first
+        (a.c.lastDeliveredAt ?? 0) - (b.c.lastDeliveredAt ?? 0) ||
         a.c.usageCount - b.c.usageCount ||
         Math.abs(a.c.difficulty - req.difficulty.target) - Math.abs(b.c.difficulty - req.difficulty.target) ||
         a.i - b.i,
@@ -96,6 +100,23 @@ export function assembleFromBank(candidates: BankCandidate[], req: AssemblyReque
   if (selection.kept.length < req.itemCount) return { status: 'SHORT', available: selection.kept.length, needed: req.itemCount };
   const chosen = selection.kept.slice(0, req.itemCount).map((q) => byQuestion.get(q)!);
   return { status: 'ASSEMBLED', questions: chosen.map((c) => c.question), candidateIds: chosen.map((c) => c.id) };
+}
+
+/**
+ * D76 -- the bank's depth in DISTINCT VALID candidates for this request: in
+ * the contract's difficulty band, not novelty-excluded, deliverable (P1-03).
+ * Reservations and prior deliveries do not reduce depth (assisted activities
+ * may reuse a delivered item).
+ */
+export function countValidCandidates(candidates: BankCandidate[], req: Pick<AssemblyRequest, 'difficulty' | 'excludeFingerprints'>): number {
+  const seen = new Set<string>();
+  for (const c of candidates) {
+    if (c.difficulty < req.difficulty.min || c.difficulty > req.difficulty.max) continue;
+    if (req.excludeFingerprints.has(c.contentFingerprint)) continue;
+    if (!isDeliverableChoiceItem(c.question)) continue;
+    seen.add(c.contentFingerprint);
+  }
+  return seen.size;
 }
 
 /**

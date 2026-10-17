@@ -21,7 +21,7 @@ import {
   generateBoundedRecoveryBatch,
   type GatedBatchInvocationDiagnostics,
 } from '@/services/gated-question-generation.service';
-import { loadPriorPracticeQuestionFingerprints } from '@/services/quiz-persistence.service';
+import { loadProveExactNoveltyExclusions } from '@/services/prove-exact-novelty.service';
 import { filterExactDuplicates } from '@/lib/lx/exact-duplicate-novelty';
 import { avoidanceBrief, diversityReport, leastSimilarFirst, selectDiverse, type DiversityReport } from '@/lib/lx/question-diversity';
 import { MAX_QUESTIONS_PER_CHUNK, ALL_QUESTION_TYPES, type GeneratedQuestion, type IBContext } from '@/services/quiz-generation.service';
@@ -67,7 +67,15 @@ export interface CanonicalProveGenerationResult {
   invocations: CanonicalProveInvocationResult[];
   noveltyPasses: CanonicalProveNoveltyPassResult[];
   priorPracticeFingerprintCount: number;
+  /** D75: exact items of prior PROVE attempts for this (student, concept), also excluded. */
+  priorProveFingerprintCount: number;
   rejectedExactDuplicateCount: number;
+  /**
+   * D75: true when the result is short AND exact-novelty rejections are why
+   * (after every bounded regeneration round) -- the caller reports
+   * PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE instead of ever reusing a prior item.
+   */
+  exactNoveltySupplyShortage: boolean;
   finalQuestionCount: number;
   /** PROVE_INTRA_SESSION_NOVELTY: candidates rejected as near duplicates / over-used templates. */
   diversityRejectedCount: number;
@@ -107,7 +115,9 @@ export async function generateCanonicalProveQuestions(params: CanonicalProveGene
   invocations.push(...chunked.chunkDiagnostics.map((diag, chunkIndex) => ({ invocationType: 'CHUNK' as const, chunkIndex, ...diag })));
 
   const priorHistoryStartedAt = Date.now();
-  const priorFingerprints = await loadPriorPracticeQuestionFingerprints(params.studentId, params.conceptId);
+  // D75: exact prior PRACTICE items AND exact prior PROVE items are both excluded.
+  const exclusions = await loadProveExactNoveltyExclusions(params.studentId, params.conceptId);
+  const priorFingerprints = exclusions.fingerprints;
   const priorHistoryMs = Date.now() - priorHistoryStartedAt;
 
   let noveltyFilterMs = 0;
@@ -182,7 +192,9 @@ export async function generateCanonicalProveQuestions(params: CanonicalProveGene
   const rejectedPool = firstPass.rejected.map((r) => r.item);
   let diversityRejectedCount = firstPass.rejected.length;
   let diversityRegenerations = 0;
-  for (let round = 0; round < MAX_DIVERSITY_REGENERATIONS && kept.length < params.targetCount && diversityRejectedCount > 0; round++) {
+  // D75: a slot lost to an exact prior-item rejection is regenerated through
+  // the SAME bounded rounds (never filled by reusing the prior item).
+  for (let round = 0; round < MAX_DIVERSITY_REGENERATIONS && kept.length < params.targetCount && (diversityRejectedCount > 0 || rejectedExactDuplicateCount > 0); round++) {
     const missing = params.targetCount - kept.length;
     diversityRegenerations++;
     const regen = await generateBoundedRecoveryBatch(params.conceptId, params.studentId, params.subjectId, {
@@ -229,7 +241,9 @@ export async function generateCanonicalProveQuestions(params: CanonicalProveGene
     invocations,
     noveltyPasses,
     priorPracticeFingerprintCount: priorFingerprints.size,
+    priorProveFingerprintCount: exclusions.priorProveCount,
     rejectedExactDuplicateCount,
+    exactNoveltySupplyShortage: questions.length < params.targetCount && rejectedExactDuplicateCount > 0,
     diversityRejectedCount,
     diversityRegenerations,
     diversityDegraded,

@@ -22,7 +22,7 @@ import { randomUUID, createHash } from 'crypto';
 import { db } from '@/lib/db';
 import { runWithAiMetrics } from '@/lib/ai/request-metrics';
 import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } from '@/services/canonical-prove-generation.service';
-import { loadPriorPracticeQuestionFingerprints } from '@/services/quiz-persistence.service';
+import { loadProveExactNoveltyExclusions, PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE } from '@/services/prove-exact-novelty.service';
 import { filterExactDuplicates } from '@/lib/lx/exact-duplicate-novelty';
 import { isDeliverableChoiceItem } from '@/lib/lx/choice-item-validator';
 import { ALL_QUESTION_TYPES, type GeneratedQuestion, type IBContext } from '@/services/quiz-generation.service';
@@ -276,11 +276,13 @@ async function prepareCanonicalProveActivityUnscoped(params: PrepareCanonicalPro
     });
 
     if (result.finalQuestionCount < contract.itemCount.authorized) {
+      // D75: a shortfall caused by exact prior-item rejections is reported as such -- never padded with a prior item.
+      const reason = result.exactNoveltySupplyShortage ? PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE : 'GENERATION_INCOMPLETE';
       await db.query(
         `UPDATE canonical_prepared_activity SET status = 'FAILED', failure_reason = $2 WHERE id = $1`,
-        [insertedId, 'GENERATION_INCOMPLETE']
+        [insertedId, reason]
       );
-      safeLog('prove_pregeneration_failed', { id: insertedId, reason: 'GENERATION_INCOMPLETE', acceptedCount: result.finalQuestionCount });
+      safeLog('prove_pregeneration_failed', { id: insertedId, reason, acceptedCount: result.finalQuestionCount });
       return;
     }
 
@@ -412,7 +414,10 @@ export async function revalidatePreparedActivity(
     return { valid: false, reason: 'ITEM_INVALID' };
   }
 
-  const freshFingerprints = await loadPriorPracticeQuestionFingerprints(prepared.studentId, prepared.conceptId);
+  // D75: re-checked against the CURRENT Practice AND Prove history -- a batch
+  // prepared before a later Prove attempt is stale if it holds any exact item
+  // that attempt administered.
+  const freshFingerprints = (await loadProveExactNoveltyExclusions(prepared.studentId, prepared.conceptId)).fingerprints;
   const revalidationFilter = filterExactDuplicates(prepared.questions, freshFingerprints);
   if (revalidationFilter.rejectedCount > 0) {
     // Part 8: never partially patch a prepared batch at consumption
