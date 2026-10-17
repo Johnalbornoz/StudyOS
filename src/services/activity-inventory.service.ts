@@ -16,6 +16,7 @@
  */
 import { db } from '@/lib/db';
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
+import { isDeliverableChoiceItem } from '@/lib/lx/choice-item-validator';
 import {
   inventoryTarget,
   preparedActivityCompatibility,
@@ -68,6 +69,9 @@ export async function consumeCompatibleInventory(
                 WHEN $6::boolean AND EXISTS (
                   SELECT 1 FROM question_bank_deliveries d WHERE d.student_id = $1 AND d.candidate_id = ANY(candidate_ids)
                 ) THEN 'CANDIDATE_DELIVERED'
+                WHEN EXISTS (
+                  SELECT 1 FROM question_bank_candidates qc WHERE qc.id = ANY(candidate_ids) AND qc.validation_status <> 'VALIDATED'
+                ) THEN 'CANDIDATE_QUARANTINED'
                 ELSE NULL
               END AS verdict
          FROM canonical_prepared_activity
@@ -94,7 +98,15 @@ export async function consumeCompatibleInventory(
   const row = r.rows[0];
   for (const reason of (row?.retired as string[] | null) ?? []) log('retired', { stage: identity.stage, reason });
   if (!row?.id) return null;
-  return { id: row.id, questions: row.questions ?? [], candidateIds: row.candidate_ids ?? [] };
+  const questions: GeneratedQuestion[] = row.questions ?? [];
+  // P1-03: a prepared set holding an item whose key is not the right option is never served -- the
+  // whole set is invalidated (never partially patched) and the caller assembles a fresh one.
+  if (!questions.every((q) => isDeliverableChoiceItem(q))) {
+    await db.query(`UPDATE canonical_prepared_activity SET status = 'INVALIDATED', failure_reason = 'ITEM_INVALID' WHERE id = $1`, [row.id]);
+    log('retired', { stage: identity.stage, reason: 'ITEM_INVALID' });
+    return null;
+  }
+  return { id: row.id, questions, candidateIds: row.candidate_ids ?? [] };
 }
 
 export async function linkConsumedActivity(preparedId: string, quizId: string): Promise<void> {

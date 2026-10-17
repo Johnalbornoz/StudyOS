@@ -29,6 +29,20 @@ export interface ToClientQuestionOptions {
   optionOrder?: string[];
 }
 
+/**
+ * P2 (explanation says "option C" when the answer was A): the client labels options A, B, C...
+ * by on-screen position, so a shuffle re-letters them. When the item's own text names options
+ * by letter ("la opción C", "option B is correct"), the canonical order is kept so the labels the
+ * learner sees are the letters the explanation and the stem refer to.
+ */
+export function referencesOptionLetters(q: Pick<GeneratedQuestion, 'question' | 'explanation' | 'options'>): boolean {
+  const ids = (q.options ?? []).map((o) => o.id);
+  if (ids.length === 0 || !ids.every((id) => /^[A-E]$/.test(id))) return false;
+  const text = `${q.question ?? ''}\n${q.explanation ?? ''}`;
+  // the letter is matched case-sensitively: "the answer a student gives" names no option
+  return /(?:[Oo]pci[oó]n|[Oo]ption|[Aa]lternativa|[Ii]nciso|[Rr]espuesta|[Aa]nswer|[Cc]hoice|[Rr][ée]ponse|[Aa]ntwort|[Rr]esposta)(?:es|s)?\s+\(?[A-E]\)?(?![A-Za-z0-9])|(?:^|[\s(])\(?[A-E]\)\s/.test(text);
+}
+
 /** Strip the correct answer/order/pairing before sending a question to the client. */
 export function toClientQuestion(q: GeneratedQuestion, index: number, opts: ToClientQuestionOptions = {}) {
   let options: { id: string; text: string }[] | undefined;
@@ -40,7 +54,7 @@ export function toClientQuestion(q: GeneratedQuestion, index: number, opts: ToCl
       for (const o of q.options) if (!seen.has(o.id)) ordered.push(o);
       options = ordered;
     } else {
-      options = shuffleArray(q.options);
+      options = referencesOptionLetters(q) ? [...q.options] : shuffleArray(q.options);
     }
   }
   return {

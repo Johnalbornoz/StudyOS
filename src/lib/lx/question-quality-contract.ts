@@ -23,6 +23,7 @@ import {
   type GeneratedQuestion,
   type QuestionType,
 } from '@/services/quiz-generation.service';
+import { validateChoiceItem, type ChoiceItemFailureCode } from '@/lib/lx/choice-item-validator';
 
 export type QualityStatus = 'PASS' | 'FAIL' | 'NOT_DETERMINISTICALLY_VERIFIED';
 
@@ -44,7 +45,9 @@ export type QualityFailureCode =
   | 'VISUAL_INCONSISTENT'
   | 'VISUAL_MISSING_RENDER_DATA'
   | 'VISUAL_INACCESSIBLE'
-  | 'NUMERIC_ANSWER_MISMATCH';
+  | 'NUMERIC_ANSWER_MISMATCH'
+  // P1-03: the answer key is not the mathematically right option, or the explanation contradicts it
+  | ChoiceItemFailureCode;
 
 export interface QualityFailure {
   code: QualityFailureCode;
@@ -159,6 +162,9 @@ export function checkQuestionQualityDeterministic(
   } else if (q.answerFormat === 'single_choice' || q.answerFormat === 'multi_choice') {
     failures.push({ code: 'CORRECT_ANSWER_INCOMPATIBLE', detail: 'choice format with no options' });
   }
+
+  // CHOICE KEY (P1-03): the key must be the mathematically right option and agree with the explanation
+  for (const f of validateChoiceItem(q).failures) failures.push({ code: f.code, detail: f.detail });
 
   // VISUAL (B11 -- only line/bar + inline diagram, deterministically
   // checked; LX-8 R19 extends this with two narrow, cheap-to-check

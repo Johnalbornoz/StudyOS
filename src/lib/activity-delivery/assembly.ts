@@ -20,6 +20,7 @@ import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { selectDiverse } from '@/lib/lx/question-diversity';
 import type { DeliveryActivityType } from './contract';
 import { prioritiseOrder } from '@/lib/learn-guided/weakness-focus';
+import { isDeliverableChoiceItem } from '@/lib/lx/choice-item-validator';
 
 export interface BankCandidate {
   id: string;
@@ -64,6 +65,8 @@ export function assembleFromBank(candidates: BankCandidate[], req: AssemblyReque
     .filter((c) => !req.excludeFingerprints.has(c.contentFingerprint))
     .filter((c) => !req.reservedCandidateIds.has(c.id))
     .filter((c) => !(independent && c.delivered))
+    // P1-03: a banked item whose key is not the right option is never served (admitted before the check existed)
+    .filter((c) => isDeliverableChoiceItem(c.question))
     .map((c, i) => ({ c, i }))
     .sort(
       (a, b) =>
