@@ -212,6 +212,14 @@ export const PROMPT_REGISTRY = {
     service: 'ai.service.ts:generateQuestion',
     description: 'Older, single-question-at-a-time generator used by /api/quizzes/generate -- parallel to quiz-generation.service.ts, not yet consolidated.',
   }),
+  'learning.guided_understanding_turn': definePrompt({
+    id: 'learning.guided_understanding_turn',
+    version: 'v1',
+    capability: 'TUTOR',
+    service: 'learn-guided.service.ts:generateGuidedTurn',
+    description:
+      'LEARN (overnight 2026-10-16): one turn of the adaptive guided-understanding loop for ONE concept -- immediate feedback on the answer just graded (what was wrong, the confusion, the concept reinforced, an extra example), a learner-safe weakness phrase, an optional catalog misconception id, a close recommendation (the server enforces 4..7) and the next comprehension interaction. Never reveals the next interaction\'s answer; never decides mastery.',
+  }),
   'learning.guided_practice': definePrompt({
     id: 'learning.guided_practice',
     version: 'v1',
