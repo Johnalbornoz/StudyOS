@@ -31,12 +31,13 @@ export const CANONICAL_POLICY = {
     minItems: 2,
     maxItems: 3,
     /**
-     * 2026-10-17 pilot policy (supersedes CANON-V2 "2 of the last 3"): the decision window is the LAST 3 completed
-     * valid practices; READY_TO_PROVE needs EACH of the 3 >= 80% AND their average >= 80%. Never from one practice.
+     * Pilot policy (overnight decision 2026-10-16, supersedes "each of the last 3 >= 80"): the decision window is the
+     * LAST 3 completed valid practices; READY_TO_PROVE needs their AVERAGE >= 80% AND the LATEST practice >= 80%.
+     * The other two need not pass individually. Never from fewer than 3 practices (rolling window).
      */
     windowSize: 3,
-    requiredPassesInWindow: 3,
     minimumWindowAveragePercent: 80,
+    latestMustPass: true,
     difficulty: { min: 2, max: 4 } as DifficultyRange,
     minimumScorePercent: 80,
     independenceRequired: false,

@@ -108,14 +108,16 @@ function validateRecognitionSet(recognized: RecognizedRequirement[] | undefined)
  * >= 80% AND their average >= 80%. Read from the one policy object; named here so the decision can explain the window.
  */
 const PRACTICE_WINDOW_SIZE = CANONICAL_POLICY.practice.windowSize;
-const PRACTICE_REQUIRED_PASSES = CANONICAL_POLICY.practice.requiredPassesInWindow;
+/** Shown in the progress explanation: the window rule needs the LATEST practice to pass (1), not every one. */
+const PRACTICE_REQUIRED_PASSES = 1;
 const PRACTICE_MINIMUM_WINDOW_AVERAGE = CANONICAL_POLICY.practice.minimumWindowAveragePercent;
-/** The rolling-window rule (pure): a full window, every attempt passing, and the window average at the bar. */
+/** The rolling-window rule (pure): a full window of 3, its average at the bar, and the latest practice passing. */
 function practiceWindowSatisfied(window: readonly { scorePercent: number; passed: boolean }[]): boolean {
   const last = window.slice(-PRACTICE_WINDOW_SIZE);
   if (last.length < PRACTICE_WINDOW_SIZE) return false;
   const average = last.reduce((a, e) => a + e.scorePercent, 0) / last.length;
-  return last.filter((e) => e.passed).length >= PRACTICE_REQUIRED_PASSES && average >= PRACTICE_MINIMUM_WINDOW_AVERAGE;
+  const latestPasses = !CANONICAL_POLICY.practice.latestMustPass || last[last.length - 1].passed;
+  return average >= PRACTICE_MINIMUM_WINDOW_AVERAGE && latestPasses;
 }
 
 function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, RecognizedRequirement> | null) {
