@@ -113,9 +113,10 @@ export function assertDev(): void {
 export const FIXTURE_TARGETS: Readonly<Record<string, { dbFingerprint: string; clerkInstance: string | null }>> = {
   DEV: { dbFingerprint: DEV_FP, clerkInstance: DEV_CLERK_INSTANCE },
   // Pilot candidate DB: Neon branch pilot-candidate-20261015, db neondb_trackb_exam (env file studyos-dev/.env.neon-pilot-candidate).
-  // Its Clerk instance is the Vercel Preview scope's Development instance, which is NOT recorded in the repository:
-  // null = every run against this target REFUSES until the operator records the instance host here.
-  PILOT_CANDIDATE_20261015: { dbFingerprint: '4baac799b9bd2a6a', clerkInstance: null },
+  // Its Clerk instance is the Vercel Preview scope's Development instance, identified 2026-10-17 from the PUBLIC
+  // publishable key (pk_test_) served by the candidate deployment and by preview.studyus.pro. Production serves
+  // pk_live_ (clerk.studyus.pro). Pilot QA identities use scripts/operations/pilot-qa-roles.ts.
+  PILOT_CANDIDATE_20261015: { dbFingerprint: '4baac799b9bd2a6a', clerkInstance: 'ample-gannet-4634.clerk.accounts.dev' },
 };
 export type FixtureTarget = string;
 

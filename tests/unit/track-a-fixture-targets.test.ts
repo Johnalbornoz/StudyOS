@@ -39,10 +39,11 @@ describe('track-a fixture targets', () => {
     expect(() => assertTarget('DEV')).toThrow(/database is not DEV/);
   });
 
-  it('the candidate target refuses on another database, and refuses while its Clerk instance is not recorded', () => {
+  it('the candidate target refuses on another database; its Clerk instance is the recorded Development instance, never Production', () => {
     env('postgres://u:p@not-candidate.example/db', 'shining-impala-8101.clerk.accounts.dev');
     expect(() => assertTarget('PILOT_CANDIDATE_20261015')).toThrow(/database is not PILOT_CANDIDATE_20261015/);
-    expect(FIXTURE_TARGETS.PILOT_CANDIDATE_20261015.clerkInstance).toBeNull();
+    expect(FIXTURE_TARGETS.PILOT_CANDIDATE_20261015.clerkInstance).toBe('ample-gannet-4634.clerk.accounts.dev');
+    expect(FIXTURE_TARGETS.PILOT_CANDIDATE_20261015.clerkInstance).not.toBe('clerk.studyus.pro');
   });
 
   it('an unknown target always refuses', () => {
