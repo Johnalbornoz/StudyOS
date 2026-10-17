@@ -1603,6 +1603,11 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     if ((quizSession.quizMode as string) === LEARN_GUIDED_QUIZ_MODE) {
       return NextResponse.json({ error: 'LEARN_GUIDED_SESSION', message: 'This guided LEARN session is completed through its own path.' }, { status: 409 });
     }
+    // APPLY (2026-10-16): an adaptive transfer attempt is completed ONLY through /api/learning/apply/answer (one
+    // transferLadder evidence row on close); this path would mark it completed with nothing graded -- never.
+    if ((quizSession.quizMode as string) === 'transfer_ladder') {
+      return NextResponse.json({ error: 'TRANSFER_LADDER_SESSION', message: 'This APPLY attempt is completed through its own path.' }, { status: 409 });
+    }
     // STUDENT E2E security: a diagnosis / remediation step named by the
     // client must be the authenticated Student's own -- otherwise this
     // submit could resolve or advance another Student's record.
