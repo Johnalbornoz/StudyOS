@@ -52,6 +52,22 @@ export interface StructuredTransferCandidate {
   targetConceptIds: string[];
   contextDomain: string | null;
   generatorPromptVersion: string;
+  /**
+   * APPLY transfer ladder (transfer-ladder-v1) -- present ONLY when the
+   * caller asked for it (`options.includeModelAnswer`). A server-side
+   * reference answer for the canonical free-text grader; never sent to
+   * the learner before the attempt ends. `undefined` for every Phase 7
+   * caller (that route's prompt is byte-identical without the option).
+   */
+  modelAnswer?: string;
+}
+
+/** APPLY transfer ladder -- additive, optional generation controls. Omitted == the Phase 7 behavior, unchanged. */
+export interface StructuredTransferGenerationOptions {
+  /** Also return a concise model answer (for the canonical free-text grader). */
+  includeModelAnswer?: boolean;
+  /** Context domains / scenario labels already used earlier in the SAME attempt -- the task must use a different one. */
+  avoidContexts?: readonly string[];
 }
 
 /**
@@ -115,8 +131,11 @@ export async function generateStructuredTransferActivity(
   distance: TransferDistance,
   language: string = 'en',
   aiContext?: { studentId?: string; subjectId?: string; conceptId?: string },
+  options: StructuredTransferGenerationOptions = {},
 ): Promise<StructuredTransferCandidate> {
   const languageName = LOCALE_FULL_NAME[language] || language;
+  const includeModelAnswer = options.includeModelAnswer === true;
+  const avoidContexts = (options.avoidContexts ?? []).map((c) => c.trim()).filter((c) => c.length > 0);
   const distanceGuidance: Record<TransferDistance, string> = {
     NEAR: 'a different surface scenario with essentially the same structure as the one the student learned it in',
     MID: 'a different context that requires recognizing the same underlying principle, not just swapping surface details',
@@ -141,6 +160,17 @@ For MID your task MUST vary at least one dimension beyond CONTEXT/SURFACE. For F
 
 Output ONLY this JSON, no markdown fences, no other text:
 {"context": "a short label (3-6 words) for the new scenario, in ${languageName}", "prompt": "the actual question, in ${languageName}", "noveltyDimensions": ["..."], "contextDomain": "a 1-3 word domain/topic label in English, or null"}`;
+  // APPLY transfer ladder (additive): appended ONLY when requested, so the
+  // Phase 7 /transfer/generate prompt above stays byte-identical.
+  const ladderSuffix = [
+    avoidContexts.length > 0
+      ? `\n\nThe student has ALREADY seen tasks in these contexts in this attempt -- use a clearly DIFFERENT real-world context and contextDomain (never one of these): ${avoidContexts.join('; ')}`
+      : '',
+    includeModelAnswer
+      ? `\n\nAlso add the field "modelAnswer": a concise, correct worked answer (2-6 sentences, in ${languageName}) showing how the concept applies in this context. It is used only by the grader and is never shown to the student before they answer. Keep all other fields exactly as specified.`
+      : '',
+  ].join('');
+  const finalSystemPrompt = systemPrompt + ladderSuffix;
 
   const registered = getPrompt('transfer.activity_generation');
   const { result } = await executeAI({
@@ -152,9 +182,9 @@ Output ONLY this JSON, no markdown fences, no other text:
     promptVersion: registered.version, // v2
     context: { ...aiContext, sourceComponent: 'transfer.service.ts:generateStructuredTransferActivity' },
     call: (signal) =>
-      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 700, system: withStudentFacingPolicy(systemPrompt), user: 'Write the structured transfer task.' }, signal),
+      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: includeModelAnswer ? 1100 : 700, system: withStudentFacingPolicy(finalSystemPrompt), user: 'Write the structured transfer task.' }, signal),
     validate: (raw) =>
-      validateJson<{ context: string; prompt: string; noveltyDimensions: string[]; contextDomain: string | null }>(
+      validateJson<{ context: string; prompt: string; noveltyDimensions: string[]; contextDomain: string | null; modelAnswer?: string }>(
         { text: raw.text || '{}' },
         (parsed) => ({
           value: {
@@ -165,6 +195,9 @@ Output ONLY this JSON, no markdown fences, no other text:
               : [],
             contextDomain:
               typeof parsed.contextDomain === 'string' && parsed.contextDomain.trim().length > 0 ? parsed.contextDomain.trim() : null,
+            ...(includeModelAnswer && typeof parsed.modelAnswer === 'string' && parsed.modelAnswer.trim().length > 0
+              ? { modelAnswer: parsed.modelAnswer.trim() }
+              : {}),
           },
           errors: [],
         }),
@@ -188,6 +221,7 @@ Output ONLY this JSON, no markdown fences, no other text:
     targetConceptIds: [], // 7D2/7G2 -- server-approved cross-concept ids only
     contextDomain: result.contextDomain,
     generatorPromptVersion: registered.version,
+    ...(result.modelAnswer ? { modelAnswer: result.modelAnswer } : {}),
   };
 }
 

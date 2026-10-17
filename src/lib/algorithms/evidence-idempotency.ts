@@ -43,6 +43,10 @@ export const EVIDENCE_OPERATION_TYPES = [
   // §54), the same key that also gates the response row itself via
   // exam_attempt_item_responses.idempotency_key.
   'EXAM_SIMULATION_RESPONSE',
+  // APPLY transfer ladder (transfer-ladder-v1): ONE learning_evidence row
+  // per adaptive attempt; operationId is the server-minted ladder session
+  // id (quiz_sessions.id, quiz_mode 'transfer_ladder').
+  'TRANSFER_LADDER',
 ] as const;
 
 export type EvidenceOperationType = (typeof EVIDENCE_OPERATION_TYPES)[number];

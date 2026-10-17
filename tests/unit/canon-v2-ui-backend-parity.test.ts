@@ -109,11 +109,10 @@ describe('TRANSFER / EXECUTABLE -- UI shows the Transfer CTA, session/start laun
     expect(view.now.activityType).toBe('TRANSFER');
   });
 
-  it('backend (session/start): resolveCanonicalLaunch is READY, launch URL uses mode=canonical_transfer', () => {
+  it('backend (session/start): resolveCanonicalLaunch is READY, launch URL is the APPLY transfer ladder page (overnight 2026-10-16)', () => {
     const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
     expect(launch.launchStatus).toBe('READY');
-    expect(launch.launchTarget).toContain('mode=canonical_transfer');
-    expect(launch.launchTarget).toContain('maxQuestions=3');
+    expect(launch.launchTarget).toBe(`/dashboard/apply/${CONCEPT}?subjectId=subj1`);
   });
 });
 
@@ -293,7 +292,7 @@ describe('RETAIN second-fail rollback -- rolled back to PROVE, UI/backend agree,
 describe('TRANSFER Case A/B/C/D rollback destinations -- UI/backend both reflect whichever stage the engine actually rolled back to, never independently re-derived from the diagnostic', () => {
   it('Case A (application-context weakness) -- stays TRANSFER', () => {
     const d = decision({ stage: 'TRANSFER', actionState: 'EXECUTABLE', nextCanonicalAction: 'TRANSFER', rollback: { case: 'TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS', rolledBackTo: 'TRANSFER', reasonCodes: [] } as any, activityContract: { ...decision().activityContract!, activityType: 'TRANSFER', itemCount: { min: 3, max: 3 }, independence: true } });
-    expect(resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d }).launchTarget).toContain('mode=canonical_transfer');
+    expect(resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d }).launchTarget).toContain('/dashboard/apply/');
   });
   it('Case B (retention weakness) -- rolled back to RETAIN', () => {
     const d = decision({ stage: 'RETAIN', actionState: 'EXECUTABLE', nextCanonicalAction: 'RETENTION_CHECK', rollback: { case: 'TRANSFER_CASE_B_RETENTION_WEAKNESS', rolledBackTo: 'RETAIN', reasonCodes: [] } as any, activityContract: { ...decision().activityContract!, activityType: 'RETENTION_CHECK', itemCount: { min: 10, max: 10 }, independence: true } });

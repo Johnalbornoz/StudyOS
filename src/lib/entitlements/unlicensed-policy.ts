@@ -58,6 +58,7 @@ export const LEARNING_ROUTE_POLICY: readonly LearningRoutePolicy[] = [
   { route: 'exams/instances/[id]/retake', rule: 'PAID' },
   { route: 'exams/instances/[id]/start', rule: 'PAID' },
   { route: 'learning/session/start', rule: 'PAID' },
+  { route: 'learning/apply/start', rule: 'PAID', note: 'APPLY transfer ladder: starts or resumes an attempt (generates challenges)' },
   { route: 'quizzes/generate', rule: 'PAID' },
   { route: 'quizzes/generate-and-take', rule: 'PAID', note: 'generation; the submit branch of the same route is continuation (ownership only)' },
   { route: 'quizzes/hint', rule: 'PAID' },
@@ -89,6 +90,7 @@ export const LEARNING_ROUTE_POLICY: readonly LearningRoutePolicy[] = [
   // (c) CONTINUATION -- only ever act on an existing attempt.
   { route: 'quizzes/session/[quizId]', rule: 'CONTINUATION', note: 'reopen an existing quiz' },
   { route: 'quizzes/session/[quizId]/check', rule: 'CONTINUATION', note: 'answer inside an active, unexpired quiz session' },
+  { route: 'learning/apply/answer', rule: 'CONTINUATION', note: 'answer inside an active, unexpired APPLY attempt (serves the next challenge of the same attempt)' },
   { route: 'simulation/attempts/[id]', rule: 'CONTINUATION', note: 'reopen an existing attempt' },
   { route: 'simulation/attempts/[id]/result', rule: 'CONTINUATION', note: 'result of the same attempt' },
   { route: 'exams/attempts/[id]', rule: 'CONTINUATION' },

@@ -75,6 +75,7 @@ const FOCUS_MODE_PREFIXES = [
   '/dashboard/remediation',
   '/dashboard/cognitive/explain',
   '/dashboard/cognitive/transfer',
+  '/dashboard/apply',
   '/dashboard/assignments/practice',
   '/dashboard/exam-prep/attempt',
 ] as const;

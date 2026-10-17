@@ -196,6 +196,31 @@ export function resolveCanonicalLaunch(params: {
     return { ...base, activityType, launchStatus: 'NOT_READY', launchTarget: null, launchParams: {}, notReadyReason: readiness.reason };
   }
 
+  // APPLY (overnight 2026-10-16): canonical TRANSFER launches the adaptive transfer ladder
+  // (transfer-ladder-v1, 3..5 challenges, NEAR -> MID -> FAR) on its own page -- never the fixed
+  // 3-challenge canonical_transfer quiz. The page's server routes re-verify the fresh decision
+  // (TRANSFER + EXECUTABLE) before generating anything; this URL carries no level or mode authority.
+  if (activityType === 'TRANSFER') {
+    return { ...base, activityType, ...buildApplyLaunch(subjectId, conceptId) };
+  }
+
   const launch = buildPracticeLaunch(subjectId, conceptId, activityType, decision);
   return { ...base, activityType, ...launch };
+}
+
+/** The APPLY page for one concept. Only identifiers -- the server decides every level. */
+export function applyLaunchTarget(subjectId: string, conceptId: string): string {
+  return `/dashboard/apply/${encodeURIComponent(conceptId)}?${new URLSearchParams({ subjectId }).toString()}`;
+}
+
+function buildApplyLaunch(
+  subjectId: string,
+  conceptId: string,
+): Pick<CanonicalLearningSession, 'launchStatus' | 'launchTarget' | 'launchParams' | 'notReadyReason'> {
+  return {
+    launchStatus: 'READY',
+    launchTarget: applyLaunchTarget(subjectId, conceptId),
+    launchParams: { subjectId, conceptId, mode: 'transfer_ladder' },
+    notReadyReason: null,
+  };
 }
