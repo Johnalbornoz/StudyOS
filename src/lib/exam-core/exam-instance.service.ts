@@ -21,6 +21,7 @@
  * DELETED from any state (rules in `deleteExamInstance`). A "new attempt"
  * is always a NEW instance from zero; an instance is never reset.
  */
+import { isExamConfigExposed, isModeExposed } from './student-exposure';
 import { attachExamInstanceProvenance } from '@/lib/assessment-execution/assessment-exam.service';
 import { itemDimensionValues } from './slot-constraints';
 import { db } from '@/lib/db';
@@ -414,6 +415,11 @@ export async function createExamInstance(params: {
   // A technical / internal exam is never started as a Student exam (e.g. a retake of an old certification instance).
   if (examAudience !== 'STUDENT' && params.contentAudience !== 'TECHNICAL_DEMO') throw new ExamInstanceError('EXAM_NOT_AVAILABLE', 'technical or internal exam');
   const contentAudience = contentAudienceFor(examAudience, params.contentAudience);
+  // Pilot exposure, defence in depth (STUDENT_CATALOG_EXPOSURE=PILOT): an exam or mode hidden from Students is never
+  // started for one, whatever route asked. In-process engine scenarios (TECHNICAL_DEMO) keep the whole catalogue.
+  if (params.contentAudience !== 'TECHNICAL_DEMO' && (!isExamConfigExposed(def.exam_family, def.config_key) || !isModeExposed(def.exam_family, params.mode))) {
+    throw new ExamInstanceError('EXAM_NOT_AVAILABLE', 'not offered in this deployment (pilot exposure)');
+  }
   // A preparation the Student removed (ARCHIVED) never gets new exams.
   const prof = await db.query(`SELECT status FROM student_exam_profiles WHERE id = $1 AND student_id = $2`, [params.examProfileId, params.studentId]);
   if (!prof.rows[0]) throw new ExamInstanceError('NOT_FOUND', 'exam profile');

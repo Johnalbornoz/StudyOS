@@ -11,6 +11,7 @@ import { isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
 import { scheduleColumnsAvailable } from '@/lib/exam-journey/ux.server';
 import { discoverExamSuggestions, discoveryCountries } from '@/lib/exam-journey/discovery';
 import { examObjectives } from '@/lib/exam-core/objectives/objective-catalog';
+import { studentObjectives } from '@/lib/exam-core/student-exposure';
 import { ChooseExamButton } from '../journey/ChooseExamButton';
 
 type Step = 'country' | 'grade' | 'destination' | 'month' | 'results';
@@ -61,7 +62,7 @@ export default async function DiscoverExamPage({ searchParams }: { searchParams:
 
   let body: React.ReactNode;
   if (step === 'results') {
-    const suggestions = discoverExamSuggestions({ country: country!.value, schoolYear: grade }, examObjectives());
+    const suggestions = discoverExamSuggestions({ country: country!.value, schoolYear: grade }, studentObjectives(examObjectives()));
     const mine = await db.query(`SELECT id, objective_key FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' AND objective_key IS NOT NULL`, [studentId]);
     const existing = new Map(mine.rows.map((r: { id: string; objective_key: string }) => [r.objective_key, r.id]));
     body = (

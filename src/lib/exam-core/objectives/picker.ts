@@ -17,6 +17,7 @@ import { presentObjective } from './objective-display';
 import { allObjectiveCapabilities } from './preparation.service';
 import { objectiveStatusKey } from './capabilities';
 import { resolveStudentExamEligibility } from '../eligibility/eligibility.service';
+import { studentObjectives } from '../student-exposure';
 import type { EligibilityReason, ObjectiveEligibility } from '../eligibility/rules';
 
 /** One reason, in the Student's language and without internal mapping terms. */
@@ -51,7 +52,8 @@ export function orderFrameworks(eligibility: ObjectiveEligibility[]): ObjectiveF
 
 export async function loadPickerData(studentId: string, language: string) {
   const t = getMessages(language) as Record<string, string>;
-  const objectives = examObjectives();
+  // Pilot exposure (STUDENT_CATALOG_EXPOSURE=PILOT): hidden objectives are not offered; unset = every objective.
+  const objectives = studentObjectives(examObjectives());
   const [caps, mine, eligibility] = await Promise.all([
     allObjectiveCapabilities(language),
     db.query(`SELECT id, objective_key FROM student_exam_profiles WHERE student_id = $1 AND status <> 'ARCHIVED' AND objective_key IS NOT NULL`, [studentId]),

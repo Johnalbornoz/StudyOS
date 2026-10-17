@@ -26,7 +26,13 @@ describe('the plan is derived from the artefacts, and only from them', () => {
     expect(buildPublicationPlan(human).planHash).toBe(plan.planHash);
     expect(plan.policy).toMatchObject({ policyHash: HUMAN50_POLICY_HASH, policyId: 'HUMAN50_POLICY', version: 'V1', mayGrantScopes: ['PILOT_PREVIEW'] });
     expect(planCounts(plan)).toMatchObject({ humanDecisions: 11, cores: 10, adapters: 2, renderers: 10, blueprints: 2, applicability: 11, certifiedInstances: 326, humanCertifiedObjects: 7, automatedCertifiedObjects: 17 });
-  });
+    // The second build IS the determinism proof (it cannot be memoised away).
+    // Per-test timeout, not a global one: buildPublicationPlan is a deterministic, CPU-bound OFFLINE computation (the
+    // V5.2 plan + 12 extension batches, 2724 merged instances). Measured alone: 2.7-3.3 s
+    // per build (tsx, 3 runs); ~7 s under the full parallel unit run, hence the 5 s default timing out there. It is never on
+    // a request path: only scripts/operations/exam-bank/* (publish-certified-supply, certify-speed-strategies) build it.
+    // Same precedent as governance-decisions-saber-aice.test.ts (120000) and qf52-certification-coverage-supply.test.ts (60_000).
+  }, 60_000);
 
   it('the human decisions are exactly the eleven recorded ones, field for field', () => {
     expect(plan.humanDecisions).toHaveLength(11);
@@ -73,7 +79,9 @@ describe('the plan is derived from the artefacts, and only from them', () => {
     expect(edited.preflight.filter((p) => p.startsWith('HUMAN_CERTIFIED_WITHOUT_A_RECORDED_DECISION'))).toEqual([]);
     // a decision by someone who is not the recorded reviewer is refused outright
     expect(buildPublicationPlan({ ...human, records: human.records.map((r, n) => (n === 0 ? { ...r, record: { ...r.record, reviewerId: 'someone-else' } } : r)) }).preflight.some((p) => p.startsWith('HUMAN_DECISION_BY_ANOTHER_REVIEWER'))).toBe(true);
-  }, 60_000);
+    // Three DIFFERENT inputs, three offline plan builds (nothing to memoise): 8.1-8.4 s measured alone. The previous
+    // 60_000 was exceeded in a full parallel run at load average ~21; 120000 = governance-decisions-saber-aice.test.ts precedent.
+  }, 120_000);
 
   it('every instance is an Exam Bank item, certified by inherited deterministic certification, with complete lineage, rights and a 1-5 difficulty', () => {
     for (const p of plan.instances) {

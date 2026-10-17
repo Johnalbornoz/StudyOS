@@ -163,7 +163,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
               </div>
             }
           />
-          <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} activities={view.capabilities} focusArea={view.plan?.recommendations.find((r) => r.recommendation.action === 'PRACTICE_AREA')?.area ?? null} />
+          <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} activities={view.capabilities} focusArea={view.plan?.recommendations.find((r) => r.recommendation.action === 'PRACTICE_AREA')?.area ?? null} family={view.objective.family} />
           <ExamTargetOverview
             profileId={profile.id}
             resolution={resolution}
@@ -212,7 +212,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
             </div>
           }
         />
-        <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} activities={view.capabilities} focusArea={view.plan?.recommendations.find((r) => r.recommendation.action === 'PRACTICE_AREA')?.area ?? null} />
+        <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} activities={view.capabilities} focusArea={view.plan?.recommendations.find((r) => r.recommendation.action === 'PRACTICE_AREA')?.area ?? null} family={view.objective.family} />
         <PreparationHome
           view={view}
           labels={prepLabels}
@@ -293,7 +293,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
           </div>
         }
       />
-      <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} />
+      <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} family={definition?.examFamily ?? null} />
       <p className="ui-hint" style={{ margin: 0 }}>
         {[definition?.examFamily ? tr[`exam.family.${definition.examFamily}`] ?? definition.examFamily : null, examVersion ? (() => { const ref = studentFacingExamReference(definition?.examFamily, examVersion.versionLabel, tr); return `${ref.governed ? tr['exv2.reference.label'] : t['examPrep.version']}: ${ref.text}`; })() : null, sitting ? `${t['exam.sitting']}: ${sitting}` : null, contentStatus ? tr[`exam.contentStatus.${contentStatus}`] : null]
           .filter(Boolean)

@@ -16,6 +16,7 @@ import { PreparationChooser } from '../exam-prep/PreparationChooser';
 import { loadPickerData } from '@/lib/exam-core/objectives/picker';
 import { readinessMode } from '@/lib/exam-core/question-bank/capability-overlay.service';
 import { resolveExamLevel } from '@/lib/exam-core/catalog/structure.service';
+import { isNodeSelectableForStudent } from '@/lib/exam-core/student-exposure';
 
 /**
  * Objective first: without a deep link the page asks "¿Para qué examen quieres
@@ -46,9 +47,11 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
     : null;
   // R-1: under ENFORCE a deep link opens only a level the overlaid readiness (bank health + engine) resolves -- never a persisted row alone
   const enforce = readinessMode() === 'ENFORCE';
-  const initialNode = (enforce ? null : persisted) ?? (validNode && enforce && (await resolveExamLevel(validNode, locale).catch(() => null))
+  const resolved = (enforce ? null : persisted) ?? (validNode && enforce && (await resolveExamLevel(validNode, locale).catch(() => null))
     ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes n WHERE node_key = $1 AND status = 'ACTIVE'`, [validNode, locale])).rows[0] ?? null)
     : null);
+  // Pilot exposure (STUDENT_CATALOG_EXPOSURE=PILOT): a deep link outside the Student scope never opens the launcher (either query above).
+  const initialNode = resolved && isNodeSelectableForStudent(resolved.family, resolved.key) ? resolved : null;
   const picker = initialNode ? null : await loadPickerData(studentId, locale);
   // The AICE Diploma planner is offered only where it applies: eligible for this Student, or a plan they already have.
   const showAicePlanner = initialNode

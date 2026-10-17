@@ -8,7 +8,9 @@
  *   npx tsx --env-file=.env.local scripts/operations/track-a-fixtures.ts signin <tag>
  *   npx tsx --env-file=.env.local scripts/operations/track-a-fixtures.ts cleanup
  *
- * DEV ONLY, enforced twice: the database fingerprint must be the official
+ *   (provision / tokens / signin also accept `--target <name>` from FIXTURE_TARGETS; see assertTarget.)
+ *
+ * DEV ONLY by default, enforced twice: the database fingerprint must be the official
  * DEV one AND the Clerk keys must belong to the DEV instance
  * (shining-impala-8101, sk_test_). Identities use `+clerk_test@example.com`
  * addresses (Clerk test mode), are created through the Clerk Backend API
@@ -102,6 +104,41 @@ export function assertDev(): void {
   }
 }
 
+/**
+ * Explicit provisioning targets. DEV is the default (no flag) and its guard is `assertDev`, unchanged.
+ * A non-DEV target is accepted ONLY by `provision`, `tokens` and `signin`, ONLY with an explicit `--target <name>`,
+ * and ONLY when BOTH the database fingerprint AND the Clerk instance match the entry below (sk_test_ keys only).
+ * Every destructive command (cleanup, resets, teardowns, manual-prep, sign-up-later) stays DEV-only.
+ */
+export const FIXTURE_TARGETS: Readonly<Record<string, { dbFingerprint: string; clerkInstance: string | null }>> = {
+  DEV: { dbFingerprint: DEV_FP, clerkInstance: DEV_CLERK_INSTANCE },
+  // Pilot candidate DB: Neon branch pilot-candidate-20261015, db neondb_trackb_exam (env file studyos-dev/.env.neon-pilot-candidate).
+  // Its Clerk instance is the Vercel Preview scope's Development instance, which is NOT recorded in the repository:
+  // null = every run against this target REFUSES until the operator records the instance host here.
+  PILOT_CANDIDATE_20261015: { dbFingerprint: '4baac799b9bd2a6a', clerkInstance: null },
+};
+export type FixtureTarget = string;
+
+/** `--target <name>` / `--target=<name>`; absent = DEV. An unknown name refuses. */
+export function parseFixtureTarget(argv: readonly string[]): FixtureTarget {
+  const i = argv.findIndex((a) => a === '--target' || a.startsWith('--target='));
+  if (i < 0) return 'DEV';
+  const name = argv[i].includes('=') ? argv[i].slice('--target='.length) : argv[i + 1];
+  if (!name || !Object.prototype.hasOwnProperty.call(FIXTURE_TARGETS, name)) throw new Error(`REFUSING: unknown fixture target "${name ?? ''}" (known: ${Object.keys(FIXTURE_TARGETS).join(', ')})`);
+  return name;
+}
+
+export function assertTarget(target: FixtureTarget): void {
+  if (target === 'DEV') return assertDev();
+  const t = FIXTURE_TARGETS[target];
+  if (!t) throw new Error(`REFUSING: unknown fixture target "${target}"`);
+  if (dbFingerprint() !== t.dbFingerprint) throw new Error(`REFUSING: database is not ${target} (${dbFingerprint()})`);
+  if (!t.clerkInstance) throw new Error(`REFUSING: the Clerk instance of ${target} is not recorded in FIXTURE_TARGETS (operator decision)`);
+  if (clerkInstance() !== t.clerkInstance || !(process.env.CLERK_SECRET_KEY ?? '').startsWith('sk_test_')) {
+    throw new Error(`REFUSING: Clerk keys are not the ${target} instance (${clerkInstance()})`);
+  }
+}
+
 export const clerk = () => createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
 
 export async function findClerkUser(tag: Tag) {
@@ -134,8 +171,8 @@ async function ensureParentProfile(clerkId: string, userId: string, name: string
   return r.rows[0].id as string;
 }
 
-async function provision() {
-  assertDev();
+async function provision(target: FixtureTarget = 'DEV') {
+  assertTarget(target);
   const out: Record<string, { clerkId: string; userId: string; studentId?: string }> = {};
   for (const tag of Object.keys(IDENTITIES) as Tag[]) {
     if (SIGN_UP_LATER.has(tag)) continue;
@@ -200,7 +237,7 @@ async function provision() {
     await db.query(`INSERT INTO concept_localizations (concept_id, language, label) VALUES ($1, 'es', 'Ecuaciones lineales'), ($1, 'en', 'Linear equations')`, [conceptA]);
   }
   const canonical = await db.query(`SELECT id FROM canonical_concepts WHERE name = $1 AND status = 'ACTIVE' LIMIT 1`, [CANONICAL_CONCEPT_NAME]);
-  if (canonical.rows.length === 0) throw new Error(`catalog concept "${CANONICAL_CONCEPT_NAME}" missing in DEV`);
+  if (canonical.rows.length === 0) throw new Error(`catalog concept "${CANONICAL_CONCEPT_NAME}" missing in ${target}`);
   const mapping = await ensureCatalogMapping(conceptA);
   if (mapping.status !== 'MATCHED') await confirmMapping(mapping.id, canonical.rows[0].id, out['inst-a'].userId);
 
@@ -208,8 +245,8 @@ async function provision() {
 }
 
 /** Short-lived (10 min) Clerk session tokens for every identity -- written to a scratch file, never to the repository. */
-async function tokens(outfile: string) {
-  assertDev();
+async function tokens(outfile: string, target: FixtureTarget = 'DEV') {
+  assertTarget(target);
   const result: Record<string, string> = {};
   for (const tag of Object.keys(IDENTITIES) as Tag[]) {
     const u = await findClerkUser(tag);
@@ -520,8 +557,8 @@ export async function signUpLater(tag: Tag): Promise<string> {
 }
 
 /** A one-time sign-in ticket URL path for the browser (no password is ever used). */
-async function signin(tag: Tag) {
-  assertDev();
+async function signin(tag: Tag, target: FixtureTarget = 'DEV') {
+  assertTarget(target);
   const u = await findClerkUser(tag);
   if (!u) throw new Error(`missing Clerk identity ${tag}`);
   const t = await clerk().signInTokens.createSignInToken({ userId: u.id, expiresInSeconds: Number(process.env.TICKET_TTL_SECONDS ?? 600) });
@@ -627,8 +664,17 @@ async function cleanup() {
 }
 
 if (process.argv[1]?.endsWith('track-a-fixtures.ts')) {
-  const [cmd, arg] = process.argv.slice(2);
-  const run = cmd === 'learning-plan-teardown' ? learningPlanTeardown() : cmd === 'institution-reset' ? institutionReset() : cmd === 'teacher-reset' ? teacherReset() : cmd === 'manual-prep' ? manualPrep() : cmd === 'provision' ? provision() : cmd === 'tokens' ? tokens(arg) : cmd === 'signin' ? signin(arg as Tag) : cmd === 'cleanup' ? cleanup() : Promise.reject(new Error('usage: provision | teacher-reset | institution-reset | learning-plan-teardown | manual-prep | tokens <file> | signin <tag> | cleanup'));
+  const argv = process.argv.slice(2);
+  const ti = argv.findIndex((a) => a === '--target' || a.startsWith('--target='));
+  const positional = ti < 0 ? argv : argv.filter((_, k) => k !== ti && !(k === ti + 1 && argv[ti] === '--target'));
+  const [cmd, arg] = positional;
+  let target: FixtureTarget = 'DEV';
+  try { target = parseFixtureTarget(argv); } catch (e) { target = ''; console.error(e instanceof Error ? e.message : e); }
+  // A non-DEV target is honoured only by provision / tokens / signin; any other command with --target refuses.
+  const targeted = new Set(['provision', 'tokens', 'signin']);
+  const run = target === '' ? Promise.reject(new Error('REFUSING: invalid --target'))
+    : target !== 'DEV' && !targeted.has(cmd) ? Promise.reject(new Error(`REFUSING: ${cmd} is DEV-only (no --target)`))
+    : cmd === 'learning-plan-teardown' ? learningPlanTeardown() : cmd === 'institution-reset' ? institutionReset() : cmd === 'teacher-reset' ? teacherReset() : cmd === 'manual-prep' ? manualPrep() : cmd === 'provision' ? provision(target) : cmd === 'tokens' ? tokens(arg, target) : cmd === 'signin' ? signin(arg as Tag, target) : cmd === 'cleanup' ? cleanup() : Promise.reject(new Error('usage: provision | teacher-reset | institution-reset | learning-plan-teardown | manual-prep | tokens <file> | signin <tag> | cleanup  [--target <name>: provision / tokens / signin only]'));
   run
     .catch((e) => {
       console.error(e instanceof Error ? e.message : e);

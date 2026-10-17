@@ -7,6 +7,9 @@
  * own words (IB -> Diploma -> Group 5 -> Math AA -> HL -> papers; PISA ->
  * PISA 2022 -> Mathematics; ...). Nothing here knows a framework: unavailable
  * nodes are shown as "not available yet", never hidden and never faked.
+ * Exception, decided by the operator for the pilot: with STUDENT_CATALOG_EXPOSURE=PILOT
+ * the SERVER does not return the families / nodes / modes the pilot hides
+ * (src/lib/exam-core/student-exposure.ts); this component still renders what it gets.
  * At the exam level the Student picks papers / components and a mode, and an
  * instance is created (a Mock form is frozen on the server before start).
  */
