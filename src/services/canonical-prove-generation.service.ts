@@ -22,7 +22,8 @@ import {
   type GatedBatchInvocationDiagnostics,
 } from '@/services/gated-question-generation.service';
 import { loadProveExactNoveltyExclusions } from '@/services/prove-exact-novelty.service';
-import { filterExactDuplicates } from '@/lib/lx/exact-duplicate-novelty';
+import { filterExactDuplicates, fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
+import { servedLevelCounts } from '@/lib/pedagogical-engine/difficulty-policy';
 import { avoidanceBrief, diversityReport, leastSimilarFirst, selectDiverse, type DiversityReport } from '@/lib/lx/question-diversity';
 import { MAX_QUESTIONS_PER_CHUNK, ALL_QUESTION_TYPES, type GeneratedQuestion, type IBContext } from '@/services/quiz-generation.service';
 
@@ -39,6 +40,13 @@ export interface CanonicalProveGenerationParams {
   activityType: string;
   quizMode: string;
   parentOperationId: string;
+  /**
+   * D79 -- the PROVE level mix (10 x L3, or 7 x L3 + 3 x L4). When present, every accepted item
+   * must carry the generator's OWN reported difficulty equal to its slot's level (never
+   * relabelled); off-level items are discarded and their slots regenerated through the same
+   * bounded rounds. Short of any level count = a short result (`levelMixSupplyShortage`).
+   */
+  levelMix?: Array<{ level: number; count: number }>;
 }
 
 export interface CanonicalProveNoveltyPassResult {
@@ -84,7 +92,16 @@ export interface CanonicalProveGenerationResult {
   /** True only when the deterministic fallback had to fill with the least-similar rejected candidates. */
   diversityDegraded: boolean;
   diversity: DiversityReport;
+  /** D79 -- candidates discarded because the generator reported a level other than their slot's. */
+  levelRejectedCount: number;
+  /** D79 -- true when a level mix was requested and some level count could not be met. */
+  levelMixSupplyShortage: boolean;
+  /** D79 -- the level counts of `questions` (sorted by level). */
+  levelCounts: Array<{ level: number; count: number }>;
 }
+
+/** D79 -- a PROVE level mix whose level counts the bounded rounds could not meet (fail closed, never relabelled). */
+export const PROVE_LEVEL_MIX_SUPPLY_SHORTAGE = 'PROVE_LEVEL_MIX_SUPPLY_SHORTAGE' as const;
 
 /** At most this many targeted regeneration rounds for rejected slots. */
 export const MAX_DIVERSITY_REGENERATIONS = 2;
@@ -95,6 +112,91 @@ export const MAX_DIVERSITY_REGENERATIONS = 2;
  * genuinely unexpected error (a bug, not a generation shortfall) propagates.
  */
 export async function generateCanonicalProveQuestions(params: CanonicalProveGenerationParams): Promise<CanonicalProveGenerationResult> {
+  const mix = params.levelMix?.filter((g) => g.count > 0) ?? [];
+  if (mix.length === 0) return generateProveGroup(params, {});
+  if (mix.length === 1) {
+    const r = await generateProveGroup({ ...params, targetCount: mix[0].count, difficulty: mix[0].level }, { requireLevel: mix[0].level });
+    return { ...r, levelMixSupplyShortage: r.finalQuestionCount < mix[0].count };
+  }
+  return generateProveLevelMix(params, mix);
+}
+
+/**
+ * D79 -- a multi-level PROVE: each level group runs the certified pipeline at its own requested
+ * level in parallel; the higher-level group is then checked for exact duplicates and semantic
+ * diversity against the base group, and its lost slots get ONE more targeted group run (told what
+ * not to repeat). Exactly the mix's counts, or a short result -- never another level as filler.
+ */
+async function generateProveLevelMix(params: CanonicalProveGenerationParams, mix: Array<{ level: number; count: number }>): Promise<CanonicalProveGenerationResult> {
+  const groups = [...mix].sort((a, b) => a.level - b.level);
+  const results = await Promise.all(
+    groups.map((g) => generateProveGroup({ ...params, targetCount: g.count, difficulty: g.level }, { requireLevel: g.level })),
+  );
+  let kept: GeneratedQuestion[] = [...results[0].questions];
+  const extra: CanonicalProveGenerationResult[] = [];
+  for (let i = 1; i < groups.length; i++) {
+    const g = groups[i];
+    const exact = filterExactDuplicates(results[i].questions, new Set(kept.map((q) => fingerprintQuestion(q))));
+    let groupKept = selectDiverse(exact.accepted, kept.length + g.count, params.language, kept).kept.slice(0, g.count);
+    if (groupKept.length < g.count) {
+      const retry = await generateProveGroup(
+        { ...params, targetCount: g.count - groupKept.length, difficulty: g.level },
+        { requireLevel: g.level, keptBefore: [...kept, ...groupKept] },
+      );
+      extra.push(retry);
+      const retryExact = filterExactDuplicates(retry.questions, new Set([...kept, ...groupKept].map((q) => fingerprintQuestion(q))));
+      groupKept = groupKept.concat(selectDiverse(retryExact.accepted, kept.length + g.count, params.language, [...kept, ...groupKept]).kept.slice(0, g.count - groupKept.length));
+    }
+    kept = kept.concat(groupKept);
+  }
+  const all = [...results, ...extra];
+  const sum = (f: (r: CanonicalProveGenerationResult) => number) => all.reduce((a, r) => a + f(r), 0);
+  const targetCount = groups.reduce((a, g) => a + g.count, 0);
+  const levelCounts = servedLevelCounts(kept.map((q) => q.difficulty));
+  const levelMixSupplyShortage = groups.some((g) => (levelCounts.find((c) => c.level === g.level)?.count ?? 0) < g.count);
+  const questions = kept.slice(0, targetCount);
+  const first = results[0];
+  return {
+    questions,
+    chunkPlan: all.flatMap((r) => r.chunkPlan),
+    priorHistoryMs: Math.max(...all.map((r) => r.priorHistoryMs)),
+    noveltyFilterMs: sum((r) => r.noveltyFilterMs),
+    generationConcurrentMs: Math.max(...results.map((r) => r.generationConcurrentMs)),
+    aggregateRecoveryUsed: all.some((r) => r.aggregateRecoveryUsed),
+    aggregateRecoveryRequestedCount: all.some((r) => r.aggregateRecoveryRequestedCount != null) ? sum((r) => r.aggregateRecoveryRequestedCount ?? 0) : null,
+    aggregateRecoveryMs: all.some((r) => r.aggregateRecoveryMs != null) ? sum((r) => r.aggregateRecoveryMs ?? 0) : null,
+    initialAcceptedCount: sum((r) => r.initialAcceptedCount),
+    invocations: all.flatMap((r) => r.invocations),
+    noveltyPasses: all.flatMap((r) => r.noveltyPasses),
+    priorPracticeFingerprintCount: first.priorPracticeFingerprintCount,
+    priorProveFingerprintCount: first.priorProveFingerprintCount,
+    rejectedExactDuplicateCount: sum((r) => r.rejectedExactDuplicateCount),
+    exactNoveltySupplyShortage: questions.length < targetCount && all.some((r) => r.exactNoveltySupplyShortage),
+    diversityRejectedCount: sum((r) => r.diversityRejectedCount),
+    diversityRegenerations: sum((r) => r.diversityRegenerations),
+    diversityDegraded: all.some((r) => r.diversityDegraded),
+    diversity: diversityReport(questions, params.language),
+    levelRejectedCount: sum((r) => r.levelRejectedCount),
+    levelMixSupplyShortage,
+    levelCounts,
+    finalQuestionCount: questions.length,
+  };
+}
+
+/** The certified single-level pipeline (unchanged behaviour when `requireLevel` / `keptBefore` are absent). */
+async function generateProveGroup(
+  params: CanonicalProveGenerationParams,
+  opts: { requireLevel?: number; keptBefore?: GeneratedQuestion[] },
+): Promise<CanonicalProveGenerationResult> {
+  const keptBefore = opts.keptBefore ?? [];
+  let levelRejectedCount = 0;
+  // D79: the generator's own reported level must equal the slot's level (never relabelled)
+  const atLevel = (qs: GeneratedQuestion[]): GeneratedQuestion[] => {
+    if (opts.requireLevel === undefined) return qs;
+    const ok = qs.filter((q) => Math.round(q.difficulty) === opts.requireLevel);
+    levelRejectedCount += qs.length - ok.length;
+    return ok;
+  };
   const invocations: CanonicalProveInvocationResult[] = [];
   const noveltyPasses: CanonicalProveNoveltyPassResult[] = [];
 
@@ -122,7 +224,7 @@ export async function generateCanonicalProveQuestions(params: CanonicalProveGene
 
   let noveltyFilterMs = 0;
   const initialFilterStartedAt = Date.now();
-  const initialFiltered = filterExactDuplicates(chunked.accepted, priorFingerprints);
+  const initialFiltered = filterExactDuplicates(atLevel(chunked.accepted), new Set([...priorFingerprints, ...keptBefore.map((q) => fingerprintQuestion(q))]));
   noveltyFilterMs += Date.now() - initialFilterStartedAt;
   let accepted = initialFiltered.accepted;
   let excludeFingerprints = initialFiltered.fingerprints;
@@ -164,7 +266,7 @@ export async function generateCanonicalProveQuestions(params: CanonicalProveGene
     invocations.push({ invocationType: 'AGGREGATE_RECOVERY', chunkIndex: null, ...recovery.diagnostics });
 
     const recoveryFilterStartedAt = Date.now();
-    const recoveryFiltered = filterExactDuplicates(recovery.accepted, excludeFingerprints);
+    const recoveryFiltered = filterExactDuplicates(atLevel(recovery.accepted), excludeFingerprints);
     noveltyFilterMs += Date.now() - recoveryFilterStartedAt;
     excludeFingerprints = recoveryFiltered.fingerprints;
     rejectedExactDuplicateCount += recoveryFiltered.rejectedCount;
@@ -187,21 +289,21 @@ export async function generateCanonicalProveQuestions(params: CanonicalProveGene
   // repeat; after MAX_DIVERSITY_REGENERATIONS rounds a deterministic
   // fallback fills from the least-similar rejected candidates so the
   // contract stays exactly targetCount -- never fewer questions.
-  const firstPass = selectDiverse(accepted, params.targetCount, params.language);
+  const firstPass = selectDiverse(accepted, keptBefore.length + params.targetCount, params.language, keptBefore);
   let kept = firstPass.kept;
   const rejectedPool = firstPass.rejected.map((r) => r.item);
   let diversityRejectedCount = firstPass.rejected.length;
   let diversityRegenerations = 0;
   // D75: a slot lost to an exact prior-item rejection is regenerated through
   // the SAME bounded rounds (never filled by reusing the prior item).
-  for (let round = 0; round < MAX_DIVERSITY_REGENERATIONS && kept.length < params.targetCount && (diversityRejectedCount > 0 || rejectedExactDuplicateCount > 0); round++) {
+  for (let round = 0; round < MAX_DIVERSITY_REGENERATIONS && kept.length < params.targetCount && (diversityRejectedCount > 0 || rejectedExactDuplicateCount > 0 || levelRejectedCount > 0); round++) {
     const missing = params.targetCount - kept.length;
     diversityRegenerations++;
     const regen = await generateBoundedRecoveryBatch(params.conceptId, params.studentId, params.subjectId, {
       count: missing,
       difficulty: params.difficulty,
       types: ALL_QUESTION_TYPES,
-      guidance: `${params.guidance}\n\nDIVERSITY: this assessment already contains the questions below. Each NEW question must use a different situation and quantities, different numbers, and a different reasoning demand -- never a variation of one of these:\n${avoidanceBrief(kept, params.language)}`,
+      guidance: `${params.guidance}\n\nDIVERSITY: this assessment already contains the questions below. Each NEW question must use a different situation and quantities, different numbers, and a different reasoning demand -- never a variation of one of these:\n${avoidanceBrief([...keptBefore, ...kept], params.language)}`,
       language: params.language,
       visualAidRate: params.visualAidRate,
       ibContext: params.ibContext,
@@ -210,17 +312,17 @@ export async function generateCanonicalProveQuestions(params: CanonicalProveGene
       parentOperationId: params.parentOperationId,
     });
     invocations.push({ invocationType: 'DIVERSITY_REGENERATION', chunkIndex: null, ...regen.diagnostics });
-    const regenFiltered = filterExactDuplicates(regen.accepted, excludeFingerprints);
+    const regenFiltered = filterExactDuplicates(atLevel(regen.accepted), excludeFingerprints);
     excludeFingerprints = regenFiltered.fingerprints;
     rejectedExactDuplicateCount += regenFiltered.rejectedCount;
-    const more = selectDiverse(regenFiltered.accepted, params.targetCount, params.language, kept);
+    const more = selectDiverse(regenFiltered.accepted, keptBefore.length + params.targetCount, params.language, [...keptBefore, ...kept]);
     kept = kept.concat(more.kept);
     rejectedPool.push(...more.rejected.map((r) => r.item));
     diversityRejectedCount += more.rejected.length;
   }
   let diversityDegraded = false;
   if (kept.length < params.targetCount && rejectedPool.length > 0) {
-    kept = kept.concat(leastSimilarFirst(rejectedPool, kept, params.language).slice(0, params.targetCount - kept.length));
+    kept = kept.concat(leastSimilarFirst(rejectedPool, [...keptBefore, ...kept], params.language).slice(0, params.targetCount - kept.length));
     diversityDegraded = true;
   }
   const questions = kept.slice(0, params.targetCount);
@@ -248,6 +350,9 @@ export async function generateCanonicalProveQuestions(params: CanonicalProveGene
     diversityRegenerations,
     diversityDegraded,
     diversity,
+    levelRejectedCount,
+    levelMixSupplyShortage: false,
+    levelCounts: servedLevelCounts(questions.map((q) => q.difficulty)),
     finalQuestionCount: questions.length,
   };
 }

@@ -18,7 +18,7 @@
  */
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { selectDiverse } from '@/lib/lx/question-diversity';
-import type { DeliveryActivityType, DeliveryPracticeMix } from './contract';
+import type { DeliveryActivityType, DeliveryLevelMix, DeliveryPracticeMix } from './contract';
 import { prioritiseOrder } from '@/lib/learn-guided/weakness-focus';
 import { isDeliverableChoiceItem } from '@/lib/lx/choice-item-validator';
 
@@ -55,6 +55,11 @@ export interface AssemblyRequest {
    * replaced only by a LOWER level inside the band, never by a harder one.
    */
   practiceMix?: DeliveryPracticeMix;
+  /**
+   * D79 -- PROVE only: exact per-level counts (10 x L3, or 7 x L3 + 3 x L4). Admissible levels are
+   * exactly the mix's levels; every level count must be met (no fallback -- SHORT otherwise).
+   */
+  proveMix?: DeliveryLevelMix;
 }
 
 export type AssemblyResult =
@@ -68,7 +73,11 @@ export const isIndependentActivity = (activityType: DeliveryActivityType): boole
 const DEPTHS = ['NEAR', 'CONTEXTUAL', 'HIGHER'] as const;
 
 /** D78 -- the admissible difficulty band of a request: the contract band, narrowed to the mix's highest level for a PRACTICE mix. */
-export function admissibleBand(req: Pick<AssemblyRequest, 'activityType' | 'difficulty' | 'practiceMix'>): { min: number; max: number } {
+export function admissibleBand(req: Pick<AssemblyRequest, 'activityType' | 'difficulty' | 'practiceMix' | 'proveMix'>): { min: number; max: number } {
+  if (req.activityType === 'PROVE' && req.proveMix && req.proveMix.items.length > 0) {
+    const levels = req.proveMix.items.map((i) => i.level);
+    return { min: Math.max(req.difficulty.min, Math.min(...levels)), max: Math.min(req.difficulty.max, Math.max(...levels)) };
+  }
   if (req.activityType !== 'PRACTICE' || !req.practiceMix || req.practiceMix.items.length === 0) return { min: req.difficulty.min, max: req.difficulty.max };
   const top = Math.max(...req.practiceMix.items.map((i) => i.level));
   return { min: req.difficulty.min, max: Math.min(req.difficulty.max, top) };
@@ -113,6 +122,9 @@ export function assembleFromBank(candidates: BankCandidate[], req: AssemblyReque
   if (req.activityType === 'PRACTICE' && req.practiceMix && req.practiceMix.items.length > 0) {
     return assemblePracticeMix(ordered, req, req.practiceMix);
   }
+  if (req.activityType === 'PROVE' && req.proveMix && req.proveMix.items.length > 0) {
+    return assembleExactLevelMix(ordered, req, req.proveMix);
+  }
 
   const byQuestion = new Map(ordered.map((c) => [c.question, c]));
   const selection = selectDiverse(ordered.map((c) => c.question), req.itemCount, req.language);
@@ -155,6 +167,25 @@ function assemblePracticeMix(ordered: BankCandidate[], req: AssemblyRequest, mix
   return { status: 'ASSEMBLED', questions: kept.map((c) => c.question), candidateIds: kept.map((c) => c.id) };
 }
 
+/**
+ * D79 -- exact per-level selection for PROVE through the SAME diversity selector: the scarcer
+ * (higher) level first, each pick checked against everything already kept. No fallback: any level
+ * short means SHORT (never relabelled, never filled with another level).
+ */
+function assembleExactLevelMix(ordered: BankCandidate[], req: AssemblyRequest, mix: DeliveryLevelMix): AssemblyResult {
+  const kept: BankCandidate[] = [];
+  for (const g of [...mix.items].sort((a, b) => b.level - a.level)) {
+    const pool = ordered.filter((c) => c.difficulty === g.level);
+    const byQuestion = new Map(pool.map((c) => [c.question, c]));
+    const sel = selectDiverse(pool.map((c) => c.question), kept.length + g.count, req.language, kept.map((c) => c.question));
+    const got = sel.kept.slice(0, g.count).map((q) => byQuestion.get(q)!);
+    kept.push(...got);
+    if (got.length < g.count) return { status: 'SHORT', available: kept.length, needed: req.itemCount };
+  }
+  if (kept.length < req.itemCount) return { status: 'SHORT', available: kept.length, needed: req.itemCount };
+  return { status: 'ASSEMBLED', questions: kept.map((c) => c.question), candidateIds: kept.map((c) => c.id) };
+}
+
 /** D78 -- why a delivered Practice set differs from its planned mix (recorded on the session, never a block). */
 export type PracticeMixFallbackReason = 'PRACTICE_MIX_PLUS_ONE_UNAVAILABLE' | 'PRACTICE_MIX_BASE_FILLED_BELOW_BASE' | 'PRACTICE_MIX_LEVEL_MISMATCH';
 
@@ -190,11 +221,11 @@ export function practiceMixFallback(mix: DeliveryPracticeMix | null | undefined,
  */
 export function countValidCandidates(
   candidates: BankCandidate[],
-  req: Pick<AssemblyRequest, 'difficulty' | 'excludeFingerprints'> & Partial<Pick<AssemblyRequest, 'activityType' | 'practiceMix'>>,
+  req: Pick<AssemblyRequest, 'difficulty' | 'excludeFingerprints'> & Partial<Pick<AssemblyRequest, 'activityType' | 'practiceMix' | 'proveMix'>>,
 ): number {
   const seen = new Set<string>();
-  // D78: a PRACTICE mix narrows the band to its admissible levels (never above base+1)
-  const band = req.activityType ? admissibleBand({ activityType: req.activityType, difficulty: req.difficulty, practiceMix: req.practiceMix }) : req.difficulty;
+  // D78/D79: a PRACTICE / PROVE mix narrows the band to its admissible levels
+  const band = req.activityType ? admissibleBand({ activityType: req.activityType, difficulty: req.difficulty, practiceMix: req.practiceMix, proveMix: req.proveMix }) : req.difficulty;
   for (const c of candidates) {
     if (c.difficulty < band.min || c.difficulty > band.max) continue;
     if (req.excludeFingerprints.has(c.contentFingerprint)) continue;

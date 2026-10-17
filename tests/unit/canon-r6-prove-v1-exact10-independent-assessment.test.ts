@@ -251,7 +251,8 @@ describe('8 -- fewer than 10 is rejected, never silently administered as v1 Prov
     // D75 (approved): the generic shortfall keeps V1_PROVE_GENERATION_INCOMPLETE; a shortfall caused by exact
     // prior-item rejections reports PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE. Both guards (JSON body, observability
     // summary, toCanonicalErrorCode) read the ONE resolved `proveReasonCode`.
-    expect(ROUTE_SRC).toMatch(/let proveReasonCode: 'V1_PROVE_GENERATION_INCOMPLETE' \| typeof PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE = 'V1_PROVE_GENERATION_INCOMPLETE';/);
+    // D79 (approved): a level-mix shortfall reports PROVE_LEVEL_MIX_SUPPLY_SHORTAGE through the same ONE `proveReasonCode`.
+    expect(ROUTE_SRC).toMatch(/let proveReasonCode: 'V1_PROVE_GENERATION_INCOMPLETE' \| typeof PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE \| typeof PROVE_LEVEL_MIX_SUPPLY_SHORTAGE = 'V1_PROVE_GENERATION_INCOMPLETE';/);
     expect((ROUTE_SRC.match(/reason: proveReasonCode,/g) ?? []).length).toBe(2);
     expect((ROUTE_SRC.match(/emitCanonicalProveSummary\('INCOMPLETE', questions\.length, proveReasonCode\)/g) ?? []).length).toBe(2);
     expect((ROUTE_SRC.match(/toCanonicalErrorCode\(proveReasonCode\)/g) ?? []).length).toBe(2);

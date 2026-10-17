@@ -14,7 +14,7 @@
  * was chosen, never just what it is.
  */
 import { CANONICAL_POLICY } from './policy';
-import type { DifficultyReasonCode, PracticeExposure, PracticeMix, RawEvidenceItem } from './types';
+import type { DifficultyReasonCode, PracticeExposure, PracticeMix, ProveMix, RawEvidenceItem } from './types';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -114,13 +114,19 @@ export function plannedPlusOneItems(mix: Pick<PracticeMix, 'baseLevel' | 'items'
 }
 
 /** D78 -- the exposure a Practice session ACTUALLY carried, from its served item levels and binary correctness. */
-export function computePracticeExposure(baseLevel: number, items: ReadonlyArray<{ difficulty: number; correct: boolean }>): PracticeExposure {
+export function computePracticeExposure(
+  baseLevel: number,
+  items: ReadonlyArray<{ difficulty: number; correct: boolean }>,
+  /** D79/D80 -- whether the session recorded a practiceMixFallback; omitted = not recorded (pre-D79 callers). */
+  mixFallback?: boolean,
+): PracticeExposure {
   const plusOne = items.filter((i) => Math.round(i.difficulty) === baseLevel + 1);
   return {
     baseLevel,
     plusOneItems: plusOne.length,
     plusOneLevel: plusOne.length > 0 ? baseLevel + 1 : null,
     plusOneCorrect: plusOne.filter((i) => i.correct).length,
+    ...(mixFallback !== undefined ? { mixFallback } : {}),
   };
 }
 
@@ -186,6 +192,51 @@ export function resolveProveDifficulty(highestQualifyingPracticeDifficulty: numb
       ? policy.difficulty.min
       : clamp(highestQualifyingPracticeDifficulty, policy.difficulty.min, policy.difficulty.max);
   return { target, reasonCode: 'PROVE_DIFFICULTY_FROM_QUALIFYING_PRACTICE' };
+}
+
+/**
+ * D79 (operator decision 2026-10-17) -- PROVE level mix.
+ *  - Without qualifying advanced Practice evidence: 10 items at level 3.
+ *  - With it: 7 at level 3 + 3 at level 4 (PROVE_ADVANCED_LEVEL4_COUNT).
+ * Qualifying advanced Practice evidence = at least ONE completed Practice session whose recorded
+ * exposure shows: base 3, score >= 80, the SERVED base+1 item at level 4, every such item answered
+ * correct (binary), no practiceMixFallback (D80: a fallback never counts), and -- as for every
+ * qualifying Practice -- no critical misconception. A row without the D79 `mixFallback` flag
+ * (D78-only) never qualifies: the absence of a fallback cannot be proven.
+ * The persistent Practice base stays capped at 3; PROVE's `difficulty.target` stays 3.
+ */
+export const PROVE_ADVANCED_LEVEL4_COUNT = 3;
+export const PROVE_BASE_LEVEL = 3;
+export const PROVE_ADVANCED_LEVEL = 4;
+
+export function isAdvancedPracticeEvidence(item: RawEvidenceItem): boolean {
+  const x = item.practiceExposure;
+  if (item.activityType !== 'PRACTICE' || !x) return false;
+  if (item.hasCriticalMisconception) return false;
+  if (item.scorePercent < CANONICAL_POLICY.practice.minimumScorePercent) return false;
+  if (x.mixFallback !== false) return false;
+  return x.baseLevel === PROVE_BASE_LEVEL && x.plusOneLevel === PROVE_ADVANCED_LEVEL && x.plusOneItems > 0 && x.plusOneCorrect === x.plusOneItems;
+}
+
+export interface ProveLevelMixResolution extends DifficultyResolution {
+  mix: ProveMix;
+}
+
+export function resolveProveLevelMix(practiceItemsInOrder: RawEvidenceItem[]): ProveLevelMixResolution {
+  const n = CANONICAL_POLICY.prove.itemCount;
+  const qualifying = practiceItemsInOrder.find(isAdvancedPracticeEvidence) ?? null;
+  const reasonCode: DifficultyReasonCode = qualifying ? 'PROVE_LEVEL_MIX_ADVANCED_PRACTICE_EVIDENCE' : 'PROVE_LEVEL_MIX_BASE';
+  const items = qualifying
+    ? [{ level: PROVE_BASE_LEVEL, count: n - PROVE_ADVANCED_LEVEL4_COUNT }, { level: PROVE_ADVANCED_LEVEL, count: PROVE_ADVANCED_LEVEL4_COUNT }]
+    : [{ level: PROVE_BASE_LEVEL, count: n }];
+  return { target: PROVE_BASE_LEVEL, reasonCode, mix: { items, reasonCode, qualifyingEvidenceId: qualifying?.id ?? null } };
+}
+
+/** D79 -- the level counts actually served (sorted by level). */
+export function servedLevelCounts(difficulties: ReadonlyArray<number>): Array<{ level: number; count: number }> {
+  const m = new Map<number, number>();
+  for (const d of difficulties) m.set(Math.round(d), (m.get(Math.round(d)) ?? 0) + 1);
+  return [...m.entries()].sort((a, b) => a[0] - b[0]).map(([level, count]) => ({ level, count }));
 }
 
 /**

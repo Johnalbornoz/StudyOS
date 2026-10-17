@@ -339,7 +339,9 @@ describe('CANON-R2R1 Part 31 -- Practice difficulty tests (17-26)', () => {
 });
 
 describe('CANON-R2R1 Part 32 -- Prove/Retention/Transfer difficulty tests (27-34)', () => {
-  it('27. Prove target is derived from the highest qualifying Practice difficulty', () => {
+  it('27. (D79, 2026-10-17) Prove target stays 3; legacy D4 Practice is not advanced evidence -> 10 x L3', () => {
+    // Superseded: the target is no longer derived from the highest qualifying Practice difficulty.
+    // The level-4 share comes ONLY from the PROVE level mix (resolveProveLevelMix).
     const decision = evaluateCanonicalLearningState(
       baseInput({
         evidence: [
@@ -349,8 +351,9 @@ describe('CANON-R2R1 Part 32 -- Prove/Retention/Transfer difficulty tests (27-34
       }),
     );
     expect(decision.currentStage).toBe('PROVE');
-    expect(decision.activityContract?.difficulty.target).toBe(4);
-    expect(decision.activityContract?.difficulty.reasonCode).toBe('PROVE_DIFFICULTY_FROM_QUALIFYING_PRACTICE');
+    expect(decision.activityContract?.difficulty.target).toBe(3);
+    expect(decision.activityContract?.difficulty.reasonCode).toBe('PROVE_LEVEL_MIX_BASE');
+    expect(decision.activityContract?.proveMix?.items).toEqual([{ level: 3, count: 10 }]);
   });
 
   it('28. Prove target is never below 3, even from a D2 qualifying Practice', () => {

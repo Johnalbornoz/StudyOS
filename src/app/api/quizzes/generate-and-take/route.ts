@@ -84,6 +84,7 @@ import {
 } from '@/services/gated-question-generation.service';
 import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } from '@/services/canonical-prove-generation.service';
 import { PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE } from '@/services/prove-exact-novelty.service';
+import { PROVE_LEVEL_MIX_SUPPLY_SHORTAGE } from '@/services/canonical-prove-generation.service';
 import { generateCanonicalRetainQuestions, type CanonicalRetainGenerationResult } from '@/services/canonical-retain-generation.service';
 import { generateCanonicalTransferChallenges, type CanonicalTransferGenerationResult } from '@/services/canonical-transfer-generation.service';
 import { gradeCanonicalTransferAttempt } from '@/lib/lx/canonical-transfer-grading';
@@ -100,7 +101,7 @@ import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contr
 import { gradeQuizAnswer } from '@/lib/quiz/grade-question';
 import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
 import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/difficulty-contract';
-import { computePracticeExposure } from '@/lib/pedagogical-engine/difficulty-policy';
+import { computePracticeExposure, servedLevelCounts } from '@/lib/pedagogical-engine/difficulty-policy';
 import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/evidence-sufficiency-contract';
 import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
@@ -1009,6 +1010,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
               independence: v1Marker!.independence,
               supportLevel: v1Marker!.supportLevel,
               minimumScorePercent: v1Marker!.minimumScorePercent,
+              // D79: a prepared batch for another level mix is incompatible
+              ...(v1Marker!.proveMix ? { proveMix: { items: v1Marker!.proveMix.items } } : {}),
             };
 
             const preparedLookupStartedAt = Date.now();
@@ -1073,6 +1076,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
               activityType: activityTypeForQuizMode(validated.quizMode),
               quizMode: validated.quizMode,
               parentOperationId,
+              // D79: the PROVE level mix (10 x L3 / 7 x L3 + 3 x L4), by the generator's own reported levels
+              ...(v1Marker!.proveMix ? { levelMix: v1Marker!.proveMix.items } : {}),
             });
             proveGenerationResult = proveGen;
             return [proveGen.questions];
@@ -1338,10 +1343,13 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     let canonicalGenerationErrorCode: CanonicalErrorCode | null = null;
     // D75: a canonical_prove shortfall caused by exact prior-item (Practice / Prove) rejections is
     // reported explicitly -- an exact prior Prove item is never reused to fill the set.
-    let proveReasonCode: 'V1_PROVE_GENERATION_INCOMPLETE' | typeof PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE = 'V1_PROVE_GENERATION_INCOMPLETE';
+    // D79: a level mix whose level counts could not be met is reported as PROVE_LEVEL_MIX_SUPPLY_SHORTAGE --
+    // never silently served at another level (no relabelling, no all-L3 substitute for a qualifying learner).
+    let proveReasonCode: 'V1_PROVE_GENERATION_INCOMPLETE' | typeof PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE | typeof PROVE_LEVEL_MIX_SUPPLY_SHORTAGE = 'V1_PROVE_GENERATION_INCOMPLETE';
     if (validated.quizMode === 'canonical_prove' && proveGenerationResult !== null && questions.length < maxQuestions) {
       const proveShortageCheck: CanonicalProveGenerationResult = proveGenerationResult;
       if (proveShortageCheck.exactNoveltySupplyShortage) proveReasonCode = PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE;
+      else if (proveShortageCheck.levelMixSupplyShortage) proveReasonCode = PROVE_LEVEL_MIX_SUPPLY_SHORTAGE;
     }
     if (questions.length < maxQuestions) {
       try {
@@ -2260,7 +2268,19 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
                     practiceExposure: computePracticeExposure(
                       quizSession.v1Marker!.practiceMix.baseLevel,
                       bucket.questionDifficulties.map((difficulty, i) => ({ difficulty, correct: bucket.questionCorrect[i] === true })),
+                      // D79/D80: the session's own practiceMixFallback record (a fallback is never advanced evidence)
+                      !!quizSession.v1Marker!.practiceMixFallback,
                     ),
+                  }
+                : {}),
+              // D79 -- a PROVE built for a level mix records the level counts it ACTUALLY served, next to the planned mix.
+              ...(isAuthorizedConcept && quizSession.v1Marker!.proveMix
+                ? {
+                    proveLevelMix: {
+                      planned: quizSession.v1Marker!.proveMix.items,
+                      served: servedLevelCounts(bucket.questionDifficulties),
+                      reasonCode: quizSession.v1Marker!.proveMix.reasonCode,
+                    },
                   }
                 : {}),
               // CANON-V2-ARCH-CLEANUP Section 9/10/11 -- the REAL,

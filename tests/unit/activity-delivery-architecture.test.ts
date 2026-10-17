@@ -413,7 +413,8 @@ describe('9. bank depth is measured in assemblable sets, never raw counts', () =
   });
 
   it('the worker and the benchmark warm-up use the same depth measure', () => {
-    expect(read('src/services/activity-delivery-worker.service.ts')).toMatch(/countSpareSets\(\{ studentId: p\.studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds\(p\.studentId, p\.conceptId\), maxSets: SPARE_ASSEMBLABLE_SETS \}\)/);
+    // D79: the worker measures spare sets on `supplyContract` (= the contract, or its all-level-3 form for a mixed PROVE)
+    expect(read('src/services/activity-delivery-worker.service.ts')).toMatch(/countSpareSets\(\{ studentId: p\.studentId, contract: supplyContract, academic, reservedCandidateIds: await reservedCandidateIds\(p\.studentId, p\.conceptId\), maxSets: SPARE_ASSEMBLABLE_SETS \}\)/);
     expect(read('scripts/bench-activity-delivery.ts')).toMatch(/countSpareSets\(/);
     expect(read('src/services/question-bank.service.ts')).not.toMatch(/countUndeliveredCandidates/);
   });

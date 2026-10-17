@@ -21,7 +21,7 @@
 import { randomUUID, createHash } from 'crypto';
 import { db } from '@/lib/db';
 import { runWithAiMetrics } from '@/lib/ai/request-metrics';
-import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } from '@/services/canonical-prove-generation.service';
+import { generateCanonicalProveQuestions, PROVE_LEVEL_MIX_SUPPLY_SHORTAGE, type CanonicalProveGenerationResult } from '@/services/canonical-prove-generation.service';
 import { loadProveExactNoveltyExclusions, PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE } from '@/services/prove-exact-novelty.service';
 import { filterExactDuplicates } from '@/lib/lx/exact-duplicate-novelty';
 import { isDeliverableChoiceItem } from '@/lib/lx/choice-item-validator';
@@ -64,6 +64,8 @@ export interface PreparedActivityContractSnapshot {
   independence: boolean;
   supportLevel: 'ASSISTED' | 'NONE';
   minimumScorePercent: number;
+  /** D79 -- the PROVE level mix the batch must satisfy (absent on pre-D79 rows -> incompatible with a mixed contract). */
+  proveMix?: { items: Array<{ level: number; count: number }> } | null;
 }
 
 export interface CanonicalPreparedActivityRow {
@@ -273,11 +275,17 @@ async function prepareCanonicalProveActivityUnscoped(params: PrepareCanonicalPro
       activityType: 'SOLO_CHECK',
       quizMode: 'canonical_prove',
       parentOperationId: insertedId,
+      ...(contract.proveMix ? { levelMix: contract.proveMix.items } : {}),
     });
 
     if (result.finalQuestionCount < contract.itemCount.authorized) {
       // D75: a shortfall caused by exact prior-item rejections is reported as such -- never padded with a prior item.
-      const reason = result.exactNoveltySupplyShortage ? PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE : 'GENERATION_INCOMPLETE';
+      // D79: a level-mix shortfall likewise (never relabelled).
+      const reason = result.exactNoveltySupplyShortage
+        ? PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE
+        : result.levelMixSupplyShortage
+          ? PROVE_LEVEL_MIX_SUPPLY_SHORTAGE
+          : 'GENERATION_INCOMPLETE';
       await db.query(
         `UPDATE canonical_prepared_activity SET status = 'FAILED', failure_reason = $2 WHERE id = $1`,
         [insertedId, reason]
@@ -362,6 +370,9 @@ export async function findActivePreparedActivity(
  * the fresh decision (journeyProgressPercent, reasonCodes, etc.) is
  * irrelevant to Prove compatibility and is never compared.
  */
+const levelMixKey = (m: PreparedActivityContractSnapshot['proveMix']): string =>
+  m ? [...m.items].sort((a, b) => a.level - b.level).map((i) => `${i.level}x${i.count}`).join(',') : '';
+
 export function isPreparedActivityContractCompatible(
   prepared: PreparedActivityContractSnapshot,
   current: PreparedActivityContractSnapshot
@@ -376,7 +387,9 @@ export function isPreparedActivityContractCompatible(
     prepared.difficulty.max === current.difficulty.max &&
     prepared.independence === current.independence &&
     prepared.supportLevel === current.supportLevel &&
-    prepared.minimumScorePercent === current.minimumScorePercent
+    prepared.minimumScorePercent === current.minimumScorePercent &&
+    // D79: a batch prepared for another PROVE level mix is never served
+    levelMixKey(prepared.proveMix) === levelMixKey(current.proveMix)
   );
 }
 
