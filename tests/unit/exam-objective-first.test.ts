@@ -31,7 +31,9 @@ describe('objective catalogue: every governed exam objective is selectable', () 
     expect(by('CIE_AS_A')).toHaveLength(88); // + the Cambridge system's own 9709 AS (Paper 1 pilot)
     expect(new Set(by('CIE_AS_A').map((o) => o.context.syllabusCode)).size).toBe(49);
     expect(by('IB_DP').length).toBeGreaterThan(50);
-    expect(list.length).toBe(by('IB_DP').length + 88 + 2 + 4);
+    // IGCSE: 0580 Core / Extended + (FD Cambridge) 0510 Speaking Endorsement + 0610 Core / Extended
+    expect(by('CIE_IGCSE').map((o) => o.key).sort()).toEqual(['cie.igcse.0510.speaking-endorsement', 'cie.igcse.0580.core', 'cie.igcse.0580.extended', 'cie.igcse.0610.core', 'cie.igcse.0610.extended']);
+    expect(list.length).toBe(by('IB_DP').length + 88 + 5 + 4);
   });
   it('IB: subject -> SL / HL; TOK and EE are objectives; CAS (not examined) is not', () => {
     expect(objectiveByKey('ib.dp.physics.hl')?.context.subject).toBe('Physics');

@@ -70,9 +70,10 @@ describe('Global Perspectives is project / report preparation', () => {
 });
 
 describe('the school route: SCHOOL_CONFIRMATION_REQUIRED, never chosen by probability', () => {
-  it('José Max León is unresolved on every blocker; no supply is allowed', () => {
+  it('José Max León: ESL decided by the operator (§13); every other blocker unresolved; no supply is allowed', () => {
     const r = resolveCheckpointVariant(JOSE_MAX_LEON_CHECKPOINT_ROUTE);
-    expect(r).toEqual({ status: 'SCHOOL_CONFIRMATION_REQUIRED', blockers: ['PRIMARY_CHECKPOINT_GRADE', 'LOWER_CHECKPOINT_GRADE', 'ENGLISH_FRAMEWORK', 'SUBJECTS_TAKEN', 'FRAMEWORK_CODES'] });
+    expect(JOSE_MAX_LEON_CHECKPOINT_ROUTE.englishFramework).toBe('ESL');
+    expect(r).toEqual({ status: 'SCHOOL_CONFIRMATION_REQUIRED', blockers: ['PRIMARY_CHECKPOINT_GRADE', 'LOWER_CHECKPOINT_GRADE', 'SUBJECTS_TAKEN', 'FRAMEWORK_CODES'] });
     for (const o of CHECKPOINT_SUBJECT_OPTIONS) expect(checkpointSupplyAllowed(JOSE_MAX_LEON_CHECKPOINT_ROUTE, o.level, o.subject).allowed).toBe(false);
     expect(checkpointCapabilityState(JOSE_MAX_LEON_CHECKPOINT_ROUTE)).toMatchObject({ primary: 'STRUCTURE_ONLY', lower: 'STRUCTURE_ONLY' });
   });

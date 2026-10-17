@@ -229,6 +229,23 @@ export const ASSESSMENT_CATALOG: CatalogFamily[] = [
               },
             ],
           },
+          // FD Cambridge (operator-named codes, §13-15). Catalogue-only: the syllabus VERSION is not governed in StudyUs
+          // yet, so no version, no papers and no binding are stated (nothing is inferred). See cambridge/school-subject-map.ts.
+          {
+            key: 'cie.igcse.0510', type: 'SUBJECT', label: 'English as a Second Language (0510)', syllabusCode: '0510',
+            description: 'ESL with the Speaking Endorsement route (0510; never converted to 0511). Syllabus version not governed yet.',
+            children: [
+              info('cie.igcse.0510.speaking-endorsement', 'VARIANT', 'Speaking Endorsement', { labels: { es: 'Speaking Endorsement (certificación oral)' } }),
+            ],
+          },
+          {
+            key: 'cie.igcse.0610', type: 'SUBJECT', label: 'Biology (0610)', syllabusCode: '0610',
+            description: 'Core and Extended tiers. Syllabus version not governed yet.',
+            children: [
+              info('cie.igcse.0610.core', 'VARIANT', 'Core'),
+              info('cie.igcse.0610.extended', 'VARIANT', 'Extended'),
+            ],
+          },
         ],
       },
       // Cambridge International AS & A Level, as the CAMBRIDGE system's own qualification (pilot: 9709 Paper 1). Not the

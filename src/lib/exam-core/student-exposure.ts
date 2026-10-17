@@ -45,6 +45,10 @@ export const SCHOOL_CONFIRMATION_REQUIRED = 'SCHOOL_CONFIRMATION_REQUIRED' as co
 export const PILOT_CAMBRIDGE_VISIBLE_NODE_KEYS: readonly string[] = [
   'cie.asal.cambridge.9709.as', // pending school confirmation (SCHOOL_CONFIRMATION_REQUIRED)
   'cie.aice.g1.9709.as', // pending school confirmation (SCHOOL_CONFIRMATION_REQUIRED)
+  // FD Cambridge §14 (operator): IGCSE 0580 Core AND Extended are pilot school subjects. Created only through the
+  // Cambridge flow (frozen target); a Learning / preparation target -- practice and mocks only where readiness says so.
+  'cie.igcse.0580.core',
+  'cie.igcse.0580.extended',
 ];
 
 /** Modes not offered in the pilot, per family. Challenge is unfinished for IB and Cambridge (AICE included). */

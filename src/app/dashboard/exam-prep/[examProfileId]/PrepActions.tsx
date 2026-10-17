@@ -149,11 +149,19 @@ export function GoalDetailsForm({ profileId, initial, session, areas, labels: l 
     e.preventDefault();
     setState('busy');
     const timing = session ? { examSession: examSession || null } : { examDate: examDate || null };
-    const r = await fetch(`/api/exam-preparation/${profileId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...timing, targetInstitutionName: institution.trim() || null, interestArea: area || null, interestAreaDetail: area === 'OTHER' ? areaDetail.trim() || null : null }),
-    }).catch(() => null);
+    const rest = { targetInstitutionName: institution.trim() || null, interestArea: area || null, interestAreaDetail: area === 'OTHER' ? areaDetail.trim() || null : null };
+    const patch = (body: Record<string, unknown>) => fetch(`/api/exam-preparation/${profileId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
+    let r = await patch({ ...timing, ...rest });
+    // FD Cambridge §18: a frozen Cambridge series changes only through the explicit, audited series change.
+    if (r?.status === 409 && (await r.clone().json().catch(() => null))?.error === 'SERIES_CHANGE_FLOW_REQUIRED') {
+      const m = /^ES:([A-Z_]+):(\d{4})$/.exec(examSession);
+      if (!m || !window.confirm(l['prep.cambridge.seriesChange.confirm'] ?? 'Cambiar la convocatoria conserva tu progreso y tu evidencia, actualiza el objetivo y recalcula el calendario. ¿Confirmas el cambio?')) {
+        setState('idle');
+        return;
+      }
+      const changed = await fetch(`/api/exam-preparation/${profileId}/series`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ examSeries: m[1], examYear: Number(m[2]), confirm: true }) }).catch(() => null);
+      r = changed?.ok ? await patch(rest) : changed;
+    }
     setState(r?.ok ? 'saved' : 'error');
     if (r?.ok) router.refresh();
   }

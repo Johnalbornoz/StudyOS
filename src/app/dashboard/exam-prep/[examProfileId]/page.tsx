@@ -34,6 +34,8 @@ import { parseDeliveryPolicy } from '@/lib/exam-core/delivery-policy';
 import { after } from 'next/server';
 import { isStudentJourneyShadowEnabled, isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
 import { examSessionLabel, examSessionOptions, objectiveSessionModel, storedExamSession } from '@/lib/exam-core/objectives/objective-session';
+import { parseFreeze, seriesChangeOptions, seriesLabel } from '@/lib/exam-core/cambridge/creation-flow';
+import { cambridgeFlowContext } from '@/lib/exam-core/cambridge/creation.service';
 import { presentObjective } from '@/lib/exam-core/objectives/objective-display';
 import { studentCountryOfStudy } from '@/lib/exam-core/objectives/preparation.service';
 import { timeContextKey } from '@/lib/student/time-context';
@@ -194,8 +196,18 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
     // T1 final delta (C): governed sessions (IB, Cambridge) come from the canonical session catalogue; other exams keep a date.
     const sessionModel = objectiveSessionModel(view.objective, await studentCountryOfStudy(studentId));
     const storedSession = storedExamSession(profile);
+    // FD Cambridge §18: a frozen Cambridge target offers only the governed series it may move to (audited change).
+    const frozen = parseFreeze(profile.objectiveContext?.cambridgeFreeze);
+    const frozenOptions = frozen
+      ? seriesChangeOptions(frozen, await cambridgeFlowContext(studentId))
+          .filter((o) => o.versionGoverned || (o.examSeries === frozen.examSeries && o.examYear === frozen.examYear))
+          .map((o) => ({ key: `ES:${o.examSeries}:${o.examYear}`, label: seriesLabel(o.examSeries, o.examYear, locale) }))
+      : null;
+    if (frozen && frozenOptions && !frozenOptions.some((o) => o.key === `ES:${frozen.examSeries}:${frozen.examYear}`)) frozenOptions.unshift({ key: `ES:${frozen.examSeries}:${frozen.examYear}`, label: seriesLabel(frozen.examSeries, frozen.examYear, locale) });
     const timing = {
-      session: sessionModel ? { options: examSessionOptions(sessionModel, new Date(), storedSession, locale), value: storedSession ? timeContextKey(storedSession) : null } : null,
+      session: frozen && frozenOptions
+        ? { options: frozenOptions, value: `ES:${frozen.examSeries}:${frozen.examYear}` }
+        : sessionModel ? { options: examSessionOptions(sessionModel, new Date(), storedSession, locale), value: storedSession ? timeContextKey(storedSession) : null } : null,
       sessionLabel: sessionModel && storedSession ? examSessionLabel(storedSession, locale) : null,
       dateLine: sessionModel && !profile.examDate ? null : dateLine,
     };

@@ -1,0 +1,66 @@
+/**
+ * FD Cambridge -- interface text of the creation flow and the series change (es / en; other locales read en).
+ * Kept with the flow so the shared message catalogue is not touched by this workstream.
+ */
+const ES = {
+  title: 'Preparación Cambridge',
+  lead: 'Elige programa, materia, nivel, año y convocatoria. StudyUs resuelve el código y la versión del syllabus por ti.',
+  'step.PROGRAMME': 'Programa o cualificación',
+  'step.SUBJECT': 'Materia',
+  'step.TIER': 'Nivel (tier)',
+  'step.EXAM_YEAR': 'Año del examen',
+  'step.EXAM_SERIES': 'Convocatoria',
+  choose: 'Elige…',
+  'tier.CORE': 'Core',
+  'tier.EXTENDED': 'Extended',
+  'year.versionNotGoverned': 'versión del syllabus no gobernada aún',
+  'syllabus.resolved': 'Syllabus',
+  'syllabus.choose': 'Hay más de un syllabus válido: elige cuál vas a presentar',
+  create: 'Crear preparación',
+  creating: 'Creando…',
+  error: 'No pudimos crear la preparación. Inténtalo de nuevo.',
+  'blocked.title': 'No disponible todavía',
+  'blocker.NO_GOVERNED_CODE': 'StudyUs no tiene aún un código de syllabus gobernado para esta materia.',
+  'blocker.VERSION_NOT_GOVERNED': 'La versión del syllabus para este año no está gobernada en StudyUs todavía.',
+  'blocker.NOT_IN_CATALOGUE': 'Esta materia aún no está en el catálogo de StudyUs.',
+  'blocker.SCHOOL_CONFIRMATION_REQUIRED': 'Falta la confirmación del colegio (grado y materias del Checkpoint).',
+  'blocker.NOT_EXPOSED': 'No se ofrece en el piloto.',
+  'supply.notReady': 'La práctica de examen aún no está disponible para esta preparación: la oferta de preguntas no está lista. Puedes crearla como objetivo de aprendizaje.',
+  'format.project': 'Global Perspectives se prepara como proyecto / informe, nunca como simulacro de opción múltiple.',
+  'route.SPEAKING_ENDORSEMENT': 'Speaking Endorsement',
+  'series.change.confirm': 'Cambiar la convocatoria conserva tu progreso y tu evidencia, actualiza el objetivo y recalcula el calendario. ¿Confirmas el cambio?',
+  'series.change.error': 'No se pudo cambiar la convocatoria.',
+};
+const EN: Record<keyof typeof ES, string> = {
+  title: 'Cambridge preparation',
+  lead: 'Choose programme, subject, tier, year and series. StudyUs resolves the syllabus code and version for you.',
+  'step.PROGRAMME': 'Programme or qualification',
+  'step.SUBJECT': 'Subject',
+  'step.TIER': 'Tier',
+  'step.EXAM_YEAR': 'Exam year',
+  'step.EXAM_SERIES': 'Exam series',
+  choose: 'Choose…',
+  'tier.CORE': 'Core',
+  'tier.EXTENDED': 'Extended',
+  'year.versionNotGoverned': 'syllabus version not governed yet',
+  'syllabus.resolved': 'Syllabus',
+  'syllabus.choose': 'More than one valid syllabus: choose the one you will sit',
+  create: 'Create preparation',
+  creating: 'Creating…',
+  error: 'We could not create the preparation. Please try again.',
+  'blocked.title': 'Not available yet',
+  'blocker.NO_GOVERNED_CODE': 'StudyUs has no governed syllabus code for this subject yet.',
+  'blocker.VERSION_NOT_GOVERNED': 'The syllabus version for this year is not governed in StudyUs yet.',
+  'blocker.NOT_IN_CATALOGUE': 'This subject is not in the StudyUs catalogue yet.',
+  'blocker.SCHOOL_CONFIRMATION_REQUIRED': 'The school has not confirmed the Checkpoint grade and subjects yet.',
+  'blocker.NOT_EXPOSED': 'Not offered in the pilot.',
+  'supply.notReady': 'Exam practice is not available for this preparation yet: question supply is not ready. You can create it as a learning target.',
+  'format.project': 'Global Perspectives is prepared as a project / report, never as a multiple-choice mock.',
+  'route.SPEAKING_ENDORSEMENT': 'Speaking Endorsement',
+  'series.change.confirm': 'Changing the series keeps your progress and evidence, updates the target and recomputes the calendar. Confirm the change?',
+  'series.change.error': 'The series could not be changed.',
+};
+export type CambridgeFlowLabels = typeof ES;
+export function cambridgeFlowLabels(locale: string): CambridgeFlowLabels {
+  return locale === 'es' ? ES : EN;
+}
