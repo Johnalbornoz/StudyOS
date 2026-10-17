@@ -1092,6 +1092,7 @@ export type MessageKey =
   | 'examPrep.run.status.MISSING'
   | 'examPrep.run.integrity'
   // P1-2: an EXAM_PRACTICE attempt is never presented with mock copy
+  | 'exam.checkpoint.disclosure' | 'exam.checkpoint.gp.disclosure'
   | 'examPrep.attempt.title.practice' | 'examPrep.attempt.complete.practice' | 'examPrep.run.handIn.practice' | 'examPrep.run.integrity.practice' | 'examPrep.result.title.practice'
   | 'examPrep.run.answerRecorded'
   | 'examPrep.run.invalidAnswer'
@@ -3409,6 +3410,8 @@ const es: Messages = {
   'examPrep.run.status.SKIPPED': 'Omitida',
   'examPrep.run.status.MISSING': 'Sin respuesta',
   'examPrep.run.integrity': 'Simulacro en curso: el Tutor no está disponible hasta que lo entregues o lo abandones.',
+  'exam.checkpoint.disclosure': 'Preparación StudyUs para Cambridge Checkpoint: contenido original de StudyUs. No es un examen oficial de Cambridge, no usa sus criterios de corrección y tu resultado no es un puntaje Checkpoint (0–50).',
+  'exam.checkpoint.gp.disclosure': 'Preparación StudyUs para el proyecto de Global Perspectives: planificación, investigación y redacción con retroalimentación formativa de StudyUs. No es una corrección oficial de Cambridge.',
   'examPrep.attempt.title.practice': 'Práctica de examen', 'examPrep.attempt.complete.practice': 'Práctica completada', 'examPrep.run.handIn.practice': 'Entregar práctica',
   'examPrep.run.integrity.practice': 'Práctica en curso: el Tutor no está disponible hasta que la entregues o la abandones.', 'examPrep.result.title.practice': 'Resultado de la práctica',
   'examPrep.run.answerRecorded': 'Respuesta registrada.',
@@ -5725,6 +5728,8 @@ const en: Messages = {
   'examPrep.run.status.SKIPPED': 'Skipped',
   'examPrep.run.status.MISSING': 'No answer',
   'examPrep.run.integrity': 'Simulation in progress: the Tutor is unavailable until you hand it in or leave it.',
+  'exam.checkpoint.disclosure': 'StudyUs preparation for Cambridge Checkpoint: original StudyUs content. It is not an official Cambridge test, does not use Cambridge marking criteria, and your result is not a Checkpoint score (0–50).',
+  'exam.checkpoint.gp.disclosure': 'StudyUs preparation for the Global Perspectives project: planning, research and writing with formative StudyUs feedback. It is not official Cambridge marking.',
   'examPrep.attempt.title.practice': 'Exam practice', 'examPrep.attempt.complete.practice': 'Practice complete', 'examPrep.run.handIn.practice': 'Hand in practice',
   'examPrep.run.integrity.practice': 'Practice in progress: the Tutor is unavailable until you hand it in or leave it.', 'examPrep.result.title.practice': 'Practice result',
   'examPrep.run.answerRecorded': 'Answer recorded.',
@@ -8041,6 +8046,8 @@ const de: Messages = {
   'examPrep.run.status.SKIPPED': 'Übersprungen',
   'examPrep.run.status.MISSING': 'Keine Antwort',
   'examPrep.run.integrity': 'Simulation läuft: Der Tutor ist erst nach Abgabe oder Abbruch wieder verfügbar.',
+  'exam.checkpoint.disclosure': 'StudyUs-Vorbereitung auf Cambridge Checkpoint: Originalinhalte von StudyUs. Kein offizieller Cambridge-Test, keine Cambridge-Bewertungskriterien, und dein Ergebnis ist keine Checkpoint-Punktzahl (0–50).',
+  'exam.checkpoint.gp.disclosure': 'StudyUs-Vorbereitung auf das Global-Perspectives-Projekt: Planung, Recherche und Schreiben mit formativem StudyUs-Feedback. Keine offizielle Cambridge-Bewertung.',
   'examPrep.attempt.title.practice': 'Prüfungsübung', 'examPrep.attempt.complete.practice': 'Übung abgeschlossen', 'examPrep.run.handIn.practice': 'Übung abgeben',
   'examPrep.run.integrity.practice': 'Übung läuft: Der Tutor ist erst nach Abgabe oder Abbruch wieder verfügbar.', 'examPrep.result.title.practice': 'Ergebnis der Übung',
   'examPrep.run.answerRecorded': 'Antwort gespeichert.',
@@ -10357,6 +10364,8 @@ const fr: Messages = {
   'examPrep.run.status.SKIPPED': 'Ignorée',
   'examPrep.run.status.MISSING': 'Pas de réponse',
   'examPrep.run.integrity': 'Simulation en cours : le Tuteur est indisponible jusqu\'à ta remise ou ton abandon.',
+  'exam.checkpoint.disclosure': 'Préparation StudyUs au Cambridge Checkpoint : contenu original de StudyUs. Ce n\'est pas une épreuve officielle de Cambridge, elle n\'utilise pas ses critères de correction et ton résultat n\'est pas un score Checkpoint (0–50).',
+  'exam.checkpoint.gp.disclosure': 'Préparation StudyUs au projet Global Perspectives : planification, recherche et rédaction avec un retour formatif de StudyUs. Ce n\'est pas une correction officielle de Cambridge.',
   'examPrep.attempt.title.practice': 'Entraînement à l\'examen', 'examPrep.attempt.complete.practice': 'Entraînement terminé', 'examPrep.run.handIn.practice': 'Remettre l\'entraînement',
   'examPrep.run.integrity.practice': 'Entraînement en cours : le Tuteur est indisponible jusqu\'à ta remise ou ton abandon.', 'examPrep.result.title.practice': 'Résultat de l\'entraînement',
   'examPrep.run.answerRecorded': 'Réponse enregistrée.',
@@ -12673,6 +12682,8 @@ const pt: Messages = {
   'examPrep.run.status.SKIPPED': 'Ignorada',
   'examPrep.run.status.MISSING': 'Sem resposta',
   'examPrep.run.integrity': 'Simulado em andamento: o Tutor fica indisponível até você entregar ou abandonar.',
+  'exam.checkpoint.disclosure': 'Preparação StudyUs para o Cambridge Checkpoint: conteúdo original da StudyUs. Não é uma prova oficial da Cambridge, não usa os critérios de correção da Cambridge e seu resultado não é uma pontuação Checkpoint (0–50).',
+  'exam.checkpoint.gp.disclosure': 'Preparação StudyUs para o projeto de Global Perspectives: planejamento, pesquisa e escrita com feedback formativo da StudyUs. Não é uma correção oficial da Cambridge.',
   'examPrep.attempt.title.practice': 'Prática de exame', 'examPrep.attempt.complete.practice': 'Prática concluída', 'examPrep.run.handIn.practice': 'Entregar prática',
   'examPrep.run.integrity.practice': 'Prática em andamento: o Tutor fica indisponível até você entregar ou abandonar.', 'examPrep.result.title.practice': 'Resultado da prática',
   'examPrep.run.answerRecorded': 'Resposta registrada.',
