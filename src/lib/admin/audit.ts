@@ -52,12 +52,14 @@ export type AdminAuditAction =
   // L10 SF-7 -- a platform administrator ended a parent-learner relationship.
   | 'PARENT_RELATIONSHIP_ENDED'
   // P1-03 -- a governed operator script quarantined Learning content that fails item validation.
-  | 'LEARNING_ITEM_QUARANTINED';
+  | 'LEARNING_ITEM_QUARANTINED'
+  // Pilot QA -- scripts/operations/pilot-qa-retain-time.ts moved a synthetic QA student's concept evidence back in time.
+  | 'PILOT_QA_RETAIN_TIME_SHIFT';
 
 export interface RecordAdminActionInput {
   actorUserId: string;
   action: AdminAuditAction;
-  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING' | 'QUESTION_BANK_ITEM_VERSION' | 'PARENT_RELATIONSHIP' | 'QUESTION_BANK_CANDIDATE' | 'PREPARED_ACTIVITY' | 'QUIZ_SESSION';
+  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING' | 'QUESTION_BANK_ITEM_VERSION' | 'PARENT_RELATIONSHIP' | 'QUESTION_BANK_CANDIDATE' | 'PREPARED_ACTIVITY' | 'QUIZ_SESSION' | 'LEARNING_EVIDENCE';
   targetId?: string | null;
   previousState?: unknown;
   newState?: unknown;
