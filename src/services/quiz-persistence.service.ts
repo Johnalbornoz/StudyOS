@@ -347,6 +347,41 @@ export async function loadPriorPracticeQuestionFingerprints(studentId: string, c
 }
 
 /**
+ * D75 -- PROVE EXACT-ITEM NOVELTY: the REAL question text of every prior
+ * v1 Prove attempt (`canonical_prove`) for this exact (student, concept)
+ * pair, as the SAME exact-novelty fingerprints Practice uses
+ * (exact-duplicate-novelty.ts -- normalized exact text only, never
+ * paraphrase / semantic detection). A Prove retry must never re-administer
+ * one of these exact items. A Prove session is single-concept (the SQL
+ * already scopes it), so an item without its own `conceptId` belongs to
+ * the session's concept.
+ */
+export async function loadPriorProveQuestionFingerprints(studentId: string, conceptId: string): Promise<Set<string>> {
+  const result = await db.query(
+    `
+    SELECT questions
+    FROM quiz_sessions
+    WHERE student_id = $1
+      AND quiz_mode = 'canonical_prove'
+      AND pedagogical_policy_version IS NOT NULL
+      AND $2::uuid = ANY(concept_ids)
+    `,
+    [studentId, conceptId]
+  );
+
+  const fingerprints = new Set<string>();
+  for (const row of result?.rows ?? []) {
+    const questions: GeneratedQuestion[] = row.questions || [];
+    for (const question of questions) {
+      if ((question.conceptId ?? conceptId) === conceptId && typeof question.question === 'string') {
+        fingerprints.add(fingerprintQuestion(question));
+      }
+    }
+  }
+  return fingerprints;
+}
+
+/**
  * CANON-V2-ARCH-CLEANUP -- the REAL, previously-administered question
  * text this (student, concept) pair has already seen across every
  * canonical activity RETAIN's own "novel" requirement must be checked

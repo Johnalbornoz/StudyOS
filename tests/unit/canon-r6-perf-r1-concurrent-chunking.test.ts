@@ -227,18 +227,19 @@ describe('13 -- recovery survivors that duplicate an already-accepted (or prior-
 // 5/8/9/10/19/22 -- route-level wiring (source audit)
 // ============================================================
 describe('5 -- prior Practice history is loaded ONCE per request, never per chunk', () => {
-  it('loadPriorPracticeQuestionFingerprints appears exactly once inside the shared generation service (CANON-R6-PERF-R2 moved the whole novelty+recovery orchestration out of route.ts)', () => {
-    const occurrences = (GENERATION_SERVICE_SRC.match(/loadPriorPracticeQuestionFingerprints\(/g) ?? []).length;
+  it('the prior-history exclusion set (D75: exact Practice + Prove items, loadProveExactNoveltyExclusions) is loaded exactly once inside the shared generation service (CANON-R6-PERF-R2 moved the whole novelty+recovery orchestration out of route.ts)', () => {
+    const occurrences = (GENERATION_SERVICE_SRC.match(/loadProveExactNoveltyExclusions\(/g) ?? []).length;
     expect(occurrences).toBe(1);
     // called AFTER the concurrent chunk round, not once per chunk --
     // the chunk generation itself never references it.
     const chunkIdx = GENERATION_SERVICE_SRC.indexOf('const chunked = await generateConcurrentChunkedBatch(');
-    const loadIdx = GENERATION_SERVICE_SRC.indexOf('loadPriorPracticeQuestionFingerprints(');
+    const loadIdx = GENERATION_SERVICE_SRC.indexOf('loadProveExactNoveltyExclusions(');
     expect(loadIdx).toBeGreaterThan(chunkIdx);
   });
 
   it('route.ts itself no longer references loadPriorPracticeQuestionFingerprints directly -- it delegates entirely to the shared service (cold path) or to revalidatePreparedActivity (cache-hit path, CANON-R6-PERF-R2)', () => {
     expect(ROUTE_SRC).not.toMatch(/loadPriorPracticeQuestionFingerprints/);
+    expect(ROUTE_SRC).not.toMatch(/loadProveExactNoveltyExclusions/);
   });
 });
 

@@ -45,7 +45,7 @@ vi.mock('@/services/activity-inventory.service', () => ({
   linkConsumedActivity: (...a: any[]) => h.link(...a),
   reservedCandidateIds: (...a: any[]) => h.reserved(...a),
 }));
-vi.mock('@/services/activity-assembly.service', () => ({ assembleActivityForLearner: (...a: any[]) => h.assemble(...a) }));
+vi.mock('@/services/activity-assembly.service', () => ({ assembleActivityForLearner: (...a: any[]) => h.assemble(...a), countValidBankDepth: async () => 9 }));
 vi.mock('@/services/question-bank.service', () => ({ recordBankDeliveries: (...a: any[]) => h.deliveries(...a), addValidatedCandidates: (...a: any[]) => h.addCandidates(...a) }));
 vi.mock('@/services/activity-delivery-worker.service', () => ({ scheduleDeliveryReplenishment: (...a: any[]) => h.schedule(...a) }));
 vi.mock('@/lib/ai', async (orig) => ({ ...(await orig<typeof import('@/lib/ai')>()), executeAI: (...a: any[]) => h.executeAI(...a) }));
@@ -306,8 +306,8 @@ describe('6. schema (migration 20261016_1000_activity_delivery)', () => {
 
 describe('7. bank pool selection (regression: an exhausted-oldest bank must not look empty)', () => {
   const BANK = read('src/services/question-bank.service.ts');
-  it('the bounded pool loads never-delivered, least-used, newest candidates first', () => {
-    expect(BANK).toMatch(/ORDER BY pool\.delivered, pool\.usage_count, pool\.created_at DESC\s*\n\s*LIMIT \$7/);
+  it('the bounded pool loads never-delivered, least-recently-delivered (D76), least-used, newest candidates first', () => {
+    expect(BANK).toMatch(/ORDER BY pool\.delivered, pool\.last_delivered_at NULLS FIRST, pool\.usage_count, pool\.created_at DESC\s*\n\s*LIMIT \$7/);
     expect(BANK).not.toMatch(/ORDER BY c\.created_at\s*\n\s*LIMIT/);
   });
   it('independent checks do not load delivered candidates at all', () => {
@@ -330,7 +330,7 @@ describe('8. background worker throughput', () => {
     expect(bankChunks(-4, 10)).toEqual([]);
     const W = read('src/services/activity-delivery-worker.service.ts');
     // generation already in flight is subtracted, so repeated triggers never over-generate
-    expect(W).toMatch(/const missing = \(SPARE_ASSEMBLABLE_SETS - spareSets\) \* contract\.itemCount - inFlight;/);
+    expect(W).toMatch(/\? \(SPARE_ASSEMBLABLE_SETS - spareSets\) \* contract\.itemCount - inFlight\s*\n\s*: depthTarget - validDepth - inFlight;/);
     expect(W).toMatch(/enqueueGenerationJob\('BANK_REPLENISH', `\$\{key\}:c\$\{i\}`/);
     expect(read('src/services/generation-queue.service.ts')).toMatch(/kind = 'BANK_REPLENISH' AND status IN \('PENDING', 'RUNNING'\) AND left\(dedup_key, length\(\$1\)\) = \$1/);
   });
@@ -434,7 +434,7 @@ describe('10. a READY activity never holds a candidate a concurrent launch deliv
     const INV = read('src/services/activity-inventory.service.ts');
     expect(INV).toMatch(/WHEN \$6::boolean AND EXISTS \(\s*SELECT 1 FROM question_bank_deliveries d WHERE d\.student_id = \$1 AND d\.candidate_id = ANY\(candidate_ids\)\s*\) THEN 'CANDIDATE_DELIVERED'/);
     expect(INV).toMatch(/current\.independent && row\.has_delivered === true\s*\n\s*\? \{ compatible: false, reason: 'CANDIDATE_DELIVERED' \}/);
-    expect(read('src/services/activity-delivery.service.ts')).toMatch(/independent: isIndependentActivity\(input\.activityType\) \}/);
+    expect(read('src/services/activity-delivery.service.ts')).toMatch(/independent: isIndependentActivity\(input\.activityType\),/);
   });
 
   it('the hot path passes independence to consumption', async () => {

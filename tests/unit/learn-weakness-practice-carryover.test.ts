@@ -134,7 +134,7 @@ const PROVE_INPUT: any = {
 };
 
 const provenanceWrites = () =>
-  h.queries.filter((q) => q.sql.startsWith('UPDATE quiz_sessions SET canonical_activity_contract = canonical_activity_contract ||')).map((q) => ({ quizId: q.params[0], provenance: JSON.parse(q.params[1]) }));
+  h.queries.filter((q) => q.sql.startsWith('UPDATE quiz_sessions SET canonical_activity_contract = canonical_activity_contract ||') && q.sql.includes("'learnWeaknessProvenance'")).map((q) => ({ quizId: q.params[0], provenance: JSON.parse(q.params[1]) }));
 const evidenceReads = () => h.queries.filter((q) => /FROM learning_evidence WHERE student_id = \$1 AND concept_id = \$2 AND source_type = \$3/.test(q.sql));
 
 beforeEach(() => {

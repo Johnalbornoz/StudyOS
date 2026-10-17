@@ -29,7 +29,9 @@ import { shuffleArray } from '@/lib/quiz/client-question';
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import {
   activityContractFingerprint,
+  bankDepthTarget,
   learnerStateFingerprint,
+  PRACTICE_BANK_DEPTH_INSUFFICIENT,
   STAGE_FOR_ACTIVITY,
   type AcademicContext,
   type ActivityContract,
@@ -45,6 +47,7 @@ import { addValidatedCandidates, recordBankDeliveries } from '@/services/questio
 import { computeAskConfidenceFlags } from '@/services/ask-confidence.service';
 import { acquireLaunchLock, launchLockKey, type LaunchLock } from '@/services/activity-launch-lock.service';
 import { getLearnWeaknessesForConcept, recordLearnWeaknessProvenance } from '@/services/learn-weakness.service';
+import { loadProveExactNoveltyExclusions } from '@/services/prove-exact-novelty.service';
 import { buildLearnWeaknessProvenance, matchLearnFocusItems, type LearnWeaknessProvenance } from '@/lib/learn-guided/weakness-focus';
 
 export { launchLockId, type LaunchLock } from '@/services/activity-launch-lock.service';
@@ -83,6 +86,26 @@ export type DeliveryResult =
     }
   | { status: 'EMERGENCY_REQUIRED'; lock: LaunchLock; timings: LaunchTimings; bank: { available: number; needed: number } };
 
+/** D76 -- what a session delivered below the governed bank depth records (controlled reuse; replenishment runs asynchronously). */
+export interface BankDepthShortfall {
+  reason: typeof PRACTICE_BANK_DEPTH_INSUFFICIENT;
+  validItems: number;
+  target: number;
+}
+
+async function recordBankDepthShortfall(quizId: string, shortfall: BankDepthShortfall): Promise<void> {
+  try {
+    await db.query(
+      `UPDATE quiz_sessions SET canonical_activity_contract = canonical_activity_contract || jsonb_build_object('bankDepth', $2::jsonb)
+        WHERE id = $1 AND canonical_activity_contract IS NOT NULL`,
+      [quizId, JSON.stringify(shortfall)],
+    );
+    console.warn('[activity-launch] PRACTICE_BANK_DEPTH_INSUFFICIENT', JSON.stringify({ quizId, validItems: shortfall.validItems, target: shortfall.target }));
+  } catch (err) {
+    console.error('[activity-launch] bank depth record failed', err);
+  }
+}
+
 /** Creates the session for a delivered set (same persistence as every session) and records its provenance. */
 async function openSession(
   input: DeliveryInput,
@@ -92,6 +115,7 @@ async function openSession(
   askConfidence: boolean,
   consumedPreparedId: string | null,
   learnWeaknessProvenance: LearnWeaknessProvenance | null = null,
+  bankDepthShortfall: BankDepthShortfall | null = null,
 ): Promise<{ quizId: string; questions: GeneratedQuestion[] }> {
   const ordered = shuffleArray(questions.map((q) => ({ ...q, conceptId: q.conceptId ?? input.conceptId })));
   if (ordered.length > 0 && askConfidence) ordered[0] = { ...ordered[0], askConfidence: true };
@@ -108,6 +132,8 @@ async function openSession(
     consumedPreparedId ? linkConsumedActivity(consumedPreparedId, quizId) : Promise.resolve(),
     learnWeaknessProvenance ? recordLearnWeaknessProvenance(quizId, learnWeaknessProvenance) : Promise.resolve(),
   ]);
+  // after the provenance write (both merge into canonical_activity_contract)
+  if (bankDepthShortfall) await recordBankDepthShortfall(quizId, bankDepthShortfall);
   return { quizId, questions: ordered };
 }
 
@@ -159,7 +185,8 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
     // 1. an equivalent open session is THE session (double click, refresh, back to the concept).
     //    Independent reads run in the same round trip.
     t = Date.now();
-    const [resumed, snapshot, askFlags, reserved, learnFocus] = await Promise.all([
+    const depthTarget = bankDepthTarget(input.activityType);
+    const [resumed, snapshot, askFlags, reserved, learnFocus, proveExclusions] = await Promise.all([
       findResumableCanonicalSession({
         studentId: input.studentId,
         conceptId: input.conceptId,
@@ -178,6 +205,8 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
       computeAskConfidenceFlags(input.studentId, [input.conceptId], input.quizMode),
       reservedCandidateIds(input.studentId, input.conceptId),
       input.activityType === 'PRACTICE' ? getLearnWeaknessesForConcept(input.studentId, input.conceptId) : Promise.resolve(null),
+      // D75: a PROVE READY set is re-checked against the current exact Practice + Prove history
+      input.activityType === 'PROVE' ? loadProveExactNoveltyExclusions(input.studentId, input.conceptId) : Promise.resolve(null),
     ]);
     timings.resumeMs = Date.now() - t;
     if (resumed) return { status: 'DELIVERED', source: 'RESUMED', quizId: resumed.quizId, questions: resumed.questions, timings };
@@ -186,12 +215,21 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
     const learnerFp = learnerStateFingerprint(snapshot);
     const stage = STAGE_FOR_ACTIVITY[input.activityType];
     const askConfidence = askFlags.get(input.conceptId) === true;
+    // D76: below the governed depth the delivery still proceeds (controlled reuse) and says so on the session.
+    // The depth is the one measured where the bank was read: at READY preparation (INVENTORY) or by this assembly (BANK).
+    const depthShortfall = (validDepth: number | null | undefined): BankDepthShortfall | null =>
+      depthTarget !== null && typeof validDepth === 'number' && validDepth < depthTarget
+        ? { reason: PRACTICE_BANK_DEPTH_INSUFFICIENT, validItems: validDepth, target: depthTarget }
+        : null;
 
     // 2. a compatible READY prepared activity, consumed atomically (one statement)
     t = Date.now();
     const consumed = await consumeCompatibleInventory(
       { studentId: input.studentId, conceptId: input.conceptId, stage, policyVersion: input.v1Marker.pedagogicalPolicyVersion },
-      { contractFingerprint, learnerStateFingerprint: learnerFp, independent: isIndependentActivity(input.activityType) },
+      {
+        contractFingerprint, learnerStateFingerprint: learnerFp, independent: isIndependentActivity(input.activityType),
+        ...(proveExclusions ? { excludeFingerprints: proveExclusions.fingerprints } : {}),
+      },
     );
     timings.inventoryMs = Date.now() - t;
     if (consumed && consumed.questions.length === input.contract.itemCount) {
@@ -205,7 +243,7 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
             matchLearnFocusItems(consumed.questions.map((q, i) => ({ id: aligned ? consumed.candidateIds[i] : q.id, question: q })), learnFocus),
           )
         : null;
-      const session = await openSession(input, consumed.questions, 'INVENTORY', consumed.candidateIds, askConfidence, consumed.id, provenance);
+      const session = await openSession(input, consumed.questions, 'INVENTORY', consumed.candidateIds, askConfidence, consumed.id, provenance, depthShortfall(consumed.bankDepth?.validItems));
       timings.sessionMs = Date.now() - t;
       return { status: 'DELIVERED', source: 'INVENTORY', ...session, timings, ...(provenance ? { learnWeaknessProvenance: provenance } : {}) };
     }
@@ -220,7 +258,7 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
     if (assembly.status === 'ASSEMBLED') {
       t = Date.now();
       const provenance = assembly.learnFocus ? buildLearnWeaknessProvenance(assembly.learnFocus.focus, 'BANK_PRIORITY', assembly.learnFocus.matchedCandidateIds) : null;
-      const session = await openSession(input, assembly.questions, 'BANK', assembly.candidateIds, askConfidence, null, provenance);
+      const session = await openSession(input, assembly.questions, 'BANK', assembly.candidateIds, askConfidence, null, provenance, depthShortfall(assembly.validDepth));
       timings.sessionMs = Date.now() - t;
       return { status: 'DELIVERED', source: 'BANK', ...session, timings, ...(provenance ? { learnWeaknessProvenance: provenance } : {}) };
     }

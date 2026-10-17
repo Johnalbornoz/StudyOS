@@ -72,6 +72,9 @@ const LEGACY_TO_CANONICAL: Record<string, CanonicalErrorCode> = {
   V1_RETAIN_GENERATION_INCOMPLETE: 'AI_GENERATION_FAILED',
   V1_TRANSFER_GENERATION_INCOMPLETE: 'AI_GENERATION_FAILED',
   GENERATION_FAILED: 'AI_GENERATION_FAILED',
+  // D75: candidates came back, but exact-novelty filtering (prior Practice +
+  // prior Prove items) left too few after every bounded regeneration round.
+  PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE: 'AI_GENERATION_INVALID',
 
   // Contract mismatch -- the administered activity didn't match its own
   // authorized contract (item count, difficulty, independence).

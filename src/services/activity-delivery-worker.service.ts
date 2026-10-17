@@ -8,7 +8,8 @@
  *   -> assemble READY activities from the bank up to the policy target
  *   (PRACTICE 2, everything else 1; a Prove READY is a complete 10) ->
  *   keep SPARE_ASSEMBLABLE_SETS complete sets assemblable from the bank
- *   beyond them (queue BANK_REPLENISH chunks for what is missing); if the
+ *   beyond them -- PRACTICE: BANK_DEPTH_TARGET (9) distinct valid items
+ *   instead, D76 -- (queue BANK_REPLENISH chunks for what is missing); if the
  *   bank is short, also a follow-up preparation.
  *
  * BANK_REPLENISH (learner, concept, activity type, language, academic)
@@ -27,6 +28,7 @@ import {
   academicContextFingerprint,
   activityContractFingerprint,
   bankChunks,
+  bankDepthTarget,
   SPARE_ASSEMBLABLE_SETS,
   DELIVERY_QUIZ_MODES,
   inventoryTarget,
@@ -41,7 +43,7 @@ import type { QuizMode } from '@/services/quiz-persistence.service';
 import { enqueueGenerationJob, openBankSupply, runGenerationWorker, type GenerationJob, type JobHandler } from '@/services/generation-queue.service';
 import { loadAcademicContext, loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { reconcileInventory, reservedCandidateIds, retireAllInventory, storeReadyActivity } from '@/services/activity-inventory.service';
-import { assembleActivityForLearner, countSpareSets } from '@/services/activity-assembly.service';
+import { assembleActivityForLearner, countSpareSets, countValidBankDepth } from '@/services/activity-assembly.service';
 import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
 import { withLaunchLock } from '@/services/activity-launch-lock.service';
 import { dispatchDeliveryWorker } from '@/services/worker-dispatch.service';
@@ -111,6 +113,10 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
   // read while a launch is delivering from it, so a READY activity can never
   // hold a candidate that a concurrent launch just delivered.
   const target = inventoryTarget(activityType);
+  // D76: the governed depth (PRACTICE = 9 distinct valid items) is measured once, before preparing
+  const depthTarget = bankDepthTarget(activityType);
+  const validDepth = depthTarget === null ? null : await countValidBankDepth({ studentId: p.studentId, contract, academic });
+  const bankDepth = depthTarget !== null && validDepth !== null ? { validItems: validDepth, target: depthTarget } : null;
   const { prepared, bankShort } = await withLaunchLock({ studentId: p.studentId, conceptId: p.conceptId, quizMode: next.quizMode }, async () => {
     let stored = 0;
     for (let slot = 0; slot < target && readyCompatible + stored < target; slot++) {
@@ -120,7 +126,7 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
       if (
         await storeReadyActivity({
           identity, canonicalRevision: next.canonicalRevision, contract, contractFingerprint, learnerStateFingerprint: learnerFp,
-          slot, questions: assembly.questions, candidateIds: assembly.candidateIds,
+          slot, questions: assembly.questions, candidateIds: assembly.candidateIds, bankDepth,
         })
       ) stored++;
     }
@@ -132,12 +138,21 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
   // inventory (real assembly: novelty + diversity); what is missing, after
   // the generation already in flight, is requested as parallel chunks of at
   // most one generator batch each.
+  //
+  // D76: an activity with a governed DEPTH target (PRACTICE = 9 distinct valid
+  // items, contract.ts BANK_DEPTH_TARGET) replenishes toward that target
+  // instead -- below it the missing candidates are requested through this
+  // same BANK_REPLENISH path; at or above it nothing is requested unless an
+  // assembly actually came up short.
   const key = bankKey(contract);
   const [spareSets, inFlight] = await Promise.all([
     countSpareSets({ studentId: p.studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds(p.studentId, p.conceptId), maxSets: SPARE_ASSEMBLABLE_SETS }),
     openBankSupply(key),
   ]);
-  const missing = (SPARE_ASSEMBLABLE_SETS - spareSets) * contract.itemCount - inFlight;
+  const missing =
+    depthTarget === null || validDepth === null
+      ? (SPARE_ASSEMBLABLE_SETS - spareSets) * contract.itemCount - inFlight
+      : depthTarget - validDepth - inFlight;
   const needed = bankShort ? Math.max(missing, contract.itemCount - inFlight) : missing;
   const chunks = bankChunks(needed, BATCH_CAP[activityType]);
   for (let i = 0; i < chunks.length; i++) {
@@ -148,7 +163,10 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
   if (bankShort) {
     await enqueueGenerationJob('PREPARE_INVENTORY', `prepare:${p.studentId}:${p.conceptId}:followup`, { ...p }, { delayMs: FOLLOW_UP_DELAY_MS });
   }
-  return { ok: true, result: { activityType, prepared, readyCompatible, bankShort, spareSets, inFlight, bankJobs: chunks.length } };
+  return {
+    ok: true,
+    result: { activityType, prepared, readyCompatible, bankShort, spareSets, inFlight, bankJobs: chunks.length, ...(depthTarget !== null ? { validDepth, depthTarget } : {}) },
+  };
 };
 
 export const bankReplenishHandler: JobHandler = async (job: GenerationJob) => {

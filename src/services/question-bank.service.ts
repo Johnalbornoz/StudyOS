@@ -100,13 +100,14 @@ export async function loadBankPool(
   const r = await client.query(
     `SELECT * FROM (
        SELECT c.id, c.question, c.difficulty, c.content_fingerprint, c.transfer_depth, c.usage_count, c.created_at,
-              EXISTS (SELECT 1 FROM question_bank_deliveries d WHERE d.candidate_id = c.id AND d.student_id = $1) AS delivered
+              EXISTS (SELECT 1 FROM question_bank_deliveries d WHERE d.candidate_id = c.id AND d.student_id = $1) AS delivered,
+              (SELECT max(d.delivered_at) FROM question_bank_deliveries d WHERE d.candidate_id = c.id AND d.student_id = $1) AS last_delivered_at
          FROM question_bank_candidates c
         WHERE c.concept_id = $2 AND c.student_id = $1 AND c.activity_type = $3 AND c.language = $4
           AND c.academic_context_fingerprint = $5 AND c.validation_status = 'VALIDATED'
      ) pool
      WHERE NOT ($6::boolean AND pool.delivered)
-     ORDER BY pool.delivered, pool.usage_count, pool.created_at DESC
+     ORDER BY pool.delivered, pool.last_delivered_at NULLS FIRST, pool.usage_count, pool.created_at DESC
      LIMIT $7`,
     [params.studentId, params.conceptId, params.activityType, params.language, academicContextFingerprint(params.academic), params.excludeDelivered, BANK_POOL_LIMIT],
   );
@@ -118,6 +119,7 @@ export async function loadBankPool(
     transferDepth: row.transfer_depth,
     usageCount: Number(row.usage_count),
     delivered: row.delivered === true,
+    lastDeliveredAt: row.last_delivered_at ? new Date(row.last_delivered_at).getTime() : null,
   }));
 }
 
