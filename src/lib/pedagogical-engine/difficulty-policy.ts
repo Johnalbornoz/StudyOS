@@ -14,7 +14,7 @@
  * was chosen, never just what it is.
  */
 import { CANONICAL_POLICY } from './policy';
-import type { DifficultyReasonCode, RawEvidenceItem } from './types';
+import type { DifficultyReasonCode, PracticeExposure, PracticeMix, RawEvidenceItem } from './types';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -26,6 +26,108 @@ export interface DifficultyResolution {
 }
 
 /**
+ * D78 (operator decisions 2026-10-17 + refinement D78A) -- Practice BASE level and bounded +1
+ * exposure.
+ *  - The persistent base starts at Practice's floor (2) and never exceeds PRACTICE_MAX_BASE (3).
+ *  - The base rises by +1 ONLY after a Practice session that scored >= 80 with no critical
+ *    misconception AND already included the base+1 exposure item AND that item was answered
+ *    correct (D78A). A correct level-4 item at base 3 never makes the base 4.
+ *  - Nothing lowers the earned base: a < 60 score or a critical misconception only suppresses
+ *    the next session's +1 exposure (and REINFORCE then targets the current base).
+ *  - Legacy rows (no `practiceExposure`) carry no exposure (never a rise); their administered
+ *    difficulty IS that session's base (clamped [2,3]). History is never rewritten.
+ *  - The walk is monotone (max): no row -- legacy or new -- ever lowers the earned base.
+ *  - Strong signal (unchanged, the existing one): the LATEST Practice attempt >= minimumScorePercent
+ *    (80) with no critical misconception -> the next session carries one base+1 item.
+ */
+export const PRACTICE_MAX_BASE = 3;
+
+export interface PracticeBaseResolution extends DifficultyResolution {
+  /** The earned persistent base (= `target`, kept for compatibility with every `difficulty.target` consumer). */
+  base: number;
+  exposure: { plusOneEligible: boolean; plusOneLevel: number | null; reasonCode: DifficultyReasonCode };
+}
+
+/** The base a single Practice evidence row was administered at (exposure-aware; legacy = its administered difficulty). */
+export function practiceSessionBaseLevel(item: Pick<RawEvidenceItem, 'difficulty' | 'practiceExposure'>): number {
+  const floor = CANONICAL_POLICY.practice.difficulty.min;
+  const raw = item.practiceExposure ? item.practiceExposure.baseLevel : item.difficulty;
+  return clamp(Math.round(raw), floor, PRACTICE_MAX_BASE);
+}
+
+/** Whether this row earned a base rise: >= 80, no critical misconception, a base+1 item served and every one of them correct. */
+export function practiceSessionEarnedRise(item: Pick<RawEvidenceItem, 'scorePercent' | 'hasCriticalMisconception' | 'practiceExposure'>): boolean {
+  const x = item.practiceExposure;
+  if (!x || item.hasCriticalMisconception) return false;
+  if (item.scorePercent < CANONICAL_POLICY.practice.minimumScorePercent) return false;
+  return x.plusOneItems > 0 && x.plusOneCorrect >= x.plusOneItems;
+}
+
+export function resolvePracticeBase(practiceItemsInOrder: RawEvidenceItem[]): PracticeBaseResolution {
+  const policy = CANONICAL_POLICY.practice;
+  let base = policy.difficulty.min;
+  let reasonCode: DifficultyReasonCode = 'PRACTICE_BASE_DEFAULT';
+  for (const item of practiceItemsInOrder) {
+    // The base is monotone: a session's own base (or its earned rise) can only keep or raise it --
+    // a later row recorded at a lower level (a legacy/non-canonical attempt) never lowers it.
+    const sessionBase = practiceSessionBaseLevel(item);
+    const earned = practiceSessionEarnedRise(item);
+    const next = clamp(Math.max(base, earned ? sessionBase + 1 : sessionBase), policy.difficulty.min, PRACTICE_MAX_BASE);
+    reasonCode = earned && next > base && next === sessionBase + 1 ? 'PRACTICE_BASE_EARNED_AFTER_EXPOSURE' : 'PRACTICE_BASE_MAINTAINED';
+    base = next;
+  }
+  const latest = practiceItemsInOrder[practiceItemsInOrder.length - 1];
+  let exposure: PracticeBaseResolution['exposure'];
+  if (!latest) exposure = { plusOneEligible: false, plusOneLevel: null, reasonCode: 'PRACTICE_EXPOSURE_NONE' };
+  else if (!latest.hasCriticalMisconception && latest.scorePercent >= policy.minimumScorePercent)
+    exposure = { plusOneEligible: true, plusOneLevel: Math.min(policy.difficulty.max, base + 1), reasonCode: 'PRACTICE_EXPOSURE_PLUS_ONE' };
+  else if (latest.hasCriticalMisconception || latest.scorePercent < 60)
+    exposure = { plusOneEligible: false, plusOneLevel: null, reasonCode: 'PRACTICE_EXPOSURE_SUPPRESSED' };
+  else exposure = { plusOneEligible: false, plusOneLevel: null, reasonCode: 'PRACTICE_EXPOSURE_NONE' };
+  return { base, target: base, reasonCode, exposure };
+}
+
+/**
+ * D78 -- the per-level item mix for a session of `itemCount` items. Only a 3-item session carries
+ * the +1 item (2 at base + 1 at base+1); a 2-item session (and any other size) is all at base.
+ */
+export function practiceMixForItemCount(
+  baseLevel: number,
+  plusOneEligible: boolean,
+  itemCount: number,
+  exposureReasonCode: DifficultyReasonCode,
+): PracticeMix {
+  const n = Math.max(0, Math.floor(itemCount));
+  const plusOneLevel = Math.min(CANONICAL_POLICY.practice.difficulty.max, baseLevel + 1);
+  const withPlusOne = plusOneEligible && n === 3 && plusOneLevel === baseLevel + 1;
+  return {
+    baseLevel,
+    plusOneEligible,
+    exposureReasonCode,
+    items: withPlusOne ? [{ level: baseLevel, count: n - 1 }, { level: plusOneLevel, count: 1 }] : [{ level: baseLevel, count: n }],
+  };
+}
+
+/** Planned base+1 items in a mix (0 or 1). */
+export function plannedPlusOneItems(mix: Pick<PracticeMix, 'baseLevel' | 'items'>): number {
+  return mix.items.filter((i) => i.level === mix.baseLevel + 1).reduce((a, i) => a + i.count, 0);
+}
+
+/** D78 -- the exposure a Practice session ACTUALLY carried, from its served item levels and binary correctness. */
+export function computePracticeExposure(baseLevel: number, items: ReadonlyArray<{ difficulty: number; correct: boolean }>): PracticeExposure {
+  const plusOne = items.filter((i) => Math.round(i.difficulty) === baseLevel + 1);
+  return {
+    baseLevel,
+    plusOneItems: plusOne.length,
+    plusOneLevel: plusOne.length > 0 ? baseLevel + 1 : null,
+    plusOneCorrect: plusOne.filter((i) => i.correct).length,
+  };
+}
+
+/**
+ * SUPERSEDED by `resolvePracticeBase` (D78): no longer consulted by the engine. Kept, unchanged,
+ * only so its historical CANON-R2R1 tests stay replayable.
+ *
  * CANON-R2R1 Part 10-13 -- the centralized, deterministic Practice
  * evidence-selection rule: walk EVERY Practice-activity-type item in
  * chronological order (regardless of whether it independently qualifies
@@ -128,18 +230,17 @@ export function resolveTransferDifficulty(params: {
 }
 
 /**
- * CANON-R2R1 Part 17 -- REINFORCE's difficulty must be derived from the
- * blocking evidence, never a fixed/random number. Documented CANON-R2R1
- * policy decision: one level below the learner's own current Practice
- * difficulty trend (the same trend `resolvePracticeDifficulty` already
- * computes), clamped into REINFORCE's own [1,3] range -- a concrete,
- * deterministic step back for remediation, grounded in the same evidence
- * already driving Practice.
+ * CANON-R2R1 Part 17 -- REINFORCE's difficulty is derived from the learner's evidence, never a
+ * fixed/random number. D78 (2026-10-17) replaced "one level below the Practice trend" with the
+ * learner's CURRENT earned Practice base (`resolvePracticeBase`), clamped into REINFORCE's own
+ * [1,3] range -- a low score or misconception no longer lowers the level, it removes the +1 item.
  */
-export function resolveReinforceDifficulty(practiceTarget: number): DifficultyResolution {
+export function resolveReinforceDifficulty(practiceBase: number): DifficultyResolution {
+  // D78 (2026-10-17): REINFORCE targets the learner's CURRENT Practice base (never base-1),
+  // clamped into REINFORCE's own [1,3] range.
   const policy = CANONICAL_POLICY.reinforce;
-  const target = clamp(practiceTarget - 1, policy.difficulty.min, policy.difficulty.max);
-  return { target, reasonCode: 'REINFORCE_DERIVED_FROM_PRACTICE_GAP' };
+  const target = clamp(practiceBase, policy.difficulty.min, policy.difficulty.max);
+  return { target, reasonCode: 'REINFORCE_AT_CURRENT_PRACTICE_BASE' };
 }
 
 /** LEARN's own difficulty is not evidence-driven by this phase's spec -- a fixed policy midpoint, matching CANON-R2's original behavior. */

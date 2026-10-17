@@ -141,6 +141,8 @@ export interface RawEvidenceItem {
   transferHighestLevel?: TransferLevel | null;
   /** Whether this attempt satisfied a response contract requiring shown reasoning (SHOW_WORK / EXPLAIN / JUSTIFY). Undefined when no such contract applied. */
   reasoningProvided?: boolean;
+  /** D78 -- PRACTICE rows written since D78 only (`metadata.practiceExposure`); absent = legacy row (no exposure). */
+  practiceExposure?: PracticeExposure;
   /** RETENTION_CHECK attempts only: whether the item set was genuinely novel (never previously seen by this learner) -- required for a Retention attempt to even be eligible for qualification. */
   novel?: boolean;
   /**
@@ -312,7 +314,42 @@ export type DifficultyReasonCode =
   | 'RETENTION_MATCHES_QUALIFYING_PROVE_DIFFICULTY'
   | 'TRANSFER_BASE_DIFFICULTY'
   | 'TRANSFER_ADVANCED_DIFFICULTY_SUPPORTED'
-  | 'REINFORCE_DERIVED_FROM_PRACTICE_GAP';
+  | 'REINFORCE_DERIVED_FROM_PRACTICE_GAP'
+  // D78 (2026-10-17) -- Practice base level + bounded +1 exposure. The base codes say why the
+  // persistent base is what it is; the exposure codes say whether this session carries the +1 item.
+  | 'PRACTICE_BASE_DEFAULT'
+  | 'PRACTICE_BASE_EARNED_AFTER_EXPOSURE'
+  | 'PRACTICE_BASE_MAINTAINED'
+  | 'PRACTICE_EXPOSURE_PLUS_ONE'
+  | 'PRACTICE_EXPOSURE_SUPPRESSED'
+  | 'PRACTICE_EXPOSURE_NONE'
+  | 'REINFORCE_AT_CURRENT_PRACTICE_BASE';
+
+/**
+ * D78 -- what a Practice-shaped session should contain, level by level. `baseLevel` is the
+ * learner's earned Practice base (floor 2, persistent cap 3); `plusOneEligible` is the strong
+ * signal (latest Practice >= 80, no critical misconception). `items` is the exact per-level
+ * count for `itemCount` items: a 3-item strong session = 2 at base + 1 at base+1; every other
+ * case = all at base. Never beyond base+1.
+ */
+export interface PracticeMix {
+  baseLevel: number;
+  plusOneEligible: boolean;
+  exposureReasonCode: DifficultyReasonCode;
+  items: Array<{ level: number; count: number }>;
+}
+
+/**
+ * D78 -- recorded on a Practice evidence row (metadata.practiceExposure) from what was ACTUALLY
+ * served and graded: the session's base, how many items were at base+1, and how many of those
+ * were answered correct (binary correctness, never rubric partial credit).
+ */
+export interface PracticeExposure {
+  baseLevel: number;
+  plusOneItems: number;
+  plusOneLevel: number | null;
+  plusOneCorrect: number;
+}
 
 export interface DifficultyDecision {
   target: number;
@@ -334,6 +371,8 @@ export interface ActivityContract {
   noveltyRequirements?: 'NOVEL_ITEMS_REQUIRED';
   /** TRANSFER only: the APPLY ladder levels (NEAR, MID, FAR). */
   transferDepth?: TransferLevel[];
+  /** D78 -- PRACTICE / REINFORCE only: the per-level item mix (`difficulty.target` stays = base). */
+  practiceMix?: PracticeMix;
 }
 
 /**

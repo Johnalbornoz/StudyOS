@@ -60,6 +60,7 @@ async function loadAssemblyInputs(params: AssemblyParams, client: DbExecutor): P
       language: contract.language,
       excludeFingerprints: exclude,
       reservedCandidateIds: params.reservedCandidateIds,
+      ...(contract.practiceMix ? { practiceMix: contract.practiceMix } : {}),
     },
   };
 }
@@ -92,4 +93,13 @@ export async function countSpareSets(params: AssemblyParams & { maxSets: number 
 export async function countValidBankDepth(params: Omit<AssemblyParams, 'reservedCandidateIds' | 'learnFocus'>, client: DbExecutor = db): Promise<number> {
   const { pool, request } = await loadAssemblyInputs({ ...params, reservedCandidateIds: new Set() }, client);
   return countValidCandidates(pool, request);
+}
+
+/** D78 -- distinct VALID candidates at exactly `level` (the base+1 exposure supply of a strong learner's Practice bank). */
+export async function countValidBankDepthAtLevel(params: Omit<AssemblyParams, 'reservedCandidateIds' | 'learnFocus'>, level: number, client: DbExecutor = db): Promise<number> {
+  const { pool, request } = await loadAssemblyInputs({ ...params, reservedCandidateIds: new Set() }, client);
+  return countValidCandidates(
+    pool.filter((c) => c.difficulty === level),
+    { difficulty: request.difficulty, excludeFingerprints: request.excludeFingerprints },
+  );
 }

@@ -29,6 +29,7 @@ import {
   activityContractFingerprint,
   bankChunks,
   bankDepthTarget,
+  deliveryPracticeMix,
   SPARE_ASSEMBLABLE_SETS,
   DELIVERY_QUIZ_MODES,
   inventoryTarget,
@@ -43,7 +44,7 @@ import type { QuizMode } from '@/services/quiz-persistence.service';
 import { enqueueGenerationJob, openBankSupply, runGenerationWorker, type GenerationJob, type JobHandler } from '@/services/generation-queue.service';
 import { loadAcademicContext, loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { reconcileInventory, reservedCandidateIds, retireAllInventory, storeReadyActivity } from '@/services/activity-inventory.service';
-import { assembleActivityForLearner, countSpareSets, countValidBankDepth } from '@/services/activity-assembly.service';
+import { assembleActivityForLearner, countSpareSets, countValidBankDepth, countValidBankDepthAtLevel } from '@/services/activity-assembly.service';
 import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
 import { withLaunchLock } from '@/services/activity-launch-lock.service';
 import { dispatchDeliveryWorker } from '@/services/worker-dispatch.service';
@@ -88,6 +89,8 @@ export async function resolveNextActivityContract(target: ReplenishTarget, langu
     independence: c.independence,
     policyVersion: decision.policyVersion,
   };
+  // D78: the same per-level mix a launch builds (buildDeliveryInput), so READY sets match its fingerprint
+  if (c.practiceMix) contract.practiceMix = deliveryPracticeMix(c.practiceMix, contract.itemCount);
   return { launchable: true, activityType, quizMode: mode, contract, academic, canonicalRevision: decision.canonicalRevision };
 }
 
@@ -160,12 +163,29 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
       ...p, activityType, language: contract.language, academic, difficulty: contract.difficulty.target, needed: chunks[i], round: 1,
     });
   }
+  // D78: a strong learner's Practice needs base+1 items, which base-level replenishment never
+  // produces. When the bank holds fewer valid base+1 items than one session plans, one
+  // BANK_REPLENISH batch (one session's item count) is requested AT base+1 through the same path.
+  let plusOneJob: { level: number; validPlusOne: number } | null = null;
+  const mix = contract.practiceMix;
+  if (activityType === 'PRACTICE' && mix) {
+    const plus = mix.items.find((i) => i.level === mix.baseLevel + 1);
+    if (plus) {
+      const validPlusOne = await countValidBankDepthAtLevel({ studentId: p.studentId, contract, academic }, plus.level);
+      if (validPlusOne < plus.count) {
+        await enqueueGenerationJob('BANK_REPLENISH', `${key}:plus${plus.level}`, {
+          ...p, activityType, language: contract.language, academic, difficulty: plus.level, needed: Math.min(contract.itemCount, BATCH_CAP[activityType]), round: 1,
+        });
+      }
+      plusOneJob = { level: plus.level, validPlusOne };
+    }
+  }
   if (bankShort) {
     await enqueueGenerationJob('PREPARE_INVENTORY', `prepare:${p.studentId}:${p.conceptId}:followup`, { ...p }, { delayMs: FOLLOW_UP_DELAY_MS });
   }
   return {
     ok: true,
-    result: { activityType, prepared, readyCompatible, bankShort, spareSets, inFlight, bankJobs: chunks.length, ...(depthTarget !== null ? { validDepth, depthTarget } : {}) },
+    result: { activityType, prepared, readyCompatible, bankShort, spareSets, inFlight, bankJobs: chunks.length, ...(depthTarget !== null ? { validDepth, depthTarget } : {}), ...(plusOneJob ? { plusOne: plusOneJob } : {}) },
   };
 };
 

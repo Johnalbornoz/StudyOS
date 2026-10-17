@@ -63,6 +63,7 @@ export async function fetchStudyUSEvidenceRows(
       le.metadata->'transferChallenges' AS transfer_challenges,
       le.metadata->>'transferFailureDiagnostic' AS transfer_failure_diagnostic,
       le.metadata->'learnSession' AS learn_session,
+      le.metadata->'practiceExposure' AS practice_exposure,
       le.metadata->'transferLadder' AS transfer_ladder,
       le.metadata->>'assignmentId' AS assignment_id,
       EXISTS (
@@ -134,6 +135,8 @@ export function mapStudyUSEvidenceRow(row: any): StudyUSEvidenceRow {
       // 2026-10-16 contracts 1.1 / 1.2 -- raw jsonb, validated by the adapter (parseLearnSession /
       // parseTransferLadder). NULL on every row the guided LEARN / APPLY ladder flows did not write.
       learnSession: parseJsonb(row.learn_session),
+      // D78 -- raw jsonb, validated by the adapter (parsePracticeExposure); NULL on every pre-D78 row.
+      practiceExposure: parseJsonb(row.practice_exposure),
       transferLadder: parseJsonb(row.transfer_ladder),
       assignmentId: row.assignment_id ?? null,
       // CANON-V2-REMEDIATION Part 7 (AUDIT-005 closed): wired to the
@@ -187,6 +190,7 @@ export async function fetchStudyUSEvidenceRowsForPairs(
       le.metadata->'transferChallenges' AS transfer_challenges,
       le.metadata->>'transferFailureDiagnostic' AS transfer_failure_diagnostic,
       le.metadata->'learnSession' AS learn_session,
+      le.metadata->'practiceExposure' AS practice_exposure,
       le.metadata->'transferLadder' AS transfer_ladder,
       le.metadata->>'assignmentId' AS assignment_id,
       EXISTS (

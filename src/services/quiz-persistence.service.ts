@@ -11,6 +11,7 @@ import { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
 import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
 import type { ExactDuplicateNoveltyMarker } from '@/lib/lx/novelty-marker';
+import type { PracticeMix } from '@/lib/pedagogical-engine/types';
 
 export type QuizMode =
   | 'topic_practice'
@@ -135,6 +136,8 @@ export interface QuizSessionV1Marker {
    * `isExactDuplicateNoveltyCertified` to stamp `metadata.novel`.
    */
   novelty?: ExactDuplicateNoveltyMarker | null;
+  /** D78 -- PRACTICE / REINFORCE sessions only: the per-level mix this session was built for (absent on pre-D78 rows). */
+  practiceMix?: PracticeMix | null;
 }
 
 export interface QuizSession {
@@ -258,6 +261,8 @@ export async function storeQuiz(
           // CANON-R6R1 -- additive; `undefined` (omitted from the JSON)
           // for every marker without novelty filtering (non-Prove/Retain).
           novelty: v1Marker.novelty ?? undefined,
+          // D78 -- additive; omitted for every non-Practice marker.
+          practiceMix: v1Marker.practiceMix ?? undefined,
         })
       : null;
 
@@ -633,6 +638,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
         supportLevel: contract.supportLevel ?? 'ASSISTED',
         minimumScorePercent: contract.minimumScorePercent ?? 80,
         novelty: contract.novelty ?? null,
+        ...(contract.practiceMix ? { practiceMix: contract.practiceMix } : {}),
       };
     }
 

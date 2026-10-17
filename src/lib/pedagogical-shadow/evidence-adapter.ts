@@ -19,7 +19,7 @@
 import { fnv1aHex } from './fingerprint';
 import { correctnessScorePercent } from '@/lib/quiz/canonical-gate-score';
 import { CANONICAL_POLICY, transferLevelRank } from '@/lib/pedagogical-engine';
-import type { PedagogicalActivityType, RawEvidenceItem, TransferLadderChallenge, TransferLevel } from '@/lib/pedagogical-engine';
+import type { PedagogicalActivityType, PracticeExposure, RawEvidenceItem, TransferLadderChallenge, TransferLevel } from '@/lib/pedagogical-engine';
 import type {
   AdapterConfidence,
   AdapterUnresolvedMapping,
@@ -172,6 +172,20 @@ function resolveIndependent(row: StudyUSEvidenceRow): boolean {
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const LADDER_LEVELS: readonly TransferLevel[] = CANONICAL_POLICY.transfer.levels;
+
+/**
+ * D78 -- a Practice exposure record, or null when absent/malformed (a malformed record is treated
+ * exactly like a legacy row: no exposure, never a base rise -- fail closed).
+ */
+export function parsePracticeExposure(raw: unknown): PracticeExposure | null {
+  if (!isRecord(raw)) return null;
+  const { baseLevel, plusOneItems, plusOneLevel, plusOneCorrect } = raw;
+  if (!isFiniteNumber(baseLevel) || !isFiniteNumber(plusOneItems) || !isFiniteNumber(plusOneCorrect)) return null;
+  if (plusOneItems < 0 || plusOneCorrect < 0 || plusOneCorrect > plusOneItems) return null;
+  if (plusOneLevel !== null && !(isFiniteNumber(plusOneLevel) && plusOneLevel === baseLevel + 1)) return null;
+  if ((plusOneItems > 0) !== (plusOneLevel !== null)) return null;
+  return { baseLevel, plusOneItems, plusOneLevel: plusOneLevel as number | null, plusOneCorrect };
+}
 
 /** 2026-10-16 contract 1.1 -- a learn-guided-v1 session, or null when malformed (shape only; the 4..7 range is the engine's rule). */
 export function parseLearnSession(raw: unknown): { interactionCount: number; closedBy: 'AI' | 'CAP'; weaknesses: string[] } | null {
@@ -341,6 +355,11 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
     hasCriticalMisconception: row.hasItemCriticalMisconception ?? false,
   };
   if (row.novel !== undefined) item.novel = row.novel;
+  if (resolved === 'PRACTICE' && row.practiceExposure != null) {
+    const exposure = parsePracticeExposure(row.practiceExposure);
+    if (exposure) item.practiceExposure = exposure;
+    else warnings.push(`Row ${row.id}: metadata.practiceExposure is malformed -- treated as a legacy row (no exposure, no base rise).`);
+  }
   // Fail closed (Part 5): NEVER set a partial/malformed breakdown --
   // either the full, correctly-ordered [NEAR, CONTEXTUAL, HIGHER] triple
   // is set, or the field is left absent entirely (the engine's own

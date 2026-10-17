@@ -51,8 +51,9 @@ import { computeAskConfidenceFlags } from '@/services/ask-confidence.service';
 import { isRecordableError, type PedagogicalGrade } from '@/lib/grading/pedagogical-grade';
 import { pedagogicalFeedbackText } from '@/lib/grading/pedagogical-feedback';
 import { recordQuizResponses } from '@/services/quiz-response-audit.service';
-import { DELIVERY_QUIZ_MODES } from '@/lib/activity-delivery/contract';
-import { buildDeliveryInput, deliverCanonicalActivity, completeEmergencyDelivery, logActivityLaunch, type DeliveryInput, type LaunchLock } from '@/services/activity-delivery.service';
+import { DELIVERY_QUIZ_MODES, deliveryPracticeMix } from '@/lib/activity-delivery/contract';
+import { combinePracticeMix, generatePracticePlusOneItems } from '@/services/practice-mix-generation.service';
+import { buildDeliveryInput, deliverCanonicalActivity, completeEmergencyDelivery, logActivityLaunch, recordPracticeMixFallback, type DeliveryInput, type LaunchLock } from '@/services/activity-delivery.service';
 import { questionGeneratorIdentity } from '@/services/activity-candidate-generation.service';
 import { INSUFFICIENT_CERTIFIED_CONTENT, INSUFFICIENT_CERTIFIED_CONTENT_STATUS, studentRuntimeMayGenerateQuestions } from '@/lib/student-runtime/question-supply-policy';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
@@ -99,6 +100,7 @@ import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contr
 import { gradeQuizAnswer } from '@/lib/quiz/grade-question';
 import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
 import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/difficulty-contract';
+import { computePracticeExposure } from '@/lib/pedagogical-engine/difficulty-policy';
 import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/evidence-sufficiency-contract';
 import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
@@ -891,6 +893,29 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         ? await getLearnWeaknessesForConcept(validated.studentId, validated.conceptId)
         : null;
     const learnWeaknesses = learnFocus?.weaknesses ?? [];
+    // D78: a verified v1 Practice whose mix plans a base+1 item asks the SAME certified generator,
+    // in parallel with the base set below (which is exactly the call a normal session makes), for
+    // that item AT base+1. It replaces one base item only when the generator really produced an
+    // item at base+1 (practice-mix-generation.service); otherwise the session stays all at base.
+    const practiceMixPlan =
+      validated.quizMode === 'topic_practice' && v1Marker?.practiceMix ? deliveryPracticeMix(v1Marker.practiceMix, perConceptCap) : undefined;
+    const practicePlusOne = practiceMixPlan ? practiceMixPlan.items.find((i) => i.level === practiceMixPlan.baseLevel + 1) : undefined;
+    const practicePlusOnePromise: Promise<GeneratedQuestion[]> = practicePlusOne
+      ? generatePracticePlusOneItems(
+          conceptIds[0], validated.studentId, validated.subjectId,
+          {
+            guidance: config.guidance,
+            language,
+            visualAidRate: config.visualAidRate,
+            ibContext,
+            activityType: activityTypeForQuizMode(validated.quizMode),
+            quizMode: validated.quizMode,
+            parentOperationId,
+          },
+          practicePlusOne,
+          learnWeaknesses,
+        )
+      : Promise.resolve([]);
     const [questionArrays, askConfidenceFlags] = await Promise.all([
       validated.quizMode === 'quick_check'
         ? generateQuickCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
@@ -1145,6 +1170,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           ),
       computeAskConfidenceFlags(validated.studentId, conceptIds, validated.quizMode),
     ]);
+    if (practicePlusOne) {
+      const plusSet = await practicePlusOnePromise;
+      if (questionArrays[0] && questionArrays[0].length === perConceptCap) {
+        questionArrays[0] = combinePracticeMix(questionArrays[0], plusSet, practicePlusOne.level, practicePlusOne.count, perConceptCap);
+      }
+    }
 
     // Ask confidence at most once per concept per quiz (its first
     // question), never on every question -- avoids fatigue while still
@@ -1443,6 +1474,10 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         quizId,
         buildLearnWeaknessProvenance(learnFocus, 'LIVE_PROMPT', matchLearnFocusItems(questions.map((q) => ({ id: q.id, question: q })), learnFocus)),
       );
+    }
+    // D78: a live / emergency Practice whose served levels differ from its planned mix says why
+    if (validated.quizMode === 'topic_practice' && v1Marker?.practiceMix) {
+      await recordPracticeMixFallback(quizId, deliveryPracticeMix(v1Marker.practiceMix, questions.length), questions.map((q) => q.difficulty));
     }
     if (emergencyLaunch) {
       await completeEmergencyDelivery({ input: emergencyLaunch.input, quizId, questions, generator: questionGeneratorIdentity(parentOperationId) }).catch((err) => console.error('[activity-launch] emergency banking failed', err));
@@ -1787,6 +1822,9 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // bucket -- the evidence row's difficulty is the mean of these
         // (aggregateEvidenceDifficulty), never a hardcoded constant.
         questionDifficulties: number[];
+        // D78: the BINARY correctness of each question (same order as questionDifficulties) --
+        // what metadata.practiceExposure.plusOneCorrect counts; never rubric partial credit.
+        questionCorrect: boolean[];
         // Phase 0E1: AI provenance for every free-text-graded question in
         // this concept's bucket -- which execution/provider/model/prompt
         // produced the grade. Empty for concepts graded only by the
@@ -1843,6 +1881,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         gradingConfidences: [],
         questionTypes: [],
         questionDifficulties: [],
+        questionCorrect: [],
         aiGrading: [],
         pedagogicalGrades: [],
         responseTimings: [],
@@ -1854,6 +1893,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       bucket.gradingConfidences.push(gradeResult.confidence);
       bucket.questionTypes.push(question.type);
       bucket.questionDifficulties.push(question.difficulty);
+      bucket.questionCorrect.push(gradeResult.correct === true);
       bucket.responseTimings.push({ questionIndex, timing });
       if ('aiExecution' in gradeResult && gradeResult.aiExecution) {
         bucket.aiGrading.push({ questionIndex, ...gradeResult.aiExecution });
@@ -2210,6 +2250,17 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
                     // novelty marker) covering every administered item --
                     // the source of the engine's RawEvidenceItem.novel.
                     ...(isExactDuplicateNoveltyCertified(quizSession.v1Marker!.novelty, bucket.total) ? { novel: true } : {}),
+                  }
+                : {}),
+              // D78 -- a Practice / Reinforce session built for a per-level mix records the exposure it
+              // ACTUALLY carried (served levels + binary correctness of the base+1 items), which is what
+              // the engine's base rise reads. Absent for every pre-D78 session (legacy: no exposure).
+              ...(isAuthorizedConcept && quizSession.v1Marker!.practiceMix
+                ? {
+                    practiceExposure: computePracticeExposure(
+                      quizSession.v1Marker!.practiceMix.baseLevel,
+                      bucket.questionDifficulties.map((difficulty, i) => ({ difficulty, correct: bucket.questionCorrect[i] === true })),
+                    ),
                   }
                 : {}),
               // CANON-V2-ARCH-CLEANUP Section 9/10/11 -- the REAL,
