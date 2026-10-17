@@ -12,7 +12,7 @@
  * the SAME stored result (and never re-diagnoses, never re-scores, never
  * creates a second attempt or result). Owner-only.
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
@@ -76,18 +76,30 @@ async function handlePOST(_request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'ALREADY_FINALIZED_OR_INVALID_STATUS' }, { status: 409 });
   }
 
+  // The hand-in itself: completion, scoring, the one result, Exam Readiness evidence, the instance status. The Student's
+  // result is final when this returns.
   const { result } = await finalizeExamCompletion(id, attempt.studentId, ROUTE);
-  const postExamDiagnosis = await runPostExamDiagnosis(attempt.examAttemptId, attempt.studentId, attempt.examVersionId);
-  const readinessSnapshot = await computeReadinessSnapshot({ studentId: attempt.studentId, examProfileId: attempt.examProfileId, examVersionId: attempt.examVersionId });
-  const nextAction = await determineNextAction({ postExamDiagnosis, readinessSnapshot, simulationType: attempt.simulationType });
 
-  logPilotEvent('exam_completed', {
-    route: '/api/simulation/attempts/complete',
-    studentId: attempt.studentId,
-    simulationType: attempt.simulationType,
-    rawScore: result.rawScore,
-    maxScore: result.maxScore,
-    scoringStatus: result.scoringStatus,
+  // BRW-C3-01 (RC-1): the post-exam diagnosis and the readiness recompute are derived views of the stored result. They
+  // run AFTER the response (never inside the hand-in request: a full-length form made the request take minutes and
+  // risk a timeout after the attempt was already COMPLETED). A failure here never changes the stored result; the
+  // readiness snapshot is recomputed again on the next completion / read.
+  after(async () => {
+    try {
+      const postExamDiagnosis = await runPostExamDiagnosis(attempt.examAttemptId, attempt.studentId, attempt.examVersionId);
+      const readinessSnapshot = await computeReadinessSnapshot({ studentId: attempt.studentId, examProfileId: attempt.examProfileId, examVersionId: attempt.examVersionId });
+      await determineNextAction({ postExamDiagnosis, readinessSnapshot, simulationType: attempt.simulationType });
+    } catch (e) {
+      console.warn('[exam-post-completion-derived]', JSON.stringify({ attemptId: id, retryable: true, reason: (e as Error)?.message?.slice(0, 120) ?? null }));
+    }
+    logPilotEvent('exam_completed', {
+      route: '/api/simulation/attempts/complete',
+      studentId: attempt.studentId,
+      simulationType: attempt.simulationType,
+      rawScore: result.rawScore,
+      maxScore: result.maxScore,
+      scoringStatus: result.scoringStatus,
+    });
   });
 
   return NextResponse.json({
@@ -97,9 +109,11 @@ async function handlePOST(_request: NextRequest, { params }: { params: Promise<{
       result,
       // Back-compat for older clients: the same raw marks the result recorded.
       scoreSummary: { rawScore: result.rawScore, maxScore: result.maxScore },
-      postExamDiagnosis,
-      readinessSnapshot,
-      nextAction,
+      // derived after the response (see above); the latest stored snapshot is read by the pages that show it
+      postExamDiagnosis: null,
+      readinessSnapshot: null,
+      nextAction: null,
+      derivedViews: 'DEFERRED',
       ...(safety ? { safety } : {}),
     },
   });

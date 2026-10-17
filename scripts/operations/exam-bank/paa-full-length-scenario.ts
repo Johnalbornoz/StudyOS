@@ -40,6 +40,8 @@ async function main(): Promise<number> {
   const { getNextSimulationItem, submitSimulationItemAnswer, finalizeOpenItemsForSubmission, endSimulationBreak } = await import('@/lib/simulation/item-resolution.service');
   const { completeSimulationAttempt, getSimulationAttempt } = await import('@/lib/simulation/attempt.service');
   const { finalizeExamCompletion } = await import('@/lib/exam-core/post-completion');
+  const { runPostExamDiagnosis } = await import('@/lib/simulation/post-exam-diagnosis.service');
+  const { computeReadinessSnapshot } = await import('@/lib/readiness/readiness.service');
   const { findAnswerKeyLeak } = await import('@/lib/exam-core/items');
   const { engineReadinessForVersion } = await import('@/lib/exam-bank/readiness/readiness-authority.service');
   const { cleanupFixtureStudent } = await import('./fixture-cleanup');
@@ -93,14 +95,32 @@ async function main(): Promise<number> {
         const sub = await submitSimulationItemAnswer(actor, sim, answerOf(item.content), `paa-full:${label}:${sim}:${next.targetIndex}`, next.targetIndex);
         if ((sub as any)?.feedback || (sub as any)?.correctAnswer || (sub as any)?.explanation) served[served.length - 1].feedback = 'FEEDBACK_SHOWN';
       }
+      // BRW-C3-01: the hand-in exactly as POST /complete runs it (completion, scoring, evidence, diagnosis, readiness), timed
+      const t0 = Date.now();
       await finalizeOpenItemsForSubmission(actor, sim);
       await completeSimulationAttempt(sim);
-      await finalizeExamCompletion(sim, S, 'paa-full-length-scenario');
+      const first = await finalizeExamCompletion(sim, S, 'paa-full-length-scenario');
+      const requestMs = Date.now() - t0;
+      const instanceStatus = (await one(`SELECT status FROM exam_instances WHERE id = $1`, [inst.id]))?.status as string;
+      const simRow = (await getSimulationAttempt(sim))!;
+      // the derived views POST /complete schedules with after() (never inside the request)
+      const t1 = Date.now();
+      await runPostExamDiagnosis(simRow.examAttemptId, S, exam.version_id);
+      await computeReadinessSnapshot({ studentId: S, examProfileId: profileId, examVersionId: exam.version_id });
+      const derivedMs = Date.now() - t1;
+      const finalizeMs = requestMs;
+      // a retried hand-in: the SAME stored result, no second result row, no duplicated evidence
+      const ev0 = await n(`SELECT count(*)::int AS n FROM exam_readiness_evidence WHERE student_id = $1`, [S]);
+      const again = await finalizeExamCompletion(sim, S, 'paa-full-length-scenario');
+      const ev1 = await n(`SELECT count(*)::int AS n FROM exam_readiness_evidence WHERE student_id = $1`, [S]);
+      const resultRows = await n(`SELECT count(*)::int AS n FROM exam_attempt_results WHERE exam_attempt_id = $1`, [simRow.examAttemptId]);
+      finalize.push({ label, ms: finalizeMs, derivedMs, instanceStatus, idempotent: JSON.stringify(first.result) === JSON.stringify(again.result) && ev0 === ev1 && resultRows === 1, detail: `results ${resultRows}; evidence ${ev0}->${ev1}` });
       const examAttemptId = (await getSimulationAttempt(sim))!.examAttemptId;
       const responses = (await db.query(`SELECT approved_item_id, score, max_score, review_status, grading_detail, evaluation_model_version FROM exam_attempt_item_responses WHERE exam_attempt_id = $1`, [examAttemptId])).rows;
       return { row, served, examAttemptId, responses, breaks };
     };
 
+    const finalize: { label: string; ms: number; derivedMs: number; instanceStatus: string; idempotent: boolean; detail: string }[] = [];
     const a = await attempt('key', (c) => String(c.correctAnswer));
     check('F1  one MOCK instance of the whole test, frozen at start, stored as PREPARATION_MOCK (never FULL_MOCK / official)', !!a.row?.form_frozen_at && a.row?.snap && a.row?.simulation_type === 'PREPARATION_MOCK', `${a.row?.simulation_type}`);
     const served = a.served;
@@ -119,6 +139,10 @@ async function main(): Promise<number> {
     const b = await attempt('wrong', (c) => (Array.isArray(c.options) && c.options.length ? String(c.options.find((o: any) => o.id !== c.correctAnswer).id) : `${String(c.correctAnswer).includes('/') ? '1' : String(Number(c.correctAnswer) + 1)}`));
     check('S2  wrong answers score 0 on every position (no partial credit invented)', b.responses.length === 175 && b.responses.every((r: any) => Number(r.score) === 0), `${b.responses.filter((r: any) => Number(r.score) === 0).length}/${b.responses.length}`);
     const calls1 = await providerCalls();
+    check('H1  FINALIZE_DURATION_175: the hand-in request (completion, scoring, result, evidence, instance) < 30 s', finalize.every((f) => f.ms < 30_000), finalize.map((f) => `${f.label} ${(f.ms / 1000).toFixed(1)} s`).join('; '));
+    check('H1b the derived views (diagnosis + readiness, run after the response) fit the function limit with margin (< 150 s)', finalize.every((f) => f.derivedMs < 150_000), finalize.map((f) => `${f.label} ${(f.derivedMs / 1000).toFixed(1)} s`).join('; '));
+    check('H2  FINALIZE_IDEMPOTENCY: a retried hand-in returns the same result; one result row; no duplicated evidence', finalize.every((f) => f.idempotent), finalize.map((f) => `${f.label}: ${f.detail}`).join('; '));
+    check('H3  ATTEMPT_INSTANCE_CONSISTENCY: the instance is COMPLETED in the completion step itself (no read needed)', finalize.every((f) => f.instanceStatus === 'COMPLETED'), finalize.map((f) => `${f.label}: ${f.instanceStatus}`).join('; '));
     check('X1  PAA_FULL_RUNTIME_PROVIDER_CALLS = 0', calls0 !== -1 && calls1 - calls0 === 0, `${calls1 - calls0}`);
     check('X2  no Learning Plan entry was created', (await planEntries()) === plan0);
     const ks1 = await knowledge();

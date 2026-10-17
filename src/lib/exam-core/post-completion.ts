@@ -24,6 +24,14 @@ export type GapRefreshOutcome = 'REFRESHED' | 'RETRYABLE_FAILURE';
 
 export async function finalizeExamCompletion(attemptId: string, studentId: string, route: string) {
   const result = await scoreAndRecordAttemptResult(attemptId);
+  // BRW-C3-01 (RC-4): the instance follows its attempt IN the completion step (no transient "attempt COMPLETED,
+  // instance IN_PROGRESS" read-model lag). Idempotent (a conditional UPDATE); a failure is retried by the next read.
+  try {
+    const { findInstanceByAttempt } = await import('@/lib/exam-core/exam-instance.service');
+    await findInstanceByAttempt(attemptId);
+  } catch (e) {
+    console.warn('[exam-instance-sync]', JSON.stringify({ attemptId, route, retryable: true, reason: (e as Error)?.message?.slice(0, 120) ?? null }));
+  }
   let gapRefresh: GapRefreshOutcome = 'REFRESHED';
   try {
     await refreshExamGapRecommendations(studentId);

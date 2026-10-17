@@ -132,3 +132,25 @@ describe('P1-2 practice / mock semantics', () => {
     expect(src('src/app/dashboard/exam-prep/attempt/[attemptId]/ItemRunner.tsx')).toMatch(/\{phase === 'complete' && <p className="ui-hint">\{labels\.completeBody\}<\/p>\}/);
   });
 });
+
+describe('BRW-C3-01 hand-in of a full-length form', () => {
+  it('RC-1: the full-mock guard is set-based (one objective query, one read per distinct component), never one query per target', () => {
+    const g = src('src/lib/assessment/full-mock-guard.service.ts');
+    expect(g).toMatch(/FROM unnest\(\$1::uuid\[\]\) WITH ORDINALITY AS o\(id, ord\) ORDER BY o\.ord/);
+    expect(g).toMatch(/new Set\(targets\.map\(\(t\) => t\.assessmentComponentId\)\)/);
+    expect(g).not.toMatch(/for \(const target of targets\) \{\s*const component = await getComponent/);
+    expect(g.match(/await db\.query\(/g)?.length).toBe(1);
+  });
+  it('RC-4: the instance follows its attempt inside the completion step (idempotent conditional update)', () => {
+    expect(src('src/lib/exam-core/post-completion.ts')).toMatch(/await findInstanceByAttempt\(attemptId\)/);
+  });
+  it('RC-2 / RC-3: one token refresh + retry on 401; lifecycle controls disabled while handing in; a refused action on a completed attempt opens its result', () => {
+    const r = src('src/app/dashboard/exam-prep/attempt/[attemptId]/ItemRunner.tsx');
+    expect(r).toMatch(/if \(res\.status === 401\) \{/);
+    expect(r).toMatch(/getToken\?\.\(\{ skipCache: true \}\)/);
+    expect(r).toMatch(/studyus:attempt-handing-in/);
+    const c = src('src/app/dashboard/exam-prep/attempt/[attemptId]/AttemptControls.tsx');
+    expect(c).toMatch(/disabled=\{busy \|\| handingIn\} onClick=\{\(\) => call\('abandon'\)\}/);
+    expect(c).toMatch(/router\.push\(`\/dashboard\/exam-prep\/attempt\/\$\{attemptId\}\/result`\)/);
+  });
+});

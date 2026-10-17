@@ -586,9 +586,20 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
     await flushDraft();
     setPhase('handingIn');
     setError(null);
+    // BRW-C3-01 (RC-3): the other lifecycle controls stay disabled while this hand-in runs
+    const signal = (active: boolean) => window.dispatchEvent(new CustomEvent('studyus:attempt-handing-in', { detail: { attemptId, active } }));
+    signal(true);
     try {
-      const res = await fetch(`/api/simulation/attempts/${attemptId}/complete`, { method: 'POST' });
+      const complete = () => fetch(`/api/simulation/attempts/${attemptId}/complete`, { method: 'POST' });
+      let res = await complete();
+      if (res.status === 401) {
+        // BRW-C3-01 (RC-2): the session token can expire while a blocking dialog is open; refresh it once and retry.
+        // The server is idempotent: a hand-in that already happened returns the SAME stored result.
+        await (window as unknown as { Clerk?: { session?: { getToken?: (o: { skipCache: boolean }) => Promise<unknown> } } }).Clerk?.session?.getToken?.({ skipCache: true }).catch(() => null);
+        res = await complete();
+      }
       if (!res.ok) {
+        signal(false);
         setError(labels.finalizeError);
         setPhase(question ? 'ready' : 'complete');
         return;
@@ -597,13 +608,14 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
       if (done?.data?.safety) {
         // Human Agency P0-4: a handed-in draft carried a safety signal. The
         // attempt is complete; show the fixed response before the result.
+        signal(false);
         setSafety(done.data.safety as SafetyNoticeData);
         setPhase('complete');
         return;
       }
       router.push(`/dashboard/exam-prep/attempt/${attemptId}/result`);
-      router.refresh();
     } catch {
+      signal(false);
       setError(labels.finalizeError);
       setPhase(question ? 'ready' : 'complete');
     }
