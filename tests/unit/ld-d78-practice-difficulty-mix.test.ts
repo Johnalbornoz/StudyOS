@@ -467,3 +467,36 @@ describe('D78 replenishment + delivery', () => {
     expect(fallbackWrites()).toHaveLength(0);
   });
 });
+
+// ---------------------------------------------------------------- D79 / D80 (approved 2026-10-17)
+describe('D80 -- practiceMixFallback never creates +1 evidence or a base promotion', () => {
+  it('planned 2,2,3 but served 2,2,2 (no valid base+1 supply): the exposure records 0 +1 items', () => {
+    // what the session ACTUALLY served is what the evidence records -- the fallback base item is not a +1 item
+    expect(computePracticeExposure(2, [{ difficulty: 2, correct: true }, { difficulty: 2, correct: true }, { difficulty: 2, correct: true }])).toEqual({ baseLevel: 2, plusOneItems: 0, plusOneLevel: null, plusOneCorrect: 0 });
+  });
+  it('a 100% fallback session (no +1 served) never promotes the persistent base; the next session still plans the +1', () => {
+    const ev = [P(100, { exposure: X(2) }), P(100, { exposure: computePracticeExposure(2, [{ difficulty: 2, correct: true }, { difficulty: 2, correct: true }, { difficulty: 2, correct: true }]) })];
+    const r = resolvePracticeBase(ev);
+    expect(r.base).toBe(2);
+    expect(r.exposure.plusOneEligible).toBe(true);
+    expect(mix3(ev)).toEqual(expect.arrayContaining([expect.objectContaining({ level: 3 })]));
+  });
+  it('repeated fallbacks at base 3 never make the base 4 (persistent max 3)', () => {
+    const ev = [P(100, { exposure: X(2) }), P(100, { exposure: X(2, 1, 1) }), ...Array.from({ length: 4 }, () => P(100, { exposure: X(3) }))];
+    expect(resolvePracticeBase(ev).base).toBe(3);
+  });
+});
+
+describe('D79 -- PROVE level mix (OPERATOR_DECISION_REQUIRED: no governed level-4 count for PROVE exists)', () => {
+  it('without the decision, PROVE keeps its single target: base-3 Practice evidence -> PROVE level 3 (never forced higher, never a guessed mix)', () => {
+    const ev = [...LEARN(), P(100, { exposure: X(2) }), P(100, { exposure: X(2, 1, 1) }), P(100, { exposure: X(3, 1, 1) })];
+    const d = decide(ev);
+    expect(d.stage).toBe('PROVE');
+    expect(d.activityContract?.difficulty.target).toBe(3);
+    expect((d.activityContract as any)?.proveMix).toBeUndefined();
+  });
+  it('the persistent Practice base never persists as 4 even with correct level-4 exposures', () => {
+    const ev = [P(100, { exposure: X(2) }), P(100, { exposure: X(2, 1, 1) }), P(100, { exposure: X(3, 1, 1) }), P(100, { exposure: X(3, 1, 1) })];
+    expect(resolvePracticeBase(ev).base).toBe(3);
+  });
+});
