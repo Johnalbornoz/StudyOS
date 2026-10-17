@@ -35,8 +35,9 @@ const GENERATORS = /generateQuickCheckQuestions\(|generatePracticeQuestions\(|ge
 
 describe('the policy follows the supply boundary, and nothing can switch it', () => {
   it('a Learning / Internal Assessment launch may generate; a standardized exam launch (or an unknown mode) may not', () => {
-    for (const mode of ['topic_practice', 'review', 'canonical_learn_check', 'quick_check', 'canonical_retain', 'retention_check', 'canonical_transfer', 'canonical_prove', 'diagnostic_check', 'cumulative_assessment']) expect(studentRuntimeMayGenerateQuestions(mode), mode).toBe(true);
-    for (const mode of ['exam_simulation', 'something_new', '', null, undefined]) expect(studentRuntimeMayGenerateQuestions(mode as never), String(mode)).toBe(false);
+    // 2026-10-17: the subject mock (exam_simulation) is an internal assessment -- generated on the explicit start
+    for (const mode of ['topic_practice', 'review', 'canonical_learn_check', 'quick_check', 'canonical_retain', 'retention_check', 'canonical_transfer', 'canonical_prove', 'diagnostic_check', 'cumulative_assessment', 'exam_simulation']) expect(studentRuntimeMayGenerateQuestions(mode), mode).toBe(true);
+    for (const mode of ['something_new', '', null, undefined]) expect(studentRuntimeMayGenerateQuestions(mode as never), String(mode)).toBe(false);
     const src = code('src/lib/student-runtime/question-supply-policy.ts');
     // no environment, header or cookie decides it: a request cannot turn exam generation on
     expect(src).not.toMatch(/process\.env|headers\(|cookies\(/);

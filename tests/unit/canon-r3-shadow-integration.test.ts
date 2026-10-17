@@ -309,28 +309,34 @@ describe('CANON-R3 Part 41 -- Safety tests (28-36)', () => {
 });
 
 describe('CANON-R3 Part 42 -- Engine Frozen verification (37-44)', () => {
-  it('37. CANON-R2R1 policy version string is unchanged', () => {
-    expect(ENGINE_POLICY_VERSION).toBe('studyus-canonical-v1');
-    expect(ENGINE_POLICY.version).toBe('studyus-canonical-v1');
+  it('37. the policy version string is the governed 2026-10-17 pilot pass policy (bumped from studyus-canonical-v1 by explicit operator decision)', () => {
+    expect(ENGINE_POLICY_VERSION).toBe('studyus-canonical-v2-pilot-2026-10-17');
+    expect(ENGINE_POLICY.version).toBe('studyus-canonical-v2-pilot-2026-10-17');
   });
 
-  it('38. LEARN >80 (exclusive) is unchanged', () => {
-    expect(ENGINE_POLICY.learn.minimumScorePercentExclusive).toBe(80);
+  it('38. LEARN >=80 (inclusive) on an exactly-5-item check (2026-10-17 pilot policy; was >80 exclusive)', () => {
+    expect(ENGINE_POLICY.learn.minimumScorePercent).toBe(80);
+    expect(ENGINE_POLICY.learn.itemCount).toBe(5);
+    expect('minimumScorePercentExclusive' in ENGINE_POLICY.learn).toBe(false);
   });
 
-  it('39. Practice >=80, difficulty [2,4] is unchanged', () => {
+  it('39. Practice >=80, difficulty [2,4]; 2026-10-17 window: last 3 valid attempts, all 3 passing, average >=80', () => {
     expect(ENGINE_POLICY.practice.minimumScorePercent).toBe(80);
     expect(ENGINE_POLICY.practice.difficulty).toEqual({ min: 2, max: 4 });
+    expect(ENGINE_POLICY.practice.windowSize).toBe(3);
+    expect(ENGINE_POLICY.practice.requiredPassesInWindow).toBe(3);
+    expect(ENGINE_POLICY.practice.minimumWindowAveragePercent).toBe(80);
   });
 
-  it('40. Prove exactly 10 items, >=80%, difficulty [3,4] is unchanged', () => {
+  it('40. Prove exactly 10 items, >=80%, difficulty [3,4] is unchanged; a failure stays in PROVE (2026-10-17)', () => {
+    expect(ENGINE_POLICY.prove.failureStaysInProve).toBe(true);
     expect(ENGINE_POLICY.prove.itemCount).toBe(10);
     expect(ENGINE_POLICY.prove.minimumScorePercent).toBe(80);
     expect(ENGINE_POLICY.prove.difficulty).toEqual({ min: 3, max: 4 });
   });
 
-  it('41. Retention exactly 10 items, >=80%, 3-day minimum wait, difficulty [3,4] is unchanged', () => {
-    expect(ENGINE_POLICY.retention.itemCount).toBe(10);
+  it('41. Retention exactly 5 items (2026-10-17 pilot policy; was 10), >=80%, 3-day minimum wait, difficulty [3,4]', () => {
+    expect(ENGINE_POLICY.retention.itemCount).toBe(5);
     expect(ENGINE_POLICY.retention.minimumScorePercent).toBe(80);
     expect(ENGINE_POLICY.retention.minimumWaitDays).toBe(3);
     expect(ENGINE_POLICY.retention.difficulty).toEqual({ min: 3, max: 4 });

@@ -38,10 +38,10 @@ describe('POST_PRACTICE_NEXT_STEP -- the real E2E session', () => {
   const d = decide(E2E());
   const launch = resolveCanonicalLaunch({ subjectId: SUBJECT, conceptId: CONCEPT, decision: d });
 
-  it('a 100% practice does NOT imply PROVE: 1 of 2 required passes -> still PRACTICE, executable', () => {
+  it('a 100% practice does NOT imply PROVE: 1 of 3 required passes (2026-10-17 pilot policy: last 3 each >= 80) -> still PRACTICE, executable', () => {
     expect(d.stage).toBe('PRACTICE');
     expect(d.actionState).toBe('EXECUTABLE');
-    expect(d.practiceProgress).toMatchObject({ passesInWindow: 1, requiredPasses: 2 });
+    expect(d.practiceProgress).toMatchObject({ passesInWindow: 1, requiredPasses: 3, windowAveragePercent: null });
   });
 
   it('the continuation LAUNCHes the same stage Results announces (PRACTICE), at the contract difficulty 3', () => {
@@ -79,8 +79,10 @@ describe('PRACTICE_SESSION_RESTART -- continuing always starts a fresh session w
     expect(pushed).toContain(`${RELAUNCH_NONCE_PARAM}=n2`);
   });
 
-  it('PRACTICE -> PROVE (2 passes) is also a fresh instance on the same page', () => {
-    const d2 = decide([...E2E(), item('PRACTICE', 90, 3)]);
+  it('PRACTICE -> PROVE (the last 3 practices all pass) is also a fresh instance on the same page', () => {
+    // [78, 100, 90] is not yet a passing window; [100, 90, 92] is.
+    expect(decide([...E2E(), item('PRACTICE', 90, 3)]).stage).toBe('PRACTICE');
+    const d2 = decide([...E2E(), item('PRACTICE', 90, 3), item('PRACTICE', 92, 3)]);
     expect(d2.stage).toBe('PROVE');
     const l2 = resolveCanonicalLaunch({ subjectId: SUBJECT, conceptId: CONCEPT, decision: d2 });
     expect(l2).toMatchObject({ launchStatus: 'READY', activityType: 'PROVE' });
@@ -119,7 +121,7 @@ describe('one canonical decision after an activity, for every surface', () => {
     const cases: Array<[string, RawEvidenceItem[]]> = [
       ['LEARN', []],
       ['PRACTICE', E2E()],
-      ['PROVE', [...E2E(), item('PRACTICE', 90, 3)]],
+      ['PROVE', [...E2E(), item('PRACTICE', 90, 3), item('PRACTICE', 92, 3)]],
     ];
     for (const [stage, ev] of cases) {
       const d = decide(ev);

@@ -46,6 +46,8 @@ export type LearnerJourneyStage =
   | 'PRACTICE'
   | 'READY_TO_PROVE'
   | 'PROVE'
+  /** 2026-10-17 pilot journey: Prove passed, the first Retain check is not due yet (prove_passed_at + 3 days). */
+  | 'WAIT_FOR_RETENTION'
   | 'RETAIN'
   | 'TRANSFER'
   | 'CONSOLIDATED';
@@ -184,4 +186,31 @@ export function deriveLearnerJourneyStage(inputs: LearnerJourneyInputs): Learner
  */
 export function isRetentionWaiting(stage: LearnerJourneyStage, retentionDue: boolean | undefined | null): boolean {
   return stage === 'RETAIN' && retentionDue === false;
+}
+
+
+/**
+ * 2026-10-17 pilot journey -- the learner-facing stage as a DETERMINISTIC projection of the canonical Learning engine's
+ * own decision (never a second engine, never a second rule):
+ *   NOT_STARTED         LEARN with no engine evidence at all
+ *   READY_TO_PROVE      PROVE executable, Practice's rolling gate just passed and no Prove attempt yet in this cycle
+ *                       (a learner sent back to Prove by Retain's two-strike rule is shown PROVE, not READY_TO_PROVE)
+ *   WAIT_FOR_RETENTION  RETAIN while the engine waits for the minimum interval (actionState WAITING)
+ *   otherwise           the engine's stage (LEARN / PRACTICE / PROVE / RETAIN / TRANSFER / CONSOLIDATED)
+ */
+export function projectCanonicalJourneyStage(decision: {
+  stage: 'LEARN' | 'PRACTICE' | 'PROVE' | 'RETAIN' | 'TRANSFER' | 'CONSOLIDATED';
+  actionState: string;
+  proveAttemptsInCycle?: number;
+  rollback?: { rolledBackTo: string } | null;
+}, engineHasEvidence: boolean): LearnerJourneyStage {
+  if (decision.stage === 'LEARN' && !engineHasEvidence) return 'NOT_STARTED';
+  if (decision.stage === 'PROVE' && decision.actionState === 'EXECUTABLE' && (decision.proveAttemptsInCycle ?? 0) === 0 && decision.rollback?.rolledBackTo !== 'PROVE') return 'READY_TO_PROVE';
+  if (decision.stage === 'RETAIN' && decision.actionState === 'WAITING') return 'WAIT_FOR_RETENTION';
+  return decision.stage;
+}
+
+/** Any attempt the canonical engine replayed for this concept, qualifying or not (an existing engine fact). */
+export function canonicalEngineHasEvidence(decision: { qualifiedEvidence: readonly { qualifyingEvidenceIds: readonly string[]; nonQualifyingEvidenceIds: readonly string[] }[] }): boolean {
+  return decision.qualifiedEvidence.some((q) => q.qualifyingEvidenceIds.length + q.nonQualifyingEvidenceIds.length > 0);
 }

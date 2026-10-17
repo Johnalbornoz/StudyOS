@@ -36,6 +36,9 @@ export interface PracticeExplanation {
   attempts: Array<{ scorePercent: number; passed: boolean }>;
   /** Fewest additional passing practices that satisfy the rule (the window slides). */
   remainingPasses: number;
+  /** ROLLING_3_AVERAGE (null until 3 completed practices) and its bar. */
+  averagePercent: number | null;
+  minimumAveragePercent: number;
   satisfied: boolean;
 }
 
@@ -70,7 +73,7 @@ export function remainingPassesFor(window: boolean[], windowSize: number, requir
 function practiceFrom(decision: DecisionInput): PracticeExplanation {
   const p = decision.practiceProgress;
   const windowSize = p?.windowSize ?? 3;
-  const required = p?.requiredPasses ?? 2;
+  const required = p?.requiredPasses ?? CANONICAL_POLICY.practice.requiredPassesInWindow;
   const attempts = (p?.recentValidAttempts ?? []).map((a) => ({ scorePercent: a.scorePercent, passed: a.passed }));
   const passes = p?.passesInWindow ?? attempts.filter((a) => a.passed).length;
   const satisfied = p?.satisfied ?? false;
@@ -81,6 +84,8 @@ function practiceFrom(decision: DecisionInput): PracticeExplanation {
     minimumScorePercent: p?.minimumScorePercent ?? CANONICAL_POLICY.practice.minimumScorePercent,
     attempts,
     remainingPasses: satisfied ? 0 : remainingPassesFor(attempts.map((a) => a.passed), windowSize, required),
+    averagePercent: p?.windowAveragePercent ?? null,
+    minimumAveragePercent: p?.minimumWindowAveragePercent ?? CANONICAL_POLICY.practice.minimumWindowAveragePercent,
     satisfied,
   };
 }
@@ -106,7 +111,7 @@ export function buildProgressExplanation(decision: DecisionInput, formatDate: (i
   let after: LocalizedLine | null;
   switch (stage) {
     case 'LEARN':
-      remaining = { key: 'progress.remaining.LEARN', params: { min: String(P.learn.minimumScorePercentExclusive) } };
+      remaining = { key: 'progress.remaining.LEARN', params: { min: String(P.learn.minimumScorePercent) } };
       after = { key: 'progress.after.LEARN', params: {} };
       break;
     case 'PRACTICE':

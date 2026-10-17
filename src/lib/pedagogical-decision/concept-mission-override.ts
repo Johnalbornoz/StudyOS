@@ -23,6 +23,7 @@
  * already a member of `LearnerJourneyStage`, so no separate stage-name
  * translation table is needed or introduced.
  */
+import { projectCanonicalJourneyStage, canonicalEngineHasEvidence } from '@/lib/lx/learner-journey-contract';
 import type { CanonicalPedagogicalDecision, PedagogicalActivityType } from '@/lib/pedagogical-engine';
 import {
   RUNG_ORDER,
@@ -96,7 +97,7 @@ function mapReasonCode(decision: CanonicalPedagogicalDecision): string {
 function buildCanonicalJourney(decision: CanonicalPedagogicalDecision): ConceptMissionJourney {
   return {
     status: 'RESOLVED',
-    stage: decision.stage,
+    stage: projectCanonicalJourneyStage(decision, canonicalEngineHasEvidence(decision)),
     intervention: decision.intervention,
     reasonCode: mapReasonCode(decision),
     milestones: buildCanonicalMilestones(decision),

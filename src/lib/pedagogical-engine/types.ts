@@ -333,6 +333,9 @@ export interface PracticeProgress {
   difficulty: { min: number; max: number };
   recentValidAttempts: PracticeWindowEntry[];
   passesInWindow: number;
+  /** ROLLING_3_AVERAGE of the last 3 completed practices (null until there are 3). */
+  windowAveragePercent: number | null;
+  minimumWindowAveragePercent: number;
   satisfied: boolean;
 }
 
@@ -392,6 +395,8 @@ export interface CanonicalPedagogicalDecision {
    * RETAIN-eligibility logic.
    */
   lastQualifyingProveAt: string | null;
+  /** Genuine Prove attempts since Practice was last satisfied (0 = READY_TO_PROVE in the learner projection). */
+  proveAttemptsInCycle?: number;
   /** Explains the PRACTICE window (see `PracticeProgress`). Always set by the engine; optional only so decisions built elsewhere (fixtures, older snapshots) stay valid -- consumers must degrade when absent. */
   practiceProgress?: PracticeProgress;
 }

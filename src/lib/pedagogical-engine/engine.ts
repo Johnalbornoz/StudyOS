@@ -103,9 +103,20 @@ function validateRecognitionSet(recognized: RecognizedRequirement[] | undefined)
  * later qualifying attempt is not reported, since it is no longer the
  * reason the learner is where they are).
  */
-/** CANON-V2-REMEDIATION Part 1A -- "2 of the last 3 VALID Practice attempts" (Policy V2 Section 3). Named here so the decision can explain the window it used; the values are unchanged. */
-const PRACTICE_WINDOW_SIZE = 3;
-const PRACTICE_REQUIRED_PASSES = 2;
+/**
+ * 2026-10-17 pilot policy (supersedes CANON-V2 "2 of the last 3"): the LAST 3 completed valid Practice attempts, EACH
+ * >= 80% AND their average >= 80%. Read from the one policy object; named here so the decision can explain the window.
+ */
+const PRACTICE_WINDOW_SIZE = CANONICAL_POLICY.practice.windowSize;
+const PRACTICE_REQUIRED_PASSES = CANONICAL_POLICY.practice.requiredPassesInWindow;
+const PRACTICE_MINIMUM_WINDOW_AVERAGE = CANONICAL_POLICY.practice.minimumWindowAveragePercent;
+/** The rolling-window rule (pure): a full window, every attempt passing, and the window average at the bar. */
+function practiceWindowSatisfied(window: readonly { scorePercent: number; passed: boolean }[]): boolean {
+  const last = window.slice(-PRACTICE_WINDOW_SIZE);
+  if (last.length < PRACTICE_WINDOW_SIZE) return false;
+  const average = last.reduce((a, e) => a + e.scorePercent, 0) / last.length;
+  return last.filter((e) => e.passed).length >= PRACTICE_REQUIRED_PASSES && average >= PRACTICE_MINIMUM_WINDOW_AVERAGE;
+}
 
 function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, RecognizedRequirement> | null) {
   const sorted = sortEvidence(evidence);
@@ -161,6 +172,8 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
    * never carry over and contaminate a new one.
    */
   let retainStrikeCount = 0;
+  // Projection support (READY_TO_PROVE): genuine Prove attempts made since Practice was last satisfied.
+  let proveAttemptsInCycle = 0;
   let transferSatisfied = false;
   let transferBasis: SatisfactionBasis = null;
   let highestQualifyingPracticeDifficulty: number | null = null;
@@ -258,8 +271,8 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
       const isWindowEligible = verdict.reasonCode === 'PASSING_SCORE' || verdict.reasonCode === 'INSUFFICIENT_SCORE';
       if (isWindowEligible) {
         practiceWindow.push({ evidenceId: item.id, scorePercent: item.scorePercent, passed: verdict.result === 'QUALIFIES', timestamp: item.timestamp });
-        const passesInWindow = practiceWindow.slice(-PRACTICE_WINDOW_SIZE).filter((e) => e.passed).length;
-        if (!practiceSatisfied && passesInWindow >= PRACTICE_REQUIRED_PASSES) {
+        if (!practiceSatisfied && practiceWindowSatisfied(practiceWindow)) {
+          proveAttemptsInCycle = 0;
           practiceSatisfied = true;
           practiceBasis = 'V1_EVIDENCE';
           // A newly-satisfied Practice window resolves any rollback that
@@ -272,6 +285,15 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
 
     if (item.activityType === 'PROVE') {
       const verdict = qualifyEvidence(item, { targetStage: 'PROVE', prerequisiteSatisfied: practiceSatisfied });
+      // 2026-10-17 pilot policy: once PROVE has passed in this cycle, a later optional attempt never undoes it (it is
+      // recorded in History only). A new cycle starts only when Retain's two-strike rule invalidates the pass.
+      if (proveSatisfied && CANONICAL_POLICY.prove.failureStaysInProve) {
+        acc.PROVE.nonQualifyingCount++;
+        acc.PROVE.nonQualifyingIds.push(item.id);
+        acc.PROVE.reasonCodes.add(verdict.reasonCode);
+        continue;
+      }
+      if (practiceSatisfied && verdict.reasonCode !== 'PREMATURE_STAGE_EVIDENCE') proveAttemptsInCycle++;
       acc.PROVE.reasonCodes.add(verdict.reasonCode);
       if (verdict.result === 'QUALIFIES') {
         proveSatisfied = true;
@@ -300,7 +322,7 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
         // basis for the rest of this replay -- newer v1 failure beats
         // legacy recognition -- simply by resetting the same booleans a
         // pre-CANON-R4R1 failure already reset.
-        if (verdict.reasonCode === 'FAILED_ATTEMPT') {
+        if (verdict.reasonCode === 'FAILED_ATTEMPT' && !CANONICAL_POLICY.prove.failureStaysInProve) {
           proveSatisfied = false;
           proveBasis = null;
           proveQualifyingDifficulty = null;
@@ -480,6 +502,7 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
     proveBasis,
     proveQualifyingAt,
     proveQualifyingDifficulty,
+    proveAttemptsInCycle,
     retainSatisfied,
     retainBasis,
     retainQualifyingScore,
@@ -815,6 +838,7 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
     // `retainStatus`'s own `eligibleFrom` computation above already
     // used. Never independently recomputed.
     lastQualifyingProveAt: state.proveQualifyingAt,
+    proveAttemptsInCycle: state.proveAttemptsInCycle,
     // Read-only explanation of the SAME window the replay above used to
     // decide PRACTICE -- never a second computation of the rule.
     practiceProgress: {
@@ -824,6 +848,9 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
       difficulty: { ...CANONICAL_POLICY.practice.difficulty },
       recentValidAttempts: state.practiceWindow.slice(-PRACTICE_WINDOW_SIZE).map((e) => ({ ...e })),
       passesInWindow: state.practiceWindow.slice(-PRACTICE_WINDOW_SIZE).filter((e) => e.passed).length,
+      // PRACTICE_1..3_SCORE and ROLLING_3_AVERAGE (null until the window holds 3 completed practices)
+      windowAveragePercent: state.practiceWindow.length >= PRACTICE_WINDOW_SIZE ? Math.round((state.practiceWindow.slice(-PRACTICE_WINDOW_SIZE).reduce((a, e) => a + e.scorePercent, 0) / PRACTICE_WINDOW_SIZE) * 10) / 10 : null,
+      minimumWindowAveragePercent: PRACTICE_MINIMUM_WINDOW_AVERAGE,
       satisfied: state.practiceSatisfied,
     },
   };

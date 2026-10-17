@@ -90,7 +90,12 @@ const SUPPLY_INTENT_OF_LEARNING_INTENT: Record<string, SupplyIntent> = {
 /** null = not a learning blueprint intent: the caller must state an exam supply intent itself. */
 export const supplyIntentOfLearningIntent = (intent: string): SupplyIntent | null => SUPPLY_INTENT_OF_LEARNING_INTENT[intent] ?? null;
 
-/** Legacy quiz modes (lib/quiz/quiz-mode-config). `exam_simulation` is the one standardized-exam mode. */
+/**
+ * Legacy quiz modes (lib/quiz/quiz-mode-config). 2026-10-17: `exam_simulation` is the SUBJECT-level mock ("Simulacro
+ * por materia") -- an internal assessment of the Student's own subject concepts, separate from standardized Exam Prep
+ * (PAA / IB / Cambridge / PISA / Saber / AICE run on exam-core instances and the certified Exam Bank, never on a quiz
+ * mode). It was misclassified as EXAM_PRACTICE (a8ce32d9 / 2a67250e), which refused every subject mock.
+ */
 const SUPPLY_INTENT_OF_QUIZ_MODE: Record<string, SupplyIntent> = {
   topic_practice: 'LEARNING_PRACTICE',
   review: 'LEARNING_PRACTICE',
@@ -102,7 +107,7 @@ const SUPPLY_INTENT_OF_QUIZ_MODE: Record<string, SupplyIntent> = {
   canonical_prove: 'INTERNAL_MASTERY_CHECK',
   diagnostic_check: 'INTERNAL_DIAGNOSTIC',
   cumulative_assessment: 'INTERNAL_MASTERY_CHECK',
-  exam_simulation: 'EXAM_PRACTICE',
+  exam_simulation: 'INTERNAL_AD_HOC',
 };
 
 /** An unknown mode is treated as a standardized exam: it never generates (fail closed). */

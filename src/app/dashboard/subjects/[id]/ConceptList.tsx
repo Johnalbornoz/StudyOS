@@ -1,6 +1,5 @@
 'use client';
 
-import { conceptCheckHref } from '@/lib/assessment-experience/entry';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -34,13 +33,12 @@ export default function ConceptList({
   studentId,
   locale,
   concepts,
-  canonicalAssessment = false,
 }: {
   subjectId: string;
   studentId: string;
   locale: Locale;
   concepts: ConceptRow[];
-  /** The server's assessment cutover flag, read by the server page. Decides where the independent check goes. */
+  /** Kept for the server page's call signature; the row no longer launches an independent check (PED-03). */
   canonicalAssessment?: boolean;
 }) {
   const t = getMessages(locale);
@@ -145,13 +143,12 @@ export default function ConceptList({
             >
               {expandedId === c.conceptId ? t['subjectDetail.learnMoreCollapse'] : t['subjectDetail.learnMoreAction']}
             </button>
-            <Link
-              href={conceptCheckHref({ subjectId, conceptId: c.conceptId, mode: 'quick_check' }, canonicalAssessment)}
-              className="btn btn-ghost"
-              style={{ fontSize: 13 }}
-            >
-              {t['quiz.modeQuickCheck']}
-            </Link>
+            {/*
+              PED-03 (2026-10-17): the concept row no longer offers an ungated "Comprobación individual" (quick_check).
+              It launched a 6-question (or, via the canonical setup, a 1-2 question) check that no canonical gate can
+              accept -- "Correcto (100%)" while the concept stayed in Demostrar. The concept's own Prove (exactly 10
+              independent questions) is launched from Concept Mission when the canonical stage is PROVE.
+            */}
             {/*
               RELEASE-R1 PART A/C: this used to be a bare
               `/dashboard/quiz?subjectId=...&conceptId=...` link with NO

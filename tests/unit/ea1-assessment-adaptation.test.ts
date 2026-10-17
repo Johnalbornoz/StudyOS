@@ -1394,7 +1394,7 @@ describe('architecture: ownership, purity and no runtime wiring', () => {
     expect(migrations.filter((f) => NEW_SCHEMA.test(f) || NEW_SCHEMA.test(read(`database/migrations/${f}`)))).toEqual(['20261121_1100_qf51_construct_core_lineage.sql']);
     // 82 files up to QB-R1C, plus the three of the L10 shared-foundation batch (20261120_*), which name nothing of this phase (asserted above).
     // 85 + the Student's scheduled assessments (20261121_1000) + QF V5.1 (20261121_1100) + curriculum convergence (20261122_1000, _1100).
-    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([96, '20261126_1000_simulation_type_preparation_mock.sql']); // + Track B PREPARATION_MOCK simulation type (20261126_1000): widens two CHECKs only; // + Track B Exam Readiness evidence (20261125_1000): additive, no learning-approach column or adaptation schema; // + QF V5.2 (20261122_1200), the Exam Bank certification model
+    expect([migrations.length, migrations[migrations.length - 1]]).toEqual([98, '20261127_1100_quiz_session_subject_assessment_setup.sql']); // + 2026-10-17 pilot pass policy (mastery v2) and subject assessment setup // + Track B PREPARATION_MOCK simulation type (20261126_1000): widens two CHECKs only; // + Track B Exam Readiness evidence (20261125_1000): additive, no learning-approach column or adaptation schema; // + QF V5.2 (20261122_1200), the Exam Bank certification model
   });
 
   it('B3 is not implemented here: no evidence engine, no evidence path, no second evidence writer', () => {

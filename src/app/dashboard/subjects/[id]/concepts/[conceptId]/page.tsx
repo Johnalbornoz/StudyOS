@@ -298,6 +298,12 @@ export default async function ConceptDetailPage({
                           </span>
                         ))}
                   </dd>
+                  <dt style={{ color: 'var(--text-secondary)' }}>{t['progress.criterionAverage']}</dt>
+                  <dd style={{ margin: 0 }} className="tabular" data-testid="practice-rolling-average">
+                    {progress.practice.averagePercent === null
+                      ? t['progress.criterionAverageNone']
+                      : t['progress.criterionAverageValue'].replace('{avg}', String(progress.practice.averagePercent)).replace('{min}', String(progress.practice.minimumAveragePercent))}
+                  </dd>
                   <dt style={{ color: 'var(--text-secondary)' }}>{t['progress.criterionTarget']}</dt>
                   <dd style={{ margin: 0 }}>
                     {t['progress.criterionTargetValue']

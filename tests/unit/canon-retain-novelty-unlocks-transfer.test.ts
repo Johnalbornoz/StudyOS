@@ -63,12 +63,14 @@ function dbRow(overrides: Record<string, unknown>) {
   };
 }
 
-// Policy V2: 2 of the last 3 valid Practice attempts.
+// 2026-10-17 pilot policy: the last 3 valid Practice attempts must each pass (average >= 80).
 const PRACTICE_1 = dbRow({ id: 'practice-1', timestamp: '2026-09-01T00:00:00.000Z' });
 const PRACTICE_2 = dbRow({ id: 'practice-2', timestamp: '2026-09-02T00:00:00.000Z' });
+const PRACTICE_3 = dbRow({ id: 'practice-3', timestamp: '2026-09-03T00:00:00.000Z' });
 // PROVE rows carry `novel` too once the fix is live -- PROVE's own policy never reads it.
 const PROVE = dbRow({ id: 'prove', activity_type: 'SOLO_CHECK', item_count: '10', correct_count: '9', timestamp: '2026-09-05T00:00:00.000Z', novel: 'true' });
-const RETAIN_NOVEL = dbRow({ id: 'retain', activity_type: 'RETENTION_CHECK', item_count: '10', correct_count: '9', timestamp: '2026-09-10T00:00:00.000Z', novel: 'true' });
+// 2026-10-17 pilot policy: the Retention check is exactly 5 items (4/5 = 80%).
+const RETAIN_NOVEL = dbRow({ id: 'retain', activity_type: 'RETENTION_CHECK', item_count: '5', correct_count: '4', score_percent: '80', timestamp: '2026-09-10T00:00:00.000Z', novel: 'true' });
 const RETAIN_LEGACY = { ...RETAIN_NOVEL, novel: null };
 
 function requirement(decision: { requirements: RequirementResult[] }, stage: string) {
@@ -90,8 +92,8 @@ describe('getCanonicalPedagogicalDecision -- a qualifying canonical RETAIN unloc
     expect(MOCK_DB.query.mock.calls[0][0]).toMatch(/le\.metadata->>'novel' AS novel/);
   });
 
-  it('PRACTICE + PROVE + a novel, independent, 10-item, >=80% RETAIN (>=3 days after Prove) -> stage TRANSFER', async () => {
-    MOCK_DB.query.mockResolvedValue({ rows: [PRACTICE_1, PRACTICE_2, PROVE, RETAIN_NOVEL] });
+  it('PRACTICE + PROVE + a novel, independent, 5-item, >=80% RETAIN (>=3 days after Prove) -> stage TRANSFER', async () => {
+    MOCK_DB.query.mockResolvedValue({ rows: [PRACTICE_1, PRACTICE_2, PRACTICE_3, PROVE, RETAIN_NOVEL] });
     const { decision } = await getCanonicalPedagogicalDecision({ studentId: STUDENT, conceptId: CONCEPT, now: NOW });
 
     expect(requirement(decision, 'PROVE')?.status).toBe('SATISFIED');
@@ -103,7 +105,7 @@ describe('getCanonicalPedagogicalDecision -- a qualifying canonical RETAIN unloc
   });
 
   it('the same RETAIN without a novelty stamp (legacy / pre-fix row) still does NOT qualify -- no retroactive regrade', async () => {
-    MOCK_DB.query.mockResolvedValue({ rows: [PRACTICE_1, PRACTICE_2, PROVE, RETAIN_LEGACY] });
+    MOCK_DB.query.mockResolvedValue({ rows: [PRACTICE_1, PRACTICE_2, PRACTICE_3, PROVE, RETAIN_LEGACY] });
     const { decision } = await getCanonicalPedagogicalDecision({ studentId: STUDENT, conceptId: CONCEPT, now: NOW });
 
     const retain = requirement(decision, 'RETAIN');
@@ -113,16 +115,16 @@ describe('getCanonicalPedagogicalDecision -- a qualifying canonical RETAIN unloc
   });
 
   it('a novel RETAIN below the score threshold does not qualify -- novelty never bypasses the other RETAIN gates', async () => {
-    MOCK_DB.query.mockResolvedValue({ rows: [PRACTICE_1, PRACTICE_2, PROVE, { ...RETAIN_NOVEL, score_percent: '70', correct_count: '7' }] });
+    MOCK_DB.query.mockResolvedValue({ rows: [PRACTICE_1, PRACTICE_2, PRACTICE_3, PROVE, { ...RETAIN_NOVEL, score_percent: '60', correct_count: '3' }] });
     const { decision } = await getCanonicalPedagogicalDecision({ studentId: STUDENT, conceptId: CONCEPT, now: NOW });
     expect(requirement(decision, 'RETAIN')?.status).not.toBe('SATISFIED');
     expect(decision.stage).not.toBe('TRANSFER');
   });
 
   it('PROVE qualification is unchanged by the novelty stamp (PROVE never reads novel)', async () => {
-    MOCK_DB.query.mockResolvedValue({ rows: [PRACTICE_1, PRACTICE_2, { ...PROVE, novel: null }] });
+    MOCK_DB.query.mockResolvedValue({ rows: [PRACTICE_1, PRACTICE_2, PRACTICE_3, { ...PROVE, novel: null }] });
     const withoutNovel = await getCanonicalPedagogicalDecision({ studentId: STUDENT, conceptId: CONCEPT, now: NOW });
-    MOCK_DB.query.mockResolvedValue({ rows: [PRACTICE_1, PRACTICE_2, PROVE] });
+    MOCK_DB.query.mockResolvedValue({ rows: [PRACTICE_1, PRACTICE_2, PRACTICE_3, PROVE] });
     const withNovel = await getCanonicalPedagogicalDecision({ studentId: STUDENT, conceptId: CONCEPT, now: NOW });
     expect(requirement(withoutNovel.decision, 'PROVE')?.status).toBe('SATISFIED');
     expect(requirement(withNovel.decision, 'PROVE')?.status).toBe('SATISFIED');

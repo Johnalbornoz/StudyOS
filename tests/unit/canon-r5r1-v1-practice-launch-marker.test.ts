@@ -73,10 +73,10 @@ describe('verifyV1PracticeLaunchMarker -- trust model', () => {
     expect(marker).not.toBeNull();
     expect(marker?.canonicalActivityType).toBe('LEARN_CHECK');
     expect(marker?.canonicalStage).toBe('LEARN');
-    // LEARN_CHECK deliberately has no canonical item-count authority
-    // (evidence-sufficiency-contract.ts) -- the marker's itemCount is
-    // null, never an invented count.
-    expect(marker?.itemCount).toBeNull();
+    // 2026-10-17 pilot policy: the LEARN check is a governed, fixed
+    // 5-question check (previously ungoverned, itemCount null) -- the
+    // marker carries exactly that authority, never an invented count.
+    expect(marker?.itemCount).toEqual({ min: 5, max: 5, authorized: 5 });
     expect(marker?.assistanceAllowed).toBe(true);
   });
 

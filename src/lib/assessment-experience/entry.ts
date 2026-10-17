@@ -36,6 +36,11 @@ export function assessmentSetupHref(scope: { learnerConceptId: string }, intent:
  */
 export function entryTargetFor(path: string, params: Readonly<Record<string, string>>, enabled: boolean, origin: LaunchOrigin = 'TODAY'): string | null {
   if (!enabled || path !== '/dashboard/quiz' || params.quizId || !params.conceptId) return null;
+  // PED-01 (2026-10-17): a launch the canonical Learning engine authorised (v1Launch) carries the stage's governed
+  // contract -- Prove exactly 10 independent questions, Retain 5, the Learn check 5. The canonical setup carries no
+  // count, so re-pointing it shrank Prove to a 1-2 question check whose evidence can never satisfy the stage. It keeps
+  // its own, contract-enforcing flow.
+  if (params.v1Launch === '1') return null;
   const intent = ASSESSMENT_INTENT_OF_QUIZ_MODE[params.mode ?? ''];
   return intent ? assessmentSetupHref({ learnerConceptId: params.conceptId }, intent, origin) : null;
 }

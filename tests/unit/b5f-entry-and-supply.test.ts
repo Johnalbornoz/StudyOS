@@ -70,7 +70,9 @@ describe('B5-F subject page: the independent check of a concept', () => {
 
   it('the concept row builds no route of its own and reads no flag; the server page hands the flag down', () => {
     const row = read('src/app/dashboard/subjects/[id]/ConceptList.tsx');
-    expect(row).toMatch(/href=\{conceptCheckHref\(\{ subjectId, conceptId: c\.conceptId, mode: 'quick_check' \}, canonicalAssessment\)\}/);
+    // PED-03 (2026-10-17): the row offers no ungated independent check at all (it could never satisfy Prove's exact-10
+    // contract); the concept's Prove is launched from Concept Mission by the canonical engine.
+    expect(row).not.toMatch(/conceptCheckHref|mode: 'quick_check'/);
     expect(code('src/app/dashboard/subjects/[id]/ConceptList.tsx')).not.toMatch(/dashboard\/quiz\?|dashboard\/assessment|isSnapshotExecutionEnabled|process\.env/);
     expect(read('src/app/dashboard/subjects/[id]/page.tsx')).toMatch(/canonicalAssessment=\{isSnapshotExecutionEnabled\(\)\}/);
     expect(read('src/app/dashboard/subjects/[id]/HierarchicalConceptList.tsx').match(/canonicalAssessment=\{canonicalAssessment\}/g)).toHaveLength(2);

@@ -77,8 +77,13 @@ export function qualifyEvidence(item: RawEvidenceItem, ctx: QualificationContext
       // activity existence. The bar is EXCLUSIVE -- exactly 80% still
       // fails; only a score strictly greater than 80 qualifies.
       // Assistance is explicitly allowed (no independence check here).
+      // 2026-10-17 pilot policy: >= 80% INCLUSIVE on the fixed 5-question check. A check of another size is not this
+      // policy's check (UNRESOLVED, never a pass).
       const p = CANONICAL_POLICY.learn;
-      if (item.scorePercent <= p.minimumScorePercentExclusive) {
+      if (item.itemCount !== p.itemCount) {
+        return { result: 'UNRESOLVED', reasonCode: 'UNRESOLVED_POLICY' };
+      }
+      if (item.scorePercent < p.minimumScorePercent) {
         return { result: 'DOES_NOT_QUALIFY', reasonCode: 'INSUFFICIENT_SCORE' };
       }
       return { result: 'QUALIFIES', reasonCode: 'PASSING_SCORE' };

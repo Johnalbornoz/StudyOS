@@ -44,16 +44,13 @@ export function buildActivityContract(
     case 'LEARN':
       return {
         activityType: 'LEARN_CHECK',
-        // No canonical item-count authority exists for the comprehension
-        // check -- never an invented number (matches this codebase's
-        // established "UNRESOLVED, not a manufactured count" principle,
-        // e.g. evidence-sufficiency-contract.ts).
-        itemCount: null,
+        // Fixed comprehension check: 5 questions (operator decision 2026-10-17; previously ungoverned).
+        itemCount: { min: CANONICAL_POLICY.learn.itemCount, max: CANONICAL_POLICY.learn.itemCount },
         difficulty: difficultyDecision,
         independence: false,
         supportLevel: 'ASSISTED',
-        minimumScorePercent: CANONICAL_POLICY.learn.minimumScorePercentExclusive,
-        evidenceContract: 'LEARN_COMPREHENSION_CHECK_SCORE_EXCLUSIVE_ABOVE_80',
+        minimumScorePercent: CANONICAL_POLICY.learn.minimumScorePercent,
+        evidenceContract: 'LEARN_COMPREHENSION_CHECK_5_SCORE_AT_LEAST_80',
       };
     case 'PRACTICE': {
       const p = CANONICAL_POLICY.practice;

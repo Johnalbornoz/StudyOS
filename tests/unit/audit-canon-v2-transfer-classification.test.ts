@@ -16,6 +16,11 @@
  * pre-existing `hasCriticalMisconception` for Case D) -- never inferred
  * from a numeric score pattern. This file asserts the CORRECTED
  * behavior end-to-end against the real, unmodified engine. Test-only.
+ *
+ * 2026-10-17 pilot pass policy: Transfer rules are unchanged; fixtures
+ * now satisfy PRACTICE with 3 passing attempts (last-3 window, each >=80)
+ * and use the 5-item Retention check. A Case C/D rollback still resets
+ * the Practice window, so 3 NEW passing attempts are needed afterwards.
  */
 import { describe, it, expect } from 'vitest';
 import { evaluateCanonicalLearningState, type RawEvidenceItem, type PedagogicalEngineInput } from '@/lib/pedagogical-engine';
@@ -41,9 +46,10 @@ function baseInput(overrides: Partial<PedagogicalEngineInput> = {}): Pedagogical
 const LEARNED = item({ activityType: 'LEARN_CHECK', timestamp: '2025-12-30T00:00:00.000Z', itemCount: 5, correctCount: 5, scorePercent: 90, difficulty: 1.5 });
 const PRACTICE_1 = item({ activityType: 'PRACTICE', timestamp: '2025-12-31T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 });
 const PRACTICE_2 = item({ activityType: 'PRACTICE', timestamp: '2025-12-31T01:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 });
+const PRACTICE_3 = item({ activityType: 'PRACTICE', timestamp: '2025-12-31T02:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 });
 const PROVE = item({ activityType: 'PROVE', timestamp: '2026-01-01T00:00:00.000Z', itemCount: 10, correctCount: 9, scorePercent: 90, difficulty: 3.5, independent: true });
-const RETAIN = item({ activityType: 'RETENTION_CHECK', timestamp: '2026-01-10T00:00:00.000Z', itemCount: 10, correctCount: 9, scorePercent: 90, difficulty: 3.5, independent: true, novel: true });
-const READY_FOR_TRANSFER = [LEARNED, PRACTICE_1, PRACTICE_2, PROVE, RETAIN];
+const RETAIN = item({ activityType: 'RETENTION_CHECK', timestamp: '2026-01-10T00:00:00.000Z', itemCount: 5, correctCount: 5, scorePercent: 90, difficulty: 3.5, independent: true, novel: true });
+const READY_FOR_TRANSFER = [LEARNED, PRACTICE_1, PRACTICE_2, PRACTICE_3, PROVE, RETAIN];
 
 function transferItem(ts: string, perChallengeScores: number[], opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
   const overall = perChallengeScores.reduce((a, b) => a + b, 0) / perChallengeScores.length;
@@ -109,20 +115,20 @@ describe('AUDIT-003 CLOSED: TRANSFER 4-way failure classification -- Policy V2 S
     expect(decision.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('SATISFIED');
   });
 
-  it('Case B retry gets the REAL 10-item independent Retain contract -- no REINFORCE overlay of any kind (intervention is null)', () => {
+  it('Case B retry gets the REAL 5-item (2026-10-17 pilot policy) independent Retain contract -- no REINFORCE overlay of any kind (intervention is null)', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({ evidence: [...READY_FOR_TRANSFER, transferItem('2026-01-13T00:00:00.000Z', [40, 40, 40], { transferFailureDiagnostic: 'RETENTION_WEAKNESS' })] }),
     );
     expect(decision.intervention).toBeNull();
     expect(decision.activityContract?.activityType).toBe('RETENTION_CHECK');
-    expect(decision.activityContract?.itemCount).toEqual({ min: 10, max: 10 });
+    expect(decision.activityContract?.itemCount).toEqual({ min: 5, max: 5 });
     expect(decision.activityContract?.independence).toBe(true);
     expect(decision.activityContract?.supportLevel).toBe('NONE');
   });
 
   it('Case B: a qualifying Retain requalification resolves the rollback and re-unlocks TRANSFER, with NO new 3-day wait ever having been imposed', () => {
     const caseBFail = transferItem('2026-01-13T00:00:00.000Z', [40, 40, 40], { transferFailureDiagnostic: 'RETENTION_WEAKNESS' });
-    const requalifyingRetain = item({ activityType: 'RETENTION_CHECK', timestamp: '2026-01-14T00:00:00.000Z', itemCount: 10, correctCount: 9, scorePercent: 90, difficulty: 3.5, independent: true, novel: true });
+    const requalifyingRetain = item({ activityType: 'RETENTION_CHECK', timestamp: '2026-01-14T00:00:00.000Z', itemCount: 5, correctCount: 5, scorePercent: 90, difficulty: 3.5, independent: true, novel: true });
     const decision = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, caseBFail, requalifyingRetain], now: '2026-01-14T00:00:00.000Z' }));
     expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('SATISFIED');
     expect(decision.rollback).toBeNull();
@@ -142,15 +148,19 @@ describe('AUDIT-003 CLOSED: TRANSFER 4-way failure classification -- Policy V2 S
     expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('LOCKED');
   });
 
-  it('Case C: after the rollback, 2 NEW valid Practice attempts (2 of last 3) are required before Prove unlocks again -- the window reset applies here exactly like a Prove-failure rollback', () => {
+  it('Case C: after the rollback, 3 NEW passing Practice attempts (the full last-3 window) are required before Prove unlocks again -- the window reset applies (the 3 pre-rollback passes no longer count)', () => {
     const foundationalFail = transferItem('2026-01-13T00:00:00.000Z', [40, 40, 40], { transferFailureDiagnostic: 'FOUNDATIONAL_PROCEDURAL_FAILURE' });
-    const oneNewPractice = item({ activityType: 'PRACTICE', timestamp: '2026-01-14T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 });
-    const afterOne = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, foundationalFail, oneNewPractice] }));
+    const newPractice = (ts: string) => item({ activityType: 'PRACTICE', timestamp: ts, itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 });
+    const p1 = newPractice('2026-01-14T00:00:00.000Z');
+    const p2 = newPractice('2026-01-14T01:00:00.000Z');
+    const p3 = newPractice('2026-01-14T02:00:00.000Z');
+    const afterOne = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, foundationalFail, p1] }));
     expect(afterOne.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('UNSATISFIED');
-    const twoNewPractices = item({ activityType: 'PRACTICE', timestamp: '2026-01-14T01:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 });
-    const afterTwo = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, foundationalFail, oneNewPractice, twoNewPractices] }));
-    expect(afterTwo.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('SATISFIED');
-    expect(afterTwo.stage).toBe('PROVE');
+    const afterTwo = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, foundationalFail, p1, p2] }));
+    expect(afterTwo.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('UNSATISFIED');
+    const afterThree = evaluateCanonicalLearningState(baseInput({ evidence: [...READY_FOR_TRANSFER, foundationalFail, p1, p2, p3] }));
+    expect(afterThree.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('SATISFIED');
+    expect(afterThree.stage).toBe('PROVE');
   });
 
   it('Case D (critical misconception) -> rolls back to PRACTICE, resetting the Practice window, exactly like Case C', () => {

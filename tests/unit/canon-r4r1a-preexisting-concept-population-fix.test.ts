@@ -248,11 +248,12 @@ describe('CANON-R4R1A Part 24 -- required test matrix (1-27)', () => {
     expect(src).toMatch(/guard\.environment !== 'preview'/);
   });
 
-  it('19. the frozen engine policy (CANONICAL_POLICY) remains unchanged by this population-only fix', () => {
-    expect(CANONICAL_POLICY.learn.minimumScorePercentExclusive).toBe(80);
+  it('19. the engine policy (CANONICAL_POLICY) is the governed 2026-10-17 pilot pass policy -- this population-only fix never changes it', () => {
+    expect(CANONICAL_POLICY.learn.minimumScorePercent).toBe(80);
+    expect(CANONICAL_POLICY.learn.itemCount).toBe(5);
     expect(CANONICAL_POLICY.practice.minimumScorePercent).toBe(80);
     expect(CANONICAL_POLICY.prove.itemCount).toBe(10);
-    expect(CANONICAL_POLICY.retention.itemCount).toBe(10);
+    expect(CANONICAL_POLICY.retention.itemCount).toBe(5);
     expect(CANONICAL_POLICY.transfer.challengeCount).toBe(3);
   });
 
@@ -270,8 +271,8 @@ describe('CANON-R4R1A Part 24 -- required test matrix (1-27)', () => {
     expect(decision.currentStage).toBe('PRACTICE');
   });
 
-  it('21. v1 rollback precedence over legacy recognition is unchanged -- a real v1 Prove failure still invalidates a legacy-recognized Practice', () => {
-    const decision = evaluateCanonicalLearningState({
+  it('21. v1 rollback precedence over legacy recognition still holds (two v1 Retain failures invalidate a legacy-recognized Prove); a v1 Prove failure is no longer a rollback (2026-10-17 pilot policy) and leaves a legacy-recognized Practice satisfied', () => {
+    const proveFail = evaluateCanonicalLearningState({
       conceptId: 'c1',
       studentId: 's1',
       now: NOW,
@@ -279,8 +280,21 @@ describe('CANON-R4R1A Part 24 -- required test matrix (1-27)', () => {
       activeCriticalMisconception: false,
       recognizedRequirements: [recognized('LEARN'), recognized('PRACTICE', 'LEGACY_POLICY_RECOGNITION')],
     });
-    expect(decision.requirements.find((r) => r.stage === 'PRACTICE')?.status).toBe('UNSATISFIED');
-    expect(decision.rollback?.case).toBe('PROVE_FAILURE_RETURN_TO_PRACTICE');
+    expect(proveFail.requirements.find((r) => r.stage === 'PRACTICE')?.status).toBe('SATISFIED');
+    expect(proveFail.rollback).toBeNull();
+    expect(proveFail.currentStage).toBe('PROVE');
+
+    const retainFail = (id: string, ts: string) => ({ id, activityType: 'RETENTION_CHECK' as const, timestamp: ts, itemCount: 5, correctCount: 2, scorePercent: 40, independent: true, novel: true, difficulty: 3.5, hasCriticalMisconception: false });
+    const twoStrikes = evaluateCanonicalLearningState({
+      conceptId: 'c1',
+      studentId: 's1',
+      now: '2026-09-30T00:00:00.000Z',
+      evidence: [retainFail('r1', '2026-09-25T00:00:00.000Z'), retainFail('r2', '2026-09-25T01:00:00.000Z')],
+      activeCriticalMisconception: false,
+      recognizedRequirements: [recognized('LEARN'), recognized('PRACTICE', 'LEGACY_POLICY_RECOGNITION'), recognized('PROVE', 'LEGACY_POLICY_RECOGNITION')],
+    });
+    expect(twoStrikes.rollback?.case).toBe('RETENTION_FAILURE_RETURN_TO_PROVE');
+    expect(twoStrikes.requirements.find((r) => r.stage === 'PROVE')?.status).toBe('UNSATISFIED');
   });
 
   it('22. no UI changes -- no React import anywhere in the migration layer', () => {

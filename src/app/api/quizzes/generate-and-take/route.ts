@@ -218,6 +218,8 @@ const GenerateQuizSchema = z.object({
     'canonical_learn_check',
   ]).default('topic_practice'),
   maxQuestions: z.number().int().min(1).max(20).optional(),
+  /** 2026-10-17 subject test / mock: the actual planned date (Student's local day). Frozen with the session. */
+  subjectAssessment: z.object({ scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).optional(),
   difficulty: z.number().int().min(1).max(5).optional(),
   language: z.string().optional(),
   /**
@@ -575,6 +577,10 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         : validated.quizMode === 'diagnostic_check'
         ? Math.max(2, Math.min(4, validated.maxQuestions ?? config.defaultMax))
         : Math.max(1, Math.min(20, validated.maxQuestions ?? config.defaultMax));
+    // 2026-10-17: the subject mock has no governed default size -- its question count is an explicit setup choice.
+    if (validated.quizMode === 'exam_simulation' && !validated.maxQuestions) {
+      return NextResponse.json({ error: 'QUESTION_COUNT_REQUIRED', message: 'A subject mock needs an explicit question count.' }, { status: 400 });
+    }
 
     // LX-4R R8: for a canonical single-concept PRACTICE / PROVE flow the
     // question count derives from the CANONICAL evidence gap
@@ -761,7 +767,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     } else if (validated.conceptIds && validated.conceptIds.length > 0) {
       // Student picked specific topics instead of the automatic
       // weakest-first/scheduled-exam selection below.
-      conceptIds = validated.conceptIds.slice(0, maxQuestions);
+      // 2026-10-17: every selected concept is assessed -- never silently dropped. More concepts than questions is a
+      // setup error the Student fixes (the questions are then distributed across ALL selected concepts).
+      if (validated.conceptIds.length > maxQuestions) {
+        return NextResponse.json({ error: 'MORE_CONCEPTS_THAN_QUESTIONS', message: `Selected ${validated.conceptIds.length} concepts for ${maxQuestions} questions.` }, { status: 400 });
+      }
+      conceptIds = [...validated.conceptIds];
       primaryConceptId = null;
     } else {
       conceptIds = await selectConceptsForQuizMode(
@@ -1348,6 +1359,29 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       v1MarkerToPersist
     );
     persistenceMs = Date.now() - persistenceStartedAt;
+    // 2026-10-17 subject test / mock: freeze the setup with the session -- the exact selected concepts, the question
+    // count, the planned date, the (not yet governed) recommended date and the per-concept blueprint of the questions.
+    if (validated.quizMode === 'cumulative_assessment' || validated.quizMode === 'exam_simulation') {
+      const blueprint: Record<string, number> = {};
+      for (const q of questions as Array<{ conceptId?: string }>) if (q.conceptId) blueprint[q.conceptId] = (blueprint[q.conceptId] ?? 0) + 1;
+      const setup = {
+        kind: validated.quizMode === 'exam_simulation' ? 'SUBJECT_MOCK_EXAM' : 'SUBJECT_CUMULATIVE_TEST',
+        quizMode: validated.quizMode,
+        subjectId: validated.subjectId,
+        selectedConceptIds: conceptIds,
+        selectionSource: validated.conceptIds && validated.conceptIds.length > 0 ? 'STUDENT_SELECTED' : 'AUTOMATIC',
+        questionCount: questions.length,
+        requestedQuestionCount: maxQuestions,
+        scheduledDate: validated.subjectAssessment?.scheduledDate ?? null,
+        recommendedDate: null,
+        recommendedDateStatus: 'NOT_AVAILABLE_NO_GOVERNED_RULE',
+        blueprint,
+        frozenAt: new Date().toISOString(),
+      };
+      await db.query(`UPDATE quiz_sessions SET subject_assessment_setup = $2::jsonb WHERE id = $1 AND subject_assessment_setup IS NULL`, [quizId, JSON.stringify(setup)]).catch((e: { code?: string; message?: string }) => {
+        console.warn('[subject-assessment-setup]', JSON.stringify({ quizId, reason: e?.code === '42703' ? 'COLUMN_NOT_MIGRATED' : (e?.message ?? '').slice(0, 120) }));
+      });
+    }
 
     if (emergencyLaunch) {
       await completeEmergencyDelivery({ input: emergencyLaunch.input, quizId, questions, generator: questionGeneratorIdentity(parentOperationId) }).catch((err) => console.error('[activity-launch] emergency banking failed', err));

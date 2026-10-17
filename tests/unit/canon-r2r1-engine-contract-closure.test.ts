@@ -8,6 +8,12 @@
  * Output Contract tests (Part 33, 35-48). Every test exercises the
  * REAL, unmocked engine (`src/lib/pedagogical-engine/`) -- no DB, no
  * React, no Next.js, no AI provider, no browser.
+ *
+ * 2026-10-17 PILOT PASS POLICY UPDATE: Learn >= 80% INCLUSIVE on an
+ * exactly-5-item check (test 4 now certifies that 80% PASSES); PRACTICE
+ * needs the last 3 valid attempts each >=80% with average >=80% (fixtures
+ * carry 3 qualifying attempts); a failed PROVE stays in PROVE (no REINFORCE
+ * rollback to PRACTICE); RETAIN is 5 items.
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -58,8 +64,9 @@ function proveItem(ts: string, score: number, opts: Partial<RawEvidenceItem> = {
   return item({ activityType: 'PROVE', timestamp: ts, itemCount: 10, correctCount: Math.round((score / 100) * 10), scorePercent: score, difficulty: 3.5, independent: true, ...opts });
 }
 
+/** 2026-10-17 pilot policy: a Retention check is exactly 5 items (was 10). */
 function retentionItem(ts: string, score: number, opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
-  return item({ activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 10, correctCount: Math.round((score / 100) * 10), scorePercent: score, difficulty: 3.5, independent: true, novel: true, ...opts });
+  return item({ activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 5, correctCount: Math.round((score / 100) * 5), scorePercent: score, difficulty: 3.5, independent: true, novel: true, ...opts });
 }
 
 function transferItem(ts: string, perChallengeScores: number[], opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
@@ -67,16 +74,19 @@ function transferItem(ts: string, perChallengeScores: number[], opts: Partial<Ra
   return item({ activityType: 'TRANSFER', timestamp: ts, itemCount: 3, correctCount: perChallengeScores.filter((s) => s >= 80).length, scorePercent: overall, difficulty: 4.5, independent: true, perChallengeScores, reasoningProvided: true, ...opts });
 }
 
-// CANON-V2-REMEDIATION Part 1A: PRACTICE now requires 2 of the last 3
-// valid attempts >=80% (AUDIT-001) -- a single qualifying attempt is no
-// longer sufficient, so this shared ledger now includes 2.
-function provenLedger(): RawEvidenceItem[] {
+// 2026-10-17 pilot policy: PRACTICE requires the LAST 3 valid attempts
+// each >=80% AND their average >=80% (superseding CANON-V2's "2 of the
+// last 3"), so this shared ledger includes 3 qualifying attempts.
+function qualifiedPractice(opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem[] {
   return [
-    LEARNED,
-    practiceItem('2026-01-01T00:00:00.000Z', 90),
-    practiceItem('2026-01-01T01:00:00.000Z', 90),
-    proveItem('2026-01-02T00:00:00.000Z', 90),
+    practiceItem('2026-01-01T00:00:00.000Z', 90, opts),
+    practiceItem('2026-01-01T01:00:00.000Z', 90, opts),
+    practiceItem('2026-01-01T02:00:00.000Z', 90, opts),
   ];
+}
+
+function provenLedger(): RawEvidenceItem[] {
+  return [LEARNED, ...qualifiedPractice(), proveItem('2026-01-02T00:00:00.000Z', 90)];
 }
 
 function retainedLedger(): RawEvidenceItem[] {
@@ -106,10 +116,13 @@ describe('CANON-R2R1 Part 29 -- LEARN regression tests (1-8)', () => {
     expect(requirement(decision, 'LEARN').status).toBe('UNSATISFIED');
   });
 
-  it('4. Learn quiz 80% -> FAIL (the bar is strictly exclusive)', () => {
+  it('4. Learn quiz 80% (4/5) -> PASS (2026-10-17 pilot policy: the bar is >= 80% INCLUSIVE); 79% -> FAIL', () => {
     const decision = evaluateCanonicalLearningState(baseInput({ evidence: [learnCheckItem('2026-01-01T00:00:00.000Z', 80)] }));
-    expect(requirement(decision, 'LEARN').status).toBe('UNSATISFIED');
-    expect(requirement(decision, 'LEARN').reasonCodes).toContain('INSUFFICIENT_SCORE');
+    expect(requirement(decision, 'LEARN').status).toBe('SATISFIED');
+    expect(requirement(decision, 'LEARN').reasonCodes).toContain('PASSING_SCORE');
+    const below = evaluateCanonicalLearningState(baseInput({ evidence: [learnCheckItem('2026-01-01T00:00:00.000Z', 79)] }));
+    expect(requirement(below, 'LEARN').status).toBe('UNSATISFIED');
+    expect(requirement(below, 'LEARN').reasonCodes).toContain('INSUFFICIENT_SCORE');
   });
 
   it('5. Learn quiz 81% -> PASS', () => {
@@ -220,9 +233,9 @@ describe('CANON-R2R1 Part 31 -- Practice difficulty tests (17-26)', () => {
   // Practice attempt to show a contract for). `resolvePracticeDifficulty`
   // is tested directly here, exactly as it is designed to be used: the
   // running-target walk it documents applies whenever the learner
-  // RETURNS to Practice (e.g. after a Prove/Retention/Transfer rollback,
-  // Tests 19-21 of the CANON-R2 suite already exercise that return path
-  // end-to-end through the full engine). Test 17 is the one case the
+  // RETURNS to Practice (e.g. after a Transfer Case C/D rollback; since
+  // the 2026-10-17 pilot policy a failed Prove no longer returns to
+  // Practice, and PRACTICE itself needs 3 of the last 3 valid attempts). Test 17 is the one case the
   // full engine CAN observe directly (zero Practice evidence yet, so
   // PRACTICE is genuinely UNSATISFIED-not-LOCKED and still the active
   // stage) and is exercised that way for extra end-to-end confidence.
@@ -305,8 +318,7 @@ describe('CANON-R2R1 Part 32 -- Prove/Retention/Transfer difficulty tests (27-34
       baseInput({
         evidence: [
           LEARNED,
-          practiceItem('2026-01-01T00:00:00.000Z', 90, { difficulty: 4 }),
-          practiceItem('2026-01-01T01:00:00.000Z', 90, { difficulty: 4 }),
+          ...qualifiedPractice({ difficulty: 4 }),
         ],
       }),
     );
@@ -317,8 +329,9 @@ describe('CANON-R2R1 Part 32 -- Prove/Retention/Transfer difficulty tests (27-34
 
   it('28. Prove target is never below 3, even from a D2 qualifying Practice', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ evidence: [LEARNED, practiceItem('2026-01-01T00:00:00.000Z', 90, { difficulty: 2 })] }),
+      baseInput({ evidence: [LEARNED, ...qualifiedPractice({ difficulty: 2 })] }),
     );
+    expect(decision.currentStage).toBe('PROVE');
     expect(decision.activityContract?.difficulty.target).toBeGreaterThanOrEqual(3);
   });
 
@@ -334,8 +347,7 @@ describe('CANON-R2R1 Part 32 -- Prove/Retention/Transfer difficulty tests (27-34
       baseInput({
         evidence: [
           LEARNED,
-          practiceItem('2026-01-01T00:00:00.000Z', 90, { difficulty: 2 }),
-          practiceItem('2026-01-01T01:00:00.000Z', 90, { difficulty: 2 }),
+          ...qualifiedPractice({ difficulty: 2 }),
           proveItem('2026-01-02T00:00:00.000Z', 90, { difficulty: 4 }),
         ],
       }),
@@ -363,8 +375,7 @@ describe('CANON-R2R1 Part 32 -- Prove/Retention/Transfer difficulty tests (27-34
       baseInput({
         evidence: [
           LEARNED,
-          practiceItem('2026-01-01T00:00:00.000Z', 90, { difficulty: 4 }),
-          practiceItem('2026-01-01T01:00:00.000Z', 90, { difficulty: 4 }),
+          ...qualifiedPractice({ difficulty: 4 }),
           proveItem('2026-01-02T00:00:00.000Z', 90, { difficulty: 4 }),
           retentionItem('2026-01-06T00:00:00.000Z', 95, { difficulty: 4 }),
         ],
@@ -464,7 +475,7 @@ describe('CANON-R2R1 Part 33 -- Output Contract tests (35-48)', () => {
 
 describe('CANON-R2R1 supplementary -- actionState/nextCanonicalAction across stages', () => {
   it('LOCKED stage reports actionState LOCKED and nextCanonicalAction NONE', () => {
-    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, practiceItem('2026-01-01T00:00:00.000Z', 90), practiceItem('2026-01-01T01:00:00.000Z', 90)] }));
+    const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, ...qualifiedPractice()] }));
     expect(decision.stage).toBe('PROVE');
     expect(decision.actionState).toBe('EXECUTABLE');
     expect(decision.nextCanonicalAction).toBe('PROVE');
@@ -472,19 +483,27 @@ describe('CANON-R2R1 supplementary -- actionState/nextCanonicalAction across sta
   });
 
   it('a REINFORCE intervention reports actionState EXECUTABLE with the underlying stage as nextCanonicalAction', () => {
+    // Since 2026-10-17 a failed Prove no longer rolls back; a foundational Transfer failure is a rollback to PRACTICE.
     const decision = evaluateCanonicalLearningState(
       baseInput({
-        evidence: [
-          LEARNED,
-          practiceItem('2026-01-01T00:00:00.000Z', 90),
-          practiceItem('2026-01-01T01:00:00.000Z', 90),
-          proveItem('2026-01-02T00:00:00.000Z', 70),
-        ],
+        evidence: [...retainedLedger(), transferItem('2026-01-10T00:00:00.000Z', [10, 10, 10], { transferFailureDiagnostic: 'FOUNDATIONAL_PROCEDURAL_FAILURE' })],
+        now: '2026-01-10T00:00:00.000Z',
       }),
     );
     expect(decision.intervention).toBe('REINFORCE');
     expect(decision.actionState).toBe('EXECUTABLE');
     expect(decision.nextCanonicalAction).toBe('PRACTICE');
+  });
+
+  it('2026-10-17 pilot policy: a failed Prove is NOT a REINFORCE intervention -- PROVE stays EXECUTABLE for an immediate retry', () => {
+    const decision = evaluateCanonicalLearningState(
+      baseInput({ evidence: [LEARNED, ...qualifiedPractice(), proveItem('2026-01-02T00:00:00.000Z', 70)] }),
+    );
+    expect(decision.intervention).toBeNull();
+    expect(decision.rollback).toBeNull();
+    expect(decision.stage).toBe('PROVE');
+    expect(decision.actionState).toBe('EXECUTABLE');
+    expect(decision.nextCanonicalAction).toBe('PROVE');
   });
 
   it('qualifiedEvidence mirrors requirements one-to-one, with only opaque ids -- never free text', () => {
@@ -505,7 +524,8 @@ describe('CANON-R2R1 supplementary -- actionState/nextCanonicalAction across sta
   it('journeyProgressPercent is strictly increasing across the canonical stage order', () => {
     const percents = [
       evaluateCanonicalLearningState(baseInput()).journeyProgressPercent, // LEARN
-      evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, practiceItem('2026-01-01T00:00:00.000Z', 90)] })).journeyProgressPercent, // PROVE
+      evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, practiceItem('2026-01-01T00:00:00.000Z', 90)] })).journeyProgressPercent, // PRACTICE
+      evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, ...qualifiedPractice()] })).journeyProgressPercent, // PROVE
       evaluateCanonicalLearningState(baseInput({ evidence: provenLedger(), now: '2026-01-06T00:00:00.000Z' })).journeyProgressPercent, // RETAIN (WAITING, but stage RETAIN)
     ];
     for (let i = 1; i < percents.length; i++) expect(percents[i]).toBeGreaterThan(percents[i - 1]);

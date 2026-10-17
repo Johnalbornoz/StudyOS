@@ -7,7 +7,8 @@
  * `CanonicalPedagogicalDecision.policyVersion`).
  */
 
-export const POLICY_VERSION = 'studyus-canonical-v1' as const;
+/** 2026-10-17 pilot pass policy (operator: PASS_THRESHOLD = 80_PERCENT_INCLUSIVE everywhere; Learn check 5; Practice 3/3 rolling; Retain 5). */
+export const POLICY_VERSION = 'studyus-canonical-v2-pilot-2026-10-17' as const;
 
 export interface DifficultyRange {
   min: number;
@@ -19,31 +20,42 @@ export const CANONICAL_POLICY = {
   learn: {
     difficulty: { min: 1, max: 2 } as DifficultyRange,
     /**
-     * CANON-R2R1: LEARN is a comprehension checkpoint (a passed LEARN
-     * check quiz), never mere activity existence. The bar is EXCLUSIVE
-     * -- exactly 80% still fails, only a score strictly greater than 80
-     * qualifies (product decision, CANON-R2R1 Part 5). Named
-     * `...Exclusive` rather than reusing `minimumScorePercent` so the
-     * comparison operator (`>`, never `>=`) is never ambiguous at a call
-     * site.
+     * LEARN is a comprehension checkpoint (a passed LEARN check), never mere activity existence or a "complete" click.
+     * 2026-10-17 pilot policy (supersedes CANON-R2R1 Part 5's EXCLUSIVE bar): PASS_THRESHOLD = 80% INCLUSIVE
+     * (80.0% passes). The check has a fixed size of 5 questions (operator decision 2026-10-17; it was ungoverned).
      */
-    minimumScorePercentExclusive: 80,
+    minimumScorePercent: 80,
+    itemCount: 5,
   },
   practice: {
     minItems: 2,
     maxItems: 3,
+    /**
+     * 2026-10-17 pilot policy (supersedes CANON-V2 "2 of the last 3"): the decision window is the LAST 3 completed
+     * valid practices; READY_TO_PROVE needs EACH of the 3 >= 80% AND their average >= 80%. Never from one practice.
+     */
+    windowSize: 3,
+    requiredPassesInWindow: 3,
+    minimumWindowAveragePercent: 80,
     difficulty: { min: 2, max: 4 } as DifficultyRange,
     minimumScorePercent: 80,
     independenceRequired: false,
   },
   prove: {
+    /** Fixed independent certification: exactly 10 valid questions; never shrunk. */
     itemCount: 10,
+    /**
+     * 2026-10-17 pilot policy: a PROVE attempt below 80% keeps the learner in PROVE with an immediate retry (no
+     * rollback to PRACTICE); once PROVE has passed, a later optional attempt never undoes it.
+     */
+    failureStaysInProve: true,
     difficulty: { min: 3, max: 4 } as DifficultyRange,
     minimumScorePercent: 80,
     independenceRequired: true,
   },
   retention: {
-    itemCount: 10,
+    /** 2026-10-17 pilot policy: 5 questions (no newer governed count supersedes it). */
+    itemCount: 5,
     minimumWaitDays: 3,
     difficulty: { min: 3, max: 4 } as DifficultyRange,
     minimumScorePercent: 80,

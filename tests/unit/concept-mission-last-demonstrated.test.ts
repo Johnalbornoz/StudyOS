@@ -26,6 +26,12 @@
  * no React. F exercises the real `overrideConceptMissionViewWithCanonicalDecision`.
  * G is a source-level assertion that the Concept Detail page no longer
  * sources this value from `memory.lastSuccessfulRetentionAt`.
+ *
+ * 2026-10-17 pilot pass policy: PRACTICE needs the last 3 valid attempts
+ * each >=80% (fixtures carry 3); the Retention check is 5 items; and once
+ * PROVE has passed in a cycle a later Prove is non-qualifying history, so
+ * lastQualifyingProveAt only moves when a NEW cycle's Prove qualifies
+ * (after Retain's two-strike rollback) -- TEST B is updated accordingly.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
@@ -80,20 +86,24 @@ function proveItem(ts: string, score: number, opts: Partial<RawEvidenceItem> = {
 
 function retentionItem(ts: string, score: number, opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
   return item({
-    activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 10,
-    correctCount: Math.round((score / 100) * 10), scorePercent: score, difficulty: 3.5, independent: true, novel: true,
+    activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 5,
+    correctCount: Math.round((score / 100) * 5), scorePercent: score, difficulty: 3.5, independent: true, novel: true,
     ...opts,
   });
 }
 
-/** LEARN + 2 qualifying PRACTICE attempts + 1 qualifying PROVE, anchored day0-2. */
-function provenLedger(): RawEvidenceItem[] {
+/** Three qualifying PRACTICE attempts (2026-10-17 pilot policy: the last 3 valid attempts must each pass). */
+function qualifiedPractice(): RawEvidenceItem[] {
   return [
-    LEARNED_ITEM,
     practiceItem('2026-01-01T00:00:00.000Z', 90),
     practiceItem('2026-01-01T01:00:00.000Z', 90),
-    proveItem('2026-01-02T00:00:00.000Z', 90),
+    practiceItem('2026-01-01T02:00:00.000Z', 90),
   ];
+}
+
+/** LEARN + 3 qualifying PRACTICE attempts + 1 qualifying PROVE, anchored day0-2. */
+function provenLedger(): RawEvidenceItem[] {
+  return [LEARNED_ITEM, ...qualifiedPractice(), proveItem('2026-01-02T00:00:00.000Z', 90)];
 }
 
 const PROVE_TS = '2026-01-02T00:00:00.000Z';
@@ -114,7 +124,7 @@ function baseInput(overrides: Partial<PedagogicalEngineInput> = {}): Pedagogical
 describe('TEST A -- before qualifying PROVE, lastQualifyingProveAt is null', () => {
   it('LEARN + PRACTICE only (no PROVE evidence at all)', () => {
     const decision = evaluateCanonicalLearningState(
-      baseInput({ now: '2026-01-01T02:00:00.000Z', evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90), practiceItem('2026-01-01T01:00:00.000Z', 90)] }),
+      baseInput({ now: '2026-01-01T03:00:00.000Z', evidence: [LEARNED_ITEM, ...qualifiedPractice()] }),
     );
     expect(decision.stage).toBe('PROVE');
     expect(decision.lastQualifyingProveAt).toBeNull();
@@ -124,9 +134,10 @@ describe('TEST A -- before qualifying PROVE, lastQualifyingProveAt is null', () 
     const decision = evaluateCanonicalLearningState(
       baseInput({
         now: '2026-01-02T01:00:00.000Z',
-        evidence: [LEARNED_ITEM, practiceItem('2026-01-01T00:00:00.000Z', 90), practiceItem('2026-01-01T01:00:00.000Z', 90), proveItem(PROVE_TS, 40)],
+        evidence: [LEARNED_ITEM, ...qualifiedPractice(), proveItem(PROVE_TS, 40)],
       }),
     );
+    expect(decision.stage).toBe('PROVE'); // genuine failure: stays in PROVE
     expect(decision.lastQualifyingProveAt).toBeNull();
   });
 });
@@ -138,10 +149,21 @@ describe('TEST B -- after a qualifying PROVE, lastQualifyingProveAt equals the e
     expect(decision.lastQualifyingProveAt).toBe(PROVE_TS);
   });
 
-  it('when multiple PROVE attempts qualify over time, the value is the MOST RECENT qualifying one', () => {
+  it('2026-10-17 pilot policy: a LATER passing Prove in the SAME cycle is non-qualifying history -- lastQualifyingProveAt stays the cycle\'s first qualifying Prove', () => {
     const secondProveTs = '2026-01-10T00:00:00.000Z';
     const decision = evaluateCanonicalLearningState(
       baseInput({ now: '2026-01-10T01:00:00.000Z', evidence: [...provenLedger(), retentionItem(ELIGIBLE_FROM, 95), proveItem(secondProveTs, 95)] }),
+    );
+    expect(decision.lastQualifyingProveAt).toBe(PROVE_TS);
+    expect(decision.requirements.find((r) => r.stage === 'PROVE')!.qualifyingEvidenceCount).toBe(1);
+  });
+
+  it('when a NEW cycle opens (Retain two-strike rollback) and its Prove qualifies, the value is that MOST RECENT qualifying Prove', () => {
+    const fail1 = new Date(new Date(ELIGIBLE_FROM).getTime() + 3600000).toISOString();
+    const fail2 = new Date(new Date(ELIGIBLE_FROM).getTime() + 7200000).toISOString();
+    const secondProveTs = '2026-01-10T00:00:00.000Z';
+    const decision = evaluateCanonicalLearningState(
+      baseInput({ now: '2026-01-10T01:00:00.000Z', evidence: [...provenLedger(), retentionItem(fail1, 40), retentionItem(fail2, 40), proveItem(secondProveTs, 95)] }),
     );
     expect(decision.lastQualifyingProveAt).toBe(secondProveTs);
   });

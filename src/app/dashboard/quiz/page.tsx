@@ -211,7 +211,9 @@ const MODE_DEFAULT_MAX: Record<QuizMode, number> = {
   topic_practice: 20,
   review: 20,
   cumulative_assessment: 20,
-  exam_simulation: 20,
+  // Subject mock: no governed default size (MOCK_DEFAULT_QUESTION_COUNT = OPERATOR_DECISION_REQUIRED, 2026-10-17); the
+  // Student must choose the count explicitly before creating it (0 = not chosen).
+  exam_simulation: 0,
   diagnostic_check: 3,
   // Never actually used: canonical_prove is always isCanonicalFlow (a
   // concept + this single-concept mode), so maxQuestions is omitted
@@ -224,7 +226,7 @@ const MODE_DEFAULT_MAX: Record<QuizMode, number> = {
   // execution-default contract decides the real count regardless of
   // this default. Values mirror QUIZ_MODE_CONFIG's own defaultMax in
   // generate-and-take/route.ts, purely for documentation consistency.
-  canonical_retain: 10,
+  canonical_retain: 5,
   canonical_transfer: 3,
   canonical_learn_check: 5,
 };
@@ -386,9 +388,16 @@ function QuizPageContent() {
   // A concept passed alongside cumulative_assessment (e.g. an older
   // link) still pre-selects it -- Solo Check itself is its own quiz
   // mode now (quick_check) and never needs this path.
+  // 2026-10-17 subject test / mock: every eligible concept is ENABLED by default once the subject's concepts load; the
+  // Student turns off what should not be assessed (at least one stays selected).
   const [selectedConceptIds, setSelectedConceptIds] = useState<string[]>(
     quizMode === 'cumulative_assessment' && conceptId ? [conceptId] : []
   );
+  // The actual planned date (YYYY-MM-DD, the Student's local day) and StudyUs's recommendation (no governed rule yet).
+  const [scheduledDate, setScheduledDate] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
 
   const [quizId, setQuizId] = useState<string | null>(null);
   // Assisted activities (LEARN_CHECK): immediate per-question feedback via
@@ -684,7 +693,11 @@ function QuizPageContent() {
         );
         const conceptsBody = await conceptsRes.json();
         if (conceptsRes.ok) {
-          if (allowsTopicSelection) setSubjectConcepts(conceptsBody.data.concepts || []);
+          if (allowsTopicSelection) {
+            const all = (conceptsBody.data.concepts || []) as SubjectConcept[];
+            setSubjectConcepts(all);
+            setSelectedConceptIds(all.map((c) => c.id));
+          }
           setSubjectName(conceptsBody.data.subjectName || '');
           const match = conceptId
             ? ((conceptsBody.data.concepts || []) as SubjectConcept[]).find((c) => c.id === conceptId || c.canonicalId === conceptId)
@@ -738,6 +751,7 @@ function QuizPageContent() {
       conceptId: conceptId || undefined,
       conceptIds: selectedConceptIds.length > 0 ? selectedConceptIds : undefined,
       quizMode,
+      ...(allowsTopicSelection ? { subjectAssessment: { scheduledDate } } : {}),
       // LX-4I: the learner never sets evidence sufficiency for a canonical
       // Practice/Prove flow. The route applies its own per-mode canonical
       // count. Legacy/manual setup still passes the slider value.
@@ -745,7 +759,7 @@ function QuizPageContent() {
       ...(languageOverride ? { language: languageOverride } : {}),
       ...(v1Launch ? { v1Launch: true } : {}),
     }),
-    [subjectId, conceptId, selectedConceptIds, quizMode, isCanonicalFlow, maxQuestions, v1Launch],
+    [subjectId, conceptId, selectedConceptIds, quizMode, isCanonicalFlow, maxQuestions, v1Launch, allowsTopicSelection, scheduledDate],
   );
 
   const generateQuiz = useCallback(
@@ -1696,26 +1710,44 @@ function QuizPageContent() {
           <p className="label" style={{ color: 'var(--brand-ink)' }}>{modeLabel(quizMode)}</p>
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '6px 0 var(--space-6)' }}>{modeDesc(quizMode)}</p>
 
-          <label className="label" htmlFor={maxQuestionsId} style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
-            {t['quiz.maxQuestionsLabel']}: <strong className="tabular">{maxQuestions}</strong>
-          </label>
-          <input
-            id={maxQuestionsId}
-            type="range"
-            min={1}
-            max={20}
-            value={maxQuestions}
-            onChange={(e) => setMaxQuestions(Number(e.target.value))}
-            style={{ width: '100%' }}
-          />
+          {quizMode === 'exam_simulation' ? (
+            <>
+              <label className="label" htmlFor={maxQuestionsId} style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
+                {t['quiz.subjectSetup.questionCountLabel']}
+              </label>
+              <select id={maxQuestionsId} className="ui-select" value={maxQuestions || ''} onChange={(e) => setMaxQuestions(Number(e.target.value))} style={{ width: '100%' }}>
+                <option value="">{t['quiz.subjectSetup.questionCountPlaceholder']}</option>
+                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </>
+          ) : (
+            <>
+              <label className="label" htmlFor={maxQuestionsId} style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
+                {t['quiz.maxQuestionsLabel']}: <strong className="tabular">{maxQuestions}</strong>
+              </label>
+              <input
+                id={maxQuestionsId}
+                type="range"
+                min={1}
+                max={20}
+                value={maxQuestions}
+                onChange={(e) => setMaxQuestions(Number(e.target.value))}
+                style={{ width: '100%' }}
+              />
+            </>
+          )}
           <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>{t[studentRuntimeMayGenerateQuestions(quizMode) ? 'quiz.maxQuestionsHint' : 'quiz.maxQuestionsHintExam']}</p>
 
           {allowsTopicSelection && subjectConcepts.length > 0 && (
-            <div style={{ marginTop: 'var(--space-6)' }}>
+            <div style={{ marginTop: 'var(--space-6)' }} data-testid="subject-concept-selector">
               <label className="label" style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
                 {t['quiz.selectTopicsLabel']}
               </label>
-              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 10px' }}>{t['quiz.selectTopicsHint']}</p>
+              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '0 0 10px' }}>{t['quiz.subjectSetup.conceptsHint']}</p>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSelectedConceptIds(subjectConcepts.map((c) => c.id))}>{t['quiz.subjectSetup.selectAll']}</button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSelectedConceptIds([])}>{t['quiz.subjectSetup.deselectAll']}</button>
+              </div>
               <div
                 style={{
                   maxHeight: 220, overflowY: 'auto', border: '1px solid var(--border-default)',
@@ -1747,22 +1779,60 @@ function QuizPageContent() {
                   );
                 })}
               </div>
-              {selectedConceptIds.length > 0 && (
-                <p style={{ fontSize: 12.5, color: 'var(--brand-ink)', margin: '8px 0 0' }}>
-                  {selectedConceptIds.length} {t['quiz.selectTopicsCount']}
-                </p>
-              )}
+              <p style={{ fontSize: 12.5, color: 'var(--brand-ink)', margin: '8px 0 0' }}>
+                {selectedConceptIds.length} {t['quiz.selectTopicsCount']}
+              </p>
             </div>
           )}
 
-          <button
-            className="btn btn-primary"
-            style={{ marginTop: 'var(--space-6)' }}
-            disabled={!studentId}
-            onClick={() => studentId && generateQuiz(studentId)}
-          >
-            {t['quiz.startQuiz']}
-          </button>
+          {allowsTopicSelection && (
+            <div style={{ marginTop: 'var(--space-6)', display: 'grid', gap: 10 }}>
+              <label className="label" style={{ color: 'var(--text-muted)' }}>
+                {t['quiz.subjectSetup.scheduledDate']}
+                <input type="date" className="ui-input" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} style={{ display: 'block', marginTop: 6 }} data-testid="subject-scheduled-date" />
+              </label>
+              <p style={{ fontSize: 13, margin: 0 }} data-testid="subject-recommended-date">
+                <span style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.recommendedDate']}:</span> {t['quiz.subjectSetup.recommendedNotAvailable']}
+              </p>
+            </div>
+          )}
+
+          {(() => {
+            const subjectSetup = allowsTopicSelection;
+            const noConcept = subjectSetup && subjectConcepts.length > 0 && selectedConceptIds.length === 0;
+            const countMissing = quizMode === 'exam_simulation' && !(maxQuestions > 0);
+            const countBelow = subjectSetup && !countMissing && selectedConceptIds.length > maxQuestions;
+            const blocked = noConcept || countMissing || countBelow || !scheduledDate;
+            const names = subjectConcepts.filter((c) => selectedConceptIds.includes(c.id)).map((c) => c.label);
+            return (
+              <>
+                {subjectSetup && (
+                  <div className="card" style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--bg-subtle)' }} data-testid="subject-assessment-preview">
+                    <p className="label" style={{ margin: '0 0 8px' }}>{t['quiz.subjectSetup.preview']}</p>
+                    <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px', margin: 0, fontSize: 13.5 }}>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewSubject']}</dt><dd style={{ margin: 0 }}>{subjectName}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewMode']}</dt><dd style={{ margin: 0 }}>{modeLabel(quizMode)}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewConcepts']}</dt><dd style={{ margin: 0 }}>{selectedConceptIds.length}{names.length ? ` · ${names.join(', ')}` : ''}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewQuestions']}</dt><dd style={{ margin: 0 }}>{maxQuestions > 0 ? maxQuestions : '—'}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.scheduledDate']}</dt><dd style={{ margin: 0 }}>{scheduledDate || '—'}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.recommendedDate']}</dt><dd style={{ margin: 0 }}>{t['quiz.subjectSetup.recommendedNotAvailable']}</dd>
+                    </dl>
+                  </div>
+                )}
+                {noConcept && <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', margin: '8px 0 0' }}>{t['quiz.subjectSetup.atLeastOne']}</p>}
+                {countMissing && <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', margin: '8px 0 0' }}>{t['quiz.subjectSetup.questionCountRequired']}</p>}
+                {countBelow && <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', margin: '8px 0 0' }}>{t['quiz.subjectSetup.countBelowConcepts'].replace('{n}', String(selectedConceptIds.length))}</p>}
+                <button
+                  className="btn btn-primary"
+                  style={{ marginTop: 'var(--space-6)' }}
+                  disabled={!studentId || blocked}
+                  onClick={() => studentId && !blocked && generateQuiz(studentId)}
+                >
+                  {subjectSetup ? t['quiz.subjectSetup.create'] : t['quiz.startQuiz']}
+                </button>
+              </>
+            );
+          })()}
         </div>
       </div>
     );
@@ -2431,13 +2501,16 @@ function QuizPageContent() {
 
         <div className="ls-secondary">
           <button className="btn btn-secondary" onClick={() => setReviewing(true)}>{at['xs.review']}</button>
-          {PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId && studentId && (
+          {/* PED-04 (2026-10-17): the Learn comprehension check is a fixed 5-question gate, not open practice -- "practice
+              again" re-requested a check the engine no longer authorised once it was passed (403 -> "No pudimos preparar
+              tu comprobación de comprensión"). Its retake, when needed, comes from the concept's canonical next action. */}
+          {PRACTICE_EVIDENCE_MODES.includes(quizMode) && quizMode !== 'canonical_learn_check' && !resumeVerifyAttemptId && studentId && (
             <button className="btn btn-secondary" onClick={() => studentId && generateQuiz(studentId)}>
               {at['activeLearning.practiceAgain']}
             </button>
           )}
         </div>
-        {PRACTICE_EVIDENCE_MODES.includes(quizMode) && !resumeVerifyAttemptId && (
+        {PRACTICE_EVIDENCE_MODES.includes(quizMode) && quizMode !== 'canonical_learn_check' && !resumeVerifyAttemptId && (
           <p className="ls-note">{at['activeLearning.retryNote']}</p>
         )}
       </div>

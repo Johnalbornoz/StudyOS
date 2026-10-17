@@ -72,10 +72,11 @@ describe('the supply boundary: three item categories, three sources, no generic 
       ['RETENTION_CHECK', 'LEARNING'], ['MIXED_CUMULATIVE', 'LEARNING'], ['AD_HOC_CONCEPT_EXAM', 'INTERNAL_ASSESSMENT'],
     ]);
     expect(supplyIntentOfLearningIntent('PAA_FULL_MOCK')).toBeNull();
-    expect(supplyFamilyOf(supplyIntentOfQuizMode('exam_simulation'))).toBe('STANDARDIZED_EXAM');
+    // 2026-10-17: exam_simulation is the SUBJECT mock (an internal assessment), never standardized Exam Prep
+    expect(supplyFamilyOf(supplyIntentOfQuizMode('exam_simulation'))).toBe('INTERNAL_ASSESSMENT');
     expect(supplyFamilyOf(supplyIntentOfQuizMode('not_a_mode'))).toBe('STANDARDIZED_EXAM');
     expect(studentRuntimeMayGenerateQuestions('topic_practice')).toBe(true);
-    expect(studentRuntimeMayGenerateQuestions('exam_simulation')).toBe(false);
+    expect(studentRuntimeMayGenerateQuestions('exam_simulation')).toBe(true);
   });
 
   it('no LEARNING or INTERNAL ASSESSMENT intent reads the Certified Exam Bank (QUESTION_BANK_BLOCKS_LEARNING = NO)', () => {

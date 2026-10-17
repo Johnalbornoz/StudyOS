@@ -102,14 +102,18 @@ describe('B5-D entry points', () => {
     for (const mode of ['topic_practice', 'canonical_prove', 'canonical_retain', 'canonical_learn_check']) expect(entryTargetFor('/dashboard/quiz', { ...quiz, mode }, false)).toBeNull();
   });
 
-  it('ON: practice / prove / retain enter the canonical setup with the same intent and nothing else', () => {
+  it('ON: a NON-canonical practice / prove / retain link enters the canonical setup with the same intent and nothing else', () => {
     expect(ASSESSMENT_INTENT_OF_QUIZ_MODE).toEqual({ topic_practice: 'CONCEPT_PRACTICE', quick_check: 'MASTERY_CHECK', canonical_prove: 'MASTERY_CHECK', canonical_retain: 'RETENTION_CHECK' });
-    const href = entryTargetFor('/dashboard/quiz', { ...quiz, mode: 'topic_practice' }, true)!;
+    const { v1Launch: _v1, ...legacy } = quiz;
+    const href = entryTargetFor('/dashboard/quiz', { ...legacy, mode: 'topic_practice' }, true)!;
     expect(href).toBe(`/dashboard/assessment?intent=CONCEPT_PRACTICE&origin=TODAY&lc=${LC}`);
     // the engine's count and difficulty do not travel: the Blueprint Core decides them
     expect(href).not.toMatch(/maxQuestions|difficulty|v1Launch|subjectId/);
-    expect(entryTargetFor('/dashboard/quiz', { ...quiz, mode: 'canonical_prove' }, true)).toBe(assessmentSetupHref({ learnerConceptId: LC }, 'MASTERY_CHECK'));
-    expect(entryTargetFor('/dashboard/quiz', { ...quiz, mode: 'canonical_retain' }, true)).toBe(assessmentSetupHref({ learnerConceptId: LC }, 'RETENTION_CHECK'));
+    expect(entryTargetFor('/dashboard/quiz', { ...legacy, mode: 'canonical_prove' }, true)).toBe(assessmentSetupHref({ learnerConceptId: LC }, 'MASTERY_CHECK'));
+    expect(entryTargetFor('/dashboard/quiz', { ...legacy, mode: 'canonical_retain' }, true)).toBe(assessmentSetupHref({ learnerConceptId: LC }, 'RETENTION_CHECK'));
+    // PED-01 (2026-10-17): a launch the canonical Learning engine AUTHORISED (v1Launch) keeps its own contract flow --
+    // Prove exactly 10, Retain 5, Learn check 5 -- and is never re-pointed to the count-less setup.
+    for (const mode of ['topic_practice', 'canonical_prove', 'canonical_retain']) expect(entryTargetFor('/dashboard/quiz', { ...quiz, mode }, true)).toBeNull();
     // the setup page understands exactly that link
     const query = Object.fromEntries(new URL(href, 'http://x').searchParams);
     expect(launchRequestOfQuery(query)).toMatchObject({ family: 'LEARNING', intent: 'CONCEPT_PRACTICE', origin: 'TODAY', scope: { canonicalConceptIds: [], learnerConceptIds: [LC] } });
@@ -142,7 +146,9 @@ describe('B5-D entry points', () => {
     expect(off.launchTarget).toMatch(/^\/dashboard\/quiz\?/);
     process.env[ASSESSMENT_SNAPSHOT_EXECUTION_FLAG] = 'true';
     const on = resolveCanonicalLaunch({ subjectId: 'sub', conceptId: LC, decision });
-    expect(on.launchTarget).toBe(`/dashboard/assessment?intent=CONCEPT_PRACTICE&origin=TODAY&lc=${LC}`);
+    // PED-01 (2026-10-17): the engine-authorised launch keeps its contract flow with the flag ON as well
+    expect(on.launchTarget).toBe(off.launchTarget);
+    expect(on.launchTarget).toMatch(/v1Launch=1/);
     // what the decision authorised is unchanged
     expect(on.launchParams).toEqual(off.launchParams);
     expect(on.launchStatus).toBe('READY');
@@ -234,7 +240,7 @@ describe('B5-D answers in progress', () => {
       // PAA pilot: the automated certification path for generated Exam Bank content; it adds no response model
       '20261124_1000_exam_bank_pilot_generated_certification.sql',
       '20261124_1100_exam_bank_pilot_certified_activation.sql',
-      '20261124_1200_exam_bank_pilot_certification_scope.sql', '20261125_1000_exam_readiness_evidence.sql', '20261126_1000_simulation_type_preparation_mock.sql',
+      '20261124_1200_exam_bank_pilot_certification_scope.sql', '20261125_1000_exam_readiness_evidence.sql', '20261126_1000_simulation_type_preparation_mock.sql', '20261127_1000_mastery_policy_v2_pilot_pass_80.sql', '20261127_1100_quiz_session_subject_assessment_setup.sql',
     ]);
   });
 

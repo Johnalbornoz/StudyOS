@@ -39,14 +39,21 @@ function baseInput(overrides: Partial<PedagogicalEngineInput> = {}): Pedagogical
   return { conceptId: 'concept-1', studentId: 'student-1', now: '2026-01-01T00:00:00.000Z', evidence: [], activeCriticalMisconception: false, ...overrides };
 }
 
-describe('LEARN boundaries -- Policy V2 Section 2 (score strictly > 80, exclusive)', () => {
+describe('LEARN boundaries -- 2026-10-17 pilot policy (score >= 80 INCLUSIVE on an exactly-5-item check; superseding Policy V2 Section 2\'s exclusive bar)', () => {
   it('79 -> FAILS', () => {
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 79 })] }));
     expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('UNSATISFIED');
   });
-  it('80 -> FAILS (the bar is EXCLUSIVE -- exactly 80% still fails)', () => {
-    const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 80 })] }));
-    expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('UNSATISFIED');
+  it('80 -> PASSES (the bar is INCLUSIVE -- exactly 80% now passes)', () => {
+    const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 80, correctCount: 4 })] }));
+    expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('SATISFIED');
+  });
+  it('a check that is not exactly 5 items (4 or 10) -> UNRESOLVED_POLICY, never a pass even at 100%', () => {
+    for (const itemCount of [4, 10]) {
+      const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 100, itemCount, correctCount: itemCount })] }));
+      expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('UNSATISFIED');
+      expect(d.requirements.find((r) => r.stage === 'LEARN')!.reasonCodes).toContain('UNRESOLVED_POLICY');
+    }
   });
   it('81 -> PASSES', () => {
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 81 })] }));
@@ -65,8 +72,7 @@ describe('LEARN boundaries -- Policy V2 Section 2 (score strictly > 80, exclusiv
     expect(d.requirements.find((r) => r.stage === 'LEARN')!.status).toBe('UNSATISFIED');
   });
   it('a live, ACTIVE global critical misconception does NOT override an in-progress LEARN stage (the exemption is `stage !== "LEARN"`)', () => {
-    // LEARN itself not yet satisfied (score 70, below the exclusive 80
-    // bar) -- stage naturally computes as LEARN even absent any
+    // LEARN itself not yet satisfied (score 70, below the 80 bar) -- stage naturally computes as LEARN even absent any
     // misconception. Confirms the override's own `stage !== 'LEARN'`
     // guard is a genuine no-op here, not merely untested.
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [item({ scorePercent: 70 })], activeCriticalMisconception: true }));
@@ -83,17 +89,23 @@ function practiceItem(ts: string, score = 90): RawEvidenceItem {
 function proveItem(ts: string, score: number, opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
   return item({ activityType: 'PROVE', timestamp: ts, itemCount: 10, correctCount: Math.round((score / 100) * 10), scorePercent: score, difficulty: 3.5, independent: true, ...opts });
 }
-// Uses 2 valid Practice attempts so the fixture is robust even once
-// AUDIT-001's "2 of last 3" rule is remediated.
-const PRACTICE_READY = [LEARNED, practiceItem('2025-12-31T00:00:00.000Z', 90), practiceItem('2025-12-31T01:00:00.000Z', 90)];
+// 2026-10-17 pilot policy: 3 valid passing Practice attempts (the last-3 window, each >= 80, average >= 80).
+const PRACTICE_READY = [
+  LEARNED,
+  practiceItem('2025-12-31T00:00:00.000Z', 90),
+  practiceItem('2025-12-31T01:00:00.000Z', 90),
+  practiceItem('2025-12-31T02:00:00.000Z', 90),
+];
 
 describe('PROVE boundaries -- Policy V2 Section 5', () => {
-  it('7/10 (70%) -> FAIL, and (per policy\'s own Section 5 rollback rule) also invalidates PRACTICE, LOCKING Prove until requalification', () => {
+  it('7/10 (70%) -> FAIL, and (2026-10-17 pilot policy) the learner STAYS in PROVE: PRACTICE remains SATISFIED, no rollback, Prove immediately retryable', () => {
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [...PRACTICE_READY, proveItem('2026-01-01T00:00:00.000Z', 70)] }));
-    expect(d.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('UNSATISFIED');
-    expect(d.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('LOCKED');
-    expect(d.rollback?.case).toBe('PROVE_FAILURE_RETURN_TO_PRACTICE');
-    expect(d.stage).toBe('PRACTICE');
+    expect(d.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('SATISFIED');
+    expect(d.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('UNSATISFIED');
+    expect(d.requirements.find((r) => r.stage === 'PROVE')!.reasonCodes).toContain('FAILED_ATTEMPT');
+    expect(d.rollback).toBeNull();
+    expect(d.stage).toBe('PROVE');
+    expect(d.actionState).toBe('EXECUTABLE');
   });
   it('8/10 (80%) -> PASS', () => {
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [...PRACTICE_READY, proveItem('2026-01-01T00:00:00.000Z', 80)] }));
@@ -123,12 +135,10 @@ describe('PROVE boundaries -- Policy V2 Section 5', () => {
     const d = evaluateCanonicalLearningState(baseInput({ evidence: [...PRACTICE_READY, proveItem('2026-01-01T00:00:00.000Z', 90, { hasCriticalMisconception: true })] }));
     expect(d.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('UNSATISFIED');
   });
-  it('retry after a failed Prove: fail then a NEW qualifying Prove after Practice requalifies -> eventually PASSES, and the failed attempt remains in nonQualifyingEvidenceIds (immutable history, never erased)', () => {
+  it('retry after a failed Prove: fail then an immediate NEW qualifying Prove (no Practice requalification needed) -> PASSES, and the failed attempt remains in nonQualifyingEvidenceIds (immutable history, never erased)', () => {
     const failedProve = proveItem('2026-01-01T00:00:00.000Z', 50);
-    const requalify1 = practiceItem('2026-01-02T00:00:00.000Z', 90);
-    const requalify2 = practiceItem('2026-01-02T01:00:00.000Z', 90);
-    const newProve = proveItem('2026-01-03T00:00:00.000Z', 90);
-    const d = evaluateCanonicalLearningState(baseInput({ evidence: [...PRACTICE_READY, failedProve, requalify1, requalify2, newProve] }));
+    const newProve = proveItem('2026-01-01T01:00:00.000Z', 90);
+    const d = evaluateCanonicalLearningState(baseInput({ evidence: [...PRACTICE_READY, failedProve, newProve] }));
     expect(d.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('SATISFIED');
     expect(d.requirements.find((r) => r.stage === 'PROVE')!.nonQualifyingEvidenceIds).toContain(failedProve.id);
     expect(d.requirements.find((r) => r.stage === 'PROVE')!.qualifyingEvidenceIds).toContain(newProve.id);
@@ -191,10 +201,13 @@ describe('Critical misconception blocking -- Policy V2 Section 9 (global flag)',
   it('an ACTIVE global critical misconception forces the stage back to PRACTICE even when every requirement is otherwise SATISFIED (would-be CONSOLIDATED)', () => {
     const p1 = practiceItem('2025-12-31T00:00:00.000Z', 90);
     const p2 = practiceItem('2025-12-31T01:00:00.000Z', 90);
+    const p3 = practiceItem('2025-12-31T02:00:00.000Z', 90);
     const prove = proveItem('2026-01-01T00:00:00.000Z', 90);
-    const retain = item({ activityType: 'RETENTION_CHECK', timestamp: '2026-01-10T00:00:00.000Z', itemCount: 10, correctCount: 9, scorePercent: 90, difficulty: 3.5, independent: true, novel: true });
+    const retain = item({ activityType: 'RETENTION_CHECK', timestamp: '2026-01-10T00:00:00.000Z', itemCount: 5, correctCount: 5, scorePercent: 90, difficulty: 3.5, independent: true, novel: true });
     const transfer = item({ activityType: 'TRANSFER', timestamp: '2026-01-20T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 4.5, independent: true, perChallengeScores: [90, 90, 90], reasoningProvided: true });
-    const d = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, p1, p2, prove, retain, transfer], activeCriticalMisconception: true }));
+    const d = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, p1, p2, p3, prove, retain, transfer], activeCriticalMisconception: true }));
+    // every requirement is genuinely evidence-satisfied -- only the live flag forces PRACTICE
+    expect(d.requirements.every((r) => r.status === 'SATISFIED')).toBe(true);
     expect(d.stage).toBe('PRACTICE');
     expect(d.intervention).toBe('REINFORCE');
     expect(d.reasonCodes).toContain('CRITICAL_MISCONCEPTION');
