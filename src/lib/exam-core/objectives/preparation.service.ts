@@ -44,9 +44,14 @@ import { buildPreparationPlan, nextStep, type ExamEvidence, type LearnerConceptS
 import { applyBankReadinessOverlay } from '../question-bank/capability-overlay.service';
 import { acquireLaunchLock } from '@/services/activity-launch-lock.service';
 import { objectiveEligibilityForStudent } from '../eligibility/eligibility.service';
+import { cambridgeFlowObjectiveKeys } from '../cambridge/school-subject-map';
+import { parseFreeze } from '../cambridge/creation-flow';
+
+/** FD Cambridge §16: objectives of the Cambridge school flow are created only through it (it freezes the target). */
+const CAMBRIDGE_FLOW_OBJECTIVES = new Set(cambridgeFlowObjectiveKeys());
 
 export class PreparationError extends Error {
-  constructor(public readonly code: 'OBJECTIVE_NOT_FOUND' | 'NOT_FOUND' | 'NOT_ACTIVE' | 'CAPABILITY_NOT_AVAILABLE' | 'REQUIREMENT_NOT_IN_PREPARATION' | 'IN_PROGRESS' | 'INVALID_EXAM_SESSION' | 'INVALID_INTEREST_AREA', detail?: string) {
+  constructor(public readonly code: 'OBJECTIVE_NOT_FOUND' | 'NOT_FOUND' | 'NOT_ACTIVE' | 'CAPABILITY_NOT_AVAILABLE' | 'REQUIREMENT_NOT_IN_PREPARATION' | 'IN_PROGRESS' | 'INVALID_EXAM_SESSION' | 'INVALID_INTEREST_AREA' | 'CAMBRIDGE_CREATION_FLOW_REQUIRED' | 'SERIES_CHANGE_FLOW_REQUIRED', detail?: string) {
     super(detail ? `${code}: ${detail}` : code);
     this.name = 'PreparationError';
   }
@@ -169,12 +174,16 @@ export interface CreatePreparationInput {
   targetQualification?: string;
   timezone?: string;
   source?: 'STUDENT' | 'INSTITUTION';
+  /** Set only by the Cambridge creation flow (cambridge/creation.service.ts); never accepted from a request body. */
+  viaCambridgeFlow?: boolean;
 }
 
 export async function createObjectivePreparation(studentId: string, input: CreatePreparationInput): Promise<{ profile: StudentExamProfile; created: boolean; capabilities: ExamPreparationCapabilities }> {
   const o = objectiveByKey(input.objectiveKey);
   // Pilot exposure: an objective hidden from Students is not created (existing preparations stay readable).
   if (!o || !isObjectiveExposed(o)) throw new PreparationError('OBJECTIVE_NOT_FOUND');
+  // FD Cambridge §16: programme -> subject -> tier -> year -> series, then a frozen target -- never a bare objective.
+  if (!input.viaCambridgeFlow && CAMBRIDGE_FLOW_OBJECTIVES.has(o.key)) throw new PreparationError('CAMBRIDGE_CREATION_FLOW_REQUIRED');
   const [def, node, capabilities, eligibility] = await Promise.all([
     startableDefinition(o),
     db.query(`SELECT id FROM assessment_structure_nodes WHERE node_key = $1 AND status = 'ACTIVE'`, [o.nodeKey]),
@@ -258,7 +267,12 @@ export async function updatePreparationDetails(
   const sets: string[] = [];
   const vals: unknown[] = [profileId];
   const set = (col: string, v: unknown) => { vals.push(v); sets.push(`${col} = $${vals.length}`); };
-  if (patch.examSession !== undefined) {
+  const frozen = parseFreeze(p.objectiveContext?.cambridgeFreeze);
+  if (patch.examSession !== undefined && frozen) {
+    // FD Cambridge §18: a frozen series changes only through the explicit, audited series change (POST .../series).
+    // Re-sending the frozen value is not a change.
+    if (patch.examSession !== `ES:${frozen.examSeries}:${frozen.examYear}`) throw new PreparationError('SERIES_CHANGE_FLOW_REQUIRED');
+  } else if (patch.examSession !== undefined) {
     if (patch.examSession === null) {
       set('target_exam_series', null);
       set('target_exam_year', null);

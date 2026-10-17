@@ -130,12 +130,17 @@ export interface CheckpointSchoolRoute {
   evidence: readonly { claim: string; source: string }[];
 }
 
-/** José Max León, as of 2026-10-16: nothing confirmed; its documents conflict on the Checkpoint grades. */
+/**
+ * José Max León. 2026-10-16: nothing confirmed; its documents conflict on the Checkpoint grades.
+ * 2026-10-17 (FINAL PRODUCT-DECISION DELTA §13, operator): English is ESL in Primary and Lower Secondary
+ * (0057 / 0876) -- the ENGLISH_FRAMEWORK blocker is resolved by that decision. Grades, subjects taken and the
+ * exact framework codes stay SCHOOL_CONFIRMATION_REQUIRED.
+ */
 export const JOSE_MAX_LEON_CHECKPOINT_ROUTE: CheckpointSchoolRoute = {
   schoolKey: 'co.cota.colegio-bilingue-jose-max-leon',
   primaryCheckpointGrade: null,
   lowerCheckpointGrade: null,
-  englishFramework: null,
+  englishFramework: 'ESL',
   subjectsTaken: null,
   frameworkCodesConfirmed: false,
   evidence: [
@@ -143,6 +148,7 @@ export const JOSE_MAX_LEON_CHECKPOINT_ROUTE: CheckpointSchoolRoute = {
     { claim: 'Manual 2025-26 table: Checkpoint in 6° and 9° (listed among English certifications)', source: 'school PDF Manual de Convivencia 2025-2026' },
     { claim: 'Primary / Lower Secondary CORE: Science, Mathematics, English, Global Perspectives', source: 'school PDF Manual de Convivencia 2025-2026, art. 57' },
     { claim: 'Booklists use Cambridge Global English (suggests ESL; inference only)', source: 'school booklists 2026-27' },
+    { claim: 'English is ESL in Primary, Lower Secondary and IGCSE', source: 'operator decision FD-CAMBRIDGE-ESL-0510-§13 (2026-10-17)' },
   ],
 };
 

@@ -92,7 +92,7 @@ describe('structure.service -- children', () => {
       };
     };
     const out = await listStructureChildren({ family: 'CAMBRIDGE', parentKey: null, language: 'es' });
-    expect(out.map((n) => n.key)).toEqual(['cie.asal', 'cie.aice']);
+    expect(out.map((n) => n.key)).toEqual(['cie.igcse', 'cie.asal', 'cie.aice']);
     const aice = out.find((n) => n.key === 'cie.aice')!;
     expect(aice.available).toBe(false); // the selectable 9700 is out of scope
     expect(aice.readiness).toBe('CATALOG_ONLY');
@@ -109,7 +109,7 @@ describe('structure.service -- resolveExamLevel', () => {
   const raw = (key: string, family: string) => ({ rows: [{ id: 'n', node_key: key, family, selectable: true, exam_version_id: 'v', exam_definition_id: 'd', label: key, labels: null, metadata: { readiness: { model: READINESS_MODEL, state: 'PRACTICE_READY', modes: ['PRACTICE', 'CHALLENGE'] } } }] });
   it('PILOT: a hidden family / out-of-scope node does not resolve (one lookup, nothing else)', async () => {
     pilot();
-    for (const [key, family] of [['saber11.math', 'ICFES'], ['pisa.2022.math', 'PISA'], ['cie.igcse.0580.extended', 'CAMBRIDGE'], ['ib.dp.math-aa.sl', 'IB'], ['cie.aice', 'CAMBRIDGE']]) {
+    for (const [key, family] of [['saber11.math', 'ICFES'], ['pisa.2022.math', 'PISA'], ['cie.igcse.0610.core', 'CAMBRIDGE'], ['ib.dp.math-aa.sl', 'IB'], ['cie.aice', 'CAMBRIDGE']]) {
       vi.mocked(db.query).mockClear();
       q.handler = () => raw(key, family);
       expect(await resolveExamLevel(key, 'es')).toBeNull();
@@ -132,7 +132,7 @@ describe('structure.service -- resolveExamLevel', () => {
 describe('createObjectivePreparation', () => {
   it('PILOT: hidden objectives are OBJECTIVE_NOT_FOUND before any write', async () => {
     pilot();
-    for (const key of ['pisa.2022', 'saber11', 'ib.dp.biology.hl', 'cie.igcse.0580.extended', 'cie.asal.9700.as', 'cie.aice.diploma']) {
+    for (const key of ['pisa.2022', 'saber11', 'ib.dp.biology.hl', 'cie.igcse.0610.core', 'cie.asal.9700.as', 'cie.aice.diploma']) {
       await expect(createObjectivePreparation('s1', { objectiveKey: key })).rejects.toMatchObject({ code: 'OBJECTIVE_NOT_FOUND' });
     }
     expect(db.query).not.toHaveBeenCalled();
@@ -170,7 +170,7 @@ describe('picker (loadPickerData)', () => {
     expect(all).toEqual(expect.arrayContaining(['pisa.2022', 'saber11', 'ib.dp.biology.hl', 'cie.igcse.0580.extended']));
     pilot();
     const shown = (await loadPickerData('s1', 'es')).objectives.map((o) => o.key).sort();
-    expect(shown).toEqual(['cie.asal.9709.as', 'cie.asal.cambridge.9709.as', 'ib.dp.math-aa.hl', 'paa'].sort());
+    expect(shown).toEqual(['cie.asal.9709.as', 'cie.asal.cambridge.9709.as', 'cie.igcse.0580.core', 'cie.igcse.0580.extended', 'ib.dp.math-aa.hl', 'paa'].sort());
   });
 });
 
@@ -179,7 +179,7 @@ describe('createExamInstance (defence in depth)', () => {
   const base = { studentId: 's1', examProfileId: 'p1', examVersionId: 'v1', componentIds: ['c1'] };
   it('PILOT: a hidden exam or the Challenge mode of IB / Cambridge is EXAM_NOT_AVAILABLE', async () => {
     pilot();
-    for (const [cfg, fam, mode] of [['v2.saber11.math', 'ICFES', 'PRACTICE'], ['v2.pisa.2022', 'PISA', 'PRACTICE'], ['v2.ib.math-aa-sl', 'IB', 'PRACTICE'], ['v2.cambridge.0580-extended', 'CAMBRIDGE', 'MOCK'], ['v2.aice.9700-as', 'AICE', 'PRACTICE'], ['v2.ib.math-aa-hl', 'IB', 'CHALLENGE'], ['v2.aice.9709-as', 'AICE', 'CHALLENGE']] as const) {
+    for (const [cfg, fam, mode] of [['v2.saber11.math', 'ICFES', 'PRACTICE'], ['v2.pisa.2022', 'PISA', 'PRACTICE'], ['v2.ib.math-aa-sl', 'IB', 'PRACTICE'], ['v2.cambridge.0580-extended', 'CAMBRIDGE', 'CHALLENGE'], ['v2.aice.9700-as', 'AICE', 'PRACTICE'], ['v2.ib.math-aa-hl', 'IB', 'CHALLENGE'], ['v2.aice.9709-as', 'AICE', 'CHALLENGE']] as const) {
       q.handler = def(cfg, fam);
       await expect(createExamInstance({ ...base, mode })).rejects.toMatchObject({ code: 'EXAM_NOT_AVAILABLE' });
     }

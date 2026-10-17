@@ -170,6 +170,11 @@ export function ObjectivePicker({ objectives, frameworks, suggested, frameworkRe
         body: JSON.stringify({ objectiveKey: o.key, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
       });
       const b = await r.json().catch(() => null);
+      // FD Cambridge §16: Cambridge school subjects are created through the step-ordered flow (frozen target).
+      if (r.status === 409 && b?.error === 'CAMBRIDGE_CREATION_FLOW_REQUIRED') {
+        router.push('/dashboard/exam-prep/cambridge');
+        return;
+      }
       if (!r.ok || !b?.data?.profile?.id) throw new Error();
       router.push(`/dashboard/exam-prep/${b.data.profile.id}`);
       router.refresh();

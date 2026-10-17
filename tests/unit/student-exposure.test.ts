@@ -95,28 +95,30 @@ describe('student exposure -- PILOT policy', () => {
     expect(exposedModes('IB', ['PRACTICE', 'MOCK', 'CHALLENGE'], P)).toEqual(['PRACTICE', 'MOCK']);
   });
 
-  it('Cambridge: only the explicit allowlist (9709 AS; AICE 9709 AS) -- IGCSE 0580, other AICE subjects and the AICE planner are hidden', () => {
+  it('Cambridge: only the explicit allowlist (9709 AS; AICE 9709 AS; FD: IGCSE 0580 Core + Extended) -- 0610 / 0510 (version not governed), other AICE subjects and the AICE planner are hidden', () => {
     expect(isObjectiveExposed(objectiveByKey('cie.asal.cambridge.9709.as')!, P)).toBe(true);
     expect(isObjectiveExposed(objectiveByKey('cie.asal.9709.as')!, P)).toBe(true); // AICE 9709 AS (node cie.aice.g1.9709.as)
-    for (const k of ['cie.igcse.0580.extended', 'cie.igcse.0580.core', 'cie.asal.9709.a', 'cie.asal.9700.as', 'cie.asal.9239.as', 'cie.aice.diploma']) expect(isObjectiveExposed(objectiveByKey(k)!, P)).toBe(false);
+    for (const k of ['cie.igcse.0580.extended', 'cie.igcse.0580.core']) expect(isObjectiveExposed(objectiveByKey(k)!, P)).toBe(true);
+    for (const k of ['cie.igcse.0610.core', 'cie.igcse.0610.extended', 'cie.igcse.0510.speaking-endorsement', 'cie.asal.9709.a', 'cie.asal.9700.as', 'cie.asal.9239.as', 'cie.aice.diploma']) expect(isObjectiveExposed(objectiveByKey(k)!, P)).toBe(false);
     for (const k of ['cie.asal.cambridge.9709.as', 'cie.asal.cambridge.9709.p1', 'cie.aice.g1.9709.as', 'cie.aice.g1.9709.as.p1', 'cie.aice.g1.9709.as.p5']) expect(isNodeSelectableForStudent('CAMBRIDGE', k, P)).toBe(true);
     for (const k of ['cie.asal', 'cie.asal.cambridge.9709', 'cie.aice', 'cie.aice.g1', 'cie.aice.g1.9709']) expect(isNavigationOnlyNode('CAMBRIDGE', k, P)).toBe(true);
-    for (const k of ['cie.igcse', 'cie.igcse.0580', 'cie.igcse.0580.extended', 'cie.aice.g1.9709.a', 'cie.aice.g1.9700', 'cie.aice.core', 'cie.aice.g2']) expect(isNodeListedForStudent('CAMBRIDGE', k, P)).toBe(false);
+    for (const k of ['cie.igcse', 'cie.igcse.0580']) expect(isNavigationOnlyNode('CAMBRIDGE', k, P)).toBe(true);
+    for (const k of ['cie.igcse.0610', 'cie.igcse.0610.core', 'cie.igcse.0510', 'cie.aice.g1.9709.a', 'cie.aice.g1.9700', 'cie.aice.core', 'cie.aice.g2']) expect(isNodeListedForStudent('CAMBRIDGE', k, P)).toBe(false);
     // exam_definitions.exam_family AICE is governed by the CAMBRIDGE scope
     expect(isExamConfigExposed('AICE', 'v2.aice.9709-as', P)).toBe(true);
     expect(isExamConfigExposed('AICE', 'v2.aice.9709-a', P)).toBe(false);
     expect(isExamConfigExposed('AICE', 'v2.aice.9700-as', P)).toBe(false);
     expect(isExamConfigExposed('CAMBRIDGE', 'v2.cambridge.9709-as', P)).toBe(true);
-    expect(isExamConfigExposed('CAMBRIDGE', 'v2.cambridge.0580-extended', P)).toBe(false);
+    expect(isExamConfigExposed('CAMBRIDGE', 'v2.cambridge.0580-extended', P)).toBe(true);
     expect(isModeExposed('AICE', 'CHALLENGE', P)).toBe(false);
     expect(isModeExposed('CAMBRIDGE', 'CHALLENGE', P)).toBe(false);
     expect(isModeExposed('CAMBRIDGE', 'MOCK', P)).toBe(true);
   });
 
-  it('the Student objective list is exactly PAA + IB AA HL + the two Cambridge entries; objectiveByKey stays complete', () => {
+  it('the Student objective list is exactly PAA + IB AA HL + the Cambridge entries; objectiveByKey stays complete', () => {
     const all = examObjectives();
     const shown = studentObjectives(all, P).map((o) => o.key).sort();
-    expect(shown).toEqual(['cie.asal.9709.as', 'cie.asal.cambridge.9709.as', 'ib.dp.math-aa.hl', 'paa'].sort());
+    expect(shown).toEqual(['cie.asal.9709.as', 'cie.asal.cambridge.9709.as', 'cie.igcse.0580.core', 'cie.igcse.0580.extended', 'ib.dp.math-aa.hl', 'paa'].sort());
     // nothing is deleted: history / existing preparations still resolve every key
     for (const o of all) expect(objectiveByKey(o.key)).toBe(o);
   });
