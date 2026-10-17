@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import LearningSupportStatus, { type LearningSupportContext } from '../LearningSupportStatus';
-import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
+import { getMessages, isLocale, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 import MathText from '@/components/MathText';
 import ProveFocusLoading from '@/components/ProveFocusLoading';
 import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contract';
@@ -325,6 +325,33 @@ export default function QuizPage() {
   return <QuizPageContent key={quizInstanceKey(searchParams)} />;
 }
 
+/** The subject Test / Mock lifecycle the server reports (services/subject-assessment.service SubjectAssessmentView). */
+interface SubjectAssessmentViewLite {
+  quizId: string;
+  state: 'SCHEDULED_NOT_STARTED' | 'ACTIVE' | 'TIME_UP' | 'EXPIRED' | 'COMPLETED';
+  remainingSeconds: number | null;
+  expiresAt: string;
+  answered?: Array<{ questionIndex: number; correct?: boolean }>;
+  results?: any;
+  setup: {
+    kind: 'SUBJECT_CUMULATIVE_TEST' | 'SUBJECT_MOCK_EXAM';
+    questionCount: number;
+    schedule: { mode: 'NOW' } | { mode: 'SCHEDULED'; date: string; timezone: string; expiresAt: string };
+    timing: { timed: boolean; durationMinutes: number | null; deadlineAt?: string };
+  };
+}
+
+function browserTimeZone(): string | undefined {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined; } catch { return undefined; }
+}
+
+function localToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const formatClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+
 function QuizPageContent() {
   const searchParams = useSearchParams();
   const maxQuestionsId = useId();
@@ -393,11 +420,28 @@ function QuizPageContent() {
   const [selectedConceptIds, setSelectedConceptIds] = useState<string[]>(
     quizMode === 'cumulative_assessment' && conceptId ? [conceptId] : []
   );
-  // The actual planned date (YYYY-MM-DD, the Student's local day) and StudyUs's recommendation (no governed rule yet).
+  // Overnight 2026-10-16: the Student picks DO NOW or SCHEDULE (a local date). StudyUs decides count, distribution,
+  // difficulty and timing (server-side plan); there is no recommended date in the pilot.
+  const [scheduleMode, setScheduleMode] = useState<'NOW' | 'SCHEDULED'>('NOW');
   const [scheduledDate, setScheduledDate] = useState<string>(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
+  // the server's plan for the current selection (count / distribution / timing), before anything is created
+  const [subjectPreview, setSubjectPreview] = useState<{ questionCount: number; distribution: Record<string, number>; timed: boolean; rule: string } | null>(null);
+  const [subjectPreviewError, setSubjectPreviewError] = useState<string | null>(null);
+  // the frozen subject assessment (lifecycle / timing) once created or reopened (?subjectSessionId=...)
+  const subjectSessionParam = searchParams.get('subjectSessionId');
+  const [subjectView, setSubjectView] = useState<SubjectAssessmentViewLite | null>(null);
+  const [subjectStarting, setSubjectStarting] = useState(false);
+  // wall-clock deadline in THIS browser's clock, from the server's remaining seconds (never paused by a lost connection)
+  const [subjectDeadlineMs, setSubjectDeadlineMs] = useState<number | null>(null);
+  const [subjectRemaining, setSubjectRemaining] = useState<number | null>(null);
+  const subjectSavesRef = useRef<Promise<unknown>[]>([]);
+  const [subjectCreateError, setSubjectCreateError] = useState<string | null>(null);
+  // a reopened attempt with every answer already saved is submitted once its quizId is in state
+  const [subjectAutoSubmit, setSubjectAutoSubmit] = useState(false);
+  const timeUpSubmittedRef = useRef(false);
 
   const [quizId, setQuizId] = useState<string | null>(null);
   // Assisted activities (LEARN_CHECK): immediate per-question feedback via
@@ -450,7 +494,7 @@ function QuizPageContent() {
   // R9: move focus to the results heading when results appear.
   const resultsHeadingRef = useRef<HTMLHeadingElement>(null);
 
-  const [phase, setPhase] = useState<'setup' | 'loading' | 'quiz' | 'error'>('setup');
+  const [phase, setPhase] = useState<'setup' | 'loading' | 'quiz' | 'error' | 'subjectWaiting' | 'subjectClosed'>(subjectSessionParam ? 'loading' : 'setup');
   // LX-4P-PERF-R1 R3: for the canonical flow, question generation runs in
   // the BACKGROUND while the learner is in MODEL/GUIDE -- it never blocks
   // the teaching stage. 'idle' before start, 'loading' in flight, 'ready'
@@ -744,14 +788,25 @@ function QuizPageContent() {
     draftFingerprintRef.current = questionFingerprint(data.quiz.questions);
   }, []);
 
+  const applySubjectView = useCallback((view: SubjectAssessmentViewLite) => {
+    setSubjectView(view);
+    setSubjectDeadlineMs(typeof view.remainingSeconds === 'number' && view.state === 'ACTIVE' ? Date.now() + view.remainingSeconds * 1000 : null);
+  }, []);
+
   const genBody = useCallback(
-    (sid: string, languageOverride?: Locale) => ({
+    (sid: string, languageOverride?: Locale) => allowsTopicSelection
+      // Overnight 2026-10-16 subject Test / Mock: never a count (StudyUs plans it server-side) -- concepts + NOW / SCHEDULE only
+      ? {
+          studentId: sid, subjectId, conceptIds: selectedConceptIds, quizMode,
+          subjectAssessment: { mode: scheduleMode, ...(scheduleMode === 'SCHEDULED' ? { scheduledDate } : {}), timezone: browserTimeZone() },
+          ...(languageOverride ? { language: languageOverride } : {}),
+        }
+      : ({
       studentId: sid,
       subjectId,
       conceptId: conceptId || undefined,
       conceptIds: selectedConceptIds.length > 0 ? selectedConceptIds : undefined,
       quizMode,
-      ...(allowsTopicSelection ? { subjectAssessment: { scheduledDate } } : {}),
       // LX-4I: the learner never sets evidence sufficiency for a canonical
       // Practice/Prove flow. The route applies its own per-mode canonical
       // count. Legacy/manual setup still passes the slider value.
@@ -759,7 +814,7 @@ function QuizPageContent() {
       ...(languageOverride ? { language: languageOverride } : {}),
       ...(v1Launch ? { v1Launch: true } : {}),
     }),
-    [subjectId, conceptId, selectedConceptIds, quizMode, isCanonicalFlow, maxQuestions, v1Launch, allowsTopicSelection, scheduledDate],
+    [subjectId, conceptId, selectedConceptIds, quizMode, isCanonicalFlow, maxQuestions, v1Launch, allowsTopicSelection, scheduledDate, scheduleMode],
   );
 
   const generateQuiz = useCallback(
@@ -799,9 +854,23 @@ function QuizPageContent() {
             setPhase('error');
             return;
           }
+          // subject Test / Mock: a planning refusal (too many concepts, a past date, generation short) is explained, never retried blindly
+          if (allowsTopicSelection && body.error) {
+            setSubjectCreateError(body.error);
+            setPhase('setup');
+            return;
+          }
           throw new Error(body.message || 'Could not generate the quiz');
         }
 
+        if (allowsTopicSelection && body.data.subjectAssessment) {
+          applySubjectView(body.data.subjectAssessment);
+          if (body.data.scheduled) {
+            setQuizId(body.data.quizId);
+            setPhase('subjectWaiting');
+            return;
+          }
+        }
         applyGenResult(body.data);
         setGenState('ready');
         setTeachingExperience(null);
@@ -825,8 +894,117 @@ function QuizPageContent() {
         setPhase('error');
       }
     },
-    [genBody, applyGenResult]
+    [genBody, applyGenResult, allowsTopicSelection, applySubjectView]
   );
+
+  // Overnight 2026-10-16 -- a subject assessment reopened from "Mis evaluaciones programadas" (?subjectSessionId=...):
+  // the server reports its lifecycle (and auto-submits a timed attempt whose time ran out, on this very read).
+  const openSubjectSession = useCallback((sid: string, view: SubjectAssessmentViewLite & { questions?: any[] }, language: Locale) => {
+    applySubjectView(view);
+    if (view.state === 'COMPLETED' && view.results) {
+      setQuizId(view.quizId);
+      setResults(view.results);
+      setPhase('quiz');
+      return;
+    }
+    if (view.state === 'EXPIRED') { setQuizId(view.quizId); setPhase('subjectClosed'); return; }
+    if (view.state === 'SCHEDULED_NOT_STARTED') { setQuizId(view.quizId); setPhase('subjectWaiting'); return; }
+    if (view.state === 'ACTIVE' && view.questions) {
+      applyGenResult({ quizId: view.quizId, language, quiz: { questions: view.questions, count: view.questions.length }, countAuthority: null });
+      // resume where the Student was: the first question the server has no answer for
+      const answered = new Set((view.answered ?? []).map((a) => a.questionIndex));
+      const firstOpen = view.questions.findIndex((_: unknown, i: number) => !answered.has(i));
+      if (firstOpen > 0) setCurrent(firstOpen);
+      setGenState('ready');
+      setTeachingStage('questions');
+      setPhase('quiz');
+      if (firstOpen === -1) setSubjectAutoSubmit(true);
+    }
+  }, [applyGenResult, applySubjectView]);
+
+  useEffect(() => {
+    if (!studentId || !subjectSessionParam) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/quizzes/session/${encodeURIComponent(subjectSessionParam)}?studentId=${studentId}`);
+        const body = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (!res.ok || !body?.data?.subjectAssessment) throw new Error(body?.message || t['common.error']);
+        if (isLocale(body.data.language)) { activityLanguageEstablishedRef.current = true; setQuizLanguage(body.data.language); }
+        openSubjectSession(studentId, { ...body.data.subjectAssessment, questions: body.data.questions?.length ? body.data.questions : undefined }, isLocale(body.data.language) ? body.data.language : locale);
+      } catch (err: any) {
+        if (!cancelled) { setError(err?.message || t['common.error']); setPhase('error'); }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, subjectSessionParam]);
+
+  async function startScheduledSubject() {
+    if (!studentId || !quizId || subjectStarting) return;
+    setSubjectStarting(true);
+    try {
+      const res = await fetch(`/api/quizzes/session/${encodeURIComponent(quizId)}/start`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.data) {
+        if (res.status === 410) { setPhase('subjectClosed'); return; }
+        throw new Error(body?.message || t['common.error']);
+      }
+      openSubjectSession(studentId, body.data, quizLanguage);
+    } catch (err: any) {
+      setError(err?.message || t['common.error']);
+      setPhase('error');
+    } finally {
+      setSubjectStarting(false);
+    }
+  }
+
+  // the countdown (Mock): wall clock; at zero the attempt is submitted (the server grades only answers saved in time)
+  useEffect(() => {
+    if (subjectDeadlineMs === null || phase !== 'quiz' || results) return;
+    const tick = () => {
+      const rem = Math.max(0, Math.ceil((subjectDeadlineMs - Date.now()) / 1000));
+      setSubjectRemaining(rem);
+      if (rem === 0 && !timeUpSubmittedRef.current) {
+        timeUpSubmittedRef.current = true; // once: a failed submission is retried by the Student, never in a loop
+        void submitQuizRef.current?.(answersRef.current, confidencesRef.current);
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [subjectDeadlineMs, phase, results]);
+
+  useEffect(() => {
+    if (!subjectAutoSubmit || !quizId) return;
+    setSubjectAutoSubmit(false);
+    void submitQuizRef.current?.({}, {});
+  }, [subjectAutoSubmit, quizId]);
+
+  // the server's plan for the current selection (count, distribution, timing) -- shown before anything is created
+  useEffect(() => {
+    if (!allowsTopicSelection || phase !== 'setup' || !studentId || !subjectId) return;
+    setSubjectPreview(null);
+    setSubjectPreviewError(null);
+    setSubjectCreateError(null);
+    if (selectedConceptIds.length === 0) return;
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch('/api/subject-assessments/preview', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal,
+          body: JSON.stringify({ studentId, subjectId, kind: quizMode === 'exam_simulation' ? 'MOCK' : 'TEST', conceptIds: selectedConceptIds }),
+        });
+        const body = await res.json().catch(() => null);
+        if (!res.ok || !body?.data) { setSubjectPreviewError(body?.error ?? 'PREVIEW_FAILED'); return; }
+        setSubjectPreview(body.data);
+      } catch { /* aborted or offline: the button stays disabled until a plan is shown */ }
+    }, 300);
+    return () => { ctrl.abort(); window.clearTimeout(timer); };
+  }, [allowsTopicSelection, phase, studentId, subjectId, quizMode, selectedConceptIds]);
 
   // LX-4P-PERF-R1 R3/R4/R6: the canonical activity start. TeachingIntent
   // (resolved from conceptId, NOT quizId) and question generation run in
@@ -1198,7 +1376,11 @@ function QuizPageContent() {
     }
   }
 
-  const perQuestionFeedback = quizMode === 'canonical_learn_check';
+  // Overnight 2026-10-16: a subject Test answers each question with CORRECT / INCORRECT only (saved server-side); a
+  // subject Mock gives no feedback during the attempt (each answer is saved server-side as the Student moves on).
+  const subjectTest = quizMode === 'cumulative_assessment';
+  const subjectMock = quizMode === 'exam_simulation';
+  const perQuestionFeedback = quizMode === 'canonical_learn_check' || subjectTest; // LEARN_CHECK: assisted check; subject Test: verdict only
   const answerLocked =
     perQuestionFeedback && answerCheck?.index === current && (answerCheck.status === 'done' || answerCheck.status === 'unavailable');
 
@@ -1209,12 +1391,13 @@ function QuizPageContent() {
     setResumedFromDraft(false);
     setAnswerCheck({ index, status: 'checking' });
     try {
-      const res = await fetch(`/api/quizzes/session/${quizId}/check`, {
+      const res = await fetch(`/api/quizzes/session/${quizId}/${subjectTest ? 'answer' : 'check'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId, questionIndex: index, answer: encodeCurrentAnswer(q) }),
       });
       const body = await res.json().catch(() => null);
+      if (subjectTest && body?.data?.timeUp && body.data.results) { setResults(body.data.results); return; }
       const safetyResponse = safetyFromBody(body);
       if (safetyResponse) {
         // Human Agency P0-4: the server's fixed safety response (no AI involved).
@@ -1246,6 +1429,17 @@ function QuizPageContent() {
     const updatedConfidences = confidenceSelected ? { ...confidences, [current]: confidenceSelected } : confidences;
     if (confidenceSelected) setConfidences(updatedConfidences);
 
+    // subject Mock: the answer is saved server-side now (no feedback), so a lost connection or the end of the time never
+    // loses it; the submission waits for these saves.
+    if (subjectMock && studentId && quizId && encoded) {
+      const index = current;
+      subjectSavesRef.current.push(
+        fetch(`/api/quizzes/session/${quizId}/answer`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId, questionIndex: index, answer: encoded }),
+        }).then((r) => r.json()).then((b) => { if (b?.data?.timeUp && b.data.results) setResults(b.data.results); }).catch(() => {}),
+      );
+    }
+
     if (current + 1 < questions.length) {
       setCurrent(current + 1);
       setAnswerCheck(null);
@@ -1272,6 +1466,7 @@ function QuizPageContent() {
     setError(null);
     setSubmitFailure(null);
     try {
+      if (allowsTopicSelection) await Promise.allSettled(subjectSavesRef.current);
       const answerList = Object.entries(finalAnswers).map(([idx, ans]) => ({
         questionIndex: Number(idx),
         answer: ans,
@@ -1308,6 +1503,11 @@ function QuizPageContent() {
         setSubmitFailure(classifySubmitFailure({ status: res.status, errorCode: body?.error ?? null }));
         return;
       }
+      // A subject assessment already submitted returns its recorded final feedback (one attempt: never a second grading).
+      if (body.alreadySubmitted && allowsTopicSelection && body.data?.subjectAssessment) {
+        setResults(body.data);
+        return;
+      }
       if (body.alreadySubmitted) {
         // The first submission was recorded; its response was lost. The
         // server changed nothing -- continue from canonical truth.
@@ -1323,6 +1523,14 @@ function QuizPageContent() {
       setSubmitting(false);
     }
   }
+
+  // the countdown and the resume path call the LATEST submitQuiz / answers (never a stale closure)
+  const submitQuizRef = useRef<typeof submitQuiz | null>(null);
+  submitQuizRef.current = submitQuiz;
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
+  const confidencesRef = useRef(confidences);
+  confidencesRef.current = confidences;
 
   // UX-3: persist the learner's own unsubmitted input for this session
   // (see session-draft.ts). Declared after the restore effect so a reload
@@ -1710,16 +1918,10 @@ function QuizPageContent() {
           <p className="label" style={{ color: 'var(--brand-ink)' }}>{modeLabel(quizMode)}</p>
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '6px 0 var(--space-6)' }}>{modeDesc(quizMode)}</p>
 
-          {quizMode === 'exam_simulation' ? (
-            <>
-              <label className="label" htmlFor={maxQuestionsId} style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
-                {t['quiz.subjectSetup.questionCountLabel']}
-              </label>
-              <select id={maxQuestionsId} className="ui-select" value={maxQuestions || ''} onChange={(e) => setMaxQuestions(Number(e.target.value))} style={{ width: '100%' }}>
-                <option value="">{t['quiz.subjectSetup.questionCountPlaceholder']}</option>
-                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </>
+          {/* Overnight 2026-10-16: a subject Test / Mock has NO user count control -- StudyUs plans the count and the
+              per-concept distribution from the selection (and, for the Test, the Knowledge State). */}
+          {allowsTopicSelection ? (
+            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: 0 }} data-testid="subject-auto-note">{t['quiz.subjectSetup.autoNote']}</p>
           ) : (
             <>
               <label className="label" htmlFor={maxQuestionsId} style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
@@ -1734,9 +1936,9 @@ function QuizPageContent() {
                 onChange={(e) => setMaxQuestions(Number(e.target.value))}
                 style={{ width: '100%' }}
               />
+              <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>{t[studentRuntimeMayGenerateQuestions(quizMode) ? 'quiz.maxQuestionsHint' : 'quiz.maxQuestionsHintExam']}</p>
             </>
           )}
-          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>{t[studentRuntimeMayGenerateQuestions(quizMode) ? 'quiz.maxQuestionsHint' : 'quiz.maxQuestionsHintExam']}</p>
 
           {allowsTopicSelection && subjectConcepts.length > 0 && (
             <div style={{ marginTop: 'var(--space-6)' }} data-testid="subject-concept-selector">
@@ -1786,24 +1988,37 @@ function QuizPageContent() {
           )}
 
           {allowsTopicSelection && (
-            <div style={{ marginTop: 'var(--space-6)', display: 'grid', gap: 10 }}>
-              <label className="label" style={{ color: 'var(--text-muted)' }}>
-                {t['quiz.subjectSetup.scheduledDate']}
-                <input type="date" className="ui-input" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} style={{ display: 'block', marginTop: 6 }} data-testid="subject-scheduled-date" />
-              </label>
-              <p style={{ fontSize: 13, margin: 0 }} data-testid="subject-recommended-date">
-                <span style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.recommendedDate']}:</span> {t['quiz.subjectSetup.recommendedNotAvailable']}
-              </p>
-            </div>
+            <fieldset style={{ marginTop: 'var(--space-6)', display: 'grid', gap: 10, border: 0, padding: 0 }} data-testid="subject-schedule">
+              <legend className="label" style={{ color: 'var(--text-muted)', marginBottom: 6 }}>{t['quiz.subjectSetup.when']}</legend>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                  <input type="radio" name="subject-schedule-mode" checked={scheduleMode === 'NOW'} onChange={() => setScheduleMode('NOW')} data-testid="subject-do-now" />
+                  {t['quiz.subjectSetup.doNow']}
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                  <input type="radio" name="subject-schedule-mode" checked={scheduleMode === 'SCHEDULED'} onChange={() => setScheduleMode('SCHEDULED')} data-testid="subject-schedule-mode" />
+                  {t['quiz.subjectSetup.schedule']}
+                </label>
+              </div>
+              {scheduleMode === 'SCHEDULED' && (
+                <>
+                  <label className="label" style={{ color: 'var(--text-muted)' }}>
+                    {t['quiz.subjectSetup.scheduledDate']}
+                    <input type="date" className="ui-input" value={scheduledDate} min={localToday()} onChange={(e) => setScheduledDate(e.target.value)} style={{ display: 'block', marginTop: 6 }} data-testid="subject-scheduled-date" />
+                  </label>
+                  <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: 0 }}>{t['quiz.subjectSetup.scheduleHint']}</p>
+                </>
+              )}
+            </fieldset>
           )}
 
           {(() => {
             const subjectSetup = allowsTopicSelection;
             const noConcept = subjectSetup && subjectConcepts.length > 0 && selectedConceptIds.length === 0;
-            const countMissing = quizMode === 'exam_simulation' && !(maxQuestions > 0);
-            const countBelow = subjectSetup && !countMissing && selectedConceptIds.length > maxQuestions;
-            const blocked = noConcept || countMissing || countBelow || !scheduledDate;
-            const names = subjectConcepts.filter((c) => selectedConceptIds.includes(c.id)).map((c) => c.label);
+            const tooMany = subjectSetup && (subjectPreviewError === 'TOO_MANY_CONCEPTS' || subjectCreateError === 'TOO_MANY_CONCEPTS' || (quizMode === 'cumulative_assessment' && selectedConceptIds.length > 50));
+            const blocked = noConcept || tooMany || (subjectSetup && (!subjectPreview || (scheduleMode === 'SCHEDULED' && !scheduledDate)));
+            const labelOf = new Map(subjectConcepts.map((c) => [c.id, c.label]));
+            const isMock = quizMode === 'exam_simulation';
             return (
               <>
                 {subjectSetup && (
@@ -1812,27 +2027,85 @@ function QuizPageContent() {
                     <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px', margin: 0, fontSize: 13.5 }}>
                       <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewSubject']}</dt><dd style={{ margin: 0 }}>{subjectName}</dd>
                       <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewMode']}</dt><dd style={{ margin: 0 }}>{modeLabel(quizMode)}</dd>
-                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewConcepts']}</dt><dd style={{ margin: 0 }}>{selectedConceptIds.length}{names.length ? ` · ${names.join(', ')}` : ''}</dd>
-                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewQuestions']}</dt><dd style={{ margin: 0 }}>{maxQuestions > 0 ? maxQuestions : '—'}</dd>
-                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.scheduledDate']}</dt><dd style={{ margin: 0 }}>{scheduledDate || '—'}</dd>
-                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.recommendedDate']}</dt><dd style={{ margin: 0 }}>{t['quiz.subjectSetup.recommendedNotAvailable']}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewConcepts']}</dt><dd style={{ margin: 0 }}>{selectedConceptIds.length}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewQuestions']}</dt>
+                      <dd style={{ margin: 0 }} data-testid="subject-preview-count">{subjectPreview ? subjectPreview.questionCount : selectedConceptIds.length > 0 && !tooMany ? t['quiz.subjectSetup.previewLoading'] : '—'}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewDistribution']}</dt>
+                      <dd style={{ margin: 0 }} data-testid="subject-preview-distribution">
+                        {subjectPreview ? Object.entries(subjectPreview.distribution).map(([id, n]) => `${labelOf.get(id) ?? '·'}: ${n}`).join(' · ') : '—'}
+                      </dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewDifficulty']}</dt><dd style={{ margin: 0 }}>{t['quiz.subjectSetup.difficultyAuto']}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewSchedule']}</dt>
+                      <dd style={{ margin: 0 }}>{scheduleMode === 'NOW' ? t['quiz.subjectSetup.nowLabel'] : scheduledDate || '—'}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewTiming']}</dt>
+                      <dd style={{ margin: 0 }} data-testid="subject-preview-timing">{isMock ? t['quiz.subjectSetup.timedMock'] : t['quiz.subjectSetup.untimed']}</dd>
+                      <dt style={{ color: 'var(--text-muted)' }}>{t['quiz.subjectSetup.previewFeedback']}</dt>
+                      <dd style={{ margin: 0 }}>{isMock ? t['quiz.subjectSetup.feedbackMock'] : t['quiz.subjectSetup.feedbackTest']} {t['quiz.subjectSetup.oneAttempt']}</dd>
                     </dl>
                   </div>
                 )}
                 {noConcept && <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', margin: '8px 0 0' }}>{t['quiz.subjectSetup.atLeastOne']}</p>}
-                {countMissing && <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', margin: '8px 0 0' }}>{t['quiz.subjectSetup.questionCountRequired']}</p>}
-                {countBelow && <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', margin: '8px 0 0' }}>{t['quiz.subjectSetup.countBelowConcepts'].replace('{n}', String(selectedConceptIds.length))}</p>}
+                {tooMany && <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', margin: '8px 0 0' }}>{t['quiz.subjectSetup.tooMany']}</p>}
+                {subjectSetup && subjectPreviewError && subjectPreviewError !== 'TOO_MANY_CONCEPTS' && (
+                  <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', margin: '8px 0 0' }}>{t['common.error']}</p>
+                )}
+                {subjectSetup && subjectCreateError && (
+                  <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', margin: '8px 0 0' }} data-testid="subject-create-error">
+                    {subjectCreateError === 'TOO_MANY_CONCEPTS' ? t['quiz.subjectSetup.tooMany']
+                      : subjectCreateError === 'SCHEDULE_DATE_IN_PAST' || subjectCreateError === 'SCHEDULE_DATE_INVALID' || subjectCreateError === 'SCHEDULE_DATE_REQUIRED' ? t['quiz.subjectSetup.dateInPast']
+                      : subjectCreateError === 'GENERATION_INSUFFICIENT' ? t['quiz.subjectSetup.createFailed']
+                      : t['common.error']}
+                  </p>
+                )}
                 <button
                   className="btn btn-primary"
                   style={{ marginTop: 'var(--space-6)' }}
                   disabled={!studentId || blocked}
                   onClick={() => studentId && !blocked && generateQuiz(studentId)}
+                  data-testid={subjectSetup ? 'subject-create' : undefined}
                 >
-                  {subjectSetup ? t['quiz.subjectSetup.create'] : t['quiz.startQuiz']}
+                  {subjectSetup ? (scheduleMode === 'SCHEDULED' ? t['quiz.subjectSetup.createScheduled'] : t['quiz.subjectSetup.create']) : t['quiz.startQuiz']}
                 </button>
               </>
             );
           })()}
+        </div>
+      </div>
+    );
+  }
+
+  // Overnight 2026-10-16: a SCHEDULED subject assessment -- frozen, waiting for the Student (an early start is allowed).
+  if (phase === 'subjectWaiting' && subjectView) {
+    const date = subjectView.setup.schedule.mode === 'SCHEDULED' ? subjectView.setup.schedule.date : '';
+    return (
+      <div style={{ maxWidth: 520 }}>
+        <div className="card" style={{ padding: 'var(--space-8)' }} data-testid="subject-scheduled">
+          <p className="label" style={{ color: 'var(--brand-ink)' }}>{modeLabel(quizMode)}</p>
+          <h1 style={{ fontSize: 20, margin: '6px 0' }}>{t['quiz.subject.scheduledTitle']}</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t['quiz.subject.scheduledBody'].replace('{date}', date)}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+            {t['quiz.subject.questionsCount'].replace('{n}', String(subjectView.setup.questionCount))}
+            {subjectView.setup.timing.timed && subjectView.setup.timing.durationMinutes ? ` · ${t['quiz.subject.minutes'].replace('{n}', String(subjectView.setup.timing.durationMinutes))}` : ` · ${t['quiz.subjectSetup.untimed']}`}
+            {` · ${t['quiz.subjectSetup.oneAttempt']}`}
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 'var(--space-6)', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={startScheduledSubject} disabled={subjectStarting} aria-busy={subjectStarting} data-testid="subject-start-now">{t['quiz.subject.startNow']}</button>
+            <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-ghost">{t['quiz.backToSubject']}</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (phase === 'subjectClosed') {
+    return (
+      <div style={{ maxWidth: 520 }}>
+        <div className="card" style={{ padding: 'var(--space-8)' }} data-testid="subject-expired">
+          <h1 style={{ fontSize: 20, margin: '0 0 6px' }}>{t['quiz.subject.expiredTitle']}</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{t['quiz.subject.expiredBody']}</p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 'var(--space-6)', flexWrap: 'wrap' }}>
+            <Link href={`/dashboard/quiz?subjectId=${subjectId}&mode=${quizMode}`} className="btn btn-primary">{t['quiz.subject.createNew']}</Link>
+            <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-ghost">{t['quiz.backToSubject']}</Link>
+          </div>
         </div>
       </div>
     );
@@ -2000,8 +2273,10 @@ function QuizPageContent() {
               // them, it never re-derives a diagnosis.
               // PEDAGOGICAL_V1: the server's teacher verdict is the verdict;
               // legacy results fall back to the previous derivation.
+              // subject Test / Mock: an UNANSWERED question is its own verdict (it counts 0 in the denominator)
+              const unanswered = (r as { unanswered?: boolean }).unanswered === true;
               const judgment = r.finalJudgment ?? (r.correct ? 'CORRECT' : r.reasoningValid ? 'ALMOST' : 'INCORRECT');
-              const whatHappened = judgment === 'CORRECT' ? at['feedback.correct'] : judgment === 'ALMOST' ? at['feedback.almost'] : at['feedback.incorrect'];
+              const whatHappened = unanswered ? at['quiz.subject.unanswered'] : judgment === 'CORRECT' ? at['feedback.correct'] : judgment === 'ALMOST' ? at['feedback.almost'] : at['feedback.incorrect'];
               const chipClass = judgment === 'CORRECT' ? 'chip-good' : judgment === 'ALMOST' ? 'chip-warn' : 'chip-critical';
               const parts = r.feedbackParts;
               const whyKey = r.errorType ? (`errorTeach.${r.errorType}` as keyof typeof t) : null;
@@ -2083,6 +2358,55 @@ function QuizPageContent() {
                 {at['activeLearning.practiceAgain']}
               </button>
             )}
+            <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-ghost">{at['quiz.backToSubject']}</Link>
+          </div>
+        </div>
+      );
+    }
+
+    // Overnight 2026-10-16: subject Test / Mock final feedback -- score, pass (>= 80 inclusive), every count including
+    // UNANSWERED, per-concept performance and the concepts to reinforce; the per-question review (expected answer,
+    // explanation, why) is one click away. One attempt: the next try is a NEW assessment.
+    if (results.subjectAssessment) {
+      const sa = results.subjectAssessment as {
+        scorePercent: number; passed: boolean; total: number; correct: number; incorrect: number; unanswered: number; oneAttempt: boolean;
+        completionReason: string; perConcept: Array<{ conceptId: string; conceptLabel: string; scorePercent: number; correct: number; total: number; passed: boolean }>;
+        conceptsToReinforce: Array<{ conceptId: string; conceptLabel: string }>;
+      };
+      return (
+        <div className="ls" data-kind={activityKind} data-testid="subject-results">
+          <p className="label" style={{ color: 'var(--brand-ink)' }}>{modeLabel(quizMode)}</p>
+          <h1 className="ls-title" ref={resultsHeadingRef} tabIndex={-1}>
+            <span className="tabular">{sa.scorePercent}%</span>{' '}
+            <span className={`chip ${sa.passed ? 'chip-good' : 'chip-critical'}`} data-testid="subject-pass">{sa.passed ? at['quiz.subject.passed'] : at['quiz.subject.notPassed']}</span>
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+            {at['quiz.subject.scoreLine'].replace('{correct}', String(sa.correct)).replace('{incorrect}', String(sa.incorrect)).replace('{unanswered}', String(sa.unanswered)).replace('{total}', String(sa.total))}
+          </p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{at['quiz.subject.passRule']}{sa.completionReason === 'TIME_UP_AUTO_SUBMIT' ? ` ${at['quiz.subject.autoSubmitted']}` : ''}</p>
+          <div className="card" style={{ padding: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
+            <p className="label" style={{ margin: '0 0 8px' }}>{at['quiz.subject.perConcept']}</p>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
+              {sa.perConcept.map((c) => (
+                <li key={c.conceptId} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 14 }}>
+                  <span>{c.conceptLabel}</span>
+                  <span className={`chip ${c.passed ? 'chip-good' : 'chip-warn'}`}><span className="tabular">{c.scorePercent}%</span> · {c.correct}/{c.total}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="card" style={{ padding: 'var(--space-4)', marginTop: 'var(--space-4)' }} data-testid="subject-reinforce">
+            <p className="label" style={{ margin: '0 0 8px' }}>{at['quiz.subject.toReinforce']}</p>
+            {sa.conceptsToReinforce.length === 0 ? (
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)' }}>{at['quiz.subject.nothingToReinforce']}</p>
+            ) : (
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>{sa.conceptsToReinforce.map((c) => <li key={c.conceptId}>{c.conceptLabel}</li>)}</ul>
+            )}
+          </div>
+          {sa.oneAttempt && <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 'var(--space-4)' }}>{at['quiz.subject.oneAttemptNote']}</p>}
+          <div className="ls-secondary">
+            <button className="btn btn-secondary" onClick={() => setReviewing(true)}>{at['xs.review']}</button>
+            <Link href={`/dashboard/quiz?subjectId=${subjectId}&mode=${quizMode}`} className="btn btn-primary" data-testid="subject-create-new">{at['quiz.subject.createNew']}</Link>
             <Link href={`/dashboard/subjects/${subjectId}`} className="btn btn-ghost">{at['quiz.backToSubject']}</Link>
           </div>
         </div>
@@ -2760,6 +3084,12 @@ function QuizPageContent() {
             : at['xs.progress'].replace('{n}', String(current + 1)).replace('{total}', String(questions.length)),
         }}
         tools={
+          <>
+          {subjectRemaining !== null && (
+            <span className="chip" role="timer" aria-live="off" data-testid="subject-timer" title={at['quiz.subject.timeLeft']} style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {at['quiz.subject.timeLeft']}: {formatClock(subjectRemaining)}
+            </span>
+          )}
           <select
             className="ls-lang"
             value={quizLanguage}
@@ -2772,6 +3102,7 @@ function QuizPageContent() {
               <option key={l} value={l}>{LOCALE_NAMES[l]}</option>
             ))}
           </select>
+          </>
         }
       />
 
@@ -3066,6 +3397,9 @@ function QuizPageContent() {
                 <p>{at['quiz.checkUnavailable']}</p>
                 <button type="button" className="btn btn-secondary" onClick={checkAnswer}>{at['xs.checkRetry']}</button>
               </>
+            ) : subjectTest ? (
+              // subject Test: CORRECT / INCORRECT only -- no explanation, no hint, no answer reveal
+              <p className="ls-feedback-title" data-testid="subject-test-verdict">{answerCheck.correct ? at['feedback.correct'] : at['feedback.incorrect']}</p>
             ) : (
               <>
                 <p className="ls-feedback-title">

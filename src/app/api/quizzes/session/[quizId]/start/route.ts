@@ -5,13 +5,14 @@
  * cannot start (410), a started one is resumed, never restarted.
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 import { z } from 'zod';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { startSubjectAssessmentSession } from '@/services/subject-assessment.service';
 
 const StartSchema = z.object({ studentId: z.string().uuid() });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ quizId: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ quizId: string }> }) {
   const { quizId } = await params;
   const auth = await verifyAuth();
   if (!auth) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -26,3 +27,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!r.ok) return NextResponse.json({ error: r.error, message: r.message }, { status: r.status });
   return NextResponse.json({ success: true, data: r.view });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/quizzes/session/[quizId]/start', handlePOST);

@@ -370,12 +370,12 @@ async function handleSubjectAssessmentCreate(validated: z.infer<typeof GenerateQ
     return NextResponse.json({ error: created.error, message: created.message, ...(created.detail ? { detail: created.detail } : {}) }, { status: created.status });
   }
   const { view } = created;
-  const language = (await db.query(`SELECT language FROM quiz_sessions WHERE id = $1`, [created.quizId])).rows[0]?.language ?? 'es';
+  const sessionLanguage = (await db.query(`SELECT language FROM quiz_sessions WHERE id = $1`, [created.quizId])).rows[0]?.language ?? 'es';
   return NextResponse.json({
     success: true,
     data: {
       quizId: created.quizId,
-      language,
+      language: sessionLanguage,
       quizMode: validated.quizMode,
       maxQuestions: created.setup.questionCount,
       countAuthority: { status: 'SUBJECT_ASSESSMENT_PLAN', rule: created.setup.rule },

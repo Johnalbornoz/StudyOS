@@ -4,6 +4,7 @@
  * same plan the creation uses (planSubjectAssessment); the Mock's duration is fixed at creation from the frozen items.
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 import { z } from 'zod';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { planSubjectAssessment } from '@/services/subject-assessment.service';
@@ -15,7 +16,7 @@ const PreviewSchema = z.object({
   conceptIds: z.array(z.string().uuid()).min(1).max(500),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const auth = await verifyAuth();
   if (!auth) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   let body: z.infer<typeof PreviewSchema>;
@@ -37,3 +38,6 @@ export async function POST(request: NextRequest) {
     },
   });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/subject-assessments/preview', handlePOST);

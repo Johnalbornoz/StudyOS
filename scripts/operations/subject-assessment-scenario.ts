@@ -248,7 +248,12 @@ async function main() {
 
     /* ---------------------------------------------------- optional: real AI ---------------------------------------------------- */
     if (process.env.SUBJECT_SCENARIO_REAL_AI === '1') {
-      const real = await svc.createSubjectAssessmentSession({ studentId: S, subjectId: A.subject, kind: 'TEST', origin: 'STUDENT', conceptIds: [A.concepts[0]], schedule: { mode: 'NOW' }, timing: { timed: false, durationMinutes: null }, language: 'es' });
+      // a real curriculum concept, added the way a Student adds it (the fixture concepts above have no content to ground items)
+      const { enrollCanonicalConcept } = await import('@/lib/learning-plan/personal-plan.service');
+      const cc = await one(`SELECT cc.id FROM canonical_concepts cc JOIN canonical_subjects cs ON cs.id = cc.canonical_subject_id WHERE cs.name = 'Matemáticas' AND cc.name = 'Fracciones' AND cc.status = 'ACTIVE'`);
+      const e = await enrollCanonicalConcept(S, cc.id, { type: 'SELF_SELECTED', actorUserId: null }, null);
+      const realSubject = (await one(`SELECT subject_id FROM concepts WHERE id = $1`, [e.learnerConceptId])).subject_id as string;
+      const real = await svc.createSubjectAssessmentSession({ studentId: S, subjectId: realSubject, kind: 'TEST', origin: 'STUDENT', conceptIds: [e.learnerConceptId], schedule: { mode: 'NOW' }, timing: { timed: false, durationMinutes: null }, language: 'es' });
       check('REAL AI  the gated generator produces exactly the planned items (or fails honestly)', real.ok ? real.setup.questionCount === real.questions.length && life.blueprintMatches(real.setup.distribution, real.setup.blueprint) : real.error === 'GENERATION_INSUFFICIENT', real.ok ? `${real.questions.length} items` : real.error);
     }
   } finally {

@@ -3,10 +3,11 @@
  * progress, and recent completed / expired), for "Mis evaluaciones programadas". Owner only. Read-only.
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
 import { listStudentSubjectAssessments } from '@/services/subject-assessment.service';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   const studentId = request.nextUrl.searchParams.get('studentId');
   const subjectId = request.nextUrl.searchParams.get('subjectId');
   if (!studentId || !/^[0-9a-f-]{36}$/i.test(studentId) || (subjectId && !/^[0-9a-f-]{36}$/i.test(subjectId))) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
@@ -16,3 +17,6 @@ export async function GET(request: NextRequest) {
   const items = await listStudentSubjectAssessments(studentId, subjectId);
   return NextResponse.json({ success: true, data: { items } });
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const GET = withAiRequestMetrics('GET /api/subject-assessments', handleGET);

@@ -834,7 +834,7 @@ export interface SubjectAssessmentListItem {
 }
 
 /** The Student's subject assessments (scheduled, open, and the last completed / expired ones) -- "Mis evaluaciones programadas". */
-export async function listStudentSubjectAssessments(studentId: string, subjectId?: string | null, limit = 20): Promise<SubjectAssessmentListItem[]> {
+export async function listStudentSubjectAssessments(studentId: string, subjectId?: string | null, limit = 20, finalizeTimeUp = true): Promise<SubjectAssessmentListItem[]> {
   let rows: Array<{ id: string; subject_id: string; status: string; expires_at: string; created_at: string; db_now: string; setup: unknown }> = [];
   try {
     const r = await db.query(
@@ -850,6 +850,12 @@ export async function listStudentSubjectAssessments(studentId: string, subjectId
   } catch (e) {
     if ((e as { code?: string })?.code === '42703') return [];
     throw e;
+  }
+  // a read: a timed attempt whose time ran out is auto-submitted now (lazily), then listed as COMPLETED
+  const timeUp = rows.filter((row) => { const st = readSetup(row.setup); return !!st && lifecycleState(st, row.status, new Date(row.expires_at), new Date(row.db_now)) === 'TIME_UP'; });
+  if (finalizeTimeUp && timeUp.length > 0) {
+    for (const row of timeUp) await submitSubjectAssessmentSession({ studentId, quizId: row.id }).catch((e) => console.error('[subject-assessment] lazy auto-submit failed', row.id, e));
+    return listStudentSubjectAssessments(studentId, subjectId, limit, false);
   }
   return rows.flatMap((row) => {
     const setup = readSetup(row.setup);
