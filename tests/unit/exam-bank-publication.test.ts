@@ -26,7 +26,13 @@ describe('the plan is derived from the artefacts, and only from them', () => {
     expect(buildPublicationPlan(human).planHash).toBe(plan.planHash);
     expect(plan.policy).toMatchObject({ policyHash: HUMAN50_POLICY_HASH, policyId: 'HUMAN50_POLICY', version: 'V1', mayGrantScopes: ['PILOT_PREVIEW'] });
     expect(planCounts(plan)).toMatchObject({ humanDecisions: 11, cores: 10, adapters: 2, renderers: 10, blueprints: 2, applicability: 11, certifiedInstances: 326, humanCertifiedObjects: 7, automatedCertifiedObjects: 17 });
-  });
+    // The second build IS the determinism proof (it cannot be memoised away).
+    // Per-test timeout, not a global one: buildPublicationPlan is a deterministic, CPU-bound OFFLINE computation (the
+    // V5.2 plan + 12 extension batches, 2724 merged instances). Measured alone: 2.7-3.3 s
+    // per build (tsx, 3 runs); ~7 s under the full parallel unit run, hence the 5 s default timing out there. It is never on
+    // a request path: only scripts/operations/exam-bank/* (publish-certified-supply, certify-speed-strategies) build it.
+    // Same precedent as governance-decisions-saber-aice.test.ts (120000) and qf52-certification-coverage-supply.test.ts (60_000).
+  }, 60_000);
 
   it('the human decisions are exactly the eleven recorded ones, field for field', () => {
     expect(plan.humanDecisions).toHaveLength(11);

@@ -117,5 +117,10 @@ describe('publication: the V5.2 plan is unchanged; the IB first delivery is an a
     expect(merged.batches.map((b) => b.batchId)).toEqual(['qf52-batch-1', 'CF-IB-AAHL-01', 'CF-IB-AAHL-01-A2', 'CIE-9709-P1-A1', 'TB-IB-AAHL-EXT-A1', 'TB-PISA-MATH-A1', 'AICE-9709-P1-EQ-A1', 'TB-SABER-MATH-A1', 'TB-SABER-MATH-A2', 'TB-IB-AAHL-P3-A1', 'AICE-9709-P2P4P5-A1', 'TB-PAA-MATH-MC-A1', 'AICE-9709-P5-CANON-A2']);
     expect(merged.instances.filter((i) => i.batchId === 'CF-IB-AAHL-01').map((i) => i.instance.key.answers[0])).toEqual(['83/4']);
     expect(new Set(merged.adapters.map((a) => a.adapter.adapterId)).size).toBe(merged.adapters.length);
-  });
+    // Per-test timeout, not a global one: buildPublicationPlan is a deterministic, CPU-bound OFFLINE computation (the
+    // V5.2 plan + 12 extension batches, 2724 merged instances). Measured alone: 2.7-3.3 s
+    // per build (tsx, 3 runs); ~7 s under the full parallel unit run, hence the 5 s default timing out there. It is never on
+    // a request path: only scripts/operations/exam-bank/* (publish-certified-supply, certify-speed-strategies) build it.
+    // Same precedent as governance-decisions-saber-aice.test.ts (120000) and qf52-certification-coverage-supply.test.ts (60_000).
+  }, 60_000);
 });
