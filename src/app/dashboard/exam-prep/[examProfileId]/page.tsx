@@ -49,6 +49,7 @@ import { db } from '@/lib/db';
 import { getPreparationView, profileObjective } from '@/lib/exam-core/objectives/preparation.service';
 import { PreparationHome } from './PreparationHome';
 import { CanonicalExamAvailability } from './CanonicalExamAvailability';
+import { sampleDisclosureKeyFor } from '@/lib/exam-core/sample-disclosure';
 
 const DIMENSION_LABEL_KEY = {
   KNOWLEDGE_READINESS: 'examPrep.dimension.knowledge',
@@ -142,6 +143,8 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
 
   // Objective first: every governed objective (catalogue-only included) opens the preparation home.
   const view = objective ? await getPreparationView(studentId, profile.id, locale) : null;
+  // Product decision 2026-10-17: AICE / PISA / Saber 11 are StudyUs samples -- say so before any activity starts.
+  const sampleDisclosure = view ? sampleDisclosureKeyFor({ family: view.objective.family, nodeKeys: view.objective.nodeKeys, framework: view.objective.framework }) : null;
 
   // Student Exam Journey V2 (J3.5, STUDENT_JOURNEY_V2=UX): Resumen / Preparar / Resultados from the
   // Journey resolution. Falls back to the preparation home below when no resolution exists.
@@ -165,6 +168,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
               </div>
             }
           />
+          {sampleDisclosure ? <p className="ui-hint" data-testid="exam-sample-disclosure">{t[sampleDisclosure]}</p> : null}
           <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} activities={view.capabilities} focusArea={view.plan?.recommendations.find((r) => r.recommendation.action === 'PRACTICE_AREA')?.area ?? null} family={view.objective.family} />
           <ExamTargetOverview
             profileId={profile.id}
@@ -224,6 +228,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
             </div>
           }
         />
+        {sampleDisclosure ? <p className="ui-hint" data-testid="exam-sample-disclosure">{t[sampleDisclosure]}</p> : null}
         <CanonicalExamAvailability examVersionId={profile.examVersionId ?? null} t={t} catalogNode={view.objective.nodeKey} activities={view.capabilities} focusArea={view.plan?.recommendations.find((r) => r.recommendation.action === 'PRACTICE_AREA')?.area ?? null} family={view.objective.family} />
         <PreparationHome
           view={view}

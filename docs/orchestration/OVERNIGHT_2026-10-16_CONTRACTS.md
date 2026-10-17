@@ -149,6 +149,7 @@ learning_evidence.metadata.transferLadder = {
 - **Hidden from Student surfaces when `STUDENT_CATALOG_EXPOSURE=PILOT`:** PISA, ICFES (Saber), unfinished IB (Challenge), and unconfirmed Cambridge qualifications.
 - **Mechanism:** a pure module `src/lib/exam-core/student-exposure.ts`. It is applied at the objective lists, at `createObjectivePreparation`, in `listStructureFamilies` / `listStructureChildren` / `resolveExamLevel`, in the raw SQL of `exams/page.tsx`, and in `createExamInstance`.
 - **History stays readable:** `objectiveByKey` is unchanged, and no data is deleted.
+- **Revised 2026-10-17 (FINAL PRODUCT-DECISION DELTA, branch `fd/exposure`):** PISA and ICFES are no longer hidden families. Under `PILOT` they are restricted by allowlist to what is functional: PISA Mathematics (`pisa.2022.math`, practice) and Saber 11 Matematicas (`saber11.math`, practice + mock). PISA Reading, Science and the three-domain benchmark, and the other Saber areas, are not listed. AICE 9709 AS P1 / P2 / P4 / P5 stays offered. Challenge stays hidden for IB, Cambridge (AICE included), PISA and ICFES. Each sample shows its disclosure (`exam.sample.disclosure.*`, `src/lib/exam-core/sample-disclosure.ts`) in the exam launcher and on the preparation page. The env value is unchanged: `STUDENT_CATALOG_EXPOSURE=PILOT`.
 
 ## 5. Operator decisions recorded (not invented)
 
