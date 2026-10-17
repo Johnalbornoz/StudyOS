@@ -47,7 +47,7 @@ export default async function SubjectAssessmentStudentPage({ params }: { params:
           <>
             <p><strong>{t['tsa.drill.total']}: {r.scorePercent} %</strong> · {r.passed ? t['quiz.subject.passed'] : t['quiz.subject.notPassed']} · {fillMessage(t['tsa.drill.attempt'], { n: r.attemptNumber })}</p>
             <p className="ta-msg">{fillMessage(t['quiz.subject.scoreLine'], { correct: r.correct, incorrect: r.incorrect, unanswered: r.unanswered, total: r.total })} · {t['quiz.subject.passRule']}</p>
-            <p className="ta-msg">{t['tsa.student.resultNote']}{r.completionReason === 'WINDOW_CLOSED_AFTER_EXIT' ? ` (${t['tsa.drill.closedAsIs']})` : ''}</p>
+            <p className="ta-msg">{t['tsa.student.resultNote']}{r.completionReason === 'WINDOW_CLOSED_AFTER_EXIT' ? ` (${t['tsa.drill.closedAsIs']})` : r.completionReason === 'INACTIVITY_CLOSED' ? ` (${t['tsa.drill.closedInactivity']})` : ''}</p>
           </>
         ) : (
           <p className="ta-msg">{t['tsa.group.noResult']}</p>
@@ -56,7 +56,7 @@ export default async function SubjectAssessmentStudentPage({ params }: { params:
       {r && (
         <>
           <section className="card ta-card" aria-labelledby="tsa-drill-kb" data-testid="tsa-drill-bucket">
-            <h3 id="tsa-drill-kb" style={{ fontSize: 16 }}>{t['kb.title']}: {t[KNOWLEDGE_BUCKET_LABEL_KEY[r.knowledge.knowledgeBucket ?? 'UNCLASSIFIED']]}</h3>
+            <h3 id="tsa-drill-kb" style={{ fontSize: 16 }}>{t['kb.title']}: {t[KNOWLEDGE_BUCKET_LABEL_KEY[r.knowledge.knowledgeBucket ?? 'INSUFFICIENT_DIFFICULTY_EVIDENCE']]}</h3>
             <ul className="ta-msg" style={{ margin: 0, paddingLeft: 18 }}>
               {(['BASIC', 'INTERMEDIATE', 'ADVANCED'] as const).map((lv) => {
                 const score = lv === 'BASIC' ? r.knowledge.basicScore : lv === 'INTERMEDIATE' ? r.knowledge.intermediateScore : r.knowledge.advancedScore;
@@ -95,7 +95,7 @@ export default async function SubjectAssessmentStudentPage({ params }: { params:
           {d.history.map((h) => (
             <li key={h.attemptNumber}>
               {fillMessage(t['tsa.drill.attempt'], { n: h.attemptNumber })}: {h.state === 'COMPLETED' ? `${h.scorePercent} %` : t[`quiz.subject.state.${h.state === 'ACTIVE' ? 'ACTIVE' : 'EXPIRED'}`]}
-              {h.completionReason === 'WINDOW_CLOSED_AFTER_EXIT' ? ` (${t['tsa.drill.closedAsIs']})` : ''}
+              {h.completionReason === 'WINDOW_CLOSED_AFTER_EXIT' ? ` (${t['tsa.drill.closedAsIs']})` : h.completionReason === 'INACTIVITY_CLOSED' ? ` (${t['tsa.drill.closedInactivity']})` : ''}
               {r && h.attemptNumber === r.attemptNumber ? ' ✓' : ''}
             </li>
           ))}

@@ -45,7 +45,7 @@ import {
   type SubjectAssessmentSetup, type TimezoneAuthority, type TimingSpec,
 } from '@/lib/subject-assessment/lifecycle';
 import { knowledgeProfile, type KnowledgeProfile } from '@/lib/subject-assessment/knowledge-bucket';
-import { ABANDONMENT_TOLERANCE_SECONDS } from '@/lib/teacher/subject-assessment-assignment.rules';
+import { ABANDONMENT_TOLERANCE_SECONDS, decideAssignmentAttemptGate } from '@/lib/teacher/subject-assessment-assignment.rules';
 
 /** A frozen item: the generated question plus the level it was generated at (additive jsonb field, set at creation). */
 type FrozenQuestion = GeneratedQuestion & { plannedDifficultyLevel?: number };
@@ -94,7 +94,7 @@ export interface CreateSubjectAssessmentParams {
    */
   previousAttemptFingerprints?: string[];
   /** TEACHER: the assignment window close, frozen into the attempt (resume / close-after-exit rule V). */
-  assignmentWindow?: { closesAt: string };
+  assignmentWindow?: { closesAt: string; resumeAfterInactivity?: boolean };
 }
 
 export type ServiceError = { ok: false; status: number; error: string; message: string; detail?: Record<string, unknown> };
@@ -460,7 +460,7 @@ export async function createSubjectAssessmentSession(
     blueprint,
     reusedItems: generated.reused,
     priorFingerprintCount: [...seen.values()].reduce((a, s) => a + s.size, 0),
-    ...(params.origin === 'TEACHER' && params.assignmentWindow ? { assignmentWindow: { closesAt: params.assignmentWindow.closesAt } } : {}),
+    ...(params.origin === 'TEACHER' && params.assignmentWindow ? { assignmentWindow: { closesAt: params.assignmentWindow.closesAt, resumeAfterInactivity: params.assignmentWindow.resumeAfterInactivity === true } } : {}),
   };
 
   const quizId = await storeQuiz(params.studentId, null, params.subjectId, questions, language, quizMode, plan.conceptIds, null);
@@ -549,8 +549,10 @@ async function lastActivityAt(quizId: string, setup: SubjectAssessmentSetup): Pr
 /**
  * Operator rule V for a TEACHER-assigned attempt (setup.assignmentWindow present), decided on every read / answer /
  * submit / heartbeat:
- *   before the close   an attempt left idle (untimed inactivity expiry) is REVIVED: the same attempt, saved answers
- *                      kept, no extra attempt consumed;
+ *   before the close   an untimed attempt left idle 45 minutes (inactivity expiry) is CLOSED AS IS by default (saved
+ *                      progress graded and kept, the same attempt never resumes) -- APPROVED D70; only when the
+ *                      Teacher froze resumeAfterInactivity = true is it REVIVED (the same attempt, saved answers kept,
+ *                      no extra attempt consumed);
  *   after the close    an attempt still in its continuous session continues (it may be finished after 21:00); one
  *                      whose session was left (no activity within ASSIGNMENT_LIVENESS_WINDOW_SECONDS), or one already
  *                      idle-expired, is CLOSED AS IS (answered graded, unanswered in the denominator).
@@ -559,10 +561,15 @@ async function lastActivityAt(quizId: string, setup: SubjectAssessmentSetup): Pr
 async function assignmentAttemptGate(row: SessionRow, setup: SubjectAssessmentSetup, state: LifecycleState, now: Date): Promise<'OK' | 'REVIVE' | 'CLOSE_AS_IS'> {
   if (setup.origin !== 'TEACHER' || !setup.assignmentWindow || !setup.timing.startedAt) return 'OK';
   const closed = now.getTime() >= new Date(setup.assignmentWindow.closesAt).getTime();
-  if (state === 'EXPIRED') return closed ? 'CLOSE_AS_IS' : 'REVIVE';
-  if (state !== 'ACTIVE' || !closed) return 'OK';
+  const resumeAfterInactivity = setup.assignmentWindow.resumeAfterInactivity === true;
+  if (state !== 'ACTIVE' || !closed) return decideAssignmentAttemptGate({ state, closed, resumeAfterInactivity, liveSession: true });
   const last = await lastActivityAt(row.id, setup);
-  return last && now.getTime() - last.getTime() <= ASSIGNMENT_LIVENESS_WINDOW_SECONDS * 1000 ? 'OK' : 'CLOSE_AS_IS';
+  return decideAssignmentAttemptGate({ state, closed, resumeAfterInactivity, liveSession: !!last && now.getTime() - last.getTime() <= ASSIGNMENT_LIVENESS_WINDOW_SECONDS * 1000 });
+}
+
+/** D70: a CLOSE_AS_IS of an idle-expired attempt BEFORE the window close is an inactivity close (not a window close). */
+function inactivityClose(setup: SubjectAssessmentSetup, state: LifecycleState, now: Date): boolean {
+  return state === 'EXPIRED' && !!setup.assignmentWindow && now.getTime() < new Date(setup.assignmentWindow.closesAt).getTime();
 }
 
 async function reviveAssignmentAttempt(quizId: string, setup: SubjectAssessmentSetup, _studentId: string, now: Date): Promise<void> {
@@ -698,6 +705,7 @@ export async function recordSubjectAssessmentAnswer(
   if (gate === 'CLOSE_AS_IS') {
     const closed = await submitSubjectAssessmentSession({ studentId: input.studentId, quizId: input.quizId }, deps);
     if (!closed.ok) return closed;
+    if (inactivityClose(setup, state, now)) return fail(409, 'INACTIVITY_CLOSED', 'This attempt was closed after 45 minutes without activity; the answers saved before were kept.', { state: 'COMPLETED' });
     return fail(409, 'WINDOW_CLOSED_AFTER_EXIT', 'The assignment window closed after this attempt was left; it was closed with the answers saved before.', { state: 'COMPLETED' });
   }
   if (gate === 'REVIVE') {
@@ -835,7 +843,7 @@ export async function submitSubjectAssessmentSession(
   if (state === 'EXPIRED' && gate === 'OK') { await markExpired(input.quizId); return fail(410, 'SESSION_EXPIRED', 'This assessment expired; no result was recorded.'); }
   const closedAsIs = gate === 'CLOSE_AS_IS';
   const timeUp = state === 'TIME_UP' || closedAsIs;
-  const reason: CompletionReason = closedAsIs ? 'WINDOW_CLOSED_AFTER_EXIT' : state === 'TIME_UP' ? 'TIME_UP_AUTO_SUBMIT' : 'SUBMITTED';
+  const reason: CompletionReason = closedAsIs ? (inactivityClose(setup, state, now) ? 'INACTIVITY_CLOSED' : 'WINDOW_CLOSED_AFTER_EXIT') : state === 'TIME_UP' ? 'TIME_UP_AUTO_SUBMIT' : 'SUBMITTED';
 
   const saved = await savedResponses(input.quizId);
   const evidenceMode = row.evidence_mode ?? evidenceModeForQuizMode(row.quiz_mode as never);

@@ -24,11 +24,24 @@ describe('bucket rule', () => {
     expect(knowledgeBucketFor({ overallScore: 80, intermediateScore: 80, advancedScore: null }).bucket).toBe('B3_COMPETENT');
     expect(knowledgeBucketFor({ overallScore: 90, intermediateScore: 85, advancedScore: 80 }).bucket).toBe('B4_ADVANCED');
   });
-  it('edge cases are NOT invented: overall >= 80 without a qualifying level -> null with the reason (operator decision)', () => {
-    expect(knowledgeBucketFor({ overallScore: 85, intermediateScore: 70, advancedScore: null })).toEqual({ bucket: null, unclassifiedReason: 'OVERALL_80_INTERMEDIATE_BELOW_80' });
-    expect(knowledgeBucketFor({ overallScore: 100, intermediateScore: null, advancedScore: null })).toEqual({ bucket: null, unclassifiedReason: 'OVERALL_80_NO_INTERMEDIATE_OR_ADVANCED_EVIDENCE' });
+  it('D69: overall >= 80 without a demonstrable B3 / B4 -> null + INSUFFICIENT_DIFFICULTY_EVIDENCE (never B2, never Competent)', () => {
+    expect(knowledgeBucketFor({ overallScore: 85, intermediateScore: 70, advancedScore: null })).toEqual({ bucket: null, classificationStatus: 'INSUFFICIENT_DIFFICULTY_EVIDENCE', unclassifiedReason: 'OVERALL_80_INTERMEDIATE_BELOW_80' });
+    expect(knowledgeBucketFor({ overallScore: 100, intermediateScore: null, advancedScore: null })).toEqual({ bucket: null, classificationStatus: 'INSUFFICIENT_DIFFICULTY_EVIDENCE', unclassifiedReason: 'OVERALL_80_NO_INTERMEDIATE_OR_ADVANCED_EVIDENCE' });
+    // the operator's examples: overall 88 / intermediate 72 / advanced 70, and overall 95 Basic-only
+    expect(knowledgeBucketFor({ overallScore: 88, intermediateScore: 72, advancedScore: 70 })).toMatchObject({ bucket: null, classificationStatus: 'INSUFFICIENT_DIFFICULTY_EVIDENCE' });
+    const basicOnly = knowledgeProfile([...items('a', 2, 19, 19), ...items('a', 2, 1, 0)]);
+    expect(basicOnly).toMatchObject({ overallScore: 95, basicScore: 95, intermediateScore: null, advancedScore: null, knowledgeBucket: null, classificationStatus: 'INSUFFICIENT_DIFFICULTY_EVIDENCE', highestDifficultyDemonstrated: 'BASIC' });
     // the data supports B4 when the advanced items qualify, even without intermediate items
     expect(knowledgeBucketFor({ overallScore: 90, intermediateScore: null, advancedScore: 90 }).bucket).toBe('B4_ADVANCED');
+  });
+  it('D69: B3 and B4 both qualifying -> B4 wins; every classified bucket is CLASSIFIED', () => {
+    expect(knowledgeBucketFor({ overallScore: 95, intermediateScore: 95, advancedScore: 90 })).toEqual({ bucket: 'B4_ADVANCED', classificationStatus: 'CLASSIFIED', unclassifiedReason: null });
+    expect(knowledgeBucketFor({ overallScore: 50, intermediateScore: null, advancedScore: null }).classificationStatus).toBe('CLASSIFIED');
+    expect(knowledgeBucketFor({ overallScore: 70, intermediateScore: null, advancedScore: null }).classificationStatus).toBe('CLASSIFIED');
+    expect(knowledgeBucketFor({ overallScore: 85, intermediateScore: 85, advancedScore: 60 })).toMatchObject({ bucket: 'B3_COMPETENT', classificationStatus: 'CLASSIFIED' });
+  });
+  it('D69: the learner / teacher label is "Evidencia de nivel insuficiente"', () => {
+    expect((MESSAGES.es as Record<string, string>)[KNOWLEDGE_BUCKET_LABEL_KEY.INSUFFICIENT_DIFFICULTY_EVIDENCE]).toBe('Evidencia de nivel insuficiente');
   });
 });
 
@@ -63,11 +76,11 @@ describe('knowledge profile of one attempt', () => {
 });
 
 describe('group view and wiring', () => {
-  it('the group aggregate counts the latest attempts per bucket (UNCLASSIFIED for the edge case)', () => {
+  it('the group aggregate counts the latest attempts per bucket (INSUFFICIENT_DIFFICULTY_EVIDENCE for the null bucket)', () => {
     const r = (studentId: string, scorePercent: number, knowledgeBucket: ReturnType<typeof knowledgeBucketFor>['bucket']) => ({ studentId, scorePercent, perConcept: [], items: [], knowledgeBucket });
     const g = aggregateGroup([r('s1', 40, 'B1_CRITICAL_GAP'), r('s2', 70, 'B2_DEVELOPING'), r('s3', 90, 'B3_COMPETENT'), r('s4', 95, 'B4_ADVANCED'), r('s5', 92, 'B4_ADVANCED'), r('s6', 85, null)]);
-    expect(g.bucketDistribution).toEqual({ B1_CRITICAL_GAP: 1, B2_DEVELOPING: 1, B3_COMPETENT: 1, B4_ADVANCED: 2, UNCLASSIFIED: 1 });
-    expect(bucketDistribution([])).toEqual({ B1_CRITICAL_GAP: 0, B2_DEVELOPING: 0, B3_COMPETENT: 0, B4_ADVANCED: 0, UNCLASSIFIED: 0 });
+    expect(g.bucketDistribution).toEqual({ B1_CRITICAL_GAP: 1, B2_DEVELOPING: 1, B3_COMPETENT: 1, B4_ADVANCED: 2, INSUFFICIENT_DIFFICULTY_EVIDENCE: 1 });
+    expect(bucketDistribution([])).toEqual({ B1_CRITICAL_GAP: 0, B2_DEVELOPING: 0, B3_COMPETENT: 0, B4_ADVANCED: 0, INSUFFICIENT_DIFFICULTY_EVIDENCE: 0 });
   });
   it('every locale has every bucket / level label', () => {
     const keys = [...Object.values(KNOWLEDGE_BUCKET_LABEL_KEY), ...Object.values(DIFFICULTY_LEVEL_LABEL_KEY), 'kb.title', 'kb.distribution', 'kb.note', 'kb.highest', 'kb.noItems'] as const;

@@ -255,23 +255,45 @@ async function main() {
     const c3total = setups[2].questionCount;
     check('EXIT AFTER CLOSE  the left attempt is not resumed: closed as is (WINDOW_CLOSED_AFTER_EXIT), unanswered in the denominator; no new attempt', resumeAfter === 'WINDOW_CLOSED' && c3read.ok && c3read.view.state === 'COMPLETED' && c3read.view.results?.subjectAssessment.completionReason === 'WINDOW_CLOSED_AFTER_EXIT' && c3read.view.results.subjectAssessment.unanswered === c3total - 1 && c3read.view.results.subjectAssessment.total === c3total, c3read.ok ? JSON.stringify({ r: c3read.view.results?.subjectAssessment.completionReason, u: c3read.view.results?.subjectAssessment.unanswered }) : c3read.error);
 
-    // S2 disconnected from the class Test BEFORE the close (idle-expired session): the same attempt resumes, answers kept
+    // D70 default (resumeAfterInactivity = false): S2 idle 45 min on the class Test BEFORE the close -> closed as is
+    // (INACTIVITY_CLOSED, the saved answer graded and kept), the same attempt never resumes; a new attempt may start
     const c2 = classAttempts[1].quizId;
     await subject.recordSubjectAssessmentAnswer({ studentId: S2.id, quizId: c2, questionIndex: 0, answer: 'a' }, deps);
     await db.query(`UPDATE quiz_sessions SET status = 'expired', expires_at = now() - interval '1 minute' WHERE id = $1`, [c2]);
-    const resumed = await svc.startSubjectAssignmentAttempt(S2.userId, ivOf(pClass, S2), deps);
+    const c2frozen = (await one(`SELECT subject_assessment_setup s FROM quiz_sessions WHERE id = $1`, [c2])).s;
+    const next = await svc.startSubjectAssignmentAttempt(S2.userId, ivOf(pClass, S2), deps);
     const c2read = await subject.readSubjectAssessmentSession(S2.id, c2, deps);
-    const c2attempts = Number((await one(`SELECT count(*) n FROM quiz_sessions WHERE subject_assessment_setup->>'assignmentId' = $1`, [ivOf(pClass, S2)])).n);
-    check('DISCONNECT BEFORE CLOSE  the same attempt resumes (no extra attempt), the saved answer is preserved', resumed.outcome === 'RESUMED' && resumed.quizId === c2 && c2read.ok && c2read.view.state === 'ACTIVE' && (c2read.view.answered ?? []).some((a) => a.questionIndex === 0) && c2attempts === 1);
-    await answerAll(S2.id, c2, () => 'a');
-    await subject.submitSubjectAssessmentSession({ studentId: S2.id, quizId: c2 }, deps);
+    check('D70 DEFAULT FALSE  idle 45 min before the close -> closed with the saved answer (INACTIVITY_CLOSED), the same attempt is not resumed; a new attempt starts',
+      c2frozen.assignmentWindow?.resumeAfterInactivity === false && next.outcome === 'STARTED' && next.quizId !== c2 && next.attemptNumber === 2 && c2read.ok && c2read.view.state === 'COMPLETED'
+        && c2read.view.results?.subjectAssessment.completionReason === 'INACTIVITY_CLOSED' && c2read.view.results.subjectAssessment.unanswered === c2read.view.results.subjectAssessment.total - 1,
+      c2read.ok ? JSON.stringify({ o: next.outcome, r: c2read.view.results?.subjectAssessment.completionReason }) : c2read.error);
+    await answerAll(S2.id, next.quizId, () => 'a');
+    await subject.submitSubjectAssessmentSession({ studentId: S2.id, quizId: next.quizId }, deps);
+
+    // D70 resumeAfterInactivity = true (explicit teacher choice): the same attempt resumes before the close, answers kept
+    const pResume = await svc.publishSubjectAssessmentAssignment(teacher, { classId: klass, kind: 'TEST', conceptIds: concepts, difficulty: 'BASICO', startDate: today, endDate: plusDays(today, 1), maxAttempts: 1, timing: { timed: false, durationMinutes: null, resumeAfterInactivity: true }, studentIds: [S2.id], requestId: randomUUID() });
+    const ivR = ivOf(pResume, S2);
+    const r1 = await svc.startSubjectAssignmentAttempt(S2.userId, ivR, deps);
+    await subject.recordSubjectAssessmentAnswer({ studentId: S2.id, quizId: r1.quizId, questionIndex: 0, answer: 'a' }, deps);
+    await db.query(`UPDATE quiz_sessions SET status = 'expired', expires_at = now() - interval '1 minute' WHERE id = $1`, [r1.quizId]);
+    const resumed = await svc.startSubjectAssignmentAttempt(S2.userId, ivR, deps);
+    const rRead = await subject.readSubjectAssessmentSession(S2.id, r1.quizId, deps);
+    const rAttempts = Number((await one(`SELECT count(*) n FROM quiz_sessions WHERE subject_assessment_setup->>'assignmentId' = $1`, [ivR])).n);
+    check('D70 TRUE  idle before the close -> the same attempt resumes (no extra attempt), the saved answer is preserved', resumed.outcome === 'RESUMED' && resumed.quizId === r1.quizId && rRead.ok && rRead.view.state === 'ACTIVE' && (rRead.view.answered ?? []).some((a) => a.questionIndex === 0) && rAttempts === 1);
+    // ...but true never overrides the post-21:00 rule: idle again, then the window closes -> closed as is, no resume
+    await db.query(`UPDATE quiz_sessions SET status = 'expired', expires_at = now() - interval '1 minute' WHERE id = $1`, [r1.quizId]);
+    await moveClose(ivR, past);
+    let afterClose = '';
+    try { await svc.startSubjectAssignmentAttempt(S2.userId, ivR, deps); } catch (e: any) { afterClose = e.code; }
+    const rClosed = await subject.readSubjectAssessmentSession(S2.id, r1.quizId, deps);
+    check('D70 TRUE NEVER OVERRIDES 21:00  after the close the idle attempt is closed as is (WINDOW_CLOSED_AFTER_EXIT), no resume', afterClose === 'WINDOW_CLOSED' && rClosed.ok && rClosed.view.state === 'COMPLETED' && rClosed.view.results?.subjectAssessment.completionReason === 'WINDOW_CLOSED_AFTER_EXIT', rClosed.ok ? String(rClosed.view.results?.subjectAssessment.completionReason) : rClosed.error);
 
     /* ------------------------------------------------------------ teacher read models ------------------------------------------------------------ */
     const groups = await svc.listClassSubjectAssessmentAssignments(teacher, klass);
-    check('TEACHER LIST  the class shows its subject assignments (4 groups) with recipients and completion', groups.length === 4 && groups.some((g) => g.assignmentGroupId === pClass.assignmentGroupId && g.recipients === 3 && g.completedStudents === 3));
+    check('TEACHER LIST  the class shows its subject assignments (5 groups, incl. the D70 resume one) with recipients and completion', groups.length === 5 && groups.some((g) => g.assignmentGroupId === pClass.assignmentGroupId && g.recipients === 3 && g.completedStudents === 3));
     const gr = await svc.getSubjectAssessmentGroupResults(teacher, klass, pClass.assignmentGroupId);
     const avg = Math.round(((gr.students.map((s) => s.latest!.scorePercent).reduce((a, b) => a + b, 0)) / 3) * 10) / 10;
-    check('GROUP VIEW  per-student latest score, average, distribution, attempts used / max', gr.students.length === 3 && gr.students.every((s) => s.latest && s.maxAttempts === 2 && s.attemptsUsed === 1) && gr.averageScorePercent === avg && Object.values(gr.distribution).reduce((a, b) => a + b, 0) === 3, JSON.stringify({ avg: gr.averageScorePercent, dist: gr.distribution }));
+    check('GROUP VIEW  per-student latest score, average, distribution, attempts used / max', gr.students.length === 3 && gr.students.every((s) => s.latest && s.maxAttempts === 2 && s.attemptsUsed === (s.studentId === S2.id ? 2 : 1)) && gr.averageScorePercent === avg && Object.values(gr.distribution).reduce((a, b) => a + b, 0) === 3, JSON.stringify({ avg: gr.averageScorePercent, dist: gr.distribution }));
     check('GROUP VIEW  performance by concept (3 canonical concepts pooled), difficulty, strongest / gaps, high-error areas', gr.perConcept.length === 3 && gr.perConcept.every((c) => !!c.conceptName) && gr.difficultyBand === 'MIXED' && gr.servedDifficultyMean !== null && Array.isArray(gr.strongestConcepts) && Array.isArray(gr.largestGaps) && Array.isArray(gr.highErrorAreas) && gr.versions.sharedItemCount === 0);
     const drill = await svc.getSubjectAssessmentStudentResult(teacher, klass, reqOne, S1.id);
     check('DRILL-DOWN  result = latest completed attempt; by concept; response by question with expected answer and explanation; history of 3', drill.result?.attemptNumber === 3 && drill.result.perConcept.length === 3 && drill.result.responses.length === 4 && drill.result.responses.every((r) => !!r.correctAnswer && !!r.explanation) && drill.history.length === 3 && drill.history.map((h) => h.scorePercent).join(',') === '100,50,100');
@@ -294,7 +316,7 @@ async function main() {
     const crossHb = await subject.heartbeatSubjectAssessmentSession(S2.id, a1.quizId);
     check('ISOLATION  a student cannot read another student\'s version / result', !crossRead.ok && crossRead.error === 'NOT_FOUND' && !crossHb.ok);
     const s2list = await svc.listStudentSubjectAssignments(S2.id);
-    check('ISOLATION  a student\'s list holds only their own assignments', s2list.length === 2 && !s2list.some((x) => x.interventionId === ivT));
+    check('ISOLATION  a student\'s list holds only their own assignments', s2list.length === 3 && !s2list.some((x) => x.interventionId === ivT));
     const ownList = await subject.listStudentSubjectAssessments(S1.id);
     check('SEPARATION  teacher-assigned attempts are not in the Student\'s own "Mis evaluaciones programadas"', ownList.every((i) => i.origin !== 'TEACHER'));
   } finally {

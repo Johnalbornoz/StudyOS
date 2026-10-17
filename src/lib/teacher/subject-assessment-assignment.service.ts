@@ -36,7 +36,7 @@ import { isTeacherOfClass, resolvePublishRecipients, TeacherClassAccessDeniedErr
 import { loadGroupServedItems } from './subject-assessment-release.service';
 import {
   INTERVENTION_TYPE_OF, MAX_ATTEMPTS_LIMIT, UI_DIFFICULTY_TO_BAND, WINDOW_CLOSE_HOUR, aggregateGroup, buildAssignmentWindow, decideAttemptAction,
-  effectiveAssignmentStatus, kindOfInterventionType, latestCompletedAttempt, planForLearner, validateTiming, windowPhase,
+  effectiveAssignmentStatus, kindOfInterventionType, latestCompletedAttempt, planForLearner, validateTiming, validateResumeAfterInactivity, resumeAfterInactivityApplies, recipientTimezoneAuthority, recipientAssignmentWindow, windowPhase,
   type AttemptDecision, type AttemptSummary, type AssignmentEffectiveStatus, type DifficultyBand, type StudentLatestReport, type SubjectAssessmentAssignmentConfig,
   type SubjectAssignmentKind,
 } from './subject-assessment-assignment.rules';
@@ -91,7 +91,7 @@ export interface SubjectAssignmentDraft {
   endDate: string;
   maxAttempts: number;
   /** TEST: timed or untimed; MOCK: always timed. durationMinutes null = the StudyUs recommendation. */
-  timing: { timed: boolean; durationMinutes: number | null };
+  timing: { timed: boolean; durationMinutes: number | null; resumeAfterInactivity?: boolean };
 }
 
 export interface SubjectAssignmentPreview {
@@ -135,6 +135,8 @@ export function buildGroupConfig(draft: SubjectAssignmentDraft, ctx: { subjectId
   if (!Number.isInteger(draft.maxAttempts) || draft.maxAttempts < 1 || draft.maxAttempts > MAX_ATTEMPTS_LIMIT) return { ok: false, error: 'MAX_ATTEMPTS_INVALID' };
   const t = validateTiming(draft.kind, draft.timing);
   if (!t.ok) return { ok: false, error: t.error };
+  const resume = validateResumeAfterInactivity(draft.kind, draft.timing.timed, draft.timing.resumeAfterInactivity);
+  if (!resume.ok) return { ok: false, error: resume.error };
   const w = buildAssignmentWindow({ startDate: draft.startDate, endDate: draft.endDate }, ctx.timezone, now);
   if (!w.ok) return { ok: false, error: w.error };
   // keep the subject's order (stable distribution), never the click order
@@ -160,6 +162,7 @@ export function buildGroupConfig(draft: SubjectAssignmentDraft, ctx: { subjectId
         recommendedDurationMinutes: rec?.minutes ?? null,
         recommendationRule: rec?.rule ?? null,
         durationSource: !draft.timing.timed ? null : draft.timing.durationMinutes === null || draft.timing.durationMinutes === rec!.minutes ? 'STUDYUS_RECOMMENDED' : 'TEACHER_ADJUSTED',
+        resumeAfterInactivity: resume.value,
       },
       maxAttempts: draft.maxAttempts,
       window: w.window,
@@ -184,16 +187,41 @@ export async function getSubjectAssessmentComposerContext(actorUserId: string, c
   const ctx = await teacherClassContext(actorUserId, classId);
   const concepts = ctx.subjectId ? await eligibleConcepts(ctx.subjectId) : [];
   const learners = await db.query(`SELECT s.id, COALESCE(s.name, s.email, '') AS name FROM class_enrollments ce JOIN students s ON s.id = ce.student_id WHERE ce.class_id = $1 AND ce.status = 'ACTIVE' ORDER BY s.name NULLS LAST, s.email`, [classId]);
-  return { subjectId: ctx.subjectId, subjectName: ctx.subjectName, concepts, timezone: ctx.timezone, timezoneBlocker: !buildAssignmentWindow({ startDate: '2000-01-01', endDate: '2999-01-01' }, ctx.timezone, new Date(0)).ok, activeLearners: learners.rows.map((l: any) => ({ id: l.id, name: l.name })) };
+  const referenceTz = await groupReferenceTimezone(classId, ctx.timezone);
+  return { subjectId: ctx.subjectId, subjectName: ctx.subjectName, concepts, timezone: referenceTz, timezoneBlocker: !buildAssignmentWindow({ startDate: '2000-01-01', endDate: '2999-01-01' }, referenceTz, new Date(0)).ok, activeLearners: learners.rows.map((l: any) => ({ id: l.id, name: l.name })) };
 }
 
 export async function previewSubjectAssessmentAssignment(actorUserId: string, draft: SubjectAssignmentDraft, deps: { now?: Date } = {}): Promise<SubjectAssignmentPreview> {
   const ctx = await teacherClassContext(actorUserId, draft.classId);
   if (!ctx.subjectId) throw new InvalidClassAssignmentError('CLASS_SUBJECT_REQUIRED');
   const eligible = (await eligibleConcepts(ctx.subjectId)).map((c) => c.id);
-  const built = buildGroupConfig(draft, { subjectId: ctx.subjectId, eligible, timezone: ctx.timezone }, deps.now ?? (await dbNow()));
+  const built = buildGroupConfig(draft, { subjectId: ctx.subjectId, eligible, timezone: await groupReferenceTimezone(draft.classId, ctx.timezone) }, deps.now ?? (await dbNow()));
   if (!built.ok) throw new SubjectAssignmentError(built.error, built.error === 'TIMEZONE_AUTHORITY_BLOCKER' ? 409 : 422);
   return toPreview(built.config, ctx.subjectName);
+}
+
+/** D71: each recipient's timezone authority -- student_availability.timezone first, else the class institution's. */
+async function recipientTimezones(studentIds: string[], classInstitutionTimezone: string | null): Promise<Map<string, ReturnType<typeof recipientTimezoneAuthority>>> {
+  const own = studentIds.length
+    ? await db.query(`SELECT student_id, timezone FROM student_availability WHERE student_id = ANY($1::uuid[])`, [studentIds]).catch(() => ({ rows: [] as Array<{ student_id: string; timezone: string | null }> }))
+    : { rows: [] as Array<{ student_id: string; timezone: string | null }> };
+  const byId = new Map<string, string | null>(own.rows.map((r: any) => [r.student_id, r.timezone ?? null]));
+  return new Map(studentIds.map((id) => [id, recipientTimezoneAuthority(byId.get(id) ?? null, classInstitutionTimezone)]));
+}
+
+/**
+ * The group's reference timezone (composer + preview; every recipient still gets their own window at publish): the
+ * class institution's; else -- only when EVERY active learner of the class has their own timezone -- the first one's;
+ * else null (TIMEZONE_AUTHORITY_BLOCKER). Never guessed.
+ */
+async function groupReferenceTimezone(classId: string, classInstitutionTimezone: string | null): Promise<string | null> {
+  if (classInstitutionTimezone) return classInstitutionTimezone;
+  const learners = await db.query(`SELECT ce.student_id FROM class_enrollments ce WHERE ce.class_id = $1 AND ce.status = 'ACTIVE'`, [classId]).catch(() => ({ rows: [] as any[] }));
+  const ids = learners.rows.map((r: any) => r.student_id as string);
+  if (ids.length === 0) return null;
+  const tz = await recipientTimezones(ids, null);
+  const all = [...tz.values()];
+  return all.every((t) => t.ok) && all[0]?.ok ? all[0].timezone : null;
 }
 
 // ---------------------------------------------------------------- publish ----------------------------------------------------------------
@@ -229,12 +257,24 @@ export async function publishSubjectAssessmentAssignment(actorUserId: string, in
   if (!ctx.subjectId) throw new InvalidClassAssignmentError('CLASS_SUBJECT_REQUIRED');
   const eligibleRows = await eligibleConcepts(ctx.subjectId);
   const now = deps.now ?? (await dbNow());
-  const built = buildGroupConfig(input, { subjectId: ctx.subjectId, eligible: eligibleRows.map((c) => c.id), timezone: ctx.timezone }, now);
+  const { learners, assignmentGroupId, existingRows, existingByStudent } = await resolvePublishRecipients(actorUserId, input);
+  // D71: every new recipient needs a timezone authority (own timezone first, else the class institution's) before any write
+  const tzByStudent = await recipientTimezones(learners.rows.filter((l: any) => !existingByStudent.has(l.id)).map((l: any) => l.id), ctx.timezone);
+  const unresolved = [...tzByStudent.entries()].filter(([, tz]) => !tz.ok).map(([id]) => id);
+  if (unresolved.length > 0) throw new SubjectAssignmentError('TIMEZONE_AUTHORITY_BLOCKER', 409, { studentIds: unresolved });
+  const firstResolved = [...tzByStudent.values()].find((tz) => tz.ok);
+  // the group reference (validation + preview): the class institution's timezone, else a recipient's own
+  const referenceTz = ctx.timezone ?? (firstResolved?.ok ? firstResolved.timezone : null);
+  const built = buildGroupConfig(input, { subjectId: ctx.subjectId, eligible: eligibleRows.map((c) => c.id), timezone: referenceTz }, now);
   if (!built.ok) throw new SubjectAssignmentError(built.error, built.error === 'TIMEZONE_AUTHORITY_BLOCKER' ? 409 : 422);
   const config = built.config;
   const interventionType = INTERVENTION_TYPE_OF[config.kind];
-
-  const { learners, assignmentGroupId, existingRows, existingByStudent } = await resolvePublishRecipients(actorUserId, input);
+  const windowByStudent = new Map<string, SubjectAssessmentAssignmentConfig['window']>();
+  for (const [id, tz] of tzByStudent) {
+    const w = recipientAssignmentWindow(config.window, tz, now);
+    if (!w.ok) throw new SubjectAssignmentError(w.error, w.error === 'TIMEZONE_AUTHORITY_BLOCKER' ? 409 : 422, { studentIds: [id] });
+    windowByStudent.set(id, w.window);
+  }
   if (existingRows.rows.length > 0) {
     const kinds = await db.query(`SELECT DISTINCT intervention_type FROM teacher_interventions WHERE assignment_group_id = $1`, [assignmentGroupId]);
     if (kinds.rows.some((r: any) => r.intervention_type !== interventionType)) throw new InvalidClassAssignmentError('REQUEST_CONFLICT');
@@ -256,7 +296,8 @@ export async function publishSubjectAssessmentAssignment(actorUserId: string, in
     }
     const subjects = await db.query(`SELECT DISTINCT subject_id FROM concepts WHERE id = ANY($1::uuid[])`, [Object.values(learnerConceptIds)]);
     if (subjects.rows.length !== 1) { skipped.push({ studentId: l.id, name: l.name || l.email || '', reason: 'LEARNER_SUBJECT_SPLIT' }); continue; }
-    const rowConfig: SubjectAssessmentAssignmentConfig = { ...config, learner: { subjectId: subjects.rows[0].subject_id, conceptIds: learnerConceptIds } };
+    const window = windowByStudent.get(l.id) ?? config.window;
+    const rowConfig: SubjectAssessmentAssignmentConfig = { ...config, window, learner: { subjectId: subjects.rows[0].subject_id, conceptIds: learnerConceptIds } };
     try {
       const intervention = await assignTeacherIntervention(actorUserId, {
         classId: input.classId,
@@ -265,8 +306,8 @@ export async function publishSubjectAssessmentAssignment(actorUserId: string, in
         target: { targetType: 'SUBJECT' },
         instructions: input.instructions ?? undefined,
         title: title ?? undefined,
-        startsAt: config.window.opensAt,
-        dueAt: config.window.closesAt,
+        startsAt: window.opensAt,
+        dueAt: window.closesAt,
         assignmentGroupId,
         addedToPlan,
         subjectAssessmentAssignment: rowConfig as unknown as Record<string, unknown>,
@@ -455,7 +496,7 @@ async function createAttempt(row: InterventionRow, decision: Extract<AttemptDeci
         maxAttempts: row.config.maxAttempts,
         avoidFingerprints: groupFps,
         previousAttemptFingerprints: previousFps,
-        assignmentWindow: { closesAt: row.config.window.closesAt },
+        assignmentWindow: { closesAt: row.config.window.closesAt, resumeAfterInactivity: row.config.timing.resumeAfterInactivity === true && resumeAfterInactivityApplies(row.config.kind, row.config.timing.timed) },
       },
       { ...(deps.generate ? { generate: deps.generate } : {}), ...(deps.grade ? { grade: deps.grade } : {}) }
     );

@@ -16,9 +16,11 @@
  *     B2 DEVELOPING     60 <= overall < 80   (alert)
  *     B4 ADVANCED       overall >= 80 AND advanced >= 80
  *     B3 COMPETENT      overall >= 80 AND intermediate >= 80 (and not B4)
- *     null              overall >= 80 but neither qualifying level score is >= 80 (intermediate below 80, or no
- *                       intermediate / advanced item at all). The approved table does not name a bucket for it, so none
- *                       is invented: `unclassifiedReason` says why (OPERATOR_DECISION_REQUIRED).
+ *     B3 + B4 both qualify -> B4 wins.
+ *     null              overall >= 80 but neither B3 nor B4 can be demonstrated (no intermediate / advanced item, or both
+ *                       below 80): classificationStatus INSUFFICIENT_DIFFICULTY_EVIDENCE (APPROVED D69, 2026-10-17) --
+ *                       never forced into B2, never called Competent on the overall alone ("Evidencia de nivel
+ *                       insuficiente"); `unclassifiedReason` keeps the detail. Scores and evidence are kept as they are.
  *
  * The item's level is the level it was generated at (`plannedDifficultyLevel`), else its recorded `difficulty`. Only
  * levels 2 / 3 / 4 are banded; an item at level 1 or 5 (possible with AUTO difficulty) counts in the overall and the
@@ -29,7 +31,8 @@ import { subjectAssessmentScorePercent, SUBJECT_ASSESSMENT_PASS_PERCENT } from '
 export const KNOWLEDGE_BUCKETS = ['B1_CRITICAL_GAP', 'B2_DEVELOPING', 'B3_COMPETENT', 'B4_ADVANCED'] as const;
 export type KnowledgeBucket = (typeof KNOWLEDGE_BUCKETS)[number];
 export type DifficultyLevelName = 'BASIC' | 'INTERMEDIATE' | 'ADVANCED';
-export type UnclassifiedReason = 'OVERALL_80_INTERMEDIATE_BELOW_80' | 'OVERALL_80_NO_INTERMEDIATE_OR_ADVANCED_EVIDENCE';
+export type ClassificationStatus = 'CLASSIFIED' | 'INSUFFICIENT_DIFFICULTY_EVIDENCE';
+export type UnclassifiedReason = 'OVERALL_80_INTERMEDIATE_BELOW_80' | 'OVERALL_80_ADVANCED_BELOW_80_NO_INTERMEDIATE' | 'OVERALL_80_NO_INTERMEDIATE_OR_ADVANCED_EVIDENCE';
 
 /** Below this overall score the attempt is a critical gap (the engine's strongContradictionBelow). */
 export const CRITICAL_GAP_BELOW = 60;
@@ -57,6 +60,7 @@ export interface KnowledgeProfile {
   highestDifficultyDemonstrated: DifficultyLevelName | null;
   conceptScore: Record<string, number>;
   knowledgeBucket: KnowledgeBucket | null;
+  classificationStatus: ClassificationStatus;
   unclassifiedReason: UnclassifiedReason | null;
 }
 
@@ -65,12 +69,18 @@ export function levelNameOf(level: number | null | undefined): DifficultyLevelNa
 }
 
 /** The bucket rule over the scores alone (null scores = no items at that level). */
-export function knowledgeBucketFor(s: { overallScore: number; intermediateScore: number | null; advancedScore: number | null }): { bucket: KnowledgeBucket | null; unclassifiedReason: UnclassifiedReason | null } {
-  if (s.overallScore < CRITICAL_GAP_BELOW) return { bucket: 'B1_CRITICAL_GAP', unclassifiedReason: null };
-  if (s.overallScore < DEMONSTRATED_AT) return { bucket: 'B2_DEVELOPING', unclassifiedReason: null };
-  if (s.advancedScore !== null && s.advancedScore >= DEMONSTRATED_AT) return { bucket: 'B4_ADVANCED', unclassifiedReason: null };
-  if (s.intermediateScore !== null && s.intermediateScore >= DEMONSTRATED_AT) return { bucket: 'B3_COMPETENT', unclassifiedReason: null };
-  return { bucket: null, unclassifiedReason: s.intermediateScore !== null ? 'OVERALL_80_INTERMEDIATE_BELOW_80' : 'OVERALL_80_NO_INTERMEDIATE_OR_ADVANCED_EVIDENCE' };
+export function knowledgeBucketFor(s: { overallScore: number; intermediateScore: number | null; advancedScore: number | null }): { bucket: KnowledgeBucket | null; classificationStatus: ClassificationStatus; unclassifiedReason: UnclassifiedReason | null } {
+  const classified = (bucket: KnowledgeBucket) => ({ bucket, classificationStatus: 'CLASSIFIED' as const, unclassifiedReason: null });
+  if (s.overallScore < CRITICAL_GAP_BELOW) return classified('B1_CRITICAL_GAP');
+  if (s.overallScore < DEMONSTRATED_AT) return classified('B2_DEVELOPING');
+  // B4 is checked first: when B3 and B4 both qualify, B4 wins
+  if (s.advancedScore !== null && s.advancedScore >= DEMONSTRATED_AT) return classified('B4_ADVANCED');
+  if (s.intermediateScore !== null && s.intermediateScore >= DEMONSTRATED_AT) return classified('B3_COMPETENT');
+  return {
+    bucket: null,
+    classificationStatus: 'INSUFFICIENT_DIFFICULTY_EVIDENCE',
+    unclassifiedReason: s.intermediateScore !== null ? 'OVERALL_80_INTERMEDIATE_BELOW_80' : s.advancedScore !== null ? 'OVERALL_80_ADVANCED_BELOW_80_NO_INTERMEDIATE' : 'OVERALL_80_NO_INTERMEDIATE_OR_ADVANCED_EVIDENCE',
+  };
 }
 
 /** The knowledge profile of one completed attempt, from its frozen items and recorded grades. */
@@ -97,7 +107,7 @@ export function knowledgeProfile(items: readonly BucketItem[]): KnowledgeProfile
     advancedScore !== null && advancedScore >= DEMONSTRATED_AT ? 'ADVANCED'
       : intermediateScore !== null && intermediateScore >= DEMONSTRATED_AT ? 'INTERMEDIATE'
         : basicScore !== null && basicScore >= DEMONSTRATED_AT ? 'BASIC' : null;
-  const { bucket, unclassifiedReason } = knowledgeBucketFor({ overallScore, intermediateScore, advancedScore });
+  const { bucket, classificationStatus, unclassifiedReason } = knowledgeBucketFor({ overallScore, intermediateScore, advancedScore });
   return {
     version: 'knowledge-bucket-v1',
     overallScore, basicScore, intermediateScore, advancedScore,
@@ -106,19 +116,20 @@ export function knowledgeProfile(items: readonly BucketItem[]): KnowledgeProfile
     highestDifficultyDemonstrated,
     conceptScore: Object.fromEntries([...concept.entries()].map(([id, x]) => [id, subjectAssessmentScorePercent(x.correct, x.total)])),
     knowledgeBucket: bucket,
+    classificationStatus,
     unclassifiedReason,
   };
 }
 
-/** Group view: how many students' latest completed attempts fall in each bucket (UNCLASSIFIED = the null edge case). */
-export function bucketDistribution(buckets: ReadonlyArray<KnowledgeBucket | null>): Record<KnowledgeBucket | 'UNCLASSIFIED', number> {
-  const out: Record<KnowledgeBucket | 'UNCLASSIFIED', number> = { B1_CRITICAL_GAP: 0, B2_DEVELOPING: 0, B3_COMPETENT: 0, B4_ADVANCED: 0, UNCLASSIFIED: 0 };
-  for (const b of buckets) out[b ?? 'UNCLASSIFIED']++;
+/** Group view: how many students' latest completed attempts fall in each bucket (null = INSUFFICIENT_DIFFICULTY_EVIDENCE). */
+export function bucketDistribution(buckets: ReadonlyArray<KnowledgeBucket | null>): Record<KnowledgeBucket | 'INSUFFICIENT_DIFFICULTY_EVIDENCE', number> {
+  const out: Record<KnowledgeBucket | 'INSUFFICIENT_DIFFICULTY_EVIDENCE', number> = { B1_CRITICAL_GAP: 0, B2_DEVELOPING: 0, B3_COMPETENT: 0, B4_ADVANCED: 0, INSUFFICIENT_DIFFICULTY_EVIDENCE: 0 };
+  for (const b of buckets) out[b ?? 'INSUFFICIENT_DIFFICULTY_EVIDENCE']++;
   return out;
 }
 
 /** i18n keys (src/lib/i18n/messages.ts) of the bucket and level labels, shared by the Teacher and Student views. */
 export const KNOWLEDGE_BUCKET_LABEL_KEY = {
-  B1_CRITICAL_GAP: 'kb.bucket.B1_CRITICAL_GAP', B2_DEVELOPING: 'kb.bucket.B2_DEVELOPING', B3_COMPETENT: 'kb.bucket.B3_COMPETENT', B4_ADVANCED: 'kb.bucket.B4_ADVANCED', UNCLASSIFIED: 'kb.bucket.UNCLASSIFIED',
+  B1_CRITICAL_GAP: 'kb.bucket.B1_CRITICAL_GAP', B2_DEVELOPING: 'kb.bucket.B2_DEVELOPING', B3_COMPETENT: 'kb.bucket.B3_COMPETENT', B4_ADVANCED: 'kb.bucket.B4_ADVANCED', INSUFFICIENT_DIFFICULTY_EVIDENCE: 'kb.bucket.INSUFFICIENT_DIFFICULTY_EVIDENCE',
 } as const;
 export const DIFFICULTY_LEVEL_LABEL_KEY = { BASIC: 'kb.level.BASIC', INTERMEDIATE: 'kb.level.INTERMEDIATE', ADVANCED: 'kb.level.ADVANCED' } as const;

@@ -111,7 +111,8 @@ export interface SubjectAssessmentSetup {
   reusedItems: Array<{ conceptId: string; fingerprint: string; source?: ReuseSource; lastServedAt?: string | null }>;
   priorFingerprintCount: number;
   /** Teacher assignment attempts: the assignment window close (operator rule V) -- frozen at the attempt's creation. */
-  assignmentWindow?: { closesAt: string };
+  /** resumeAfterInactivity (D69-D71 micro-delta, D70): frozen from the Teacher assignment; absent = false. */
+  assignmentWindow?: { closesAt: string; resumeAfterInactivity?: boolean };
   /** Teacher assignment attempts: the last runner activity (heartbeat), for the "same continuous session" rule. */
   liveness?: { lastActivityAt: string };
   /** Set when the attempt is closed. */
@@ -121,8 +122,12 @@ export interface SubjectAssessmentSetup {
 export type TimezoneSource = 'STUDENT_AVAILABILITY' | 'INSTITUTION';
 
 export type ReuseSource = 'OWN_LEAST_RECENTLY_USED' | 'ASSIGNMENT_GROUP' | 'PREVIOUS_ATTEMPT';
-/** WINDOW_CLOSED_AFTER_EXIT: a teacher-assigned attempt left before / across the window close, closed as is. */
-export type CompletionReason = 'SUBMITTED' | 'TIME_UP_AUTO_SUBMIT' | 'WINDOW_CLOSED_AFTER_EXIT';
+/**
+ * WINDOW_CLOSED_AFTER_EXIT: a teacher-assigned attempt left before / across the window close, closed as is.
+ * INACTIVITY_CLOSED (D70): a teacher-assigned untimed Test idle 45 minutes BEFORE the close with resumeAfterInactivity
+ * false (the default) -- closed as is, saved progress graded and kept, the same attempt never resumes.
+ */
+export type CompletionReason = 'SUBMITTED' | 'TIME_UP_AUTO_SUBMIT' | 'WINDOW_CLOSED_AFTER_EXIT' | 'INACTIVITY_CLOSED';
 
 /**
  * Controlled reuse order (operator rule T): a candidate the Student has seen is ranked by its pool -- the Student's own

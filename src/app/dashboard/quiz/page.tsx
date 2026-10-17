@@ -2413,7 +2413,7 @@ function QuizPageContent() {
           </div>
           {sa.knowledge && (
             <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 'var(--space-4)' }} data-testid="subject-knowledge-bucket">
-              {at['kb.title']}: <strong>{at[KNOWLEDGE_BUCKET_LABEL_KEY[sa.knowledge.knowledgeBucket ?? 'UNCLASSIFIED']]}</strong>
+              {at['kb.title']}: <strong>{at[KNOWLEDGE_BUCKET_LABEL_KEY[sa.knowledge.knowledgeBucket ?? 'INSUFFICIENT_DIFFICULTY_EVIDENCE']]}</strong>
             </p>
           )}
           <div className="card" style={{ padding: 'var(--space-4)', marginTop: 'var(--space-4)' }} data-testid="subject-reinforce">

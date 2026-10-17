@@ -86,14 +86,61 @@ describe('authorization order', () => {
 });
 
 describe('write discipline', () => {
-  it('no institution timezone -> TIMEZONE_AUTHORITY_BLOCKER before recipients are resolved; nothing written', async () => {
-    const e = await publishSubjectAssessmentAssignment('t1', { classId: 'k1', kind: 'TEST', conceptIds: ['cc1'], difficulty: 'BASICO', startDate: '2026-10-17', endDate: '2026-10-18', maxAttempts: 1, timing: { timed: false, durationMinutes: null } }).catch((x) => x);
+  const DRAFT = { classId: 'k1', kind: 'TEST' as const, conceptIds: ['cc1'], difficulty: 'BASICO' as any, startDate: '2026-10-17', endDate: '2026-10-18', maxAttempts: 1, timing: { timed: false, durationMinutes: null } };
+  const recipients = () => resolveRecipientsMock.mockResolvedValue({ learners: { rows: [{ id: 's1', name: 'A', email: 'a', user_id: null }] }, assignmentGroupId: 'g1', existingRows: { rows: [] }, existingByStudent: new Map() });
+  const world = (o: { institutionTz: string | null; studentTz: string | null }) => {
+    const base = dbQueryMock.getMockImplementation()!;
+    dbQueryMock.mockImplementation(async (sql: string, params?: unknown[]) => {
+      if (sql.includes('FROM classes c JOIN institutions i')) return { rows: [{ id: 'k1', name: 'K', institution_id: 'i1', canonical_subject_id: 'subj', subject_name: 'Mat', timezone: o.institutionTz }] };
+      if (sql.includes('FROM student_availability')) return { rows: o.studentTz ? [{ student_id: 's1', timezone: o.studentTz }] : [] };
+      if (sql.includes('SELECT DISTINCT subject_id FROM concepts')) return { rows: [{ subject_id: 'ls' }] };
+      return base(sql, params);
+    });
+    ensureMock.mockResolvedValue({ conceptId: 'lc1', added: false });
+    assignMock.mockResolvedValue({ id: 'iv-new' });
+    recipients();
+  };
+  const frozenWindow = () => (assignMock.mock.calls[0][1].subjectAssessmentAssignment as any).window;
+
+  it('D71: no student timezone and no institution timezone -> TIMEZONE_AUTHORITY_BLOCKER (409) before any write', async () => {
+    world({ institutionTz: null, studentTz: null });
+    const e = await publishSubjectAssessmentAssignment('t1', DRAFT).catch((x) => x);
     expect(e).toBeInstanceOf(SubjectAssignmentError);
     expect(e.code).toBe('TIMEZONE_AUTHORITY_BLOCKER');
     expect(e.status).toBe(409);
-    expect(resolveRecipientsMock).not.toHaveBeenCalled();
+    expect(e.detail).toEqual({ studentIds: ['s1'] });
     expect(ensureMock).not.toHaveBeenCalled();
     expect(assignMock).not.toHaveBeenCalled();
+  });
+
+  it('D71: the student timezone beats the class institution timezone (window 21:00 in the student zone)', async () => {
+    world({ institutionTz: 'America/Bogota', studentTz: 'Europe/Madrid' });
+    await publishSubjectAssessmentAssignment('t1', DRAFT);
+    expect(frozenWindow()).toMatchObject({ timezone: 'Europe/Madrid', timezoneSource: 'STUDENT_AVAILABILITY', closesAt: '2026-10-18T19:00:00.000Z' });
+    expect(assignMock.mock.calls[0][1].dueAt).toBe('2026-10-18T19:00:00.000Z');
+  });
+
+  it('D71: no student timezone -> the class institution timezone (fallback)', async () => {
+    world({ institutionTz: 'America/Bogota', studentTz: null });
+    await publishSubjectAssessmentAssignment('t1', DRAFT);
+    expect(frozenWindow()).toMatchObject({ timezone: 'America/Bogota', timezoneSource: 'INSTITUTION', closesAt: '2026-10-19T02:00:00.000Z' });
+  });
+
+  it('D71: an institution without a timezone does not block a student who has their own', async () => {
+    world({ institutionTz: null, studentTz: 'America/Mexico_City' });
+    await publishSubjectAssessmentAssignment('t1', DRAFT);
+    expect(frozenWindow()).toMatchObject({ timezone: 'America/Mexico_City', timezoneSource: 'STUDENT_AVAILABILITY' });
+  });
+
+  it('D70: resumeAfterInactivity is frozen into the assignment (default false; only an untimed Test may set it)', async () => {
+    world({ institutionTz: 'America/Bogota', studentTz: null });
+    await publishSubjectAssessmentAssignment('t1', DRAFT);
+    expect((assignMock.mock.calls[0][1].subjectAssessmentAssignment as any).timing.resumeAfterInactivity).toBe(false);
+    assignMock.mockClear();
+    await publishSubjectAssessmentAssignment('t1', { ...DRAFT, timing: { timed: false, durationMinutes: null, resumeAfterInactivity: true } });
+    expect((assignMock.mock.calls[0][1].subjectAssessmentAssignment as any).timing.resumeAfterInactivity).toBe(true);
+    const e = await publishSubjectAssessmentAssignment('t1', { ...DRAFT, kind: 'MOCK', timing: { timed: true, durationMinutes: 30, resumeAfterInactivity: true } }).catch((x) => x);
+    expect(e.code).toBe('RESUME_AFTER_INACTIVITY_NOT_APPLICABLE');
   });
 
   it('the teacher service never writes evidence, mastery or knowledge state itself', async () => {

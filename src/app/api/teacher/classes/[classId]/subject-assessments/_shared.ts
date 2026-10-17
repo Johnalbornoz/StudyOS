@@ -20,7 +20,7 @@ export const DraftSchema = z.object({
   endDate: isoDate,
   // 1, 2 or 3 (APPROVED 2026-10-17); the service re-validates (MAX_ATTEMPTS_INVALID)
   maxAttempts: z.number().int().min(1).max(3),
-  timing: z.object({ timed: z.boolean(), durationMinutes: z.number().int().min(1).max(600).nullable() }),
+  timing: z.object({ timed: z.boolean(), durationMinutes: z.number().int().min(1).max(600).nullable(), resumeAfterInactivity: z.boolean().optional() }),
 });
 
 export const PublishSchema = DraftSchema.extend({

@@ -68,7 +68,7 @@ export default async function SubjectAssessmentGroupPage({ params }: { params: P
               <Link href={`/dashboard/teacher/classes/${classId}/subject-assessments/${groupId}/students/${s.studentId}`}>{s.name}</Link>
               <StatusBadge label={t[`assignments.status.${s.status}`] ?? s.status} tone={toneForInterventionStatus(s.status)} />
             </span>
-            <span data-testid="tsa-student-bucket">{s.latest ? `${s.latest.scorePercent} % · ${s.latest.passed ? t['quiz.subject.passed'] : t['quiz.subject.notPassed']} · ${fillMessage(t['tsa.drill.attempt'], { n: s.latest.attemptNumber })} · ${t[KNOWLEDGE_BUCKET_LABEL_KEY[s.latest.knowledge.knowledgeBucket ?? 'UNCLASSIFIED']]}` : t['tsa.group.noResult']}</span>
+            <span data-testid="tsa-student-bucket">{s.latest ? `${s.latest.scorePercent} % · ${s.latest.passed ? t['quiz.subject.passed'] : t['quiz.subject.notPassed']} · ${fillMessage(t['tsa.drill.attempt'], { n: s.latest.attemptNumber })} · ${t[KNOWLEDGE_BUCKET_LABEL_KEY[s.latest.knowledge.knowledgeBucket ?? 'INSUFFICIENT_DIFFICULTY_EVIDENCE']]}` : t['tsa.group.noResult']}</span>
             <span>{fillMessage(t['tsa.attempts'], { used: s.attemptsUsed, max: s.maxAttempts })}</span>
           </div>
         ))}
@@ -78,7 +78,7 @@ export default async function SubjectAssessmentGroupPage({ params }: { params: P
         <h3 id="tsa-kb-title" style={{ fontSize: 16 }}>{t['kb.distribution']}</h3>
         <ul className="ta-msg" style={{ margin: 0, paddingLeft: 18 }}>
           {KNOWLEDGE_BUCKETS.map((b) => <li key={b}>{t[KNOWLEDGE_BUCKET_LABEL_KEY[b]]}: {g.bucketDistribution[b]}</li>)}
-          {g.bucketDistribution.UNCLASSIFIED > 0 && <li>{t[KNOWLEDGE_BUCKET_LABEL_KEY.UNCLASSIFIED]}: {g.bucketDistribution.UNCLASSIFIED}</li>}
+          {g.bucketDistribution.INSUFFICIENT_DIFFICULTY_EVIDENCE > 0 && <li>{t[KNOWLEDGE_BUCKET_LABEL_KEY.INSUFFICIENT_DIFFICULTY_EVIDENCE]}: {g.bucketDistribution.INSUFFICIENT_DIFFICULTY_EVIDENCE}</li>}
         </ul>
         <p className="ta-msg">{t['kb.note']}</p>
       </section>

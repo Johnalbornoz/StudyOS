@@ -24,7 +24,7 @@
  *   Y  pass >= 80 inclusive (sizing.ts).
  */
 import { subjectAssessmentPassed } from '@/lib/subject-assessment/sizing';
-import { isIsoDate, isValidTimeZone, zonedWallTimeToUtc, type DifficultyBand } from '@/lib/subject-assessment/lifecycle';
+import { isIsoDate, isValidTimeZone, zonedWallTimeToUtc, resolveTimezoneAuthority, type DifficultyBand, type TimezoneAuthority } from '@/lib/subject-assessment/lifecycle';
 import { bucketDistribution, type KnowledgeBucket } from '@/lib/subject-assessment/knowledge-bucket';
 
 export { zonedWallTimeToUtc };
@@ -57,7 +57,8 @@ export interface AssignmentWindow {
   startDate: string;
   endDate: string;
   timezone: string;
-  timezoneSource: 'INSTITUTION';
+  /** D71: the recipient's own timezone (student_availability) beats the class institution's. */
+  timezoneSource: 'INSTITUTION' | 'STUDENT_AVAILABILITY';
   opensAt: string;
   closesAt: string;
 }
@@ -75,7 +76,9 @@ export interface SubjectAssessmentAssignmentConfig {
   difficultyBand: DifficultyBand;
   /** planGroupAssessment over the canonical concepts: identical for every student (never per-student). */
   plan: { questionCount: number; distribution: Record<string, number>; rule: string };
-  timing: { timed: boolean; durationMinutes: number | null; recommendedDurationMinutes: number | null; recommendationRule: string | null; durationSource: 'STUDYUS_RECOMMENDED' | 'TEACHER_ADJUSTED' | null };
+  timing: { timed: boolean; durationMinutes: number | null; recommendedDurationMinutes: number | null; recommendationRule: string | null; durationSource: 'STUDYUS_RECOMMENDED' | 'TEACHER_ADJUSTED' | null;
+    /** D70 (APPROVED 2026-10-17): untimed Teacher Test only; absent on older rows = false. */
+    resumeAfterInactivity?: boolean };
   maxAttempts: number;
   window: AssignmentWindow;
   feedbackPolicy: FeedbackPolicy;
@@ -103,14 +106,30 @@ export type WindowError = 'TIMEZONE_AUTHORITY_BLOCKER' | 'WINDOW_DATES_INVALID' 
  * authority). Null / invalid -> TIMEZONE_AUTHORITY_BLOCKER (nothing is created). A window whose close is already past
  * is refused (it could never be taken).
  */
-export function buildAssignmentWindow(input: { startDate: unknown; endDate: unknown }, institutionTimezone: string | null | undefined, now: Date): { ok: true; window: AssignmentWindow } | { ok: false; error: WindowError } {
+export function buildAssignmentWindow(input: { startDate: unknown; endDate: unknown }, institutionTimezone: string | null | undefined, now: Date, timezoneSource: AssignmentWindow['timezoneSource'] = 'INSTITUTION'): { ok: true; window: AssignmentWindow } | { ok: false; error: WindowError } {
   if (!isValidTimeZone(institutionTimezone)) return { ok: false, error: 'TIMEZONE_AUTHORITY_BLOCKER' };
   if (!isIsoDate(input.startDate) || !isIsoDate(input.endDate)) return { ok: false, error: 'WINDOW_DATES_INVALID' };
   if (input.endDate < input.startDate) return { ok: false, error: 'WINDOW_END_BEFORE_START' };
   const opensAt = zonedWallTimeToUtc(input.startDate, 0, 0, institutionTimezone);
   const closesAt = zonedWallTimeToUtc(input.endDate, WINDOW_CLOSE_HOUR, WINDOW_CLOSE_MINUTE, institutionTimezone);
   if (closesAt.getTime() <= now.getTime()) return { ok: false, error: 'WINDOW_ALREADY_CLOSED' };
-  return { ok: true, window: { startDate: input.startDate, endDate: input.endDate, timezone: institutionTimezone, timezoneSource: 'INSTITUTION', opensAt: opensAt.toISOString(), closesAt: closesAt.toISOString() } };
+  return { ok: true, window: { startDate: input.startDate, endDate: input.endDate, timezone: institutionTimezone, timezoneSource, opensAt: opensAt.toISOString(), closesAt: closesAt.toISOString() } };
+}
+
+/**
+ * D71 (APPROVED 2026-10-17) -- the timezone authority of ONE recipient of a Teacher assignment: the Student's own
+ * timezone (student_availability) first, even when the class's institution has another one; else the class's
+ * institution (the single, deterministic applicable institution of a class assignment); else
+ * TIMEZONE_AUTHORITY_BLOCKER. Never the browser's, never the server's, never a fixture default.
+ */
+export function recipientTimezoneAuthority(studentTimezone: string | null | undefined, classInstitutionTimezone: string | null | undefined): TimezoneAuthority {
+  return resolveTimezoneAuthority(studentTimezone, classInstitutionTimezone ? [classInstitutionTimezone] : []);
+}
+
+/** The recipient's window: the group's dates at 00:00 / 21:00 in the recipient's authoritative timezone. */
+export function recipientAssignmentWindow(group: Pick<AssignmentWindow, 'startDate' | 'endDate'>, tz: TimezoneAuthority, now: Date): { ok: true; window: AssignmentWindow } | { ok: false; error: WindowError } {
+  if (!tz.ok) return { ok: false, error: 'TIMEZONE_AUTHORITY_BLOCKER' };
+  return buildAssignmentWindow({ startDate: group.startDate, endDate: group.endDate }, tz.timezone, now, tz.source === 'STUDENT_AVAILABILITY' ? 'STUDENT_AVAILABILITY' : 'INSTITUTION');
 }
 
 export type WindowPhase = 'NOT_OPEN' | 'OPEN' | 'CLOSED';
@@ -256,6 +275,30 @@ export function validateTiming(kind: SubjectAssignmentKind, timing: { timed: boo
   return { ok: true };
 }
 
+/**
+ * D70 (APPROVED 2026-10-17) -- `resumeAfterInactivity` exists only for a Teacher-assigned, UNTIMED subject TEST.
+ * Default false. Mock and timed Test never carry it (a true value there is refused, never silently dropped).
+ */
+export const resumeAfterInactivityApplies = (kind: SubjectAssignmentKind, timed: boolean): boolean => kind === 'TEST' && !timed;
+export function validateResumeAfterInactivity(kind: SubjectAssignmentKind, timed: boolean, value: boolean | undefined): { ok: true; value: boolean } | { ok: false; error: 'RESUME_AFTER_INACTIVITY_NOT_APPLICABLE' } {
+  if (value === true && !resumeAfterInactivityApplies(kind, timed)) return { ok: false, error: 'RESUME_AFTER_INACTIVITY_NOT_APPLICABLE' };
+  return { ok: true, value: value === true };
+}
+
+/**
+ * Rule V + D70 for one Teacher-assigned attempt, decided on every read / answer / submit / heartbeat (pure):
+ *   EXPIRED (an untimed attempt idle 45 min) before the close -> REVIVE only when resumeAfterInactivity, else CLOSE_AS_IS
+ *     (saved progress graded and kept; the same attempt never resumes);
+ *   EXPIRED after the close -> CLOSE_AS_IS (resumeAfterInactivity NEVER overrides the post-close rule);
+ *   ACTIVE after the close -> continues while its session lives (liveSession), else CLOSE_AS_IS;
+ *   anything else -> OK.
+ */
+export function decideAssignmentAttemptGate(input: { state: string; closed: boolean; resumeAfterInactivity: boolean; liveSession: boolean }): 'OK' | 'REVIVE' | 'CLOSE_AS_IS' {
+  if (input.state === 'EXPIRED') return !input.closed && input.resumeAfterInactivity ? 'REVIVE' : 'CLOSE_AS_IS';
+  if (input.state !== 'ACTIVE' || !input.closed) return 'OK';
+  return input.liveSession ? 'OK' : 'CLOSE_AS_IS';
+}
+
 // ------------------------------------------------------------- group results -------------------------------------------------------------
 
 /** Result distribution buckets -- a DISTRIBUTION for reading, not a policy (only the 80 pass mark is a rule). */
@@ -321,7 +364,7 @@ export function aggregateGroup(reports: readonly StudentLatestReport[], opts: { 
     largestGaps: [...byScore].reverse().filter((c) => !c.passed).slice(0, 3).map((c) => c.conceptKey),
     highErrorQuestions,
     highErrorAreas,
-    /** Diagnostic: how many latest completed attempts fall in each knowledge bucket (B1..B4, UNCLASSIFIED). */
+    /** Diagnostic: how many latest completed attempts fall in each knowledge bucket (B1..B4, INSUFFICIENT_DIFFICULTY_EVIDENCE). */
     bucketDistribution: bucketDistribution(reports.map((r) => r.knowledgeBucket ?? null)),
   };
 }

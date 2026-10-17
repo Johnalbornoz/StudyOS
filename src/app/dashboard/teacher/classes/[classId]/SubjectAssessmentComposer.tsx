@@ -47,6 +47,8 @@ export function SubjectAssessmentComposer({
   const [endDate, setEndDate] = useState(today ?? '');
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [timed, setTimed] = useState(false);
+  // D70: only for an untimed Teacher Test; default false
+  const [resumeAfterInactivity, setResumeAfterInactivity] = useState(false);
   const [duration, setDuration] = useState<number | null>(null);
   const [wholeClass, setWholeClass] = useState(true);
   const [recipients, setRecipients] = useState<string[]>([]);
@@ -61,7 +63,7 @@ export function SubjectAssessmentComposer({
   const names = useMemo(() => new Map(concepts.map((c) => [c.id, c.name])), [concepts]);
 
   const errorText = (code: string | undefined) => (code && t[`tsa.err.${code}` as keyof typeof t]) || (code === 'TIMEZONE_AUTHORITY_BLOCKER' ? t['tsa.timezoneBlocker'] : t['tsa.error']);
-  const draft = { kind, conceptIds: selected, difficulty, startDate, endDate, maxAttempts, timing: { timed: isTimed, durationMinutes: isTimed ? duration : null } };
+  const draft = { kind, conceptIds: selected, difficulty, startDate, endDate, maxAttempts, timing: { timed: isTimed, durationMinutes: isTimed ? duration : null, ...(kind === 'TEST' && !isTimed ? { resumeAfterInactivity } : {}) } };
 
   // the server's plan for the current draft (count, distribution, recommended duration, close in the institution tz)
   useEffect(() => {
@@ -186,6 +188,12 @@ export function SubjectAssessmentComposer({
             </>
           ) : (
             <p className="ta-msg">{t['tsa.mockAlwaysTimed']}</p>
+          )}
+          {kind === 'TEST' && !isTimed && (
+            <label className="ta-choice" data-testid="tsa-resume-after-inactivity">
+              <input type="checkbox" checked={resumeAfterInactivity} onChange={(e) => setResumeAfterInactivity(e.target.checked)} /> {t['tsa.resumeAfterInactivity']}
+              <span className="ta-msg"> {t['tsa.resumeAfterInactivityHint']}</span>
+            </label>
           )}
           {isTimed && (
             <label className="ta-field">

@@ -166,3 +166,22 @@ learning_evidence.metadata.transferLadder = {
   - Items generated at level 1 or 5 (AUTO difficulty only) count in the overall and concept scores but in no level score.
   - Teacher-assigned untimed attempts idle for more than 45 min before the window close are resumed (rule V, decision 4), not closed (decision 8). Decision 8 is applied to Student-created untimed Tests.
   - Several distinct institution timezones for one Student (no `student_availability.timezone`) → `TIMEZONE_AUTHORITY_BLOCKER` (`INSTITUTION_TIMEZONES_CONFLICT`).
+
+## 6. Final micro-delta D69–D71 (APPROVED 2026-10-17)
+
+- **D69 — insufficient difficulty evidence.**
+  - When the overall score is >= 80 but neither B3 nor B4 can be shown, `knowledgeBucket` is null and `classificationStatus` is `INSUFFICIENT_DIFFICULTY_EVIDENCE` (label "Evidencia de nivel insuficiente"). That covers Basic-only attempts and attempts where Intermediate and Advanced are both below 80.
+  - Such a result is never moved to B2 and never called Competent.
+  - When B3 and B4 both qualify, B4 wins.
+  - `unclassifiedReason` keeps the detail. The group distribution key is `INSUFFICIENT_DIFFICULTY_EVIDENCE`.
+- **D70 — `timing.resumeAfterInactivity`.**
+  - It exists only for a Teacher-assigned, untimed subject Test, and it is frozen in the assignment and in each attempt's `assignmentWindow`.
+  - The default is false. After 45 minutes idle before the close, the attempt closes as is (`INACTIVITY_CLOSED`): saved progress is graded and kept, the same attempt never resumes, and a new attempt may start if attempts remain.
+  - When true, the same attempt is revived before the close.
+  - `true` never overrides the post-21:00 rule. A true value on a Mock or a timed Test is refused with `RESUME_AFTER_INACTIVITY_NOT_APPLICABLE`.
+  - Student-created untimed Tests are unchanged.
+- **D71 — timezone authority, per recipient.**
+  - The order is: the student's own `student_availability.timezone`, then the class institution's timezone (for a Teacher assignment), else `TIMEZONE_AUTHORITY_BLOCKER`.
+  - For Student-created assessments, the fallback is the single distinct timezone across the student's active institutions, and conflicting values block.
+  - Each recipient row is frozen with its own window (00:00 / 21:00 in that zone, `timezoneSource` `STUDENT_AVAILABILITY` or `INSTITUTION`).
+  - There is no browser, server or fixture default. QA Institution `America/Mexico_City` is `QA_FIXTURE_ONLY`.
