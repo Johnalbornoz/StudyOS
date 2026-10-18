@@ -70,6 +70,12 @@ export interface ExamPreparationCapabilities {
   /** AICE Diploma: the Diploma Planner. */
   canPlanDiploma: boolean;
   unavailableReasons: Array<{ capability: Capability; reason: UnavailableReason }>;
+  /**
+   * C13-P1-01: every governed form (published exam version) the objective's catalogue entries are bound to, in catalogue
+   * order, whether or not an activity of it is launchable today (PAA: the reduced v2.paa form and the full-length one).
+   * What the preparation offers is judged per form, never by the one version a Student profile happens to name.
+   */
+  formVersionIds?: string[];
 }
 
 const COMPONENT_TYPES = new Set(['PAPER', 'COMPONENT', 'PORTFOLIO', 'PERFORMANCE', 'PROJECT', 'SECTION']);
@@ -80,7 +86,7 @@ export function computeCapabilities(objective: Pick<ExamObjective, 'key' | 'kind
   const reasons: ExamPreparationCapabilities['unavailableReasons'] = [];
   if (objective.kind === 'PROGRAMME_PLAN') {
     for (const c of ['PRACTICE', 'DIAGNOSTIC', 'REDUCED_MOCK', 'FULL_MOCK', 'LEARNING_BRIDGE'] as Capability[]) reasons.push({ capability: c, reason: 'PLANNED_BY_SUBJECT' });
-    return { objectiveKey: objective.key, readiness: 'STRUCTURE_READY', canSelect: true, canViewStructure: true, canPractice: false, practiceModes: [], canRunDiagnostic: false, canRunReducedMock: false, reducedMocks: [], canRunFullMock: false, fullMocks: [], canUseLearningBridge: false, canPlanDiploma: true, unavailableReasons: reasons };
+    return { objectiveKey: objective.key, readiness: 'STRUCTURE_READY', canSelect: true, canViewStructure: true, canPractice: false, practiceModes: [], canRunDiagnostic: false, canRunReducedMock: false, reducedMocks: [], canRunFullMock: false, fullMocks: [], canUseLearningBridge: false, canPlanDiploma: true, unavailableReasons: reasons, formVersionIds: [] };
   }
   const readiness = entries.reduce<ReadinessState>((best, e) => (rank(e.state) > rank(best) ? e.state : best), 'CATALOG_ONLY');
   // Launchable entries: the exam / level / area / skill nodes the instance API accepts (never a lone paper node).
@@ -121,6 +127,7 @@ export function computeCapabilities(objective: Pick<ExamObjective, 'key' | 'kind
     canUseLearningBridge: bridgeMappings > 0,
     canPlanDiploma: false,
     unavailableReasons: reasons,
+    formVersionIds: [...new Set(entries.map((e) => e.examVersionId).filter((v): v is string => !!v))],
   };
 }
 
@@ -165,7 +172,9 @@ export function examEntryHrefs(objectiveNode: string | null, c: Pick<ExamPrepara
   // R-1 / no dead end: a mode is linked ONLY to a launchable entry of this preparation; none = no link (shown unavailable)
   const practice = valid(focusAreaLabel ? c.practiceModes.find((p) => p.label === focusAreaLabel)?.nodeKey : null) ?? pick(c.practiceModes);
   const reduced = pick(c.reducedMocks); const full = pick(c.fullMocks);
-  return { ...(practice ? { EXAM_PRACTICE: href(practice), EXAM_CHALLENGE: href(practice) } : {}), ...(reduced ? { REDUCED_MOCK: href(reduced) } : {}), ...(full ? { FULL_MOCK: href(full) } : {}), ...(full ?? reduced ? { PREPARATION_MOCK: href((full ?? reduced)!) } : {}) };
+  // C13-P1-01: the StudyUs preparation card opens the entry stored as a preparation mock when there is one
+  const preparation = pick([...c.fullMocks, ...c.reducedMocks].filter((e) => e.mockAttemptType === 'PREPARATION_MOCK')) ?? full ?? reduced;
+  return { ...(practice ? { EXAM_PRACTICE: href(practice), EXAM_CHALLENGE: href(practice) } : {}), ...(reduced ? { REDUCED_MOCK: href(reduced) } : {}), ...(full ? { FULL_MOCK: href(full) } : {}), ...(preparation ? { PREPARATION_MOCK: href(preparation) } : {}) };
 }
 
 /**

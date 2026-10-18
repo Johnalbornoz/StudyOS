@@ -154,16 +154,40 @@ export async function profileObjective(profile: Pick<StudentExamProfile, 'object
   return d?.config_key ? objectiveForConfig(d.config_key) : null;
 }
 
+/**
+ * The exam definition + published version a NEW preparation is bound to, when the objective names one exam.
+ *
+ * C13-P1-01: a TEST objective (the whole test is the objective: PAA) may be bound to several governed FORMS of that one
+ * exam (PAA: v2.paa -- practice + reduced mock -- and v2.paa-full-length). It used to require exactly one config key, so
+ * a PAA preparation was created with no definition and no version until its first attempt filled them. Now such an
+ * objective is bound to its first catalogue form that has a published version, provided every form is the same exam
+ * family. A subject level with several exams (IB History SL + HL) is not one exam: it stays unbound, as before.
+ * What the preparation OFFERS never depends on this choice (see preparation-availability.ts).
+ */
+export interface StartableDefinitionRow { config_key: string; exam_family: string | null; definition_id: string; version_id: string }
+export function pickStartableDefinition(o: Pick<ExamObjective, 'kind' | 'configKeys'>, rows: readonly StartableDefinitionRow[]): { definitionId: string; versionId: string } | null {
+  const of = (row: StartableDefinitionRow | undefined) => (row ? { definitionId: row.definition_id, versionId: row.version_id } : null);
+  if (o.configKeys.length === 1) return of(rows.find((r) => r.config_key === o.configKeys[0]));
+  if (o.configKeys.length === 0 || o.kind !== 'EXAM') return null;
+  const families = new Set(rows.map((r) => r.exam_family));
+  if (rows.length === 0 || families.size !== 1 || families.has(null)) return null;
+  for (const k of o.configKeys) {
+    const row = rows.find((r) => r.config_key === k);
+    if (row) return of(row);
+  }
+  return null;
+}
+
 async function startableDefinition(o: ExamObjective): Promise<{ definitionId: string; versionId: string } | null> {
-  // Only when the objective is ONE configured exam (PAA, PISA, an IB / Cambridge subject level).
-  if (o.configKeys.length !== 1) return null;
+  if (!o.configKeys.length || (o.configKeys.length > 1 && o.kind !== 'EXAM')) return null;
+  // the latest PUBLISHED version of each ACTIVE definition of the objective's config keys
   const r = await db.query(
-    `SELECT d.id AS definition_id, v.id AS version_id FROM exam_definitions d
+    `SELECT DISTINCT ON (d.config_key) d.config_key, d.exam_family, d.id AS definition_id, v.id AS version_id FROM exam_definitions d
        JOIN exam_versions v ON v.exam_definition_id = d.id AND v.status = 'PUBLISHED'
-      WHERE d.config_key = $1 AND d.status = 'ACTIVE' ORDER BY v.created_at DESC LIMIT 1`,
-    [o.configKeys[0]]
+      WHERE d.config_key = ANY($1::text[]) AND d.status = 'ACTIVE' ORDER BY d.config_key, v.created_at DESC`,
+    [o.configKeys]
   );
-  return r.rows[0] ? { definitionId: r.rows[0].definition_id, versionId: r.rows[0].version_id } : null;
+  return pickStartableDefinition(o, r.rows as StartableDefinitionRow[]);
 }
 
 export interface CreatePreparationInput {
@@ -443,6 +467,13 @@ async function engineVerdictsFor(examVersionId: string | null): Promise<EngineMo
   return view ? { anyPractice: Object.values(view.practiceBySection).some((s) => s !== 'NOT_READY'), reducedMock: view.reducedMock, fullMock: view.fullMock } : null;
 }
 
+/** R-1 per governed form: each form's entries are restricted by that form's own engine verdict (ENFORCE only). */
+export async function restrictByEachFormEngine(caps: ExamPreparationCapabilities, verdictsFor: (examVersionId: string | null) => Promise<EngineModeVerdicts | null> = engineVerdictsFor): Promise<ExamPreparationCapabilities> {
+  let out = caps;
+  for (const v of caps.formVersionIds ?? []) out = restrictByReadinessEngine(out, await verdictsFor(v), v);
+  return out;
+}
+
 /** Other active preparations whose requirements map to the same canonical concepts (real mappings only, never by name). */
 async function otherPreparationsByConcept(studentId: string, excludeProfileId: string, canonicalIds: string[], language = 'en'): Promise<Map<string, string[]>> {
   const out = new Map<string, string[]>();
@@ -518,8 +549,10 @@ export async function getPreparationView(studentId: string, profileId: string, l
   if (!profile || profile.studentId !== studentId) return null;
   const objective = await profileObjective(profile);
   if (!objective) return null;
-  // R-1: under ENFORCE the Exam Bank Readiness Engine restricts what the catalogue offers (never adds)
-  const capabilities = restrictByReadinessEngine(await objectiveCapabilities(objective, language), await engineVerdictsFor(profile.examVersionId ?? null), profile.examVersionId ?? null);
+  // R-1: under ENFORCE the Exam Bank Readiness Engine restricts what the catalogue offers (never adds).
+  // C13-P1-01: each governed form by ITS OWN engine -- never by the one version the profile happens to name (NULL on a
+  // fresh profile until its first attempt), so the preparation offers the same before and after that attempt.
+  const capabilities = await restrictByEachFormEngine(await objectiveCapabilities(objective, language));
   const [plan, open, diag] = await Promise.all([
     buildProfilePlan(studentId, profile, objective, capabilities, language),
     findOpenSimulationAttemptForProfile(profile.id),
