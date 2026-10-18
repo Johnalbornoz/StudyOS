@@ -159,7 +159,7 @@ describe('exam-specific readers are target-scoped', () => {
     expect(src).toMatch(/\(sa\.exam_profile_id = \$4::uuid\) AS own_target/);
     expect(src).toMatch(/inExamScopeSql\('le', '\$3'\)/);
     expect(src).toMatch(/learnerStates\(studentId, canonicalIds, profile\.id\)/);
-    expect(src).toMatch(/examEvidence\(studentId, reqs\.map\(\(r\) => r\.code\), canonicalIds, profile\.id\)/);
+    expect(src).toMatch(/examEvidence\(studentId, reqs\.map\(\(r\) => r\.code\), canonicalIds, profile\.id, readinessAttemptIds\)/);
     expect(src).not.toMatch(/configKeys\.includes\(x\.config_key\)/);
   });
   it('T5 deriveExamGaps: latest per target x objective; getExamPreparationPlan passes its target', () => {

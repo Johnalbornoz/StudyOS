@@ -1622,6 +1622,9 @@ export type MessageKey =
   | 'prep.home.coverage'
   | 'prep.home.coverageNone'
   | 'prep.home.noEvidenceCount'
+  | 'prep.home.readinessStatus'
+  | 'prep.home.readinessInsufficient'
+  | 'prep.home.areasWithoutEvidence'
   | 'prep.home.noRequirements'
   | 'prep.home.covered'
   | 'prep.home.coveredEmpty'
@@ -3829,6 +3832,9 @@ const es: Messages = {
   'prep.home.coverage': '{n} de {m} requisitos vinculados a conceptos tienen evidencia.',
   'prep.home.coverageNone': 'Todavía no hay requisitos de este examen vinculados a conceptos de StudyUs.',
   'prep.home.noEvidenceCount': '{n} requisitos sin evidencia suficiente: no significa que no los sepas.',
+  'prep.home.readinessStatus': 'Estado de tu preparación: {status}.',
+  'prep.home.readinessInsufficient': 'Todavía no hay evidencia suficiente para diagnosticar tu preparación en este examen, así que aún no te recomendamos conceptos. Responde más preguntas, sobre todo en las áreas sin evidencia, para obtener un diagnóstico.',
+  'prep.home.areasWithoutEvidence': 'Áreas sin evidencia todavía: {list}.',
   'prep.home.noRequirements': 'Todavía no hay requisitos verificados de este examen en StudyUs, así que no inventamos un plan. Lo que aprendas sigue contando.',
   'prep.home.covered': 'Qué ya tienes cubierto',
   'prep.home.coveredEmpty': 'Aún no hay requisitos demostrados. Lo que ya sabes cuenta en cuanto haya evidencia.',
@@ -6187,6 +6193,9 @@ const en: Messages = {
   'prep.home.coverage': '{n} of {m} requirements linked to concepts have evidence.',
   'prep.home.coverageNone': 'No requirement of this exam is linked to StudyUs concepts yet.',
   'prep.home.noEvidenceCount': '{n} requirements without enough evidence: that does not mean you do not know them.',
+  'prep.home.readinessStatus': 'Your preparation status: {status}.',
+  'prep.home.readinessInsufficient': 'There is not enough evidence yet to diagnose your preparation for this exam, so we are not recommending concepts yet. Answer more questions, especially in the areas without evidence, to get a diagnosis.',
+  'prep.home.areasWithoutEvidence': 'Areas without evidence yet: {list}.',
   'prep.home.noRequirements': 'There are no verified requirements for this exam in StudyUs yet, so we do not invent a plan. What you learn still counts.',
   'prep.home.covered': 'What you already have covered',
   'prep.home.coveredEmpty': 'No requirement is demonstrated yet. What you know counts as soon as there is evidence.',
@@ -8545,6 +8554,9 @@ const de: Messages = {
   'prep.home.coverage': '{n} von {m} mit Konzepten verknüpften Anforderungen haben Nachweise.',
   'prep.home.coverageNone': 'Noch keine Anforderung dieser Prüfung ist mit StudyUs-Konzepten verknüpft.',
   'prep.home.noEvidenceCount': '{n} Anforderungen ohne ausreichende Nachweise – das heißt nicht, dass du sie nicht kannst.',
+  'prep.home.readinessStatus': 'Stand deiner Vorbereitung: {status}.',
+  'prep.home.readinessInsufficient': 'Es gibt noch nicht genug Nachweise, um deine Vorbereitung auf diese Prüfung zu diagnostizieren, deshalb empfehlen wir noch keine Konzepte. Beantworte mehr Fragen, vor allem in den Bereichen ohne Nachweise, um eine Diagnose zu erhalten.',
+  'prep.home.areasWithoutEvidence': 'Bereiche noch ohne Nachweise: {list}.',
   'prep.home.noRequirements': 'Für diese Prüfung gibt es in StudyUs noch keine geprüften Anforderungen; wir erfinden keinen Plan. Was du lernst, zählt trotzdem.',
   'prep.home.covered': 'Was du schon abgedeckt hast',
   'prep.home.coveredEmpty': 'Noch keine Anforderung ist nachgewiesen. Dein Wissen zählt, sobald es Nachweise gibt.',
@@ -10903,6 +10915,9 @@ const fr: Messages = {
   'prep.home.coverage': '{n} des {m} exigences liées à des concepts ont des preuves.',
   'prep.home.coverageNone': 'Aucune exigence de cet examen n’est encore liée à des concepts StudyUs.',
   'prep.home.noEvidenceCount': '{n} exigences sans preuves suffisantes : cela ne veut pas dire que tu ne les maîtrises pas.',
+  'prep.home.readinessStatus': 'État de ta préparation : {status}.',
+  'prep.home.readinessInsufficient': 'Il n’y a pas encore assez de preuves pour diagnostiquer ta préparation à cet examen, donc nous ne te recommandons pas encore de concepts. Réponds à plus de questions, surtout dans les domaines sans preuves, pour obtenir un diagnostic.',
+  'prep.home.areasWithoutEvidence': 'Domaines encore sans preuves : {list}.',
   'prep.home.noRequirements': 'Il n’y a pas encore d’exigences vérifiées pour cet examen dans StudyUs : nous n’inventons pas de plan. Ce que tu apprends compte quand même.',
   'prep.home.covered': 'Ce que tu maîtrises déjà',
   'prep.home.coveredEmpty': 'Aucune exigence n’est encore démontrée. Ce que tu sais compte dès qu’il y a des preuves.',
@@ -13261,6 +13276,9 @@ const pt: Messages = {
   'prep.home.coverage': '{n} de {m} requisitos vinculados a conceitos têm evidência.',
   'prep.home.coverageNone': 'Ainda não há requisitos deste exame vinculados a conceitos do StudyUs.',
   'prep.home.noEvidenceCount': '{n} requisitos sem evidência suficiente: isso não significa que você não os saiba.',
+  'prep.home.readinessStatus': 'Estado da sua preparação: {status}.',
+  'prep.home.readinessInsufficient': 'Ainda não há evidência suficiente para diagnosticar sua preparação para este exame, por isso ainda não recomendamos conceitos. Responda mais perguntas, principalmente nas áreas sem evidência, para obter um diagnóstico.',
+  'prep.home.areasWithoutEvidence': 'Áreas ainda sem evidência: {list}.',
   'prep.home.noRequirements': 'Ainda não há requisitos verificados deste exame no StudyUs, então não inventamos um plano. O que você aprende continua contando.',
   'prep.home.covered': 'O que você já tem coberto',
   'prep.home.coveredEmpty': 'Ainda não há requisitos demonstrados. O que você sabe conta assim que houver evidência.',

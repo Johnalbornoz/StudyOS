@@ -104,6 +104,10 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
     if (!byArea.has(r.area)) byArea.set(r.area, []);
     byArea.get(r.area)!.push(r);
   }
+  // C13-P1-02: the overall status is the STORED readiness snapshot's, never derived from requirement pills; an area
+  // is "without evidence" when none of its requirements has evidence (unanswered items are not evidence).
+  const readiness = view.readiness;
+  const areasWithoutEvidence = [...byArea.entries()].filter(([, reqs]) => reqs.some((r) => r.concepts.length > 0) && !reqs.some((r) => r.hasEvidence)).map(([area]) => comp(area));
 
   return (
     <div className="prep-home">
@@ -176,6 +180,12 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
           <h2 id="prep-estimate-title" className="ex-status-title">{l['prep.home.estimate']}</h2>
           <p className="ui-hint">{l['prep.home.reuseNote']}</p>
           <p className="ui-hint">{l['prep.home.examSpecificNote']}</p>
+          {readiness ? (
+            <p className="ex-status-body" data-readiness-status={readiness.overallStatus}>
+              {fill(l['prep.home.readinessStatus'], { status: l[`examPrep.status.${readiness.overallStatus}`] ?? readiness.overallStatus })}
+            </p>
+          ) : null}
+          {readiness?.overallStatus === 'INSUFFICIENT_EVIDENCE' && readiness.diagnosedTargets === 0 ? <p className="ui-hint" data-readiness-insufficient>{l['prep.home.readinessInsufficient']}</p> : null}
           {plan ? (
             <>
               <ul className="prep-counts">
@@ -187,6 +197,9 @@ export function PreparationHome({ view, labels: l, language, timing, display, as
                 {plan.coverage.mapped > 0 ? fill(l['prep.home.coverage'], { n: plan.coverage.mappedWithEvidence, m: plan.coverage.mapped }) : l['prep.home.coverageNone']}
               </p>
               {noEvidence > 0 ? <p className="ui-hint">{fill(l['prep.home.noEvidenceCount'], { n: noEvidence })}</p> : null}
+              {plan.coverage.mapped > 0 && areasWithoutEvidence.length > 0 && areasWithoutEvidence.length < byArea.size ? (
+                <p className="ui-hint" data-areas-without-evidence>{fill(l['prep.home.areasWithoutEvidence'], { list: areasWithoutEvidence.join(', ') })}</p>
+              ) : null}
             </>
           ) : (
             <p className="ex-status-body">{c.canPlanDiploma ? l['prep.home.planner'] : l['prep.home.noRequirements']}</p>

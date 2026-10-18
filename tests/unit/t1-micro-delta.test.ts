@@ -750,10 +750,11 @@ describe('Recommendation card: the concept row under a Cambridge requirement', (
         [{
           learningObjectiveId: 'lo-energy', code: 'aice.9709.p4.energy',
           description: learningObjectiveLabel('aice.9709.p4.energy', locale) ?? 'Mechanics · Energy, work and power.', // as preparation.service builds it
-          area: 'Paper 4 — Mechanics', weight: 1, ownEvidence: null,
+          area: 'Paper 4 — Mechanics', weight: 1, ownEvidence: { classification: 'GAP', at: '2026-10-01', examName: 'X', sameExam: true },
           concepts: [{ canonicalConceptId: 'c-energy', name: conceptName, learner: null, examEvidence: null, alsoRelevantFor: [] }],
         }],
-        { examDaysLeft: null, canPractice: false, canRunDiagnostic: false }
+        // C13-P1-02: a concept card exists only for a requirement the stored readiness snapshot diagnosed
+        { examDaysLeft: null, canPractice: false, canRunDiagnostic: false, readiness: { overallStatus: 'DEVELOPING', evidencedObjectiveIds: new Set(['lo-energy']), diagnosedObjectiveIds: new Set(['lo-energy']) } }
       );
       const capabilities = computeCapabilities(objective, [], 1);
       const view = { profile: { id: 'p1', studentId: 's1', examDefinitionId: null, examVersionId: null, purpose: null, programmeContext: null, subjectFocus: null, examDate: null, timezone: null, institutionTargetId: null, status: 'ACTIVE', objectiveKey: objective.key }, objective, capabilities, plan, next: nextStep({ openAttemptId: null, plan, canPractice: false, canRunDiagnostic: false, diagnosticDone: false, canViewStructure: false, canPlanDiploma: false, hasExamDate: true }), openAttemptId: null, diagnostic: null };

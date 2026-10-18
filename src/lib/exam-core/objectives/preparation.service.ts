@@ -40,7 +40,9 @@ import { createExamInstance, toInstanceView } from '../exam-instance.service';
 import { examObjectives, objectiveByKey, objectiveForConfig, type ExamObjective } from './objective-catalog';
 import { isObjectiveExposed } from '../student-exposure';
 import { computeCapabilities, objectiveStatusKey, type ExamPreparationCapabilities, type ObjectiveEntry, restrictByReadinessEngine, type EngineModeVerdicts } from './capabilities';
-import { buildPreparationPlan, nextStep, type ExamEvidence, type LearnerConceptState, type PreparationPlan, type RequirementInput, examReadinessEvidenceOf, type ExamReadinessCellSummary } from './preparation-plan';
+import { buildPreparationPlan, nextStep, type ExamEvidence, type LearnerConceptState, type PreparationPlan, type RequirementInput, examReadinessEvidenceOf, type ExamReadinessCellSummary, type StoredReadinessProjection } from './preparation-plan';
+import { getLatestReadinessSnapshot } from '@/lib/readiness/readiness.service';
+import type { OverallReadinessStatus, ReadinessSnapshot } from '@/lib/readiness/types';
 import { applyBankReadinessOverlay } from '../question-bank/capability-overlay.service';
 import { acquireLaunchLock } from '@/services/activity-launch-lock.service';
 import { objectiveEligibilityForStudent } from '../eligibility/eligibility.service';
@@ -410,13 +412,19 @@ const asClass = (c: string): ExamEvidence['classification'] | null => (c === 'ST
  * Latest StudyUs evidence per requirement code for THIS exam target, and per canonical concept from OTHER
  * targets (context only). G6: "own" is decided by the attempt's own target (simulation_attempts.exam_profile_id),
  * never by a shared code, concept or exam family.
+ *
+ * C13-P1-02: a scored result classifies EVERY blueprint objective, the unanswered ones included (earned 0 of the
+ * objective's available points -> "GAP"). An objective nobody answered is not evidence: only objectives with at least
+ * one scored response in that attempt count. And an attempt that wrote Exam Readiness evidence is read through Exam
+ * Readiness (E-1, `examReadinessByConcept`) -- its per-objective result is never this target's own signal; it is used
+ * only for a legacy attempt recorded before Exam Readiness existed.
  */
-async function examEvidence(studentId: string, codes: string[], canonicalIds: string[], examTargetId: string) {
+async function examEvidence(studentId: string, codes: string[], canonicalIds: string[], examTargetId: string, readinessAttemptIds: ReadonlySet<string>) {
   const byCode = new Map<string, ExamEvidence>();
   const byConcept = new Map<string, ExamEvidence>();
   if (!codes.length && !canonicalIds.length) return { byCode, byConcept };
   const r = await db.query(
-    `SELECT lo.code, o->>'classification' AS cls, r.created_at, d.name AS exam_name, (sa.exam_profile_id = $4::uuid) AS own_target,
+    `SELECT lo.code, o->>'classification' AS cls, r.created_at, d.name AS exam_name, (sa.exam_profile_id = $4::uuid) AS own_target, sa.exam_attempt_id,
             COALESCE((SELECT array_agg(m.canonical_concept_id) FROM objective_concept_mappings m WHERE m.learning_objective_id = lo.id AND m.status = 'PUBLISHED'), '{}') AS concepts
        FROM simulation_attempts sa
        JOIN exam_attempt_results r ON r.exam_attempt_id = sa.exam_attempt_id AND r.status = 'SCORED'
@@ -424,6 +432,7 @@ async function examEvidence(studentId: string, codes: string[], canonicalIds: st
        CROSS JOIN LATERAL jsonb_array_elements(r.objective_results) o
        JOIN learning_objectives lo ON lo.id = (o->>'learningObjectiveId')::uuid
       WHERE sa.student_id = $1 AND o->>'classification' IN ('STRENGTH', 'DEVELOPING', 'GAP') AND NOT ${technicalExamAttemptSql('sa.exam_attempt_id')}
+        AND EXISTS (SELECT 1 FROM exam_attempt_item_responses ir WHERE ir.exam_attempt_id = sa.exam_attempt_id AND ir.learning_objective_id = lo.id AND ir.score IS NOT NULL AND ir.max_score > 0)
         AND (lo.code = ANY($2::text[]) OR EXISTS (SELECT 1 FROM objective_concept_mappings m WHERE m.learning_objective_id = lo.id AND m.status = 'PUBLISHED' AND m.canonical_concept_id = ANY($3::uuid[])))
       ORDER BY r.created_at DESC`,
     [studentId, codes, canonicalIds, examTargetId]
@@ -432,7 +441,7 @@ async function examEvidence(studentId: string, codes: string[], canonicalIds: st
     const cls = asClass(x.cls);
     if (!cls) continue;
     const ev: ExamEvidence = { classification: cls, at: new Date(x.created_at).toISOString(), examName: x.exam_name, sameExam: x.own_target === true };
-    if (ev.sameExam && codes.includes(x.code) && !byCode.has(x.code)) byCode.set(x.code, ev);
+    if (ev.sameExam && codes.includes(x.code) && !byCode.has(x.code) && !readinessAttemptIds.has(x.exam_attempt_id)) byCode.set(x.code, ev);
     // Another exam's result on the same concept: context only (different form of assessment and purpose).
     if (!ev.sameExam) for (const c of x.concepts as string[]) if (!byConcept.has(c)) byConcept.set(c, ev);
   }
@@ -458,6 +467,63 @@ async function examReadinessByConcept(studentId: string, canonicalIds: string[],
     if ((e as { code?: string })?.code !== '42P01') throw e;
   }
   return out;
+}
+
+/** Attempts of this exam target that recorded Exam Readiness evidence (E-1). Absent table = none. */
+async function examReadinessAttempts(studentId: string, examTargetId: string): Promise<Set<string>> {
+  try {
+    const r = await db.query(`SELECT DISTINCT exam_attempt_id FROM exam_readiness_evidence WHERE student_id = $1 AND exam_target_id = $2::uuid`, [studentId, examTargetId]);
+    return new Set((r.rows as any[]).map((x) => x.exam_attempt_id as string));
+  } catch (e) {
+    if ((e as { code?: string })?.code !== '42P01') throw e;
+    return new Set();
+  }
+}
+
+/**
+ * C13-P1-02: the STORED readiness snapshot of this target (never recomputed here) projected onto requirements:
+ * which learning objectives have an evidenced blueprint target and which have a diagnosed one. A snapshot of an exam
+ * version that is not one of this preparation's governed forms is stale and not read. C14 integration: a preparation can
+ * span several governed forms of one exam (PAA: v2.paa + v2.paa-full-length), and a snapshot is computed for the version
+ * of the attempt that completed -- so any of the preparation's form versions is accepted (C13-P1-01 binds a new profile
+ * to its first form, which never changes when a later attempt uses another form).
+ */
+/** Pure: a stored snapshot is this preparation's when its version is one of the preparation's governed forms (or the profile's own version). */
+export function snapshotBelongsToPreparation(snapshotVersionId: string, formVersionIds: readonly string[], profileVersionId: string | null): boolean {
+  const accepted = new Set([...formVersionIds, ...(profileVersionId ? [profileVersionId] : [])]);
+  return accepted.size === 0 || accepted.has(snapshotVersionId);
+}
+export interface PreparationReadiness { overallStatus: OverallReadinessStatus; calculatedAt: string; diagnosedTargets: number; evidencedTargets: number; totalTargets: number }
+async function storedReadinessFor(profile: StudentExamProfile, formVersionIds: readonly string[] = []): Promise<{ summary: PreparationReadiness; projection: StoredReadinessProjection } | null> {
+  const snapshot = await getLatestReadinessSnapshot(profile.id).catch(() => null);
+  if (!snapshot) return null;
+  if (!snapshotBelongsToPreparation(snapshot.examVersionId, formVersionIds, profile.examVersionId ?? null)) return null;
+  const targets = snapshot.blueprintCoverage?.targets ?? [];
+  const ids = [...new Set(targets.map((t) => t.targetId))];
+  const loByTarget = new Map<string, string>();
+  if (ids.length) {
+    const r = await db.query(`SELECT id, learning_objective_id FROM blueprint_objective_targets WHERE id = ANY($1::uuid[])`, [ids]);
+    for (const x of r.rows as any[]) loByTarget.set(x.id, x.learning_objective_id);
+  }
+  return { summary: readinessSummary(snapshot), projection: projectReadinessSnapshot(snapshot, loByTarget) };
+}
+
+export function readinessSummary(s: ReadinessSnapshot): PreparationReadiness {
+  const targets = s.blueprintCoverage?.targets ?? [];
+  return { overallStatus: s.overallStatus, calculatedAt: s.calculatedAt, diagnosedTargets: targets.filter((t) => !!t.diagnosisId).length, evidencedTargets: s.blueprintCoverage?.supportedAndEvidenced ?? 0, totalTargets: s.blueprintCoverage?.totalTargets ?? targets.length };
+}
+
+/** Pure: snapshot targets -> requirement (learning objective) sets. */
+export function projectReadinessSnapshot(s: Pick<ReadinessSnapshot, 'overallStatus' | 'blueprintCoverage'>, loByTarget: ReadonlyMap<string, string>): StoredReadinessProjection {
+  const evidencedObjectiveIds = new Set<string>();
+  const diagnosedObjectiveIds = new Set<string>();
+  for (const t of s.blueprintCoverage?.targets ?? []) {
+    const lo = loByTarget.get(t.targetId);
+    if (!lo) continue;
+    if (t.status === 'SUPPORTED_AND_EVIDENCED') evidencedObjectiveIds.add(lo);
+    if (t.diagnosisId) diagnosedObjectiveIds.add(lo);
+  }
+  return { overallStatus: s.overallStatus, evidencedObjectiveIds, diagnosedObjectiveIds };
 }
 
 /** The engine's verdicts for a version (ENFORCE only; null = not evaluated: SHADOW, no version, or no governed blueprint). */
@@ -498,7 +564,14 @@ async function otherPreparationsByConcept(studentId: string, excludeProfileId: s
   return out;
 }
 
-export async function buildProfilePlan(studentId: string, profile: StudentExamProfile, objective: ExamObjective, caps: ExamPreparationCapabilities, language = 'en'): Promise<PreparationPlan | null> {
+export async function buildProfilePlan(
+  studentId: string,
+  profile: StudentExamProfile,
+  objective: ExamObjective,
+  caps: ExamPreparationCapabilities,
+  language = 'en',
+  readinessProjection: StoredReadinessProjection | null = null
+): Promise<PreparationPlan | null> {
   const reqs = await objectiveRequirements(objective.configKeys);
   // Catalogue only: no governed requirements -- nothing is invented to fill the plan.
   if (!reqs.length) return null;
@@ -506,9 +579,10 @@ export async function buildProfilePlan(studentId: string, profile: StudentExamPr
   const canonicalIds = [...new Set([...conceptsByReq.values()].flat().map((c) => c.id))];
   // Micro-delta M03: requirement and concept NAMES are catalogue display labels in the reader's language
   // (learning-objective labels by stable code; canonical_concept_localizations). IDs, codes and areas are unchanged.
+  const readinessAttemptIds = await examReadinessAttempts(studentId, profile.id);
   const [learner, evidence, also, conceptLabels, readiness] = await Promise.all([
     learnerStates(studentId, canonicalIds, profile.id),
-    examEvidence(studentId, reqs.map((r) => r.code), canonicalIds, profile.id),
+    examEvidence(studentId, reqs.map((r) => r.code), canonicalIds, profile.id, readinessAttemptIds),
     otherPreparationsByConcept(studentId, profile.id, canonicalIds, language),
     canonicalConceptLabels(canonicalIds, language).catch(() => new Map<string, string>()),
     examReadinessByConcept(studentId, canonicalIds, profile.id),
@@ -520,8 +594,9 @@ export async function buildProfilePlan(studentId: string, profile: StudentExamPr
     description: learningObjectiveLabel(r.code, language) ?? r.description,
     area: r.area,
     weight: totalItems ? r.items / totalItems : 1 / reqs.length,
-    // this exam's result on the requirement's own objective, else its Exam Readiness on the requirement's concepts (E-1)
-    ownEvidence: evidence.byCode.get(r.code) ?? examReadinessEvidenceOf((conceptsByReq.get(r.id) ?? []).flatMap((c) => (readiness.has(c.id) ? [readiness.get(c.id)!] : [])), objective.label),
+    // C13-P1-02: this target's Exam Readiness on the requirement's concepts (E-1, the governed rule), else -- only for a
+    // legacy attempt without Exam Readiness evidence -- its result on an ANSWERED objective
+    ownEvidence: examReadinessEvidenceOf((conceptsByReq.get(r.id) ?? []).flatMap((c) => (readiness.has(c.id) ? [readiness.get(c.id)!] : [])), objective.label) ?? evidence.byCode.get(r.code) ?? null,
     concepts: (conceptsByReq.get(r.id) ?? []).map((c) => ({
       canonicalConceptId: c.id,
       name: conceptLabels.get(c.id) ?? c.name,
@@ -531,7 +606,7 @@ export async function buildProfilePlan(studentId: string, profile: StudentExamPr
     })),
   }));
   const todayIso = new Date().toISOString().slice(0, 10);
-  return buildPreparationPlan(inputs, { examDaysLeft: profile.examDate ? calendarDaysUntil(profile.examDate, todayIso) : null, canPractice: caps.canPractice, canRunDiagnostic: caps.canRunDiagnostic });
+  return buildPreparationPlan(inputs, { examDaysLeft: profile.examDate ? calendarDaysUntil(profile.examDate, todayIso) : null, canPractice: caps.canPractice, canRunDiagnostic: caps.canRunDiagnostic, readiness: readinessProjection });
 }
 
 export interface PreparationView {
@@ -539,6 +614,8 @@ export interface PreparationView {
   objective: ExamObjective;
   capabilities: ExamPreparationCapabilities;
   plan: PreparationPlan | null;
+  /** C13-P1-02: the stored readiness snapshot of this target (overall status as stored), null = none computed yet. */
+  readiness: PreparationReadiness | null;
   next: ReturnType<typeof nextStep>;
   openAttemptId: string | null;
   diagnostic: { instanceId: string; status: string } | null;
@@ -553,8 +630,9 @@ export async function getPreparationView(studentId: string, profileId: string, l
   // C13-P1-01: each governed form by ITS OWN engine -- never by the one version the profile happens to name (NULL on a
   // fresh profile until its first attempt), so the preparation offers the same before and after that attempt.
   const capabilities = await restrictByEachFormEngine(await objectiveCapabilities(objective, language));
+  const stored = await storedReadinessFor(profile, capabilities.formVersionIds ?? []);
   const [plan, open, diag] = await Promise.all([
-    buildProfilePlan(studentId, profile, objective, capabilities, language),
+    buildProfilePlan(studentId, profile, objective, capabilities, language, stored?.projection ?? null),
     findOpenSimulationAttemptForProfile(profile.id),
     db.query(`SELECT id, status FROM exam_instances WHERE exam_profile_id = $1 AND purpose = 'DIAGNOSTIC' AND status <> 'DELETED' ORDER BY created_at DESC LIMIT 1`, [profile.id]),
   ]);
@@ -570,7 +648,7 @@ export async function getPreparationView(studentId: string, profileId: string, l
     // T1 final delta (C): a governed series + year configures the timing as much as a date does.
     hasExamDate: !!profile.examDate || !!storedExamSession(profile),
   });
-  return { profile, objective, capabilities, plan, next, openAttemptId: open?.id ?? null, diagnostic };
+  return { profile, objective, capabilities, plan, readiness: stored?.summary ?? null, next, openAttemptId: open?.id ?? null, diagnostic };
 }
 
 // ---------------------------------------------------------------- activities from the preparation

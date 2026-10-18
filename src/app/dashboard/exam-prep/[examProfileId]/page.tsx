@@ -196,7 +196,7 @@ export default async function ExamPrepDetailPage({ params, searchParams }: { par
   }
   if (view) {
     const attempts = await listProfileAttempts(profile.id);
-    const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.') || k.startsWith('acp.goal.')));
+    const prepLabels: Record<string, string> = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('prep.') || k.startsWith('acp.goal.') || k.startsWith('examPrep.status.')));
     // T1 final delta (C): governed sessions (IB, Cambridge) come from the canonical session catalogue; other exams keep a date.
     const sessionModel = objectiveSessionModel(view.objective, await studentCountryOfStudy(studentId));
     const storedSession = storedExamSession(profile);

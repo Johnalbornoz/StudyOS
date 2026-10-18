@@ -137,7 +137,25 @@ export interface PlannedRequirement extends RequirementInput {
   };
   /** Evidence exists in THIS exam's own format (practice / diagnostic / mock of this exam). */
   formatConfirmed: boolean;
+  /**
+   * C13-P1-02: the requirement has evidence for THIS target -- a status other than NO_EVIDENCE, or a SUPPORTED_AND_EVIDENCED
+   * blueprint target in the stored readiness snapshot. Drives coverage; never inferred from an unanswered item.
+   */
+  hasEvidence: boolean;
   priority: { score: number; band: 'HIGH' | 'MEDIUM' | 'LOW'; factors: PriorityFactor[] };
+}
+
+/**
+ * C13-P1-02: the STORED readiness snapshot (readiness_snapshots, computeReadinessSnapshot) projected onto requirements
+ * (learning objectives). The plan never recomputes readiness; it only reads which requirements the snapshot evidenced
+ * and which it diagnosed.
+ */
+export interface StoredReadinessProjection {
+  overallStatus: string;
+  /** Requirements with >= 1 SUPPORTED_AND_EVIDENCED blueprint target in the snapshot. */
+  evidencedObjectiveIds: ReadonlySet<string>;
+  /** Requirements with >= 1 diagnosed blueprint target (diagnosisId) in the snapshot. */
+  diagnosedObjectiveIds: ReadonlySet<string>;
 }
 
 export interface PreparationPlan {
@@ -199,7 +217,10 @@ export function classifyRequirement(r: RequirementInput): { status: RequirementS
 
 const SEVERITY: Record<RequirementStatus, number> = { NEEDS_REINFORCEMENT: 3, NO_EVIDENCE: 2, NEEDS_CONFIRMATION: 1, NOT_YET_MAPPED: 1, ALREADY_STRONG: 0 };
 
-export function buildPreparationPlan(inputs: RequirementInput[], opts: { examDaysLeft: number | null; canPractice: boolean; canRunDiagnostic: boolean }): PreparationPlan {
+export function buildPreparationPlan(
+  inputs: RequirementInput[],
+  opts: { examDaysLeft: number | null; canPractice: boolean; canRunDiagnostic: boolean; readiness?: StoredReadinessProjection | null }
+): PreparationPlan {
   const avgWeight = inputs.length ? inputs.reduce((a, r) => a + r.weight, 0) / inputs.length : 0;
   const requirements: PlannedRequirement[] = inputs.map((r) => {
     const { status, labels, gapExam, otherExam } = classifyRequirement(r);
@@ -210,12 +231,17 @@ export function buildPreparationPlan(inputs: RequirementInput[], opts: { examDay
     const reasons: RecommendationReason[] = [];
     let action: RecommendationAction = 'NONE';
     let conceptId: string | null = null;
-    const studied = concepts.find((c) => c.learner);
+    // C13-P1-02: a CONCEPT is recommended only from a diagnosed target -- diagnosed in the stored readiness snapshot,
+    // or carrying the learner's own in-scope evidence (the snapshot's diagnosis precondition). Exam Readiness evidence
+    // alone (SEPARATED: it never reaches the Knowledge State) is never a diagnosis, so it never names a concept.
+    const diagnosed = opts.readiness?.diagnosedObjectiveIds.has(r.learningObjectiveId) ?? false;
+    const evidenced = (c: (typeof concepts)[number]) => diagnosed || c.label !== 'NO_EVIDENCE';
+    const studied = concepts.find((c) => c.learner && evidenced(c));
     const weakStudied = concepts.find((c) => c.label === 'NEEDS_REINFORCEMENT' && c.learner);
     if (status === 'NEEDS_REINFORCEMENT') {
       if (gapExam) reasons.push('EXAM_GAP');
       if (concepts.some((c) => c.label === 'NEEDS_REINFORCEMENT')) reasons.push('LEARNER_AT_RISK');
-      const target = weakStudied ?? studied ?? concepts[0];
+      const target = weakStudied ?? studied ?? (diagnosed ? concepts[0] : undefined);
       if (target) {
         action = target.learner ? 'CONTINUE_CONCEPT' : 'ADD_TO_PLAN';
         conceptId = target.canonicalConceptId;
@@ -224,12 +250,13 @@ export function buildPreparationPlan(inputs: RequirementInput[], opts: { examDay
       if (retentionDue) reasons.push('RETENTION_DUE');
       if (concepts.some((c) => c.label === 'IN_PROGRESS')) reasons.push('IN_PROGRESS');
       if (otherExam) reasons.push(otherExam.classification === 'STRENGTH' ? 'OTHER_EXAM_STRENGTH' : 'OTHER_EXAM_GAP');
-      const target = concepts.find((c) => c.learner?.retentionDue) ?? concepts.find((c) => c.label === 'IN_PROGRESS') ?? (otherExam && otherExam.classification !== 'STRENGTH' ? concepts.find((c) => c.learner) : undefined);
+      const target =
+        concepts.find((c) => c.learner?.retentionDue && evidenced(c)) ?? concepts.find((c) => c.label === 'IN_PROGRESS') ?? (otherExam && otherExam.classification !== 'STRENGTH' ? studied : undefined);
       if (target) {
         action = 'CONTINUE_CONCEPT';
         conceptId = target.canonicalConceptId;
       } else if (opts.canPractice) action = 'PRACTICE_AREA'; // confirm it in THIS exam's format
-      else if (otherExam && otherExam.classification !== 'STRENGTH' && concepts[0]) {
+      else if (diagnosed && otherExam && otherExam.classification !== 'STRENGTH' && concepts[0]) {
         action = 'ADD_TO_PLAN';
         conceptId = concepts[0].canonicalConceptId;
       }
@@ -238,12 +265,9 @@ export function buildPreparationPlan(inputs: RequirementInput[], opts: { examDay
       // G6: another exam's result on the same concept is shown as context only.
       if (otherExam) reasons.push(otherExam.classification === 'STRENGTH' ? 'OTHER_EXAM_STRENGTH' : 'OTHER_EXAM_GAP');
       reasons.push('NO_EVIDENCE', 'EXAM_REQUIREMENT');
-      // Without evidence, first find out (diagnostic / practice) -- never assume a weakness.
+      // Without evidence, first find out (diagnostic) -- never assume a weakness, and never recommend a concept
+      // (C13-P1-02): nothing is known about it yet.
       if (opts.canRunDiagnostic) action = 'DIAGNOSTIC';
-      else if (concepts[0]) {
-        action = 'ADD_TO_PLAN';
-        conceptId = concepts[0].canonicalConceptId;
-      }
     } else if (status === 'NOT_YET_MAPPED') {
       reasons.push('NOT_MAPPED');
       if (opts.canPractice) action = 'PRACTICE_AREA';
@@ -272,6 +296,7 @@ export function buildPreparationPlan(inputs: RequirementInput[], opts: { examDay
       status,
       concepts,
       formatConfirmed,
+      hasEvidence: status !== 'NO_EVIDENCE' && status !== 'NOT_YET_MAPPED' ? true : (opts.readiness?.evidencedObjectiveIds.has(r.learningObjectiveId) ?? false),
       recommendation: { action, canonicalConceptId: conceptId, reasons, gapExam, otherExam: otherExam?.examName ?? null },
       priority: { score, band: score >= 5 ? 'HIGH' : score >= 3 ? 'MEDIUM' : 'LOW', factors },
     };
@@ -282,7 +307,7 @@ export function buildPreparationPlan(inputs: RequirementInput[], opts: { examDay
   return {
     requirements,
     counts,
-    coverage: { total: requirements.length, mapped: mapped.length, mappedWithEvidence: mapped.filter((r) => r.status !== 'NO_EVIDENCE').length },
+    coverage: { total: requirements.length, mapped: mapped.length, mappedWithEvidence: mapped.filter((r) => r.hasEvidence).length },
     recommendations: requirements
       .filter((r) => r.recommendation.action !== 'NONE')
       .sort((a, b) => b.priority.score - a.priority.score || b.weight - a.weight || a.code.localeCompare(b.code)),
