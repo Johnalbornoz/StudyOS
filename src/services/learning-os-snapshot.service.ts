@@ -36,6 +36,12 @@ import {
   CanonicalDecisionUnavailableError,
   type CanonicalLearningSession,
 } from '@/lib/pedagogical-decision';
+import {
+  continuationCandidates,
+  isExecutableContinuation,
+  type CanonicalContinuation,
+  type ContinuationCandidate,
+} from '@/lib/lx/canonical-continuation';
 
 /** The SAME three LearningState values deriveLearnerJourneyStage's own REINFORCE rule keys off -- never inferred from mastery/understanding alone (LX-9R8 PART A2). */
 const REINFORCE_LEARNING_STATES = new Set(['MISCONCEPTION_BLOCKED', 'PREREQUISITE_BLOCKED', 'NEEDS_REPAIR']);
@@ -95,6 +101,14 @@ export interface LearningOSSnapshot {
   canonicalOverride: CanonicalLearningSession | null;
   /** True only when the gate is on AND the canonical override read failed for `nextExecutableItem` -- see `canonicalOverride`'s own doc comment. */
   canonicalOverrideReadFailed: boolean;
+  /**
+   * C14-P1-03 (lib/lx/canonical-continuation.ts): under the canonical gate only, the Learning concepts Phase 3C
+   * has no decision for because they have no Knowledge State row yet (a finished LEARN session writes diagnostic
+   * evidence without a projection), whose canonical launch is executable -- most recent first. Empty when the
+   * gate is off. Never mixed into `decisions` / `dailyPlan` (Phase 3C/3D stay the only ranking); Today and Learn
+   * offer the first one only when Phase 3C has nothing executable for them.
+   */
+  canonicalContinuations: CanonicalContinuation[];
   /** Presentation-only: concept id -> display label/subject name. Never a priority field, never used for ordering. */
   conceptLabels: Map<string, ConceptDisplayInfo>;
 }
@@ -146,6 +160,50 @@ export async function loadConceptLabels(conceptIds: string[], preferredLanguage:
     labels.set(row.id, { label, canonicalId: row.canonical_id, subjectName: row.subject_name });
   }
   return labels;
+}
+
+/**
+ * C14-P1-03: the Learning concepts (active subjects, Learning evidence stream) with no Knowledge State row, and
+ * their canonical launch when it is executable. Learning evidence only -- exam_readiness_evidence is never read,
+ * so Exam Prep can never create a Learning next step. Read-only; every failure degrades to "no continuation".
+ */
+async function loadCanonicalContinuations(studentId: string, decisions: LearningDecision[], now: Date): Promise<CanonicalContinuation[]> {
+  const rows = await db
+    .query(
+      `SELECT c.id AS concept_id, c.subject_id, MAX(e.timestamp) AS last_evidence_at
+         FROM learning_evidence e
+         JOIN concepts c ON c.id = e.concept_id
+         JOIN subjects s ON s.id = c.subject_id AND s.student_id = $1 AND s.status = 'active'
+        WHERE e.student_id = $1
+          AND NOT EXISTS (SELECT 1 FROM concept_knowledge_state k WHERE k.student_id = $1 AND k.concept_id = c.id)
+        GROUP BY c.id, c.subject_id
+        ORDER BY MAX(e.timestamp) DESC, c.id
+        LIMIT 20`,
+      [studentId]
+    )
+    .catch(() => ({ rows: [] as any[] }));
+  const candidates = continuationCandidates(
+    ((rows?.rows ?? []) as any[]).map((r): ContinuationCandidate => ({
+      conceptId: r.concept_id,
+      subjectId: r.subject_id,
+      lastEvidenceAt: r.last_evidence_at instanceof Date ? r.last_evidence_at.toISOString() : String(r.last_evidence_at),
+    })),
+    new Set(decisions.map((d) => d.actionConceptId))
+  );
+  const out: CanonicalContinuation[] = [];
+  for (const candidate of candidates) {
+    try {
+      const { decision } = await getCanonicalPedagogicalDecision({ studentId, conceptId: candidate.conceptId, now: now.toISOString() });
+      const session = resolveCanonicalLaunch({ subjectId: candidate.subjectId, conceptId: candidate.conceptId, decision });
+      if (isExecutableContinuation(session)) out.push({ ...candidate, session });
+    } catch (error) {
+      // Additive and fail-soft: a concept whose canonical read fails is simply not offered here.
+      if (!(error instanceof CanonicalDecisionUnavailableError)) {
+        console.error('[learning-os-snapshot] canonical continuation read failed:', error instanceof Error ? error.message : String(error));
+      }
+    }
+  }
+  return out;
 }
 
 /**
@@ -201,7 +259,9 @@ export async function getLearningOSSnapshot(studentId: string, options: Learning
     }
   }
 
-  const conceptIds = decisions.flatMap((d) => [d.actionConceptId, ...d.targetConceptIds]);
+  const canonicalContinuations = isCanonicalEngineV1Enabled() ? await loadCanonicalContinuations(studentId, decisions, now) : [];
+
+  const conceptIds = [...decisions.flatMap((d) => [d.actionConceptId, ...d.targetConceptIds]), ...canonicalContinuations.map((c) => c.conceptId)];
   const conceptLabels = await loadConceptLabels(conceptIds, preferredLanguage);
 
   let canonicalOverride: CanonicalLearningSession | null = null;
@@ -235,6 +295,7 @@ export async function getLearningOSSnapshot(studentId: string, options: Learning
     nextExecutableItemZeroGapBlocked,
     canonicalOverride,
     canonicalOverrideReadFailed,
+    canonicalContinuations,
     conceptLabels,
   };
 }

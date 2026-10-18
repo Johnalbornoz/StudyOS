@@ -17,7 +17,8 @@ import {
   CanonicalDecisionUnavailableError,
   type CanonicalLearningSession,
 } from '@/lib/pedagogical-decision';
-import { presentNextChallenge, type LegacyGate, type NextChallengeView } from './next-challenge';
+import type { CanonicalContinuation } from '@/lib/lx/canonical-continuation';
+import { presentCanonicalChallenge, presentNextChallenge, type LegacyGate, type NextChallengeView } from './next-challenge';
 
 /** Today / My Path hero: the snapshot's next executable item, with the snapshot's own gates. */
 export function presentSnapshotNextChallenge(snapshot: LearningOSSnapshot): NextChallengeView | null {
@@ -35,6 +36,14 @@ export function presentSnapshotNextChallenge(snapshot: LearningOSSnapshot): Next
       zeroGapBlocked: snapshot.nextExecutableItemZeroGapBlocked,
     },
   });
+}
+
+/**
+ * C14-P1-03: a canonical continuation (snapshot.canonicalContinuations) -- the canonical launch the snapshot
+ * already read for a Learning concept Phase 3C has no decision for. No legacy facts (there is no legacy decision).
+ */
+export function presentCanonicalContinuation(continuation: CanonicalContinuation): NextChallengeView {
+  return presentCanonicalChallenge(continuation.conceptId, continuation.subjectId, continuation.session, []);
 }
 
 async function readCanonicalLaunch(studentId: string, subjectId: string, conceptId: string): Promise<CanonicalLearningSession | null> {

@@ -15,7 +15,7 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { deriveTodayState } from '@/lib/lx/today-view';
 import type { NextChallengeView } from '@/lib/experience/next-challenge';
-import { presentSnapshotNextChallenge, loadConceptNextChallenge } from '@/lib/experience/next-challenge.server';
+import { presentSnapshotNextChallenge, presentCanonicalContinuation, loadConceptNextChallenge } from '@/lib/experience/next-challenge.server';
 import { challengeVerb } from '@/lib/experience/vocabulary';
 import { activePreparationSummary, calendarDaysUntil } from '@/lib/experience/goal';
 import { InlineAlert } from '@/components/ui/InlineAlert';
@@ -178,17 +178,22 @@ export default async function TodayPage() {
   const todayFormatted = new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
 
   const best = snapshot?.nextExecutableItem ?? null;
-  const bestLabel = best ? snapshot!.conceptLabels.get(best.decision.actionConceptId) : null;
+  // C14-P1-03: when Phase 3C has nothing executable, a Learning concept it cannot see yet (only LEARN evidence,
+  // no Knowledge State row) whose canonical launch is executable is still the Student's next step -- never
+  // "Estás al día". Under the canonical gate only (lib/lx/canonical-continuation.ts).
+  const continuation = !best ? snapshot?.canonicalContinuations?.[0] ?? null : null;
+  const primaryConceptId = best?.decision.actionConceptId ?? continuation?.conceptId ?? null;
+  const bestLabel = primaryConceptId ? snapshot!.conceptLabels.get(primaryConceptId) : null;
   // UX-2: the hero is presented from the canonical launch for this
   // concept (the snapshot's own `canonicalOverride`, computed with the
   // same function /api/learning/session/start runs) whenever the
   // canonical gate is on -- never from the legacy `activityType`, which
   // could name a different activity than the one the button launches.
-  const hero = snapshot ? presentSnapshotNextChallenge(snapshot) : null;
+  const hero = snapshot ? presentSnapshotNextChallenge(snapshot) ?? (continuation ? presentCanonicalContinuation(continuation) : null) : null;
   const heroHasAction = !!hero && (hero.status === 'READY' || hero.status === 'WAITING');
 
   // LX-6: a failed read is never "empty" -- it's unresolved (see below).
-  const isEmpty = !snapshotReadFailed && (!snapshot || snapshot.decisions.length === 0);
+  const isEmpty = !snapshotReadFailed && (!snapshot || (snapshot.decisions.length === 0 && !continuation));
 
   // Step 6L-A: a brand-new/cold profile with no evidence yet is a
   // different, calmer state than "caught up". A plain existence check
@@ -210,6 +215,12 @@ export default async function TodayPage() {
       conceptId: best.decision.actionConceptId,
       subjectId: best.decision.subjectId,
       reasonCode: best.decision.reasonCode,
+    });
+  } else if (todayState === 'NEXT_ACTION_AVAILABLE' && continuation) {
+    logToday('TODAY_CANONICAL_CONTINUATION_RENDERED', {
+      activityType: hero?.status === 'READY' ? hero.activityType : null,
+      conceptId: continuation.conceptId,
+      subjectId: continuation.subjectId,
     });
   } else if (todayState === 'UNRESOLVED') {
     logToday('TODAY_UNRESOLVED');
@@ -250,7 +261,7 @@ export default async function TodayPage() {
       ? goalDays === 0 ? t['xp.goalToday'] : goalDays === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(goalDays))
       : goalSession ? examSessionLabel(goalSession, locale) : null;
   const tx = t as Record<string, string>;
-  const learningSubjectId = best?.decision.subjectId ?? (mySubjects?.length === 1 ? mySubjects[0].id : null);
+  const learningSubjectId = best?.decision.subjectId ?? continuation?.subjectId ?? (mySubjects?.length === 1 ? mySubjects[0].id : null);
 
   // A hero concept with nothing executable right now (canonical
   // CONSOLIDATED / BLOCKED / zero-gap) shows the calm card only when
@@ -305,15 +316,15 @@ export default async function TodayPage() {
         />
       ) : (
         <>
-          {best && hero && showHero && (
+          {primaryConceptId && hero && showHero && (
             <NextChallengeCard
               view={hero}
-              conceptLabel={bestLabel?.label ?? best.decision.actionConceptId}
+              conceptLabel={bestLabel?.label ?? primaryConceptId}
               subjectName={bestLabel?.subjectName ? localizeSubjectName(bestLabel.subjectName, locale) : ''}
               studentId={studentId}
               t={t}
               locale={locale}
-              legacyMinutes={best.estimatedMinutes}
+              legacyMinutes={best?.estimatedMinutes ?? null}
               launchMark="TODAY_PRIMARY_ACTION_LAUNCHED"
             />
           )}
@@ -344,7 +355,7 @@ export default async function TodayPage() {
             </section>
           )}
 
-          {!isEmpty && !best && (
+          {!isEmpty && !best && !continuation && (
             // Decisions exist but none is executable right now (Phase 3D's
             // own answer) -- a calm, explicit state, never a blank page.
             <section className="xp-hero xp-hero--calm" aria-labelledby="xp-caught-up-title">
