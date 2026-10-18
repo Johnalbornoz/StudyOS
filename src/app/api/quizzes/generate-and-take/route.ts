@@ -1354,9 +1354,9 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // Candidate #12 follow-up A (OE-014): an explicit Prove supply shortage is AUDITED (analytics_events) and that is
     // all -- this learner route never enqueues replenishment and never generates beyond the attempt's own bounded
     // rounds. Replenishment stays an Operator / Admin workflow.
-    if (validated.quizMode === 'canonical_prove' && proveReasonCode !== 'V1_PROVE_GENERATION_INCOMPLETE') {
+    if (validated.quizMode === 'canonical_prove' && (proveReasonCode === PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE || proveReasonCode === PROVE_LEVEL_MIX_SUPPLY_SHORTAGE)) {
       await track(validated.studentId, 'CANONICAL_PROVE_SUPPLY_SHORTAGE', {
-        conceptId: primaryConceptId, reason: proveReasonCode, served: questions.length, required: maxQuestions, replenishmentQueued: false,
+        conceptId: primaryConceptId, shortageReason: proveReasonCode, served: questions.length, required: maxQuestions, replenishmentQueued: false,
       });
     }
     if (questions.length < maxQuestions) {
