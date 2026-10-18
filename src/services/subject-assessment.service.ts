@@ -27,6 +27,7 @@ import { ALL_QUESTION_TYPES } from '@/services/quiz-generation.service';
 import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
 import { activityTypeForQuizMode, evidenceModeForQuizMode, storeQuiz, completeQuiz } from '@/services/quiz-persistence.service';
 import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
+import { sessionQuestionHistory } from '@/lib/quiz/session-question-history';
 import { resolveTargetDifficulty, aggregateEvidenceDifficulty } from '@/lib/lx/difficulty-contract';
 import { normalizeResponseTiming, toResponseTimingEntries, withBehaviorMetadata, type ResponseTiming } from '@/lib/algorithms/response-timing';
 import { isRecordableError, type PedagogicalGrade } from '@/lib/grading/pedagogical-grade';
@@ -241,11 +242,13 @@ export async function loadSeenFingerprints(studentId: string, conceptIds: string
 async function loadSeenWithRecency(studentId: string, conceptIds: string[]): Promise<{ seen: Map<string, Set<string>>; lastServedMs: Map<string, number> }> {
   const out = new Map<string, Set<string>>(conceptIds.map((c) => [c, new Set<string>()]));
   const lastServedMs = new Map<string, number>();
-  const r = await db.query(`SELECT questions, created_at FROM quiz_sessions WHERE student_id = $1 AND concept_ids && $2::uuid[]`, [studentId, conceptIds]);
+  const r = await db.query(`SELECT questions, created_at, concept_id, quiz_mode FROM quiz_sessions WHERE student_id = $1 AND concept_ids && $2::uuid[]`, [studentId, conceptIds]);
   for (const row of r.rows) {
     const at = row.created_at ? new Date(row.created_at).getTime() : 0;
-    for (const q of (row.questions || []) as GeneratedQuestion[]) {
-      if (q && typeof q.question === 'string' && out.has(q.conceptId)) {
+    // C14-P0-01: every session of the Student counts, whatever its stored shape (an APPLY transfer ladder row holds an
+    // object, not an array) -- normalized in ONE place; an unsupported shape adds no history and never throws.
+    for (const q of sessionQuestionHistory(row.questions, { sessionConceptId: row.concept_id ?? null, quizMode: row.quiz_mode ?? null })) {
+      if (q.conceptId !== null && out.has(q.conceptId)) {
         const fp = fingerprintQuestion(q);
         out.get(q.conceptId)!.add(fp);
         if (!(lastServedMs.get(fp)! >= at)) lastServedMs.set(fp, at);

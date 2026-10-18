@@ -9,6 +9,7 @@
  */
 import { db } from '@/lib/db';
 import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
+import { sessionQuestionHistory } from '@/lib/quiz/session-question-history';
 import { crossStudentSharedFingerprints, feedbackReleaseFor, type FeedbackRelease } from './subject-assessment-assignment.rules';
 
 /** Every attempt of every recipient of the group that `interventionId` belongs to: who was served which items. */
@@ -26,7 +27,7 @@ export async function loadGroupServedItems(interventionId: string): Promise<Arra
     interventionId: row.intervention_id,
     quizId: row.id,
     createdAt: new Date(row.created_at).toISOString(),
-    fingerprints: ((row.questions ?? []) as any[]).filter((q) => q && typeof q.question === 'string').map((q) => fingerprintQuestion(q)),
+    fingerprints: sessionQuestionHistory(row.questions).map((q) => fingerprintQuestion(q)),
   }));
 }
 

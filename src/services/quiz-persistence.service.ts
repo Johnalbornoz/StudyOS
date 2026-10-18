@@ -10,6 +10,7 @@ import { db } from '@/lib/db';
 import { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
 import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
+import { sessionQuestionHistory } from '@/lib/quiz/session-question-history';
 import type { ExactDuplicateNoveltyMarker } from '@/lib/lx/novelty-marker';
 import type { PracticeMix, ProveMix } from '@/lib/pedagogical-engine/types';
 
@@ -350,9 +351,8 @@ export async function loadPriorPracticeQuestionFingerprints(studentId: string, c
 
   const fingerprints = new Set<string>();
   for (const row of result.rows) {
-    const questions: GeneratedQuestion[] = row.questions || [];
-    for (const question of questions) {
-      if (question.conceptId === conceptId && typeof question.question === 'string') {
+    for (const question of sessionQuestionHistory(row.questions)) {
+      if (question.conceptId === conceptId) {
         fingerprints.add(fingerprintQuestion(question));
       }
     }
@@ -385,9 +385,8 @@ export async function loadPriorProveQuestionFingerprints(studentId: string, conc
 
   const fingerprints = new Set<string>();
   for (const row of result?.rows ?? []) {
-    const questions: GeneratedQuestion[] = row.questions || [];
-    for (const question of questions) {
-      if ((question.conceptId ?? conceptId) === conceptId && typeof question.question === 'string') {
+    for (const question of sessionQuestionHistory(row.questions)) {
+      if ((question.conceptId ?? conceptId) === conceptId) {
         fingerprints.add(fingerprintQuestion(question));
       }
     }
@@ -420,9 +419,8 @@ export async function loadPriorCanonicalQuestionFingerprintsForRetain(studentId:
 
   const fingerprints = new Set<string>();
   for (const row of result.rows) {
-    const questions: GeneratedQuestion[] = row.questions || [];
-    for (const question of questions) {
-      if (question.conceptId === conceptId && typeof question.question === 'string') {
+    for (const question of sessionQuestionHistory(row.questions)) {
+      if (question.conceptId === conceptId) {
         fingerprints.add(fingerprintQuestion(question));
       }
     }
