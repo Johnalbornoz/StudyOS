@@ -122,13 +122,20 @@ export async function listCurriculumOptions(catalogKey: string): Promise<Curricu
 export async function resolveCurriculumContext(
   studentId: string,
   catalogKey: string,
-  requestedAcademicSubjectId?: string | null
+  requestedAcademicSubjectId?: string | null,
+  /**
+   * C14-P1-03: only these explicit sources name the curriculum (default: all, in authority order). Learn resolves
+   * the Student's LEARNING curriculum (Academic Profile) apart from the EXAM-PREP curriculum (an exam they
+   * prepare), so an active preparation never takes the place of the Learning curriculum.
+   */
+  sources?: readonly ExplicitSubjectSource[]
 ): Promise<{ context: CurriculumOption | null; options: CurriculumOption[]; reason: ContextReason; notReady: CurriculumNotReady[] }> {
   const options = await listCurriculumOptions(catalogKey);
   if (requestedAcademicSubjectId === GENERAL_CONTEXT) return { context: null, options, reason: 'GENERAL', notReady: [] };
-  const named: Array<{ academicSubjectId: string; source: ExplicitSubjectSource }> = requestedAcademicSubjectId
+  const explicit: Array<{ academicSubjectId: string; source: ExplicitSubjectSource }> = requestedAcademicSubjectId
     ? [{ academicSubjectId: requestedAcademicSubjectId, source: 'REQUESTED' }]
     : await studentExplicitAcademicSubjects(studentId);
+  const named = sources ? explicit.filter((n) => n.source === 'REQUESTED' || sources.includes(n.source)) : explicit;
   const decision = decideCurriculumContext(options, await describeExplicitSubjects(named, catalogKey));
   if (decision.status === 'RESOLVED') return { context: decision.context, options, reason: decision.source, notReady: decision.notReady };
   if (decision.status === 'NOT_READY') return { context: null, options, reason: CURRICULUM_MAPPING_NOT_READY, notReady: decision.notReady };
