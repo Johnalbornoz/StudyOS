@@ -163,7 +163,13 @@ describe('personalized preparation plan: from the existing learner model, never 
       { examDaysLeft: null, canPractice: false, canRunDiagnostic: false }
     );
     expect(plan.requirements[0].recommendation).toMatchObject({ action: 'CONTINUE_CONCEPT', canonicalConceptId: 'studied' });
-    expect(plan.requirements[1].recommendation).toMatchObject({ action: 'ADD_TO_PLAN', canonicalConceptId: 'new', reasons: ['EXAM_GAP'] });
+    // C13-P1-02: an exam gap alone is not a diagnosis -- no concept is named until the stored snapshot diagnoses it
+    expect(plan.requirements[1].recommendation).toMatchObject({ action: 'NONE', canonicalConceptId: null, reasons: ['EXAM_GAP'] });
+    const diagnosed = buildPreparationPlan(
+      [req('n', [concept('new', null)], { ownEvidence: { classification: 'GAP', at: '2026-10-01', examName: 'X', sameExam: true } })],
+      { examDaysLeft: null, canPractice: false, canRunDiagnostic: false, readiness: { overallStatus: 'DEVELOPING', evidencedObjectiveIds: new Set(['lo-n']), diagnosedObjectiveIds: new Set(['lo-n']) } }
+    );
+    expect(diagnosed.requirements[0].recommendation).toMatchObject({ action: 'ADD_TO_PLAN', canonicalConceptId: 'new', reasons: ['EXAM_GAP'] });
   });
   it('transparent priority: gap severity, blueprint weight, exam date, retention -- explained factors', () => {
     const plan = buildPreparationPlan(
