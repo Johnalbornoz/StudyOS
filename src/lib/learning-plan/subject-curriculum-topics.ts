@@ -29,7 +29,7 @@ import { canonicalConceptLabels, catalogSuppliesLabel, resolveLearnerConceptLabe
 import { learningObjectiveLabel } from '@/lib/exam-core/catalog/objective-localization';
 import { localizeComponentLabel } from '@/lib/exam-core/catalog/subject-localization';
 import { catalogKeyOf, resolveCurriculumContext, type ContextReason, type CurriculumOption } from './curriculum.service';
-import { CURRICULUM_MAPPING_NOT_READY, type CurriculumNotReady } from './curriculum-context-resolution';
+import { CURRICULUM_MAPPING_NOT_READY, type CurriculumNotReady, type ExplicitSubjectSource } from './curriculum-context-resolution';
 import { ASSESSMENT_NODE_TYPES } from './curriculum-grouping';
 
 
@@ -127,19 +127,46 @@ export function buildCurriculumTopics(
   return out;
 }
 
+/**
+ * C14-P1-03: the Exam Prep section is shown only when it adds something -- a preparation whose curriculum IS the
+ * Learning curriculum (same published structure version) is already on the page.
+ */
+export function distinctExamCurriculum<T extends SubjectCurriculumTopics | SubjectCurriculumNotReady | null>(learning: SubjectCurriculumTopics | SubjectCurriculumNotReady | null, exam: T): T | null {
+  if (!exam) return null;
+  if (exam.status === 'READY' && learning?.status === 'READY' && learning.context.structureVersionId === exam.context.structureVersionId) return null;
+  if (exam.status !== 'READY' && learning?.status !== 'READY' && learning) return null; // the Learning notice already says the curriculum is not loaded
+  return exam;
+}
+
 /** "IB Diploma Programme · Physics · HL" parts, for the section title (official names; the caller localizes the subject). */
 export function curriculumContextParts(context: Pick<CurriculumOption, 'programme' | 'name' | 'level'>): { programme: string; subject: string; level: string | null } {
   return { programme: context.programme, subject: context.name, level: context.level };
 }
 
 /**
+ * C14-P1-03 -- which explicit curriculum a Learn section shows:
+ *   LEARNING   the Student's own Learning curriculum (their Academic Profile subjects) -- "Temas de tu currículo";
+ *   EXAM_PREP  the curriculum an ACTIVE exam preparation assesses -- an ADDITIONAL Exam Prep section that never
+ *              takes the Learning curriculum's place, title or position, and never re-buckets Learning concepts;
+ *   ANY        every explicit source in authority order (the original single resolution; kept for other callers).
+ */
+export type CurriculumScope = 'LEARNING' | 'EXAM_PREP' | 'ANY';
+export const CURRICULUM_SCOPE_SOURCES: Record<CurriculumScope, readonly ExplicitSubjectSource[] | undefined> = {
+  LEARNING: ['ACADEMIC_PROFILE'],
+  EXAM_PREP: ['EXAM_PROFILE'],
+  ANY: undefined,
+};
+
+/**
  * The curriculum topics of one of the Student's subjects, or null when the subject is not linked to a
  * known curriculum (then Learn shows no curriculum section at all).
  */
-export async function loadSubjectCurriculumTopics(studentId: string, subject: { id: string; name: string }, locale: string): Promise<SubjectCurriculumTopics | SubjectCurriculumNotReady | null> {
+export async function loadSubjectCurriculumTopics(studentId: string, subject: { id: string; name: string }, locale: string, scope: CurriculumScope = 'ANY'): Promise<SubjectCurriculumTopics | SubjectCurriculumNotReady | null> {
   const catalogKey = catalogKeyOf(subject.name);
   if (!catalogKey) return null;
-  const { context, reason, notReady } = await resolveCurriculumContext(studentId, catalogKey);
+  const { context, reason, notReady } = await (scope === 'ANY'
+    ? resolveCurriculumContext(studentId, catalogKey)
+    : resolveCurriculumContext(studentId, catalogKey, null, CURRICULUM_SCOPE_SOURCES[scope]));
   if (!context && reason === CURRICULUM_MAPPING_NOT_READY) {
     const named = await db
       .query(`SELECT asub.name, asub.level, ap.name AS programme FROM academic_subjects asub JOIN academic_programmes ap ON ap.id = asub.programme_id WHERE asub.id = $1`, [notReady[0]?.academicSubjectId ?? null])

@@ -23,8 +23,12 @@ type L = Record<string, string>;
 // Before paint on the client (no flash of a collapsed topic after a remount); a no-op on the server.
 const useBeforePaint = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
-export default function CurriculumTopics({ subjectId, title, reason, topics, provenance, labels: l, initialOpen = [] }: {
+export default function CurriculumTopics({ subjectId, title, reason, topics, provenance, labels: l, initialOpen = [], sectionId = 'ln-curriculum-title', kind = 'LEARNING' }: {
   subjectId: string;
+  /** The heading id (two curriculum sections can share the page: the Learning curriculum and an Exam Prep one). */
+  sectionId?: string;
+  /** C14-P1-03: LEARNING = the Student's own curriculum; EXAM_PREP = an additional section for an active exam preparation. */
+  kind?: 'LEARNING' | 'EXAM_PREP';
   /** "Temas de tu currículo — IB Diploma Programme · Física · Nivel Superior (NS)" */
   title: string;
   /** Why this curriculum (exam preparation / academic profile), already in the interface locale; null when unknown. */
@@ -61,11 +65,11 @@ export default function CurriculumTopics({ subjectId, title, reason, topics, pro
   };
   const count = (n: number) => (n === 1 ? l['acp.learn.curriculum.concepts.one'] : (l['acp.learn.curriculum.concepts.other'] ?? '{n}').replace('{n}', String(n)));
   return (
-    <section className="ln-curriculum" aria-labelledby="ln-curriculum-title" data-curriculum-topics>
+    <section className="ln-curriculum" aria-labelledby={sectionId} data-curriculum-topics data-curriculum-kind={kind}>
       <div className="ui-section-head">
-        <h2 id="ln-curriculum-title" className="ui-section-title">{title}</h2>
+        <h2 id={sectionId} className="ui-section-title">{title}</h2>
       </div>
-      <p className="ui-hint">{[reason, l['acp.learn.curriculum.lead']].filter(Boolean).join(' ')}</p>
+      <p className="ui-hint">{[reason, l[kind === 'EXAM_PREP' ? 'acp.learn.exam.lead' : 'acp.learn.curriculum.lead']].filter(Boolean).join(' ')}</p>
       {topics.length === 0 ? (
         <p className="card ln-curriculum-empty" data-curriculum-empty>{l['acp.learn.curriculum.empty']}</p>
       ) : (

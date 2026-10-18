@@ -444,7 +444,8 @@ describe('M03. ES / EN change display labels, never stored IDs', () => {
     // Applied on the T1 surfaces: Learn (title level + topic component), Exam Prep (areas, modes, requirements,
     // concepts), Profile (wizard + summary), "Para ti".
     const learn = code('src/app/dashboard/learn/page.tsx');
-    expect(learn).toMatch(/levelDisplayLabel\(curriculum\.context\.level, locale\)/);
+    expect(learn).toMatch(/levelDisplayLabel\(c\.level, locale\)/); // C14-P1-03: one name helper for the Learning and the Exam Prep section
+    expect(learn).toMatch(/curriculumName\(cur\.context\)/);
     expect(code('src/lib/learning-plan/subject-curriculum-topics.ts')).toMatch(/localizeComponentLabel\(context\.programme, t\.component, locale\)/);
     const home = code('src/app/dashboard/exam-prep/[examProfileId]/PreparationHome.tsx');
     expect(home).toMatch(/localizeComponentLabel\(objective\.framework, label, language\)/);
