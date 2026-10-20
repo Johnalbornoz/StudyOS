@@ -10,6 +10,9 @@ import { InlineAlert } from '@/components/ui/InlineAlert';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SessionHeader } from '@/components/learning/SessionHeader';
 import { classifySubmitFailure, submitFailureKey, type SubmitFailure } from '@/lib/experience/learning-session';
+import { SafetyNotice, safetyFromBody, type SafetyNoticeData } from '@/components/safety/SafetyNotice';
+import { AccessRequiredNotice } from '@/components/ui/AccessRequiredNotice';
+import { isEntitlementRequired } from '@/lib/lx/access-required';
 
 export default function ExplainDefendPage() {
   const searchParams = useSearchParams();
@@ -20,9 +23,10 @@ export default function ExplainDefendPage() {
 
   const [locale, setLocale] = useState<Locale>('es');
   const [studentId, setStudentId] = useState<string | null>(null);
-  const [phase, setPhase] = useState<'loading' | 'answering' | 'submitting' | 'done' | 'error'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'answering' | 'submitting' | 'done' | 'error' | 'access'>('loading');
+  // L6 / CR-L11-02: the server refused this submit with the licence gate (403 ENTITLEMENT_REQUIRED).
+  const [submitAccessRequired, setSubmitAccessRequired] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [expectedElements, setExpectedElements] = useState<string[]>([]);
   const [response, setResponse] = useState('');
   const [feedback, setFeedback] = useState<{ feedback: string; scorePercent: number } | null>(null);
   // Phase 1D: stamped once, right when the prompt becomes visible.
@@ -37,6 +41,8 @@ export default function ExplainDefendPage() {
   // learner's text and re-sends with the SAME activityId (the server's
   // evidence idempotency key), so a retry can never double-count.
   const [submitFailure, setSubmitFailure] = useState<SubmitFailure | null>(null);
+  // Human Agency P0-4: fixed safety response from the server (no AI involved).
+  const [safety, setSafety] = useState<SafetyNoticeData | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const t = getMessages(locale);
 
@@ -58,12 +64,16 @@ export default function ExplainDefendPage() {
         body: JSON.stringify({ studentId: me.studentId, subjectId, conceptId, conceptLabel, language: lang.locale || 'en' }),
       });
       const body = await res.json();
+      // L6 / CR-L11-02: a new activity refused by the licence gate is an access state, not a failure to retry.
+      if (isEntitlementRequired(res.status, body)) {
+        setPhase('access');
+        return;
+      }
       if (!res.ok) {
         setPhase('error');
         return;
       }
       setPrompt(body.data.prompt);
-      setExpectedElements(body.data.expectedElements || []);
       activityIdRef.current = body.data.activityId;
       setPhase('answering');
       // Phase 1D: the prompt just became visible/answerable.
@@ -79,18 +89,19 @@ export default function ExplainDefendPage() {
     const answerSubmittedAt = new Date().toISOString();
     setPhase('submitting');
     setSubmitFailure(null);
+    setSubmitAccessRequired(false);
+    setSafety(null);
     let res: Response;
     try {
     res = await fetch('/api/cognitive/explain/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        // Human Agency P0-3: the question and its rubric live on the server
+        // (keyed by activityId); the browser sends only the answer.
         studentId,
         subjectId,
         conceptId,
-        conceptLabel,
-        prompt,
-        expectedElements,
         studentResponse: response,
         language: locale,
         remediationStepId,
@@ -105,6 +116,17 @@ export default function ExplainDefendPage() {
       return;
     }
     const body = await res.json().catch(() => null);
+    const safetyResponse = safetyFromBody(body);
+    if (safetyResponse) {
+      setSafety(safetyResponse);
+      setPhase('answering');
+      return;
+    }
+    if (isEntitlementRequired(res.status, body)) {
+      setSubmitAccessRequired(true);
+      setPhase('answering');
+      return;
+    }
     if (!res.ok || !body?.data) {
       setSubmitFailure(classifySubmitFailure({ status: res.status, errorCode: body?.error ?? null }));
       setPhase('answering');
@@ -124,6 +146,20 @@ export default function ExplainDefendPage() {
           <Skeleton height={24} width="85%" />
           <Skeleton height={120} radius="var(--radius-md)" />
         </div>
+      </div>
+    );
+  }
+  if (phase === 'access') {
+    return (
+      <div className="ls" data-kind={lsKind}>
+        <AccessRequiredNotice
+          locale={locale}
+          actions={
+            <Link href={subjectId && conceptId ? `/dashboard/subjects/${subjectId}/concepts/${conceptId}` : '/dashboard/today'} className="btn btn-ghost">
+              {t['continuation.backToConcept']}
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -172,6 +208,8 @@ export default function ExplainDefendPage() {
               rows={6}
               className="ui-input ls-textarea"
             />
+            {safety && <SafetyNotice safety={safety} />}
+            {submitAccessRequired && <AccessRequiredNotice locale={locale} />}
             {submitFailure && (
               <InlineAlert tone="error" title={t['xs.submitFailedTitle']} body={t[submitFailureKey(submitFailure)]} />
             )}

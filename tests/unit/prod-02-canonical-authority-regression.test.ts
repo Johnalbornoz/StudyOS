@@ -19,7 +19,7 @@
  *
  * Section 8 exercises the REAL, unmocked canonical engine directly
  * (never asserting a hardcoded PROVE/PRACTICE outcome -- the expected
- * stage is derived from the real 2-of-last-3 PRACTICE policy). Section
+ * stage is derived from the real PRACTICE rolling-window policy -- 3 of the last 3 since 2026-10-17). Section
  * 9 exercises the cross-surface consistency requirement: given the same
  * canonical decision, `resolveCanonicalLaunch` (Results/session-start/
  * Continue) and `path-view.ts`'s new canonical-aware authority (My
@@ -76,7 +76,7 @@ function baseInput(overrides: Partial<PedagogicalEngineInput> = {}): Pedagogical
 }
 
 describe('SECTION 8 -- PROD-02 regression: PRACTICE 83/50/0, zero PROVE evidence, must never produce RETAIN/WAITING_FOR_RETENTION/RETENTION_RISK/PROVE-satisfied', () => {
-  it('the real canonical engine, given the exact reported evidence (plus the LEARN prerequisite every real student would have), derives PRACTICE as the current stage -- NOT hardcoded, derived from the real 2-of-last-3 policy (only 1 of 3 attempts >=80%, so PRACTICE is still outstanding)', () => {
+  it('the real canonical engine, given the exact reported evidence (plus the LEARN prerequisite every real student would have), derives PRACTICE as the current stage -- NOT hardcoded, derived from the real rolling-window policy (2026-10-17: the last 3 valid attempts must each be >=80%; only 1 of 3 is, so PRACTICE is still outstanding)', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({ evidence: [learnCheckItem('2025-12-31T00:00:00.000Z', 90), ...prod02PracticeAttempts()] }),
     );
@@ -86,7 +86,7 @@ describe('SECTION 8 -- PROD-02 regression: PRACTICE 83/50/0, zero PROVE evidence
     // fail loudly instead of silently asserting the wrong thing.
     const practiceReq = decision.requirements.find((r) => r.stage === 'PRACTICE')!;
     expect(practiceReq.qualifyingEvidenceCount).toBe(1); // only the 83% attempt qualifies
-    expect(practiceReq.status).not.toBe('SATISFIED'); // 1 of 3 is not "2 of last 3"
+    expect(practiceReq.status).not.toBe('SATISFIED'); // 1 of 3 is not "3 of the last 3"
 
     expect(decision.stage).toBe('PRACTICE');
   });
@@ -111,17 +111,17 @@ describe('SECTION 8 -- PROD-02 regression: PRACTICE 83/50/0, zero PROVE evidence
     expect(decision.waitingReason).toBeNull();
   });
 
-  it('even with a HIGH-scoring first attempt (83%) that alone might look "sufficient" to a naive reading, the canonical engine still requires the real 2-of-3 window before advancing past PRACTICE -- proves this is the real policy, not a lenient approximation', () => {
+  it('even with a HIGH-scoring first attempt (83%) that alone might look "sufficient" to a naive reading, the canonical engine still requires the real 3-of-3 window before advancing past PRACTICE -- proves this is the real policy, not a lenient approximation', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({
         now: '2026-01-02T00:00:00.000Z',
         evidence: [learnCheckItem('2025-12-31T00:00:00.000Z', 90), item({ activityType: 'PRACTICE', timestamp: '2026-01-01T00:00:00.000Z', scorePercent: 83, difficulty: 3 })],
       }),
     );
-    expect(decision.stage).toBe('PRACTICE'); // 1 qualifying attempt is not yet 2 of 3
+    expect(decision.stage).toBe('PRACTICE'); // 1 qualifying attempt is not yet 3 of 3
   });
 
-  it('CONTROL -- a legitimate progression (qualifying PRACTICE x2, then a real qualifying PROVE) DOES correctly reach RETAIN, proving this suite is not simply asserting "never RETAIN" universally', () => {
+  it('CONTROL -- a legitimate progression (qualifying PRACTICE x3, then a real qualifying PROVE) DOES correctly reach RETAIN, proving this suite is not simply asserting "never RETAIN" universally', () => {
     const decision = evaluateCanonicalLearningState(
       baseInput({
         now: '2026-01-03T01:00:00.000Z',
@@ -129,6 +129,7 @@ describe('SECTION 8 -- PROD-02 regression: PRACTICE 83/50/0, zero PROVE evidence
           learnCheckItem('2025-12-31T00:00:00.000Z', 90),
           item({ activityType: 'PRACTICE', timestamp: '2026-01-01T00:00:00.000Z', scorePercent: 90, difficulty: 3 }),
           item({ activityType: 'PRACTICE', timestamp: '2026-01-01T01:00:00.000Z', scorePercent: 90, difficulty: 3 }),
+          item({ activityType: 'PRACTICE', timestamp: '2026-01-01T02:00:00.000Z', scorePercent: 90, difficulty: 3 }),
           item({ activityType: 'PROVE', timestamp: '2026-01-02T00:00:00.000Z', itemCount: 10, correctCount: 9, scorePercent: 90, difficulty: 3.5, independent: true }),
         ],
       }),
@@ -186,7 +187,9 @@ describe('SECTION 9 -- cross-surface consistency: the SAME canonical decision ca
 
     const result = await resolveConceptJourneyResultAuthoritative('s1', 'c1', 'subj1', legacyKsWithWaitingForRetention, undefined);
 
-    expect(result.stage).toBe('PROVE');
+    // 2026-10-17 pilot journey: a PROVE-executable decision with no Prove attempt yet is projected as READY_TO_PROVE --
+    // still the canonical decision's own fact, never the legacy WAITING_FOR_RETENTION -> RETAIN reading.
+    expect(result.stage).toBe('READY_TO_PROVE');
     expect(result.stage).not.toBe('RETAIN');
 
     vi.doUnmock('@/lib/pedagogical-decision');

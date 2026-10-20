@@ -6,6 +6,10 @@ import Link from 'next/link';
  * navigation system -- these links live inside the page content area,
  * the global shell's own nav still owns the top-level "Institution"
  * entry (task section 6).
+ *
+ * Track A: wraps instead of overflowing at phone widths (.ta-subnav), and
+ * the requests label is localized by every caller (no hard-coded fallback
+ * text shown to a non-Spanish reader).
  */
 export function InstitutionSubNav({
   institutionId,
@@ -13,13 +17,19 @@ export function InstitutionSubNav({
   labels,
 }: {
   institutionId: string;
-  active: 'overview' | 'grades' | 'classes' | 'teachers' | 'requests' | 'learners' | 'coverage' | 'readiness' | 'interventions' | 'attention';
+  active: 'overview' | 'grades' | 'classes' | 'students' | 'subjects' | 'curriculum' | 'tasks' | 'teachers' | 'requests' | 'coordinators' | 'settings' | 'learners' | 'coverage' | 'readiness' | 'interventions' | 'attention';
   labels: {
     overview: string;
     grades: string;
     classes: string;
+    students?: string;
     teachers: string;
     requests?: string;
+    subjects?: string;
+    curriculum?: string;
+    tasks?: string;
+    coordinators?: string;
+    settings?: string;
     learners: string;
     coverage: string;
     readiness: string;
@@ -32,8 +42,14 @@ export function InstitutionSubNav({
     { key: 'overview', href: base, label: labels.overview },
     { key: 'grades', href: `${base}/grades`, label: labels.grades },
     { key: 'classes', href: `${base}/classes`, label: labels.classes },
+    ...(labels.students ? [{ key: 'students' as const, href: `${base}/students`, label: labels.students }] : []),
+    ...(labels.subjects ? [{ key: 'subjects' as const, href: `${base}/subjects`, label: labels.subjects }] : []),
+    ...(labels.curriculum ? [{ key: 'curriculum' as const, href: `${base}/curriculum`, label: labels.curriculum }] : []),
+    ...(labels.tasks ? [{ key: 'tasks' as const, href: `${base}/tasks`, label: labels.tasks }] : []),
     { key: 'teachers', href: `${base}/teachers`, label: labels.teachers },
-    { key: 'requests', href: `${base}/requests`, label: labels.requests ?? 'Solicitudes' },
+    ...(labels.requests ? [{ key: 'requests' as const, href: `${base}/requests`, label: labels.requests }] : []),
+    ...(labels.coordinators ? [{ key: 'coordinators' as const, href: `${base}/coordinators`, label: labels.coordinators }] : []),
+    ...(labels.settings ? [{ key: 'settings' as const, href: `${base}/settings`, label: labels.settings }] : []),
     { key: 'learners', href: `${base}/learners`, label: labels.learners },
     { key: 'coverage', href: `${base}/coverage`, label: labels.coverage },
     { key: 'readiness', href: `${base}/readiness`, label: labels.readiness },
@@ -41,19 +57,9 @@ export function InstitutionSubNav({
     { key: 'attention', href: `${base}/attention`, label: labels.attention },
   ];
   return (
-    <nav aria-label={labels.overview} style={{ display: 'flex', gap: 'var(--space-4)', borderBottom: '1px solid var(--border-default)', marginBottom: 'var(--space-6)', paddingBottom: 'var(--space-2)' }}>
+    <nav aria-label={labels.overview} className="ta-subnav">
       {items.map((item) => (
-        <Link
-          key={item.key}
-          href={item.href}
-          aria-current={item.key === active ? 'page' : undefined}
-          style={{
-            fontSize: 13,
-            fontWeight: 650,
-            color: item.key === active ? 'var(--brand-ink)' : 'var(--text-muted)',
-            textDecoration: 'none',
-          }}
-        >
+        <Link key={item.key} href={item.href} aria-current={item.key === active ? 'page' : undefined}>
           {item.label}
         </Link>
       ))}

@@ -198,13 +198,6 @@ export const PROMPT_REGISTRY = {
     service: 'embedding.service.ts:generateEmbedding',
     description: 'text-embedding-3-small vector embedding of a content chunk, for pgvector semantic search.',
   }),
-  'legacy.concept_extraction': definePrompt({
-    id: 'legacy.concept_extraction',
-    version: 'v1',
-    capability: 'CLASSIFICATION',
-    service: 'ai.service.ts:extractConceptsFromText',
-    description: "Older, simpler concept-extraction path used by /api/concepts/extract -- parallel to concept-extraction.service.ts's, not yet consolidated.",
-  }),
   'legacy.image_transcription': definePrompt({
     id: 'legacy.image_transcription',
     version: 'v1',
@@ -218,6 +211,14 @@ export const PROMPT_REGISTRY = {
     capability: 'QUESTION_GENERATION',
     service: 'ai.service.ts:generateQuestion',
     description: 'Older, single-question-at-a-time generator used by /api/quizzes/generate -- parallel to quiz-generation.service.ts, not yet consolidated.',
+  }),
+  'learning.guided_understanding_turn': definePrompt({
+    id: 'learning.guided_understanding_turn',
+    version: 'v1',
+    capability: 'TUTOR',
+    service: 'learn-guided.service.ts:generateGuidedTurn',
+    description:
+      'LEARN (overnight 2026-10-16): one turn of the adaptive guided-understanding loop for ONE concept -- immediate feedback on the answer just graded (what was wrong, the confusion, the concept reinforced, an extra example), a learner-safe weakness phrase, an optional catalog misconception id, a close recommendation (the server enforces 4..7) and the next comprehension interaction. Never reveals the next interaction\'s answer; never decides mastery.',
   }),
   'learning.guided_practice': definePrompt({
     id: 'learning.guided_practice',
@@ -274,6 +275,70 @@ export const PROMPT_REGISTRY = {
     service: 'src/lib/teaching/ai-teaching-contract.service.ts:verifyTeachingContentSemantic',
     description:
       'F8: independent semantic verdict on generated teaching content -- the generator cannot self-certify. Checks only what checkTeachingContentDeterministic cannot: whether the knowledge section stays framework-neutral, whether the strategy section (when present) adds framing rather than restating the canonical definition, and factual consistency with the canonical concept. Fail-closed on a malformed or low-confidence verdict, mirroring quiz.question_quality_verify exactly.',
+  }),
+  'exam.rubric_assessor_a': definePrompt({
+    id: 'exam.rubric_assessor_a',
+    version: 'v1',
+    capability: 'GRADING',
+    service: 'src/lib/exam-core/assessment/double-assessor.service.ts:assessWithRubric',
+    description:
+      'Exam V2 ASSESSOR A: criterion-first analytic assessment of an interpretive exam response (or an Arts submission, with images) against a StudyUs rubric that is passed in as data -- never invents criteria or marks. Returns per-criterion marks within each maximum, evidence quotes, a rationale and a confidence. Feeds REVIEW_REQUIRED and adjudication; never self-certifies.',
+  }),
+  'exam.rubric_assessor_b': definePrompt({
+    id: 'exam.rubric_assessor_b',
+    version: 'v1',
+    capability: 'GRADING',
+    service: 'src/lib/exam-core/assessment/double-assessor.service.ts:assessWithRubric',
+    description:
+      'Exam V2 ASSESSOR B: an independent second assessment of the same response with a different reading order (holistic impression first, then best-fit placement per criterion). Never sees Assessor A. Same output contract as A, so the two can be compared deterministically.',
+  }),
+  'exam.rubric_adjudicator': definePrompt({
+    id: 'exam.rubric_adjudicator',
+    version: 'v1',
+    capability: 'GRADING',
+    service: 'src/lib/exam-core/assessment/double-assessor.service.ts:assessWithRubric',
+    description:
+      'Exam V2 ADJUDICATOR: called only when assessors A and B disagree beyond the rubric threshold. Sees both assessments and the response, and decides each disputed criterion within its maximum, giving a reason. Low confidence still ends in REVIEW_REQUIRED (human review), never a silent final mark.',
+  }),
+  'question_bank.generate_items': definePrompt({
+    id: 'question_bank.generate_items',
+    version: 'v1',
+    capability: 'QUESTION_GENERATION',
+    service: 'src/lib/exam-core/question-bank/ai-runner.ts:generateCandidates',
+    description:
+      'Question Bank Factory GENERATOR (background only, never on a Student request): writes a small batch of ORIGINAL StudyUs selected-response items for ONE blueprint cell (section contract, requirement, difficulty, demand, format) from exam structure, bank exemplars and optional anonymous aggregate signals -- never Student data. Supplies a verification expression (mathematics) or a verbatim evidence quote (reading) that StudyUs checks deterministically. Output is a DRAFT_AI candidate that must pass the validation pipeline.',
+  }),
+  'question_bank.validate_item': definePrompt({
+    id: 'question_bank.validate_item',
+    version: 'v1',
+    capability: 'CLASSIFICATION',
+    service: 'src/lib/exam-core/question-bank/ai-runner.ts:validateCandidate',
+    description:
+      'Question Bank Factory INDEPENDENT VALIDATOR: a separate call that SOLVES a candidate item without seeing its key, and reports other defensible options, need for information outside the passage and implausible distractors. Judged deterministically against the key; Luna first, Terra only when Luna is not confident.',
+  }),
+  'question_bank.repair_item': definePrompt({
+    id: 'question_bank.repair_item',
+    version: 'v1',
+    capability: 'QUESTION_GENERATION',
+    service: 'src/lib/exam-core/question-bank/ai-runner.ts:repairCandidate',
+    description:
+      'Question Bank Factory REPAIR: one bounded attempt to fix the exact automated-validation findings of a candidate; the result is a NEW item version that goes through the full validation pipeline again.',
+  }),
+  'exam_bank.paa_pilot.generate_unit': definePrompt({
+    id: 'exam_bank.paa_pilot.generate_unit',
+    version: 'v1',
+    capability: 'QUESTION_GENERATION',
+    service: 'src/lib/exam-bank/pilot/paa-pilot-ai.ts:generateUnit',
+    description:
+      'PAA pilot Exam Bank CANDIDATE PRODUCER (offline, pre-publication only, never on a Student request): writes one ORIGINAL StudyUs unit -- an optional stimulus and the selected-response items of named, uncovered blueprint slots. Its output is a candidate: the Exam Bank pipeline validates and certifies it; nothing it writes reaches a learner directly.',
+  }),
+  'exam_bank.paa_pilot.verify_unit': definePrompt({
+    id: 'exam_bank.paa_pilot.verify_unit',
+    version: 'v1',
+    capability: 'CLASSIFICATION',
+    service: 'src/lib/exam-bank/pilot/paa-pilot-ai.ts:solveUnit',
+    description:
+      'PAA pilot INDEPENDENT SOLVER: a separate call that answers the items of a candidate unit WITHOUT seeing the key, from its own shuffle of the options, and reports other defensible options, ambiguity, need for outside knowledge, skill fit, language problems and whether the stimulus reads as reproduced. Judged deterministically by the certification policy.',
   }),
 } as const satisfies Record<string, PromptDefinition>;
 

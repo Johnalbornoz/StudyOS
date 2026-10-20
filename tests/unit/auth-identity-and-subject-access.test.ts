@@ -80,8 +80,8 @@ describe('getOrCreateStudentId -- canonical dual-identity provisioning (students
   }
 
   it('7. a brand-new student creates BOTH a students row and a profiles (+ student_profiles) row', async () => {
-    // No existing students row for this clerk_id.
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    // No existing students row for this clerk_id; the identity holds an ACTIVE STUDENT role.
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
     currentUserMock.mockResolvedValue({
       primaryEmailAddress: { emailAddress: 'new@student.test' },
       emailAddresses: [],
@@ -106,7 +106,7 @@ describe('getOrCreateStudentId -- canonical dual-identity provisioning (students
   });
 
   it('8. the profiles/student_profiles rows are written with the exact same UUID students.id returned', async () => {
-    queryMock.mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
     currentUserMock.mockResolvedValue({
       primaryEmailAddress: { emailAddress: 'new@student.test' },
       emailAddresses: [],
@@ -128,8 +128,16 @@ describe('getOrCreateStudentId -- canonical dual-identity provisioning (students
     expect(studentProfilesCall?.[1]?.[0]).toBe(STUDENT_ID);
   });
 
+  it('7b. foundation: an identity WITHOUT an ACTIVE STUDENT role is refused -- no students/profiles row is ever created', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+    const clientQueryMock = mockTransactionClient();
+    await expect(getOrCreateStudentId(CLERK_ID)).rejects.toThrow('STUDENT_ROLE_REQUIRED');
+    expect(clientQueryMock).not.toHaveBeenCalled();
+    expect(String(queryMock.mock.calls[1][0])).toMatch(/r\.role = 'STUDENT' AND r\.status = 'ACTIVE'/);
+  });
+
   it('9. an existing student with an already-matching profile is idempotent -- no duplicate students row is created, no Clerk lookup is needed', async () => {
-    queryMock.mockResolvedValueOnce({ rows: [{ id: STUDENT_ID }] }); // SELECT id FROM students WHERE clerk_id
+    queryMock.mockResolvedValueOnce({ rows: [{ student_id: STUDENT_ID, user_id: 'user-1', access_active: true }] }); // L10 SF-2: the one shared resolver (account + ACTIVE STUDENT role)
     queryMock.mockResolvedValueOnce({ rows: [] }); // ensureProfileRows: INSERT INTO profiles ... ON CONFLICT DO NOTHING (no-op)
     queryMock.mockResolvedValueOnce({ rows: [] }); // ensureProfileRows: INSERT INTO student_profiles ... ON CONFLICT DO NOTHING (no-op)
 
@@ -142,8 +150,18 @@ describe('getOrCreateStudentId -- canonical dual-identity provisioning (students
     expect(sqlCalls.some((sql) => /INSERT INTO students/i.test(sql))).toBe(false);
   });
 
+  it('9b. L10 SF-1: an EXISTING student whose STUDENT role was revoked (or whose account is not ACTIVE) is refused -- the existing-row path is no longer unconditional', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ student_id: STUDENT_ID, user_id: 'user-1', access_active: false }] });
+    await expect(getOrCreateStudentId(CLERK_ID)).rejects.toThrow('STUDENT_ROLE_REQUIRED');
+    expect(connectMock).not.toHaveBeenCalled();
+    const sqlCalls = queryMock.mock.calls.map((c: any[]) => String(c[0]));
+    expect(sqlCalls).toHaveLength(1); // nothing repaired, nothing provisioned
+    expect(sqlCalls[0]).toMatch(/ar\.role = 'STUDENT' AND ar\.status = 'ACTIVE'/);
+    expect(sqlCalls[0]).toMatch(/au\.status = 'ACTIVE'/);
+  });
+
   it('10. an existing student whose profiles/student_profiles rows are missing is self-repaired by the same canonical path', async () => {
-    queryMock.mockResolvedValueOnce({ rows: [{ id: STUDENT_ID }] }); // students row already exists
+    queryMock.mockResolvedValueOnce({ rows: [{ student_id: STUDENT_ID, user_id: 'user-1', access_active: true }] }); // students row already exists (resolver)
     queryMock.mockResolvedValueOnce({ rows: [{ id: STUDENT_ID }] }); // profiles INSERT ... ON CONFLICT DO NOTHING -- repairs the missing row
     queryMock.mockResolvedValueOnce({ rows: [{ id: STUDENT_ID }] }); // student_profiles INSERT ... ON CONFLICT DO NOTHING -- repairs the missing row
 

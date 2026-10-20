@@ -94,7 +94,8 @@ describe('LX-4P-PERF-R1 R6 -- MODEL renders when its content is ready; it never 
     expect(TEACH).toMatch(/const \[expLoading, setExpLoading\] = useState/);
     // LX-4P-PERF-R1E-R1: GUIDE's own explicit lifecycle state, distinct
     // from a bare loading boolean -- see the PENDING assertion below.
-    expect(TEACH).toMatch(/const \[guideState, setGuideState\] = useState<'idle' \| 'loading' \| 'ready' \| 'error'>/);
+    // L6 / CR-L11-02 added 'access' (the licence gate), a fifth explicit state.
+    expect(TEACH).toMatch(/const \[guideState, setGuideState\] = useState<'idle' \| 'loading' \| 'ready' \| 'error' \| 'access'>/);
   });
   it('the whole-component loading gate blocks only on explanation, not on GUIDE', () => {
     expect(TEACH).toMatch(/\/\/ Block only on the FIRST needed content \(explanation\)\.[\s\S]*?if \(expLoading\) \{/);

@@ -1,0 +1,454 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r8.red-e",
+    "component": "redaccion",
+    "language": "es",
+    "stimulusKind": "SHORT_SOURCE_TEXT",
+    "stimulusBrief": "Párrafo ORIGINAL de 140 a 200 palabras sobre la renovación de una cancha deportiva por los vecinos, escrito como borrador de estudiante con las oraciones NUMERADAS así: (1) ... (2) ... hasta (8). Debe contener tres puntos claramente distintos donde la relación lógica entre dos oraciones numeradas pida un conector concreto: una causa, un contraste y una consecuencia.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.red.cohesion",
+        "conceptStableId": "write.cohesion-connectors",
+        "difficulty": 3,
+        "focus": "qué conector une mejor dos oraciones numeradas que expresan causa y efecto"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.red.cohesion",
+        "conceptStableId": "write.cohesion-connectors",
+        "difficulty": 3,
+        "focus": "qué conector une mejor dos oraciones numeradas que expresan un contraste"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.red.cohesion",
+        "conceptStableId": "write.cohesion-connectors",
+        "difficulty": 3,
+        "focus": "qué conector introduce mejor una oración numerada que expresa una consecuencia de la anterior"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Borrador sobre la cancha de Los Fresnos",
+      "text": "(1) Durante varios meses, la cancha del barrio Los Fresnos tuvo grietas, charcos y una malla rota que impedían jugar con seguridad. (2) Los vecinos organizaron una reunión para proponer su renovación y reunir apoyos. (3) Un grupo de voluntarios afirmó que era necesario reparar el piso y cambiar los aros antes de pintar las líneas. (4) Algunas personas consideraban suficiente aplicar pintura nueva para mejorar el aspecto del lugar. (5) En la reunión, las familias aportaron ideas, herramientas y pequeñas cuotas según sus posibilidades. (6) El comité compró cemento, redes y drenajes para iniciar los trabajos el sábado siguiente. (7) Después de dos jornadas, jóvenes y adultos retiraron escombros, nivelaron el terreno y fijaron la malla nueva. (8) Al terminar, acordaron turnos de cuidado para conservar la cancha disponible para niñas, niños y equipos locales.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué conector podría colocarse al inicio de la oración (2) para expresar que la situación descrita en (1) motivó la acción posterior?",
+        "options": [
+          {
+            "text": "Por esta razón,",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Expresa que el deterioro de la cancha motivó a los vecinos a organizar una reunión."
+          },
+          {
+            "text": "Sin embargo,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CAUSA_CON_CONTRASTE",
+            "rationale": "Resulta atractivo porque enlaza dos ideas, pero no hay una oposición entre el mal estado de la cancha y la reunión vecinal."
+          },
+          {
+            "text": "Además,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CAUSA_CON_ADICION",
+            "rationale": "Añade información, pero no comunica que la primera situación produjo la segunda."
+          },
+          {
+            "text": "Mientras tanto,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CAUSA_CON_SIMULTANEIDAD",
+            "rationale": "Indica acciones simultáneas, pero el texto presenta una acción motivada por una situación previa."
+          }
+        ],
+        "evidenceQuote": "tuvo grietas, charcos y una malla rota que impedían jugar con seguridad"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué conector podría colocarse al inicio de la oración (4) para señalar el contraste con la propuesta presentada en la oración (3)?",
+        "options": [
+          {
+            "text": "Sin embargo,",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Introduce una postura distinta: mientras un grupo propone reparaciones amplias, otras personas sugieren una medida más limitada."
+          },
+          {
+            "text": "Por lo tanto,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CONTRASTE_CON_CONSECUENCIA",
+            "rationale": "Parece relacionar las ideas, pero la opinión sobre pintar no es una consecuencia de la propuesta de reparar el piso."
+          },
+          {
+            "text": "Por esta razón,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CONTRASTE_CON_CAUSA",
+            "rationale": "Expresa una causa o justificación, aunque las dos oraciones presentan puntos de vista diferentes."
+          },
+          {
+            "text": "Además,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CONTRASTE_CON_ADICION",
+            "rationale": "Agrega una idea compatible, pero la segunda oración limita la propuesta mencionada antes."
+          }
+        ],
+        "evidenceQuote": "Algunas personas consideraban suficiente aplicar pintura nueva para mejorar el aspecto del lugar."
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué conector podría colocarse al inicio de la oración (6) para introducirla como consecuencia de los aportes mencionados en la oración (5)?",
+        "options": [
+          {
+            "text": "Por lo tanto,",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Presenta la compra de materiales como resultado de los aportes reunidos por las familias."
+          },
+          {
+            "text": "Sin embargo,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CONSECUENCIA_CON_CONTRASTE",
+            "rationale": "Sugiere una oposición entre los aportes y la compra, pero ambas acciones se relacionan de manera consecuente."
+          },
+          {
+            "text": "Por ejemplo,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CONSECUENCIA_CON_EJEMPLIFICACION",
+            "rationale": "Podría introducir un caso ilustrativo, pero la oración explica lo que ocurrió a partir de los aportes."
+          },
+          {
+            "text": "A pesar de ello,",
+            "isKey": false,
+            "misconception": "CONFUNDE_CONSECUENCIA_CON_CONCESION",
+            "rationale": "Indica una acción realizada pese a un obstáculo, pero el texto no presenta ningún obstáculo entre ambas oraciones."
+          }
+        ],
+        "evidenceQuote": "El comité compró cemento, redes y drenajes para iniciar los trabajos el sábado siguiente."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "f955fdf0-5382-4940-a966-3feae9661450",
+    "generatedAt": "2026-10-16T14:06:13.886Z",
+    "unitId": "paa-pilot.r8.red-e"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "2bff233b-f5f6-4f7c-a2d4-a8b5ce4b2930",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "4447d986-f07d-428c-88fb-0b77628a7201",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.red-cohesion.97ccbe81c36e",
+        "slot": "s1",
+        "objectiveCode": "paa.red.cohesion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.cohesion / write.cohesion-connectors"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.45c6e9fb2f76@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-cohesion.265cdb776813",
+        "slot": "s2",
+        "objectiveCode": "paa.red.cohesion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.cohesion / write.cohesion-connectors"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.45c6e9fb2f76@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-cohesion.272eb7dfe966",
+        "slot": "s3",
+        "objectiveCode": "paa.red.cohesion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.cohesion / write.cohesion-connectors"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.45c6e9fb2f76@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

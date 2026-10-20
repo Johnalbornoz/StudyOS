@@ -11,7 +11,7 @@ Production requires a materially higher bar than Pilot. This checklist is intent
 | Distributed rate limiting | **DEFERRED** | A shared (e.g. Redis-backed) limiter, replacing the current per-process `checkRateLimit` |
 | Backup/restore drill with documented RPO/RTO | **DEFERRED, not rehearsed** | Operator identifies Neon's backup offering and performs one real restore drill |
 | Paging/alerting/incident communication | **DEFERRED, no tooling exists** | A real alerting integration, minimally on top of `/api/health` |
-| Dedicated feature-level kill switches | **DEFERRED** | Flags for Exam Prep / Teacher assignments / Institution Intelligence beyond the existing `AI_ENABLED` |
+| Dedicated feature-level kill switches | **DEFERRED** | Flags for Exam Prep / Teacher assignments / Institution Intelligence — and no AI kill switch exists either (`AI_ENABLED` was never implemented; corrected 2026-10-06) |
 | Correlation-id end-to-end threading | **DEFERRED** | Wire the existing utility through every downstream log call |
 | Real concurrency/load characterization | **DEFERRED, not measured** | A real load test at realistic Production concurrency, not just single-run samples |
 | Real assistive-technology accessibility verification | **DEFERRED** | Live screen-reader confirmation of the `aria-live` fix (and a fuller AT pass) |

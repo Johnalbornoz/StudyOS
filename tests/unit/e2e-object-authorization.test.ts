@@ -10,6 +10,10 @@
  *   5. POST /api/quizzes/generate-and-take (submit)   -- diagnosisId / remediationStepId not bound
  *   6. POST /api/learning/record-evidence    -- conceptId / subjectId not bound
  * Each is now bound; this file proves B gets 403 on A's ids and A still works.
+ *
+ * L6 ST-3: routes 2 and 6 are retired. They still refuse a foreign studentId
+ * with 403, and answer the owner 404 without reaching the service (the full
+ * cases are in l6-st3-retired-self-asserted-routes.test.ts).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
@@ -34,7 +38,8 @@ vi.mock('@/lib/db', () => {
       'bbbbbbbb-0000-4000-8000-000000000003': [students.clerk_B, 'bbbbbbbb-0000-4000-8000-000000000001'],
     };
     const one = (ok: boolean) => ({ rows: ok ? [{ '?column?': 1 }] : [], rowCount: ok ? 1 : 0 });
-    if (/FROM students WHERE clerk_id = \$1 AND id = \$2/.test(sql)) return one(students[p[0]] === p[1]);
+    // L10 SF-1/SF-2: ownership + ACTIVE account + ACTIVE STUDENT role, in one query (both fixture students are active).
+    if (/FROM students s\s+JOIN users u[\s\S]*u\.clerk_id = \$1 AND s\.id = \$2/.test(sql)) return one(students[p[0]] === p[1]);
     if (/FROM subjects\s+WHERE id = \$1 AND student_id = \$2/.test(sql)) return one(subjects[p[0]] === p[1]);
     if (/FROM content_sources\s+WHERE id = \$1 AND student_id = \$2/.test(sql)) return one(sources[p[0]]?.[0] === p[1]);
     if (/FROM content_sources WHERE id = \$1 AND subject_id = \$2/.test(sql)) return one(sources[p[0]]?.[1] === p[1]);
@@ -126,20 +131,22 @@ describe('#2/#3 learning-debt', () => {
     expect(h.services.getActiveDebts).not.toHaveBeenCalled();
     expect(h.services.checkAndResolve).not.toHaveBeenCalled();
   });
-  it('A reads / checks own debts', async () => {
+  it('A reads own debts; check-and-resolve is retired for the owner too (404, resolver not called)', async () => {
     as('A');
     expect((await getActive(new NextRequest(`https://dev.test/x?studentId=${A.student}`))).status).toBe(200);
-    expect((await checkAndResolve(post({ studentId: A.student, conceptId: A.concept, currentMastery: 90, daysSinceLastSuccess: 1, forgettingRisk: 10 }))).status).toBe(200);
+    expect((await checkAndResolve(post({ studentId: A.student, conceptId: A.concept, currentMastery: 90, daysSinceLastSuccess: 1, forgettingRisk: 10 }))).status).toBe(404);
+    expect(h.services.checkAndResolve).not.toHaveBeenCalled();
   });
 });
 
 describe('#6 learning/record-evidence', () => {
   const ev = (studentId: string, conceptId: string, subjectId: string) =>
     post({ studentId, conceptId, subjectId, result: 'correct', difficulty: 2, sourceType: 'PRACTICE_QUIZ', idempotencyKey: 'e2e-authz-probe-1' });
-  it('B cannot record evidence against A concept/subject, even under B own studentId', async () => {
+  it('B cannot record evidence against A (403), and nobody can record it against their own ids either (404)', async () => {
     as('B');
-    expect((await recordEvidence(ev(B.student, A.concept, A.subject))).status).toBe(403);
-    expect((await recordEvidence(ev(B.student, B.concept, A.subject))).status).toBe(403);
+    expect((await recordEvidence(ev(A.student, A.concept, A.subject))).status).toBe(403);
+    expect((await recordEvidence(ev(B.student, A.concept, A.subject))).status).toBe(404);
+    expect((await recordEvidence(ev(B.student, B.concept, B.subject))).status).toBe(404);
     expect(h.services.updateMastery).not.toHaveBeenCalled();
   });
 });
@@ -187,11 +194,15 @@ describe('E2E regression: simulation attempt page shows labels and an honest "no
   it('never renders the raw simulationType / timingMode enums', () => {
     expect(src).not.toMatch(/subtitle=\{attempt\.simulationType\}/);
     expect(src).not.toMatch(/: \{attempt\.timingMode\}/);
-    expect(src).toMatch(/label\(`ex\.type\.\$\{attempt\.simulationType\}`/);
+    // B1-C: the label key is the attempt's kind (instance mode when it belongs to an exam instance, else its type) -- still never a raw enum.
+    expect(src).toMatch(/label\(attemptKindLabelKey\(\{ simulationType: attempt\.simulationType,/);
     expect(src).toMatch(/label\(`ex\.timing\.\$\{attempt\.timingMode\}`/);
   });
-  it('0 gradable items is "no score", never 0%', () => {
+  it('0 gradable items is "no score", never 0% (Track B: shown on the attempt RESULT page)', () => {
+    const result = readFileSync(join(process.cwd(), 'src/app/dashboard/exam-prep/attempt/[attemptId]/result/page.tsx'), 'utf-8');
     expect(src).not.toMatch(/: 0\}%/);
-    expect(src).toMatch(/t\['examPrep\.attempt\.noGradedItems'\]/);
+    expect(result).not.toMatch(/: 0\}%/);
+    expect(result).toMatch(/result\.maxScore === 0[\s\S]{0,120}t\['examPrep\.attempt\.noGradedItems'\]/);
+    expect(src).toMatch(/redirect\(`\/dashboard\/exam-prep\/attempt\/\$\{attempt\.id\}\/result`\)/);
   });
 });

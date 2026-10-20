@@ -10,7 +10,11 @@
  * follow-ups about a different part of the material.
  */
 
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
 import { randomUUID } from 'crypto';
+import { detectSafetySignal } from '@/lib/safety/safety-signal-detector';
+import { assertNoSafetySignal } from '@/lib/safety/safety-gate';
+import { handleSafetySignal } from './safety-signal.service';
 import { db } from '@/lib/db';
 import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
@@ -150,12 +154,24 @@ export async function sendMessage(
     `SELECT role, content FROM tutor_messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT $2`,
     [conversationId, MAX_HISTORY_MESSAGES]
   );
-  const history = historyResult.rows.reverse();
+  // Human Agency P0-4 (Layer B): a Student turn that carried a safety signal
+  // never reaches a model -- not now, and not later as conversation history.
+  const history = historyResult.rows.reverse().filter((h: any) => h.role !== 'user' || detectSafetySignal(h.content) === 'NO_SIGNAL');
 
   await db.query(`INSERT INTO tutor_messages (conversation_id, role, content) VALUES ($1, 'user', $2)`, [
     conversationId,
     userMessage,
   ]);
+
+  // Human Agency P0-4 (Layer B): deterministic safety gate BEFORE any other
+  // work (it outranks the integrity guard and every AI call). On a signal:
+  // no model call, a FIXED reviewed reply, a minimal safety event and a
+  // notification routed per D-HA-01.
+  const safetyStatus = detectSafetySignal(userMessage);
+  if (safetyStatus !== 'NO_SIGNAL') {
+    const safety = await handleSafetySignal({ studentId, status: safetyStatus, surface: 'TUTOR_MESSAGE', locale: language });
+    return persistAssistantReply(conversationId, userMessage, safety.text);
+  }
 
   // Phase 5-R2/5-R3/5-R4 S3/S5: the cross-surface guard runs
   // UNCONDITIONALLY -- before any teaching computation, grounding, or
@@ -237,7 +253,7 @@ ${
 
 ${opts.context ? `${contextPromptBlock(opts.context)}
 ` : ''}
-Your role: the StudyUs Tutor -- a support layer. StudyUs (not you) decides what the student learns next, when they practise or demonstrate, and what is mastered. Never say a concept is mastered, never promise exam results, never tell the student to skip a step of their learning path, and never complete an evaluated task for them.
+Your role: the StudyUs Tutor -- a support layer. The student decides what to work on; StudyUs recommends next steps and its evidence rules (not you) determine when they demonstrate and what counts as mastered. Never say a concept is mastered, never promise exam results, never tell the student to skip a step of their learning path, and never complete an evaluated task for them.
 
 Teaching style:
 - Don't just hand over the final answer to a problem -- guide the student toward it, asking a short clarifying or leading question first when that would help them think it through themselves.
@@ -305,13 +321,16 @@ Write your entire response in ${languageName}.`;
     validate: (raw: { text: string }) => ({ valid: true as const, value: raw.text }),
   };
 
+  // Defence in depth (P0-4): nothing signalled may reach the model.
+  assertNoSafetySignal([userMessage, ...history.filter((h: any) => h.role === 'user').map((h: any) => h.content)]);
+
   let replyText: string;
   try {
     const { result, execution } = await executeAI({
       ...baseCallArgs,
       provider: route.provider,
       model: route.primary,
-      call: (signal) => callModel({ provider: route.provider, model: route.primary, maxTokens: budget.maxOutputTokens, reasoningEffort: budget.reasoningEffort, system: systemPrompt, user: userTurn, plainText: true }, signal),
+      call: (signal) => callModel({ provider: route.provider, model: route.primary, maxTokens: budget.maxOutputTokens, reasoningEffort: budget.reasoningEffort, system: withStudentFacingPolicy(systemPrompt), user: userTurn, plainText: true }, signal),
     });
     replyText = result;
     recordRuntimeEvent(
@@ -360,7 +379,7 @@ Write your entire response in ${languageName}.`;
       ...baseCallArgs,
       provider: route.provider,
       model: TERRA,
-      call: (signal) => callModel({ provider: route.provider, model: TERRA, maxTokens: budget.maxOutputTokens, reasoningEffort: budget.reasoningEffort, system: systemPrompt, user: userTurn, plainText: true }, signal),
+      call: (signal) => callModel({ provider: route.provider, model: TERRA, maxTokens: budget.maxOutputTokens, reasoningEffort: budget.reasoningEffort, system: withStudentFacingPolicy(systemPrompt), user: userTurn, plainText: true }, signal),
     });
     replyText = result;
     recordRuntimeEvent(

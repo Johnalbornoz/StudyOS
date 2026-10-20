@@ -1,0 +1,257 @@
+{
+  "retrievedAt": "2026-10-01",
+  "scope": "OECD PISA 2022 assessment design (Mathematics major domain; Reading and Science minor domains). Framework structure only; no released items copied.",
+  "sources": [
+    {
+      "key": "oecd-pisa2022-assessment-analytical-framework",
+      "url": "https://www.oecd.org/content/dam/oecd/en/publications/reports/2023/08/pisa-2022-assessment-and-analytical-framework_a124aec8/dfe0bf9c-en.pdf",
+      "title": "PISA 2022 Assessment and Analytical Framework (OECD, 2023), Chapter 1 overview and Chapter 2 PISA 2022 Mathematics Framework",
+      "frameworkYear": "2022",
+      "confidence": "HIGH",
+      "notes": "Primary source for mathematics (Tables 2.1, 2.2, pp. 42-43 printed; item formats/scoring pp. 47-48; test design p. 13)."
+    },
+    {
+      "key": "oecd-pisa2022-math-framework-site",
+      "url": "https://pisa2022-maths.oecd.org/ca/index.html",
+      "title": "PISA 2022: Mathematics Framework (interactive site)",
+      "frameworkYear": "2022",
+      "confidence": "MEDIUM",
+      "notes": "Corroborates contexts and the eight 21st-century skills; site does not give target distributions."
+    },
+    {
+      "key": "oecd-pisa2018-assessment-analytical-framework",
+      "url": "https://www.oecd.org/content/dam/oecd/en/publications/reports/2019/04/pisa-2018-assessment-and-analytical-framework_d1c359c7/b25efab8-en.pdf",
+      "title": "PISA 2018 Assessment and Analytical Framework (OECD, 2019), Chapter 2 PISA 2018 Reading Framework and Chapter 4 PISA 2018 Science Framework (= PISA 2015 science framework)",
+      "frameworkYear": "2018 (reading); 2015 (science, republished unchanged in 2018 volume)",
+      "confidence": "HIGH",
+      "notes": "Reading Tables 2.1-2.2 (pp. 37, 42); Science Tables 4.1, 4.2, 4.9, 4.10 and item response formats (pp. 102-114)."
+    },
+    {
+      "key": "oecd-pisa2022-results-vol1",
+      "url": "https://www.oecd.org/content/dam/oecd/en/publications/reports/2023/12/pisa-2022-results-volume-i_76772a36/53f23881-en.pdf",
+      "title": "PISA 2022 Results (Volume I): The State of Learning and Equity in Education (OECD, 2023)",
+      "frameworkYear": "2022",
+      "confidence": "HIGH",
+      "notes": "Confirms reading/science frameworks reused (Box I.2.3 p. 80; pp. 83-84), proficiency-level lower score limits (Ch. 2), MSAT design (Annex A9, pp. 307-310), IRT scaling (Annex A1/A5)."
+    },
+    {
+      "key": "oecd-pisa2022-technical-report",
+      "url": "NOT_CONFIRMED",
+      "title": "PISA 2022 Technical Report",
+      "frameworkYear": "2022",
+      "confidence": "NOT_CONFIRMED",
+      "notes": "Referenced as 'OECD, Forthcoming' in Results Vol I; not retrieved in this pass. Routing thresholds and exact cut-score decimals live there."
+    }
+  ],
+  "testDesign": {
+    "mode": "Computer-based assessment (CBA) as principal mode; paper-based (PBA) forms for countries unable to test by computer, limited to trend items.",
+    "cognitiveTestingTimeMinutes": 120,
+    "studentQuestionnaireMinutes": 35,
+    "formStructure": "94% of CBA students: 60 min mathematics + 60 min of one of reading, science or creative thinking; 6% received forms of two minor domains.",
+    "clusterMinutes": 30,
+    "clusterNote": "30-minute clusters stated explicitly in the 2018 framework (science chapter: four 30-min clusters per two-hour form). For 2022 mathematics the MSAT uses testlets/stages instead of fixed clusters; 30-min cluster for 2022 minor domains NOT_CONFIRMED in 2022 documents.",
+    "adaptive": {
+      "mathematics": "Hybrid multistage adaptive testing (MSAT): 3 stages (core, stage 1, stage 2) of 9-10-item testlets; item pool 234 items / 99 units in three sets of 78; 28-30 math items per student; 75% of students on adaptive path, 25% on non-adaptive path.",
+      "reading": "MSAT identical in structure to 2018 (Core, Stage 1, Stage 2), item pool reduced ~25%; Standard Design (~75% of students) and Alternate Design.",
+      "science": "Non-adaptive (no MSAT described for science in 2022).",
+      "paper": "Non-adaptive version for PBA countries."
+    },
+    "navigation": "Framework states CBA must retain ability to revisit items already attempted, but with adaptive testing this is limited to the unit the student is working on (PISA 2022 framework, p. 47). Strict forward-only between units implied by MSAT; explicit 'forward-only' wording NOT_CONFIRMED.",
+    "calculator": "On-screen basic scientific calculator and equation editor tool for typed constructed responses (mathematics).",
+    "confidence": "HIGH",
+    "sourceKeys": ["oecd-pisa2022-assessment-analytical-framework", "oecd-pisa2022-results-vol1"]
+  },
+  "mathematics": {
+    "definition": "Mathematical literacy: ability to reason mathematically and to formulate, employ, and interpret mathematics to solve problems in a variety of real-world contexts (paraphrase of OECD 2023 definition).",
+    "reasoning": {
+      "key": "reasoning",
+      "officialName": "Mathematical reasoning",
+      "description": "Both deductive and inductive; treated as core of mathematical literacy and as its own score-point category and reporting subscale.",
+      "targetPercent": 25,
+      "targetWording": "Approximately 25"
+    },
+    "processes": [
+      {
+        "key": "formulate",
+        "officialName": "Formulating situations mathematically",
+        "targetPercent": 25,
+        "targetWording": "Approximately 25"
+      },
+      {
+        "key": "employ",
+        "officialName": "Employing mathematical concepts, facts and procedures",
+        "officialNameVariant": "Employing mathematical concepts, facts, procedures and reasoning",
+        "targetPercent": 25,
+        "targetWording": "Approximately 25",
+        "nameNote": "Table 2.1 and Results Vol I subscale tables use 'concepts, facts and procedures'; narrative text in Ch. 1/2 uses 'facts, procedures and reasoning'. Use the Table 2.1 / subscale wording as canonical."
+      },
+      {
+        "key": "interpret",
+        "officialName": "Interpreting, applying and evaluating mathematical outcomes",
+        "targetPercent": 25,
+        "targetWording": "Approximately 25"
+      }
+    ],
+    "processDistributionSource": "PISA 2022 Assessment and Analytical Framework, Table 2.1 'Approximate distribution of score points by domain for PISA 2022'. Each item contributes to only one category (reasoning or one process).",
+    "contentCategories": [
+      { "key": "change_relationships", "officialName": "Change and relationships", "targetPercent": 25, "targetWording": "Approximately 25" },
+      { "key": "space_shape", "officialName": "Space and shape", "targetPercent": 25, "targetWording": "Approximately 25" },
+      { "key": "quantity", "officialName": "Quantity", "targetPercent": 25, "targetWording": "Approximately 25" },
+      { "key": "uncertainty_data", "officialName": "Uncertainty and data", "targetPercent": 25, "targetWording": "Approximately 25" }
+    ],
+    "contentDistributionSource": "Table 2.2 'Approximate distribution of score points by content category for PISA 2022'.",
+    "contexts": [
+      { "key": "personal", "officialName": "Personal", "targetPercent": null },
+      { "key": "occupational", "officialName": "Occupational", "targetPercent": null },
+      { "key": "societal", "officialName": "Societal", "targetPercent": null },
+      { "key": "scientific", "officialName": "Scientific", "targetPercent": null }
+    ],
+    "contextsNote": "Four PISA 2012 context categories retained to inform item development; framework says there is no expectation of reporting against contexts and gives no numeric target for 2022 (2018 framework had ~25% each; 2022 target NOT_CONFIRMED). Intra-mathematical items are allocated to Scientific.",
+    "twentyFirstCenturySkills": [
+      "critical thinking",
+      "creativity",
+      "research and inquiry",
+      "self-direction, initiative, and persistence",
+      "information use",
+      "systems thinking",
+      "communication",
+      "reflection"
+    ],
+    "itemFormats": [
+      { "key": "open_constructed_response", "officialName": "Open constructed-response", "notes": "Extended written response, may show steps; coded by trained experts; minimised to support adaptive routing." },
+      { "key": "closed_constructed_response", "officialName": "Closed constructed-response", "notes": "Structured; usually single-number answers; often auto-coded." },
+      { "key": "selected_response", "officialName": "Selected-response (multiple-choice)", "notes": "Choice of one or more responses from options; auto-processed. Simple vs complex multiple choice split NOT explicitly stated in 2022 math chapter." }
+    ],
+    "itemFormatDistribution": "About equal numbers of each of the three format types (framework p. 47).",
+    "cbaFeatures": "New CBA formats e.g. drag and drop, hot spots, sortable datasets, simulations, curve fitting; equation editor; on-screen calculator.",
+    "scoring": "Majority of items dichotomously scored (credit / no credit); open constructed-response items can involve partial credit, expected to be especially relevant for mathematical reasoning items.",
+    "unitStructure": "Assessment units share common stimulus with one or more linked items.",
+    "notes": "Process and content subscales reported (Results Vol I Tables I.2.7, I.2.8). Eight proficiency levels in 2022 (Level 1 renamed 1a; 1b and 1c added).",
+    "confidence": "HIGH",
+    "sourceKeys": ["oecd-pisa2022-assessment-analytical-framework", "oecd-pisa2022-math-framework-site", "oecd-pisa2022-results-vol1"]
+  },
+  "reading": {
+    "frameworkUsed": "PISA 2018 Reading Framework, used unchanged in PISA 2022 (Results Vol I: 'The PISA reading framework developed in PISA 2018 was used again in PISA 2022.').",
+    "processes": [
+      {
+        "key": "locate",
+        "officialName": "Locating information",
+        "subprocesses": [
+          { "officialName": "Accessing and retrieving information within a text", "source": "single", "taskTargetLabel": "Scanning and locating", "targetPercent": 15 },
+          { "officialName": "Searching for and selecting relevant text", "source": "multiple", "targetPercent": 10 }
+        ],
+        "targetPercent": 25
+      },
+      {
+        "key": "understand",
+        "officialName": "Understanding",
+        "subprocesses": [
+          { "officialName": "Representing literal meaning", "source": "single", "taskTargetLabel": "Literal comprehension", "targetPercent": 15 },
+          { "officialName": "Integrating and generating inferences", "source": "single", "taskTargetLabel": "Inferential comprehension", "targetPercent": 15 },
+          { "officialName": "Integrating and generating inferences (across multiple sources)", "source": "multiple", "taskTargetLabel": "Multiple-text inferential comprehension", "targetPercent": 15 }
+        ],
+        "targetPercent": 45
+      },
+      {
+        "key": "evaluate_reflect",
+        "officialName": "Evaluating and reflecting",
+        "subprocesses": [
+          { "officialName": "Assessing quality and credibility", "source": "single", "targetPercentCombined": 20 },
+          { "officialName": "Reflecting on content and form", "source": "single", "targetPercentCombined": 20 },
+          { "officialName": "Detecting and handling conflict", "source": "multiple", "taskTargetLabel": "Corroborating/handling conflict", "targetPercent": 10 }
+        ],
+        "targetPercent": 30
+      }
+    ],
+    "processDistributionSource": "PISA 2018 framework Table 2.2 'Approximate distribution of tasks by targeted process and text source' (distribution of TASKS, not explicitly score points). Superordinate totals 25/45/30 are derived sums of the table cells. Assessing quality and credibility + Reflecting on content and form share one 20% cell.",
+    "readingFluency": {
+      "officialName": "Reading fluently",
+      "description": "Reading ease and efficiency task near start of the test: judge plausibility of simple sentences; accuracy and time considered. Reported on PISA scale via separate scaling step; not one of the three superordinate scaling categories.",
+      "timing": "NOT_CONFIRMED (fluency task time limit not stated in framework)"
+    },
+    "textDimensions": {
+      "source": ["single", "multiple"],
+      "organisationalAndNavigationalStructure": ["static", "dynamic"],
+      "format": ["continuous", "non-continuous", "mixed"],
+      "type": ["description", "narration", "exposition", "argumentation", "instruction", "interaction", "transaction"],
+      "typeNote": "Four-dimension summary lists seven types incl. interaction; the Text types section lists six (description, narration, exposition, argumentation, instruction, transaction)."
+    },
+    "situations": ["personal", "public", "occupational", "educational"],
+    "itemFormats": [
+      { "key": "multiple_choice", "officialName": "Multiple choice" },
+      { "key": "short_constructed_response", "officialName": "Short constructed-response" },
+      { "key": "open_constructed_response", "officialName": "Open constructed-response", "notes": "Particularly important for the reflecting and evaluating process." },
+      { "key": "cba_interactive", "officialName": "Computer-enabled response formats (e.g. highlighting, drag-and-drop)" }
+    ],
+    "scoring": "Framework does not specify a credit model in the reading chapter; full/partial/no credit coding NOT_CONFIRMED for reading specifically. Writing quality (spelling, grammar) is not scored.",
+    "adaptive": "Multistage adaptive (Core, Stage 1, Stage 2).",
+    "confidence": "HIGH",
+    "sourceKeys": ["oecd-pisa2018-assessment-analytical-framework", "oecd-pisa2022-results-vol1"]
+  },
+  "science": {
+    "frameworkUsed": "PISA 2015 Science Framework, used again in 2018 and 2022 (Results Vol I p. 83-84). Retrieved from the 2018 A&AF Chapter 4 which reprints it.",
+    "competencies": [
+      { "key": "explain", "officialName": "Explain phenomena scientifically", "tableName": "Explaining phenomena scientifically", "targetPercentRange": [40, 50] },
+      { "key": "evaluate_design", "officialName": "Evaluate and design scientific enquiry", "tableName": "Evaluating and designing scientific enquiry", "targetPercentRange": [20, 30] },
+      { "key": "interpret_data", "officialName": "Interpret data and evidence scientifically", "tableName": "Interpreting data and evidence scientifically", "targetPercentRange": [30, 40] }
+    ],
+    "competencyDistributionSource": "Table 4.10 'Target distribution of score points for scientific competencies'.",
+    "knowledge": [
+      { "key": "content", "officialName": "Content knowledge", "targetPercentRange": [54, 66], "bySystem": { "physical": [20, 24], "living": [20, 24], "earthAndSpace": [14, 18] } },
+      { "key": "procedural", "officialName": "Procedural knowledge", "targetPercentRange": [19, 31], "bySystem": { "physical": [7, 11], "living": [7, 11], "earthAndSpace": [5, 9] } },
+      { "key": "epistemic", "officialName": "Epistemic knowledge", "targetPercentRange": [10, 22], "bySystem": { "physical": [4, 8], "living": [4, 8], "earthAndSpace": [2, 6] } }
+    ],
+    "contentSystems": [
+      { "key": "physical", "officialName": "Physical systems", "targetPercent": 36 },
+      { "key": "living", "officialName": "Living systems", "targetPercent": 36 },
+      { "key": "earth_space", "officialName": "Earth and space systems", "targetPercent": 28 }
+    ],
+    "knowledgeDistributionSource": "Table 4.9 'Target distribution of score points by knowledge type and content knowledge category'.",
+    "contexts": [
+      { "key": "personal", "officialName": "Personal", "ratio": 1 },
+      { "key": "local_national", "officialName": "Local/National", "ratio": 2 },
+      { "key": "global", "officialName": "Global", "ratio": 1 }
+    ],
+    "contextsNote": "Item contexts spread roughly 1:2:1 (personal : local/national : global), i.e. ~25/50/25%.",
+    "applicationAreas": [
+      "Health and disease",
+      "Natural resources",
+      "Environmental quality",
+      "Hazards",
+      "Frontiers of science and technology"
+    ],
+    "itemFormats": [
+      { "key": "simple_multiple_choice", "officialName": "Simple multiple-choice", "notes": "One of four options, or selecting a hot spot." },
+      { "key": "complex_multiple_choice", "officialName": "Complex multiple-choice", "notes": "Series of Yes/No scored as one item; multiple selection; drop-down completion; drag-and-drop. Interactive simulation responses usually scored as complex MC." },
+      { "key": "constructed_response", "officialName": "Constructed response", "notes": "Phrase to short paragraph (2-4 sentences), occasionally drawing." }
+    ],
+    "itemFormatDistribution": "Approximately equal thirds across the three classes.",
+    "scoring": "Science chapter does not restate credit model; full/partial/no credit for science NOT_CONFIRMED in retrieved text (general PISA practice: mostly dichotomous with some partial credit).",
+    "itemDesignRule": "Individual items primarily assess one form of knowledge and one competency; units assess multiple.",
+    "confidence": "HIGH",
+    "sourceKeys": ["oecd-pisa2018-assessment-analytical-framework", "oecd-pisa2022-results-vol1"]
+  },
+  "proficiency": {
+    "scale": "PISA scales originally set to OECD mean 500, SD 100; later cycles linked to be comparable, so OECD average fluctuates around 500.",
+    "oecdAverage2022": { "mathematics": 472, "reading": 476, "science": 485 },
+    "levels": {
+      "mathematics": { "count": 8, "lowerScoreLimits": { "6": 669, "5": 607, "4": 545, "3": 482, "2": 420, "1a": 358, "1b": 295, "1c": 233 } },
+      "reading": { "count": 8, "lowerScoreLimits": { "6": 698, "5": 626, "4": 553, "3": 480, "2": 407, "1a": 335, "1b": 262, "1c": 189 } },
+      "science": { "count": 7, "lowerScoreLimits": { "6": 708, "5": 633, "4": 559, "3": 484, "2": 410, "1a": 335, "1b": 261 } }
+    },
+    "cutScoreNote": "Rounded values as printed in PISA 2022 Results Vol I Chapter 2 figures (exact decimals, e.g. 357.77 for math Level 1a, in Technical Report). Level 2 is the baseline proficiency level.",
+    "calibrationNote": "PISA scores are estimated with unidimensional multi-group item response theory (IRT) models and plausible values, linked across cycles. Reproducing an official PISA scale score or level requires the OECD item parameters and IRT calibration; a non-calibrated practice test can only approximate levels and must not be labelled an official PISA score.",
+    "confidence": "HIGH",
+    "sourceKeys": ["oecd-pisa2022-results-vol1", "oecd-pisa2022-assessment-analytical-framework"]
+  },
+  "notConfirmed": [
+    "Numeric target distribution for mathematics contexts in PISA 2022 (framework gives none; 25% each was the 2018 target).",
+    "Explicit split of 2022 mathematics selected-response into simple vs complex multiple choice (framework names three formats: open CR, closed CR, selected-response).",
+    "Explicit 'forward-only' navigation wording; framework only says revisiting is limited to the current unit under adaptive testing.",
+    "30-minute cluster structure for 2022 minor domains (stated in 2018 framework; 2022 uses 60-min domain blocks and MSAT testlets).",
+    "Reading fluency task time limit.",
+    "Reading and science credit models (full/partial/no credit) not restated in the respective framework chapters retrieved.",
+    "Reading process percentages are a distribution of tasks (Table 2.2), not explicitly score points; superordinate totals 25/45/30 are derived sums.",
+    "PISA 2022 Technical Report (routing thresholds, exact cut-score decimals) not retrieved."
+  ]
+}

@@ -1,0 +1,454 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r5.lect-lit",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Fragmento narrativo literario ORIGINAL de 280 a 360 palabras sobre dos hermanos que cuidan un faro durante una tormenta. Narrador definido (primera o tercera persona), al menos dos figuras retóricas claras (símil, metáfora, personificación o hipérbole) y un cambio en el estado de ánimo del personaje.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.narrative-elements",
+        "difficulty": 3,
+        "focus": "el tipo de narrador o la voz narrativa del fragmento"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.figurative-language",
+        "difficulty": 4,
+        "focus": "el efecto o sentido de una imagen figurada citada del fragmento"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 3,
+        "focus": "el sentido de una palabra o expresión tal como se usa en el fragmento (cítala entre comillas)"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "La luz entre las olas",
+      "text": "Yo tenía diecinueve años cuando mi hermano Tomás y yo pasamos nuestra primera tormenta solos en el faro de Punta Rota. Nuestro padre, guardián durante tres décadas, había quedado en el pueblo por una fiebre inoportuna. Antes de partir, nos dejó una libreta con instrucciones y una frase escrita al margen: «La luz no discute con la noche; trabaja».\n\nAl caer la tarde, el mar cambió de color. Dejó de parecer una planicie azul y se convirtió en una espalda enorme, erizada de espuma. Tomás, dos años menor que yo, revisó el depósito de aceite por tercera vez. Yo fingía leer la libreta, aunque las letras se movían como hormigas sobre el papel.\n\nCuando el viento empezó a sacudir la torre, la escalera gimió bajo nuestros pasos. Encendimos la lámpara y observamos cómo el haz giraba sobre las olas. Por un momento sentí orgullo: aquella luz obedecía a nuestras manos. Pero un trueno partió el cielo con tal violencia que las ventanas vibraron. La tormenta golpeaba los vidrios como un puño impaciente, y mi orgullo se encogió hasta volverse miedo.\n\nTomás notó mi silencio. Sin decir nada, puso junto a mí una taza de café tibio y señaló la libreta. Allí había un dibujo sencillo: una rueda dentada, una mecha y una flecha que indicaba el movimiento. Comprendimos que el mecanismo se había trabado. Bajamos al cuarto inferior mientras el faro parecía respirar con dificultad.\n\nTrabajamos arrodillados, con las manos negras de aceite. Tomás sostuvo la linterna y yo liberé la rueda con una llave. Cuando el haz volvió a recorrer el mar, él soltó una risa breve. Entonces el miedo no desapareció, pero cambió de forma: ya no era una sombra que me paralizaba, sino una voz que me obligaba a mirar con cuidado. Permanecimos junto a la ventana hasta el amanecer, viendo cómo la luz abría un camino pálido entre las olas.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué voz narrativa predomina en el fragmento?",
+        "options": [
+          {
+            "text": "La de un hermano que participa en los sucesos.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El narrador usa la primera persona y relata acciones que vive junto con Tomás."
+          },
+          {
+            "text": "La de un observador externo que describe a los hermanos.",
+            "isKey": false,
+            "misconception": "CONFUSES_FIRST_PERSON_WITH_EXTERNAL_NARRATOR",
+            "rationale": "Puede parecer descriptivo, pero el uso de «yo» muestra que quien narra participa en la historia."
+          },
+          {
+            "text": "La de Tomás, quien cuenta sus propios pensamientos.",
+            "isKey": false,
+            "misconception": "ATTRIBUTES_NARRATION_TO_SECONDARY_CHARACTER",
+            "rationale": "Tomás es un personaje importante, pero el relato no está contado desde su perspectiva directa."
+          },
+          {
+            "text": "La de un padre que recuerda el trabajo de sus hijos.",
+            "isKey": false,
+            "misconception": "CONFUSES_MENTIONED_CHARACTER_WITH_NARRATOR",
+            "rationale": "El padre aparece mencionado, pero permanece en el pueblo y no narra los acontecimientos."
+          }
+        ],
+        "evidenceQuote": "Yo tenía diecinueve años cuando mi hermano Tomás y yo pasamos nuestra primera tormenta solos"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué efecto produce la imagen «La tormenta golpeaba los vidrios como un puño impaciente»?",
+        "options": [
+          {
+            "text": "Presenta la tormenta como una fuerza agresiva y amenazante.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El símil compara el impacto de la tormenta con un puño, lo que intensifica la sensación de peligro."
+          },
+          {
+            "text": "Presenta la tormenta como un fenómeno distante y silencioso.",
+            "isKey": false,
+            "misconception": "IGNORES_FIGURATIVE_TONE",
+            "rationale": "La imagen de un puño que golpea comunica cercanía, ruido y violencia, no distancia ni silencio."
+          },
+          {
+            "text": "Presenta los vidrios como objetos capaces de atacar.",
+            "isKey": false,
+            "misconception": "REVERSES_AGENT_OF_ACTION",
+            "rationale": "La acción de golpear corresponde figuradamente a la tormenta, mientras los vidrios reciben el golpe."
+          },
+          {
+            "text": "Presenta a los hermanos como personas impacientes por partir.",
+            "isKey": false,
+            "misconception": "MISATTRIBUTES_EMOTION_TO_CHARACTERS",
+            "rationale": "La impaciencia caracteriza a la tormenta mediante una personificación, no a los hermanos."
+          }
+        ],
+        "evidenceQuote": "La tormenta golpeaba los vidrios como un puño impaciente, y mi orgullo se encogió"
+      },
+      {
+        "slot": "s3",
+        "stem": "En el fragmento, ¿qué significa que «la escalera gimió» bajo los pasos de los hermanos?",
+        "options": [
+          {
+            "text": "Que la escalera produjo un crujido por el peso.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "«Gimió» se usa de forma figurada para describir el sonido que hizo la escalera al soportar los pasos."
+          },
+          {
+            "text": "Que la escalera se rompió por completo durante la tormenta.",
+            "isKey": false,
+            "misconception": "OVERSTATES_CONTEXTUAL_MEANING",
+            "rationale": "El texto describe un sonido, pero después los hermanos continúan usando la escalera."
+          },
+          {
+            "text": "Que la escalera pidió ayuda a los hermanos con palabras.",
+            "isKey": false,
+            "misconception": "INTERPRETS_PERSONIFICATION_LITERALLY",
+            "rationale": "La escalera recibe una acción humana de modo figurado; no habla realmente."
+          },
+          {
+            "text": "Que la escalera se movió para proteger a los hermanos.",
+            "isKey": false,
+            "misconception": "INVENTS_UNSUPPORTED_ACTION",
+            "rationale": "No hay indicios de que la escalera se moviera para protegerlos; la expresión alude a un crujido."
+          }
+        ],
+        "evidenceQuote": "Cuando el viento empezó a sacudir la torre, la escalera gimió bajo nuestros pasos"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "39d2add0-09c3-49ac-8006-cd8a42bef1c6",
+    "generatedAt": "2026-10-16T03:38:20.712Z",
+    "unitId": "paa-pilot.r5.lect-lit"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "8168d727-d9c1-4831-9a38-6d0c13863d9f",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "214eebfe-178b-40c8-a42c-442f21fe79d5",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-literario.f6c44c94392c",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.literario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.narrative-elements"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.d6f519b9bf30@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-literario.e0822105983d",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.literario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.figurative-language"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.d6f519b9bf30@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.d6097849c460",
+        "slot": "s3",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.d6f519b9bf30@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

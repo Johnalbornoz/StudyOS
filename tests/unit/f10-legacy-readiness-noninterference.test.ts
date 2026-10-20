@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
-const F10_LIB_FILES = ['src/lib/parent/read-model.service.ts', 'src/lib/parent/privacy-classification.ts'];
+const F10_LIB_FILES = ['src/lib/parent/read-model.service.ts'];
 
 const F10_ROUTE_FILES = [
   'src/app/api/parent/learners/route.ts',

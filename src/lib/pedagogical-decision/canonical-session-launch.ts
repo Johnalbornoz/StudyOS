@@ -37,6 +37,11 @@
 import type { CanonicalPedagogicalDecision, PedagogicalActivityType } from '@/lib/pedagogical-engine';
 import { resolveV1ActivityLaunchReadiness, type V1ActivityNotReadyReason } from './activity-launch-readiness';
 import { resolveCanonicalImplementation, type CanonicalQuizMode } from './canonical-implementation-registry';
+import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/execution-flag';
+import { entryTargetFor } from '@/lib/assessment-experience/entry';
+
+/** The guided LEARN page (adaptive guided understanding) -- the canonical LEARN_CHECK launch target. */
+export const LEARN_GUIDED_PATH = '/dashboard/learn/guided' as const;
 
 export type CanonicalLaunchStatus = 'READY' | 'WAITING' | 'LOCKED' | 'CONSOLIDATED' | 'BLOCKED' | 'NOT_READY';
 
@@ -146,7 +151,18 @@ function buildPracticeLaunch(
   };
   if (itemCount) params.maxQuestions = itemCount;
   const qs = new URLSearchParams(params).toString();
-  return { launchStatus: 'READY', launchTarget: `/dashboard/quiz?${qs}`, launchParams: params, notReadyReason: null };
+  // LEARN (operator rule 2026-10-16): LEARN is adaptive guided understanding (4..7 interactions, no score
+  // gate), not a fixed quiz batch -- the canonical LEARN launch enters the guided page, which re-verifies the
+  // same fresh decision server-side (/api/learning/guided-understanding/start). `launchParams` are unchanged
+  // (mode stays canonical_learn_check: the canonical identity of the activity), so every other consumer of
+  // the launch keeps its meaning; only the navigable target changes. Other stages are untouched.
+  if (activityType === 'LEARN_CHECK') {
+    return { launchStatus: 'READY', launchTarget: `${LEARN_GUIDED_PATH}?${qs}`, launchParams: params, notReadyReason: null };
+  }
+  // B5-D: with canonical assessment execution ON, the same intent (this concept, this activity) enters the
+  // canonical setup instead; `launchParams` stay what the decision authorised. OFF -> the existing quiz flow.
+  const canonicalEntry = entryTargetFor('/dashboard/quiz', params, isSnapshotExecutionEnabled());
+  return { launchStatus: 'READY', launchTarget: canonicalEntry ?? `/dashboard/quiz?${qs}`, launchParams: params, notReadyReason: null };
 }
 
 /**
@@ -191,6 +207,31 @@ export function resolveCanonicalLaunch(params: {
     return { ...base, activityType, launchStatus: 'NOT_READY', launchTarget: null, launchParams: {}, notReadyReason: readiness.reason };
   }
 
+  // APPLY (overnight 2026-10-16): canonical TRANSFER launches the adaptive transfer ladder
+  // (transfer-ladder-v1, 3..5 challenges, NEAR -> MID -> FAR) on its own page -- never the fixed
+  // 3-challenge canonical_transfer quiz. The page's server routes re-verify the fresh decision
+  // (TRANSFER + EXECUTABLE) before generating anything; this URL carries no level or mode authority.
+  if (activityType === 'TRANSFER') {
+    return { ...base, activityType, ...buildApplyLaunch(subjectId, conceptId) };
+  }
+
   const launch = buildPracticeLaunch(subjectId, conceptId, activityType, decision);
   return { ...base, activityType, ...launch };
+}
+
+/** The APPLY page for one concept. Only identifiers -- the server decides every level. */
+export function applyLaunchTarget(subjectId: string, conceptId: string): string {
+  return `/dashboard/apply/${encodeURIComponent(conceptId)}?${new URLSearchParams({ subjectId }).toString()}`;
+}
+
+function buildApplyLaunch(
+  subjectId: string,
+  conceptId: string,
+): Pick<CanonicalLearningSession, 'launchStatus' | 'launchTarget' | 'launchParams' | 'notReadyReason'> {
+  return {
+    launchStatus: 'READY',
+    launchTarget: applyLaunchTarget(subjectId, conceptId),
+    launchParams: { subjectId, conceptId, mode: 'transfer_ladder' },
+    notReadyReason: null,
+  };
 }

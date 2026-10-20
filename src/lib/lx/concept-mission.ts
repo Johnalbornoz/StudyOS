@@ -297,6 +297,7 @@ export function currentRungIndex(stage: LearnerJourneyStage): number {
     case 'READY_TO_PROVE':
     case 'PROVE':
       return 2; // PROVE
+    case 'WAIT_FOR_RETENTION':
     case 'RETAIN':
       return 3; // RETAIN
     case 'TRANSFER':

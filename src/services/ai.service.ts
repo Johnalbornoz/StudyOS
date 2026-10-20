@@ -1,11 +1,15 @@
 import { parseAIJson } from '@/lib/ai-json';
+import { assertNoSafetySignal } from '@/lib/safety/safety-gate';
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
 import { executeAI, getPrompt } from '@/lib/ai';
 import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
 
 /**
  * Phase 0A flagged this file as possibly dead. Phase 0E1 re-confirmed
- * it (Step 16): it is live, used by /api/concepts/extract,
- * /api/quizzes/generate, and src/lib/extract-text.ts. Parallel to, and
+ * it (Step 16): it is live, used by /api/quizzes/generate and
+ * src/lib/extract-text.ts. (Human Agency P0-5 removed the orphaned
+ * /api/concepts/extract route and its extractConceptsFromText: it had no
+ * caller and no subject-ownership check.) Parallel to, and
  * not yet consolidated with, concept-extraction.service.ts and
  * quiz-generation.service.ts -- see the Phase 0E1 report for the
  * consolidation recommendation left for a later phase.
@@ -19,77 +23,6 @@ import { callAnthropicMessages } from '@/lib/ai/adapters/anthropic';
  * call (here, and everywhere else in the app) does not -- see the
  * Phase 0E1 report's Remaining Risks.
  */
-
-interface ConceptExtractionResult {
-  concepts: Array<{
-    id: string;
-    label: string;
-    description: string;
-  }>;
-}
-
-/** HIGH_RISK (Phase 0E1): parallels extractConceptsFromChunk -- creates concept records with no human review step. */
-export async function extractConceptsFromText(
-  text: string,
-  subject: string,
-  language: string = 'en'
-): Promise<ConceptExtractionResult> {
-  try {
-    const prompt = getPrompt('legacy.concept_extraction');
-    const { result } = await executeAI({
-      capability: prompt.capability,
-      risk: 'HIGH_RISK',
-      provider: 'anthropic',
-      model: 'claude-sonnet-5',
-      promptId: prompt.id,
-      promptVersion: prompt.version,
-      call: (signal) =>
-        callAnthropicMessages(
-          {
-            model: 'claude-sonnet-5',
-            maxTokens: 4096,
-            messages: [
-              {
-                role: 'user',
-                content: `You are an educational content analyzer for ${subject}.
-
-Analyze the following text and extract the main concepts/topics that should be learned.
-
-Text:
-${text}
-
-Return a JSON object with this structure:
-{
-  "concepts": [
-    {
-      "id": "CONCEPT_ID",
-      "label": "Concept Name in ${language}",
-      "description": "Brief description"
-    }
-  ]
-}
-
-Only return valid JSON, no other text.`,
-              },
-            ],
-          },
-          signal
-        ),
-      validate: (raw) => {
-        if (!raw.text) return { valid: false, errors: ['No text response found'] };
-        try {
-          return { valid: true, value: parseAIJson<ConceptExtractionResult>(raw.text) };
-        } catch (e) {
-          return { valid: false, errors: [e instanceof Error ? e.message : String(e)] };
-        }
-      },
-    });
-    return result;
-  } catch (error) {
-    console.error('Error extracting concepts:', error);
-    throw error;
-  }
-}
 
 /**
  * Transcribe/describe an image (a photo of notes, a textbook page, a
@@ -148,6 +81,8 @@ export async function generateQuestion(
   concept: string,
   difficulty: number = 3
 ): Promise<string> {
+  // Human Agency P0-4 (Layer B, defence in depth): `concept` is free text from the request.
+  assertNoSafetySignal(concept);
   try {
     const prompt = getPrompt('legacy.question_generation');
     const { result } = await executeAI({
@@ -162,6 +97,7 @@ export async function generateQuestion(
           {
             model: 'claude-sonnet-5',
             maxTokens: 2048,
+            system: withStudentFacingPolicy('You write one multiple-choice practice question for a student.'),
             messages: [
               {
                 role: 'user',

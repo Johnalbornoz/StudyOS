@@ -21,9 +21,17 @@
  */
 import type { ActivityType } from '@/lib/activity-taxonomy';
 import type { LearningFact } from '@/lib/adaptive-learning-policy';
+import type { AssessmentOriginContext } from '@/lib/lx/continuation';
 import type { PedagogicalStage } from '@/lib/pedagogical-engine/types';
 import type { CanonicalLearningSession } from '@/lib/pedagogical-decision/canonical-session-launch';
 import { presentedActivityTypeForCanonical } from '@/lib/pedagogical-decision/concept-mission-override';
+
+/** B1: what the deciding authority states about the size of the activity. Never computed by presentation. */
+export interface ChallengeEstimate {
+  items: number | null;
+  marks: number | null;
+  minutes: number | null;
+}
 
 /** The activity as the learner sees it, plus the REINFORCE overlay the canonical engine can launch. */
 export type ChallengeKind = ActivityType | 'REINFORCE';
@@ -54,6 +62,13 @@ export type NextChallengeView =
       itemCount: number | null;
       /** Explanatory facts compatible with the authority that chose the activity. */
       facts: LearningFact[];
+      /**
+       * B1: the assessment context of the challenge (family, exam target), when its authority states one.
+       * Presentation only -- absent for every challenge produced today.
+       */
+      assessment?: AssessmentOriginContext | null;
+      /** B1: the authority's own estimate (items / marks / minutes). A field it does not state stays null. */
+      estimate?: ChallengeEstimate | null;
     }
   | { status: 'WAITING'; authority: ChallengeAuthority; conceptId: string; subjectId: string; stage: PedagogicalStage | null; nextEligibleAt: string | null }
   | { status: 'CONSOLIDATED'; authority: ChallengeAuthority; conceptId: string; subjectId: string; stage: PedagogicalStage | null }
@@ -106,46 +121,56 @@ function parseItemCount(raw: string | undefined): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+/**
+ * The canonical branch of `presentNextChallenge`: the view of ONE canonical launch. `canonical === null` (a
+ * failed canonical read under the gate) is reported as unavailable, never replaced by a legacy value.
+ * C14-P1-03: also presents a canonical continuation (lib/lx/canonical-continuation.ts) -- a concept Phase 3C has
+ * no decision for -- with no legacy facts at all.
+ */
+export function presentCanonicalChallenge(conceptId: string, subjectId: string, canonical: CanonicalLearningSession | null, facts: LearningFact[] = []): NextChallengeView {
+  const c = canonical;
+  if (!c) {
+    return { status: 'UNAVAILABLE', authority: 'CANONICAL', conceptId, subjectId, stage: null, reason: 'CANONICAL_READ_FAILED' };
+  }
+  const stage = c.stage;
+  switch (c.launchStatus) {
+    case 'READY': {
+      if (!c.activityType) {
+        return { status: 'UNAVAILABLE', authority: 'CANONICAL', conceptId, subjectId, stage, reason: 'BLOCKED' };
+      }
+      const reinforce = c.activityType === 'REINFORCE';
+      return {
+        status: 'READY',
+        authority: 'CANONICAL',
+        conceptId,
+        subjectId,
+        activityType: presentedActivityTypeForCanonical(c.activityType),
+        challenge: reinforce ? 'REINFORCE' : presentedActivityTypeForCanonical(c.activityType),
+        stage,
+        reinforce,
+        // B5-E: when the launch enters the canonical assessment setup, the question count is the Blueprint
+        // Core's (shown on the setup); the engine contract's count is not what the Student will get, so it is not shown.
+        itemCount: c.launchTarget?.startsWith('/dashboard/assessment') ? null : parseItemCount(c.launchParams?.maxQuestions),
+        facts: factsCompatibleWithAuthority(facts, 'CANONICAL'),
+      };
+    }
+    case 'WAITING':
+      return { status: 'WAITING', authority: 'CANONICAL', conceptId, subjectId, stage, nextEligibleAt: c.nextEligibleAt };
+    case 'CONSOLIDATED':
+      return { status: 'CONSOLIDATED', authority: 'CANONICAL', conceptId, subjectId, stage };
+    case 'LOCKED':
+      return { status: 'UNAVAILABLE', authority: 'CANONICAL', conceptId, subjectId, stage, reason: 'LOCKED' };
+    case 'NOT_READY':
+      return { status: 'UNAVAILABLE', authority: 'CANONICAL', conceptId, subjectId, stage, reason: 'NOT_READY' };
+    default:
+      return { status: 'UNAVAILABLE', authority: 'CANONICAL', conceptId, subjectId, stage, reason: 'BLOCKED' };
+  }
+}
+
 export function presentNextChallenge(input: NextChallengeInput): NextChallengeView {
   const { conceptId, subjectId, legacyDecision } = input;
 
-  if (input.canonicalAuthority) {
-    const c = input.canonical;
-    if (!c) {
-      return { status: 'UNAVAILABLE', authority: 'CANONICAL', conceptId, subjectId, stage: null, reason: 'CANONICAL_READ_FAILED' };
-    }
-    const stage = c.stage;
-    switch (c.launchStatus) {
-      case 'READY': {
-        if (!c.activityType) {
-          return { status: 'UNAVAILABLE', authority: 'CANONICAL', conceptId, subjectId, stage, reason: 'BLOCKED' };
-        }
-        const reinforce = c.activityType === 'REINFORCE';
-        return {
-          status: 'READY',
-          authority: 'CANONICAL',
-          conceptId,
-          subjectId,
-          activityType: presentedActivityTypeForCanonical(c.activityType),
-          challenge: reinforce ? 'REINFORCE' : presentedActivityTypeForCanonical(c.activityType),
-          stage,
-          reinforce,
-          itemCount: parseItemCount(c.launchParams?.maxQuestions),
-          facts: factsCompatibleWithAuthority(legacyDecision.facts, 'CANONICAL'),
-        };
-      }
-      case 'WAITING':
-        return { status: 'WAITING', authority: 'CANONICAL', conceptId, subjectId, stage, nextEligibleAt: c.nextEligibleAt };
-      case 'CONSOLIDATED':
-        return { status: 'CONSOLIDATED', authority: 'CANONICAL', conceptId, subjectId, stage };
-      case 'LOCKED':
-        return { status: 'UNAVAILABLE', authority: 'CANONICAL', conceptId, subjectId, stage, reason: 'LOCKED' };
-      case 'NOT_READY':
-        return { status: 'UNAVAILABLE', authority: 'CANONICAL', conceptId, subjectId, stage, reason: 'NOT_READY' };
-      default:
-        return { status: 'UNAVAILABLE', authority: 'CANONICAL', conceptId, subjectId, stage, reason: 'BLOCKED' };
-    }
-  }
+  if (input.canonicalAuthority) return presentCanonicalChallenge(conceptId, subjectId, input.canonical, legacyDecision.facts);
 
   const gate = input.legacyGate;
   if (gate?.waiting) {

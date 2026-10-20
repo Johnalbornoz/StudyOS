@@ -2,18 +2,20 @@ import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { requireStudyUSAdmin } from '@/lib/admin/authorization';
-import { listActiveInstitutions } from '@/services/institution.service';
+import { listInstitutionsForPlatformAdmin } from '@/services/institution-admin.service';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
+import { getMessages, type MessageKey } from '@/lib/i18n/messages';
+import { fillMessage } from '@/lib/i18n/roles-messages';
+import { institutionProfileLabels } from '@/lib/institution/admin-labels';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { InstitutionProfileForm } from '@/components/institution/InstitutionProfileForm';
 import { AdminSubNav } from '../AdminSubNav';
 
 /**
- * A lightweight index into the institution intelligence workspace
- * that already exists (`/dashboard/institution/[id]/**`), not a
- * duplicate of it -- institution-level operational data (grades,
- * classes, coverage, readiness) has its own, already-built,
- * already-certified surface; this console only needs to route a
- * STUDYUS_ADMIN there and show which institutions exist.
+ * Platform Admin -- institutions. Track A: create an institution with its
+ * profile, then open it to manage its coordinators. Only a StudyUs admin
+ * (canonical role + allowlist) reaches this page or its routes.
  */
 export default async function AdminInstitutionsPage() {
   const { userId: clerkUserId } = await auth();
@@ -22,23 +24,53 @@ export default async function AdminInstitutionsPage() {
   const admin = await requireStudyUSAdmin(clerkUserId);
   if (!admin) redirect('/dashboard');
 
-  const institutions = await listActiveInstitutions();
+  const locale = await getUserInterfaceLanguage(admin.actor.id).catch(() => 'es' as const);
+  const t = getMessages(locale);
+  const institutions = await listInstitutionsForPlatformAdmin();
+  const countryName = (code: string | null) => {
+    if (!code) return null;
+    try {
+      return new Intl.DisplayNames([locale], { type: 'region' }).of(code) ?? code;
+    } catch {
+      return code;
+    }
+  };
 
   return (
-    <div>
-      <PageHeader title="Instituciones" subtitle="Instituciones activas. La gestión operativa detallada vive en el espacio de cada institución." />
-      <AdminSubNav active="institutions" />
+    <div className="ta-stack">
+      <div>
+        <PageHeader title={t['ia.list.title']} subtitle={t['ia.list.subtitle']} />
+        <AdminSubNav active="institutions" />
+      </div>
+
+      <InstitutionProfileForm
+        mode="create"
+        endpoint="/api/admin/institutions"
+        statusOptions={['ACTIVE', 'DRAFT']}
+        onCreatedHref="/dashboard/admin/institutions"
+        labels={institutionProfileLabels(t, t['ia.create.title'], t['ia.create.submit'])}
+      />
 
       {institutions.length === 0 ? (
-        <EmptyState title="No hay instituciones activas." />
+        <EmptyState title={t['ia.list.empty']} />
       ) : (
-        <ul className="list-card card">
+        <ul className="list-card card" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {institutions.map((inst) => (
-            <li key={inst.id} className="list-row">
-              <div className="row-main">
-                <div className="row-title">{inst.name}</div>
+            <li key={inst.id} className="list-row" style={{ flexWrap: 'wrap' }}>
+              <div className="row-main" style={{ flexBasis: 240 }}>
+                <Link href={`/dashboard/admin/institutions/${inst.id}`} className="row-title">
+                  {inst.displayName || inst.name}
+                </Link>
+                <div className="row-sub">{[inst.displayName ? inst.name : null, [inst.region, countryName(inst.country)].filter(Boolean).join(', ') || null].filter(Boolean).join(' · ')}</div>
+                <div className="row-sub">
+                  {fillMessage(t['ia.list.coordinators'], { n: inst.activeCoordinators })}
+                  {inst.pendingInvitations > 0 ? ` · ${fillMessage(t['ia.list.pending'], { n: inst.pendingInvitations })}` : ''}
+                </div>
               </div>
-              <Link href={`/dashboard/institution/${inst.id}/requests`} className="btn btn-ghost">Ver solicitudes y profesores</Link>
+              <span className={inst.status === 'ACTIVE' ? 'chip chip-good' : 'chip chip-warn'}>{t[`ia.status.${inst.status}` as MessageKey]}</span>
+              <Link href={`/dashboard/admin/institutions/${inst.id}`} className="btn btn-secondary">
+                {t['ia.list.open']}
+              </Link>
             </li>
           ))}
         </ul>

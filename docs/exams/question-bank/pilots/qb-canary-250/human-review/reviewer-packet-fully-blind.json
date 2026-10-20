@@ -1,0 +1,3524 @@
+{
+  "kind": "QB_CANARY_250_HUMAN_CALIBRATION_PACKET_FULLY_BLIND",
+  "label": "An ADDITIONAL rendering of human-calibration-packet.json: the same 37 items in the same order, with no AI review and no validator outcome for ANY item. The frozen packet is unchanged.",
+  "forHumanReviewers": true,
+  "items": [
+    {
+      "position": 1,
+      "ITEM_ID": "c250-079",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "COMPUTE",
+          "REPRESENT"
+        ],
+        "object": "Two points of the plane given by their coordinates.",
+        "observablePerformance": "Computes the slope from the two points and writes the equation of the line through them, or a value the equation gives."
+      },
+      "target": "ICFES.SABER11_MATEMATICAS",
+      "taskFamily": "tf.math.linear.line-through-two-points",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "ABSTRACT",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "6c667df970216cce21273e2a2f2534dd5c6e6e390faefc0cdf2e63ba0c013739",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 1,
+        "stem": "En el plano cartesiano se consideran los puntos P=(0,-7) y Q=(4,5). Si una recta pasa por P y Q, ¿qué valor de y corresponde a x=2?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "-13"
+            },
+            {
+              "id": "B",
+              "text": "-1"
+            },
+            {
+              "id": "C",
+              "text": "6"
+            },
+            {
+              "id": "D",
+              "text": "-13/3"
+            }
+          ],
+          "answerKey": "B"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 2,
+      "ITEM_ID": "c250-048",
+      "canonicalConcept": {
+        "stableId": "math.alg.quadratics",
+        "canonicalSubject": "Mathematics",
+        "canonicalName": "Quadratic functions and inequalities"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity to be made as large or as small as possible depends on one free measure through a product of two linear expressions.",
+        "observablePerformance": "Expresses the quantity as a quadratic function of the free measure, finds its vertex, and states the optimal measure and the optimal value in the terms of the situation."
+      },
+      "target": "PAA.MATEMATICAS",
+      "taskFamily": "tf.math.quadratic.optimum-of-a-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es"
+      },
+      "specificationId": "9c455f41d2430b1f2b8d866d7942035484d17bc4f5ac6a51dc13c9a98f521391",
+      "item": {
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 1,
+        "stem": "Una empresa de reparto cobra una tarifa diaria que aumenta en 6 euros por cada euro que añade a un recargo x, y estima que puede realizar 180 - 4x entregas al día. La tarifa diaria inicial es de 12 euros. La empresa puede elegir un valor de x entre 0 y 45 euros. ¿Cuál es el ingreso diario máximo que puede obtener, expresado en euros?",
+        "selected": null,
+        "numeric": {
+          "numericKey": {
+            "kind": "NUMERIC",
+            "value": "13254",
+            "equivalentFormsAllowed": true
+          }
+        },
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 3,
+      "ITEM_ID": "c250-076",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity starts at a fixed value and changes by the same amount for each unit of another quantity.",
+        "observablePerformance": "Writes the linear relation that models the situation and says what its slope and its intercept mean in it."
+      },
+      "target": "CAMBRIDGE.9709.P1",
+      "taskFamily": "tf.math.linear.constant-rate-model",
+      "learningApproach": "STEM_PLUS",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "bf5f1d2d1712cfc7a882cdd315565f59fb24913c176ac1fe9840a4ee0a0eb3a3",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 6,
+        "stem": "The courier service uses the same pricing rule for every delivery. Let x be the distance of a delivery in kilometres and let y be its charge in dollars.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 6,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Work out an equation relating y to x for the courier service.",
+              "commandTerm": "work out",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Uses a fixed starting amount and a constant change per kilometre to set up the linear form."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Writes the relationship y = 11x + 32."
+                }
+              ],
+              "finalAnswer": "y = 11x + 32",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Calculate the charge for a delivery of 7 kilometres.",
+              "commandTerm": "calculate",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Substitutes 7 for x in the linear relationship."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Evaluates 11(7) + 32 to obtain 109 dollars."
+                }
+              ],
+              "finalAnswer": "109 dollars",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "109",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 0
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Write down what the number 11 means for the courier service.",
+              "commandTerm": "write down",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "States that the charge increases by 11 dollars for each additional kilometre."
+                }
+              ],
+              "finalAnswer": "The charge increases by 11 dollars for each additional kilometre.",
+              "numericKey": null
+            },
+            {
+              "label": "d",
+              "prompt": "Write down what the number 32 means for the courier service.",
+              "commandTerm": "write down",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "States that 32 dollars is the charge when the delivery distance is 0 kilometres, or the fixed booking fee."
+                }
+              ],
+              "finalAnswer": "32 dollars is the fixed booking fee charged at 0 kilometres.",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": {
+        "kind": "TABLE",
+        "text": [
+          "A courier service charges a fixed booking fee plus a constant amount for each kilometre of a delivery. The records below show charges for several delivery distances."
+        ],
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "deliveryCharges",
+              "title": "Delivery records",
+              "columns": [
+                {
+                  "key": "distance",
+                  "label": "Distance (km)",
+                  "type": "NUMBER",
+                  "unit": "km"
+                },
+                {
+                  "key": "charge",
+                  "label": "Charge (dollars)",
+                  "type": "NUMBER",
+                  "unit": "dollars"
+                }
+              ],
+              "rows": [
+                [
+                  0,
+                  32
+                ],
+                [
+                  1,
+                  43
+                ],
+                [
+                  2,
+                  54
+                ],
+                [
+                  4,
+                  76
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "figures": [],
+          "charts": []
+        }
+      },
+      "presentation": "BLIND"
+    },
+    {
+      "position": 4,
+      "ITEM_ID": "c250-214",
+      "canonicalConcept": {
+        "stableId": "math.prob.probability",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Probabilidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "COMPUTE",
+          "EVALUATE"
+        ],
+        "object": "A situation with two options, each with its own counts of outcomes, and a claim about which option gives the better chance of a stated result.",
+        "observablePerformance": "Identifies the event and the sample space of each option, computes the two probabilities and judges the claim by comparing them."
+      },
+      "target": "CAMBRIDGE.9709.P1",
+      "taskFamily": "tf.math.probability.compare-chances-to-decide",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "SCIENTIFIC",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "a49b46e125d1295c7f1cc9ca8c6b7684c44dd5772840f2aa4c3ab5e8ca641c96",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 4,
+        "stem": "A water-quality scientist tests two streams for a particular pollutant. From stream A, 11 of 31 water samples meet the safety standard. From stream B, 20 of 47 water samples meet the safety standard. The scientist claims that a sample from stream A is more likely to meet the safety standard than a sample from stream B.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 4,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Write down the probability relationship for each stream using the numbers of samples that meet the safety standard and the total numbers of samples.",
+              "commandTerm": "write down",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Sets up the two relationships as 11/31 and 20/47."
+                }
+              ],
+              "finalAnswer": "For stream A, P1 = 11/31. For stream B, P2 = 20/47.",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Calculate the probability that a sample from stream A meets the safety standard.",
+              "commandTerm": "calculate",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Calculates 11/31 as approximately 0.3548."
+                }
+              ],
+              "finalAnswer": "0.3548",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "0.3548",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 4
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Calculate the probability that a sample from stream B meets the safety standard.",
+              "commandTerm": "calculate",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Calculates 20/47 as approximately 0.4255."
+                }
+              ],
+              "finalAnswer": "0.4255",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "0.4255",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 4
+              }
+            },
+            {
+              "label": "d",
+              "prompt": "Show that the scientist's claim does not hold by identifying the stream with the higher probability of meeting the safety standard.",
+              "commandTerm": "show that",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Compares the two probabilities and identifies stream B as having the higher probability."
+                }
+              ],
+              "finalAnswer": "The claim is false; stream B has the higher probability.",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 5,
+      "ITEM_ID": "c250-032",
+      "canonicalConcept": {
+        "stableId": "math.num.ratio-proportion",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Proporcionalidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation offering two options, each described by an amount and what it gives in return, where the better option is not visible without a common rate.",
+        "observablePerformance": "Chooses the quantity to compare, forms the two unit rates, and states which option the comparison favours and by how much."
+      },
+      "target": "PISA.MATHEMATICS",
+      "taskFamily": "tf.math.proportion.rate-comparison-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "SOCIETAL",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "f04e20bd23f4cddd6bed2adc24433c96a69bf97bbf1449cd204f8ab99367b846",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 1,
+        "stem": "En una campaña pública de fomento de la lectura, la biblioteca 1 presta 12 libros por cada 5 euros aportados y la biblioteca 2 presta 17 libros por cada 8 euros aportados. Si se quiere elegir la biblioteca que ofrece más libros por euro, ¿cuál debe elegirse?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "La biblioteca 1"
+            },
+            {
+              "id": "B",
+              "text": "La biblioteca 2"
+            },
+            {
+              "id": "C",
+              "text": "La biblioteca 2"
+            },
+            {
+              "id": "D",
+              "text": "La biblioteca 1"
+            }
+          ],
+          "answerKey": "A"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Selecciona la biblioteca 1, que ofrece más libros por euro."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "Selecciona cualquier otra opción."
+          }
+        ]
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 6,
+      "ITEM_ID": "c250-023",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity starts at a fixed value and changes by the same amount for each unit of another quantity.",
+        "observablePerformance": "Writes the linear relation that models the situation and says what its slope and its intercept mean in it."
+      },
+      "target": "IB.MATH_AA_HL.P1",
+      "taskFamily": "tf.math.linear.constant-rate-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "c85ca3ed2b71be6a608df6a67183cf3a86a460d63e282ce63ef626d05ce21383",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 4,
+        "stem": "A parcel delivery company prepares parcels at a depot before its evening dispatch. At the start of a shift, 35 parcels are ready for processing. For each hour that the processing team works, it processes 4 more parcels than at the start of the shift. Let x be the number of hours worked and let y be the total number of parcels processed.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 4,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Find the number of parcels processed after 9 hours. Show the relationship you use and your calculation.",
+              "commandTerm": "find",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Sets up the relationship y = 4x + 35 from the starting number of parcels and the constant hourly change."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Substitutes 9 and obtains 71 parcels."
+                }
+              ],
+              "finalAnswer": "71 parcels",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "71",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 0
+              }
+            },
+            {
+              "label": "b",
+              "prompt": "Write down what the slope and the intercept of your relationship mean for the parcel delivery company.",
+              "commandTerm": "write down",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "States that the slope 4 represents 4 additional parcels processed for each extra hour worked."
+                },
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "States that the intercept 35 represents the 35 parcels ready at the start of the shift, when 0 hours have been worked."
+                }
+              ],
+              "finalAnswer": "The slope means that 4 parcels are added for each hour worked. The intercept means that 35 parcels are ready at the start of the shift.",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 7,
+      "ITEM_ID": "c250-099",
+      "canonicalConcept": {
+        "stableId": "math.alg.quadratics",
+        "canonicalSubject": "Mathematics",
+        "canonicalName": "Quadratic functions and inequalities"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity to be made as large or as small as possible depends on one free measure through a product of two linear expressions.",
+        "observablePerformance": "Expresses the quantity as a quadratic function of the free measure, finds its vertex, and states the optimal measure and the optimal value in the terms of the situation."
+      },
+      "target": "CAMBRIDGE.9709.P1",
+      "taskFamily": "tf.math.quadratic.optimum-of-a-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "e95d688994f0e6a524d0de4b21a23219a88659dee2b8626867ff1db200375f24",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 5,
+        "stem": "A print shop is designing rectangular display panels for a chain of stores. For an adjustment of x centimetres to the panel design, one side will measure (24 + 6x) centimetres and the other side will measure (180 - 4x) centimetres. The shop wants the panel area to be as large as possible. The design allows x to vary over values for which both side lengths are positive.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 5,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Work out an expression for the panel area A in terms of x, and expand it.",
+              "commandTerm": "work out",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Forms the product of the two side-length expressions."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Expands the product to obtain a quadratic expression in x."
+                }
+              ],
+              "finalAnswer": "A=(24+6x)(180-4x)=4320+984x-24x^2",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Calculate the value of x that gives the greatest possible panel area.",
+              "commandTerm": "calculate",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Uses the vertex of the quadratic area model to determine the maximizing value of x."
+                }
+              ],
+              "finalAnswer": "x=20.5 centimetres",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "20.5",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Calculate the greatest possible area of one panel.",
+              "commandTerm": "calculate",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Substitutes the maximizing design adjustment into the area model to obtain the optimal area."
+                }
+              ],
+              "finalAnswer": "14406 square centimetres",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "14406",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 0
+              }
+            },
+            {
+              "label": "d",
+              "prompt": "Write down what choosing this value of x means for the print shop's panel design.",
+              "commandTerm": "write down",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Explains that the chosen adjustment produces the largest possible panel area under the stated design conditions."
+                }
+              ],
+              "finalAnswer": "The shop should increase the design adjustment by 20.5 centimetres; this makes the panel area as large as possible, at 14406 square centimetres.",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 8,
+      "ITEM_ID": "c250-211",
+      "canonicalConcept": {
+        "stableId": "math.stat.data-representation",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Representación e interpretación de datos"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "INTERPRET",
+          "EVALUATE"
+        ],
+        "object": "A data display of small whole-number values and a statement someone makes about what it shows.",
+        "observablePerformance": "Reads what the display does and does not show and decides whether the statement is supported, contradicted or undecidable from it."
+      },
+      "target": "ICFES.SABER11_MATEMATICAS",
+      "taskFamily": "tf.math.data.judge-claim-against-display",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "PERSONAL",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "21f512d0d396e5a0ccad52c5df62557160b4ddf4592d39217aeb840ef36f8d97",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 1,
+        "stem": "Una persona afirma: «Las papas al horno fueron el acompañamiento preferido por más invitados». ¿Qué veredicto corresponde a esta afirmación según la tabla?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "Está contradicha por la tabla."
+            },
+            {
+              "id": "B",
+              "text": "Está respaldada por la tabla."
+            },
+            {
+              "id": "C",
+              "text": "No se puede decidir con la tabla."
+            },
+            {
+              "id": "D",
+              "text": "Está respaldada solo para algunos invitados."
+            }
+          ],
+          "answerKey": "B"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": {
+        "kind": "TABLE",
+        "text": [
+          "Para preparar una cena en casa, una familia preguntó a sus invitados qué acompañamiento preferían. La tabla muestra las respuestas de 6 invitados."
+        ],
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "acompanamientos",
+              "title": "Acompañamiento preferido por los invitados",
+              "columns": [
+                {
+                  "key": "acompanamiento",
+                  "label": "Acompañamiento",
+                  "type": "TEXT",
+                  "unit": null
+                },
+                {
+                  "key": "invitados",
+                  "label": "Número de invitados",
+                  "type": "NUMBER",
+                  "unit": "personas"
+                }
+              ],
+              "rows": [
+                [
+                  "Ensalada",
+                  2
+                ],
+                [
+                  "Arroz",
+                  1
+                ],
+                [
+                  "Papas al horno",
+                  4
+                ],
+                [
+                  "Verduras salteadas",
+                  3
+                ],
+                [
+                  "Pan de ajo",
+                  2
+                ],
+                [
+                  "Fruta",
+                  1
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "figures": [],
+          "charts": []
+        }
+      },
+      "presentation": "BLIND"
+    },
+    {
+      "position": 9,
+      "ITEM_ID": "c250-033",
+      "canonicalConcept": {
+        "stableId": "math.alg.quadratics",
+        "canonicalSubject": "Mathematics",
+        "canonicalName": "Quadratic functions and inequalities"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity to be made as large or as small as possible depends on one free measure through a product of two linear expressions.",
+        "observablePerformance": "Expresses the quantity as a quadratic function of the free measure, finds its vertex, and states the optimal measure and the optimal value in the terms of the situation."
+      },
+      "target": "IB.MATH_AA_HL.P1",
+      "taskFamily": "tf.math.quadratic.optimum-of-a-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "SCIENTIFIC",
+        "responseFormat": "SHORT_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "35da5a7291d9dc10294ee016cce926b6be314ebed3dfde5626ffc4813a010441",
+      "item": {
+        "responseFormat": "SHORT_RESPONSE",
+        "language": "en",
+        "difficultyBand": "STANDARD",
+        "marks": 6,
+        "stem": "At a weather station, technicians test a new sensor by changing a calibration setting x, measured in degrees, from 0 to 60. For each setting, the sensor produces a response index Q. In this trial, one factor contributing to Q starts at 10 and increases by 2 for each degree of x, while a second factor starts at 70 and decreases by 1 for each degree of x. The response index is the product of these two factors.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 6,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Find the response index Q in terms of x, giving the two factors first and then expanding your expression.",
+              "commandTerm": "find",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Sets up the product of the two linear factors from the situation."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Expands the product to obtain Q = -2x^2 + 130x + 700."
+                }
+              ],
+              "finalAnswer": "Q = (10 + 2x)(70 - x) = -2x^2 + 130x + 700",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Find the calibration setting x at which the response index is greatest.",
+              "commandTerm": "find",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Uses the vertex of the quadratic model to determine the maximizing value of x."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Obtains x = 32.5 degrees."
+                }
+              ],
+              "finalAnswer": "x = 32.5 degrees",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "32.5",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Find the greatest response index produced by the sensor.",
+              "commandTerm": "find",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Substitutes the optimal setting into the response model."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Obtains a greatest response index of 2812.5."
+                }
+              ],
+              "finalAnswer": "Q = 2812.5",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "2812.5",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 10,
+      "ITEM_ID": "c250-205",
+      "canonicalConcept": {
+        "stableId": "math.alg.quadratics",
+        "canonicalSubject": "Mathematics",
+        "canonicalName": "Quadratic functions and inequalities"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity to be made as large or as small as possible depends on one free measure through a product of two linear expressions.",
+        "observablePerformance": "Expresses the quantity as a quadratic function of the free measure, finds its vertex, and states the optimal measure and the optimal value in the terms of the situation."
+      },
+      "target": "IB.MATH_AA_HL.P1",
+      "taskFamily": "tf.math.quadratic.optimum-of-a-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "PERSONAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "ab40d5d076f0a0d74a1fe0b54fde0a8f7924409de5da34deb5c26d02610a7fc6",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "CHALLENGE",
+        "marks": 6,
+        "stem": "During an amateur sport training plan, an athlete chooses a nonnegative number x of extra conditioning sessions in a week. The first part of a combined training index starts at 46 points and increases by 5 points for each extra session. The second part starts at 180 points and decreases by 4 points for each extra session. The plan is only feasible while both parts remain positive. The combined training index is the product of these two parts.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 6,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Find an expression for the combined training index in terms of x, using the two factors described in the situation.",
+              "commandTerm": "find",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Sets up the product of the increasing and decreasing factors in terms of x."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Gives the relationship as (46 + 5x)(180 - 4x)."
+                }
+              ],
+              "finalAnswer": "Q=(46+5x)(180-4x)",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Show that the combined training index can be written as a quadratic in expanded form.",
+              "commandTerm": "show that",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Expands the product to Q=-20x^2+716x+8280."
+                }
+              ],
+              "finalAnswer": "Q=-20x^2+716x+8280",
+              "numericKey": null
+            },
+            {
+              "label": "c",
+              "prompt": "Solve for the number of extra conditioning sessions that gives the greatest possible combined training index.",
+              "commandTerm": "solve",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Uses the vertex of the quadratic to obtain the maximizing value of x."
+                }
+              ],
+              "finalAnswer": "x=17.9 sessions",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "17.9",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            },
+            {
+              "label": "d",
+              "prompt": "Calculate the greatest possible combined training index for the athlete's plan.",
+              "commandTerm": "calculate",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Substitutes the maximizing value into the product of the two factors."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Obtains the maximum index as 14688.2."
+                }
+              ],
+              "finalAnswer": "14688.2 index points",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "14688.2",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 11,
+      "ITEM_ID": "c250-082",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity starts at a fixed value and changes by the same amount for each unit of another quantity.",
+        "observablePerformance": "Writes the linear relation that models the situation and says what its slope and its intercept mean in it."
+      },
+      "target": "PISA.MATHEMATICS",
+      "taskFamily": "tf.math.linear.constant-rate-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "7a80464fbb984d494d592687a6d5a1648deb8f4a9baae6926ed22ce2ba1a8f4f",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "CHALLENGE",
+        "marks": 1,
+        "stem": "¿Qué importe total debe pagar la empresa por el alquiler de la plataforma durante las 7 horas de uso?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "91 euros"
+            },
+            {
+              "id": "B",
+              "text": "288 euros"
+            },
+            {
+              "id": "C",
+              "text": "366 euros"
+            },
+            {
+              "id": "D",
+              "text": "1938 euros"
+            }
+          ],
+          "answerKey": "C"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Selecciona 366 euros, el importe correspondiente a la tarifa fija más el importe constante por cada una de las 7 horas."
+          },
+          {
+            "code": "PARTIAL_CREDIT",
+            "description": "No se asigna crédito parcial en esta pregunta de respuesta seleccionada."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "Selecciona cualquier otra opción o no responde."
+          }
+        ]
+      },
+      "stimulus": {
+        "kind": "TABLE",
+        "text": [
+          "En una obra, una empresa alquila una plataforma elevadora. El importe incluye una tarifa fija de preparación y un importe que se cobra por cada hora de uso. La información del alquiler es la siguiente:"
+        ],
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "datos_alquiler",
+              "title": "Datos del alquiler de la plataforma",
+              "columns": [
+                {
+                  "key": "concepto",
+                  "label": "Concepto",
+                  "type": "TEXT",
+                  "unit": null
+                },
+                {
+                  "key": "dato",
+                  "label": "Dato",
+                  "type": "NUMBER",
+                  "unit": "euros u horas"
+                }
+              ],
+              "rows": [
+                [
+                  "Tarifa fija de preparación",
+                  275
+                ],
+                [
+                  "Importe por cada hora de uso",
+                  13
+                ],
+                [
+                  "Horas de uso",
+                  7
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "figures": [],
+          "charts": []
+        }
+      },
+      "presentation": "BLIND"
+    },
+    {
+      "position": 12,
+      "ITEM_ID": "c250-194",
+      "canonicalConcept": {
+        "stableId": "math.prob.probability",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Probabilidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "COMPUTE",
+          "EVALUATE"
+        ],
+        "object": "A situation with two options, each with its own counts of outcomes, and a claim about which option gives the better chance of a stated result.",
+        "observablePerformance": "Identifies the event and the sample space of each option, computes the two probabilities and judges the claim by comparing them."
+      },
+      "target": "IB.MATH_AA_HL.P1",
+      "taskFamily": "tf.math.probability.compare-chances-to-decide",
+      "learningApproach": "STEM_PLUS",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "PERSONAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "28298c3d1d9d941f840e3d6bfe378489a4fcf434f89f2700d77a0427a5369ffe",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "STANDARD",
+        "marks": 6,
+        "stem": "A mobile phone company offers two plans, Plan 1 and Plan 2. In a trial of Plan 1, 9 of 28 customers received a bonus data upgrade. In a separate trial of Plan 2, 18 of 45 customers received a bonus data upgrade. A customer claims that Plan 1 gives a better chance of receiving the upgrade.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 6,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Show that the probability of receiving a bonus data upgrade is represented by 9/28 for Plan 1 and by 18/45 for Plan 2.",
+              "commandTerm": "show that",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Sets up each probability as the number receiving the upgrade divided by the total number of customers in that plan."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Writes both relationships with the correct counts: P1 = 9/28 and P2 = 18/45."
+                }
+              ],
+              "finalAnswer": "P1 = 9/28 and P2 = 18/45",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Calculate the probability of receiving a bonus data upgrade with Plan 1.",
+              "commandTerm": "calculate",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Calculates 9/28, giving approximately 0.321."
+                }
+              ],
+              "finalAnswer": "9/28 = 0.321428...",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "9/28",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 3
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Calculate the probability of receiving a bonus data upgrade with Plan 2.",
+              "commandTerm": "calculate",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Calculates 18/45 = 0.4."
+                }
+              ],
+              "finalAnswer": "18/45 = 0.4",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "18/45",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            },
+            {
+              "label": "d",
+              "prompt": "Show that the claim about Plan 1 is false, and state which plan gives the better chance of receiving the upgrade.",
+              "commandTerm": "show that",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Compares the two calculated probabilities, for example by noting that 0.321428... is less than 0.4."
+                },
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Concludes that Plan 2, not Plan 1, gives the better chance, so the claim is false."
+                }
+              ],
+              "finalAnswer": "The claim is false; Plan 2 gives the better chance because 0.4 > 0.321428....",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 13,
+      "ITEM_ID": "c250-007",
+      "canonicalConcept": {
+        "stableId": "math.num.ratio-proportion",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Proporcionalidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation offering two options, each described by an amount and what it gives in return, where the better option is not visible without a common rate.",
+        "observablePerformance": "Chooses the quantity to compare, forms the two unit rates, and states which option the comparison favours and by how much."
+      },
+      "target": "SCHOOL_STEM_PERFORMANCE",
+      "taskFamily": "tf.math.proportion.rate-comparison-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "a467b7b4ec889a3c824b0ad0829fa50f9b828ef474c2b7c40b56e8f0459ca94c",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "CHALLENGE",
+        "marks": 5,
+        "stem": "Una panadería necesita elegir un proveedor de cajas para sus productos. El proveedor 1 ofrece 7.5 cajas por cada 2 euros pagados. El proveedor 2 ofrece 10.5 cajas por cada 3 euros pagados. La encargada quiere saber qué proveedor ofrece más cajas por euro y cuál es la diferencia entre las dos ofertas.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 5,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Escribe las dos operaciones que permiten calcular cuántas cajas ofrece cada proveedor por euro.",
+              "commandTerm": null,
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Establece la división de la cantidad de cajas entre el coste para cada proveedor."
+                }
+              ],
+              "finalAnswer": "Proveedor 1: 7.5 / 2; proveedor 2: 10.5 / 3.",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Calcula la diferencia entre las cantidades de cajas que ofrece cada proveedor por euro.",
+              "commandTerm": null,
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Calcula las dos tasas unitarias y plantea su diferencia."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Obtiene una diferencia de 0.25 cajas por euro."
+                }
+              ],
+              "finalAnswer": "La diferencia es 0.25 cajas por euro.",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "0.25",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 2
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Justifica qué proveedor debería elegir la panadería, relacionando tu decisión con las cantidades de cajas obtenidas por euro.",
+              "commandTerm": null,
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Compara las dos tasas unitarias y explica que la tasa mayor representa más cajas por cada euro."
+                },
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Concluye que debe elegir el proveedor 1 porque ofrece 3.75 cajas por euro frente a 3.5 cajas por euro del proveedor 2."
+                }
+              ],
+              "finalAnswer": "La panadería debería elegir el proveedor 1: ofrece 3.75 cajas por euro, frente a 3.5 cajas por euro del proveedor 2, por lo que proporciona más cajas por la misma cantidad de dinero.",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "La respuesta cumple todos los criterios de sus puntos de crédito."
+          },
+          {
+            "code": "PARTIAL_CREDIT",
+            "description": "La respuesta muestra parte del procedimiento o del razonamiento, pero contiene una omisión o un error."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "La respuesta no muestra un procedimiento o razonamiento válido."
+          }
+        ]
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 14,
+      "ITEM_ID": "c250-013",
+      "canonicalConcept": {
+        "stableId": "math.prob.probability",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Probabilidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "COMPUTE",
+          "EVALUATE"
+        ],
+        "object": "A situation with two options, each with its own counts of outcomes, and a claim about which option gives the better chance of a stated result.",
+        "observablePerformance": "Identifies the event and the sample space of each option, computes the two probabilities and judges the claim by comparing them."
+      },
+      "target": "PAA.MATEMATICAS",
+      "taskFamily": "tf.math.probability.compare-chances-to-decide",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "PERSONAL",
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es"
+      },
+      "specificationId": "eff3eed1d987da505b6ae26524bccee555adfff5a0a7c21d10a52ca841cbc766",
+      "item": {
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es",
+        "difficultyBand": "CHALLENGE",
+        "marks": 1,
+        "stem": "Una familia compara dos promociones de supermercado para intentar obtener un cupón de descuento. En la promoción 1, 4 de las 9 tarjetas posibles dan el cupón. En la promoción 2, 5 de las 14 tarjetas posibles lo dan. La familia afirma que la promoción 1 ofrece una mayor posibilidad de obtener el cupón. ¿Qué diferencia hay entre las dos probabilidades, expresada como una fracción exacta?",
+        "selected": null,
+        "numeric": {
+          "numericKey": {
+            "kind": "NUMERIC",
+            "value": "11/126",
+            "equivalentFormsAllowed": true
+          }
+        },
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 15,
+      "ITEM_ID": "c250-087",
+      "canonicalConcept": {
+        "stableId": "math.num.ratio-proportion",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Proporcionalidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "SOLVE"
+        ],
+        "object": "A direct proportion between two quantities in which three of the four values are given.",
+        "observablePerformance": "Finds the fourth value by keeping the ratio between the two quantities constant."
+      },
+      "target": "PAA.MATEMATICAS",
+      "taskFamily": "tf.math.proportion.missing-value",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "ABSTRACT",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "ca6110c1a6f2be52b8a8b469b7a6bd2bf74a151d5a26b63646b1fc33d88b0f77",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "CHALLENGE",
+        "marks": 1,
+        "stem": "En una proporción directa, 11 unidades de una cantidad corresponden a 143 unidades de otra. Si la primera cantidad es 18, ¿cuántas unidades de la segunda cantidad le corresponden?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "234 unidades"
+            },
+            {
+              "id": "B",
+              "text": "150 unidades"
+            },
+            {
+              "id": "C",
+              "text": "1,38 unidades"
+            },
+            {
+              "id": "D",
+              "text": "87,39 unidades"
+            }
+          ],
+          "answerKey": "A"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 16,
+      "ITEM_ID": "c250-226",
+      "canonicalConcept": {
+        "stableId": "math.alg.quadratics",
+        "canonicalSubject": "Mathematics",
+        "canonicalName": "Quadratic functions and inequalities"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity to be made as large or as small as possible depends on one free measure through a product of two linear expressions.",
+        "observablePerformance": "Expresses the quantity as a quadratic function of the free measure, finds its vertex, and states the optimal measure and the optimal value in the terms of the situation."
+      },
+      "target": "CAMBRIDGE.9709.P1",
+      "taskFamily": "tf.math.quadratic.optimum-of-a-model",
+      "learningApproach": "STEM_PLUS",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "SCIENTIFIC",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "c1932c7fe2f47c087fe4fcac23293eae9d15cd32e52ebdeb818c98fae2c9a608",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "CHALLENGE",
+        "marks": 7,
+        "stem": "During a materials test, a strip is prepared with an adjustable spacing of x millimetres, where 0 <= x <= 30. The test produces a performance index Q. One contribution to the index starts at 50 and increases by 6 for every millimetre of spacing. A second contribution starts at 164 and decreases by 4 for every millimetre of spacing. The performance index is the product of these two contributions. The spacing will be chosen to make Q as large as possible.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 7,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Work out an expression for Q in terms of x, giving both the product of the two linear factors and its expanded quadratic form.",
+              "commandTerm": "work out",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Sets up Q as the product of the two linear factors in x."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Expands the product correctly to obtain Q = 9840 + 784x - 24x^2."
+                }
+              ],
+              "finalAnswer": "Q = (50 + 6x)(164 - 4x) = 9840 + 784x - 24x^2",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Calculate the spacing x that gives the maximum value of Q.",
+              "commandTerm": "calculate",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Uses the vertex of the quadratic, or an equivalent valid method, to determine the maximizing x."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Obtains x = 16 millimetres."
+                }
+              ],
+              "finalAnswer": "16 mm",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "16",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 0
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Work out the maximum value of Q.",
+              "commandTerm": "work out",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Substitutes the maximizing spacing into the product model or an equivalent valid expression."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Obtains the maximum value Q = 14600."
+                }
+              ],
+              "finalAnswer": "14600",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "14600",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 0
+              }
+            },
+            {
+              "label": "d",
+              "prompt": "Write down what the result in part (b) means for the materials test.",
+              "commandTerm": "write down",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "States that the test strip should use a spacing of 16 millimetres to produce the greatest performance index."
+                }
+              ],
+              "finalAnswer": "The spacing should be set to 16 millimetres; this gives the greatest performance index.",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 17,
+      "ITEM_ID": "c250-187",
+      "canonicalConcept": {
+        "stableId": "math.prob.probability",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Probabilidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "COMPUTE"
+        ],
+        "object": "One random draw from a finite set of equally likely outcomes described by counts.",
+        "observablePerformance": "Counts the favourable and the possible outcomes and gives their ratio as the probability of the event."
+      },
+      "target": "PAA.MATEMATICAS",
+      "taskFamily": "tf.math.probability.single-event-equally-likely",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "PERSONAL",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "214427d2c8ac92943cd7e35026a4b94b2ba958702d24d87daf55d86f84536f64",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "stem": "En un club deportivo se sortea al azar 1 de 26 membresías numeradas. De ellas, 8 incluyen acceso a la sala de entrenamiento personal. Todas las membresías tienen la misma probabilidad de ser sorteadas. ¿Cuál es la probabilidad de que la membresía sorteada incluya acceso a la sala de entrenamiento personal?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "4/13"
+            },
+            {
+              "id": "B",
+              "text": "9/13"
+            },
+            {
+              "id": "C",
+              "text": "4/9"
+            },
+            {
+              "id": "D",
+              "text": "2/13"
+            }
+          ],
+          "answerKey": "A"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 18,
+      "ITEM_ID": "c250-138",
+      "canonicalConcept": {
+        "stableId": "math.prob.probability",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Probabilidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "COMPUTE"
+        ],
+        "object": "One random draw from a finite set of equally likely outcomes described by counts.",
+        "observablePerformance": "Counts the favourable and the possible outcomes and gives their ratio as the probability of the event."
+      },
+      "target": "CAMBRIDGE.9709.P1",
+      "taskFamily": "tf.math.probability.single-event-equally-likely",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "PERSONAL",
+        "responseFormat": "SHORT_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "7a0610dae491dc1208100d4ea36fbdacd6bfefe5b07da201c39721730ae6c298",
+      "item": {
+        "responseFormat": "SHORT_RESPONSE",
+        "language": "en",
+        "difficultyBand": "STANDARD",
+        "marks": 2,
+        "stem": "A housing website lists 21 flats currently available for rent. Of these flats, 8 allow tenants to keep a cat. A renter chooses 1 of the flats at random, with each flat equally likely to be chosen.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 2,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Calculate the probability that the chosen flat allows a tenant to keep a cat.",
+              "commandTerm": "calculate",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Sets up the probability as the number of favourable flats divided by the total number of flats."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Obtains the probability 8/21, or an equivalent fraction or decimal."
+                }
+              ],
+              "finalAnswer": "8/21",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "8/21",
+                "equivalentFormsAllowed": true
+              }
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 19,
+      "ITEM_ID": "c250-001",
+      "canonicalConcept": {
+        "stableId": "math.stat.data-representation",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Representación e interpretación de datos"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "INTERPRET",
+          "EVALUATE"
+        ],
+        "object": "A data display of small whole-number values and a statement someone makes about what it shows.",
+        "observablePerformance": "Reads what the display does and does not show and decides whether the statement is supported, contradicted or undecidable from it."
+      },
+      "target": "PAA.MATEMATICAS",
+      "taskFamily": "tf.math.data.judge-claim-against-display",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "156a607841ea8b9fd0cec282cf17a3018f0c3195ea595babf71eab1feedfcfcc",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "CHALLENGE",
+        "marks": 1,
+        "stem": "Una persona afirma: «Las magdalenas fueron el producto más vendido durante el turno de la mañana». ¿Qué decisión permiten tomar los datos de la tabla sobre esta afirmación?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "Está respaldada por los datos."
+            },
+            {
+              "id": "B",
+              "text": "Está contradicha por los datos."
+            },
+            {
+              "id": "C",
+              "text": "No puede decidirse con los datos."
+            },
+            {
+              "id": "D",
+              "text": "Solo puede decidirse con información externa."
+            }
+          ],
+          "answerKey": "A"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": {
+        "kind": "TABLE",
+        "text": [
+          "En una panadería se registró cuántas unidades de cada producto se vendieron durante el turno de la mañana."
+        ],
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "ventas",
+              "title": "Ventas durante el turno de la mañana",
+              "columns": [
+                {
+                  "key": "producto",
+                  "label": "Producto",
+                  "type": "TEXT",
+                  "unit": null
+                },
+                {
+                  "key": "unidades",
+                  "label": "Unidades vendidas",
+                  "type": "NUMBER",
+                  "unit": "unidades"
+                }
+              ],
+              "rows": [
+                [
+                  "Magdalenas",
+                  48
+                ],
+                [
+                  "Barras integrales",
+                  31
+                ],
+                [
+                  "Cruasanes",
+                  22
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "figures": [],
+          "charts": []
+        }
+      },
+      "presentation": "BLIND"
+    },
+    {
+      "position": 20,
+      "ITEM_ID": "c250-005",
+      "canonicalConcept": {
+        "stableId": "math.prob.probability",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Probabilidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "COMPUTE",
+          "EVALUATE"
+        ],
+        "object": "A situation with two options, each with its own counts of outcomes, and a claim about which option gives the better chance of a stated result.",
+        "observablePerformance": "Identifies the event and the sample space of each option, computes the two probabilities and judges the claim by comparing them."
+      },
+      "target": "IB.MATH_AA_HL.P1",
+      "taskFamily": "tf.math.probability.compare-chances-to-decide",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "SOCIETAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "75d7d83f5964e216e4b9ba19a9275b99d1a3c41e0d1ecb36e9343e8191f6446b",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 4,
+        "stem": "A city bus network is testing two routes for a new express service. During one morning, 3 of the 8 buses on Route 1 arrived within 5 minutes of the scheduled time. On Route 2, 9 of the 15 buses tested arrived within 5 minutes. A transport manager claims that Route 1 gives a better chance of an on-time arrival than Route 2.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 4,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Find the probability expressions for an on-time arrival on Route 1 and on Route 2, using the numbers of on-time arrivals and buses tested.",
+              "commandTerm": "find",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Sets up the two probability relationships as favourable outcomes divided by total outcomes."
+                }
+              ],
+              "finalAnswer": "P1 = 3/8 and P2 = 9/15",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Calculate the probability of an on-time arrival on Route 1.",
+              "commandTerm": "calculate",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Calculates 3/8 as 0.375."
+                }
+              ],
+              "finalAnswer": "0.375",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "0.375",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 3
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Show that the manager’s claim does or does not hold by calculating the probability for Route 2 and comparing it with the probability for Route 1.",
+              "commandTerm": "show that",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Calculates the Route 2 probability as 9/15 = 0.6."
+                },
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Compares 0.6 with 0.375 and concludes that Route 2, not Route 1, has the higher probability."
+                }
+              ],
+              "finalAnswer": "The claim does not hold; Route 2 has the higher probability.",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 21,
+      "ITEM_ID": "c250-011",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity starts at a fixed value and changes by the same amount for each unit of another quantity.",
+        "observablePerformance": "Writes the linear relation that models the situation and says what its slope and its intercept mean in it."
+      },
+      "target": "ICFES.SABER11_MATEMATICAS",
+      "taskFamily": "tf.math.linear.constant-rate-model",
+      "learningApproach": "STEM_PLUS",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "be69a31fc50faa3e9b31a8ecb1952bcccc283dcda253c69ef86f16f03231f5fc",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 1,
+        "stem": "Si la cantidad de panes empacados continúa cambiando de la misma manera, ¿cuántos panes habrá empacado la persona después de 9 horas?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "27 panes"
+            },
+            {
+              "id": "B",
+              "text": "45 panes"
+            },
+            {
+              "id": "C",
+              "text": "69 panes"
+            },
+            {
+              "id": "D",
+              "text": "381 panes"
+            }
+          ],
+          "answerKey": "C"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": {
+        "kind": "TABLE",
+        "text": [
+          "En una panadería, una persona registra la cantidad de panes empacados al comenzar la jornada y después de 4 horas. La tabla muestra esos registros."
+        ],
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "registro_panes",
+              "title": "Registro de panes empacados",
+              "columns": [
+                {
+                  "key": "tiempo",
+                  "label": "Tiempo transcurrido",
+                  "type": "NUMBER",
+                  "unit": "horas"
+                },
+                {
+                  "key": "panes",
+                  "label": "Panes empacados",
+                  "type": "NUMBER",
+                  "unit": "panes"
+                }
+              ],
+              "rows": [
+                [
+                  0,
+                  42
+                ],
+                [
+                  4,
+                  54
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "figures": [],
+          "charts": []
+        }
+      },
+      "presentation": "BLIND"
+    },
+    {
+      "position": 22,
+      "ITEM_ID": "c250-077",
+      "canonicalConcept": {
+        "stableId": "math.alg.quadratics",
+        "canonicalSubject": "Mathematics",
+        "canonicalName": "Quadratic functions and inequalities"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity to be made as large or as small as possible depends on one free measure through a product of two linear expressions.",
+        "observablePerformance": "Expresses the quantity as a quadratic function of the free measure, finds its vertex, and states the optimal measure and the optimal value in the terms of the situation."
+      },
+      "target": "PISA.MATHEMATICS",
+      "taskFamily": "tf.math.quadratic.optimum-of-a-model",
+      "learningApproach": "STEM_PLUS",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "PERSONAL",
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es"
+      },
+      "specificationId": "c75b4bdd730f328750a001d22fbdbec5373e4e20f7efa59be96b83b0728ad52b",
+      "item": {
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "stem": "Una familia dispone de un presupuesto mensual para organizar actividades y compras del hogar. Si destina x euros a actividades recreativas, el primer factor que determina la satisfacción familiar comienza en 18 y aumenta en 6 por cada euro destinado a ellas. El segundo factor comienza en 164 y disminuye en 4 por cada euro destinado a actividades recreativas. La satisfacción se calcula multiplicando ambos factores. ¿Cuántos euros debe destinar a actividades recreativas para obtener la mayor satisfacción posible?",
+        "selected": null,
+        "numeric": {
+          "numericKey": {
+            "kind": "NUMERIC",
+            "value": "19",
+            "equivalentFormsAllowed": true
+          }
+        },
+        "constructed": null,
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Indica 19 euros, que es la cantidad que maximiza la satisfacción."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "Da una respuesta distinta de 19 o no proporciona una respuesta numérica válida."
+          }
+        ]
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 23,
+      "ITEM_ID": "c250-090",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "COMPUTE",
+          "REPRESENT"
+        ],
+        "object": "Two points of the plane given by their coordinates.",
+        "observablePerformance": "Computes the slope from the two points and writes the equation of the line through them, or a value the equation gives."
+      },
+      "target": "ICFES.SABER11_MATEMATICAS",
+      "taskFamily": "tf.math.linear.line-through-two-points",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "ABSTRACT",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "60e9a649e54b644d072b5af38da1cd8c83abbf995f652ce4c46d90b1e60be486",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "stem": "Considera los puntos P(1,-2) y Q(4,10) del plano cartesiano. ¿Qué valor de y corresponde a x=2 en la recta que pasa por P y Q?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "2"
+            },
+            {
+              "id": "B",
+              "text": "-3/2"
+            },
+            {
+              "id": "C",
+              "text": "-10"
+            },
+            {
+              "id": "D",
+              "text": "6"
+            }
+          ],
+          "answerKey": "A"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 24,
+      "ITEM_ID": "c250-016",
+      "canonicalConcept": {
+        "stableId": "math.alg.quadratics",
+        "canonicalSubject": "Mathematics",
+        "canonicalName": "Quadratic functions and inequalities"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity to be made as large or as small as possible depends on one free measure through a product of two linear expressions.",
+        "observablePerformance": "Expresses the quantity as a quadratic function of the free measure, finds its vertex, and states the optimal measure and the optimal value in the terms of the situation."
+      },
+      "target": "IB.MATH_AA_HL.P2",
+      "taskFamily": "tf.math.quadratic.optimum-of-a-model",
+      "learningApproach": "STEM_PLUS",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "602da15104f62c78537d8b19ae83512402db80a56915d94b7cb1a11638f042ae",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "CHALLENGE",
+        "marks": 6,
+        "stem": "A bakery is considering a promotional pricing plan for a new celebration cake. If the promotion level is x, where 0 <= x <= 40, the number of cakes the bakery expects to sell in a week is 6 + 5x, and the price charged for each cake is 150 - 3x dollars. The weekly revenue is the product of the number sold and the price per cake.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 6,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Find an expression for the weekly revenue Q in terms of x, using the two factors given in the situation.",
+              "commandTerm": "find",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Sets up the product of the expected number of cakes sold and the price per cake."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Writes Q = (6 + 5x)(150 - 3x)."
+                }
+              ],
+              "finalAnswer": "Q = (6 + 5x)(150 - 3x)",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Write down the expanded quadratic expression for Q.",
+              "commandTerm": "write down",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Expands the product accurately to obtain the quadratic expression."
+                }
+              ],
+              "finalAnswer": "Q = -15x^2 + 732x + 900",
+              "numericKey": null
+            },
+            {
+              "label": "c",
+              "prompt": "Find the promotion level x that gives the maximum weekly revenue.",
+              "commandTerm": "find",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Uses the vertex of the quadratic, or an equivalent completing-the-square or differentiation method, to determine the optimal x."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Obtains x = 24.4 and recognises that this lies within the allowed range."
+                }
+              ],
+              "finalAnswer": "x = 24.4",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "24.4",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            },
+            {
+              "label": "d",
+              "prompt": "Write down the maximum weekly revenue and state what it means for the bakery.",
+              "commandTerm": "write down",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Calculates the revenue at the optimal promotion level and identifies it as the bakery's maximum weekly revenue."
+                }
+              ],
+              "finalAnswer": "Maximum weekly revenue = 9820.8 dollars; at a promotion level of 24.4, the bakery expects its greatest weekly revenue.",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "9820.8",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 25,
+      "ITEM_ID": "c250-003",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity starts at a fixed value and changes by the same amount for each unit of another quantity.",
+        "observablePerformance": "Writes the linear relation that models the situation and says what its slope and its intercept mean in it."
+      },
+      "target": "PISA.MATHEMATICS",
+      "taskFamily": "tf.math.linear.constant-rate-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "SCIENTIFIC",
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es"
+      },
+      "specificationId": "0b450ff4b7b8305bbe126ca36f2a5f0ab5980e7b1defc3c2026a7e119a588ab9",
+      "item": {
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "stem": "Si la concentración cambia de manera constante, ¿cuál será la concentración, en mg/L, al cabo de 7 minutos?",
+        "selected": null,
+        "numeric": {
+          "numericKey": {
+            "kind": "NUMERIC",
+            "value": "50",
+            "equivalentFormsAllowed": true
+          }
+        },
+        "constructed": null,
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Da como respuesta 50 mg/L."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "Da otra respuesta o no proporciona una respuesta válida."
+          }
+        ]
+      },
+      "stimulus": {
+        "kind": "TABLE",
+        "text": [
+          "En un laboratorio de química se registra la concentración de un reactivo en una disolución durante una reacción. La tabla muestra dos mediciones realizadas al inicio y después de 3 minutos."
+        ],
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "mediciones",
+              "title": "Concentración del reactivo",
+              "columns": [
+                {
+                  "key": "tiempo",
+                  "label": "Tiempo",
+                  "type": "NUMBER",
+                  "unit": "minutos"
+                },
+                {
+                  "key": "concentracion",
+                  "label": "Concentración",
+                  "type": "NUMBER",
+                  "unit": "mg/L"
+                }
+              ],
+              "rows": [
+                [
+                  0,
+                  36
+                ],
+                [
+                  3,
+                  42
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "figures": [],
+          "charts": []
+        }
+      },
+      "presentation": "BLIND"
+    },
+    {
+      "position": 26,
+      "ITEM_ID": "c250-107",
+      "canonicalConcept": {
+        "stableId": "math.num.ratio-proportion",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Proporcionalidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation offering two options, each described by an amount and what it gives in return, where the better option is not visible without a common rate.",
+        "observablePerformance": "Chooses the quantity to compare, forms the two unit rates, and states which option the comparison favours and by how much."
+      },
+      "target": "SCHOOL_STEM_PERFORMANCE",
+      "taskFamily": "tf.math.proportion.rate-comparison-model",
+      "learningApproach": "STEM_PLUS",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "SOCIETAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "54bb573e3acb7e5b8350255a5e7e5163fe3c1eab532dee16ea8e9705f7ff65fb",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 4,
+        "stem": "En un parque público se estudian dos formas de organizar una jornada de mantenimiento. La opción 1 utiliza 16 jornadas de trabajo y permite atender 40 árboles. La opción 2 utiliza 25 jornadas de trabajo y permite atender 70 árboles. El ayuntamiento quiere elegir la opción que atienda más árboles por cada jornada utilizada.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 4,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Escribe cómo calcularías la cantidad de árboles atendidos por cada jornada para cada opción, usando los datos de la situación.",
+              "commandTerm": null,
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Establece las dos relaciones cantidad de árboles dividida entre jornadas: 40/16 y 70/25."
+                }
+              ],
+              "finalAnswer": "r1 = 40/16 y r2 = 70/25",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Calcula cuántos árboles por jornada separan las dos opciones.",
+              "commandTerm": null,
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Calcula 2.8 - 2.5 y obtiene 0.3 árboles por jornada."
+                }
+              ],
+              "finalAnswer": "0.3 árboles por jornada",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "0.3",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Explica qué opción favorecería la comparación y por qué las tasas que calculaste permiten tomar esa decisión.",
+              "commandTerm": null,
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Relaciona la comparación con la cantidad de árboles atendidos por una jornada, en lugar de comparar solo los totales."
+                },
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Concluye que la opción 2 es la favorecida porque atiende 2.8 árboles por jornada frente a 2.5 de la opción 1."
+                }
+              ],
+              "finalAnswer": "Se favorece la opción 2, porque atiende 2.8 árboles por jornada, mientras que la opción 1 atiende 2.5; por tanto, la opción 2 ofrece 0.3 árboles más por jornada.",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Realiza correctamente el planteamiento, el cálculo de la diferencia y la justificación de la opción favorecida."
+          },
+          {
+            "code": "PARTIAL_CREDIT",
+            "description": "Muestra parte del planteamiento o de la comparación, pero contiene un error de cálculo o una justificación incompleta."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "No establece tasas unitarias pertinentes ni identifica la opción favorecida mediante ellas."
+          }
+        ]
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 27,
+      "ITEM_ID": "c250-186",
+      "canonicalConcept": {
+        "stableId": "math.num.ratio-proportion",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Proporcionalidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation offering two options, each described by an amount and what it gives in return, where the better option is not visible without a common rate.",
+        "observablePerformance": "Chooses the quantity to compare, forms the two unit rates, and states which option the comparison favours and by how much."
+      },
+      "target": "SCHOOL_STEM_PERFORMANCE",
+      "taskFamily": "tf.math.proportion.rate-comparison-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "SHORT_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "fc63ce0617662a540a3843b7e52b979ff62b2b29c81da5574a502eff3a6b8377",
+      "item": {
+        "responseFormat": "SHORT_RESPONSE",
+        "language": "es",
+        "difficultyBand": "CHALLENGE",
+        "marks": 5,
+        "stem": "En un taller de confección, la encargada debe elegir entre dos proveedores de tela para una serie de prendas. El proveedor 1 cobra 27 euros y entrega tela suficiente para producir 81 prendas. El proveedor 2 cobra 40 euros y entrega tela suficiente para producir 100 prendas.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 5,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Escribe la relación que debe usarse para calcular cuántas prendas se pueden producir por cada euro con cada proveedor.",
+              "commandTerm": null,
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Formula una división de prendas entre euros para cada proveedor: 81/27 y 100/40."
+                }
+              ],
+              "finalAnswer": "Tasa del proveedor 1 = 81/27 y tasa del proveedor 2 = 100/40; en general, prendas por euro = prendas producidas ÷ euros pagados.",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Calcula la diferencia entre las cantidades de prendas producidas por euro de los dos proveedores.",
+              "commandTerm": null,
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Calcula las dos tasas unitarias y las resta: 81/27 y 100/40."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Obtiene una diferencia de 0.5 prendas por euro."
+                }
+              ],
+              "finalAnswer": "0.5 prendas por euro",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "0.5",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Justifica qué proveedor debería elegir la encargada, relacionando tu decisión con las cantidades de prendas producidas por euro.",
+              "commandTerm": null,
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Explica que el proveedor 1 produce 3 prendas por euro y el proveedor 2 produce 2.5 prendas por euro."
+                },
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Concluye que el proveedor 1 es preferible porque su tasa unitaria es mayor."
+                }
+              ],
+              "finalAnswer": "Debe elegir el proveedor 1, porque produce 3 prendas por euro, frente a 2.5 prendas por euro del proveedor 2; por tanto, su rendimiento por euro es mayor.",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Se cumplen todos los criterios indicados en los puntos de corrección de cada apartado."
+          },
+          {
+            "code": "PARTIAL_CREDIT",
+            "description": "Se muestra parte del procedimiento o del razonamiento, pero falta precisión en uno o más criterios."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "La respuesta no formula las tasas unitarias ni fundamenta la comparación entre los proveedores."
+          }
+        ]
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 28,
+      "ITEM_ID": "c250-037",
+      "canonicalConcept": {
+        "stableId": "math.prob.probability",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Probabilidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "COMPUTE"
+        ],
+        "object": "One random draw from a finite set of equally likely outcomes described by counts.",
+        "observablePerformance": "Counts the favourable and the possible outcomes and gives their ratio as the probability of the event."
+      },
+      "target": "PAA.MATEMATICAS",
+      "taskFamily": "tf.math.probability.single-event-equally-likely",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "PERSONAL",
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es"
+      },
+      "specificationId": "2b774c34a555031070190d8435cb95111e3635e6cfe7f243b656450c7b142dc1",
+      "item": {
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "stem": "Durante una excursión familiar, una aplicación elige al azar 1 de 9 zonas de descanso disponibles. Las 9 zonas tienen la misma probabilidad de ser elegidas y 4 de ellas tienen sombra. ¿Cuál es la probabilidad de que la aplicación elija una zona con sombra? Escribe la respuesta como fracción.",
+        "selected": null,
+        "numeric": {
+          "numericKey": {
+            "kind": "NUMERIC",
+            "value": "4/9",
+            "equivalentFormsAllowed": true
+          }
+        },
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 29,
+      "ITEM_ID": "c250-147",
+      "canonicalConcept": {
+        "stableId": "math.prob.probability",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Probabilidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "COMPUTE"
+        ],
+        "object": "One random draw from a finite set of equally likely outcomes described by counts.",
+        "observablePerformance": "Counts the favourable and the possible outcomes and gives their ratio as the probability of the event."
+      },
+      "target": "ICFES.SABER11_MATEMATICAS",
+      "taskFamily": "tf.math.probability.single-event-equally-likely",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "PERSONAL",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "1685b1d27cdae96deda126b54cf5bf1ae48ca1faca9f85a76826bd6131302135",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 1,
+        "stem": "En un puesto escolar de recaudación, una ruleta tiene 22 secciones del mismo tamaño y todas tienen la misma probabilidad de quedar señaladas al detenerse. De esas secciones, 5 entregan un premio y las demás no entregan premio. Si una persona hace un giro, ¿cuál es la probabilidad de que obtenga un premio?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "5/22"
+            },
+            {
+              "id": "B",
+              "text": "5/17"
+            },
+            {
+              "id": "C",
+              "text": "17/22"
+            },
+            {
+              "id": "D",
+              "text": "1/5"
+            }
+          ],
+          "answerKey": "A"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 30,
+      "ITEM_ID": "c250-010",
+      "canonicalConcept": {
+        "stableId": "math.stat.data-representation",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Representación e interpretación de datos"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "INTERPRET",
+          "EVALUATE"
+        ],
+        "object": "A data display of small whole-number values and a statement someone makes about what it shows.",
+        "observablePerformance": "Reads what the display does and does not show and decides whether the statement is supported, contradicted or undecidable from it."
+      },
+      "target": "PISA.MATHEMATICS",
+      "taskFamily": "tf.math.data.judge-claim-against-display",
+      "learningApproach": "STEM_PLUS",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "SOCIETAL",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "b93bdca92046550bd7d85c320a2af802a49df19efa1cfef5b67feb41dd3de051",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "CHALLENGE",
+        "marks": 1,
+        "stem": "En una nota sobre el informe, alguien afirma: «La ruta Roja fue la más utilizada esa mañana». ¿Cómo debe clasificarse esta afirmación usando solamente la tabla?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "Está respaldada por la tabla."
+            },
+            {
+              "id": "B",
+              "text": "Está contradicha por la tabla."
+            },
+            {
+              "id": "C",
+              "text": "No es decidible con la tabla."
+            },
+            {
+              "id": "D",
+              "text": "No puede comprobarse con esos datos."
+            }
+          ],
+          "answerKey": "B"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Selecciona la opción B y reconoce que la tabla contradice la afirmación."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "Selecciona cualquier otra opción."
+          }
+        ]
+      },
+      "stimulus": {
+        "kind": "TABLE",
+        "text": [
+          "En un informe municipal se registró cuántas validaciones de pasaje tuvo cada una de las 3 rutas de autobús durante la mañana del lunes. El informe incluye la siguiente tabla."
+        ],
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "validaciones_rutas",
+              "title": "Validaciones de pasaje por ruta",
+              "columns": [
+                {
+                  "key": "ruta",
+                  "label": "Ruta",
+                  "type": "TEXT",
+                  "unit": null
+                },
+                {
+                  "key": "validaciones",
+                  "label": "Validaciones",
+                  "type": "NUMBER",
+                  "unit": "validaciones"
+                }
+              ],
+              "rows": [
+                [
+                  "Azul",
+                  46
+                ],
+                [
+                  "Verde",
+                  31
+                ],
+                [
+                  "Roja",
+                  23
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "figures": [],
+          "charts": []
+        }
+      },
+      "presentation": "BLIND"
+    },
+    {
+      "position": 31,
+      "ITEM_ID": "c250-128",
+      "canonicalConcept": {
+        "stableId": "math.stat.data-representation",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Representación e interpretación de datos"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "INTERPRET",
+          "EVALUATE"
+        ],
+        "object": "A data display of small whole-number values and a statement someone makes about what it shows.",
+        "observablePerformance": "Reads what the display does and does not show and decides whether the statement is supported, contradicted or undecidable from it."
+      },
+      "target": "SCHOOL_STEM_PERFORMANCE",
+      "taskFamily": "tf.math.data.judge-claim-against-display",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "SCIENTIFIC",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "b56a98ea2a98aa3c0683b108e1906074a8ae79f2f589bc9d979437fde4b8adc4",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "CHALLENGE",
+        "marks": 3,
+        "stem": "En un informe sobre estos datos, una persona afirma: «El martes fue el día más frío de los 3 días registrados».",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 3,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Explica qué muestran las mediciones sobre las temperaturas máximas de los 3 días.",
+              "commandTerm": null,
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Identifica la relación entre las tres temperaturas registradas y señala cuál es la menor."
+                }
+              ],
+              "finalAnswer": "La temperatura máxima más baja fue la del lunes, con 18 °C; la del martes, 42 °C, fue la más alta.",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Decide si la afirmación está respaldada por la tabla, contradicha por la tabla o si no se puede decidir a partir de ella.",
+              "commandTerm": null,
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Selecciona el veredicto que corresponde a la comparación de las temperaturas de los 3 días."
+                }
+              ],
+              "finalAnswer": "La afirmación está contradicha por la tabla.",
+              "numericKey": null
+            },
+            {
+              "label": "c",
+              "prompt": "Justifica tu decisión comparando las cantidades pertinentes y explica por qué esa comparación decide si la afirmación se sostiene.",
+              "commandTerm": null,
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Compara la temperatura del martes con la menor temperatura registrada y relaciona esa comparación con la afirmación."
+                }
+              ],
+              "finalAnswer": "El martes tuvo 42 °C, mientras que el lunes tuvo 18 °C. Como 42 °C es mayor que 18 °C, el martes no fue el día más frío; por eso la afirmación queda contradicha.",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Responde a cada parte con una interpretación adecuada, el veredicto correcto y una justificación basada en las temperaturas de la tabla."
+          },
+          {
+            "code": "PARTIAL_CREDIT",
+            "description": "Muestra alguna interpretación o comparación pertinente, pero omite el veredicto correcto o no conecta completamente los datos con la afirmación."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "La respuesta es incorrecta, irrelevante o no utiliza los datos de la tabla."
+          }
+        ]
+      },
+      "stimulus": {
+        "kind": "TABLE",
+        "text": [
+          "Una estación meteorológica registró la temperatura máxima durante 3 días consecutivos. La tabla muestra las mediciones, en grados Celsius."
+        ],
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "temperaturas",
+              "title": "Temperatura máxima registrada",
+              "columns": [
+                {
+                  "key": "dia",
+                  "label": "Día",
+                  "type": "TEXT",
+                  "unit": null
+                },
+                {
+                  "key": "temperatura",
+                  "label": "Temperatura máxima",
+                  "type": "NUMBER",
+                  "unit": "°C"
+                }
+              ],
+              "rows": [
+                [
+                  "Lunes",
+                  18
+                ],
+                [
+                  "Martes",
+                  42
+                ],
+                [
+                  "Miércoles",
+                  27
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "figures": [],
+          "charts": []
+        }
+      },
+      "presentation": "BLIND"
+    },
+    {
+      "position": 32,
+      "ITEM_ID": "c250-233",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity starts at a fixed value and changes by the same amount for each unit of another quantity.",
+        "observablePerformance": "Writes the linear relation that models the situation and says what its slope and its intercept mean in it."
+      },
+      "target": "IB.MATH_AA_HL.P1",
+      "taskFamily": "tf.math.linear.constant-rate-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "PERSONAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "9aa82d9f9284b733f08f98543a8ecc4ceb8aea69065a7d4c8dda65db88a868ed",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "STANDARD",
+        "marks": 5,
+        "stem": "During a rowing-machine training session, Maya has already rowed 14 metres when her timed practice begins. She then rows at a steady rate of 29 metres per minute. Let x be the number of minutes since the timed practice began, and let y be the total distance rowed, in metres.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 5,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Find an equation connecting y and x for Maya's timed practice.",
+              "commandTerm": "find",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Uses the fixed starting distance and the constant distance per minute to set up a linear relationship."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Writes the relationship as y = 29x + 14."
+                }
+              ],
+              "finalAnswer": "y = 29x + 14",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Write down what the coefficient of x and the constant term mean in Maya's training session.",
+              "commandTerm": "write down",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Explains that 29 is the distance, in metres, rowed during each minute."
+                },
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Explains that 14 is the distance, in metres, already rowed when the timed practice began."
+                }
+              ],
+              "finalAnswer": "The coefficient of x, 29, is Maya's rate of 29 metres per minute. The constant term, 14, is the 14 metres she had already rowed at the start of the timed practice.",
+              "numericKey": null
+            },
+            {
+              "label": "c",
+              "prompt": "Calculate the total distance Maya has rowed after 6 minutes of timed practice.",
+              "commandTerm": "calculate",
+              "marks": 1,
+              "markScheme": [
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Substitutes 6 into the model and obtains 188 metres."
+                }
+              ],
+              "finalAnswer": "188 metres",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "188",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 0
+              }
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 33,
+      "ITEM_ID": "c250-154",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity starts at a fixed value and changes by the same amount for each unit of another quantity.",
+        "observablePerformance": "Writes the linear relation that models the situation and says what its slope and its intercept mean in it."
+      },
+      "target": "ICFES.SABER11_MATEMATICAS",
+      "taskFamily": "tf.math.linear.constant-rate-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "CHALLENGE",
+        "context": "OCCUPATIONAL",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "92adb91fc5c6f260b78a2cd97c3567b14a84737089d755ebec97ed86da7f374e",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "CHALLENGE",
+        "marks": 1,
+        "stem": "En un taller de confección, preparar una orden de producción tiene un costo fijo de 135 pesos. Además, por cada prenda confeccionada se cobran 21 pesos. Una orden incluye 14 prendas. ¿Cuánto debe cobrarse en total por esa orden?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "294 pesos"
+            },
+            {
+              "id": "B",
+              "text": "429 pesos"
+            },
+            {
+              "id": "C",
+              "text": "1911 pesos"
+            },
+            {
+              "id": "D",
+              "text": "135 pesos"
+            }
+          ],
+          "answerKey": "B"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 34,
+      "ITEM_ID": "c250-014",
+      "canonicalConcept": {
+        "stableId": "math.num.ratio-proportion",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Proporcionalidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "object": "A situation offering two options, each described by an amount and what it gives in return, where the better option is not visible without a common rate.",
+        "observablePerformance": "Chooses the quantity to compare, forms the two unit rates, and states which option the comparison favours and by how much."
+      },
+      "target": "CAMBRIDGE.9709.P1",
+      "taskFamily": "tf.math.proportion.rate-comparison-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "FOUNDATIONAL",
+        "context": "SOCIETAL",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en"
+      },
+      "specificationId": "8de0adf188c0c271fc9260ee7beafb022235f6ff6422bde1b0d9c532a532ebec",
+      "item": {
+        "responseFormat": "EXTENDED_RESPONSE",
+        "language": "en",
+        "difficultyBand": "FOUNDATIONAL",
+        "marks": 6,
+        "stem": "A city bus network is reviewing two travel passes. Pass 1 costs 3 dollars and provides 9 rides. Pass 2 costs 5 dollars and provides 14 rides. The network wants to compare the rides received for each dollar paid.",
+        "selected": null,
+        "numeric": null,
+        "constructed": {
+          "totalMarks": 6,
+          "parts": [
+            {
+              "label": "a",
+              "prompt": "Work out an expression for the difference between the rides per dollar for the two passes.",
+              "commandTerm": "work out",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Sets up the rides-per-dollar relationship for both passes by dividing rides by cost."
+                },
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Forms the difference between the two unit rates in a valid order."
+                }
+              ],
+              "finalAnswer": "9 / 3 - 14 / 5",
+              "numericKey": null
+            },
+            {
+              "label": "b",
+              "prompt": "Calculate the difference in rides per dollar between the two passes.",
+              "commandTerm": "calculate",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Calculates the two unit rates as 9 / 3 and 14 / 5 before finding their difference."
+                },
+                {
+                  "kind": "ACCURACY",
+                  "marks": 1,
+                  "criterion": "Gives the difference as 0.2 rides per dollar."
+                }
+              ],
+              "finalAnswer": "0.2 rides per dollar",
+              "numericKey": {
+                "kind": "NUMERIC",
+                "value": "0.2",
+                "equivalentFormsAllowed": true,
+                "decimalPlaces": 1
+              }
+            },
+            {
+              "label": "c",
+              "prompt": "Write down which pass gives more rides per dollar.",
+              "commandTerm": "write down",
+              "marks": 2,
+              "markScheme": [
+                {
+                  "kind": "METHOD",
+                  "marks": 1,
+                  "criterion": "Uses the calculated unit rates to compare the two passes."
+                },
+                {
+                  "kind": "REASONING",
+                  "marks": 1,
+                  "criterion": "Identifies Pass 1 as the pass with the higher rides-per-dollar rate."
+                }
+              ],
+              "finalAnswer": "Pass 1",
+              "numericKey": null
+            }
+          ]
+        },
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 35,
+      "ITEM_ID": "c250-111",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity starts at a fixed value and changes by the same amount for each unit of another quantity.",
+        "observablePerformance": "Writes the linear relation that models the situation and says what its slope and its intercept mean in it."
+      },
+      "target": "ICFES.SABER11_MATEMATICAS",
+      "taskFamily": "tf.math.linear.constant-rate-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "SCIENTIFIC",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "8da8a5babffcf2d461d90df4484408383c60080334241b4efc32ba08be7d638f",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "stem": "En un experimento de crecimiento vegetal, una planta tiene 68 hojas al comenzar la observación y, durante varios días, desarrolla 17 hojas nuevas por día. Si mantiene ese ritmo constante, ¿cuántas hojas tendrá después de 4 días?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "68 hojas"
+            },
+            {
+              "id": "B",
+              "text": "136 hojas"
+            },
+            {
+              "id": "C",
+              "text": "289 hojas"
+            },
+            {
+              "id": "D",
+              "text": "85 hojas"
+            }
+          ],
+          "answerKey": "B"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": null
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    },
+    {
+      "position": 36,
+      "ITEM_ID": "c250-132",
+      "canonicalConcept": {
+        "stableId": "math.fun.linear-functions-lines",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Rectas y funciones lineales"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "object": "A situation in which a quantity starts at a fixed value and changes by the same amount for each unit of another quantity.",
+        "observablePerformance": "Writes the linear relation that models the situation and says what its slope and its intercept mean in it."
+      },
+      "target": "PISA.MATHEMATICS",
+      "taskFamily": "tf.math.linear.constant-rate-model",
+      "learningApproach": "STANDARD_BY_ABSENCE",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "SCIENTIFIC",
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es"
+      },
+      "specificationId": "4c44f85452a4a8ce4b69e386af9f7ae817660a3d826c68fe616fe4e6fe7e3ceb",
+      "item": {
+        "responseFormat": "SELECTED_RESPONSE",
+        "language": "es",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "stem": "Si el patrón continúa sin cambios, ¿qué brillo marcará el sensor cuando hayan transcurrido 8 h?",
+        "selected": {
+          "options": [
+            {
+              "id": "A",
+              "text": "152 unidades"
+            },
+            {
+              "id": "B",
+              "text": "199 unidades"
+            },
+            {
+              "id": "C",
+              "text": "66 unidades"
+            },
+            {
+              "id": "D",
+              "text": "901 unidades"
+            }
+          ],
+          "answerKey": "B"
+        },
+        "numeric": null,
+        "constructed": null,
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Selecciona 199 unidades, el brillo previsto al extender la relación lineal desde el valor inicial y la tasa constante observados."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "Selecciona cualquier otra opción."
+          }
+        ]
+      },
+      "stimulus": {
+        "kind": "GRAPH",
+        "text": [
+          "Durante una observación astronómica, un sensor registra el brillo de una estrella cada 2 horas. La escala de brillo utilizada por el sensor es lineal."
+        ],
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "observaciones",
+              "title": "Brillo registrado por el sensor",
+              "columns": [
+                {
+                  "key": "tiempo",
+                  "label": "Tiempo transcurrido",
+                  "type": "NUMBER",
+                  "unit": "h"
+                },
+                {
+                  "key": "brillo",
+                  "label": "Brillo del sensor",
+                  "type": "NUMBER",
+                  "unit": "unidades"
+                }
+              ],
+              "rows": [
+                [
+                  0,
+                  47
+                ],
+                [
+                  2,
+                  85
+                ],
+                [
+                  4,
+                  123
+                ],
+                [
+                  6,
+                  161
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "figures": [],
+          "charts": [
+            {
+              "chartKey": "grafico_observaciones",
+              "chartType": "LINE",
+              "title": "Brillo de la estrella a lo largo del tiempo",
+              "xLabel": "Tiempo transcurrido (h)",
+              "yLabel": "Brillo (unidades)",
+              "source": {
+                "kind": "TABLE",
+                "tableKey": "observaciones",
+                "xColumn": "tiempo",
+                "valueColumns": [
+                  "brillo"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "presentation": "BLIND"
+    },
+    {
+      "position": 37,
+      "ITEM_ID": "c250-093",
+      "canonicalConcept": {
+        "stableId": "math.prob.probability",
+        "canonicalSubject": "Matemáticas",
+        "canonicalName": "Probabilidad"
+      },
+      "evidenceTarget": {
+        "actions": [
+          "FORMULATE",
+          "COMPUTE",
+          "EVALUATE"
+        ],
+        "object": "A situation with two options, each with its own counts of outcomes, and a claim about which option gives the better chance of a stated result.",
+        "observablePerformance": "Identifies the event and the sample space of each option, computes the two probabilities and judges the claim by comparing them."
+      },
+      "target": "PISA.MATHEMATICS",
+      "taskFamily": "tf.math.probability.compare-chances-to-decide",
+      "learningApproach": "STEM_PLUS",
+      "request": {
+        "difficultyBand": "STANDARD",
+        "context": "PERSONAL",
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es"
+      },
+      "specificationId": "2f90d888074113fc347ab4fabcb2c183c3df40e665fd2114699888fb0ad29443",
+      "item": {
+        "responseFormat": "NUMERIC_ENTRY",
+        "language": "es",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "stem": "Durante un viaje familiar, Ana puede elegir entre dos juegos para ganar una entrada. En el juego 1 hay 18 tarjetas y 7 de ellas otorgan una entrada. En el juego 2 hay 35 tarjetas y 10 de ellas otorgan una entrada. ¿Cuál es la probabilidad, expresada como número decimal y redondeada a 3 cifras decimales, de obtener una entrada si Ana elige el juego que ofrece la mayor probabilidad?",
+        "selected": null,
+        "numeric": {
+          "numericKey": {
+            "kind": "NUMERIC",
+            "value": "0.389",
+            "equivalentFormsAllowed": true,
+            "decimalPlaces": 3
+          }
+        },
+        "constructed": null,
+        "credit": [
+          {
+            "code": "FULL_CREDIT",
+            "description": "Obtiene 0.389."
+          },
+          {
+            "code": "PARTIAL_CREDIT",
+            "description": "No se asigna crédito parcial en esta respuesta numérica de un solo resultado."
+          },
+          {
+            "code": "NO_CREDIT",
+            "description": "Da un número distinto de 0.389 o no responde."
+          }
+        ]
+      },
+      "stimulus": null,
+      "presentation": "BLIND"
+    }
+  ]
+}

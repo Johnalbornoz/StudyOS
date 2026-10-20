@@ -1,0 +1,111 @@
+programme,subject,level,version,status,config_key,nodes,topics_before,topics_after,objectives,concept_mappings,classification,structure_version_id
+Cambridge AICE Diploma,Biology,A Level,9700 A Level,PUBLISHED,v2.aice.9700-a,26,21,21,11,11,HAS_CONCEPT_MAPPINGS,af41e290-8aa6-4517-87a6-b9b0c450fc6f
+Cambridge AICE Diploma,Biology,AS Level,9700 AS Level,PUBLISHED,v2.aice.9700-as,15,12,12,6,6,HAS_CONCEPT_MAPPINGS,2ed1f8c0-1601-4d96-9893-999508f8cf42
+Cambridge AICE Diploma,Chemistry,A Level,9701 A Level,PUBLISHED,v2.aice.9701-a,5,0,0,11,11,HAS_CONCEPT_MAPPINGS,5ce39925-3420-477e-a58d-1c30e4249011
+Cambridge AICE Diploma,Chemistry,AS Level,9701 AS Level,PUBLISHED,v2.aice.9701-as,3,0,0,6,6,HAS_CONCEPT_MAPPINGS,08e666c2-9f3a-4a3d-a29e-09dda005ef42
+Cambridge AICE Diploma,Economics,A Level,9708 A Level,PUBLISHED,v2.aice.9708-a,15,11,11,12,12,HAS_CONCEPT_MAPPINGS,90d6162d-822d-40fc-9331-f35421d45835
+Cambridge AICE Diploma,Economics,AS Level,9708 AS Level,PUBLISHED,v2.aice.9708-as,8,6,6,6,6,HAS_CONCEPT_MAPPINGS,df1e2af9-2d61-42d5-8524-ed75528c5465
+Cambridge AICE Diploma,English Language,A Level,9093 A Level,PUBLISHED,v2.aice.9093-a,4,0,0,8,8,HAS_CONCEPT_MAPPINGS,4563e033-b022-4719-a31b-d98f5f7544f5
+Cambridge AICE Diploma,English Language,AS Level,9093 AS Level,PUBLISHED,v2.aice.9093-as,2,0,0,4,4,HAS_CONCEPT_MAPPINGS,eb3e9802-26f5-4956-a4ed-5598f050df46
+Cambridge AICE Diploma,Global Perspectives & Research,A Level,9239 A Level,PUBLISHED,v2.aice.9239-a,4,0,0,6,6,HAS_CONCEPT_MAPPINGS,c25a463e-de32-4d7d-b712-ecb972119c3a
+Cambridge AICE Diploma,Global Perspectives & Research,AS Level,9239 AS Level,PUBLISHED,v2.aice.9239-as,3,0,0,5,5,HAS_CONCEPT_MAPPINGS,a4be23e2-fe0c-4e80-aa80-c02b7d40c503
+Cambridge AICE Diploma,Mathematics,A Level,9709 A Level,PUBLISHED,v2.aice.9709-a,5,0,0,17,17,HAS_CONCEPT_MAPPINGS,d80cd553-128d-4712-94c5-4f8c9a932f84
+Cambridge AICE Diploma,Mathematics,AS Level,9709 AS Level,PUBLISHED,v2.aice.9709-as,4,0,0,14,14,HAS_CONCEPT_MAPPINGS,e18b4510-24bf-4a36-98f0-145911bcfe24
+Cambridge AICE Diploma,Physics,A Level,9702 A Level,PUBLISHED,v2.aice.9702-a,32,27,27,11,12,HAS_CONCEPT_MAPPINGS,41b2a471-ce0e-4824-9f4c-3c77ee34e78e
+Cambridge AICE Diploma,Physics,AS Level,9702 AS Level,PUBLISHED,v2.aice.9702-as,15,12,12,6,7,HAS_CONCEPT_MAPPINGS,fc72b53d-6699-4e72-bc45-ba78fc377969
+Cambridge Advanced,English General Paper,AS Level,DEV-CERT v1,PUBLISHED,dev-cert.aice.as-english-general-paper,1,0,0,1,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,b67b8e33-8582-4a36-9323-41db7c7c5aeb
+Cambridge Advanced,Mathematics,AS Level,DEV-CERT v1,PUBLISHED,dev-cert.aice.as-math,1,0,0,2,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,5f182fcc-04da-4cef-ab3f-99739e7e6cd5
+Cambridge IGCSE,Mathematics (0580),Extended,V2 0580 2025-2027,PUBLISHED,v2.cambridge.0580-extended,2,0,0,8,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,bd24ee83-77a6-4f28-a66c-d178ccc3f4cb
+Cambridge Upper Secondary,Mathematics,Extended,DEV-CERT v1,PUBLISHED,dev-cert.cambridge.igcse-math,2,0,0,4,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,7e763f14-7064-4a57-a989-597265dee9c5
+Educación Básica Secundaria (6.º–9.º),Matemáticas,,EBC 2006 · DBA v2 2016,PUBLISHED,,0,0,0,0,0,STRUCTURAL_ONLY,3a4e9c67-455c-4b41-95e9-ccd9954f2082
+Educación Media (10.º–11.º),Matemáticas,,EBC 2006 · DBA v2 2016,PUBLISHED,,0,0,0,0,0,STRUCTURAL_ONLY,4249d7d4-b77c-4b8d-ad37-da008789e75e
+Educación Media (10.º–11.º),Matemáticas,,EBC 2006 · DBA v2 2016,PUBLISHED,,0,0,0,0,0,STRUCTURAL_ONLY,76b623a6-0cd5-47a9-b98d-e0dfff7c8e5f
+Educación Media Superior — Marco Curricular Común (MCCEMS),Pensamiento Matemático,,MCCEMS 2023,PUBLISHED,,0,0,0,0,0,STRUCTURAL_ONLY,ba9768d7-4a65-4224-bb6c-9ff4f049f78f
+Educación Primaria — Plan de Estudio 2022,Matemáticas,,Plan de Estudio 2022,PUBLISHED,,0,0,0,0,0,STRUCTURAL_ONLY,5d600593-7309-43cc-ae2e-9ea9cac5069f
+Educación Secundaria — Plan de Estudio 2022,Matemáticas,,Plan de Estudio 2022,PUBLISHED,,0,0,0,0,0,STRUCTURAL_ONLY,706dbea1-fbe2-4f71-af17-8e11a9da6d5b
+Estándares Básicos de Competencias y DBA,Matemáticas,,EBC 2006 · DBA v2 2016,PUBLISHED,,0,0,0,0,0,STRUCTURAL_ONLY,6d5f3a39-a5df-45ad-91af-feb7db4f74c4
+Examen Saber 11.°,Matemáticas,,V2 Saber 11 2026,PUBLISHED,v2.saber11.math,1,0,0,3,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,70655882-d2a9-4413-8243-c837d16bfc00
+IB Diploma Programme,Biology,HL,DEV-CERT v1,PUBLISHED,dev-cert.ib.biology-hl,1,0,0,2,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,16d51dff-ecda-4421-9dce-703724def3e0
+IB Diploma Programme,Biology,HL,V2 2025,DRAFT,v2.ib.biology-hl,3,0,0,7,12,HAS_CONCEPT_MAPPINGS,86fe7e5d-3320-4b06-a10c-404a9306d644
+IB Diploma Programme,Biology,SL,V2 2025,PUBLISHED,v2.ib.biology-sl,3,0,0,7,12,HAS_CONCEPT_MAPPINGS,6d5befb1-5d4c-492c-b879-48e6645018b2
+IB Diploma Programme,Business management,HL,V2 structure 2024,PUBLISHED,v2.ib.s.business-management-hl,4,0,0,4,0,MAPPING_DATA_MISSING,01769210-703f-4bd0-925d-db06a64a4828
+IB Diploma Programme,Business management,SL,V2 structure 2024,PUBLISHED,v2.ib.s.business-management-sl,3,0,0,3,0,MAPPING_DATA_MISSING,0ff5c444-8140-495e-b33e-8537751c8741
+IB Diploma Programme,Chemistry,HL,V2 2025,PUBLISHED,v2.ib.chemistry-hl,3,0,0,10,15,HAS_CONCEPT_MAPPINGS,3e9e2c78-fc33-45ac-8d85-9d610ba7f169
+IB Diploma Programme,Chemistry,SL,V2 2025,PUBLISHED,v2.ib.chemistry-sl,3,0,0,10,15,HAS_CONCEPT_MAPPINGS,85c85d7c-97b1-47c7-a891-136e54fb5131
+IB Diploma Programme,Classical languages (Latin / Classical Greek),HL,V2 structure 2024,PUBLISHED,v2.ib.s.classical-languages-hl,4,0,0,4,0,MAPPING_DATA_MISSING,c2d4a1de-16bd-452c-bea1-43abba5b10e2
+IB Diploma Programme,Classical languages (Latin / Classical Greek),SL,V2 structure 2024,PUBLISHED,v2.ib.s.classical-languages-sl,3,0,0,3,0,MAPPING_DATA_MISSING,f1414523-3207-4799-89d9-50cbc25c7d15
+IB Diploma Programme,Computer science,HL,V2 structure 2027,PUBLISHED,v2.ib.s.computer-science-hl,3,0,0,3,0,MAPPING_DATA_MISSING,d208f8fe-1a30-40e8-90c9-ccef8f04b927
+IB Diploma Programme,Computer science,SL,V2 structure 2027,PUBLISHED,v2.ib.s.computer-science-sl,3,0,0,3,0,MAPPING_DATA_MISSING,43e011bf-e1c8-4076-8039-d678c6fb52d2
+IB Diploma Programme,Dance,HL,V2 structure 2013,PUBLISHED,v2.ib.s.dance-hl,3,0,0,3,0,MAPPING_DATA_MISSING,e20074b3-56a3-46c4-8700-17620912a15d
+IB Diploma Programme,Dance,SL,V2 structure 2013,PUBLISHED,v2.ib.s.dance-sl,3,0,0,3,0,MAPPING_DATA_MISSING,d79227d8-2710-4d17-8b1b-96c7dee79f43
+IB Diploma Programme,Design technology,HL,V2 structure 2027,PUBLISHED,v2.ib.s.design-technology-hl,3,0,0,3,0,MAPPING_DATA_MISSING,d69c772d-c6cc-434d-b555-f166c9a25f05
+IB Diploma Programme,Design technology,SL,V2 structure 2027,PUBLISHED,v2.ib.s.design-technology-sl,3,0,0,3,0,MAPPING_DATA_MISSING,7f9960ff-6491-4d1c-a2a1-4c454619db02
+IB Diploma Programme,Digital society,HL,V2 structure 2024,PUBLISHED,v2.ib.s.digital-society-hl,4,0,0,4,0,MAPPING_DATA_MISSING,44cc6ef5-ff2d-42f2-9bf1-600a53b89dc8
+IB Diploma Programme,Digital society,SL,V2 structure 2024,PUBLISHED,v2.ib.s.digital-society-sl,3,0,0,3,0,MAPPING_DATA_MISSING,99fa66e6-e925-4b6d-8192-79b2aa719444
+IB Diploma Programme,Economics,HL,V2 structure 2022,PUBLISHED,v2.ib.s.economics-hl,4,0,0,4,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,145d133d-0ad7-4127-95e3-13ebaad590b1
+IB Diploma Programme,Economics,SL,V2 structure 2022,PUBLISHED,v2.ib.s.economics-sl,3,0,0,3,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,17973fb6-ecc4-4dd0-aaa5-293d53f625b5
+IB Diploma Programme,Environmental systems and societies (interdisciplinary: Group 3 and/or Group 4),HL,V2 structure 2026,PUBLISHED,v2.ib.s.environmental-systems-societies-hl,3,0,0,3,0,MAPPING_DATA_MISSING,5437e643-6235-4e68-a538-4e8ee57f617d
+IB Diploma Programme,Environmental systems and societies (interdisciplinary: Group 3 and/or Group 4),SL,V2 structure 2026,PUBLISHED,v2.ib.s.environmental-systems-societies-sl,3,0,0,3,0,MAPPING_DATA_MISSING,8592f0a3-0251-4eb1-81ef-cc96de8c0a65
+IB Diploma Programme,Extended essay,,V2 structure 2027,PUBLISHED,v2.ib.s.extended-essay,1,0,0,1,0,NON_ACADEMIC_COMPONENT,bb7861b0-b654-485a-acf8-bb2f2cd0afbf
+IB Diploma Programme,Film,HL,V2 structure 2023,PUBLISHED,v2.ib.s.film-hl,4,0,0,4,0,MAPPING_DATA_MISSING,b0beefab-862a-4c9e-a1a8-ff89dc87a722
+IB Diploma Programme,Film,SL,V2 structure 2023,PUBLISHED,v2.ib.s.film-sl,3,0,0,3,0,MAPPING_DATA_MISSING,4c2110ae-2603-4822-bbd6-eb52272dce22
+IB Diploma Programme,Geography,HL,V2 structure 2019,PUBLISHED,v2.ib.s.geography-hl,4,0,0,4,0,MAPPING_DATA_MISSING,82e53682-1a45-4517-aa07-45236cae222d
+IB Diploma Programme,Geography,SL,V2 structure 2019,PUBLISHED,v2.ib.s.geography-sl,3,0,0,3,0,MAPPING_DATA_MISSING,6b47c877-2046-47e9-9711-53d5a0c02089
+IB Diploma Programme,Global politics,HL,V2 structure 2026,PUBLISHED,v2.ib.s.global-politics-hl,4,0,0,4,0,MAPPING_DATA_MISSING,1f0d64cd-9b27-48b8-ab7a-70934286e676
+IB Diploma Programme,Global politics,SL,V2 structure 2026,PUBLISHED,v2.ib.s.global-politics-sl,3,0,0,3,0,MAPPING_DATA_MISSING,8c02899f-76d6-4e27-bf3b-a018453c4628
+IB Diploma Programme,"History (2020 version, outgoing)",HL,V2 structure 2020,PUBLISHED,v2.ib.s.history-hl,4,0,0,4,0,LEGACY_RETIRED,80853830-3715-48b4-8174-aeb9bbe5dec4
+IB Diploma Programme,"History (2020 version, outgoing)",SL,V2 structure 2020,PUBLISHED,v2.ib.s.history-sl,3,0,0,3,0,LEGACY_RETIRED,8586c834-f171-4a28-80d4-c176a876e876
+IB Diploma Programme,"History (new course, first assessment 2028)",HL,V2 structure 2028,PUBLISHED,v2.ib.s.history-2028-hl,4,0,0,4,0,MAPPING_DATA_MISSING,4a468cd7-837c-45e1-8480-eeeaec5b82cc
+IB Diploma Programme,"History (new course, first assessment 2028)",SL,V2 structure 2028,PUBLISHED,v2.ib.s.history-2028-sl,3,0,0,3,0,MAPPING_DATA_MISSING,f6ec4d68-60db-47cb-afed-7931aa867af0
+IB Diploma Programme,Language A: language and literature,HL,V2 structure 2021,PUBLISHED,v2.ib.s.language-a-language-and-literature-hl,4,0,0,4,0,MAPPING_DATA_MISSING,793ab6b3-23d0-4bf6-8d2d-b3b65344369e
+IB Diploma Programme,Language A: language and literature,SL,V2 structure 2021,PUBLISHED,v2.ib.s.language-a-language-and-literature-sl,3,0,0,3,0,MAPPING_DATA_MISSING,ff7baab2-24c3-4c6a-bc06-87c82fb3372c
+IB Diploma Programme,Language A: literature,HL,V2 structure 2021,PUBLISHED,v2.ib.s.language-a-literature-hl,4,0,0,4,0,MAPPING_DATA_MISSING,7f6ec624-4e0b-40ae-939a-3b03dbac8736
+IB Diploma Programme,Language A: literature,SL,V2 structure 2021,PUBLISHED,v2.ib.s.language-a-literature-sl,3,0,0,3,0,MAPPING_DATA_MISSING,24738c19-87e0-4649-8bd7-548b7c7bf6d0
+IB Diploma Programme,Language B,HL,V2 structure 2020,PUBLISHED,v2.ib.s.language-b-hl,4,0,0,4,0,MAPPING_DATA_MISSING,eef1ddf2-12f3-45a5-b3db-c1fc2aad1f3e
+IB Diploma Programme,Language B,SL,V2 structure 2020,PUBLISHED,v2.ib.s.language-b-sl,4,0,0,4,0,MAPPING_DATA_MISSING,24873456-0918-4439-9660-d08ba043eac7
+IB Diploma Programme,Language ab initio (SL only),SL,V2 structure 2020,PUBLISHED,v2.ib.s.language-ab-initio-sl,4,0,0,4,0,MAPPING_DATA_MISSING,1eb85afa-33cc-4807-9206-bd0ec7bc748e
+IB Diploma Programme,"Literature and performance (interdisciplinary, SL only)",SL,V2 structure 2024,PUBLISHED,v2.ib.s.literature-and-performance-sl,3,0,0,3,0,MAPPING_DATA_MISSING,4292d185-6e62-49c7-8dcd-470d284e5d07
+IB Diploma Programme,Mathematics: Analysis and Approaches,SL,DEV-CERT v1,PUBLISHED,dev-cert.ib.math-aa-sl,2,0,0,3,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,e71245ab-9799-4f25-b923-f1f912122683
+IB Diploma Programme,Mathematics: analysis and approaches,HL,V2 2021-2028,PUBLISHED,v2.ib.math-aa-hl,3,0,0,8,15,HAS_CONCEPT_MAPPINGS,b43d591c-b12f-4984-a62f-3cb896629522
+IB Diploma Programme,Mathematics: analysis and approaches,SL,V2 2021-2028,PUBLISHED,v2.ib.math-aa-sl,2,0,0,7,13,HAS_CONCEPT_MAPPINGS,6f8f60f0-277a-465e-b5d3-ffa048f1c54e
+IB Diploma Programme,Mathematics: applications and interpretation,HL,V2 2021-2028,PUBLISHED,v2.ib.math-ai-hl,3,0,0,6,6,HAS_CONCEPT_MAPPINGS,128cb8da-c702-4a6f-804a-c0b84a3ef8fa
+IB Diploma Programme,Mathematics: applications and interpretation,SL,V2 2021-2028,PUBLISHED,v2.ib.math-ai-sl,2,0,0,5,5,HAS_CONCEPT_MAPPINGS,a78a4da1-d66a-48cc-834b-52dc8a2f5c13
+IB Diploma Programme,Music,HL,V2 structure 2022,PUBLISHED,v2.ib.s.music-hl,4,0,0,4,0,MAPPING_DATA_MISSING,6aa5343f-ac91-417e-ad10-41066da9148d
+IB Diploma Programme,Music,SL,V2 structure 2022,PUBLISHED,v2.ib.s.music-sl,3,0,0,3,0,MAPPING_DATA_MISSING,48c73f11-6eb8-4a40-8b06-7e55792272b7
+IB Diploma Programme,Philosophy,HL,V2 structure 2025,PUBLISHED,v2.ib.s.philosophy-hl,4,0,0,4,0,MAPPING_DATA_MISSING,d909dbc8-6c34-42d9-ab39-86793e19a23a
+IB Diploma Programme,Philosophy,SL,V2 structure 2025,PUBLISHED,v2.ib.s.philosophy-sl,3,0,0,3,0,MAPPING_DATA_MISSING,73853b58-b7db-4ba4-b4cc-b40f97268121
+IB Diploma Programme,Physics,HL,V2 2025,PUBLISHED,v2.ib.physics-hl,3,0,0,9,14,HAS_CONCEPT_MAPPINGS,189aaa61-af34-4e87-b9c9-8a5b29982f89
+IB Diploma Programme,Physics,SL,V2 2025,PUBLISHED,v2.ib.physics-sl,3,0,0,9,14,HAS_CONCEPT_MAPPINGS,5eb0c667-91df-47fa-98b5-abbd42af8ab9
+IB Diploma Programme,Psychology,HL,V2 structure 2027,PUBLISHED,v2.ib.s.psychology-hl,4,0,0,4,0,MAPPING_DATA_MISSING,208ba3f6-5476-4e4d-8d8c-c2e7ae57e571
+IB Diploma Programme,Psychology,SL,V2 structure 2027,PUBLISHED,v2.ib.s.psychology-sl,3,0,0,3,0,MAPPING_DATA_MISSING,f07f0732-d5ed-47bc-9b06-f91620741319
+IB Diploma Programme,Religion and society (successor to world religions),SL,V2 structure 2029,PUBLISHED,v2.ib.s.religion-and-society-sl,3,0,0,3,0,MAPPING_DATA_MISSING,3fdab1b4-2e98-4c61-bed4-9ac4de535060
+IB Diploma Programme,Social and cultural anthropology,HL,V2 structure 2019,PUBLISHED,v2.ib.s.social-and-cultural-anthropology-hl,3,0,0,3,0,MAPPING_DATA_MISSING,c300f9f4-2166-42e6-9678-cf960f65945a
+IB Diploma Programme,Social and cultural anthropology,SL,V2 structure 2019,PUBLISHED,v2.ib.s.social-and-cultural-anthropology-sl,3,0,0,3,0,MAPPING_DATA_MISSING,87e0f283-28d5-4010-8c08-e0e076e0a761
+IB Diploma Programme,"Sports, exercise and health science",HL,V2 structure 2026,PUBLISHED,v2.ib.s.sports-exercise-health-science-hl,4,0,0,4,0,MAPPING_DATA_MISSING,7993819f-8dc0-474b-8a6e-af7660593d6c
+IB Diploma Programme,"Sports, exercise and health science",SL,V2 structure 2026,PUBLISHED,v2.ib.s.sports-exercise-health-science-sl,4,0,0,4,0,MAPPING_DATA_MISSING,425682a4-737f-4905-b427-de18314aeaa6
+IB Diploma Programme,Theatre,HL,V2 structure 2024,PUBLISHED,v2.ib.s.theatre-hl,4,0,0,4,0,MAPPING_DATA_MISSING,e8075b9e-95e7-4643-912c-fe69eebf78cf
+IB Diploma Programme,Theatre,SL,V2 structure 2024,PUBLISHED,v2.ib.s.theatre-sl,3,0,0,3,0,MAPPING_DATA_MISSING,50eb09a2-e427-497f-b993-1ed29d6eb50c
+IB Diploma Programme,Theory of knowledge,,V2 structure 2022,PUBLISHED,v2.ib.s.theory-of-knowledge,2,0,0,2,0,NON_ACADEMIC_COMPONENT,a131e12a-b5ee-4132-92d1-c6676df20e94
+IB Diploma Programme,Visual arts,HL,V2 2027,PUBLISHED,v2.ib.visual-arts-hl,3,0,0,3,3,HAS_CONCEPT_MAPPINGS,cf23ba68-f458-49a3-8a09-8e6045455ec6
+IB Diploma Programme,Visual arts,SL,V2 2027,PUBLISHED,v2.ib.visual-arts-sl,3,0,0,3,3,HAS_CONCEPT_MAPPINGS,9241f1f4-7c57-4539-b2ea-21fabce34aa6
+IB Diploma Programme,"World religions (SL only, outgoing)",SL,V2 structure 2013,PUBLISHED,v2.ib.s.world-religions-sl,3,0,0,3,0,LEGACY_RETIRED,db98c943-31e3-4547-9ee9-54ff6daeaac0
+PAA,Inglés,,V2.1 PAA revisada,PUBLISHED,v2.paa,20,15,15,3,9,HAS_CONCEPT_MAPPINGS,6c68cc08-311c-41d5-aedb-0ab42d5890db
+PAA,Lectura,,DEV-CERT v1,PUBLISHED,dev-cert.paa,1,0,0,2,0,MAPPING_DATA_MISSING,ea114909-02e9-420d-847f-f7b109dc6cf8
+PAA,Lectura,,V2.1 PAA revisada,PUBLISHED,v2.paa,27,20,20,6,11,HAS_CONCEPT_MAPPINGS,f1929cc6-0041-4a24-9aff-d3fc18311b1a
+PAA,Matemáticas,,DEV-CERT v1,PUBLISHED,dev-cert.paa,1,0,0,3,28,HAS_CONCEPT_MAPPINGS,45ca9c6e-b549-49fb-b460-7c42e7afa355
+PAA,Matemáticas,,V2 PAA revisada,PUBLISHED,v2.paa.math,1,0,0,4,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,63e0239e-d7ee-4a5b-927e-a6b6abb513ec
+PAA,Matemáticas,,V2.1 PAA revisada,DRAFT,v2.paa,50,44,44,5,35,HAS_CONCEPT_MAPPINGS,421cc83a-8052-4aff-b59d-570a7fa6ea90
+PAA,Redacción,,DEV-CERT v1,PUBLISHED,dev-cert.paa,1,0,0,2,1,HAS_CONCEPT_MAPPINGS,abaea148-431b-4baa-9527-ebfde14ea02a
+PAA,Redacción,,V2.1 PAA revisada,PUBLISHED,v2.paa,12,5,5,6,6,HAS_CONCEPT_MAPPINGS,b988fa94-9eec-484c-b527-1f18f03d8c9c
+PAA (Pilot),Mathematics (Pilot),,Pilot 2026 v1,PUBLISHED,,1,1,1,1,1,HAS_CONCEPT_MAPPINGS,0a493b1c-47f6-462a-840f-6558db0790a6
+PISA,Ciencias,,V2 PISA 2022,PUBLISHED,v2.pisa.2022,1,0,0,6,6,HAS_CONCEPT_MAPPINGS,d5af827e-3652-4e7f-adf5-f6aeae25a840
+PISA,Lectura,,V2 PISA 2022,PUBLISHED,v2.pisa.2022,1,0,0,7,8,HAS_CONCEPT_MAPPINGS,68aa3d53-88f7-40a1-8248-4b135c105fdd
+PISA,Matemáticas,,V2 PISA 2022,PUBLISHED,v2.pisa.math,1,0,0,8,16,HAS_CONCEPT_MAPPINGS,fbf7e839-5b0c-41be-bce0-12c484e1d6e0
+PISA,Mathematics,,DEV-CERT v1,PUBLISHED,dev-cert.pisa,1,0,0,2,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,59ca7101-59fd-473e-969c-d2684f353732
+PISA,Reading,,DEV-CERT v1,PUBLISHED,dev-cert.pisa,1,0,0,2,0,MAPPING_DATA_MISSING,64a4e5c4-9a90-4a8a-87de-1e917d97e80a
+PISA,Science,,DEV-CERT v1,PUBLISHED,dev-cert.pisa,1,0,0,1,0,MAPPING_DATA_MISSING,ba8f6181-660c-4cb4-923a-f0190959d593
+Saber 11,Ciencias Naturales,,DEV-CERT v1,PUBLISHED,dev-cert.icfes.saber11,1,0,0,1,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,61230b74-440b-46ec-8a6b-ae0a038c96c4
+Saber 11,Inglés,,DEV-CERT v1,PUBLISHED,dev-cert.icfes.saber11,1,0,0,1,0,MAPPING_DATA_MISSING,7f65e17e-c897-4598-a33a-6263951afe92
+Saber 11,Lectura Crítica,,DEV-CERT v1,PUBLISHED,dev-cert.icfes.saber11,1,0,0,1,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,aca430ca-edaa-470d-87a2-6177e6dc4086
+Saber 11,Matemáticas,,DEV-CERT v1,PUBLISHED,dev-cert.icfes.saber11,1,0,0,1,0,EXPECTED_TO_HAVE_CONCEPT_MAPPINGS,4a5880a9-ce8c-4324-9843-801e172e791e
+Saber 11,Sociales y Ciudadanas,,DEV-CERT v1,PUBLISHED,dev-cert.icfes.saber11,1,0,0,1,0,MAPPING_DATA_MISSING,7d524b46-e968-40fb-9f74-1fa464724261

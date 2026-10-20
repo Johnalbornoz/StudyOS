@@ -29,9 +29,14 @@ vi.mock('@/services/canonical-prove-generation.service', () => ({
 }));
 
 const loadFingerprintsMock = vi.fn();
+const loadProveFingerprintsMock = vi.fn(async (..._a: any[]) => new Set<string>());
 vi.mock('@/services/quiz-persistence.service', async () => {
   const actual = await vi.importActual<typeof import('@/services/quiz-persistence.service')>('@/services/quiz-persistence.service');
-  return { ...actual, loadPriorPracticeQuestionFingerprints: (...a: any[]) => loadFingerprintsMock(...a) };
+  return {
+    ...actual,
+    loadPriorPracticeQuestionFingerprints: (...a: any[]) => loadFingerprintsMock(...a),
+    loadPriorProveQuestionFingerprints: (...a: any[]) => loadProveFingerprintsMock(...a),
+  };
 });
 
 import {
@@ -187,6 +192,21 @@ describe('prepareCanonicalProveActivity -- Part 1/2/3/6/14', () => {
     expect(updateCall[1]).toContain('GENERATION_INCOMPLETE');
   });
 
+  it('D75 -- a short result caused by exact prior-item rejections is FAILED with PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE (never READY with a reused item)', async () => {
+    mockNoStaleRows();
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'prep-1' }] });
+    queryMock.mockResolvedValueOnce({ rows: [] }); // the UPDATE ... FAILED
+    generateMock.mockResolvedValue({ questions: [Q('a')], finalQuestionCount: 1, priorPracticeFingerprintCount: 10, aggregateRecoveryUsed: true, exactNoveltySupplyShortage: true });
+    await prepareCanonicalProveActivity({
+      studentId: 's1', conceptId: 'c1', subjectId: 'subj1',
+      pedagogicalPolicyVersion: 'v1', canonicalRevision: 'rev1', contract: CONTRACT,
+      language: 'en', guidance: 'g', visualAidRate: 0, ibContext: null,
+    });
+    const updateCall = queryMock.mock.calls[3];
+    expect(updateCall[0]).toMatch(/SET status = 'FAILED'/);
+    expect(updateCall[1]).toContain('PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE');
+  });
+
   it('Part 14 -- an unexpected error during generation is caught internally and never rethrown to the caller (background failure safety)', async () => {
     mockNoStaleRows();
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'prep-1' }] });
@@ -267,10 +287,20 @@ describe('revalidatePreparedActivity -- Part 8 (status/expiry/contract cheap-fir
     expect(result.reason).toBe('NOVELTY_STALE');
   });
 
+  it('D75 -- a batch prepared BEFORE a later Prove attempt is re-checked against that attempt: an exact prior-PROVE item invalidates the whole batch (NOVELTY_STALE)', async () => {
+    loadFingerprintsMock.mockResolvedValue(new Set()); // no Practice collision
+    loadProveFingerprintsMock.mockResolvedValueOnce(new Set(['a'])); // the later Prove attempt administered 'a'
+    const result = await revalidatePreparedActivity(toRow(row()), CONTRACT);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe('NOVELTY_STALE');
+    expect(loadProveFingerprintsMock).toHaveBeenCalledWith('s1', 'c1');
+  });
+
   it('always re-fetches FRESH fingerprints -- never trusts the stored priorPracticeFingerprintBasis hash alone to decide validity', () => {
     const idx = PREPARED_ACTIVITY_SRC.indexOf('export async function revalidatePreparedActivity');
     const block = PREPARED_ACTIVITY_SRC.slice(idx);
-    expect(block).toMatch(/const freshFingerprints = await loadPriorPracticeQuestionFingerprints\(/);
+    // D75: the CURRENT Practice AND Prove history
+    expect(block).toMatch(/const freshFingerprints = \(await loadProveExactNoveltyExclusions\(prepared\.studentId, prepared\.conceptId\)\)\.fingerprints;/);
   });
 });
 
@@ -345,32 +375,17 @@ describe('DB migration -- Part 5', () => {
 // ============================================================
 // Route wiring -- trigger (Part 2/3) and consumption (Part 8/10/11)
 // ============================================================
-describe('route wiring -- Part 2 trigger (LEARNING_ACTIVITY_DELIVERY: now every canonical stage)', () => {
-  const TRIGGER = 'after(() => scheduleDeliveryReplenishment(target, { language: replenishLanguage })';
-  it('the trigger fires only inside the fresh-canonical-decision success branch (canonicalResultsStatus = OK)', () => {
+describe('route wiring -- OE-014: a finished activity never triggers preparation or replenishment', () => {
+  it('the fresh-canonical-decision success branch schedules nothing', () => {
     const okIdx = ROUTE_SRC.indexOf("canonicalResultsStatus = 'OK';");
     expect(okIdx).toBeGreaterThan(-1);
-    const triggerIdx = ROUTE_SRC.indexOf(TRIGGER, okIdx);
-    expect(triggerIdx).toBeGreaterThan(okIdx);
-    expect(triggerIdx).toBeLessThan(ROUTE_SRC.indexOf('} catch (error) {', okIdx));
+    const branch = ROUTE_SRC.slice(okIdx, ROUTE_SRC.indexOf('} catch (error) {', okIdx));
+    expect(branch.replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/scheduleDeliveryReplenishment|prepareCanonicalProveActivity|after\(/);
   });
 
-  it('uses after() (Next.js post-response background work, Vercel waitUntil) -- never a bare detached Promise', () => {
-    expect(ROUTE_SRC).toMatch(/import \{ NextRequest, NextResponse, after \} from 'next\/server';/);
-    expect(ROUTE_SRC).toContain(TRIGGER);
-  });
-
-  it('Part 2 -- the response is never gated on preparation (scheduled after it is sent)', () => {
-    const triggerIdx = ROUTE_SRC.indexOf(TRIGGER);
-    const returnIdx = ROUTE_SRC.indexOf('return NextResponse.json({\n      success: true,\n      data: {\n        quizId: validated.quizId,');
-    expect(triggerIdx).toBeGreaterThan(-1);
-    expect(returnIdx).toBeGreaterThan(triggerIdx);
-    expect(ROUTE_SRC.slice(triggerIdx - 10, triggerIdx + 20)).not.toMatch(/await after\(/);
-  });
-
-  it('a background failure is caught inside the scheduled callback itself -- never an unhandled rejection', () => {
-    const idx = ROUTE_SRC.indexOf(TRIGGER);
-    expect(ROUTE_SRC.slice(idx, idx + 300)).toMatch(/\.catch\(\(err\) => console\.error\('\[activity-delivery\] replenishment failed', err\)\)/);
+  it('the route has no post-response work at all: no after(), no replenishment import', () => {
+    expect(ROUTE_SRC).toMatch(/import \{ NextRequest, NextResponse \} from 'next\/server';/);
+    expect(ROUTE_SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/\bafter\(|scheduleDeliveryReplenishment|activity-delivery-worker\.service/);
   });
 });
 

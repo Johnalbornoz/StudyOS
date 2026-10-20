@@ -1,0 +1,457 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r1.lect-lit",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Fragmento narrativo literario ORIGINAL de 260 a 340 palabras sobre una joven que regresa al taller de relojería de su abuelo. Narrador definido (primera o tercera persona), al menos dos figuras retóricas claras (símil, metáfora, personificación o hipérbole) y un ambiente bien construido. No imites a ningún autor conocido.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.narrative-elements",
+        "difficulty": 3,
+        "focus": "el tipo de narrador o la voz narrativa del fragmento"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.figurative-language",
+        "difficulty": 3,
+        "focus": "la figura retórica presente en una expresión citada del fragmento"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.figurative-language",
+        "difficulty": 4,
+        "focus": "el efecto o sentido de una imagen figurada citada del fragmento"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "El taller de las seis",
+      "text": "Volví al taller de mi abuelo una tarde de lluvia, nueve meses después de su muerte. La persiana verde estaba a medio bajar y, al empujarla, soltó un gemido largo, como si hubiera pasado el invierno guardando una pregunta. Adentro olía a aceite tibio, madera húmeda y metal antiguo. El polvo flotaba sobre el mostrador como harina suspendida en una cocina abandonada.\n\nNo encendí la luz enseguida. Conocía de memoria la disposición de cada cosa: las cajas de resortes junto a la ventana, el calendario detenido en abril, la lupa con mango de carey sobre el paño azul. Mi abuelo decía que un reloj no se arreglaba con prisa, sino escuchando el lugar donde había perdido el pulso. Yo había repetido esa frase muchas veces sin entenderla.\n\nCuando abrí el cajón inferior del banco de trabajo, encontré el reloj de bolsillo que él llevaba en el chaleco. Su tapa tenía una raya nueva, fina como una cicatriz. Lo acerqué al oído. Durante unos segundos no ocurrió nada; luego, desde su interior, nació un tic tac débil. Los demás relojes parecieron responderle: tosieron, suspiraron y llenaron el taller de pequeñas voces de lata.\n\nEntonces encendí la lámpara. La luz cayó sobre las herramientas y el banco dejó de parecer un mueble vacío: era un puerto después de la tormenta, lleno de objetos que aguardaban una orden para partir. Me senté en la silla alta, demasiado grande cuando yo era niña, y coloqué el reloj abierto frente a mí. Afuera, la lluvia golpeaba los vidrios con dedos impacientes. Adentro, por primera vez, no sentí que hubiera regresado para cerrar una puerta. Había vuelto para aprender a darle cuerda al silencio.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué tipo de narrador presenta el fragmento?",
+        "options": [
+          {
+            "text": "Un narrador protagonista que relata su propia experiencia",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La voz usa la primera persona y cuenta acciones, recuerdos y emociones que vive directamente."
+          },
+          {
+            "text": "Un narrador omnisciente que conoce a todos los personajes",
+            "isKey": false,
+            "misconception": "CONFUSES_FIRST_PERSON_WITH_OMNISCIENCE",
+            "rationale": "Aunque la narradora conoce el taller, el relato se limita a su perspectiva y no revela pensamientos de otros personajes."
+          },
+          {
+            "text": "Un narrador testigo que observa la experiencia ajena",
+            "isKey": false,
+            "misconception": "CONFUSES_PROTAGONIST_WITH_WITNESS",
+            "rationale": "La voz no observa a otra protagonista: ella misma regresa al taller y realiza las acciones narradas."
+          },
+          {
+            "text": "Un narrador en segunda persona que interpela al lector",
+            "isKey": false,
+            "misconception": "CONFUSES_DIRECT_ADDRESS_WITH_NARRATION",
+            "rationale": "El fragmento no se dirige a un tú; está contado desde un yo que participa en los hechos."
+          }
+        ],
+        "evidenceQuote": "Volví al taller de mi abuelo una tarde de lluvia"
+      },
+      {
+        "slot": "s2",
+        "stem": "En la expresión “la persiana verde estaba a medio bajar y, al empujarla, soltó un gemido largo”, ¿qué figura retórica se emplea principalmente?",
+        "options": [
+          {
+            "text": "Una personificación que atribuye una acción humana al objeto",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La persiana recibe la capacidad de gemir, una acción propia de un ser vivo."
+          },
+          {
+            "text": "Una metáfora que identifica dos realidades sin comparación",
+            "isKey": false,
+            "misconception": "CONFUSES_PERSONIFICATION_WITH_METAPHOR",
+            "rationale": "La expresión da una cualidad humana a la persiana; no sustituye una realidad por otra."
+          },
+          {
+            "text": "Un símil que compara dos elementos mediante un nexo",
+            "isKey": false,
+            "misconception": "CONFUSES_NEARBY_SIMILE_WITH_TARGET_EXPRESSION",
+            "rationale": "Aunque después aparece “como si”, el efecto central de la expresión citada es que la persiana gime."
+          },
+          {
+            "text": "Una hipérbole que aumenta una cualidad de manera extrema",
+            "isKey": false,
+            "misconception": "CONFUSES_VIVID_DESCRIPTION_WITH_HYPERBOLE",
+            "rationale": "El gemido crea una imagen expresiva, pero no exagera una cantidad o cualidad hasta lo imposible."
+          }
+        ],
+        "evidenceQuote": "al empujarla, soltó un gemido largo, como si hubiera pasado"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué efecto produce la imagen “era un puerto después de la tormenta” para describir el banco de trabajo?",
+        "options": [
+          {
+            "text": "Sugiere un espacio de calma que conserva actividad pendiente",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La imagen del puerto tras la tormenta combina el alivio posterior con la idea de objetos listos para emprender una nueva tarea."
+          },
+          {
+            "text": "Presenta un espacio dañado que ya no puede utilizarse",
+            "isKey": false,
+            "misconception": "INTERPRETS_STORM_AS_IRREVERSIBLE_DESTRUCTION",
+            "rationale": "La tormenta ya pasó y los objetos aguardan partir, por lo que la imagen no comunica inutilidad."
+          },
+          {
+            "text": "Describe un espacio ruidoso dominado por visitantes externos",
+            "isKey": false,
+            "misconception": "LITERALIZES_FIGURATIVE_SETTING",
+            "rationale": "El puerto funciona como comparación del banco de trabajo; no indica la llegada real de visitantes."
+          },
+          {
+            "text": "Expresa un espacio vacío que carece de propósito futuro",
+            "isKey": false,
+            "misconception": "IGNORES_CONTEXTUAL_TRANSFORMATION",
+            "rationale": "El banco deja de parecer vacío y los objetos esperan una orden, lo que señala continuidad y posibilidad."
+          }
+        ],
+        "evidenceQuote": "era un puerto después de la tormenta, lleno de objetos que aguardaban"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "be7a0148-9719-40ba-89b5-d8f3611a03af",
+    "generatedAt": "2026-10-14T01:26:28.017Z",
+    "unitId": "paa-pilot.r1.lect-lit"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "36bd57a8-cf4b-45ac-8bae-071d20506992",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "610ce05a-19cc-48fd-bafb-bfbfdc366560",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-literario.3cce64b86633",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.literario",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "STRUCTURE",
+          "SCORING_COMPATIBILITY"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": false,
+            "detail": "ABSOLUTE_WORDING_SINGLES_OUT_AN_OPTION"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.narrative-elements"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.4b0a0a4752cb@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": false,
+            "detail": "SELECTED_RESPONSE_NOT_CERTIFIABLE: ABSOLUTE_WORDING_SINGLES_OUT_AN_OPTION"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-literario.9008b9ac1000",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.literario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.figurative-language"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.4b0a0a4752cb@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-literario.c1bdda0e890f",
+        "slot": "s3",
+        "objectiveCode": "paa.lect.literario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.figurative-language"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.4b0a0a4752cb@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

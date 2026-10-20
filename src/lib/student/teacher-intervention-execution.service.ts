@@ -21,11 +21,15 @@ import { db } from '@/lib/db';
 import { isOwner } from '@/lib/authorization';
 import { generatePracticeQuestions } from '@/services/quiz-generation.service';
 import { storeQuiz, getQuizSession } from '@/services/quiz-persistence.service';
+import { resolveLanguageForSubject as languageFor } from '@/services/subject-generation-context.service';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
 import { getStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import { getExamVersion, getPublishedExamVersion } from '@/lib/assessment/exam-definition.service';
 import { getSimulationEligibility } from '@/lib/simulation/eligibility.service';
 import { startSimulationAttempt, getSimulationAttempt } from '@/lib/simulation/attempt.service';
+import { createExamInstance, startExamInstance, ExamInstanceError } from '@/lib/exam-core/exam-instance.service';
+import { listComponentsForVersion } from '@/lib/assessment/component.service';
+import { isPreparationSimulationType } from '@/lib/simulation/preparation-simulation';
 import type { SimulationType } from '@/lib/simulation/types';
 
 export class StudentInterventionAccessDeniedError extends Error {
@@ -47,6 +51,67 @@ export class StudentInterventionNotStartableError extends Error {
     super(reason);
     this.name = 'StudentInterventionNotStartableError';
   }
+}
+
+/**
+ * B1-C -- how a Teacher-assigned exam practice becomes an attempt, by what it is:
+ *   a preparation type (TOPIC_EXAM / DOMAIN_EXAM / MINI_MOCK)  -> a Preparation Simulation, started directly
+ *   anything else (a full mock)                                  -> an OFFICIAL mock, through a frozen exam instance
+ * Eligibility has already been checked by the caller for every type alike; this only chooses the start path.
+ */
+export async function startInterventionExamAttempt(p: { studentId: string; examProfileId: string; examVersionId: string; simulationType: SimulationType; learningObjectiveId?: string; academicSubjectId?: string }): Promise<string> {
+  if (!isPreparationSimulationType(p.simulationType)) return startOfficialMockForIntervention({ studentId: p.studentId, examProfileId: p.examProfileId, examVersionId: p.examVersionId });
+  const { simulationAttempt } = await startSimulationAttempt({
+    studentId: p.studentId,
+    examProfileId: p.examProfileId,
+    examVersionId: p.examVersionId,
+    simulationType: p.simulationType,
+    timingMode: 'UNTIMED',
+    learningObjectiveId: p.learningObjectiveId,
+    academicSubjectId: p.academicSubjectId,
+    language: 'en',
+  });
+  return simulationAttempt.id;
+}
+
+/**
+ * B1-C -- starts a Teacher-assigned FULL_MOCK as an official mock: a MOCK exam instance over every
+ * simulation-capable component of the version, frozen at creation, then started. Returns the attempt id.
+ * Any reason the official form cannot exist (no eligible content, a component with no mock, an attempt
+ * already open) makes the assignment not startable; nothing is generated in its place.
+ */
+export async function startOfficialMockForIntervention(p: { studentId: string; examProfileId: string; examVersionId: string }): Promise<string> {
+  try {
+    const componentIds = (await listComponentsForVersion(p.examVersionId)).filter((c) => c.simulationCapable).map((c) => c.id);
+    const instance = await createExamInstance({ studentId: p.studentId, examProfileId: p.examProfileId, examVersionId: p.examVersionId, componentIds, mode: 'MOCK' });
+    const started = await startExamInstance(instance.id, { language: 'en' });
+    if (!started.simulationAttemptId) throw new ExamInstanceError('INVALID_STATE', 'instance started without an attempt');
+    return started.simulationAttemptId;
+  } catch (err) {
+    if (err instanceof ExamInstanceError) throw new StudentInterventionNotStartableError(`official mock not available: ${err.code}`);
+    throw err;
+  }
+}
+
+/**
+ * Track A: practice generation is all-or-nothing (it returns [] rather than
+ * a short quiz). An empty set must never become a stored, startable
+ * activity -- the start fails retryably instead and NOTHING is written (no
+ * quiz session, no execution row, no status change), so the Student's next
+ * "Start" simply tries again.
+ */
+export class StudentInterventionGenerationFailedError extends Error {
+  constructor() {
+    super('practice generation returned no questions');
+    this.name = 'StudentInterventionGenerationFailedError';
+  }
+}
+
+/** Track A: generatePracticeQuestions, refusing an empty (all-or-nothing failed) set. */
+async function generateNonEmpty(conceptId: string, studentId: string, subjectId: string, language: string) {
+  const questions = await generatePracticeQuestions(conceptId, studentId, subjectId, { language });
+  if (questions.length === 0) throw new StudentInterventionGenerationFailedError();
+  return questions;
 }
 
 export type TeacherInterventionStatus = 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
@@ -77,6 +142,9 @@ export interface StudentTeacherIntervention {
   instructions: string | null;
   assignedAt: string;
   dueAt: string | null;
+  /** Track A: assignment title and the moment it becomes startable (null = immediately). */
+  title: string | null;
+  startsAt: string | null;
   storedStatus: TeacherInterventionStatus;
   effectiveStatus: TeacherInterventionStatus;
 }
@@ -94,6 +162,8 @@ function toStudentIntervention(row: any): StudentTeacherIntervention {
     instructions: row.instructions,
     assignedAt: row.assigned_at instanceof Date ? row.assigned_at.toISOString() : row.assigned_at,
     dueAt,
+    title: row.title ?? null,
+    startsAt: row.starts_at instanceof Date ? row.starts_at.toISOString() : (row.starts_at ?? null),
     storedStatus,
     effectiveStatus: getEffectiveStatus(storedStatus, dueAt),
   };
@@ -166,7 +236,7 @@ export async function getStudentPendingTeacherInterventions(studentId: string): 
  * complete` flow (scoring, F8 post-exam diagnosis, F9 readiness
  * recomputation) is never called into or duplicated from here.
  */
-async function reconcileCompletionsForStudent(studentId: string): Promise<void> {
+export async function reconcileCompletionsForStudent(studentId: string): Promise<void> {
   const activeExecutions = await db.query(
     `
     SELECT tie.id AS execution_id, tie.execution_reference, tie.teacher_intervention_id, tie.execution_type
@@ -292,8 +362,11 @@ export async function startConceptReinforcementExecution(
   const subjectId = conceptRow.rows[0]?.subject_id;
   if (!subjectId) throw new Error(`concept ${claimed.conceptId} has no subject_id`);
 
-  const questions = await generatePracticeQuestions(claimed.conceptId, claimed.studentId, subjectId, {});
-  const quizId = await storeQuiz(claimed.studentId, claimed.conceptId, subjectId, questions, 'en', 'topic_practice', []);
+  // Track A: same language resolution as the Student's own practice route
+  // (generate-and-take), never a hard-coded 'en'.
+  const language = await languageFor(subjectId, claimed.studentId);
+  const questions = await generateNonEmpty(claimed.conceptId, claimed.studentId, subjectId, language);
+  const quizId = await storeQuiz(claimed.studentId, claimed.conceptId, subjectId, questions, language, 'topic_practice', []);
 
   try {
     const insertResult = await db.query(
@@ -440,8 +513,9 @@ export async function startSkillReinforcementExecution(
   const subjectId = conceptRow.rows[0]?.subject_id;
   if (!subjectId) throw new Error(`concept ${conceptId} has no subject_id`);
 
-  const questions = await generatePracticeQuestions(conceptId, claimed.studentId, subjectId, {});
-  const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, 'en', 'topic_practice', [], null, [claimed.skillId]);
+  const language = await languageFor(subjectId, claimed.studentId);
+  const questions = await generateNonEmpty(conceptId, claimed.studentId, subjectId, language);
+  const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, language, 'topic_practice', [], null, [claimed.skillId]);
 
   try {
     const insertResult = await db.query(
@@ -577,8 +651,9 @@ export async function startCompetencyReinforcementExecution(
   const subjectId = conceptRow.rows[0]?.subject_id;
   if (!subjectId) throw new Error(`concept ${conceptId} has no subject_id`);
 
-  const questions = await generatePracticeQuestions(conceptId, claimed.studentId, subjectId, {});
-  const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, 'en', 'topic_practice', [], null, null, [claimed.competencyId]);
+  const language = await languageFor(subjectId, claimed.studentId);
+  const questions = await generateNonEmpty(conceptId, claimed.studentId, subjectId, language);
+  const quizId = await storeQuiz(claimed.studentId, conceptId, subjectId, questions, language, 'topic_practice', [], null, null, [claimed.competencyId]);
 
   try {
     const insertResult = await db.query(
@@ -700,7 +775,7 @@ async function startExamReinforcementExecution(
     // profile itself does not pin one. Only a PUBLISHED version may
     // be started -- a RETIRED/SUPERSEDED/DRAFT version is a controlled
     // rejection (Case B), never silently substituted.
-    const examVersionId = profile.examVersionId ?? (await getPublishedExamVersion(profile.examDefinitionId))?.id ?? null;
+    const examVersionId = profile.examVersionId ?? (profile.examDefinitionId ? (await getPublishedExamVersion(profile.examDefinitionId))?.id ?? null : null);
     if (!examVersionId) {
       await client.query('ROLLBACK');
       throw new StudentInterventionNotStartableError(`no resolvable exam version for exam profile ${intervention.exam_profile_id}`);
@@ -729,16 +804,12 @@ async function startExamReinforcementExecution(
     // this is what makes the concurrency guarantee below stronger than
     // Concept/Skill/Competency's own "insert-after-generation, UNIQUE
     // constraint as the final guard" pattern.
-    const { simulationAttempt } = await startSimulationAttempt({
-      studentId: intervention.student_id,
-      examProfileId: intervention.exam_profile_id,
-      examVersionId,
-      simulationType,
-      timingMode: 'UNTIMED',
-      learningObjectiveId,
-      academicSubjectId,
-      language: 'en',
-    });
+    // B1-C (official mock invariant): FULL_MOCK => frozen exam instance, whoever launches it. A Teacher-assigned
+    // full mock is therefore an OFFICIAL mock: it is created as a MOCK exam instance (official blueprint, form
+    // frozen from eligible reviewed content, official timing) and started through it. When no official form can
+    // be frozen, the assignment is not startable -- it is never downgraded to a learner-adaptive simulation.
+    // Every other assigned type (TOPIC_EXAM / DOMAIN_EXAM / MINI_MOCK) is a Preparation Simulation, as before.
+    const simulationAttempt = { id: await startInterventionExamAttempt({ studentId: intervention.student_id, examProfileId: intervention.exam_profile_id, examVersionId, simulationType, learningObjectiveId, academicSubjectId }) };
 
     const insertResult = await client.query(
       `
@@ -779,8 +850,14 @@ export async function startTeacherInterventionExecution(
   interventionId: string,
   idempotencyKey: string
 ): Promise<StartExecutionResult> {
-  const typeRow = await db.query(`SELECT intervention_type FROM teacher_interventions WHERE id = $1`, [interventionId]);
+  const typeRow = await db.query(`SELECT intervention_type, student_id, starts_at FROM teacher_interventions WHERE id = $1`, [interventionId]);
   if (typeRow.rows.length === 0) throw new StudentInterventionNotFoundError(interventionId);
+  // Track A: an assignment with a future start date is visible but not yet
+  // startable (owner check first, so a non-owner still gets ACCESS_DENIED).
+  const startsAt = typeRow.rows[0].starts_at;
+  if (startsAt && new Date(startsAt).getTime() > Date.now() && (await isOwner(actorUserId, typeRow.rows[0].student_id))) {
+    throw new StudentInterventionNotStartableError('intervention is not available yet (starts_at in the future)');
+  }
 
   if (typeRow.rows[0].intervention_type === 'SKILL_PRACTICE') {
     return startSkillReinforcementExecution(actorUserId, interventionId, idempotencyKey);

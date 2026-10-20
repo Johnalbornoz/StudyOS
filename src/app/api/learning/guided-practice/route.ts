@@ -41,6 +41,8 @@ import { query } from '@/lib/db';
 import type { EvidenceMode } from '@/lib/activity-taxonomy';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { instructionalAssistanceLockedResponse } from '@/lib/ai/instructional-assistance-guard';
+import { learningLicenceRequiredResponse } from '@/lib/entitlements/learning-gate';
 
 const VALID_MODES: ReadonlySet<string> = new Set<QuizMode>([
   'topic_practice', 'review', 'quick_check', 'retention_check',
@@ -71,6 +73,14 @@ async function handlePOST(request: NextRequest) {
   if (!(await verifyStudentAccess(authContext.userId, v.studentId, authContext.role))) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
+
+  // L11 / EN-2 (D-8a): instructional AI is part of the licence -- refused before any generation.
+  const licenceRequired = await learningLicenceRequiredResponse(authContext, v.studentId);
+  if (licenceRequired) return licenceRequired;
+
+  // Human Agency P0-1: student-wide, server-authoritative, fail-closed.
+  const assistanceLocked = await instructionalAssistanceLockedResponse(v.studentId);
+  if (assistanceLocked) return assistanceLocked;
 
   let conceptId: string | null;
   let subjectId: string;

@@ -197,7 +197,7 @@ async function main() {
   assert(paaConceptMapping.rows[0].canonical_concept_id === cambridgeConceptMapping.rows[0].canonical_concept_id, 'task 33-N: PAA and Cambridge objectives reference the exact SAME canonical concept id -- one knowledge identity');
   const paaExamDefRow = await db.query(`SELECT exam_family FROM exam_definitions WHERE id = $1`, [paaExamDefId]);
   const cambridgeExamDefRow = await db.query(`SELECT exam_family FROM exam_definitions WHERE id = $1`, [cambridgeExamDefId]);
-  assert(paaExamDefRow.rows[0].exam_family !== cambridgeExamDefRow.rows[0].exam_family, 'task 33-N: PAA (ADMISSION_EXAM) and Cambridge (SUBJECT_ASSESSMENT) have genuinely DIFFERENT assessment configuration, despite sharing the same canonical concept');
+  assert(paaExamDefRow.rows[0].exam_family !== cambridgeExamDefRow.rows[0].exam_family, 'task 33-N: PAA and Cambridge have genuinely DIFFERENT assessment configuration, despite sharing the same canonical concept');
   assert(conceptLinearId === paaConceptMapping.rows[0].canonical_concept_id, 'task 33-N: the shared canonical concept is exactly the one seeded, confirmed by direct id equality');
 
   console.log('\nAll F7 adversarial certification assertions passed against real PostgreSQL.');

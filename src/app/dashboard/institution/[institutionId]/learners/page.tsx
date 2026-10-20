@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getInstitutionOverview, getInstitutionLearnerSummary, InstitutionIntelligenceAccessDeniedError, NoActiveAnalyticsPolicyError } from '@/lib/institution-intelligence';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -27,7 +27,7 @@ export default async function InstitutionLearnersPage({ params }: { params: Prom
   if (!clerkUserId) redirect('/sign-in');
 
   const actor = await getOrCreateCanonicalUser(clerkUserId, null);
-  const locale = await getInterfaceLanguage(actor.id).catch(() => 'es' as const);
+  const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
 
   let overview;
@@ -49,7 +49,14 @@ export default async function InstitutionLearnersPage({ params }: { params: Prom
     overview: t['institution.overview.title'],
     grades: t['institution.grades.title'],
     classes: t['institution.classes.title'],
+    students: t['iops.nav.students'],
     teachers: t['institution.teachers.title'],
+    requests: t['institution.requests.title'],
+    subjects: t['ia.nav.subjects'],
+    curriculum: t['icur.nav'],
+    tasks: t['cur2.tasks.nav'],
+    coordinators: t['ia.nav.coordinators'],
+    settings: t['ia.nav.settings'],
     learners: t['institution.learners.title'],
     coverage: t['institution.coverage.title'],
     readiness: t['institution.readiness.title'],

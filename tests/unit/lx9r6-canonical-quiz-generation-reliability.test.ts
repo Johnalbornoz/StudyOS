@@ -303,7 +303,8 @@ describe('17. published count equals required count / 20. zero accepted question
     // `error: 'GENERATION_FAILED'`, and storeQuiz is still unreachable
     // from this branch either way.
     expect(afterCheck).toMatch(/return NextResponse\.json\(\s*\n\s*validated\.quizMode === 'canonical_prove'/);
-    expect(afterCheck).toMatch(/error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE'/);
+    // D75: the canonical_prove reason is V1_PROVE_GENERATION_INCOMPLETE or PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE (proveReasonCode)
+    expect(afterCheck).toMatch(/error: 'GENERATION_FAILED', reason: proveReasonCode,/);
     expect(afterCheck).toMatch(/: \{ error: 'GENERATION_FAILED', canonicalErrorCode: toCanonicalErrorCode\('GENERATION_FAILED'\)\.code, message: 'Failed to generate quiz questions' \}/);
     expect(afterCheck.indexOf('const quizId = await storeQuiz(')).toBeGreaterThan(afterCheck.indexOf("error: 'GENERATION_FAILED'"));
   });

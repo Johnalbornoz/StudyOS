@@ -36,6 +36,9 @@ export interface PracticeExplanation {
   attempts: Array<{ scorePercent: number; passed: boolean }>;
   /** Fewest additional passing practices that satisfy the rule (the window slides). */
   remainingPasses: number;
+  /** ROLLING_3_AVERAGE (null until 3 completed practices) and its bar. */
+  averagePercent: number | null;
+  minimumAveragePercent: number;
   satisfied: boolean;
 }
 
@@ -59,6 +62,18 @@ export interface ProgressExplanation {
 type DecisionInput = Pick<CanonicalPedagogicalDecision, 'stage' | 'actionState' | 'nextEligibleAt' | 'intervention' | 'requirements' | 'practiceProgress'>;
 
 /** Fewest additional passing attempts so that >= required of the last windowSize pass. */
+/**
+ * Fewest additional practices (each assumed to score 100%) after which the rolling rule holds: a full window whose
+ * average reaches the bar and whose latest practice passes.
+ */
+export function remainingPracticesFor(scores: number[], windowSize: number, minimum: number): number {
+  for (let k = 0; k <= windowSize; k++) {
+    const next = [...scores, ...Array<number>(k).fill(100)].slice(-windowSize);
+    if (next.length === windowSize && next.reduce((a, b) => a + b, 0) / windowSize >= minimum && next[next.length - 1] >= minimum) return k;
+  }
+  return windowSize;
+}
+
 export function remainingPassesFor(window: boolean[], windowSize: number, required: number): number {
   for (let k = 0; k <= required; k++) {
     const next = [...window, ...Array<boolean>(k).fill(true)].slice(-windowSize);
@@ -70,9 +85,11 @@ export function remainingPassesFor(window: boolean[], windowSize: number, requir
 function practiceFrom(decision: DecisionInput): PracticeExplanation {
   const p = decision.practiceProgress;
   const windowSize = p?.windowSize ?? 3;
-  const required = p?.requiredPasses ?? 2;
+  // Pilot rule: the counter is completed practices in the window (3 needed), the bar is the average + the latest.
+  const required = p?.windowSize ?? CANONICAL_POLICY.practice.windowSize;
   const attempts = (p?.recentValidAttempts ?? []).map((a) => ({ scorePercent: a.scorePercent, passed: a.passed }));
-  const passes = p?.passesInWindow ?? attempts.filter((a) => a.passed).length;
+  // completed practices in the current window (the counter), never a per-attempt pass requirement
+  const passes = attempts.length;
   const satisfied = p?.satisfied ?? false;
   return {
     passes,
@@ -80,7 +97,9 @@ function practiceFrom(decision: DecisionInput): PracticeExplanation {
     windowSize,
     minimumScorePercent: p?.minimumScorePercent ?? CANONICAL_POLICY.practice.minimumScorePercent,
     attempts,
-    remainingPasses: satisfied ? 0 : remainingPassesFor(attempts.map((a) => a.passed), windowSize, required),
+    remainingPasses: satisfied ? 0 : remainingPracticesFor(attempts.map((a) => a.scorePercent), windowSize, p?.minimumWindowAveragePercent ?? CANONICAL_POLICY.practice.minimumWindowAveragePercent),
+    averagePercent: p?.windowAveragePercent ?? null,
+    minimumAveragePercent: p?.minimumWindowAveragePercent ?? CANONICAL_POLICY.practice.minimumWindowAveragePercent,
     satisfied,
   };
 }
@@ -106,7 +125,8 @@ export function buildProgressExplanation(decision: DecisionInput, formatDate: (i
   let after: LocalizedLine | null;
   switch (stage) {
     case 'LEARN':
-      remaining = { key: 'progress.remaining.LEARN', params: { min: String(P.learn.minimumScorePercentExclusive) } };
+      // 2026-10-16 contract 1.1: a guided 4-7 interaction session, no score gate.
+      remaining = { key: 'progress.remaining.LEARN', params: { min: String(P.learn.minInteractions), max: String(P.learn.maxInteractions) } };
       after = { key: 'progress.after.LEARN', params: {} };
       break;
     case 'PRACTICE':
@@ -130,7 +150,8 @@ export function buildProgressExplanation(decision: DecisionInput, formatDate: (i
     case 'TRANSFER':
       remaining = {
         key: 'progress.remaining.TRANSFER',
-        params: { count: String(P.transfer.challengeCount), min: String(P.transfer.minimumOverallScorePercent), per: String(P.transfer.perChallengeMinimumScorePercent) },
+        // 2026-10-16 contract 1.2: an adaptive ladder of 3-5 challenges (near -> mid -> far), each passing at 80%.
+        params: { min: String(P.transfer.minChallenges), max: String(P.transfer.maxChallenges), per: String(P.transfer.perChallengePassPercent) },
       };
       after = { key: 'progress.after.TRANSFER', params: {} };
       break;

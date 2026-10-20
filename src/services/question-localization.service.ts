@@ -28,6 +28,7 @@
  * falls back to the LX-4P-R1 explicit-restart dialog. A question is
  * never partially mutated.
  */
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { executeAI, getPrompt } from '@/lib/ai';
 import { callModel } from '@/lib/ai/adapters/call-model';
@@ -402,7 +403,7 @@ Omit "options" if the source has none. Omit "explanation"/"caption" if the sourc
   if (q.explanation) payload.explanation = q.explanation;
   if (q.visualAid?.caption) payload.caption = q.visualAid.caption;
   const user = `Translate this question into ${targetName}. Return the JSON described.\n\n${JSON.stringify(payload, null, 2)}`;
-  return { system, user };
+  return { system: withStudentFacingPolicy(system), user };
 }
 
 export async function localizeGeneratedQuestion(input: {

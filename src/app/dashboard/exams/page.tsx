@@ -1,0 +1,95 @@
+import { auth } from '@clerk/nextjs/server';
+import { preparationChooserLabels } from '@/lib/i18n/preparation-chooser-labels';
+import { selectableSql } from '@/lib/exam-core/catalog/readiness-view';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { getOrCreateStudentId } from '@/lib/auth';
+import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getMessages } from '@/lib/i18n/messages';
+import { listExamInstances, toInstanceView } from '@/lib/exam-core/exam-instance.service';
+import { db } from '@/lib/db';
+import { EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
+import { PageIntro } from '@/components/ui/PageIntro';
+import { ExamCatalogBrowser } from './ExamCatalogBrowser';
+import { SAMPLE_DISCLOSURE_KEYS } from '@/lib/exam-core/sample-disclosure';
+import { InstanceCard } from './InstanceCard';
+import { PreparationChooser } from '../exam-prep/PreparationChooser';
+import { loadPickerData } from '@/lib/exam-core/objectives/picker';
+import { readinessMode } from '@/lib/exam-core/question-bank/capability-overlay.service';
+import { resolveExamLevel } from '@/lib/exam-core/catalog/structure.service';
+import { isNodeSelectableForStudent } from '@/lib/exam-core/student-exposure';
+
+/**
+ * Objective first: without a deep link the page asks "¿Para qué examen quieres
+ * prepararte?" (every catalogue objective selectable, readiness never blocks).
+ * With `?node=` (from a preparation) it opens the activity launcher at that entry.
+ *
+ * Exam V2 -- "Exámenes": choose an exam by walking the framework's own
+ * structure, pick papers and a mode (Practice / Mock / Challenge), and manage
+ * one's exam instances (start, continue, results, repeat from zero, delete).
+ */
+export default async function ExamsPage({ searchParams }: { searchParams: Promise<{ node?: string }> }) {
+  const { node } = await searchParams;
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) redirect('/sign-in');
+  const studentId = await getOrCreateStudentId(clerkUserId);
+  const locale = await getInterfaceLanguage(studentId).catch(() => 'es' as const);
+  const t = getMessages(locale) as Record<string, string>;
+  const labels: Record<string, string> = Object.fromEntries(Object.entries(t).filter(([k]) => k.startsWith('exv2.')));
+  for (const f of EXAM_FAMILIES) labels[`exv2.family.${f}`] = t[`exam.family.${f}`] ?? f;
+  for (const k of SAMPLE_DISCLOSURE_KEYS) labels[k] = t[k];
+
+  const instances = await Promise.all((await listExamInstances(studentId)).map(toInstanceView));
+  // Deep link to one selectable exam level (validated: it must exist and be selectable).
+  // Track B: under ENFORCE the readiness of an entry comes from the bank-health snapshot (the same authority the
+  // level and instance APIs use: resolveExamLevel), so an entry the Certified Exam Bank made ready opens here too.
+  const validNode = node && /^[a-z0-9._-]{1,120}$/.test(node) ? node : null;
+  const persisted = validNode
+    ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes n WHERE node_key = $1 AND status = 'ACTIVE' AND ${selectableSql('n', 'STUDENT')}`, [validNode, locale])).rows[0] ?? null)
+    : null;
+  // R-1: under ENFORCE a deep link opens only a level the overlaid readiness (bank health + engine) resolves -- never a persisted row alone
+  const enforce = readinessMode() === 'ENFORCE';
+  const resolved = (enforce ? null : persisted) ?? (validNode && enforce && (await resolveExamLevel(validNode, locale).catch(() => null))
+    ? ((await db.query(`SELECT node_key AS key, family, COALESCE(labels->>$2, label) AS label FROM assessment_structure_nodes n WHERE node_key = $1 AND status = 'ACTIVE'`, [validNode, locale])).rows[0] ?? null)
+    : null);
+  // Pilot exposure (STUDENT_CATALOG_EXPOSURE=PILOT): a deep link outside the Student scope never opens the launcher (either query above).
+  const initialNode = resolved && isNodeSelectableForStudent(resolved.family, resolved.key) ? resolved : null;
+  const picker = initialNode ? null : await loadPickerData(studentId, locale);
+  // The AICE Diploma planner is offered only where it applies: eligible for this Student, or a plan they already have.
+  const showAicePlanner = initialNode
+    ? true
+    : picker!.suggested.includes('CIE_AICE') || (await db.query(`SELECT 1 FROM aice_diploma_plans WHERE student_id = $1 AND status = 'ACTIVE' LIMIT 1`, [studentId])).rows.length > 0;
+  const prepLabels: Record<string, string> = preparationChooserLabels(t as Record<string, string>);
+  const active = instances.filter((i) => i.status === 'DRAFT' || i.status === 'READY' || i.status === 'IN_PROGRESS');
+  const past = instances.filter((i) => i.status === 'COMPLETED' || i.status === 'ARCHIVED');
+
+  return (
+    <div className="exv2-page">
+      <PageIntro
+        title={initialNode ? t['exv2.page.title'] : t['prep.question']}
+        lead={initialNode ? t['exv2.page.lead'] : t['prep.lead']}
+        crumb={<Link href="/dashboard/exam-prep">{t['examPrep.title']}</Link>}
+        actions={showAicePlanner ? <Link className="btn btn-secondary" href="/dashboard/exams/aice">{t['exv2.aice.diplomaPlan']}</Link> : undefined}
+      />
+      {active.length > 0 && (
+        <section aria-labelledby="exv2-active" className="exv2-list">
+          <h2 id="exv2-active" className="exv2-title">{t['exv2.list.active']}</h2>
+          {active.map((i) => <InstanceCard key={i.id} instance={i} labels={labels} language={locale} />)}
+        </section>
+      )}
+      {/* Objective first: the Explorer asks WHICH exam to prepare (every objective selectable);
+          the activity launcher opens from a preparation (deep link to an entry). */}
+      {initialNode ? (
+        <ExamCatalogBrowser labels={labels} language={locale} initialNode={initialNode} />
+      ) : (
+        <PreparationChooser objectives={picker!.objectives} frameworks={picker!.frameworks} suggested={picker!.suggested} frameworkReasons={picker!.frameworkReasons} hasAcademicContext={picker!.hasAcademicContext} labels={prepLabels} />
+      )}
+      {past.length > 0 && (
+        <section aria-labelledby="exv2-past" className="exv2-list">
+          <h2 id="exv2-past" className="exv2-title">{t['exv2.list.past']}</h2>
+          {past.map((i) => <InstanceCard key={i.id} instance={i} labels={labels} language={locale} />)}
+        </section>
+      )}
+    </div>
+  );
+}

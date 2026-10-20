@@ -3,24 +3,29 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { currentUser } from '@clerk/nextjs/server';
 import { auth } from '@clerk/nextjs/server';
-import { isAdminEmail } from '@/services/admin.service';
-import { getUnreadNotifications } from '@/services/notifications.service';
+import { isAllowlistedAdminUser, resolveVerifiedPrimaryEmail } from '@/lib/admin/admin-identity';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getLearningDaysThisWeek } from '@/services/gamification.service';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { countPendingTeacherInterventionsForStudent } from '@/lib/student/teacher-intervention-execution.service';
-import { getOrCreateCanonicalUser, resolveAvailableWorkspaces, resolveDefaultWorkspace, getActiveWorkspace, type Workspace } from '@/lib/identity';
+import { getOrCreateCanonicalUser, resolveAvailableWorkspaces, resolveDefaultWorkspace, getActiveWorkspace, personaWorkspaceOf, isPersonaWorkspace, type Workspace } from '@/lib/identity';
+import { WORKSPACE_HOME } from '@/lib/identity/workspace-entry';
 import { canUseCapability } from '@/lib/entitlements';
+import { countAccountUnread } from '@/lib/notifications/role-notifications.service';
 import LicenseBanner from './LicenseBanner';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getInterfaceLanguage, getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { buildLearnerNav } from '@/lib/lx/learner-navigation';
+import { isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
+import { examPrepNavPrimary } from '@/lib/exam-journey/ux.server';
 import { buildParentNav, buildTeacherNav, buildInstitutionNav, buildAdminNav } from '@/lib/lx/workspace-navigation';
 import { bootstrapStudyUSAdminIfEligible } from '@/lib/admin/authorization';
 import { PATHNAME_HEADER, resolveShellContext } from '@/lib/admin/shell-context';
 import LanguageSwitcher from './LanguageSwitcher';
 import LearnerShell, { type ResolvedNavGroup } from './LearnerShell';
 import WorkspaceSwitcher, { type WorkspaceOption } from './WorkspaceSwitcher';
+import { loadGateState } from '@/lib/student/onboarding-gate.server';
+import { studentOnboardingStage } from '@/lib/student/onboarding-gate';
 
 // The whole authenticated app is student-specific and must never be
 // indexed -- see also the matching Disallow in src/app/robots.ts.
@@ -48,11 +53,15 @@ export const metadata: Metadata = {
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { userId: clerkUserId } = await auth();
+  // REM-T1-01: never render the Student shell (sidebar, Home/Learn/Progress, account navigation) for an
+  // unauthenticated request. The proxy redirects first; this is defence in depth.
+  if (!clerkUserId) redirect('/sign-in');
   const user = await currentUser();
 
   let notifCount = 0;
   let debtCount = 0;
   let assignmentCount = 0;
+  let examPrepPrimary = false;
   // LX-9 A5: renamed from a raw consecutive-day "streak" to a bounded,
   // non-punitive "learning days this week" count -- see
   // gamification.service.ts::getLearningDaysThisWeek's own doc comment.
@@ -61,6 +70,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let activeWorkspace: Workspace = 'STUDENT';
   let availableWorkspaces: Workspace[] = ['STUDENT'];
   let hasActiveLicense = true;
+  // REM-T1-01: while mandatory Student onboarding is incomplete the shell shows only brand, language and Sign out.
+  let onboardingChrome = false;
 
   if (clerkUserId) {
     const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? null;
@@ -90,7 +101,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     // workspaces are resolved, so an admin-only account reaches the
     // console directly instead of being sent to role selection (and
     // having to become a Student first). No-op for every other account.
-    await bootstrapStudyUSAdminIfEligible(canonicalUser, email);
+    await bootstrapStudyUSAdminIfEligible(canonicalUser, resolveVerifiedPrimaryEmail(user));
 
     const [available, storedActive] = await Promise.all([
       resolveAvailableWorkspaces(canonicalUser.id),
@@ -128,9 +139,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
     activeWorkspace = context.workspace;
 
     if (activeWorkspace === 'STUDENT') {
+      const gate = await loadGateState(clerkUserId).catch(() => null);
+      if (gate) {
+        const ux = gate.journeyUx === true;
+        onboardingChrome =
+          studentOnboardingStage(gate.profile, gate.subjectCount, gate.examTargetCount ?? 0, ux ? gate.institutionalPathCount ?? 0 : 0, ux ? undefined : gate.studentContextType) !== 'READY';
+      }
       const studentId = await getOrCreateStudentId(clerkUserId);
-      const [notifications, debts, lang, daysThisWeek, pendingAssignments, fullAccess] = await Promise.all([
-        getUnreadNotifications(studentId).catch(() => []),
+      // Track A: the badge counts UNREAD notifications of the account inbox
+      // (persona + capabilities), the same rows /dashboard/notifications
+      // lists -- never pending business actions, never capped.
+      const [unreadNotifications, debts, lang, daysThisWeek, pendingAssignments, fullAccess] = await Promise.all([
+        countAccountUnread(canonicalUser.id, availableWorkspaces).catch(() => 0),
         getActiveDebts(studentId).catch(() => []),
         getInterfaceLanguage(studentId).catch(() => 'es' as const),
         getLearningDaysThisWeek(studentId).catch(() => 0),
@@ -140,12 +160,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
         // open into a silent "has license" assumption.
         canUseCapability(canonicalUser.id, studentId, 'LEARNING_FULL_ACCESS').catch(() => false),
       ]);
-      notifCount = notifications.length;
+      notifCount = unreadNotifications;
       debtCount = debts.length;
       locale = lang;
       learningDaysThisWeek = daysThisWeek;
       assignmentCount = pendingAssignments;
       hasActiveLicense = fullAccess;
+      // Student Exam Journey (entry UX only): "Exámenes" is primary only while a target is in active preparation.
+      if (isStudentJourneyUxEnabled()) examPrepPrimary = await examPrepNavPrimary(studentId);
     } else {
       // `getUnreadNotifications`/`getActiveDebts` are Student-domain
       // concepts (queried by `students.id`) that have not been
@@ -155,7 +177,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
       // does not show a notification/debt badge for non-Student
       // workspaces rather than pretend a real read happened (documented
       // residual, see F13_NEXT_PHASE_HANDOFF.md).
-      locale = await getInterfaceLanguage(canonicalUser.id).catch(() => 'es' as const);
+      // Track A: non-Student workspaces now have a real, workspace-scoped
+      // inbox (role-notifications.service), so they get an unread badge too.
+      const [lang, unread] = await Promise.all([
+        getUserInterfaceLanguage(canonicalUser.id).catch(() => 'es' as const),
+        countAccountUnread(canonicalUser.id, availableWorkspaces).catch(() => 0),
+      ]);
+      locale = lang;
+      notifCount = unread;
       // Non-Student workspaces key their interface-language preference
       // by the F1 canonical user id, never by a fabricated Student
       // identity -- see F13_ROLE_WORKSPACE_MODEL.md for why this
@@ -167,15 +196,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const t = getMessages(locale);
   const displayName = user?.firstName || (activeWorkspace === 'ADMIN' ? t['workspace.admin'] : 'Student');
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
-  const isAdmin = isAdminEmail(email);
+  const isAdmin = isAllowlistedAdminUser(user);
 
   const rawGroups =
-    activeWorkspace === 'PARENT' ? buildParentNav()
-    : activeWorkspace === 'TEACHER' ? buildTeacherNav()
-    : activeWorkspace === 'INSTITUTION' ? buildInstitutionNav()
-    : activeWorkspace === 'ADMIN' ? buildAdminNav()
-    : buildLearnerNav({ isAdmin, debtCount, notifCount, assignmentCount });
+    activeWorkspace === 'PARENT' ? buildParentNav({ notifCount })
+    : activeWorkspace === 'TEACHER' ? buildTeacherNav({ notifCount })
+    : activeWorkspace === 'INSTITUTION' ? buildInstitutionNav({ notifCount })
+    : activeWorkspace === 'ADMIN' ? buildAdminNav({ notifCount })
+    : buildLearnerNav({ isAdmin, debtCount, notifCount, assignmentCount, examPrepPrimary });
 
   // LX-2E: navigation organised around learner intent
   // (Today / My Path / Progress), resolved to plain strings for the
@@ -194,13 +222,33 @@ export default async function DashboardLayout({ children }: { children: React.Re
     })),
   }));
 
+  // Track A product amendment: the indicator names the account's ONE
+  // persona (or the capability context that is open); there is no persona
+  // switching and no "add another role".
   const workspaceLabels: Record<WorkspaceOption, string> = {
-    STUDENT: t['workspace.student'],
-    PARENT: t['workspace.parent'],
-    TEACHER: t['workspace.teacher'],
-    INSTITUTION: t['workspace.institution'],
+    STUDENT: t['role.STUDENT.name'],
+    PARENT: t['role.PARENT.name'],
+    TEACHER: t['role.TEACHER.name'],
+    INSTITUTION: t['role.INSTITUTION_ADMIN.name'],
     ADMIN: t['workspace.admin'],
   };
+
+  // Capabilities (institution administration, StudyUs administration) are
+  // ordinary links, plus a way back to the persona from a capability page.
+  const personaWorkspace = personaWorkspaceOf(availableWorkspaces);
+  const capabilityItems: ResolvedNavGroup['items'] = [];
+  if (availableWorkspaces.includes('INSTITUTION') && activeWorkspace !== 'INSTITUTION') {
+    capabilityItems.push({ key: 'cap-institution', href: WORKSPACE_HOME.INSTITUTION, label: t['capability.institution'], iconKey: 'Building2' });
+  }
+  if (availableWorkspaces.includes('ADMIN') && activeWorkspace !== 'ADMIN' && !(activeWorkspace === 'STUDENT' && isAdmin)) {
+    capabilityItems.push({ key: 'cap-admin', href: WORKSPACE_HOME.ADMIN, label: t['capability.admin'], iconKey: 'ShieldCheck' });
+  }
+  if (personaWorkspace && !isPersonaWorkspace(activeWorkspace)) {
+    capabilityItems.push({ key: 'cap-persona', href: WORKSPACE_HOME[personaWorkspace], label: t['capability.backToPersona'], iconKey: 'RotateCcw' });
+  }
+  if (capabilityItems.length > 0) {
+    navGroups.push({ kind: 'UTILITY', title: t['capability.groupTitle'], items: capabilityItems });
+  }
 
   return (
     <LearnerShell
@@ -215,14 +263,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
       locale={locale}
       tabBarLabel={t['xp.tabBarLabel']}
       notificationsLabel={t['nav.notifications']}
+      chrome={onboardingChrome ? 'onboarding' : 'full'}
+      signOutLabel={t['common.signOut']}
+      onboardingLabel={t['onboarding.shellLabel']}
       localeSwitcher={<LanguageSwitcher locale={locale} label={t['lang.switcherLabel']} />}
       workspaceSwitcher={
         <WorkspaceSwitcher
-          available={availableWorkspaces as WorkspaceOption[]}
-          active={activeWorkspace as WorkspaceOption}
-          labels={workspaceLabels}
-          switcherLabel={t['workspace.switcherLabel']}
-          errorLabel={t['error.generic']}
+          label={workspaceLabels[activeWorkspace as WorkspaceOption]}
+          ariaLabel={t['workspace.switcherLabel']}
         />
       }
       banner={

@@ -9,6 +9,7 @@
  * are always current.
  */
 
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
 import { db } from '@/lib/db';
 import { retrieveContext } from './rag.service';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
@@ -268,7 +269,7 @@ Use 2 to 3 "sections" covering, in this spirit: (1) what is likely going wrong c
     promptVersion: prompt.version,
     call: (signal) =>
       callModel(
-        { provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 1200, system: systemPrompt, user: 'Help me understand this pattern of mistakes.' },
+        { provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 1200, system: withStudentFacingPolicy(systemPrompt), user: 'Help me understand this pattern of mistakes.' },
         signal
       ),
     validate: (raw: { text: string }) => ({ valid: true, value: coerceGuidance(raw.text || '{}') }),

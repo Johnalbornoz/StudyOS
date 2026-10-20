@@ -16,6 +16,7 @@ import type { Locale } from '@/lib/i18n/messages';
 import { getMessages } from '@/lib/i18n/messages';
 import { ConceptExplanationPanel, type ConceptExplanationData } from '@/app/dashboard/subjects/[id]/ConceptExplanationPanel';
 import ContinuationPanel from '@/app/dashboard/quiz/ContinuationPanel';
+import { isEntitlementRequired } from '@/lib/lx/access-required';
 
 export default function ConceptExplanationDisclosure({
   studentId,
@@ -42,6 +43,11 @@ export default function ConceptExplanationDisclosure({
   const [data, setData] = useState<ConceptExplanationData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  // Human Agency P0-1: the server locks instructional help (423) while
+  // restricted evidence is being collected; say so instead of a generic error.
+  const [locked, setLocked] = useState(false);
+  // L6 / CR-L11-02: the licence gate (403 ENTITLEMENT_REQUIRED) is an access state, not an error.
+  const [accessRequired, setAccessRequired] = useState(false);
   const fetchedRef = useRef(false);
 
   async function load() {
@@ -49,12 +55,20 @@ export default function ConceptExplanationDisclosure({
     fetchedRef.current = true;
     setLoading(true);
     setError(false);
+    setLocked(false);
+    setAccessRequired(false);
     try {
       const res = await fetch(
         `/api/concepts/${conceptId}/explanation?studentId=${studentId}&language=${locale}`,
       );
       const body = await res.json();
-      if (res.ok && body?.data?.explanation) {
+      if (res.status === 423) {
+        setLocked(true);
+        fetchedRef.current = false; // allow a fresh attempt once the check is over
+      } else if (isEntitlementRequired(res.status, body)) {
+        setAccessRequired(true);
+        fetchedRef.current = false; // the server decides again the next time it is opened
+      } else if (res.ok && body?.data?.explanation) {
         setData(body.data.explanation as ConceptExplanationData);
       } else {
         setError(true);
@@ -84,11 +98,15 @@ export default function ConceptExplanationDisclosure({
         {open ? collapseLabel : expandLabel}
       </button>
       <div id={panelId} hidden={!open}>
-        {open && (
+        {open && locked && (
+          <p role="status" className="ui-hint">{t['assistance.locked']}</p>
+        )}
+        {open && !locked && (
           <ConceptExplanationPanel
             locale={locale}
             loading={loading}
             error={error}
+            accessRequired={accessRequired}
             data={data ?? undefined}
             headerLabel={t['conceptMission.learnTitle']}
             conceptId={conceptId}

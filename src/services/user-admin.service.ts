@@ -15,7 +15,7 @@
  */
 import { clerkClient } from '@clerk/nextjs/server';
 import { maskEmail } from '@/lib/admin/mask';
-import { findClerkIdsMissingInClerk } from '@/services/identity-reconciliation.service';
+import { detectIdentityInconsistencies, findClerkIdsMissingInClerk } from '@/services/identity-reconciliation.service';
 import { db } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getOrCreateCanonicalUser, getUserRoles, hasRole, type Role, type SelfServiceRole } from '@/lib/identity';
@@ -31,6 +31,13 @@ export class LastAdminProtectionError extends Error {
 export class PrivilegedRoleForbiddenError extends Error {
   constructor() {
     super('PRIVILEGED_ROLE_FORBIDDEN');
+  }
+}
+/** Track A product amendment: an account holds ONE active primary persona. */
+export class PersonaExistsError extends Error {
+  constructor() {
+    super('PERSONA_EXISTS');
+    this.name = 'PersonaExistsError';
   }
 }
 export class InstitutionRequiredError extends Error {
@@ -362,11 +369,28 @@ export async function revokeInvitation(actorUserId: string, invitationId: string
 export async function addRole(actorUserId: string, targetUserId: string, role: SelfServiceRole, targetClerkId: string): Promise<void> {
   if (!INVITABLE_ROLES.includes(role)) throw new PrivilegedRoleForbiddenError();
 
-  await db.query(
-    `INSERT INTO user_roles (user_id, role, status, granted_via) VALUES ($1, $2, 'ACTIVE', 'INVITATION')
-     ON CONFLICT (user_id, role) DO UPDATE SET status = 'ACTIVE', revoked_at = NULL, revoked_by_user_id = NULL WHERE user_roles.status = 'REVOKED'`,
+  // Track A product amendment: an administrator may set an account's persona
+  // (or reactivate the one it had), but never add a SECOND active persona.
+  // Changing persona is deliberate: revoke the current one first, then add.
+  const otherActive = await db.query(
+    `SELECT 1 FROM user_roles WHERE user_id = $1 AND role IN ('STUDENT', 'PARENT', 'TEACHER') AND role <> $2 AND status = 'ACTIVE' LIMIT 1`,
     [targetUserId, role]
   );
+  if ((otherActive.rows?.length ?? 0) > 0) throw new PersonaExistsError();
+
+  try {
+    await db.query(
+      `INSERT INTO user_roles (user_id, role, status, granted_via) VALUES ($1, $2, 'ACTIVE', 'INVITATION')
+       ON CONFLICT (user_id, role) DO UPDATE SET status = 'ACTIVE', revoked_at = NULL, revoked_by_user_id = NULL WHERE user_roles.status = 'REVOKED'`,
+      [targetUserId, role]
+    );
+  } catch (error: any) {
+    // L10 SF-10: the database now holds the one-ACTIVE-persona rule itself
+    // (uq_user_roles_one_persona). The check above is read-then-write, so two
+    // concurrent grants could both pass it; the index refuses the second.
+    if (error?.code === '23505' && String(error?.constraint ?? '').includes('uq_user_roles_one_persona')) throw new PersonaExistsError();
+    throw error;
+  }
 
   // Mirrors assignSelfServiceRole's own invariant: STUDENT role always
   // provisions the canonical dual identity immediately, and ONLY then --
@@ -419,37 +443,95 @@ async function assertNotLastAdmin(targetUserId: string): Promise<void> {
   if (remaining <= 1) throw new LastAdminProtectionError();
 }
 
-export async function suspendUser(actorUserId: string, targetUserId: string, targetClerkId: string, reason: string): Promise<void> {
+/**
+ * L10 SF-1 (L4-12, CR-L4-08) -- suspend / archive / reactivate are ordered so
+ * that a partial failure always leaves the account on the DENYING side, and
+ * every failure is audited.
+ *
+ * The database status is now an authorization gate of its own (the proxy's
+ * account gate and the shared guards read `users.status` on every request),
+ * so it is written FIRST when access is being removed and LAST when access
+ * is being restored:
+ *
+ *   suspend / archive : DB status -> Clerk ban -> Clerk session revocation
+ *   reactivate        : Clerk unban -> DB status
+ *
+ * If a Clerk call fails after the status was written, the account is already
+ * denied by the database; the failure is recorded (`clerkSyncFailed`) and
+ * rethrown so the administrator sees it and can retry. Retrying is safe:
+ * every step is idempotent.
+ */
+/** Records a failed Clerk synchronisation. Never throws: the original Clerk error is what the caller must see. */
+async function auditSyncFailure(input: Parameters<typeof recordAdminAction>[0]): Promise<void> {
+  try {
+    await recordAdminAction(input);
+  } catch (error) {
+    console.error('[user-admin] failure audit write failed', error instanceof Error ? error.message : error);
+  }
+}
+
+async function deactivateAccount(
+  actorUserId: string,
+  targetUserId: string,
+  targetClerkId: string,
+  reason: string,
+  status: 'SUSPENDED' | 'ARCHIVED',
+  action: 'USER_SUSPENDED' | 'USER_ARCHIVED'
+): Promise<void> {
   await assertNotLastAdmin(targetUserId);
 
-  const client = await clerkClient();
-  await client.users.banUser(targetClerkId);
-  const revokedCount = await revokeAllClerkSessions(targetClerkId);
-
   await db.query(
-    `UPDATE users SET status = 'SUSPENDED', status_changed_at = NOW(), status_changed_by = $1 WHERE id = $2`,
+    status === 'SUSPENDED'
+      ? `UPDATE users SET status = 'SUSPENDED', status_changed_at = NOW(), status_changed_by = $1 WHERE id = $2`
+      : `UPDATE users SET status = 'ARCHIVED', status_changed_at = NOW(), status_changed_by = $1 WHERE id = $2`,
     [actorUserId, targetUserId]
   );
-  await recordAdminAction({ actorUserId, action: 'USER_SUSPENDED', targetType: 'USER', targetId: targetUserId, reason, newState: { sessionsRevoked: revokedCount } });
+
+  let revokedCount = 0;
+  try {
+    const client = await clerkClient();
+    await client.users.banUser(targetClerkId);
+    revokedCount = await revokeAllClerkSessions(targetClerkId);
+  } catch (error) {
+    await auditSyncFailure({
+      actorUserId,
+      action,
+      targetType: 'USER',
+      targetId: targetUserId,
+      reason,
+      newState: { status, clerkSyncFailed: true, error: error instanceof Error ? error.message : String(error) },
+    });
+    throw error;
+  }
+  await recordAdminAction({ actorUserId, action, targetType: 'USER', targetId: targetUserId, reason, newState: { sessionsRevoked: revokedCount } });
+}
+
+export async function suspendUser(actorUserId: string, targetUserId: string, targetClerkId: string, reason: string): Promise<void> {
+  await deactivateAccount(actorUserId, targetUserId, targetClerkId, reason, 'SUSPENDED', 'USER_SUSPENDED');
 }
 
 export async function reactivateUser(actorUserId: string, targetUserId: string, targetClerkId: string): Promise<void> {
-  const client = await clerkClient();
-  await client.users.unbanUser(targetClerkId);
+  try {
+    const client = await clerkClient();
+    await client.users.unbanUser(targetClerkId);
+  } catch (error) {
+    // The database status is untouched: the account stays denied.
+    await auditSyncFailure({
+      actorUserId,
+      action: 'USER_REACTIVATED',
+      targetType: 'USER',
+      targetId: targetUserId,
+      newState: { clerkSyncFailed: true, reactivated: false, error: error instanceof Error ? error.message : String(error) },
+    });
+    throw error;
+  }
 
   await db.query(`UPDATE users SET status = 'ACTIVE', status_changed_at = NOW(), status_changed_by = $1 WHERE id = $2`, [actorUserId, targetUserId]);
   await recordAdminAction({ actorUserId, action: 'USER_REACTIVATED', targetType: 'USER', targetId: targetUserId });
 }
 
 export async function archiveUser(actorUserId: string, targetUserId: string, targetClerkId: string, reason: string): Promise<void> {
-  await assertNotLastAdmin(targetUserId);
-
-  const client = await clerkClient();
-  await client.users.banUser(targetClerkId);
-  const revokedCount = await revokeAllClerkSessions(targetClerkId);
-
-  await db.query(`UPDATE users SET status = 'ARCHIVED', status_changed_at = NOW(), status_changed_by = $1 WHERE id = $2`, [actorUserId, targetUserId]);
-  await recordAdminAction({ actorUserId, action: 'USER_ARCHIVED', targetType: 'USER', targetId: targetUserId, reason, newState: { sessionsRevoked: revokedCount } });
+  await deactivateAccount(actorUserId, targetUserId, targetClerkId, reason, 'ARCHIVED', 'USER_ARCHIVED');
 }
 
 // ---------------------------------------------------------------------
@@ -550,21 +632,62 @@ export async function cleanupTestIdentity(actorUserId: string, targetUserId: str
 
 export interface SyncCheckResult {
   usersWithoutClerkMatch: string[];
+  /** Track A: the same accounts, identified (name / email / state) -- never just an internal id. */
+  accounts: SyncErrorAccount[];
+  /** false when Clerk could not be consulted: the lists are then empty because nothing was verified, not because nothing is wrong. */
+  clerkReachable: boolean;
 }
 
 /** Best-effort, read-only detection -- never fabricates a role or profile. A `users` row whose `clerk_id` no longer resolves via Clerk is flagged, not repaired automatically. */
-export async function detectSyncErrors(sampleLimit: number): Promise<SyncCheckResult> {
-  const client = await clerkClient();
-  const rows = await db.query(`SELECT id, clerk_id FROM users ORDER BY created_at DESC LIMIT $1`, [sampleLimit]);
-  const missing: string[] = [];
-  for (const row of rows.rows) {
-    try {
-      await client.users.getUser(row.clerk_id);
-    } catch {
-      missing.push(row.id);
-    }
-  }
-  return { usersWithoutClerkMatch: missing };
+export interface SyncErrorAccount {
+  userId: string;
+  email: string | null;
+  name: string | null;
+  status: string;
+  isTest: boolean;
+  createdAt: string | null;
+  roles: string[];
+}
+
+/**
+ * The StudyUs accounts the admin inbox lists as having no Clerk identity.
+ *
+ * Which accounts those are is decided in ONE place, the canonical reconciliation
+ * (`detectIdentityInconsistencies`), so the inbox and the Overview cannot disagree: human accounts only.
+ * A technical identity (`users.is_system`) has no Clerk account by design and is never an inconsistency.
+ * `limit` caps how many are listed (most recent first).
+ */
+export async function detectSyncErrors(limit: number): Promise<SyncCheckResult> {
+  const report = await detectIdentityInconsistencies();
+  if (!report.clerkReachable) return { usersWithoutClerkMatch: [], accounts: [], clerkReachable: false };
+  const missing: string[] = report.items
+    .filter((i) => i.kind === 'DB_WITHOUT_CLERK' && i.userId !== null)
+    .map((i) => i.userId as string)
+    .reverse() // the reconciliation lists oldest first
+    .slice(0, limit);
+  // Track A: identify each affected account from its own StudyUs records
+  // (its Clerk user is, by definition, missing).
+  const accounts: SyncErrorAccount[] = missing.length
+    ? (
+        await db.query(
+          `SELECT u.id, u.email, u.status, u.is_test, u.created_at,
+                  NULLIF(TRIM(COALESCE((SELECT s.name FROM students s WHERE s.user_id = u.id LIMIT 1),
+                                       (SELECT p.full_name FROM profiles p WHERE p.user_id = u.id AND p.full_name IS NOT NULL LIMIT 1))), '') AS name,
+                  ARRAY(SELECT r.role FROM user_roles r WHERE r.user_id = u.id AND r.status = 'ACTIVE' ORDER BY r.role) AS roles
+           FROM users u WHERE u.id = ANY($1::uuid[]) AND NOT u.is_system ORDER BY u.created_at DESC`,
+          [missing]
+        )
+      ).rows.map((r: any) => ({
+        userId: r.id,
+        email: r.email ?? null,
+        name: r.name ?? null,
+        status: r.status,
+        isTest: Boolean(r.is_test),
+        createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : r.created_at ?? null,
+        roles: r.roles ?? [],
+      }))
+    : [];
+  return { usersWithoutClerkMatch: missing, accounts, clerkReachable: true };
 }
 
 export async function reconcileSyncError(actorUserId: string, targetUserId: string): Promise<void> {

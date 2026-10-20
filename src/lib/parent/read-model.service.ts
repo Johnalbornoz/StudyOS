@@ -13,8 +13,13 @@
  * field-classification decisions.
  */
 
+import { studentFacingExamReference } from '@/lib/exam-core/exam-family-owner';
+import { studentAudienceDefinitionSql } from '@/lib/exam-core/audience';
 import { db } from '@/lib/db';
-import { isActiveParentOf } from '@/lib/authorization';
+import { isActiveParentOf, LEARNER_READ_SCOPE, type LearnerReadScope } from '@/lib/authorization';
+import { shapeAttemptResultViewForScope } from '@/lib/authorization/learner-data-scope';
+import { resolveResultViewContext } from '@/lib/authorization/learner-result-scope';
+import { getAttemptResultView, type AttemptResultView } from '@/lib/exam-core/result-view.service';
 import { getStudentMastery } from '@/services/mastery.service';
 import { getActiveDebts } from '@/services/learning-debt.service';
 import { getSubjectConcepts } from '@/services/concept-extraction.service';
@@ -206,7 +211,8 @@ export async function getParentRecentActivity(
 
 interface ActiveExamProfile {
   id: string;
-  examDefinitionId: string;
+  /** Track B (objective first): null for a catalogue-only exam goal (named by its objective). */
+  examDefinitionId: string | null;
   examVersionId: string | null;
   examName: string;
   examDate: string | null;
@@ -222,10 +228,11 @@ interface ActiveExamProfile {
 async function getActiveExamProfile(studentId: string): Promise<ActiveExamProfile | null> {
   const result = await db.query(
     `
-    SELECT sep.id, sep.exam_definition_id, sep.exam_version_id, sep.exam_date, ed.name AS exam_name
+    SELECT sep.id, sep.exam_definition_id, sep.exam_version_id, sep.exam_date, COALESCE(ed.name, sep.objective_context->>'label', sep.objective_key) AS exam_name
     FROM student_exam_profiles sep
-    JOIN exam_definitions ed ON ed.id = sep.exam_definition_id
+    LEFT JOIN exam_definitions ed ON ed.id = sep.exam_definition_id
     WHERE sep.student_id = $1 AND sep.status = 'ACTIVE'
+      AND (sep.exam_definition_id IS NULL OR ${studentAudienceDefinitionSql('ed')})
     ORDER BY sep.created_at DESC
     LIMIT 1
     `,
@@ -365,4 +372,94 @@ export async function getParentAttentionAreas(actorUserId: string, studentId: st
   }
 
   return areas;
+}
+
+/**
+ * L7 PA-3 -- one released exam result, as a Parent may see it: a SUMMARY.
+ * An explicit allow-list projected from the canonical result view. It never
+ * carries the item review (question text, the learner's answers, correct
+ * answers, explanations), rubric criteria or evidence, scoring provenance or
+ * hashes, the internal strict-readiness metric, or institution policies.
+ */
+export interface ParentReleasedResult {
+  attemptId: string;
+  examName: string;
+  versionLabel: string;
+  simulationType: string;
+  /** INVALIDATED results are shown because the Student sees them too, flagged. */
+  status: 'SCORED' | 'INVALIDATED';
+  scoringStatus: 'SCORED' | 'NO_SCORING_POLICY';
+  scoredAt: string;
+  rawScore: number;
+  maxScore: number;
+  finalScore: number | null;
+  finalLabel: string | null;
+  completion: { answered: number; total: number; missing: number } | null;
+  minutesUsed: number | null;
+  objectives: { strengths: number; developing: number; gaps: number; notAssessed: number };
+}
+
+/** How many of the learner's most recent attempts are considered. */
+const PARENT_RESULTS_CANDIDATE_LIMIT = 12;
+
+function toParentReleasedResult(view: AttemptResultView): ParentReleasedResult | null {
+  const result = view.result;
+  if (!result) return null;
+  const count = (c: string) => view.objectives.filter((o) => o.classification === c).length;
+  return {
+    attemptId: view.attemptId,
+    examName: view.exam.definitionName,
+    versionLabel: studentFacingExamReference(view.exam.family, view.exam.versionLabel).text,
+    simulationType: view.simulationType,
+    status: result.status,
+    scoringStatus: result.scoringStatus,
+    scoredAt: result.scoredAt,
+    rawScore: result.rawScore,
+    maxScore: result.maxScore,
+    finalScore: result.finalScore,
+    finalLabel: result.finalLabel,
+    completion: view.completion,
+    minutesUsed: view.minutesUsed,
+    objectives: { strengths: count('STRENGTH'), developing: count('DEVELOPING'), gaps: count('GAP'), notAssessed: count('NOT_ASSESSED') },
+  };
+}
+
+/**
+ * L7 PA-3 -- the linked learner's released exam results, newest first.
+ *
+ * Which results are released is NOT decided here. Every candidate attempt
+ * goes through the Shared Foundation path the attempt-result route uses
+ * (L10 SF-4, D-1): `resolveResultViewContext` asks whether the SAME result is
+ * visible to the Student today, and `shapeAttemptResultViewForScope` returns
+ * the Parent's summary or nothing. The candidate query below is deliberately
+ * unfiltered (any status, hidden or not) so that no publication rule is
+ * repeated in this file.
+ *
+ * The scope is the PARENT row of the one canonical table, for a caller
+ * `isActiveParentOf` has just accepted -- never the union of the actor's
+ * relationships, so a Teacher relationship to the same learner cannot widen
+ * what this Parent-labelled read returns (F10 multi-role isolation).
+ */
+export async function getParentReleasedResults(actorUserId: string, studentId: string): Promise<ParentReleasedResult[]> {
+  await requireAccess(actorUserId, studentId);
+  const scope: LearnerReadScope = { relationships: ['PARENT'], permissions: [...LEARNER_READ_SCOPE.PARENT] };
+
+  const candidates = await db.query(
+    `SELECT id, status FROM simulation_attempts WHERE student_id = $1 ORDER BY created_at DESC LIMIT $2`,
+    [studentId, PARENT_RESULTS_CANDIDATE_LIMIT]
+  );
+
+  const results: ParentReleasedResult[] = [];
+  for (const row of candidates.rows) {
+    const attempt = { id: row.id as string, status: row.status as string, studentId };
+    const context = await resolveResultViewContext({ actorUserId, scope, attempt, objectiveConceptIds: [] });
+    if (!context.studentVisible) continue;
+    const view = await getAttemptResultView(attempt.id).catch(() => null);
+    if (!view) continue;
+    const shaped = shapeAttemptResultViewForScope(view, scope, context);
+    if (!shaped) continue;
+    const summary = toParentReleasedResult(shaped);
+    if (summary) results.push(summary);
+  }
+  return results;
 }

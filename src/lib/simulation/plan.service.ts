@@ -5,17 +5,65 @@
  */
 import { db } from '@/lib/db';
 import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/blueprint.service';
-import { getComponent } from '@/lib/assessment/component.service';
+import { blueprintV2Mode } from '@/lib/exam-core/blueprint-v2/flag';
+import { getComponent, listComponentsForVersion } from '@/lib/assessment/component.service';
 import { getExamVersion } from '@/lib/assessment/exam-definition.service';
 import { canFullMockBeOffered } from '@/lib/assessment/full-mock-guard.service';
 import type { BlueprintObjectiveTarget } from '@/lib/assessment/types';
-import type { SimulationPlan, SimulationPlanTarget, SimulationType, TimingMode } from './types';
+import type { AssessmentComponent } from '@/lib/assessment/types';
+import type { SimulationPlan, SimulationPlanSection, SimulationPlanTarget, SimulationType, TimingMode } from './types';
+
+/**
+ * Track B: targets are grouped by section (component) in the version's
+ * section order, keeping blueprint order inside a section -- a stable sort,
+ * so the same blueprint always yields the same plan order.
+ */
+export function orderTargetsBySection<T extends { assessmentComponentId: string }>(targets: T[], components: AssessmentComponent[]): T[] {
+  const order = new Map(components.map((c, i) => [c.id, i]));
+  return targets
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => (order.get(a.t.assessmentComponentId) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.t.assessmentComponentId) ?? Number.MAX_SAFE_INTEGER) || a.i - b.i)
+    .map((x) => x.t);
+}
+
+/** Contiguous runs of the same component in `selectedTargets` (works for pre-Track-B plans too). */
+export function deriveSections(
+  selectedTargets: Array<{ assessmentComponentId: string }>,
+  components: Array<Pick<AssessmentComponent, 'id' | 'name' | 'durationMinutes' | 'timingStatus'> & { sectionKey?: string | null }>,
+  timingMode: TimingMode
+): SimulationPlanSection[] {
+  const byId = new Map(components.map((c) => [c.id, c]));
+  const sections: SimulationPlanSection[] = [];
+  selectedTargets.forEach((t, index) => {
+    const last = sections[sections.length - 1];
+    if (last && last.componentId === t.assessmentComponentId) {
+      last.endIndex = index;
+      return;
+    }
+    const c = byId.get(t.assessmentComponentId);
+    sections.push({
+      componentId: t.assessmentComponentId,
+      key: c?.sectionKey ?? t.assessmentComponentId,
+      name: c?.name ?? t.assessmentComponentId,
+      order: sections.length,
+      startIndex: index,
+      endIndex: index,
+      durationSeconds: timingMode !== 'UNTIMED' && c && c.timingStatus === 'CONFIGURED' && c.durationMinutes !== null ? c.durationMinutes * 60 : null,
+    });
+  });
+  return sections;
+}
 
 export class TimingConfigurationError extends Error {
   constructor(componentName: string) {
     super(`TIMING_NOT_CONFIGURED: ${componentName} -- cannot build a ${'TRAINING_TIMED/OFFICIAL_SIMULATION_TIMED'} plan`);
     this.name = 'TimingConfigurationError';
   }
+}
+
+/** The four types the direct (non-instance) path and the Blueprint V2 shadow hook know. */
+function isDirectPathSimulationType(type: SimulationType): type is 'TOPIC_EXAM' | 'DOMAIN_EXAM' | 'MINI_MOCK' | 'FULL_MOCK' {
+  return type === 'TOPIC_EXAM' || type === 'DOMAIN_EXAM' || type === 'MINI_MOCK' || type === 'FULL_MOCK';
 }
 
 async function selectTargets(params: {
@@ -45,6 +93,16 @@ async function selectTargets(params: {
     }
     case 'FULL_MOCK':
       return allTargets;
+    // B1-D: an exam-instance practice covers every position of the instance's selected components (the caller
+    // narrows by component / focus objective). It is NOT reduced the way MINI_MOCK is: no readiness subset applies.
+    case 'EXAM_PRACTICE':
+      return allTargets;
+    // B1-E: a reduced mock and a challenge are frozen instance forms over the selected components' positions,
+    // exactly as a MOCK / CHALLENGE instance was planned when both were stored as FULL_MOCK.
+    case 'REDUCED_MOCK':
+    case 'PREPARATION_MOCK':
+    case 'EXAM_CHALLENGE':
+      return allTargets;
   }
 }
 
@@ -56,12 +114,33 @@ export async function buildSimulationPlan(params: {
   academicSubjectId?: string;
   timingMode: TimingMode;
   readinessSnapshotId?: string;
+  /** Exam V2: restrict the plan to these components (an exam instance's selected papers). */
+  assessmentComponentIds?: string[];
+  /** Exam V2: restrict the plan to these objectives (skill-level practice). */
+  learningObjectiveIds?: string[];
 }): Promise<SimulationPlan> {
-  const targets = await selectTargets(params);
+  const versionComponents = await listComponentsForVersion(params.examVersionId);
+  const only = params.assessmentComponentIds && params.assessmentComponentIds.length > 0 ? new Set(params.assessmentComponentIds) : null;
+  const focus = params.learningObjectiveIds && params.learningObjectiveIds.length > 0 ? new Set(params.learningObjectiveIds) : null;
+  const targets = orderTargetsBySection((await selectTargets(params)).filter((t) => (!only || only.has(t.assessmentComponentId)) && (!focus || focus.has(t.learningObjectiveId))), versionComponents);
   if (targets.length === 0) throw new Error(`no blueprint targets selected for ${params.simulationType}`);
 
   const examVersion = await getExamVersion(params.examVersionId);
   const blueprint = await getBlueprintForVersion(params.examVersionId);
+  // Blueprint V2 SHADOW (BP-4A): only the legacy F9 path (no instance components). An exam-instance plan was
+  // already observed once in formInputs -- one shadow observation per flow. Observe only; nothing is returned.
+  // (B1-D / B1-E: the instance-derived types are always exam-instance plans, observed in formInputs, never here.)
+  if (!only && blueprint && isDirectPathSimulationType(params.simulationType) && blueprintV2Mode() === 'SHADOW') {
+    const { shadowObserveSimulationPlan } = await import('@/lib/exam-core/blueprint-v2/runtime-hook');
+    const all = await listObjectiveTargets(blueprint.id);
+    await shadowObserveSimulationPlan({
+      examVersionId: params.examVersionId,
+      legacyBlueprintId: blueprint.id,
+      simulationType: params.simulationType,
+      components: versionComponents.map((c) => ({ id: c.id, sectionKey: c.sectionKey ?? null })),
+      allTargets: all.map((t) => ({ id: t.id, learningObjectiveId: t.learningObjectiveId, assessmentComponentId: t.assessmentComponentId, questionType: t.questionType, difficultyMin: t.difficultyMin, difficultyMax: t.difficultyMax, commandTermId: t.commandTermId, ...(t.constraints?.length ? { constraints: t.constraints.map((c) => ({ ...c })) } : {}) })),
+    });
+  }
 
   const selectedTargets: SimulationPlanTarget[] = [];
   const toolRules: Record<string, Record<string, unknown> | null> = {};
@@ -96,8 +175,11 @@ export async function buildSimulationPlan(params: {
     });
   }
 
+  const sections = deriveSections(selectedTargets, versionComponents, params.timingMode);
+
   const plan = {
     simulationType: params.simulationType,
+    sections,
     frameworkVersion: { examVersionId: params.examVersionId, blueprintId: blueprint?.id ?? null },
     selectedTargets,
     timingAllocation: { mode: params.timingMode, totalSeconds: params.timingMode === 'UNTIMED' ? null : totalSeconds },
@@ -138,6 +220,7 @@ export async function getSimulationPlanById(id: string): Promise<SimulationPlan 
     timingAllocation: plan.timingAllocation,
     toolRules: plan.toolRules,
     scoringConfiguration: plan.scoringConfiguration,
+    sections: plan.sections,
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
   };
 }

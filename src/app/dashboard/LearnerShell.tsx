@@ -15,8 +15,13 @@
  *     navigation system, two presentations.
  *
  * `chrome` is the structural seam for the LX-4 focus state:
- *   - 'full'    -> nav + drawer
- *   - 'minimal' -> slim bar with an Exit affordance, no nav
+ *   - 'full'       -> nav + drawer
+ *   - 'minimal'    -> slim bar with an Exit affordance, no nav
+ *   - 'onboarding' -> REM-T1-01: mandatory Student onboarding is incomplete;
+ *                     brand + language + Sign out only, NO product navigation
+ *                     (Home/Learn/Progress/My Plan/Exam Prep/Study Plan/
+ *                     Improve/Account). The proxy gate enforces the routes;
+ *                     this only removes links that would bounce anyway.
  *
  * LX-4K FOCUS MODE: during active learning the full learner navigation
  * disappears. Rather than a nested layout per activity, the shell
@@ -25,7 +30,7 @@
  * system is built; Focus Mode owns presentation only.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -38,6 +43,7 @@ import {
   RotateCcw,
   ArrowLeft,
   ListChecks,
+  Map as MapIcon,
   MessageCircle,
   Bell,
   Users,
@@ -57,6 +63,7 @@ import {
 import type { LearnerNavGroup } from '@/lib/lx/learner-navigation';
 import type { Locale } from '@/lib/i18n/messages';
 import { ShellLocaleProvider } from './ShellLocale';
+import SignOutAction from '@/components/auth/SignOutAction';
 
 /**
  * LX-4K -- routes that ARE an active learning activity. On these the
@@ -68,8 +75,11 @@ const FOCUS_MODE_PREFIXES = [
   '/dashboard/remediation',
   '/dashboard/cognitive/explain',
   '/dashboard/cognitive/transfer',
+  '/dashboard/apply',
   '/dashboard/assignments/practice',
   '/dashboard/exam-prep/attempt',
+  // LEARN guided understanding (2026-10-16) -- an active activity.
+  '/dashboard/learn/guided',
 ] as const;
 
 const ICONS: Record<string, ReactNode> = {
@@ -80,6 +90,7 @@ const ICONS: Record<string, ReactNode> = {
   BookOpen: <BookOpen size={16} strokeWidth={2} aria-hidden />,
   RotateCcw: <RotateCcw size={16} strokeWidth={2} aria-hidden />,
   ListChecks: <ListChecks size={16} strokeWidth={2} aria-hidden />,
+  Map: <MapIcon size={16} strokeWidth={2} aria-hidden />,
   MessageCircle: <MessageCircle size={16} strokeWidth={2} aria-hidden />,
   Bell: <Bell size={16} strokeWidth={2} aria-hidden />,
   Users: <Users size={16} strokeWidth={2} aria-hidden />,
@@ -282,7 +293,7 @@ function Footer({ displayName, streak, streakLabel, localeSwitcher }: { displayN
 }
 
 export default function LearnerShell({
-  groups,
+  groups: groupsProp,
   displayName,
   streak,
   streakLabel,
@@ -298,6 +309,8 @@ export default function LearnerShell({
   locale = 'es',
   tabBarLabel,
   notificationsLabel,
+  signOutLabel = 'Sign out',
+  onboardingLabel,
   children,
 }: {
   groups: ResolvedNavGroup[];
@@ -313,7 +326,11 @@ export default function LearnerShell({
   /** LX-4K: safe destination for the Focus Mode exit. Defaults to Today. */
   exitHref?: string;
   localeSwitcher: ReactNode;
-  chrome?: 'full' | 'minimal';
+  chrome?: 'full' | 'minimal' | 'onboarding';
+  /** REM-T1-01: label of the Sign out action shown in the onboarding chrome. */
+  signOutLabel?: string;
+  /** REM-T1-01: accessible label of the onboarding header. */
+  onboardingLabel?: string;
   /** F13 -- shows the actor's active workspace and lets a multi-workspace user switch (task section 7). Optional so Focus Mode / any future minimal-chrome caller is unaffected. Rendered in both the desktop sidebar and the mobile drawer, above the Footer, so it is never hidden on a small viewport (INV-F13-22). */
   workspaceSwitcher?: ReactNode;
   /** Onboarding/authorization rework (2026-09-21) -- an optional persistent, non-dismissable license-state notice (demo mode / no active license), rendered above page content. Never shown during Focus Mode so it cannot interrupt an in-progress activity; the server-side capability gate on the activity's own route is what actually blocks premium use, this is purely the visible cue. */
@@ -329,6 +346,36 @@ export default function LearnerShell({
   const pathname = usePathname() ?? '';
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+
+  // The document language is the workspace language. The root layout already renders it on <html>
+  // (resolveRequestDocumentLanguage); this keeps the document in step when the language is switched
+  // or when that server read fell back.
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
+  // Track A: the notifications badge counts UNREAD notifications only. The
+  // notifications page announces the new count right after it marks what it
+  // displayed as read (or after "mark all" / "mark unread"), so the badge
+  // updates without a reload; the next server render is the source of truth.
+  const serverUnread = groupsProp.flatMap((g) => g.items).find((i) => i.key === 'notifications')?.badge ?? 0;
+  const [unreadOverride, setUnreadOverride] = useState<number | null>(null);
+  useEffect(() => setUnreadOverride(null), [serverUnread]);
+  useEffect(() => {
+    const onUnread = (e: Event) => {
+      const count = (e as CustomEvent<{ count?: number }>).detail?.count;
+      if (typeof count === 'number') setUnreadOverride(count);
+    };
+    window.addEventListener('studyus:unread-notifications', onUnread);
+    return () => window.removeEventListener('studyus:unread-notifications', onUnread);
+  }, []);
+  const groups = useMemo(
+    () =>
+      unreadOverride === null
+        ? groupsProp
+        : groupsProp.map((g) => ({ ...g, items: g.items.map((i) => (i.key === 'notifications' ? { ...i, badge: unreadOverride > 0 ? unreadOverride : undefined } : i)) })),
+    [groupsProp, unreadOverride]
+  );
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -440,12 +487,32 @@ export default function LearnerShell({
     </Link>
   );
 
+  // REM-T1-01: mandatory onboarding -- brand, language, Sign out. No product navigation.
+  if (chrome === 'onboarding') {
+    return (
+      <div className="lx-shell lx-shell--focus lx-shell--onboarding" lang={locale}>
+        <header className="lx-focusbar" aria-label={onboardingLabel} style={{ justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+          <span style={{ display: 'inline-flex', padding: '0 var(--space-2)' }}>
+            <Image src="/brand/studyus-wordmark-v2.png" alt="StudyUs" width={91} height={30} priority style={{ height: 30, width: 'auto' }} />
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            {localeSwitcher}
+            <SignOutAction label={signOutLabel} />
+          </div>
+        </header>
+        <main className="lx-main lx-main--focus">
+          <ShellLocaleProvider value={locale}>{children}</ShellLocaleProvider>
+        </main>
+      </div>
+    );
+  }
+
   // LX-4K: collapse to the minimal chrome for any active-learning route.
   const inFocusMode = chrome === 'minimal' || FOCUS_MODE_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
   if (inFocusMode) {
     return (
-      <div className="lx-shell lx-shell--focus">
+      <div className="lx-shell lx-shell--focus" lang={locale}>
         <div className="lx-focusbar">
           <Link href={originExitHref ?? exitHref} className="lx-exit" aria-label={exitLabel}>
             <ArrowLeft size={16} strokeWidth={2.2} aria-hidden />

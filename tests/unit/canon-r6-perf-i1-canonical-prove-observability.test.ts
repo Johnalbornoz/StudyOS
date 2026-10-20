@@ -405,7 +405,8 @@ describe('route wiring -- request correlation, per-phase timers, single summary 
 
   it('8. exactly one CANONICAL_PROVE_GENERATION_SUMMARY-equivalent emission call site per outcome: SUCCESS (1), INCOMPLETE (2, one per choke-point guard), ERROR (1, in the outer catch)', () => {
     const successCount = (ROUTE_SRC.match(/emitCanonicalProveSummary\('SUCCESS', questions\.length\);/g) ?? []).length;
-    const incompleteCount = (ROUTE_SRC.match(/emitCanonicalProveSummary\('INCOMPLETE', questions\.length, 'V1_PROVE_GENERATION_INCOMPLETE'\);/g) ?? []).length;
+    // D75: the INCOMPLETE errorCode is the resolved proveReasonCode (V1_PROVE_GENERATION_INCOMPLETE | PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE)
+    const incompleteCount = (ROUTE_SRC.match(/emitCanonicalProveSummary\('INCOMPLETE', questions\.length, proveReasonCode\);/g) ?? []).length;
     const errorCount = (ROUTE_SRC.match(/result: 'ERROR',/g) ?? []).length;
     expect(successCount).toBe(1);
     expect(incompleteCount).toBe(2);

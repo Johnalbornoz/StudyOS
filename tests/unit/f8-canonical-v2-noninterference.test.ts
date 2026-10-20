@@ -166,7 +166,11 @@ describe('F0-S/F1-F7 protections remain present (source-level guard; behavior co
   it('F2 authorization service untouched apart from F8 being its first real LEARNER_INTERVENTION_CREATE consumer', () => {
     const src = readFileSync(join(process.cwd(), 'src/lib/authorization/index.ts'), 'utf-8');
     expect(src).toMatch(/canAccessLearner/);
-    expect(src).toMatch(/LEARNER_INTERVENTION_CREATE/);
+    // L10 SF-4: the per-relationship grant table moved to ./permissions (LEARNER_READ_SCOPE); the owner alone still holds it.
+    const permissions = readFileSync(join(process.cwd(), 'src/lib/authorization/permissions.ts'), 'utf-8');
+    expect(permissions).toMatch(/LEARNER_INTERVENTION_CREATE/);
+    expect(permissions).toMatch(/PARENT: \[[^\]]*\]/);
+    expect(permissions.match(/'LEARNER_INTERVENTION_CREATE'/g)?.length).toBe(2); // the type member + the OWNER grant, nothing else
   });
 
   it('F1 identity/workspace layer untouched', () => {

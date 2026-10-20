@@ -1,0 +1,38 @@
+{
+  "runId": "qf5-live-006",
+  "batchId": "PISA.SCIENCE:C1:001",
+  "phase": "C1",
+  "profileId": "PISA.SCIENCE",
+  "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.4.0",
+  "cumulativeSpendUsd": 4.804905,
+  "timestamp": "2026-10-12T13:26:13.468Z",
+  "candidateIds": [
+    "v2.pisa.2022/science/pisa.sci.explain.earth#0/004#0",
+    "v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/003#0",
+    "v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/003#1"
+  ],
+  "decisions": {
+    "v2.pisa.2022/science/pisa.sci.explain.earth#0/004#0": "HUMAN_REVIEW",
+    "v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/003#1": "HUMAN_REVIEW"
+  },
+  "metrics": {
+    "rawGenerated": 3,
+    "structuralPass": 3,
+    "answerPass": 3,
+    "constructPass": 1,
+    "difficultyMatch": 2,
+    "autoApproved": 0,
+    "humanReview": 2,
+    "autoRejected": 0,
+    "specifications": 2,
+    "firstAttemptPass": 0,
+    "regenerated": 1,
+    "specificationIssues": 0,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 0.5,
+    "humanReviewRate": 1,
+    "rejectionRate": 0
+  },
+  "hash": "88162174e36d44097cbb830c712a262890d180710ccd3ff387baa3b5798cd2b0"
+}

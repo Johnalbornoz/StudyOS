@@ -1,0 +1,9 @@
+{
+  "frozenOn": "2026-10-12",
+  "frozenBy": "operator instruction: QUESTION FACTORY V5 -- HUMAN CALIBRATION FREEZE",
+  "reason": "human calibration of the 50-item blind set is pending; no provider generation or judging call until its results are analysed",
+  "authorizedBudgetUsd": 25,
+  "estimatedSpendUsd": 17.47,
+  "budgetRemainingUsd": 7.53,
+  "providerCallsAfterFreeze": 0
+}

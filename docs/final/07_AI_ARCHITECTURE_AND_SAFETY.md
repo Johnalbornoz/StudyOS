@@ -20,7 +20,7 @@ Two real provider adapters: `src/lib/ai/adapters/anthropic.ts`, `src/lib/ai/adap
 
 ## Kill switch
 
-`AI_ENABLED` (environment variable) is a real, working partial kill switch — setting it `false` disables AI-generation-dependent code paths. **Disclosed scope limit**: this is the only dedicated kill switch; there is no per-feature (Exam Prep / Teacher assignments / Institution Intelligence) flag yet — see [15_RESIDUAL_RISKS_AND_IVG.md](15_RESIDUAL_RISKS_AND_IVG.md) (`IVG-F15-12`, **DEFERRED**).
+~~`AI_ENABLED` (environment variable) is a real, working partial kill switch~~ **[Corrected 2026-10-06, technical cleanup]** `AI_ENABLED` does **not** exist in the code and never has (verified on `main`, `develop`, the Production SHA `9597ac8` and this line). There is **no AI kill switch**. Real containment today: redeploy a prior Vercel deployment (instant rollback). An invalid `AI_MAX_CALLS_PER_DAY` makes every AI call fail with `CONFIGURATION_ERROR`, but that is an error path, not a supported switch. A real kill switch is an open operational item (see `TECHNICAL_CLEANUP_REPORT.md`). Scope limit: there is no per-feature (Exam Prep / Teacher assignments / Institution Intelligence) flag yet — see [15_RESIDUAL_RISKS_AND_IVG.md](15_RESIDUAL_RISKS_AND_IVG.md) (`IVG-F15-12`, **DEFERRED**).
 
 ## Credential handling
 

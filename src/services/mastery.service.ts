@@ -999,3 +999,43 @@ export async function getMasteryTrend(subjectId: string, days: number = 14): Pro
   );
   return result.rows.map((r) => Number(r.avg_mastery_score));
 }
+
+/**
+ * LEARN guided understanding (operator rule 2026-10-16, contract 1.1) -- writes ONE diagnostic
+ * learning_evidence row WITHOUT any mastery / memory / knowledge-state projection. Kept here so this file
+ * stays the single learning_evidence writer. Used only for assisted, diagnostic evidence whose reading is
+ * owned by the canonical engine (a guided LEARN session's close): it must not move mastery_records.
+ * Idempotent on the unique `operationKey` -- a retried write returns the existing row's id.
+ */
+export async function recordDiagnosticEvidence(
+  input: {
+    studentId: string;
+    conceptId: string;
+    subjectId: string;
+    sourceType: string;
+    result: 'correct' | 'partial' | 'incorrect';
+    difficulty: number;
+    scorePercent: number | null;
+    activityType: string;
+    learningMode: 'SOLO' | 'COACH' | 'AI_NATIVE';
+    hintsUsed: number;
+    aiAssistanceType: string;
+    metadata: Record<string, unknown>;
+    operationKey: string;
+  },
+  client: DbExecutor = db,
+): Promise<{ id: string | null; duplicate: boolean }> {
+  const inserted = await client.query(
+    `INSERT INTO learning_evidence (
+       student_id, concept_id, source_type, result, difficulty, timestamp,
+       subject_id, activity_type, learning_mode, hints_used, ai_assistance_type,
+       score_percent, metadata, operation_key
+     ) VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12::jsonb, $13)
+     ON CONFLICT (operation_key) WHERE operation_key IS NOT NULL DO NOTHING
+     RETURNING id`,
+    [input.studentId, input.conceptId, input.sourceType, input.result, input.difficulty, input.subjectId, input.activityType, input.learningMode, input.hintsUsed, input.aiAssistanceType, input.scorePercent, JSON.stringify(input.metadata), input.operationKey],
+  );
+  if (inserted.rows[0]?.id) return { id: inserted.rows[0].id as string, duplicate: false };
+  const existing = await client.query(`SELECT id FROM learning_evidence WHERE operation_key = $1`, [input.operationKey]);
+  return { id: (existing.rows[0]?.id as string) ?? null, duplicate: true };
+}

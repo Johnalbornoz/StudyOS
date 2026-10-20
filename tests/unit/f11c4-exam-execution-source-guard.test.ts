@@ -69,7 +69,9 @@ describe('F11-C4 Exam Reinforcement never becomes a second Assessment/Simulation
     // startSimulationAttempt and the execution-registry INSERT must both appear AFTER BEGIN and BEFORE the function's own COMMIT/ROLLBACK handling -- i.e. no `db.connect()`-releasing pattern splits them into two transactions.
     expect(body).toMatch(/await client\.query\('BEGIN'\)/);
     const beginIndex = body.indexOf(`await client.query('BEGIN')`);
-    const startAttemptIndex = body.indexOf('await startSimulationAttempt(');
+    // B1-C: the attempt is created through startInterventionExamAttempt (a preparation type -> startSimulationAttempt;
+    // a full mock -> a frozen exam instance). The guarded property is unchanged: it happens inside this transaction.
+    const startAttemptIndex = body.indexOf('await startInterventionExamAttempt(');
     const commitIndex = body.lastIndexOf(`await client.query('COMMIT')`);
     expect(startAttemptIndex).toBeGreaterThan(beginIndex);
     expect(startAttemptIndex).toBeLessThan(commitIndex);

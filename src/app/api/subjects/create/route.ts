@@ -7,6 +7,7 @@ import { getAcademicProfile } from '@/services/academic-profile.service';
 import { deriveSubjectAcademicContext, resolveSubjectIbFields } from '@/lib/student/subject-academic-context';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { catalogSubject, catalogSubjectByName } from '@/lib/experience/subject-catalog';
+import { loadResolvedStudentContext } from '@/lib/student/student-context.server';
 
 /**
  * Reuse the Student's active subject with this name, or create it -- once.
@@ -84,7 +85,11 @@ export async function POST(req: NextRequest) {
     // from the form; a DP subject needs an explicit HL/SL level. The IB
     // group comes from the catalog entry.
     const context = deriveSubjectAcademicContext(await getAcademicProfile(userId));
-    const ib = resolveSubjectIbFields(context, { ibProgramme, ibSubjectGroup: context.programme === 'none' ? ibSubjectGroup : entry.ibGroup, ibLevel });
+    // REM-T1-04: the Academic Profile is the source of truth for the subject's level -- when it already
+    // states it (e.g. Mathematics: analysis and approaches · HL), it is used and never asked again. An
+    // explicit level from the Student (the "Cambiar nivel" action) still wins.
+    const knownLevel = context.requiresLevel && !ibLevel ? (await loadResolvedStudentContext(userId).catch(() => null))?.knownLevels[entry.key] ?? null : null;
+    const ib = resolveSubjectIbFields(context, { ibProgramme, ibSubjectGroup: context.programme === 'none' ? ibSubjectGroup : entry.ibGroup, ibLevel: ibLevel ?? knownLevel });
     if (!ib.ok) {
       return NextResponse.json({ error: ib.error }, { status: 400 });
     }

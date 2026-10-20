@@ -107,7 +107,10 @@ describe('UI/API contract: one controlled definition', () => {
         h.locale = locale;
         h.db = fakeDb();
         const suggestions = suggestSubjects({ profile, locale, examSubjectFocus: [], ownedSubjectNames: [] });
-        expect(suggestions.length).toBeGreaterThan(0);
+        // T1 micro-delta M05: with no Academic Profile there is no generic "For you" list (those subjects stay
+        // under "Explore subjects"); every profile shape still gets its recommendations.
+        if (profile) expect(suggestions.length).toBeGreaterThan(0);
+        else expect(suggestions).toEqual([]);
         for (const s of suggestions) {
           const ibLevel = profile?.ibProgramme === 'DP' ? 'HL' : null; // the picker asks HL/SL for DP
           const res = await post({ catalogKey: s.key, ibLevel });

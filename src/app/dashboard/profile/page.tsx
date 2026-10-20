@@ -3,10 +3,30 @@ import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
+import { fillMessage } from '@/lib/i18n/roles-messages';
 import { getAcademicProfile } from '@/services/academic-profile.service';
+import { getProfileCurriculum } from '@/services/academic-profile-catalogue.service';
+import { loadClassProgrammes } from '@/lib/exam-core/eligibility/academic-context';
 import AcademicProfileWizard from './AcademicProfileWizard';
+import { query } from '@/lib/db';
+import { isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
+import { getStudentInstitutionalContext } from '@/lib/exam-journey/ux.server';
+import { EntryChoice, InstitutionalContextCard } from './InstitutionalContextCard';
+import { VALID_EXAM_TARGET_PREDICATE, STUDENT_CONTEXT_PATH } from '@/lib/student/onboarding-gate';
+import { gradeDisplayLabel } from '@/lib/i18n/catalog-labels';
+import { levelDisplayLabel, localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
+import { formatTimeContext, storedTimeContext } from '@/lib/student/time-context';
+import { getParentAccessMessages } from '@/lib/i18n/parent-access-messages';
+import ParentAccessCard from './ParentAccessCard';
+import { StudentClassMemberships } from './StudentClassMemberships';
 
-export default async function AcademicProfilePage() {
+/**
+ * Student Academic Profile. Once saved it is shown as a summary (never asked again
+ * each session) with an explicit "Cambiar" action. Class curricula set by an
+ * Institution are listed beside it: authoritative for that class, never merged
+ * into the personal profile; a different programme is shown as such.
+ */
+export default async function AcademicProfilePage({ searchParams }: { searchParams?: Promise<{ entry?: string }> } = {}) {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) {
     return (
@@ -20,29 +40,145 @@ export default async function AcademicProfilePage() {
   const studentId = await getOrCreateStudentId(clerkUserId);
   const locale = await getInterfaceLanguage(studentId);
   const t = getMessages(locale);
+  const tr = t as Record<string, string>;
 
-  const profile = await getAcademicProfile(studentId);
+  const [profile, curriculum, classRows] = await Promise.all([getAcademicProfile(studentId), getProfileCurriculum(studentId), loadClassProgrammes(studentId).catch(() => [])]);
+  const classCurricula = classRows.filter((r) => r.programme_id);
+  const completed = !!profile?.profileCompleted;
+
+  // Student Exam Journey -- entry UX (STUDENT_JOURNEY_V2=UX only).
+  if (isStudentJourneyUxEnabled()) {
+    const context = await getStudentInstitutionalContext(studentId);
+    const institutionDefinesPath = context.institutions.some((i) => i.classes.some((c) => c.subject.value !== null));
+    if (institutionDefinesPath) {
+      // J1.3: what the institution provided is shown, never asked again; the Student's own
+      // declaration stays separate (and never overwrites the institution).
+      return (
+        <div className="acp-page">
+          <div className="acp-intro">
+            <h1>{t['profile.title']}</h1>
+          </div>
+          <InstitutionalContextCard context={context} labels={tr} />
+          {completed || context.conflicts.length > 0 ? (
+            <details className="card ui-disclosure jx-personal">
+              <summary className="jx-summary">{tr['jx.inst.personal.title']}</summary>
+              <div className="ui-disclosure-body">
+                <p className="ui-hint">{tr['jx.inst.personal.lead']}</p>
+                <AcademicProfileWizard
+                  t={tr}
+                  initial={{
+                    countryOfStudy: profile?.countryOfStudy ?? null,
+                    schoolYear: profile?.schoolYear ?? null,
+                    curriculumType: profile?.curriculumType ?? null,
+                    curriculumScope: curriculum?.scope ?? null,
+                    academicProgrammeId: curriculum?.programmeId ?? null,
+                    academicQualificationId: curriculum?.qualificationId ?? null,
+                    academicSubjectIds: curriculum?.subjects.map((x) => x.id) ?? [],
+                    academicYear: profile?.academicYear ?? null,
+                    academicYearStart: profile?.academicYearStart ?? null,
+                    academicYearEnd: profile?.academicYearEnd ?? null,
+                    examSeries: profile?.examSeries ?? null,
+                    examYear: profile?.examYear ?? null,
+                    profileCompleted: completed,
+                  }}
+                  locale={locale}
+                />
+              </div>
+            </details>
+          ) : null}
+          <ParentAccessCard labels={getParentAccessMessages(locale)} locale={locale} />
+        </div>
+      );
+    }
+    const entry = (await searchParams)?.entry;
+    const hasTarget = (await query(`SELECT 1 FROM student_exam_profiles WHERE student_id = $1 AND ${VALID_EXAM_TARGET_PREDICATE} LIMIT 1`, [studentId]).catch(() => ({ rows: [] as unknown[] }))).rows.length > 0;
+    if (!profile && !hasTarget && entry !== 'curriculum') {
+      // J3.3: ONE first decision before any form -- an exam needs no school profile.
+      return (
+        <div className="acp-page">
+          <EntryChoice labels={tr} />
+          {/* CR-L9-01: an enrolled Student can leave a class from here too (renders nothing without an active class). */}
+          <StudentClassMemberships />
+        </div>
+      );
+    }
+  }
 
   return (
-    <div>
-      <div style={{ marginBottom: 'var(--space-8)' }}>
+    <div className="acp-page">
+      <div className="acp-intro">
         <h1>{t['profile.title']}</h1>
-        <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 15, maxWidth: '62ch' }}>
-          {t['profile.subtitle']}
-        </p>
+        <p className="acp-lead">{t['profile.subtitle']}</p>
       </div>
 
+      {completed && (
+        <section className="card acp-summary" aria-labelledby="acp-summary-title">
+          <h2 id="acp-summary-title">{tr['acp.summary.title']}</h2>
+          <p className="acp-summary-line">
+            <strong>{curriculum?.programme ?? tr['acp.summary.none']}</strong>
+            {curriculum?.authority ? <span className="acp-hint"> · {curriculum.authority}</span> : null}
+            {curriculum?.qualification ? <span className="acp-hint"> · {curriculum.qualification}</span> : null}
+          </p>
+          {/* REM-T1-07 / REM-T1-03: grade and time context in the interface locale (stored values unchanged). */}
+          <p className="acp-hint">
+            {[
+              profile?.schoolYear ? gradeDisplayLabel(profile.schoolYear, locale) : null,
+              profile ? (storedTimeContext(profile) ? formatTimeContext(storedTimeContext(profile)!, locale) : profile.academicYear) : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+          {curriculum && curriculum.subjects.length > 0 ? (
+            <p className="acp-hint">{fillMessage(tr['acp.summary.subjects'], { subjects: curriculum.subjects.map((s) => (s.level ? `${localizeCatalogSubjectName(s.name, locale)} · ${levelDisplayLabel(s.level, locale)}` : localizeCatalogSubjectName(s.name, locale))).join(', ') })}</p>
+          ) : null}
+          <p className="acp-hint">{tr['acp.summary.historyNote']}</p>
+        </section>
+      )}
+
+      {classCurricula.length > 0 && (
+        <section className="card acp-summary" aria-labelledby="acp-classes-title" data-class-curricula>
+          <h2 id="acp-classes-title">{tr['acp.institution.title']}</h2>
+          <ul className="acp-class-list">
+            {classCurricula.map((r) => {
+              const conflict = !!curriculum?.programmeId && r.programme_id !== curriculum.programmeId;
+              return (
+                <li key={r.class_id} className={conflict ? 'acp-conflict' : undefined}>
+                  {fillMessage(tr[conflict ? 'acp.institution.conflict' : 'acp.institution.row'], { class: r.class_name, programme: r.programme_name ?? '' })}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       <AcademicProfileWizard
-        t={t}
+        t={tr}
         initial={{
           countryOfStudy: profile?.countryOfStudy ?? null,
           schoolYear: profile?.schoolYear ?? null,
           curriculumType: profile?.curriculumType ?? null,
-          ibProgramme: profile?.ibProgramme ?? null,
-          ibYear: profile?.ibYear ?? null,
+          curriculumScope: curriculum?.scope ?? null,
+          academicProgrammeId: curriculum?.programmeId ?? null,
+          academicQualificationId: curriculum?.qualificationId ?? null,
+          academicSubjectIds: curriculum?.subjects.map((s) => s.id) ?? [],
           academicYear: profile?.academicYear ?? null,
+          academicYearStart: profile?.academicYearStart ?? null,
+          academicYearEnd: profile?.academicYearEnd ?? null,
+          examSeries: profile?.examSeries ?? null,
+          examYear: profile?.examYear ?? null,
+          profileCompleted: completed,
         }}
+        locale={locale}
+        // REM-T1-06: first-time onboarding can be left through Cancel, back to the context choice.
+        exitHref={completed ? null : STUDENT_CONTEXT_PATH}
       />
+
+      {/* CR-L9-01: L9's "leave class" control on the canonical profile, independent of STUDENT_JOURNEY_V2=UX.
+          The institution-defined layout above already shows it inside InstitutionalContextCard. */}
+      <StudentClassMemberships />
+
+      {/* L7 PA-1: who can see my progress, invite a family member, remove access. */}
+      <ParentAccessCard labels={getParentAccessMessages(locale)} locale={locale} />
     </div>
   );
 }

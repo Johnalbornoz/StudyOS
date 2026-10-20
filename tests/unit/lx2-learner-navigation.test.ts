@@ -37,7 +37,7 @@ describe('LX-2E buildLearnerNav', () => {
   it('UX-2/UX-5: no capability was removed -- every destination stays reachable (nav or Aprender-owned detail route)', () => {
     const inNav = [
       '/dashboard/today', '/dashboard', '/dashboard/exam-prep', '/dashboard/assignments',
-      '/dashboard/study-plan', '/dashboard/learning-debt', '/dashboard/tutor',
+      '/dashboard/plan', '/dashboard/learning-debt', '/dashboard/tutor',
       '/dashboard/notifications', '/dashboard/profile', '/dashboard/parent', '/dashboard/billing', '/dashboard/learn',
     ];
     for (const assignmentCount of [0, 1]) {
@@ -67,9 +67,9 @@ describe('LX-2E buildLearnerNav', () => {
     expect(nav().flatMap((g) => g.items).every((i) => i.temporaryMappingNote === undefined)).toBe(true);
   });
 
-  it('secondary group ("Más") holds Tutor, Exam Prep, assignments without pending work, study plan, learning debt', () => {
+  it('secondary group ("Más") holds Tutor, My plan (the one plan entry -- L6 ST-4), Exam Prep, assignments without pending work, learning debt', () => {
     const secondary = nav().find((g) => g.kind === 'SECONDARY')!;
-    expect(secondary.items.map((i) => i.key)).toEqual(['tutor', 'examPrep', 'assignments', 'studyPlan', 'debt']);
+    expect(secondary.items.map((i) => i.key)).toEqual(['tutor', 'myPlan', 'examPrep', 'assignments', 'debt']);
   });
 
   it('utility group holds account/profile/system; admin only when isAdmin', () => {

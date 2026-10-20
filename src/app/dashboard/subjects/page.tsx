@@ -5,6 +5,7 @@ import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import SubjectCard from './SubjectCard';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 
 export default async function SubjectsPage() {
   const { userId: clerkUserId } = await auth();
@@ -48,7 +49,7 @@ export default async function SubjectsPage() {
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
             {activeSubjects.map((s: any) => (
-              <SubjectCard key={s.id} id={s.id} name={s.name} status={s.status} studentId={studentId} locale={locale} />
+              <SubjectCard key={s.id} id={s.id} name={localizeSubjectName(s.name, locale)} status={s.status} studentId={studentId} locale={locale} />
             ))}
           </div>
 
@@ -59,7 +60,7 @@ export default async function SubjectsPage() {
               </h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
                 {archivedSubjects.map((s: any) => (
-                  <SubjectCard key={s.id} id={s.id} name={s.name} status={s.status} studentId={studentId} locale={locale} />
+                  <SubjectCard key={s.id} id={s.id} name={localizeSubjectName(s.name, locale)} status={s.status} studentId={studentId} locale={locale} />
                 ))}
               </div>
             </div>

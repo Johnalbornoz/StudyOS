@@ -1,0 +1,358 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r2.lect-graf",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "DATA_TABLE",
+    "stimulusBrief": "Tabla ORIGINAL con datos inventados y verosímiles sobre el consumo de agua por sector en un municipio durante cuatro años: 4 a 6 filas y 3 a 4 columnas, con título descriptivo. Los números deben permitir comparar, ordenar y calcular diferencias simples sin ambigüedad.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.graficos",
+        "conceptStableId": "read.tables-and-graphics",
+        "difficulty": 2,
+        "focus": "la lectura directa o comparación de valores de la tabla"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.graficos",
+        "conceptStableId": "read.tables-and-graphics",
+        "difficulty": 3,
+        "focus": "una conclusión que se obtiene relacionando dos filas o columnas de la tabla"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Consumo anual de agua por sector en el municipio de Valle Claro",
+      "text": null,
+      "table": {
+        "caption": "Volumen consumido, en miles de m³",
+        "headers": [
+          "Año",
+          "Hogares",
+          "Comercio",
+          "Servicios públicos"
+        ],
+        "rows": [
+          [
+            "2022",
+            "410",
+            "180",
+            "95"
+          ],
+          [
+            "2023",
+            "425",
+            "184",
+            "101"
+          ],
+          [
+            "2024",
+            "418",
+            "189",
+            "106"
+          ],
+          [
+            "2025",
+            "432",
+            "192",
+            "111"
+          ]
+        ]
+      }
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿En qué año el sector de hogares registró el mayor consumo de agua?",
+        "options": [
+          {
+            "text": "En 2022.",
+            "isKey": false,
+            "misconception": "SELECTS_FIRST_VALUE",
+            "rationale": "En 2022 el consumo de hogares fue de 410, una cifra menor que el valor máximo de la columna."
+          },
+          {
+            "text": "En 2023.",
+            "isKey": false,
+            "misconception": "SELECTS_NEARLY_HIGHEST_VALUE",
+            "rationale": "El valor de 425 es alto, pero queda por debajo de 432."
+          },
+          {
+            "text": "En 2024.",
+            "isKey": false,
+            "misconception": "IGNORES_COLUMN_COMPARISON",
+            "rationale": "En 2024 se registraron 418, por lo que no corresponde al mayor consumo del sector."
+          },
+          {
+            "text": "En 2025.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El valor de 432 en 2025 es el más alto de la columna de hogares."
+          }
+        ],
+        "evidenceQuote": "432"
+      },
+      {
+        "slot": "s2",
+        "stem": "Entre 2022 y 2025, ¿qué sector presentó el mayor aumento en el consumo de agua?",
+        "options": [
+          {
+            "text": "El sector de hogares.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Hogares aumentó de 410 a 432, es decir, 22 miles de m³, un incremento mayor que los demás sectores."
+          },
+          {
+            "text": "El sector de comercio.",
+            "isKey": false,
+            "misconception": "CONFUSES_FINAL_VALUE_WITH_INCREASE",
+            "rationale": "Comercio terminó con un valor alto, pero su aumento fue de 12 miles de m³."
+          },
+          {
+            "text": "El sector de servicios públicos.",
+            "isKey": false,
+            "misconception": "MISREADS_DIFFERENCE",
+            "rationale": "Servicios públicos aumentó de 95 a 111, es decir, 16 miles de m³, menos que hogares."
+          },
+          {
+            "text": "Los tres sectores por igual.",
+            "isKey": false,
+            "misconception": "ASSUMES_EQUAL_CHANGE",
+            "rationale": "Los cambios entre 2022 y 2025 fueron distintos para cada sector."
+          }
+        ],
+        "evidenceQuote": "432"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "3618a598-42eb-4a12-82e5-4f4f7f4b5f24",
+    "generatedAt": "2026-10-14T01:30:47.679Z",
+    "unitId": "paa-pilot.r2.lect-graf"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "f9cccf91-6c56-423c-ba5f-f6216f4d1a21",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "25899a2a-976d-4692-91c8-545b653a97bc",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-graficos.f2d0f213c30f",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.graficos",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.graficos / read.tables-and-graphics"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.7d68b1f3e246@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-graficos.753b24171e65",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.graficos",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.graficos / read.tables-and-graphics"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.7d68b1f3e246@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

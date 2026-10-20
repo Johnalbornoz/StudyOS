@@ -19,8 +19,12 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import UploadPanel from './UploadPanel';
 import AssessmentPanel from './AssessmentPanel';
+import CreateExamPanel from './CreateExamPanel';
+import ScheduledExams from './ScheduledExams';
 import SubjectSettingsPanel from './SubjectSettingsPanel';
+import SubjectAssessmentsList from './SubjectAssessmentsList';
 import HierarchicalConceptList from './HierarchicalConceptList';
+import { isSnapshotExecutionEnabled } from '@/lib/assessment-execution/execution-flag';
 import { getSubjectAccentColor } from '@/lib/subject-color';
 import { masteryToPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { activityCta } from '../../activityCta';
@@ -231,6 +235,12 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           </Link>
         </div>
       )}
+      {/* Overnight 2026-10-16: the Student's scheduled / open subject Tests and Mocks ("Mis evaluaciones programadas"). */}
+      <SubjectAssessmentsList subjectId={id} studentId={studentId} locale={locale} />
+
+      {/* The Student's own partial exam: exactly the concepts they choose, with or without a curriculum. */}
+      {isSnapshotExecutionEnabled() && <ScheduledExams subjectId={id} locale={locale} />}
+      <CreateExamPanel subjectId={id} locale={locale} hierarchy={hierarchy} canonicalAssessment={isSnapshotExecutionEnabled()} />
 
       <AssessmentPanel
         subjectId={id}
@@ -256,6 +266,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ id: st
           hierarchy={hierarchy}
           masteryStates={masteryStates}
           journeyStages={journeyStages}
+          canonicalAssessment={isSnapshotExecutionEnabled()}
         />
       )}
 

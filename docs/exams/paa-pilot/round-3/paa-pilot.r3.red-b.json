@@ -1,0 +1,454 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r3.red-b",
+    "component": "redaccion",
+    "language": "es",
+    "stimulusKind": "SHORT_SOURCE_TEXT",
+    "stimulusBrief": "Párrafo ORIGINAL de 110 a 170 palabras sobre un club de lectura juvenil, con las oraciones NUMERADAS así: (1) ... (2) ... hasta (6) u (8). Debe presentar varios casos particulares de una misma idea y una afirmación general que pueda concretarse con un ejemplo.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.red.generalizacion",
+        "conceptStableId": "write.generalization",
+        "difficulty": 3,
+        "focus": "qué oración general recoge mejor los casos particulares de varias oraciones numeradas"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.red.integracion",
+        "conceptStableId": "write.global-synthesis",
+        "difficulty": 3,
+        "focus": "qué título u oración resume mejor el párrafo completo"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.red.particularizacion",
+        "conceptStableId": "write.indirect-expression",
+        "difficulty": 3,
+        "focus": "qué ejemplo o detalle concreto ilustra mejor una afirmación general de una oración numerada"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "El club de Puerto Claro",
+      "text": "(1) Cada miércoles, el club de lectura juvenil del barrio Puerto Claro se reúne en la biblioteca para conversar sobre relatos y novelas. (2) En abril, Marina llevó una historieta sobre una científica que explora volcanes y explicó cómo los dibujos ayudaban a seguir el argumento. (3) La semana siguiente, Tomás eligió una novela de misterio y preparó tres preguntas sobre las pistas escondidas. (4) Lucía prefirió un libro de poemas y propuso que cada integrante leyera en voz alta un verso favorito. (5) Incluso quienes llegan sin haber terminado la obra participan al escuchar las opiniones del grupo y anotar recomendaciones. (6) Estas actividades muestran que el club ofrece distintas maneras de acercarse a la lectura y de compartir interpretaciones. (7) Al final de cada mes, los jóvenes votan el texto que comentarán después.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué oración general recoge mejor los casos particulares presentados en las oraciones (2), (3), (4) y (5)?",
+        "options": [
+          {
+            "text": "La oración (6), sobre las diversas formas de leer y compartir.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Esta oración reúne los distintos ejemplos de participación descritos en las oraciones anteriores."
+          },
+          {
+            "text": "La oración (1), sobre la reunión semanal en la biblioteca.",
+            "isKey": false,
+            "misconception": "CONFUSES_CONTEXT_WITH_GENERALIZATION",
+            "rationale": "Describe el contexto del club, pero no sintetiza las distintas actividades de los participantes."
+          },
+          {
+            "text": "La oración (5), sobre quienes llegan con una lectura pendiente.",
+            "isKey": false,
+            "misconception": "SELECTS_SINGLE_EXAMPLE",
+            "rationale": "Presenta un caso particular de participación, no la idea que incluye todos los casos."
+          },
+          {
+            "text": "La oración (7), sobre la votación del próximo texto.",
+            "isKey": false,
+            "misconception": "CONFUSES_SEQUENCE_WITH_GENERALIZATION",
+            "rationale": "Menciona una actividad final del club, pero no resume las formas de acercarse a la lectura."
+          }
+        ],
+        "evidenceQuote": "Estas actividades muestran que el club ofrece distintas maneras de acercarse a la lectura y de compartir interpretaciones."
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Cuál título resume mejor el párrafo completo?",
+        "options": [
+          {
+            "text": "Un club con diversas puertas hacia la lectura",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El título abarca las variadas obras, actividades y formas de participación que presenta el párrafo."
+          },
+          {
+            "text": "La votación mensual de los textos juveniles",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_MINOR_DETAIL",
+            "rationale": "La votación aparece al final, pero es un detalle y no el tema central del párrafo."
+          },
+          {
+            "text": "Las pistas de una novela de misterio",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_SINGLE_EXAMPLE",
+            "rationale": "Las pistas corresponden a la actividad de Tomás, una de varias experiencias del club."
+          },
+          {
+            "text": "Cómo terminar una obra antes de reunirse",
+            "isKey": false,
+            "misconception": "INVENTS_UNSTATED_REQUIREMENT",
+            "rationale": "El texto indica que también participan quienes no han terminado la obra, por lo que ese no es su enfoque."
+          }
+        ],
+        "evidenceQuote": "Estas actividades muestran que el club ofrece distintas maneras de acercarse a la lectura y de compartir interpretaciones."
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué caso presenta una vía de integración para asistentes con lectura pendiente?",
+        "options": [
+          {
+            "text": "Escuchar opiniones del grupo y anotar recomendaciones.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Este detalle muestra que se puede participar en el club aunque la lectura aún no esté terminada."
+          },
+          {
+            "text": "Preparar preguntas sobre pistas escondidas.",
+            "isKey": false,
+            "misconception": "CONFUSES_OTHER_ACTIVITY_WITH_TARGET_CASE",
+            "rationale": "Esa actividad corresponde a Tomás y no se presenta como una opción para quienes tienen lectura pendiente."
+          },
+          {
+            "text": "Leer en voz alta un verso favorito.",
+            "isKey": false,
+            "misconception": "CONFUSES_OTHER_ACTIVITY_WITH_TARGET_CASE",
+            "rationale": "La propuesta de Lucía es otra modalidad de participación, sin relación con tener la lectura pendiente."
+          },
+          {
+            "text": "Votar el texto del mes siguiente.",
+            "isKey": false,
+            "misconception": "CONFUSES_CLOSING_EVENT_WITH_TARGET_CASE",
+            "rationale": "La votación ocurre al final del mes y no concreta la integración descrita para asistentes con lectura pendiente."
+          }
+        ],
+        "evidenceQuote": "Incluso quienes llegan sin haber terminado la obra participan al escuchar las opiniones del grupo y anotar recomendaciones."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "0cd65a5e-61db-4979-adae-dff35535556a",
+    "generatedAt": "2026-10-14T01:36:30.021Z",
+    "unitId": "paa-pilot.r3.red-b"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "53af8223-1284-4290-86e5-6a922b2df748",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "f00427b3-26bf-4a34-ad2f-71b4a9e48c65",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.red-generalizacion.8a58e71b59e7",
+        "slot": "s1",
+        "objectiveCode": "paa.red.generalizacion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.generalizacion / write.generalization"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.c8bc9f2cb81f@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-integracion.955c03d8d06d",
+        "slot": "s2",
+        "objectiveCode": "paa.red.integracion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.integracion / write.global-synthesis"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.c8bc9f2cb81f@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-particularizacion.6e5d5d539fc4",
+        "slot": "s3",
+        "objectiveCode": "paa.red.particularizacion",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.particularizacion / write.indirect-expression"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.c8bc9f2cb81f@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

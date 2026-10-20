@@ -62,6 +62,32 @@ export async function loadRecognizedRequirementsForEngine(
   return result.rows.map(rowToEngineRecognizedRequirement);
 }
 
+/** Batched read of the same recognitions for MANY (student, concept) pairs, keyed `${studentId}:${conceptId}` (one SELECT). */
+export async function loadRecognizedRequirementsForPairs(
+  pairs: Array<{ studentId: string; conceptId: string }>,
+  migrationVersion: string,
+  client: DbExecutor = db,
+): Promise<Map<string, RecognizedRequirement[]>> {
+  const out = new Map<string, RecognizedRequirement[]>();
+  if (pairs.length === 0) return out;
+  const result = await client.query(
+    `SELECT r.id, r.student_id, r.concept_id, r.requirement, r.recognition_basis, r.legacy_policy_version,
+            r.source_evidence_ids, r.reason_code, r.recognized_at, r.migration_version
+     FROM pedagogical_requirement_recognition r
+     JOIN unnest($1::uuid[], $2::uuid[]) AS p(student_id, concept_id) ON p.student_id = r.student_id AND p.concept_id = r.concept_id
+     WHERE r.migration_version = $3
+     ORDER BY r.student_id, r.concept_id, r.requirement`,
+    [pairs.map((p) => p.studentId), pairs.map((p) => p.conceptId), migrationVersion],
+  );
+  for (const row of result.rows as RecognitionRow[]) {
+    const key = `${row.student_id}:${row.concept_id}`;
+    if (!out.has(key)) out.set(key, []);
+    // a duplicated input pair would repeat rows; keep one per recognition id
+    if (!out.get(key)!.some((x) => x.recognitionId === row.id)) out.get(key)!.push(rowToEngineRecognizedRequirement(row));
+  }
+  return out;
+}
+
 export interface ApplyRecognitionsResult {
   inserted: number;
   alreadyExisted: number;

@@ -17,7 +17,9 @@
  * with whatever metadata/quiz_sessions context is available).
  */
 import { fnv1aHex } from './fingerprint';
-import type { PedagogicalActivityType, RawEvidenceItem } from '@/lib/pedagogical-engine';
+import { correctnessScorePercent } from '@/lib/quiz/canonical-gate-score';
+import { CANONICAL_POLICY, transferLevelRank } from '@/lib/pedagogical-engine';
+import type { PedagogicalActivityType, PracticeExposure, RawEvidenceItem, TransferLadderChallenge, TransferLevel } from '@/lib/pedagogical-engine';
 import type {
   AdapterConfidence,
   AdapterUnresolvedMapping,
@@ -73,13 +75,22 @@ function orderTransferChallengeScores(challenges: StudyUSTransferChallengeScore[
  *     (challenge breakdown is separately handled --
  *     see mapTransferChallengeScores below)
  *
- *   DIAGNOSTIC_CHECK / CUMULATIVE_ASSESSMENT / MOCK_EXAM
- *   (ActivityType), or diagnostic_check /
+ *   CUMULATIVE_ASSESSMENT / MOCK_EXAM (ActivityType), or
  *   cumulative_assessment / exam_simulation (quiz_mode)
- *                                                      -> UNSUPPORTED_ACTIVITY_TYPE
- *     (these represent real, legitimate evidence purposes
- *     the 5-stage frozen v1 engine simply does not model --
- *     never forced into the nearest stage)
+ *                                                      -> INTERNAL_ASSESSMENT
+ *     (2026-10-16 contract 1.3: subject Test / Mock, one
+ *     row per (session, concept) with that concept's
+ *     score_percent -- generate-and-take writes
+ *     metadata.activityType = quiz_sessions.activity_type.
+ *     Replayed for revalidation only; never satisfies a
+ *     stage. A SOLO_VERIFICATION follow-up question carrying
+ *     the same activityType is NOT a session result and is
+ *     not mapped.)
+ *
+ *   DIAGNOSTIC_CHECK (ActivityType), or diagnostic_check
+ *   (quiz_mode)                                        -> UNSUPPORTED_ACTIVITY_TYPE
+ *     (a real, legitimate evidence purpose the engine
+ *     does not model -- never forced into the nearest stage)
  *
  *   LEARN_CHECK -> LEARN_CHECK: a forward-compatible hook
  *   only -- StudyUs has no existing quiz_mode or ActivityType
@@ -102,8 +113,8 @@ const ACTIVITY_TYPE_MAP: Record<string, PedagogicalActivityType | 'UNSUPPORTED'>
   RETENTION_CHECK: 'RETENTION_CHECK',
   TRANSFER: 'TRANSFER',
   DIAGNOSTIC_CHECK: 'UNSUPPORTED',
-  CUMULATIVE_ASSESSMENT: 'UNSUPPORTED',
-  MOCK_EXAM: 'UNSUPPORTED',
+  CUMULATIVE_ASSESSMENT: 'INTERNAL_ASSESSMENT',
+  MOCK_EXAM: 'INTERNAL_ASSESSMENT',
 };
 
 const QUIZ_MODE_MAP: Record<string, PedagogicalActivityType | 'UNSUPPORTED'> = {
@@ -111,8 +122,8 @@ const QUIZ_MODE_MAP: Record<string, PedagogicalActivityType | 'UNSUPPORTED'> = {
   review: 'PRACTICE',
   quick_check: 'PROVE',
   retention_check: 'RETENTION_CHECK',
-  cumulative_assessment: 'UNSUPPORTED',
-  exam_simulation: 'UNSUPPORTED',
+  cumulative_assessment: 'INTERNAL_ASSESSMENT',
+  exam_simulation: 'INTERNAL_ASSESSMENT',
   diagnostic_check: 'UNSUPPORTED',
 };
 
@@ -158,8 +169,92 @@ function resolveIndependent(row: StudyUSEvidenceRow): boolean {
   return row.aiAssistanceType === 'NONE' && (row.hintsUsed ?? 0) === 0;
 }
 
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const LADDER_LEVELS: readonly TransferLevel[] = CANONICAL_POLICY.transfer.levels;
+
+/**
+ * D78 -- a Practice exposure record, or null when absent/malformed (a malformed record is treated
+ * exactly like a legacy row: no exposure, never a base rise -- fail closed).
+ */
+export function parsePracticeExposure(raw: unknown): PracticeExposure | null {
+  if (!isRecord(raw)) return null;
+  const { baseLevel, plusOneItems, plusOneLevel, plusOneCorrect } = raw;
+  if (!isFiniteNumber(baseLevel) || !isFiniteNumber(plusOneItems) || !isFiniteNumber(plusOneCorrect)) return null;
+  if (plusOneItems < 0 || plusOneCorrect < 0 || plusOneCorrect > plusOneItems) return null;
+  if (plusOneLevel !== null && !(isFiniteNumber(plusOneLevel) && plusOneLevel === baseLevel + 1)) return null;
+  if ((plusOneItems > 0) !== (plusOneLevel !== null)) return null;
+  // D79/D80 -- optional on D78-only rows (absent = unknown, never advanced evidence); a boolean otherwise
+  if (raw.mixFallback !== undefined && typeof raw.mixFallback !== 'boolean') return null;
+  return {
+    baseLevel, plusOneItems, plusOneLevel: plusOneLevel as number | null, plusOneCorrect,
+    ...(typeof raw.mixFallback === 'boolean' ? { mixFallback: raw.mixFallback } : {}),
+  };
+}
+
+/** 2026-10-16 contract 1.1 -- a learn-guided-v1 session, or null when malformed (shape only; the 4..7 range is the engine's rule). */
+export function parseLearnSession(raw: unknown): { interactionCount: number; closedBy: 'AI' | 'CAP'; weaknesses: string[] } | null {
+  if (!isRecord(raw) || raw.version !== 'learn-guided-v1') return null;
+  if (!isFiniteNumber(raw.interactionCount)) return null;
+  if (raw.closedBy !== 'AI' && raw.closedBy !== 'CAP') return null;
+  if (!Array.isArray(raw.weaknesses) || !raw.weaknesses.every((w) => typeof w === 'string')) return null;
+  return { interactionCount: raw.interactionCount, closedBy: raw.closedBy, weaknesses: [...(raw.weaknesses as string[])] };
+}
+
+/**
+ * 2026-10-16 contract 1.2 -- a transfer-ladder-v1 ladder, or null when malformed: 3..5 challenges, each with a known
+ * level, a numeric score and boolean passed/certified. `highestLevel` is RE-DERIVED from the challenges (the highest
+ * level with passed AND certified AND scorePercent >= perChallengePassPercent); a declared `highestLevelReached` that
+ * disagrees is malformed (fail closed -- never trust a level the challenges do not support).
+ */
+export function parseTransferLadder(raw: unknown): { challenges: TransferLadderChallenge[]; highestLevel: TransferLevel | null } | null {
+  const p = CANONICAL_POLICY.transfer;
+  if (!isRecord(raw) || raw.version !== 'transfer-ladder-v1' || !Array.isArray(raw.challenges)) return null;
+  if (raw.challenges.length < p.minChallenges || raw.challenges.length > p.maxChallenges) return null;
+  const challenges: TransferLadderChallenge[] = [];
+  for (const c of raw.challenges) {
+    if (!isRecord(c) || !LADDER_LEVELS.includes(c.level as TransferLevel) || !isFiniteNumber(c.scorePercent)) return null;
+    if (typeof c.passed !== 'boolean' || typeof c.certified !== 'boolean' || typeof c.taskId !== 'string') return null;
+    challenges.push({
+      level: c.level as TransferLevel,
+      scorePercent: c.scorePercent,
+      passed: c.passed,
+      certified: c.certified,
+      taskId: c.taskId,
+      contextDomain: typeof c.contextDomain === 'string' ? c.contextDomain : null,
+    });
+  }
+  let highestLevel: TransferLevel | null = null;
+  for (const c of challenges) {
+    if (c.passed && c.certified && c.scorePercent >= p.perChallengePassPercent && transferLevelRank(c.level) > transferLevelRank(highestLevel)) highestLevel = c.level;
+  }
+  const declared = raw.highestLevelReached ?? null;
+  if (declared !== highestLevel) return null;
+  return { challenges, highestLevel };
+}
+
 function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping[], warnings: string[]): RawEvidenceItem | null {
   const resolved = resolveActivityType(row);
+  // 2026-10-16 contract 1.3: a verification follow-up question (assessment-verification.service ->
+  // submitQualifiedAssessmentEvidence, source_type SOLO_VERIFICATION) is tagged with the Test/Mock activityType but
+  // is ONE re-check question, not a (session, concept) result -- never an INTERNAL_ASSESSMENT item.
+  if (resolved === 'INTERNAL_ASSESSMENT' && row.sourceType === 'SOLO_VERIFICATION') {
+    unresolved.push({
+      reason: 'INTERNAL_ASSESSMENT_VERIFICATION_FOLLOWUP',
+      evidenceId: row.id,
+      detail: `sourceType=SOLO_VERIFICATION activityType=${row.activityType ?? 'null'}: a verification follow-up, not a subject Test/Mock (session, concept) result.`,
+    });
+    return null;
+  }
+  // 2026-10-16 contract 1.1: a malformed learnSession is never read as a legacy LEARN_CHECK quiz.
+  let learnSession: ReturnType<typeof parseLearnSession> = null;
+  if (resolved === 'LEARN_CHECK' && row.learnSession != null) {
+    learnSession = parseLearnSession(row.learnSession);
+    if (!learnSession) {
+      unresolved.push({ reason: 'LEARN_SESSION_MALFORMED', evidenceId: row.id, detail: 'metadata.learnSession is present but is not a valid learn-guided-v1 session; the row is not mapped.' });
+      return null;
+    }
+  }
   if (resolved === 'UNSUPPORTED') {
     unresolved.push({
       reason: 'UNSUPPORTED_ACTIVITY_TYPE',
@@ -177,7 +272,14 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
     return null;
   }
 
-  const scorePercent =
+  // BR-SCORE P1-01 -- a correctness-gated stage (PRACTICE / PROVE / RETENTION_CHECK) gates on the BINARY correctness
+  // score the learner saw. When the row carries its own administered/correct counts (every v1 row stamps
+  // metadata.itemCount + correctCount), the gate score is derived from them, so a legacy row whose score_percent was
+  // the partial-credit rubric mean (e.g. 2/3 persisted as 83) can never inflate the gate. A row WITHOUT both counts
+  // is never re-scored (its stored score_percent is used as before) -- history is not guessed.
+  const correctnessGated = resolved === 'PRACTICE' || resolved === 'PROVE' || resolved === 'RETENTION_CHECK';
+  const countsPresent = row.correctCount != null && row.itemCount != null && row.itemCount > 0;
+  const storedScorePercent =
     row.scorePercent != null
       ? normalizeScorePercent(row.scorePercent, row.scoreShape ?? 'PERCENT_0_100')
       : row.correctCount != null && row.itemCount
@@ -187,8 +289,29 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
           : row.result === 'partial'
             ? 50
             : 0;
+  const scorePercent = correctnessGated && countsPresent ? correctnessScorePercent(row.correctCount!, row.itemCount!) : storedScorePercent;
+  if (correctnessGated && countsPresent && row.scorePercent != null && scorePercent !== storedScorePercent) {
+    warnings.push(
+      `Row ${row.id}: stored score_percent=${storedScorePercent} disagrees with its own counts ${row.correctCount}/${row.itemCount}; the canonical ${resolved} gate uses the correctness score ${scorePercent} (BR-SCORE P1-01).`,
+    );
+  }
 
-  if (row.itemCount == null) {
+  let ladder: ReturnType<typeof parseTransferLadder> = null;
+  if (resolved === 'TRANSFER' && row.transferLadder != null) {
+    ladder = parseTransferLadder(row.transferLadder);
+    if (!ladder) {
+      unresolved.push({
+        reason: 'TRANSFER_LADDER_MALFORMED',
+        evidenceId: row.id,
+        detail: 'metadata.transferLadder is malformed (3-5 challenges with level/score/passed/certified/taskId, and a highestLevelReached matching the passed AND certified challenges at >= 80) -- mapped without a ladder (UNRESOLVED).',
+      });
+    }
+  }
+
+  // A guided LEARN session and an APPLY ladder are self-describing (interaction count / challenge list), and an
+  // internal assessment's per-concept score is what counts -- none of them needs a durable item-count column.
+  const itemCountNeeded = !learnSession && !ladder && resolved !== 'INTERNAL_ASSESSMENT';
+  if (row.itemCount == null && itemCountNeeded) {
     unresolved.push({
       reason: 'ITEM_COUNT_NOT_AVAILABLE',
       evidenceId: row.id,
@@ -197,7 +320,7 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
   }
 
   let orderedChallengeScores: number[] | null = null;
-  if (resolved === 'TRANSFER') {
+  if (resolved === 'TRANSFER' && !ladder) {
     orderedChallengeScores = orderTransferChallengeScores(row.transferChallenges);
     if (!orderedChallengeScores) {
       unresolved.push({
@@ -222,7 +345,7 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
   // engine's own qualification logic will universally reject via its
   // itemCount !== policy.itemCount checks -- never silently coerced
   // into a plausible-looking but fabricated value like 10).
-  const itemCount = row.itemCount ?? 0;
+  const itemCount = row.itemCount ?? (ladder ? ladder.challenges.length : 0);
   const correctCount = row.correctCount ?? Math.round((scorePercent / 100) * itemCount);
 
   const item: RawEvidenceItem = {
@@ -237,6 +360,11 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
     hasCriticalMisconception: row.hasItemCriticalMisconception ?? false,
   };
   if (row.novel !== undefined) item.novel = row.novel;
+  if (resolved === 'PRACTICE' && row.practiceExposure != null) {
+    const exposure = parsePracticeExposure(row.practiceExposure);
+    if (exposure) item.practiceExposure = exposure;
+    else warnings.push(`Row ${row.id}: metadata.practiceExposure is malformed -- treated as a legacy row (no exposure, no base rise).`);
+  }
   // Fail closed (Part 5): NEVER set a partial/malformed breakdown --
   // either the full, correctly-ordered [NEAR, CONTEXTUAL, HIGHER] triple
   // is set, or the field is left absent entirely (the engine's own
@@ -244,10 +372,17 @@ function mapOneRow(row: StudyUSEvidenceRow, unresolved: AdapterUnresolvedMapping
   // pass or fail).
   if (orderedChallengeScores) item.perChallengeScores = orderedChallengeScores;
   if (row.reasoningProvided !== undefined) item.reasoningProvided = row.reasoningProvided;
-  if (row.transferFailureDiagnostic !== undefined) {
-    item.transferFailureDiagnostic = row.transferFailureDiagnostic;
+  if (row.transferFailureDiagnostic !== undefined) item.transferFailureDiagnostic = row.transferFailureDiagnostic;
+  if (learnSession) {
+    item.learnInteractionCount = learnSession.interactionCount;
+    item.learnClosedBy = learnSession.closedBy;
+    item.learnWeaknesses = learnSession.weaknesses;
+  }
+  if (ladder) {
+    item.transferLadder = ladder.challenges;
+    item.transferHighestLevel = ladder.highestLevel;
   } else if (resolved === 'TRANSFER') {
-    warnings.push(`Row ${row.id}: transferFailureDiagnostic not supplied -- StudyUs has no live source for this yet; Transfer failures default to APPLICATION_CONTEXT_WEAKNESS per Policy V2 Section 7.`);
+    warnings.push(`Row ${row.id}: no valid metadata.transferLadder -- a legacy (or malformed) Transfer row is UNRESOLVED under the 2026-10-16 APPLY ladder policy (no qualification, no rollback).`);
   }
 
   return item;
@@ -277,7 +412,20 @@ export function mapStudyUSEvidenceToPedagogicalEvidence(rows: StudyUSEvidenceRow
     });
   }
 
+  // Overnight rule S (2026-10-16): for a teacher-assigned subject Test / Mock, the current result is the LAST completed
+  // attempt -- not the best, not an average. Earlier attempts of the same assignment stay in History (never deleted)
+  // but are not replayed, so an early weak attempt never counts as a revalidation alert once a later attempt exists.
+  const latestOfAssignment = new Map<string, StudyUSEvidenceRow>();
   for (const row of rows) {
+    if (!row.assignmentId) continue;
+    const prev = latestOfAssignment.get(row.assignmentId);
+    if (!prev || new Date(row.timestamp).getTime() > new Date(prev.timestamp).getTime()) latestOfAssignment.set(row.assignmentId, row);
+  }
+  for (const row of rows) {
+    if (row.assignmentId && latestOfAssignment.get(row.assignmentId) !== row) {
+      unresolved.push({ reason: 'SUPERSEDED_BY_LATER_ATTEMPT', evidenceId: row.id, detail: 'An earlier attempt of the same teacher assignment; the latest completed attempt is the current result.' });
+      continue;
+    }
     const mapped = mapOneRow(row, unresolved, warnings);
     if (mapped) items.push(mapped);
   }

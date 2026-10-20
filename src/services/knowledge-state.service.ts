@@ -91,7 +91,26 @@ export interface EvidenceRow {
   scorePercent: number | null;
   aiAssistanceType: string;
   timestamp: string | Date;
+  /**
+   * B5-R: the evidence's own statement of whether it may count as INDEPENDENT evidence
+   * (`metadata.independenceEligible`), written by the canonical assessment path. null / absent = evidence
+   * written before that statement existed: read by the historical rule (see `countsAsIndependent`).
+   */
+  independenceEligible?: boolean | null;
 }
+
+/**
+ * Does this evidence count as independent?
+ *
+ *   explicit statement present -> it decides. Canonical evidence says true only for an independent activity,
+ *                                 answered without assistance, as the single PRIMARY concept of its question.
+ *   no statement (historical)  -> the rule this projector has always applied: written without assistance.
+ *
+ * No historical row is reinterpreted and nothing is recomputed in bulk: the same formulas run over the same
+ * rows, and only evidence that carries the statement is read by it.
+ */
+export const countsAsIndependent = (row: Pick<EvidenceRow, 'aiAssistanceType' | 'independenceEligible'>): boolean =>
+  row.independenceEligible === true || row.independenceEligible === false ? row.independenceEligible : row.aiAssistanceType === 'NONE';
 
 function scoreOf(row: Pick<EvidenceRow, 'result' | 'scorePercent'>): number {
   if (row.scorePercent !== null && row.scorePercent !== undefined) return row.scorePercent;
@@ -104,7 +123,8 @@ function average(rows: EvidenceRow[], limit = 10): number | null {
   return Math.round(recent.reduce((sum, r) => sum + scoreOf(r), 0) / recent.length);
 }
 
-const UNDERSTANDING_FALLBACK_SOURCES = new Set([
+/** Evidence sources that count toward understanding (fallback) / application -- the ONE definition (also read by the explanation service). */
+export const UNDERSTANDING_FALLBACK_SOURCES: ReadonlySet<string> = new Set([
   'PRACTICE_QUIZ',
   'PRACTICE_QUESTION',
   'CUMULATIVE_ASSESSMENT',
@@ -113,7 +133,7 @@ const UNDERSTANDING_FALLBACK_SOURCES = new Set([
   'TOPIC_ASSESSMENT',
   'REAL_SCHOOL_EXAM',
 ]);
-const APPLICATION_SOURCES = new Set(['CUMULATIVE_ASSESSMENT', 'EXAM_SIMULATION', 'TOPIC_ASSESSMENT']);
+export const APPLICATION_SOURCES: ReadonlySet<string> = new Set(['CUMULATIVE_ASSESSMENT', 'EXAM_SIMULATION', 'TOPIC_ASSESSMENT']);
 
 /**
  * Understanding: EXPLANATION evidence (rubric-graded reasoning) if any
@@ -164,7 +184,7 @@ export interface EvidenceSufficiency {
 
 export function evaluateEvidenceSufficiency(rows: EvidenceRow[], policy: MasteryPolicy): EvidenceSufficiency {
   const evidenceCount = rows.length;
-  const independentEvidenceCount = rows.filter((r) => r.aiAssistanceType === 'NONE').length;
+  const independentEvidenceCount = rows.filter(countsAsIndependent).length;
   return {
     evidenceCount,
     independentEvidenceCount,
@@ -390,7 +410,7 @@ export async function recalculateConceptKnowledgeState(
   if (!subjectId) return null;
 
   const evidenceRows = await client.query(
-    `SELECT source_type, result, score_percent, ai_assistance_type, timestamp
+    `SELECT source_type, result, score_percent, ai_assistance_type, timestamp, metadata->>'independenceEligible' AS independence_eligible
      FROM learning_evidence WHERE student_id = $1 AND concept_id = $2 ORDER BY timestamp DESC`,
     [studentId, conceptId]
   );
@@ -400,6 +420,7 @@ export async function recalculateConceptKnowledgeState(
     scorePercent: r.score_percent !== null ? Number(r.score_percent) : null,
     aiAssistanceType: r.ai_assistance_type,
     timestamp: r.timestamp,
+    independenceEligible: r.independence_eligible === 'true' ? true : r.independence_eligible === 'false' ? false : null,
   }));
 
   const policy = await getActiveMasteryPolicy(client);
@@ -421,7 +442,7 @@ export async function recalculateConceptKnowledgeState(
   // exclusively to MemoryPolicy v1 (Step 6G Section 10).
   const memoryInput = await getPhase2MemoryInput(client, studentId, conceptId);
 
-  const unassistedRows = rows.filter((r) => r.aiAssistanceType === 'NONE');
+  const unassistedRows = rows.filter(countsAsIndependent);
   const scores: DimensionScores = {
     understanding: classifyUnderstanding(rows),
     independence: classifyIndependence(unassistedRows),

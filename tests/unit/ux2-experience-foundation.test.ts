@@ -370,7 +370,13 @@ const authMocks = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/auth', async (orig) => ({ ...(await orig<typeof import('@/lib/auth')>()), verifyAuth: () => authMocks.verifyAuth() }));
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: async () => ({ id: 'actor-a' }) }));
-vi.mock('@/lib/authorization', () => ({ canAccessLearner: (...a: unknown[]) => authMocks.canAccessLearner(...a) }));
+vi.mock('@/lib/authorization', () => ({
+  canAccessLearner: (...a: unknown[]) => authMocks.canAccessLearner(...a),
+  // L10-R2: the learner-wide routes resolve the whole read scope (Teacher subject boundary). In this file the
+  // single allow/deny switch stands for "the owner" vs "no relationship at all".
+  resolveLearnerReadScope: async (actor: string, learner: string) =>
+    (await authMocks.canAccessLearner(actor, learner, 'LEARNER_PROGRESS_VIEW')) ? { relationships: ['OWNER'], permissions: ['LEARNER_PROGRESS_VIEW', 'LEARNER_PROFILE_VIEW', 'LEARNER_INTERVENTION_CREATE', 'LEARNER_GAPS_VIEW', 'LEARNER_ASSESSMENT_SUMMARY_VIEW', 'LEARNER_ASSESSMENT_DETAIL_VIEW'] } : { relationships: [], permissions: [] },
+}));
 vi.mock('@/lib/db', () => ({ db: { query: (...a: unknown[]) => authMocks.dbQuery(...a), connect: vi.fn() }, query: (...a: unknown[]) => authMocks.dbQuery(...a) }));
 vi.mock('@/lib/readiness/readiness.service', () => ({
   computeReadinessSnapshot: (...a: unknown[]) => authMocks.compute(...a),
@@ -522,7 +528,8 @@ describe('UX-2 §10/§21 -- Home structure and states', () => {
   });
 
   it('the goal names an EXISTING exam profile only -- never invented', () => {
-    expect(TODAY).toMatch(/selectGoalProfile\(examProfiles, todayIso\)/);
+    // T1 final delta (F): Home reads the preparation context through activePreparationSummary (same selection rule).
+    expect(TODAY).toMatch(/activePreparationSummary\(examProfiles, todayIso\)/);
     expect(TODAY).toMatch(/\{goalProfile && goalName && \(/);
     const profile = (over: Partial<StudentExamProfile>): StudentExamProfile => ({
       id: 'p', studentId: 's', examDefinitionId: 'd', examVersionId: null, purpose: null, programmeContext: null,
@@ -869,9 +876,13 @@ describe('UX-2 authenticated surfaces -- Hoy, Mi ruta, Progreso, Preparación de
     expect(panel).toMatch(/className="btn btn-primary btn-lg"/);
   });
 
-  it('no profile: setup is primary; with profiles: the form moves into a disclosure', () => {
-    expect(examList).toMatch(/rows\.length === 0 \? \(\s*form\s*\)/);
-    expect(examList).toMatch(/<details className="ui-disclosure">\s*<summary>\{t\['ex\.addAnother'\]\}<\/summary>\s*<div className="ui-disclosure-body">\{form\}<\/div>/);
+  // Track B (objective first): the exam choice is the page's question -- primary with no
+  // preparation (it IS the page title), below "Mis preparaciones" otherwise; never hidden.
+  it('no profile: choosing the exam is the page; with profiles: the chooser follows "Mis preparaciones"', () => {
+    expect(examList).toMatch(/title=\{rows\.length === 0 \? tr\['prep\.question'\] : t\['examPrep\.title'\]\}/);
+    // Exam eligibility: the chooser shows the Student's recommended preparations first (PreparationChooser wraps ObjectivePicker).
+    expect(examList).toMatch(/<PreparationChooser /);
+    expect(examList.indexOf("tr['prep.mine.title']")).toBeLessThan(examList.indexOf('{chooser}'));
   });
 
   it('insufficient evidence is an intentional "taking shape" state, not an empty ladder', () => {
@@ -882,9 +893,10 @@ describe('UX-2 authenticated surfaces -- Hoy, Mi ruta, Progreso, Preparación de
     expect(getMessages('es')['ex.formingTitle']).toMatch(/tomando forma/);
   });
 
-  it('the simulation practice POST body is unchanged', () => {
+  it('the simulation practice POST body keeps its shape (Track B: the Student\'s language, never a hard-coded one)', () => {
     expect(panel).toMatch(/fetch\('\/api\/simulation\/attempts'/);
-    expect(panel).toMatch(/studentId,\s*examProfileId,\s*examVersionId,\s*simulationType,\s*timingMode,\s*language: 'en',/);
+    expect(panel).toMatch(/studentId,\s*examProfileId,\s*examVersionId,\s*simulationType,\s*timingMode,\s*language,/);
+    expect(panel).not.toMatch(/language: 'en'/);
   });
 
   it('Progreso: pending capabilities read "Por validar", never 0%', () => {

@@ -101,7 +101,7 @@ The typed result is the only thing that ever reaches `updateMastery`, `gradeStru
 
 `src/lib/ai/logging.ts`. `logAIExecution()` -- called by the gateway on every success and failure -- emits only the fields on `AIExecutionMetadata`: `executionId`, `capability`, `provider`, `model`, `promptId`, `promptVersion`, `durationMs`, `success`, `validationStatus`, `fallbackUsed`, `errorCode`. It never logs a student's name, email, the raw prompt, the raw response, or any credential -- proven by a dedicated test (`tests/unit/ai-gateway.test.ts`) that feeds secret-shaped content through the gateway and asserts none of it appears in the logged line.
 
-An explicit, opt-in-only `logAIDebugRaw()` exists for local development, gated behind `STUDYUS_AI_DEBUG_RAW=1` (absent by default everywhere, including local dev) -- no call site in the app currently invokes it.
+There is no raw prompt/response logging path: the former opt-in `logAIDebugRaw()` (`STUDYUS_AI_DEBUG_RAW=1`) had no caller and was removed in the technical cleanup.
 
 ## Execution metadata and provenance
 
@@ -117,5 +117,5 @@ No `learning_evidence` column was added or changed; provenance rides inside the 
 
 - **The persistent, queryable audit table** (`ai_execution_events` or equivalent) that would let a query answer "show me every AI execution behind this student's mastery history." This phase only produces the execution metadata and the additive `learning_evidence.metadata` provenance fields describe above -- no new table, no schema migration (Step 19).
 - **Cross-engine decision auditability** -- linking an AI execution to a specific Learning Decision Engine / Adaptive Teaching Engine decision. Neither engine exists yet; this phase is infrastructure they will eventually sit on top of.
-- **Consolidating the legacy parallel path** (`src/services/ai.service.ts`, used by `/api/concepts/extract`, `/api/quizzes/generate`, `src/lib/extract-text.ts`) with the newer, more complete `concept-extraction.service.ts` / `quiz-generation.service.ts`. Both paths are now migrated onto the same gateway and prompt registry, but they remain two separate implementations of overlapping capabilities -- a real consolidation is a deliberate, separately-tested future change, not something to do silently while building the transport layer.
+- **Consolidating the legacy parallel path** (`src/services/ai.service.ts`, used by `/api/quizzes/generate` (and formerly `/api/concepts/extract`, removed in `942dc9d`), `src/lib/extract-text.ts`) with the newer, more complete `concept-extraction.service.ts` / `quiz-generation.service.ts`. Both paths are now migrated onto the same gateway and prompt registry, but they remain two separate implementations of overlapping capabilities -- a real consolidation is a deliberate, separately-tested future change, not something to do silently while building the transport layer.
 - **Prompt quality improvements.** Every prompt registered at `v1` is the exact prompt already live before this phase.

@@ -124,7 +124,8 @@ describe('POST /api/subjects/create enforces the inherited context', () => {
     const res = await createSubject(post({ name: 'Química', ibProgramme: 'none' }));
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: 'IB_LEVEL_REQUIRED' });
-    expect(h.queryMock).not.toHaveBeenCalled();
+    // REM-T1-04: the route may READ the Academic Profile subjects (to reuse a level it already states); it never writes.
+    expect(h.queryMock.mock.calls.filter((c: any[]) => /\b(INSERT|UPDATE|DELETE)\b/i.test(String(c[0])))).toEqual([]);
   });
 
   it('national student: IB fields are never stored', async () => {

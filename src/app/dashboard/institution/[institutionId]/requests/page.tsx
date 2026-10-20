@@ -1,10 +1,11 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { getInstitutionOverview, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
-import { listPendingMemberships, listDecidedMemberships } from '@/services/institution.service';
+import { listPendingMembershipsWithEmail, listDecidedMemberships } from '@/services/institution.service';
+import type { MessageKey } from '@/lib/i18n/messages';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InstitutionSubNav } from '../InstitutionSubNav';
@@ -33,7 +34,7 @@ export default async function InstitutionRequestsPage({ params }: { params: Prom
   if (!clerkUserId) redirect('/sign-in');
 
   const actor = await getOrCreateCanonicalUser(clerkUserId, null);
-  const locale = await getInterfaceLanguage(actor.id).catch(() => 'es' as const);
+  const locale = await getUserInterfaceLanguage(actor.id).catch(() => 'es' as const);
   const t = getMessages(locale);
 
   let overview;
@@ -45,7 +46,7 @@ export default async function InstitutionRequestsPage({ params }: { params: Prom
   }
 
   const [pending, decided] = await Promise.all([
-    listPendingMemberships(institutionId),
+    listPendingMembershipsWithEmail(institutionId),
     listDecidedMemberships(institutionId),
   ]);
 
@@ -53,8 +54,14 @@ export default async function InstitutionRequestsPage({ params }: { params: Prom
     overview: t['institution.overview.title'],
     grades: t['institution.grades.title'],
     classes: t['institution.classes.title'],
+    students: t['iops.nav.students'],
     teachers: t['institution.teachers.title'],
     requests: t['institution.requests.title'],
+    subjects: t['ia.nav.subjects'],
+    curriculum: t['icur.nav'],
+    tasks: t['cur2.tasks.nav'],
+    coordinators: t['ia.nav.coordinators'],
+    settings: t['ia.nav.settings'],
     learners: t['institution.learners.title'],
     coverage: t['institution.coverage.title'],
     readiness: t['institution.readiness.title'],
@@ -74,16 +81,19 @@ export default async function InstitutionRequestsPage({ params }: { params: Prom
         ) : (
           <ul className="list-card card">
             {pending.map((m) => (
-              <li key={m.id} className="list-row">
+              <li key={m.id} className="list-row" style={{ flexWrap: 'wrap' }}>
                 <div className="row-main">
-                  <div className="row-title">{m.userId}</div>
+                  <div className="row-title" style={{ overflowWrap: 'anywhere' }}>
+                    {m.userName && m.userEmail ? `${m.userName} · ${m.userEmail}` : m.userName ?? m.userEmail ?? '—'}
+                  </div>
+                  <div className="row-sub">{t['inst.requests.teacherRequest']}</div>
                   {m.requestedAt && (
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       {t['institution.requests.requestedAt']}: {new Date(m.requestedAt).toLocaleString(locale)}
                     </div>
                   )}
                 </div>
-                <MembershipRequestActions institutionId={institutionId} membershipId={m.id} labels={{ approve: t['institution.requests.approve'], reject: t['institution.requests.reject'] }} />
+                <MembershipRequestActions institutionId={institutionId} membershipId={m.id} labels={{ approve: t['institution.requests.approve'], reject: t['institution.requests.reject'], error: t['inst.common.error'] }} />
               </li>
             ))}
           </ul>
@@ -97,11 +107,13 @@ export default async function InstitutionRequestsPage({ params }: { params: Prom
         ) : (
           <ul className="list-card card">
             {decided.map((m) => (
-              <li key={m.id} className="list-row">
+              <li key={m.id} className="list-row" style={{ flexWrap: 'wrap' }}>
                 <div className="row-main">
-                  <div className="row-title">{m.userEmail ?? m.userId}</div>
+                  <div className="row-title" style={{ overflowWrap: 'anywhere' }}>
+                    {m.userName && m.userEmail ? `${m.userName} · ${m.userEmail}` : m.userName ?? m.userEmail ?? '—'}
+                  </div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    {m.status} {m.reviewedAt ? `— ${new Date(m.reviewedAt).toLocaleString(locale)}` : ''}
+                    {t[`inst.requests.status.${m.status}` as MessageKey] ?? m.status} {m.reviewedAt ? `— ${new Date(m.reviewedAt).toLocaleString(locale)}` : ''}
                   </div>
                 </div>
               </li>

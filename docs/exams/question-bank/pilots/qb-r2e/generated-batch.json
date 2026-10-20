@@ -1,0 +1,4440 @@
+{
+  "kind": "QB_R2E_GENERATED_BATCH",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- AUTOMATED VALIDATION ONLY, NO HUMAN REVIEW",
+  "freeze": {
+    "freezeCommitSha": "9fe68d01d8649548f453873acec633f4a3dead5e",
+    "manifestHash": "dc7549e579d8d971df9193ef4fd2bf9bb8b3c133e6c8fb2970a56826fe3b18c5"
+  },
+  "batch": {
+    "v": 1,
+    "kind": "SPECIFICATION_DRIVEN_GENERATION_BATCH",
+    "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT",
+    "batchKey": "qb-r2e-pre-registered",
+    "generatedAt": "2026-10-11T19:03:28.445Z",
+    "run": {
+      "runId": "qb-r2e-20261011190328",
+      "provider": "live:openai:chat-completions",
+      "model": "gpt-5.6-luna",
+      "generationPolicy": {
+        "id": "qb-r2e-live-generation",
+        "version": "1"
+      }
+    },
+    "stimuli": [
+      {
+        "stimulusKey": "stim|12.linear-model.pisa#a1",
+        "kind": "GRAPH",
+        "language": "es",
+        "parts": [
+          {
+            "label": null,
+            "partKind": "TEXT",
+            "text": "La tabla muestra cómo aumenta el saldo de ahorro de Elena, que al comenzar ya tenía 75 euros y añade 6 euros cada semana. La gráfica representa los mismos datos."
+          },
+          {
+            "label": "ahorro",
+            "partKind": "TABLE",
+            "text": "Saldo de ahorro de Elena\nSemanas (semanas) | Saldo (euros)\n0 | 75\n1 | 81\n2 | 87\n3 | 93\n4 | 99\n5 | 105\n6 | 111\n7 | 117\n8 | 123"
+          },
+          {
+            "label": "graficaAhorro",
+            "partKind": "GRAPH",
+            "text": "Gráfico de líneas: Saldo según el número de semanas. Saldo — 0: 75, 1: 81, 2: 87, 3: 93, 4: 99, 5: 105, 6: 111, 7: 117, 8: 123."
+          }
+        ],
+        "provenance": "STUDYUS_GENERATED",
+        "stimulusPlanId": null,
+        "generationUnitKey": "12.linear-model.pisa#a1",
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "ahorro",
+              "title": "Saldo de ahorro de Elena",
+              "columns": [
+                {
+                  "key": "semana",
+                  "label": "Semanas",
+                  "type": "NUMBER",
+                  "unit": "semanas"
+                },
+                {
+                  "key": "saldo",
+                  "label": "Saldo",
+                  "type": "NUMBER",
+                  "unit": "euros"
+                }
+              ],
+              "rows": [
+                [
+                  0,
+                  75
+                ],
+                [
+                  1,
+                  81
+                ],
+                [
+                  2,
+                  87
+                ],
+                [
+                  3,
+                  93
+                ],
+                [
+                  4,
+                  99
+                ],
+                [
+                  5,
+                  105
+                ],
+                [
+                  6,
+                  111
+                ],
+                [
+                  7,
+                  117
+                ],
+                [
+                  8,
+                  123
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "charts": [
+            {
+              "chartKey": "graficaAhorro",
+              "chartType": "LINE",
+              "title": "Saldo según el número de semanas",
+              "xLabel": "Semanas",
+              "yLabel": "Saldo (euros)",
+              "source": {
+                "kind": "TABLE",
+                "tableKey": "ahorro",
+                "xColumn": "semana",
+                "valueColumns": [
+                  "saldo"
+                ]
+              }
+            }
+          ],
+          "figures": []
+        },
+        "renderedAssets": [
+          {
+            "assetKey": "chart:graficaAhorro",
+            "assetKind": "CHART",
+            "renderer": {
+              "id": "studyus-svg-renderer",
+              "version": "1"
+            },
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 480 320\" width=\"480\" height=\"320\" role=\"img\"><title>Saldo según el número de semanas</title><rect width=\"480\" height=\"320\" fill=\"#fff\"/><text x=\"240\" y=\"20\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\" font-weight=\"bold\">Saldo según el número de semanas</text><line x1=\"56\" y1=\"264\" x2=\"464\" y2=\"264\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"268\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">0</text><line x1=\"56\" y1=\"188\" x2=\"464\" y2=\"188\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"192\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">50</text><line x1=\"56\" y1=\"112\" x2=\"464\" y2=\"112\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"116\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">100</text><line x1=\"56\" y1=\"36\" x2=\"464\" y2=\"36\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"40\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">150</text><line x1=\"56\" y1=\"36\" x2=\"56\" y2=\"264\" stroke=\"#eee\" stroke-width=\"1\"/><text x=\"56\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">0</text><line x1=\"158\" y1=\"36\" x2=\"158\" y2=\"264\" stroke=\"#eee\" stroke-width=\"1\"/><text x=\"158\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">2</text><line x1=\"260\" y1=\"36\" x2=\"260\" y2=\"264\" stroke=\"#eee\" stroke-width=\"1\"/><text x=\"260\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">4</text><line x1=\"362\" y1=\"36\" x2=\"362\" y2=\"264\" stroke=\"#eee\" stroke-width=\"1\"/><text x=\"362\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">6</text><line x1=\"464\" y1=\"36\" x2=\"464\" y2=\"264\" stroke=\"#eee\" stroke-width=\"1\"/><text x=\"464\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">8</text><line x1=\"56\" y1=\"264\" x2=\"464\" y2=\"264\" stroke=\"#111\" stroke-width=\"1.5\"/><line x1=\"56\" y1=\"36\" x2=\"56\" y2=\"264\" stroke=\"#111\" stroke-width=\"1.5\"/><polyline points=\"56,150 107,140.88 158,131.76 209,122.64 260,113.52 311,104.4 362,95.28 413,86.16 464,77.04\" fill=\"none\" stroke=\"#2b6cb0\" stroke-width=\"2\"/><circle cx=\"56\" cy=\"150\" r=\"4\" fill=\"#2b6cb0\"/><circle cx=\"107\" cy=\"140.88\" r=\"4\" fill=\"#2b6cb0\"/><circle cx=\"158\" cy=\"131.76\" r=\"4\" fill=\"#2b6cb0\"/><circle cx=\"209\" cy=\"122.64\" r=\"4\" fill=\"#2b6cb0\"/><circle cx=\"260\" cy=\"113.52\" r=\"4\" fill=\"#2b6cb0\"/><circle cx=\"311\" cy=\"104.4\" r=\"4\" fill=\"#2b6cb0\"/><circle cx=\"362\" cy=\"95.28\" r=\"4\" fill=\"#2b6cb0\"/><circle cx=\"413\" cy=\"86.16\" r=\"4\" fill=\"#2b6cb0\"/><circle cx=\"464\" cy=\"77.04\" r=\"4\" fill=\"#2b6cb0\"/><text x=\"260\" y=\"306\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Semanas</text><text x=\"14\" y=\"150\" text-anchor=\"middle\" transform=\"rotate(-90 14 150)\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Saldo (euros)</text></svg>",
+            "altText": "Gráfico de líneas: Saldo según el número de semanas. Saldo — 0: 75, 1: 81, 2: 87, 3: 93, 4: 99, 5: 105, 6: 111, 7: 117, 8: 123."
+          }
+        ]
+      },
+      {
+        "stimulusKey": "stim|19.data-judge-claim.icfes#a1",
+        "kind": "GRAPH",
+        "language": "es",
+        "parts": [
+          {
+            "label": null,
+            "partKind": "TEXT",
+            "text": "En una encuesta de un curso, cada estudiante escogió una sola actividad para la jornada cultural. La tabla y el gráfico muestran cuántos estudiantes escogieron cada actividad. Una estudiante afirma: «La actividad de teatro fue escogida por más estudiantes que la de música»."
+          },
+          {
+            "label": "tabla_actividades",
+            "partKind": "TABLE",
+            "text": "Preferencias para la jornada cultural\nActividad | Número de estudiantes (estudiantes)\nTeatro | 15\nMúsica | 9\nDeporte | 12\nArte | 6\nCocina | 8"
+          },
+          {
+            "label": "grafico_actividades",
+            "partKind": "GRAPH",
+            "text": "Gráfico de barras: Estudiantes por actividad. Número de estudiantes — Teatro: 15, Música: 9, Deporte: 12, Arte: 6, Cocina: 8."
+          }
+        ],
+        "provenance": "STUDYUS_GENERATED",
+        "stimulusPlanId": null,
+        "generationUnitKey": "19.data-judge-claim.icfes#a1",
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "tabla_actividades",
+              "title": "Preferencias para la jornada cultural",
+              "columns": [
+                {
+                  "key": "actividad",
+                  "label": "Actividad",
+                  "type": "TEXT",
+                  "unit": null
+                },
+                {
+                  "key": "estudiantes",
+                  "label": "Número de estudiantes",
+                  "type": "NUMBER",
+                  "unit": "estudiantes"
+                }
+              ],
+              "rows": [
+                [
+                  "Teatro",
+                  15
+                ],
+                [
+                  "Música",
+                  9
+                ],
+                [
+                  "Deporte",
+                  12
+                ],
+                [
+                  "Arte",
+                  6
+                ],
+                [
+                  "Cocina",
+                  8
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "charts": [
+            {
+              "chartKey": "grafico_actividades",
+              "chartType": "BAR",
+              "title": "Estudiantes por actividad",
+              "xLabel": "Actividad",
+              "yLabel": "Número de estudiantes",
+              "source": {
+                "kind": "TABLE",
+                "tableKey": "tabla_actividades",
+                "xColumn": "actividad",
+                "valueColumns": [
+                  "estudiantes"
+                ]
+              }
+            }
+          ],
+          "figures": []
+        },
+        "renderedAssets": [
+          {
+            "assetKey": "chart:grafico_actividades",
+            "assetKind": "CHART",
+            "renderer": {
+              "id": "studyus-svg-renderer",
+              "version": "1"
+            },
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 480 320\" width=\"480\" height=\"320\" role=\"img\"><title>Estudiantes por actividad</title><rect width=\"480\" height=\"320\" fill=\"#fff\"/><text x=\"240\" y=\"20\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\" font-weight=\"bold\">Estudiantes por actividad</text><line x1=\"56\" y1=\"264\" x2=\"464\" y2=\"264\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"268\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">0</text><line x1=\"56\" y1=\"188\" x2=\"464\" y2=\"188\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"192\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">5</text><line x1=\"56\" y1=\"112\" x2=\"464\" y2=\"112\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"116\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">10</text><line x1=\"56\" y1=\"36\" x2=\"464\" y2=\"36\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"40\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">15</text><line x1=\"56\" y1=\"264\" x2=\"464\" y2=\"264\" stroke=\"#111\" stroke-width=\"1.5\"/><line x1=\"56\" y1=\"36\" x2=\"56\" y2=\"264\" stroke=\"#111\" stroke-width=\"1.5\"/><text x=\"96.8\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Teatro</text><text x=\"178.4\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Música</text><text x=\"260\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Deporte</text><text x=\"341.6\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Arte</text><text x=\"423.2\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Cocina</text><rect x=\"68.24\" y=\"36\" width=\"57.12\" height=\"228\" fill=\"#2b6cb0\"/><text x=\"96.8\" y=\"32\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">15</text><rect x=\"149.84\" y=\"127.2\" width=\"57.12\" height=\"136.8\" fill=\"#2b6cb0\"/><text x=\"178.4\" y=\"123.2\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">9</text><rect x=\"231.44\" y=\"81.6\" width=\"57.12\" height=\"182.4\" fill=\"#2b6cb0\"/><text x=\"260\" y=\"77.6\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">12</text><rect x=\"313.04\" y=\"172.8\" width=\"57.12\" height=\"91.2\" fill=\"#2b6cb0\"/><text x=\"341.6\" y=\"168.8\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">6</text><rect x=\"394.64\" y=\"142.4\" width=\"57.12\" height=\"121.6\" fill=\"#2b6cb0\"/><text x=\"423.2\" y=\"138.4\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">8</text><text x=\"260\" y=\"306\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Actividad</text><text x=\"14\" y=\"150\" text-anchor=\"middle\" transform=\"rotate(-90 14 150)\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Número de estudiantes</text></svg>",
+            "altText": "Gráfico de barras: Estudiantes por actividad. Número de estudiantes — Teatro: 15, Música: 9, Deporte: 12, Arte: 6, Cocina: 8."
+          }
+        ]
+      },
+      {
+        "stimulusKey": "stim|20.data-relative-change.cambridge-p1#a1",
+        "kind": "TABLE",
+        "language": "en",
+        "parts": [
+          {
+            "label": null,
+            "partKind": "TEXT",
+            "text": "A laboratory records the number of microorganisms per millilitre in water samples collected from five sites on the same day. The results are shown below."
+          },
+          {
+            "label": "microorganisms",
+            "partKind": "TABLE",
+            "text": "Microorganisms measured in water samples\nSampling site | Microorganisms per millilitre (microorganisms/mL)\nA | 12500\nB | 14280\nC | 18750\nD | 16100\nE | 20900"
+          }
+        ],
+        "provenance": "STUDYUS_GENERATED",
+        "stimulusPlanId": null,
+        "generationUnitKey": "20.data-relative-change.cambridge-p1#a1",
+        "structured": {
+          "v": 1,
+          "tables": [
+            {
+              "tableKey": "microorganisms",
+              "title": "Microorganisms measured in water samples",
+              "columns": [
+                {
+                  "key": "site",
+                  "label": "Sampling site",
+                  "type": "TEXT",
+                  "unit": null
+                },
+                {
+                  "key": "count",
+                  "label": "Microorganisms per millilitre",
+                  "type": "NUMBER",
+                  "unit": "microorganisms/mL"
+                }
+              ],
+              "rows": [
+                [
+                  "A",
+                  12500
+                ],
+                [
+                  "B",
+                  14280
+                ],
+                [
+                  "C",
+                  18750
+                ],
+                [
+                  "D",
+                  16100
+                ],
+                [
+                  "E",
+                  20900
+                ]
+              ]
+            }
+          ],
+          "dataSets": [],
+          "charts": [],
+          "figures": []
+        },
+        "renderedAssets": []
+      }
+    ],
+    "candidates": [
+      {
+        "v": 1,
+        "candidateKey": "cand|01.rate-comparison.paa#a1",
+        "unitKey": "01.rate-comparison.paa#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "f58949d46019205c2fbd6c337e4ee61dcb589488f21c853e08356abb6fc146a5",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": null,
+        "content": {
+          "stem": "Una tienda ofrece dos paquetes de café. El paquete 1 cuesta 24 euros y contiene 84 porciones. El paquete 2 cuesta 35 euros y contiene 105 porciones. ¿Qué opción presenta correctamente la comparación del número de porciones por euro y cuál conviene más?",
+          "context": {
+            "kind": "PERSONAL",
+            "description": "Una persona compara dos ofertas de café antes de comprar."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 24,
+              "q1": 84,
+              "p2": 35,
+              "q2": 105
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "Paquete 1: 3,5 porciones por euro; conviene el paquete 1 por 0,5 porciones por euro."
+              },
+              {
+                "id": "B",
+                "text": "Paquete 2: 3 porciones por euro; conviene el paquete 2 por 0,5 porciones por euro."
+              },
+              {
+                "id": "C",
+                "text": "Paquete 2: 0,29 porciones por euro; conviene el paquete 2 por 0,21 porciones por euro."
+              },
+              {
+                "id": "D",
+                "text": "Paquete 1: 21 porciones más; conviene el paquete 1 por 0,5 porciones por euro."
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "one-quantity",
+                "rationale": "Compara principalmente la cantidad total de porciones y elige el paquete con más porciones, sin usar adecuadamente una tasa común."
+              },
+              "C": {
+                "misconceptionModelId": "inverted-rate",
+                "rationale": "Divide el precio entre las porciones en vez de comparar las porciones obtenidas por cada euro."
+              },
+              "D": {
+                "misconceptionModelId": "difference",
+                "rationale": "Usa la diferencia entre las cantidades totales como si fuera la medida pertinente para decidir qué oferta conviene."
+              }
+            },
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+              "value": "OPTION_1"
+            },
+            "answerCheck": {
+              "kind": "NOT_COMPUTABLE",
+              "reason": "No arithmetic expression was declared for this answer."
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null,
+          "rationale": "La comparación pertinente es la tasa unitaria de porciones por euro. Para el paquete 1, 84/24 = 3,5; para el paquete 2, 105/35 = 3. Por tanto, el paquete 1 tiene la tasa mayor, y la diferencia es 3,5 - 3 = 0,5 porciones por euro.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.num.ratio-proportion"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.num.ratio-proportion",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Proporcionalidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.proportion.rate-comparison-model",
+            "version": "0.2.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "PAA",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "PAA.MATEMATICAS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.paa",
+              "version": "V2.1 PAA revisada (guía 2021)",
+              "componentKey": "matematicas",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "cb-paa-guia-2021",
+                  "cb-paa-preguntas-respuestas-2017",
+                  "cb-paa-practice-test-2018"
+                ],
+                "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "f58949d46019205c2fbd6c337e4ee61dcb589488f21c853e08356abb6fc146a5",
+            "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "9d807b9cdfe121564b3517e36364fc286f8ea78888f53aee302a3256f84416f8",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "01.rate-comparison.paa#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:03:28.446Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|03.rate-comparison.cambridge-p1#a1",
+        "unitKey": "03.rate-comparison.cambridge-p1#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "56c6fc238c21e004b8be3bdf773102834a4a0f777c7693ad37fe291e57464121",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "language": "en",
+        "responseFormat": "SHORT_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 6,
+        "instruction": null,
+        "stimulusKey": null,
+        "content": {
+          "stem": "At a workplace, two suppliers offer rolls of labels for a packaging machine. Supplier 1 charges $18 for 54 labels, while Supplier 2 charges $25 for 70 labels. Compare the suppliers by finding how many labels are obtained for each dollar spent.",
+          "context": {
+            "kind": "OCCUPATIONAL",
+            "description": "A workplace manager is comparing two suppliers of packaging labels using the number of labels received for each dollar spent."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 18,
+              "q1": 54,
+              "p2": 25,
+              "q2": 70
+            }
+          },
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Work out the unit rate for each supplier, in labels per dollar.",
+                "commandTerm": "work out",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Forms each unit rate by dividing the number of labels by the cost for that supplier."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtains 3 labels per dollar for Supplier 1 and 2.8 labels per dollar for Supplier 2."
+                  }
+                ],
+                "finalAnswer": "Supplier 1: 3 labels per dollar; Supplier 2: 2.8 labels per dollar.",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "The response contains two unit-rate quantities that must both be identified and assigned to the correct supplier."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Calculate the difference between the two unit rates, in labels per dollar.",
+                "commandTerm": "calculate",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Subtracts the smaller unit rate from the larger unit rate."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtains a difference of 0.2 labels per dollar."
+                  }
+                ],
+                "finalAnswer": "0.2 labels per dollar",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "0.2",
+                  "equivalentFormsAllowed": true,
+                  "decimalPlaces": 1
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "UNIT_RATE_DIFFERENCE"
+                },
+                "answerCheck": {
+                  "kind": "ARITHMETIC_EXPRESSION",
+                  "expression": "3-2.8"
+                }
+              },
+              {
+                "label": "c",
+                "prompt": "Write down which supplier is favoured by the comparison.",
+                "commandTerm": "write down",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "REASONING",
+                    "marks": 1,
+                    "criterion": "Uses the larger unit rate to identify the favoured supplier."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Identifies Supplier 1 as the favoured supplier."
+                  }
+                ],
+                "finalAnswer": "Supplier 1 is favoured because it provides more labels per dollar.",
+                "numericKey": null,
+                "target": {
+                  "kind": "VERDICT",
+                  "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+                  "value": "OPTION_1"
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              }
+            ],
+            "totalMarks": 6,
+            "workingOutline": [
+              "For Supplier 1, divide 54 labels by $18 to obtain 3 labels per dollar.",
+              "For Supplier 2, divide 70 labels by $25 to obtain 2.8 labels per dollar.",
+              "Subtract 2.8 from 3 to find a difference of 0.2 labels per dollar.",
+              "Choose Supplier 1 because its unit rate is larger."
+            ]
+          },
+          "credit": null,
+          "rationale": "The item requires proportional reasoning to formulate and compare two unit rates rather than relying on either total cost or total number of labels alone. Supplier 2 has the larger total number of labels, but Supplier 1 has the higher return per dollar.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.num.ratio-proportion"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.num.ratio-proportion",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Proporcionalidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.proportion.rate-comparison-model",
+            "version": "0.2.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "CAMBRIDGE",
+            "version": "0.3.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "CAMBRIDGE.9709.P1",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "SYLLABUS_VERSION",
+              "targetIdentity": "9709",
+              "version": "2026-2027",
+              "componentKey": "p1",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "cie-9709-syllabus-2026-2027"
+                ],
+                "recordedIn": "AICE_SYLLABI[code 9709].code / versionKey / components[p1]"
+              }
+            }
+          },
+          "systemVersionBinding": {
+            "targetType": "SYLLABUS_VERSION",
+            "targetIdentity": "9709",
+            "version": "2026-2027",
+            "componentKey": null,
+            "provenance": {
+              "kind": "AUTHORITATIVE_SOURCE",
+              "sourceKeys": [
+                "cie-9709-syllabus-2026-2027"
+              ],
+              "recordedIn": "AICE_SYLLABI[code 9709].code / versionKey"
+            }
+          },
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "56c6fc238c21e004b8be3bdf773102834a4a0f777c7693ad37fe291e57464121",
+            "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "283469f1d928188b208db82144874025796e1500eb66fc1eac496a2d5c56177c",
+            "template": {
+              "id": "spec-constructed-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "03.rate-comparison.cambridge-p1#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:04:01.374Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|04.rate-comparison.pisa#a1",
+        "unitKey": "04.rate-comparison.pisa#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "1b915272a1de46e25ea4bbcb2decbba709b51a7e658ed5724c735b28d18c99f0",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": null,
+        "content": {
+          "stem": "Dos compañías ofrecen planes de datos móviles para un viaje. La opción 1 cuesta 48 euros y proporciona 9.6 GB. La opción 2 cuesta 75 euros y proporciona 13.125 GB. ¿Qué opción ofrece más datos por euro y cuál es la diferencia entre sus cantidades de datos por euro?",
+          "context": {
+            "kind": "PERSONAL",
+            "description": "Una persona compara dos ofertas de datos móviles para elegir la más conveniente para un viaje."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 48,
+              "q1": 9.6,
+              "p2": 75,
+              "q2": 13.125
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "La opción 1; 0.025 GB por euro más que la opción 2"
+              },
+              {
+                "id": "B",
+                "text": "La opción 2; 0.025 GB por euro más que la opción 1"
+              },
+              {
+                "id": "C",
+                "text": "La opción 1; 0.025 euros por GB más que la opción 2"
+              },
+              {
+                "id": "D",
+                "text": "La opción 2; 0.025 euros por GB más que la opción 1"
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "one-quantity",
+                "rationale": "Elige la opción con mayor cantidad total de datos sin comparar cuánto se obtiene por cada euro."
+              },
+              "C": {
+                "misconceptionModelId": "inverted-rate",
+                "rationale": "Invierte la razón y expresa el resultado en euros por GB en lugar de GB por euro."
+              },
+              "D": {
+                "misconceptionModelId": "difference",
+                "rationale": "Combina la inversión de la razón con la elección basada en la mayor cantidad total de datos."
+              }
+            },
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+              "value": "OPTION_1"
+            },
+            "answerCheck": {
+              "kind": "NOT_COMPUTABLE",
+              "reason": "No arithmetic expression was declared for this answer."
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Selecciona la opción 1, que tiene la mayor cantidad de datos por euro, y comunica correctamente la diferencia de 0.025 GB por euro."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "Selecciona cualquier otra opción."
+            }
+          ],
+          "rationale": "La comparación adecuada es la cantidad de datos por euro. Para la opción 1, 9.6 / 48 = 0.2 GB por euro. Para la opción 2, 13.125 / 75 = 0.175 GB por euro. Como 0.2 es mayor que 0.175, la opción 1 es mejor. La diferencia es 0.2 - 0.175 = 0.025 GB por euro. Las cantidades totales no bastan para decidir: aunque la opción 2 proporciona más GB, requiere un pago mayor.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.num.ratio-proportion"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.num.ratio-proportion",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Proporcionalidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.proportion.rate-comparison-model",
+            "version": "0.2.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "PISA",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "PISA.MATHEMATICS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "FRAMEWORK_VERSION",
+              "targetIdentity": "pisa-math",
+              "version": "2022",
+              "componentKey": "math",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "oecd-pisa-2022-framework",
+                  "oecd-pisa-2022-math-site",
+                  "nces-pisa-2022-technical-notes"
+                ],
+                "recordedIn": "PISA_MATH_V2.framework.frameworkKey / frameworkVersion / sections[math]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "1b915272a1de46e25ea4bbcb2decbba709b51a7e658ed5724c735b28d18c99f0",
+            "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "93f6ca01a884da3468e12481d8d12ca2ce698712267856be02f6c74dc08a9019",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "04.rate-comparison.pisa#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:04:16.906Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|05.rate-comparison.icfes#a1",
+        "unitKey": "05.rate-comparison.icfes#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "e6a02748367f26da1d37f670a73380aa5524f2e9c426feeba5cacba0841b348d",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": null,
+        "content": {
+          "stem": "Una persona compara dos planes de recompensas para decidir cuál le conviene más. El plan 1 cuesta 18 dólares y entrega 72 puntos. El plan 2 cuesta 25 dólares y entrega 75 puntos. ¿Cuál opción presenta correctamente el plan que ofrece más puntos por dólar y la diferencia entre los dos planes?",
+          "context": {
+            "kind": "PERSONAL",
+            "description": "Una persona elige entre dos planes de recompensas con precios y cantidades de puntos diferentes."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 18,
+              "q1": 72,
+              "p2": 25,
+              "q2": 75
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "El plan 1 ofrece 4 puntos por dólar y supera al plan 2 por 1 punto por dólar."
+              },
+              {
+                "id": "B",
+                "text": "El plan 2 ofrece 3 puntos por dólar y supera al plan 1 por 1 punto por dólar."
+              },
+              {
+                "id": "C",
+                "text": "El plan 2 ofrece 75 puntos por dólar y supera al plan 1 por 3 puntos por dólar."
+              },
+              {
+                "id": "D",
+                "text": "El plan 1 ofrece 0,25 puntos por dólar y supera al plan 2 por 0,08 puntos por dólar."
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "one-quantity",
+                "rationale": "Compara principalmente las cantidades totales de puntos y elige el plan 2 porque entrega más puntos, sin convertir las ofertas a una cantidad común."
+              },
+              "C": {
+                "misconceptionModelId": "difference",
+                "rationale": "Usa las cantidades entregadas como si fueran tasas por dólar y toma su diferencia directa, sin relacionarlas con los precios."
+              },
+              "D": {
+                "misconceptionModelId": "inverted-rate",
+                "rationale": "Invierte la relación entre puntos y precio, calculando dólares por punto en lugar de puntos por dólar."
+              }
+            },
+            "target": {
+              "kind": "NOT_MACHINE_CHECKABLE",
+              "reason": "La respuesta correcta combina la opción favorecida con la diferencia entre ambas tasas unitarias."
+            },
+            "answerCheck": {
+              "kind": "NOT_COMPUTABLE",
+              "reason": "No arithmetic expression was declared for this answer."
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null,
+          "rationale": "La comparación adecuada usa la cantidad de puntos obtenida por cada dólar pagado. El plan 1 tiene 72/18 = 4 puntos por dólar, mientras que el plan 2 tiene 75/25 = 3 puntos por dólar. Por tanto, favorece al plan 1 y la diferencia es 4 - 3 = 1 punto por dólar. La opción B se fija en que el plan 2 entrega más puntos en total; la opción C confunde cantidades totales con tasas; la opción D invierte la relación y expresa dólares por punto.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.num.ratio-proportion"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.num.ratio-proportion",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Proporcionalidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.proportion.rate-comparison-model",
+            "version": "0.2.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "ICFES",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "ICFES.SABER11_MATEMATICAS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.saber11.math",
+              "version": "V2.1 Saber 11 2026 · 50 posiciones",
+              "componentKey": "math",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "icfes-marco-matematicas-saber11",
+                  "icfes-guia-saber11-2026",
+                  "icfes-resolucion-268-2020"
+                ],
+                "recordedIn": "SABER11_MATH_V2.key / version.label / sections[math]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "e6a02748367f26da1d37f670a73380aa5524f2e9c426feeba5cacba0841b348d",
+            "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "137f6161968b36d8019dfac1c331afe5c0c4280e7b817e09dcb76a977a92521c",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "05.rate-comparison.icfes#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:04:32.242Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|06.approach.school.standard#a1",
+        "unitKey": "06.approach.school.standard#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "aeadb00606e82f63e33c94fd50723d59f797f500f88dede09010e5058d4d3b11",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "language": "es",
+        "responseFormat": "SHORT_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 6,
+        "instruction": null,
+        "stimulusKey": null,
+        "content": {
+          "stem": "Una ciudad compara dos programas de recogida de residuos para decidir cuál ofrece un mejor rendimiento. El programa 1 recoge 84 toneladas de residuos utilizando 24 rutas de recogida. El programa 2 recoge 105 toneladas utilizando 35 rutas de recogida. Se quiere comparar la cantidad recogida por ruta.",
+          "context": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos programas públicos de recogida de residuos mediante la cantidad recogida por ruta."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 24,
+              "q1": 84,
+              "p2": 35,
+              "q2": 105
+            }
+          },
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Calcula la cantidad recogida por cada ruta en cada programa.",
+                "commandTerm": null,
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Divide la cantidad recogida por el número de rutas correspondiente en cada programa."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtiene 3.5 toneladas por ruta para el programa 1 y 3 toneladas por ruta para el programa 2."
+                  }
+                ],
+                "finalAnswer": "Programa 1: 84/24 = 3.5 toneladas por ruta; programa 2: 105/35 = 3 toneladas por ruta.",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "La respuesta contiene dos tasas unitarias relacionadas, no una única cantidad."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Calcula la diferencia entre las dos cantidades recogidas por ruta.",
+                "commandTerm": null,
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Resta una tasa unitaria de la otra."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtiene una diferencia de 0.5 toneladas por ruta."
+                  }
+                ],
+                "finalAnswer": "3.5 - 3 = 0.5 toneladas por ruta.",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "0.5",
+                  "equivalentFormsAllowed": true,
+                  "decimalPlaces": 1
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "UNIT_RATE_DIFFERENCE"
+                },
+                "answerCheck": {
+                  "kind": "ARITHMETIC_EXPRESSION",
+                  "expression": "3.5 - 3"
+                }
+              },
+              {
+                "label": "c",
+                "prompt": "Interpreta la comparación y justifica qué programa ofrece el mejor rendimiento.",
+                "commandTerm": null,
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "REASONING",
+                    "marks": 1,
+                    "criterion": "Relaciona el mayor valor por ruta con un mejor rendimiento."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Identifica correctamente el programa 1 y explica que recoge 0.5 toneladas más por ruta."
+                  }
+                ],
+                "finalAnswer": "El programa 1 ofrece el mejor rendimiento porque recoge 3.5 toneladas por ruta, frente a 3 toneladas por ruta del programa 2; la diferencia es de 0.5 toneladas por ruta.",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "La respuesta exige interpretar las tasas y justificar verbalmente qué programa tiene el rendimiento superior."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              }
+            ],
+            "totalMarks": 6,
+            "workingOutline": [
+              "Para el programa 1, dividir 84 toneladas entre 24 rutas para obtener 3.5 toneladas por ruta.",
+              "Para el programa 2, dividir 105 toneladas entre 35 rutas para obtener 3 toneladas por ruta.",
+              "Restar 3 a 3.5 para hallar una diferencia de 0.5 toneladas por ruta.",
+              "Comparar las tasas y concluir que el programa 1 tiene el mejor rendimiento porque su tasa unitaria es mayor."
+            ]
+          },
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Realiza correctamente las dos divisiones, calcula la diferencia y justifica que el programa 1 tiene la tasa unitaria mayor."
+            },
+            {
+              "code": "PARTIAL_CREDIT",
+              "description": "Muestra un método adecuado y obtiene parte de los valores correctos, pero comete un error de cálculo o interpreta incompletamente la comparación."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "No establece correctamente las tasas unitarias ni identifica de forma justificada el programa con mejor rendimiento."
+            }
+          ],
+          "rationale": "La situación requiere comparar dos opciones mediante una tasa común: cantidad recogida por ruta. El alumnado debe formular las dos tasas unitarias, resolver su diferencia e interpretar cuál programa es superior y por cuánto.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.num.ratio-proportion"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.num.ratio-proportion",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Proporcionalidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.proportion.rate-comparison-model",
+            "version": "0.2.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "SCHOOL_STEM_PERFORMANCE",
+            "version": "0.1.0-design"
+          },
+          "componentProfile": null,
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "aeadb00606e82f63e33c94fd50723d59f797f500f88dede09010e5058d4d3b11",
+            "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "0f34790198a3fc69dd34fa94e6bb0aa14cd816ab1f740869c6d890821a3fba3a",
+            "template": {
+              "id": "spec-constructed-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "06.approach.school.standard#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:04:46.146Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|07.approach.school.stem-plus#a1",
+        "unitKey": "07.approach.school.stem-plus#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "c0705b8f595cb1048e79ed1a710c5425fdfd29a378d4ce6371b53a99e7df2755",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "language": "es",
+        "responseFormat": "EXTENDED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 6,
+        "instruction": null,
+        "stimulusKey": null,
+        "content": {
+          "stem": "Un ayuntamiento está comparando dos abonos mensuales de transporte para decidir cuál ofrece mejor valor a las personas usuarias. El abono 1 cuesta 24 euros y permite realizar 84 viajes al mes. El abono 2 cuesta 30 euros y permite realizar 96 viajes al mes.",
+          "context": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos abonos de transporte público mediante el número de viajes que ofrecen por cada euro pagado."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 24,
+              "q1": 84,
+              "p2": 30,
+              "q2": 96
+            }
+          },
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Escribe la tasa unitaria de cada abono, expresada en viajes por euro.",
+                "commandTerm": null,
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Divide el número de viajes de cada abono entre su precio."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtiene correctamente 3,5 viajes por euro para el abono 1 y 3,2 viajes por euro para el abono 2."
+                  }
+                ],
+                "finalAnswer": "Abono 1: 84/24 = 3,5 viajes por euro; abono 2: 96/30 = 3,2 viajes por euro.",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "La respuesta requiere presentar e identificar dos tasas unitarias, no un único valor numérico."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Calcula la diferencia entre las dos tasas unitarias, en viajes por euro.",
+                "commandTerm": null,
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Resta una tasa unitaria de la otra."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Calcula correctamente una diferencia de 0,3 viajes por euro."
+                  }
+                ],
+                "finalAnswer": "3,5 - 3,2 = 0,3 viajes por euro.",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "0.3",
+                  "equivalentFormsAllowed": true,
+                  "decimalPlaces": 1
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "UNIT_RATE_DIFFERENCE"
+                },
+                "answerCheck": {
+                  "kind": "ARITHMETIC_EXPRESSION",
+                  "expression": "3.5-3.2"
+                }
+              },
+              {
+                "label": "c",
+                "prompt": "Indica qué abono ofrece mejor valor y justifica tu respuesta usando las tasas unitarias.",
+                "commandTerm": null,
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "REASONING",
+                    "marks": 2,
+                    "criterion": "Concluye que el abono 1 ofrece mejor valor porque proporciona 3,5 viajes por euro, frente a 3,2 viajes por euro del abono 2, y relaciona la diferencia de 0,3 viajes por euro con la elección."
+                  }
+                ],
+                "finalAnswer": "El abono 1 ofrece mejor valor: proporciona 3,5 viajes por euro, mientras que el abono 2 proporciona 3,2. Por tanto, el abono 1 ofrece 0,3 viajes más por euro.",
+                "numericKey": null,
+                "target": {
+                  "kind": "VERDICT",
+                  "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+                  "value": "OPTION_1"
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              }
+            ],
+            "totalMarks": 6,
+            "workingOutline": [
+              "Dividir 84 entre 24 para obtener la tasa del abono 1: 3,5 viajes por euro.",
+              "Dividir 96 entre 30 para obtener la tasa del abono 2: 3,2 viajes por euro.",
+              "Restar 3,2 de 3,5 para hallar una diferencia de 0,3 viajes por euro.",
+              "Comparar las tasas y concluir que el abono 1 ofrece mejor valor porque su tasa unitaria es mayor."
+            ]
+          },
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Obtiene las dos tasas unitarias, calcula correctamente su diferencia y justifica que el abono 1 ofrece mejor valor mediante la comparación de las tasas."
+            },
+            {
+              "code": "PARTIAL_CREDIT",
+              "description": "Muestra un procedimiento adecuado o realiza correctamente parte de los cálculos, pero contiene un error numérico o una conclusión incompleta."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "No establece tasas unitarias pertinentes ni proporciona una comparación válida entre los abonos."
+            }
+          ],
+          "rationale": "La situación exige modelar cada abono mediante una tasa unitaria común, calcular la diferencia entre las tasas e interpretar cuál opción favorece la comparación. La opción con mayor precio no es la mejor, de modo que la elección no puede hacerse usando una sola cantidad. Los valores producen tasas decimales terminantes y permiten una justificación clara.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.num.ratio-proportion"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.num.ratio-proportion",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Proporcionalidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.proportion.rate-comparison-model",
+            "version": "0.2.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "EXPLICIT",
+            "id": "STEM_PLUS",
+            "version": "0.1.0-provisional"
+          },
+          "systemProfile": {
+            "id": "SCHOOL_STEM_PERFORMANCE",
+            "version": "0.1.0-design"
+          },
+          "componentProfile": null,
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "c0705b8f595cb1048e79ed1a710c5425fdfd29a378d4ce6371b53a99e7df2755",
+            "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "1fc4649f7672f154293fbc629fdb6681472c85bd08d5fe1a523444b4ae86d613",
+            "template": {
+              "id": "spec-constructed-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "07.approach.school.stem-plus#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:05:00.888Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|08.approach.paa.stem-plus#a1",
+        "unitKey": "08.approach.paa.stem-plus#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "eba283b06456e0d182d557ff605e69b4dd164bc45e05df03556e12a9540c6b7e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": null,
+        "content": {
+          "stem": "Una campaña de salud pública compara dos centros de atención. El centro 1 atiende a 90 personas por cada 24 jornadas de trabajo, mientras que el centro 2 atiende a 140 personas por cada 40 jornadas. ¿Qué opción indica correctamente cuál centro atiende a más personas por jornada y cuál es la diferencia entre sus tasas?",
+          "context": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos centros de atención de una campaña de salud pública mediante personas atendidas por jornada."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 24,
+              "q1": 90,
+              "p2": 40,
+              "q2": 140
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "El centro 1; 3.75 frente a 3.50 personas por jornada, una diferencia de 0.25."
+              },
+              {
+                "id": "B",
+                "text": "El centro 2; 3.50 frente a 3.75 personas por jornada, una diferencia de 0.25."
+              },
+              {
+                "id": "C",
+                "text": "El centro 2; 0.27 frente a 0.29 jornadas por persona, una diferencia de 0.02."
+              },
+              {
+                "id": "D",
+                "text": "El centro 1; 90 frente a 140 personas, una diferencia de 50 personas."
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "one-quantity",
+                "rationale": "Compara principalmente la cantidad de jornadas o selecciona la opción con el valor total mayor, sin poner los resultados en una tasa común."
+              },
+              "C": {
+                "misconceptionModelId": "inverted-rate",
+                "rationale": "Calcula jornadas por persona en lugar de personas por jornada y usa esa tasa invertida para decidir."
+              },
+              "D": {
+                "misconceptionModelId": "difference",
+                "rationale": "Compara directamente las cantidades totales de personas y no calcula la diferencia entre las dos tasas unitarias."
+              }
+            },
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+              "value": "OPTION_1"
+            },
+            "answerCheck": {
+              "kind": "ARITHMETIC_EXPRESSION",
+              "expression": "90 / 24 - 140 / 40"
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null,
+          "rationale": "La tasa del centro 1 es 90 / 24 = 3.75 personas por jornada. La tasa del centro 2 es 140 / 40 = 3.50 personas por jornada. Por tanto, favorece al centro 1 y la diferencia es 3.75 - 3.50 = 0.25 personas por jornada. La opción B elige el centro con mayor cantidad de jornadas; la C invierte las tasas; y la D compara totales en vez de tasas unitarias.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.num.ratio-proportion"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.num.ratio-proportion",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Proporcionalidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.proportion.rate-comparison-model",
+            "version": "0.2.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "EXPLICIT",
+            "id": "STEM_PLUS",
+            "version": "0.1.0-provisional"
+          },
+          "systemProfile": {
+            "id": "PAA",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "PAA.MATEMATICAS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.paa",
+              "version": "V2.1 PAA revisada (guía 2021)",
+              "componentKey": "matematicas",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "cb-paa-guia-2021",
+                  "cb-paa-preguntas-respuestas-2017",
+                  "cb-paa-practice-test-2018"
+                ],
+                "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "eba283b06456e0d182d557ff605e69b4dd164bc45e05df03556e12a9540c6b7e",
+            "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "80a629a383607abc13446e7b4bf8105c564e6859e5ac4e8aa03dd3970711d4f0",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "08.approach.paa.stem-plus#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:05:18.418Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|09.approach.pisa.stem-plus#a1",
+        "unitKey": "09.approach.pisa.stem-plus#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "c98474ab45c30e4ebe91aeeaf831db68ad2497a95b4a55842dd70e8b3bd6153e",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": null,
+        "content": {
+          "stem": "Una municipalidad quiere elegir entre dos programas de préstamo de libros para una biblioteca comunitaria. El programa 1 entrega 18 libros por cada 40 euros aportados. El programa 2 entrega 20 libros por cada 50 euros aportados. ¿Qué opción ofrece más libros por euro y por cuánto supera a la otra?",
+          "context": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos programas públicos de préstamo de libros según la cantidad de libros obtenidos por cada euro aportado."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 40,
+              "q1": 18,
+              "p2": 50,
+              "q2": 20
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "El programa 1; 0,05 libros por euro"
+              },
+              {
+                "id": "B",
+                "text": "El programa 2; 0,05 libros por euro"
+              },
+              {
+                "id": "C",
+                "text": "El programa 1; 2 libros"
+              },
+              {
+                "id": "D",
+                "text": "El programa 2; 0,28 euros por libro"
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "one-quantity",
+                "rationale": "Elige el programa con la mayor cantidad total de libros, sin comparar la cantidad obtenida por euro."
+              },
+              "C": {
+                "misconceptionModelId": "difference",
+                "rationale": "Compara directamente las cantidades totales de libros y usa su diferencia, sin calcular tasas unitarias."
+              },
+              "D": {
+                "misconceptionModelId": "inverted-rate",
+                "rationale": "Usa el coste por libro en lugar de los libros obtenidos por euro y además selecciona la opción favorecida por esa tasa invertida."
+              }
+            },
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+              "value": "OPTION_1"
+            },
+            "answerCheck": {
+              "kind": "NOT_COMPUTABLE",
+              "reason": "No arithmetic expression was declared for this answer."
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Selecciona la única opción que identifica el programa con la mayor cantidad de libros por euro y la diferencia correcta entre las tasas unitarias."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "Selecciona cualquier otra opción."
+            }
+          ],
+          "rationale": "La comparación pertinente es entre los libros obtenidos por cada euro. El programa 1 tiene una tasa de 18 / 40 = 0,45 libros por euro, mientras que el programa 2 tiene una tasa de 20 / 50 = 0,40 libros por euro. La diferencia es 0,45 - 0,40 = 0,05 libros por euro; por tanto, la opción correcta es A.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.num.ratio-proportion"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.num.ratio-proportion",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Proporcionalidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.proportion.rate-comparison-model",
+            "version": "0.2.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "EXPLICIT",
+            "id": "STEM_PLUS",
+            "version": "0.1.0-provisional"
+          },
+          "systemProfile": {
+            "id": "PISA",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "PISA.MATHEMATICS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "FRAMEWORK_VERSION",
+              "targetIdentity": "pisa-math",
+              "version": "2022",
+              "componentKey": "math",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "oecd-pisa-2022-framework",
+                  "oecd-pisa-2022-math-site",
+                  "nces-pisa-2022-technical-notes"
+                ],
+                "recordedIn": "PISA_MATH_V2.framework.frameworkKey / frameworkVersion / sections[math]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "c98474ab45c30e4ebe91aeeaf831db68ad2497a95b4a55842dd70e8b3bd6153e",
+            "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "9e94923b695389882e3efbee15595523a03876df045edc11166d62341da396be",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "09.approach.pisa.stem-plus#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:05:30.477Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|10.line-two-points.paa#a1",
+        "unitKey": "10.line-two-points.paa#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "81b7863c0e5979f865488cb34227645d4a191e674de4c5f9a1ba884ba42c2ef1",
+        "primaryConceptStableId": "math.fun.linear-functions-lines",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": null,
+        "content": {
+          "stem": "Los puntos P(-4, 7) y Q(2, -5) pertenecen a una misma recta. ¿Cuál es la ecuación de esa recta?",
+          "context": {
+            "kind": "ABSTRACT",
+            "description": "Se dan directamente las coordenadas de dos puntos del plano, sin una situación contextual."
+          },
+          "declaredModel": {
+            "construct": "LINE_THROUGH_TWO_POINTS",
+            "parameters": {
+              "x1": -4,
+              "y1": 7,
+              "x2": 2,
+              "y2": -5
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "y = -2x - 1"
+              },
+              {
+                "id": "B",
+                "text": "y = -1/2x + 5"
+              },
+              {
+                "id": "C",
+                "text": "y = 2x + 15"
+              },
+              {
+                "id": "D",
+                "text": "y = -2x + 7"
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "run-over-rise",
+                "rationale": "Invierte el cociente de las diferencias y obtiene una pendiente de -1/2; después ajusta una ecuación que pasa por uno de los puntos."
+              },
+              "C": {
+                "misconceptionModelId": "mixed-order",
+                "rationale": "Combina el orden de las diferencias de las coordenadas y obtiene una pendiente positiva de 2, lo que produce también un intercepto incorrecto."
+              },
+              "D": {
+                "misconceptionModelId": "point-as-intercept",
+                "rationale": "Calcula correctamente la pendiente, pero usa la coordenada y del primer punto como si fuera el intercepto."
+              }
+            },
+            "target": {
+              "kind": "NOT_MACHINE_CHECKABLE",
+              "reason": "La respuesta correcta es una ecuación, no un valor numérico aislado."
+            },
+            "answerCheck": {
+              "kind": "NOT_COMPUTABLE",
+              "reason": "No arithmetic expression was declared for this answer."
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null,
+          "rationale": "La pendiente de la recta que pasa por los dos puntos es m = (-5 - 7) / (2 - (-4)) = -12/6 = -2. Usando P(-4, 7), 7 = -2(-4) + b, por lo que b = -1. Por tanto, la ecuación es y = -2x - 1, opción A.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.fun.linear-functions-lines"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.fun.linear-functions-lines",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Rectas y funciones lineales"
+          },
+          "taskFamily": {
+            "id": "tf.math.linear.line-through-two-points",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "PAA",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "PAA.MATEMATICAS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.paa",
+              "version": "V2.1 PAA revisada (guía 2021)",
+              "componentKey": "matematicas",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "cb-paa-guia-2021",
+                  "cb-paa-preguntas-respuestas-2017",
+                  "cb-paa-practice-test-2018"
+                ],
+                "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "81b7863c0e5979f865488cb34227645d4a191e674de4c5f9a1ba884ba42c2ef1",
+            "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "6ba4b9a62e8aef988f80d97b9ed78a252dee68171cd8ef432e88c23bab027447",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "10.line-two-points.paa#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:05:43.935Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|11.linear-model.ib-p2#a1",
+        "unitKey": "11.linear-model.ib-p2#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "ed4eff5a34c82416f5cfcf1d49d6f80884ae5d9ccdc803a2f2338e8258e6e214",
+        "primaryConceptStableId": "math.fun.linear-functions-lines",
+        "language": "en",
+        "responseFormat": "SHORT_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 6,
+        "instruction": null,
+        "stimulusKey": null,
+        "content": {
+          "stem": "During an experiment, a sensor measures the temperature of a solution as it warms at a constant rate. At the start of the experiment, the temperature is 18°C, and it increases by 2.5°C each minute. Let t be the number of minutes after the start and let T be the temperature in °C.",
+          "context": {
+            "kind": "SCIENTIFIC",
+            "description": "A laboratory solution warms at a constant rate from an initial temperature."
+          },
+          "declaredModel": {
+            "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+            "parameters": {
+              "b": 18,
+              "m": 2.5,
+              "x": 6
+            }
+          },
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Find an equation expressing T in terms of t.",
+                "commandTerm": "find",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Uses the constant-rate linear form T = mt + b."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Writes the correct equation, T = 2.5t + 18."
+                  }
+                ],
+                "finalAnswer": "T = 2.5t + 18",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "The response is an equation representing the linear model, not a single machine-checkable quantity."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Find the temperature after 6 minutes.",
+                "commandTerm": "find",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Substitutes t = 6 into the linear model."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtains 33°C."
+                  }
+                ],
+                "finalAnswer": "T = 33°C",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "33",
+                  "equivalentFormsAllowed": true,
+                  "decimalPlaces": 0
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "VALUE_AT_X"
+                },
+                "answerCheck": {
+                  "kind": "ARITHMETIC_EXPRESSION",
+                  "expression": "2.5 * 6 + 18"
+                }
+              },
+              {
+                "label": "c",
+                "prompt": "Write down what the coefficient of t represents in this experiment.",
+                "commandTerm": "write down",
+                "marks": 1,
+                "markScheme": [
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "States that 2.5 represents an increase of 2.5°C per minute."
+                  }
+                ],
+                "finalAnswer": "The temperature increases by 2.5°C per minute.",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "The response interprets the rate in the experimental situation rather than giving a single numeric result."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "d",
+                "prompt": "Write down what the constant term represents in this experiment.",
+                "commandTerm": "write down",
+                "marks": 1,
+                "markScheme": [
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "States that 18 represents the temperature at the start of the experiment."
+                  }
+                ],
+                "finalAnswer": "The starting temperature is 18°C.",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "The response interprets the starting value in the experimental situation rather than giving a single numeric result."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              }
+            ],
+            "totalMarks": 6,
+            "workingOutline": [
+              "Use the form T = mt + b for a quantity with a fixed starting value and a constant rate of change.",
+              "Substitute the rate 2.5 and starting value 18 to obtain T = 2.5t + 18.",
+              "Substitute t = 6 and calculate 2.5 × 6 + 18 = 33.",
+              "Interpret the coefficient of t as the temperature increase per minute and the constant term as the initial temperature."
+            ]
+          },
+          "credit": null,
+          "rationale": "The item requires the learner to formulate a linear model for a quantity with a fixed start and constant rate, calculate a value from that model, and interpret both the rate and starting value. The four parts use only permitted command terms, with the lead term used for the formulation action.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.fun.linear-functions-lines"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.fun.linear-functions-lines",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Rectas y funciones lineales"
+          },
+          "taskFamily": {
+            "id": "tf.math.linear.constant-rate-model",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "IB",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "IB.MATH_AA_HL.P2",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.ib.math-aa-hl",
+              "version": "V2 2021-2028",
+              "componentKey": "p2",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "ibo-math-aa-guide-2021",
+                  "ibo-math-aa-brief-2021",
+                  "ibo-math-dp-page"
+                ],
+                "recordedIn": "IB_MATH_AA_HL_V2.key / version.label / sections[p2]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "ed4eff5a34c82416f5cfcf1d49d6f80884ae5d9ccdc803a2f2338e8258e6e214",
+            "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "6a609ec09fb217ab63e9a92ba331dc429870460427b229b03ed0d8bafe95986c",
+            "template": {
+              "id": "spec-constructed-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "11.linear-model.ib-p2#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:05:54.557Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|12.linear-model.pisa#a1",
+        "unitKey": "12.linear-model.pisa#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "03b9473dcceefe21138eac38f191433e21f757d80eba02181182fe9d600a3ec9",
+        "primaryConceptStableId": "math.fun.linear-functions-lines",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": "stim|12.linear-model.pisa#a1",
+        "content": {
+          "stem": "Después de 8 semanas, ¿qué opción describe correctamente el saldo de Elena y el significado de los dos números de su relación lineal?",
+          "context": {
+            "kind": "PERSONAL",
+            "description": "Una persona controla un ahorro que comienza con un saldo fijo y aumenta en la misma cantidad cada semana."
+          },
+          "declaredModel": {
+            "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+            "parameters": {
+              "b": 75,
+              "m": 6,
+              "x": 8
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "La relación es y = 6x + 75; 6 indica el aumento semanal, 75 el saldo inicial y el saldo es 123 euros."
+              },
+              {
+                "id": "B",
+                "text": "La relación es y = 75x + 6; 75 indica el aumento semanal, 6 el saldo inicial y el saldo es 606 euros."
+              },
+              {
+                "id": "C",
+                "text": "La relación es y = 6x; 6 indica el aumento semanal, no hay saldo inicial y el saldo es 48 euros."
+              },
+              {
+                "id": "D",
+                "text": "La relación es y = 75 + 6; 75 indica el saldo total de ocho semanas, 6 el aumento semanal y el saldo es 81 euros."
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "swapped-parameters",
+                "rationale": "Intercambia el saldo inicial y el aumento semanal en la relación y en su interpretación."
+              },
+              "C": {
+                "misconceptionModelId": "no-start",
+                "rationale": "Omite el saldo que Elena ya tenía al comenzar."
+              },
+              "D": {
+                "misconceptionModelId": "slope-as-total",
+                "rationale": "No multiplica el aumento semanal por el número de semanas y trata los datos como una suma fija."
+              }
+            },
+            "target": {
+              "kind": "QUANTITY",
+              "quantity": "VALUE_AT_X"
+            },
+            "answerCheck": {
+              "kind": "ARITHMETIC_EXPRESSION",
+              "expression": "6 * 8 + 75"
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Selecciona A: reconoce la relación lineal, interpreta correctamente el aumento semanal y el saldo inicial, y obtiene un saldo de 123 euros."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "Selecciona cualquier otra opción."
+            }
+          ],
+          "rationale": "El saldo comienza en 75 euros y aumenta 6 euros por cada semana. Por tanto, el modelo es y = 6x + 75. Al sustituir x = 8 se obtiene y = 6 * 8 + 75 = 123. La opción A es la única que formula la relación, interpreta sus dos componentes y da el valor correcto. Las demás representan, respectivamente, un intercambio de los papeles de los números, la omisión del saldo inicial y la confusión entre la tasa semanal y el total.",
+          "usesStimulusValues": [
+            0,
+            75,
+            1,
+            81,
+            2,
+            87,
+            3,
+            93,
+            4,
+            99,
+            5,
+            105,
+            6,
+            111,
+            7,
+            117,
+            8,
+            123
+          ],
+          "proposedSupportingConceptStableIds": [
+            "math.fun.linear-functions-lines"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.fun.linear-functions-lines",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Rectas y funciones lineales"
+          },
+          "taskFamily": {
+            "id": "tf.math.linear.constant-rate-model",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "PISA",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "PISA.MATHEMATICS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "FRAMEWORK_VERSION",
+              "targetIdentity": "pisa-math",
+              "version": "2022",
+              "componentKey": "math",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "oecd-pisa-2022-framework",
+                  "oecd-pisa-2022-math-site",
+                  "nces-pisa-2022-technical-notes"
+                ],
+                "recordedIn": "PISA_MATH_V2.framework.frameworkKey / frameworkVersion / sections[math]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "03b9473dcceefe21138eac38f191433e21f757d80eba02181182fe9d600a3ec9",
+            "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "1429206ca969531a7f08ef052525a014e89ba5012180b100a8055fdff28203c3",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "12.linear-model.pisa#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:06:08.612Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|13.quadratic-factorising.cambridge-p1#a1",
+        "unitKey": "13.quadratic-factorising.cambridge-p1#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "673c8a4773fb6a9809ce76e328d11d0c2872f6f01ad58a03884013732058bf13",
+        "primaryConceptStableId": "math.alg.quadratics",
+        "language": "en",
+        "responseFormat": "SHORT_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 6,
+        "instruction": null,
+        "stimulusKey": null,
+        "content": {
+          "stem": "Consider the equation 3x^2 - 6x = 33.",
+          "context": {
+            "kind": "ABSTRACT",
+            "description": "An algebraic equation is given directly, with no applied situation."
+          },
+          "declaredModel": {
+            "construct": "QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING",
+            "parameters": {
+              "a": 3,
+              "r1": -2.5,
+              "r2": 4.5
+            }
+          },
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Work out the equation in standard form.",
+                "commandTerm": "work out",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Rearranges the equation so that all terms are on one side and the equation is equal to zero."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Gives 3x^2 - 6x - 33 = 0."
+                  }
+                ],
+                "finalAnswer": "3x^2 - 6x - 33 = 0",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "The response is an algebraic standard-form equation rather than a single machine-checkable quantity."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Work out the factorised form of the equation from part (a).",
+                "commandTerm": "work out",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Identifies factors whose product gives the standard-form quadratic, including the factor 3."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Gives 3(x + 2.5)(x - 4.5) = 0."
+                  }
+                ],
+                "finalAnswer": "3(x + 2.5)(x - 4.5) = 0",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "The response is a factorised algebraic expression containing the unknown x."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "c",
+                "prompt": "Work out both roots of the equation.",
+                "commandTerm": "work out",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Sets each linear factor equal to zero."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Gives x = -2.5 and x = 4.5."
+                  }
+                ],
+                "finalAnswer": "x = -2.5 or x = 4.5",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "The response contains two roots and an algebraic variable rather than one machine-checkable quantity."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              }
+            ],
+            "totalMarks": 6,
+            "workingOutline": [
+              "Rearrange 3x^2 - 6x = 33 to obtain 3x^2 - 6x - 33 = 0.",
+              "Factorise the quadratic as 3(x + 2.5)(x - 4.5) = 0.",
+              "Set x + 2.5 = 0 and x - 4.5 = 0, giving x = -2.5 and x = 4.5."
+            ]
+          },
+          "credit": null,
+          "rationale": "This item requires the learner to rearrange a quadratic into standard form, factorise it, and read both rational roots from the factors. The selected coefficient and roots are within the permitted ranges, produce integer derived coefficients, and do not match any avoided parameter set.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.alg.quadratics"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.alg.quadratics",
+            "canonicalSubject": "Mathematics",
+            "canonicalName": "Quadratic functions and inequalities"
+          },
+          "taskFamily": {
+            "id": "tf.math.quadratic.solve-by-factorising",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "CAMBRIDGE",
+            "version": "0.3.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "CAMBRIDGE.9709.P1",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "SYLLABUS_VERSION",
+              "targetIdentity": "9709",
+              "version": "2026-2027",
+              "componentKey": "p1",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "cie-9709-syllabus-2026-2027"
+                ],
+                "recordedIn": "AICE_SYLLABI[code 9709].code / versionKey / components[p1]"
+              }
+            }
+          },
+          "systemVersionBinding": {
+            "targetType": "SYLLABUS_VERSION",
+            "targetIdentity": "9709",
+            "version": "2026-2027",
+            "componentKey": null,
+            "provenance": {
+              "kind": "AUTHORITATIVE_SOURCE",
+              "sourceKeys": [
+                "cie-9709-syllabus-2026-2027"
+              ],
+              "recordedIn": "AICE_SYLLABI[code 9709].code / versionKey"
+            }
+          },
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "673c8a4773fb6a9809ce76e328d11d0c2872f6f01ad58a03884013732058bf13",
+            "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "a24386a1650d34d7e454c0e66c826c46c6c5204a675de81bf9beb3ab20834b54",
+            "template": {
+              "id": "spec-constructed-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "13.quadratic-factorising.cambridge-p1#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:06:22.492Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|14.quadratic-factorising.paa#a1",
+        "unitKey": "14.quadratic-factorising.paa#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "ae1b954dc2b47781be99eb24bb15414af9a743b195bb3f0ec6039346a4397adf",
+        "primaryConceptStableId": "math.alg.quadratics",
+        "language": "es",
+        "responseFormat": "NUMERIC_ENTRY",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Escribe tu respuesta como un número.",
+        "stimulusKey": null,
+        "content": {
+          "stem": "Resuelve la ecuación 4x² - 8x - 21 = 0 factorizándola. Escribe únicamente la raíz mayor como número.",
+          "context": {
+            "kind": "ABSTRACT",
+            "description": "Se presenta directamente una ecuación cuadrática sin contexto adicional."
+          },
+          "declaredModel": {
+            "construct": "QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING",
+            "parameters": {
+              "a": 4,
+              "r1": -1.5,
+              "r2": 3.5
+            }
+          },
+          "selected": null,
+          "numeric": {
+            "numericKey": {
+              "kind": "NUMERIC",
+              "value": "3.5",
+              "equivalentFormsAllowed": true
+            },
+            "target": {
+              "kind": "QUANTITY",
+              "quantity": "GREATER_ROOT"
+            },
+            "answerCheck": {
+              "kind": "ARITHMETIC_EXPRESSION",
+              "expression": "(-(-8)+sqrt((-8)^2-4*4*(-21)))/(2*4)"
+            }
+          },
+          "constructed": null,
+          "credit": null,
+          "rationale": "La ecuación se factoriza como (2x-7)(2x+3)=0, por lo que sus raíces son 3.5 y -1.5. La respuesta solicitada es la raíz mayor: 3.5.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.alg.quadratics"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.alg.quadratics",
+            "canonicalSubject": "Mathematics",
+            "canonicalName": "Quadratic functions and inequalities"
+          },
+          "taskFamily": {
+            "id": "tf.math.quadratic.solve-by-factorising",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "PAA",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "PAA.MATEMATICAS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.paa",
+              "version": "V2.1 PAA revisada (guía 2021)",
+              "componentKey": "matematicas",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "cb-paa-guia-2021",
+                  "cb-paa-preguntas-respuestas-2017",
+                  "cb-paa-practice-test-2018"
+                ],
+                "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "ae1b954dc2b47781be99eb24bb15414af9a743b195bb3f0ec6039346a4397adf",
+            "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "d35dfbf0c93db1040fa3dfbf3bdd606cb71241e81c5668178d5f40a10a52eec8",
+            "template": {
+              "id": "spec-numeric-entry",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "14.quadratic-factorising.paa#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:06:36.520Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|15.quadratic-optimum.ib-p1#a1",
+        "unitKey": "15.quadratic-optimum.ib-p1#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "6ebec5925a89411afb55fb2ca31967cc0807ab7878aa06da16ace8cda2d54ef5",
+        "primaryConceptStableId": "math.alg.quadratics",
+        "language": "en",
+        "responseFormat": "SHORT_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 6,
+        "instruction": null,
+        "stimulusKey": null,
+        "content": {
+          "stem": "In a laboratory experiment, a researcher varies the concentration x of a solution, measured in millimoles per litre. A sensor records a response Q, measured in response units. For the range of concentrations being studied, the response is modelled by the product of two linear effects: one effect starts at 35 response units and increases by 5 response units for each millimole per litre, while the other starts at 150 response units and decreases by 3 response units for each millimole per litre.",
+          "context": {
+            "kind": "SCIENTIFIC",
+            "description": "A laboratory researcher models a measured sensor response that rises and then falls as concentration changes."
+          },
+          "declaredModel": {
+            "construct": "QUADRATIC_MODEL_VERTEX_OPTIMUM",
+            "parameters": {
+              "p": 35,
+              "q": 5,
+              "r": 150,
+              "s": 3
+            }
+          },
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Find an expression for Q in terms of x, first as a product of the two linear effects and then in expanded quadratic form.",
+                "commandTerm": "find",
+                "marks": 3,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 2,
+                    "criterion": "Forms the product (35 + 5x)(150 - 3x) and expands it correctly."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtains Q = -15x^2 + 645x + 5250."
+                  }
+                ],
+                "finalAnswer": "Q=(35+5x)(150-3x)=-15x^2+645x+5250",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "The response must include both the factored model and its expanded quadratic form."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Solve for the concentration x at which the sensor response is greatest.",
+                "commandTerm": "solve",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Uses the vertex formula for the quadratic, or an equivalent method, to determine the x-coordinate of the maximum."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtains x = 21.5 millimoles per litre."
+                  }
+                ],
+                "finalAnswer": "x=21.5 millimoles per litre",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "21.5",
+                  "equivalentFormsAllowed": true,
+                  "decimalPlaces": 1
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "MEASURE_AT_OPTIMUM"
+                },
+                "answerCheck": {
+                  "kind": "ARITHMETIC_EXPRESSION",
+                  "expression": "(5*150-35*3)/(2*5*3)"
+                }
+              },
+              {
+                "label": "c",
+                "prompt": "Write down what the maximum response means for this experiment, including the concentration used and the corresponding response.",
+                "commandTerm": "write down",
+                "marks": 1,
+                "markScheme": [
+                  {
+                    "kind": "REASONING",
+                    "marks": 1,
+                    "criterion": "States that the response is maximized at a concentration of 21.5 millimoles per litre and that the maximum response is 12183.75 response units."
+                  }
+                ],
+                "finalAnswer": "The greatest response is 12183.75 response units, achieved when x=21.5 millimoles per litre.",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "The answer must interpret the vertex by relating both coordinates to the concentration and sensor response."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              }
+            ],
+            "totalMarks": 6,
+            "workingOutline": [
+              "Represent the two effects by 35+5x and 150-3x, so Q=(35+5x)(150-3x).",
+              "Expand to obtain Q=-15x^2+645x+5250.",
+              "Use the vertex x-coordinate formula to calculate x=-(645)/(2(-15))=21.5.",
+              "Substitute x=21.5 into the factored model to obtain Q=(142.5)(85.5)=12183.75.",
+              "Interpret the vertex in the laboratory context as the concentration giving the greatest sensor response and the corresponding maximum response."
+            ]
+          },
+          "credit": null,
+          "rationale": "The item requires the learner to formulate the product of two linear expressions, expand it into a quadratic, solve for the vertex, and interpret both coordinates in the stated scientific situation. The chosen values satisfy the required ranges, give an interior optimum x=21.5, and keep both factors positive there.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.alg.quadratics"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.alg.quadratics",
+            "canonicalSubject": "Mathematics",
+            "canonicalName": "Quadratic functions and inequalities"
+          },
+          "taskFamily": {
+            "id": "tf.math.quadratic.optimum-of-a-model",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "IB",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "IB.MATH_AA_HL.P1",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.ib.math-aa-hl",
+              "version": "V2 2021-2028",
+              "componentKey": "p1",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "ibo-math-aa-guide-2021",
+                  "ibo-math-aa-brief-2021",
+                  "ibo-math-dp-page"
+                ],
+                "recordedIn": "IB_MATH_AA_HL_V2.key / version.label / sections[p1]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "6ebec5925a89411afb55fb2ca31967cc0807ab7878aa06da16ace8cda2d54ef5",
+            "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "0a56f62455beb67e46523867af6277449134ef5c2ee4f03b8eddcc967ebc360c",
+            "template": {
+              "id": "spec-constructed-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "15.quadratic-optimum.ib-p1#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:06:47.087Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|17.probability-single-event.ib-p1#a1",
+        "unitKey": "17.probability-single-event.ib-p1#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "5ac48a459384897110a14e3414f967405f16c59e64996eae8a3894e24c44b8f2",
+        "primaryConceptStableId": "math.prob.probability",
+        "language": "en",
+        "responseFormat": "SHORT_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 3,
+        "instruction": null,
+        "stimulusKey": null,
+        "content": {
+          "stem": "A box contains 20 sealed envelopes. Exactly 7 of the envelopes contain a gift card, and one envelope is selected at random. All envelopes are equally likely to be selected.",
+          "context": {
+            "kind": "ABSTRACT",
+            "description": "The numbers of favourable and possible outcomes are given directly, with no additional situation required."
+          },
+          "declaredModel": {
+            "construct": "CLASSICAL_PROBABILITY_SINGLE_DRAW",
+            "parameters": {
+              "n": 20,
+              "k": 7
+            }
+          },
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Calculate the probability that the selected envelope contains a gift card, giving your answer as a fraction.",
+                "commandTerm": "calculate",
+                "marks": 1,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Forms the ratio of the 7 favourable outcomes to the 20 possible outcomes."
+                  }
+                ],
+                "finalAnswer": "7/20",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "0.35",
+                  "equivalentFormsAllowed": true
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "PROBABILITY"
+                },
+                "answerCheck": {
+                  "kind": "ARITHMETIC_EXPRESSION",
+                  "expression": "7/20"
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Calculate the probability in part (a) as a decimal.",
+                "commandTerm": "calculate",
+                "marks": 1,
+                "markScheme": [
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Converts 7/20 to the correct decimal, 0.35."
+                  }
+                ],
+                "finalAnswer": "0.35",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "0.35",
+                  "equivalentFormsAllowed": true,
+                  "decimalPlaces": 2
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "PROBABILITY"
+                },
+                "answerCheck": {
+                  "kind": "ARITHMETIC_EXPRESSION",
+                  "expression": "7/20"
+                }
+              },
+              {
+                "label": "c",
+                "prompt": "Calculate the probability that the selected envelope does not contain a gift card.",
+                "commandTerm": "calculate",
+                "marks": 1,
+                "markScheme": [
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Calculates the complementary probability as 13/20."
+                  }
+                ],
+                "finalAnswer": "13/20",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "0.65",
+                  "equivalentFormsAllowed": true
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "COMPLEMENT_PROBABILITY"
+                },
+                "answerCheck": {
+                  "kind": "ARITHMETIC_EXPRESSION",
+                  "expression": "1-7/20"
+                }
+              }
+            ],
+            "totalMarks": 3,
+            "workingOutline": [
+              "For part (a), identify 7 favourable outcomes and 20 equally likely possible outcomes, then form 7/20.",
+              "For part (b), divide 7 by 20 to obtain 0.35.",
+              "For part (c), subtract the probability of selecting a gift-card envelope from 1: 1 - 7/20 = 13/20."
+            ]
+          },
+          "credit": null,
+          "rationale": "The item assesses classical probability for one draw from a finite set of equally likely outcomes. It requires the learner to count favourable and possible outcomes and give their ratio, while also applying the same probability and its complement in exact and decimal forms. The chosen values satisfy 0 < 7 < 20 and do not use the prohibited parameter set.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.prob.probability"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.prob.probability",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Probabilidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.probability.single-event-equally-likely",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "IB",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "IB.MATH_AA_HL.P1",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.ib.math-aa-hl",
+              "version": "V2 2021-2028",
+              "componentKey": "p1",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "ibo-math-aa-guide-2021",
+                  "ibo-math-aa-brief-2021",
+                  "ibo-math-dp-page"
+                ],
+                "recordedIn": "IB_MATH_AA_HL_V2.key / version.label / sections[p1]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "5ac48a459384897110a14e3414f967405f16c59e64996eae8a3894e24c44b8f2",
+            "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "859f3818057c4f6224996d8786117e38fb91b2f89870b81b6b5bacb89fe4a9f3",
+            "template": {
+              "id": "spec-constructed-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "17.probability-single-event.ib-p1#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:07:19.865Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|18.probability-compare.icfes#a1",
+        "unitKey": "18.probability-compare.icfes#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "ef378592e7bb493245f24edc006fea2ea82103097ae28c47198c875eaee29b0e",
+        "primaryConceptStableId": "math.prob.probability",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": null,
+        "content": {
+          "stem": "Laura puede escoger uno de dos juegos. En el juego 1, una ficha se extrae de una bolsa que contiene 12 fichas, de las cuales 5 son rojas. En el juego 2, una ficha se extrae de otra bolsa que contiene 20 fichas, de las cuales 7 son rojas. Laura afirma: «Tengo más posibilidades de sacar una ficha roja si elijo el juego 2». ¿Cuál opción presenta la decisión correcta sobre esta afirmación?",
+          "context": {
+            "kind": "PERSONAL",
+            "description": "Una persona elige entre dos juegos de azar con bolsas que contienen fichas rojas y fichas de otros colores."
+          },
+          "declaredModel": {
+            "construct": "COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES",
+            "parameters": {
+              "n1": 12,
+              "k1": 5,
+              "n2": 20,
+              "k2": 7
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "El juego 1 ofrece la mayor posibilidad; la afirmación es falsa."
+              },
+              {
+                "id": "B",
+                "text": "El juego 2 ofrece la mayor posibilidad; la afirmación es verdadera."
+              },
+              {
+                "id": "C",
+                "text": "El juego 1 ofrece la mayor posibilidad; la afirmación es verdadera."
+              },
+              {
+                "id": "D",
+                "text": "El juego 2 ofrece la mayor posibilidad; la afirmación es falsa."
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "count-comparison",
+                "rationale": "Compara solamente la cantidad de fichas rojas y elige el juego 2 porque 7 es mayor que 5, sin considerar el total de fichas de cada bolsa."
+              },
+              "C": {
+                "misconceptionModelId": "total-comparison",
+                "rationale": "Elige el juego 1 por considerar que una bolsa con menos fichas ofrece mayor posibilidad, pero juzga incorrectamente la afirmación al no comparar las proporciones favorables."
+              },
+              "D": {
+                "misconceptionModelId": "pooled-space",
+                "rationale": "Confunde la comparación de las dos proporciones con una comparación basada en un espacio de resultados común y concluye que el juego 2 es mejor aunque la afirmación sea falsa."
+              }
+            },
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_PROBABILITY",
+              "value": "OPTION_1"
+            },
+            "answerCheck": {
+              "kind": "NOT_COMPUTABLE",
+              "reason": "No arithmetic expression was declared for this answer."
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null,
+          "rationale": "Cada juego tiene como espacio de resultados todas las fichas de su propia bolsa y como resultados favorables las fichas rojas. Las posibilidades son 5/12 y 7/20. Al comparar mediante productos cruzados, 5 × 20 = 100 y 7 × 12 = 84, por lo que 5/12 es mayor que 7/20. Así, el juego 1 ofrece la mayor posibilidad y la afirmación sobre el juego 2 es falsa.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.prob.probability"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.prob.probability",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Probabilidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.probability.compare-chances-to-decide",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "ICFES",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "ICFES.SABER11_MATEMATICAS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.saber11.math",
+              "version": "V2.1 Saber 11 2026 · 50 posiciones",
+              "componentKey": "math",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "icfes-marco-matematicas-saber11",
+                  "icfes-guia-saber11-2026",
+                  "icfes-resolucion-268-2020"
+                ],
+                "recordedIn": "SABER11_MATH_V2.key / version.label / sections[math]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "ef378592e7bb493245f24edc006fea2ea82103097ae28c47198c875eaee29b0e",
+            "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "5b8d77ff52b74997cfb95a1572d8e90ea30ec124018dcb97efe6e20efccae0cd",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "18.probability-compare.icfes#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:07:32.672Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|19.data-judge-claim.icfes#a1",
+        "unitKey": "19.data-judge-claim.icfes#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "fb4b7c2b24957a959fce917b717e42f9b09e0039cd6dc4b1dc2a503b5b351f34",
+        "primaryConceptStableId": "math.stat.data-representation",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": "stim|19.data-judge-claim.icfes#a1",
+        "content": {
+          "stem": "¿Cuál opción califica correctamente la afirmación de la estudiante?",
+          "context": {
+            "kind": "PERSONAL",
+            "description": "Una encuesta escolar sobre la actividad que cada estudiante prefiere para una jornada cultural."
+          },
+          "declaredModel": {
+            "construct": "CLAIM_EVALUATION_AGAINST_A_DATA_DISPLAY",
+            "parameters": {
+              "categories": 5
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "Está respaldada por los datos."
+              },
+              {
+                "id": "B",
+                "text": "Está contradicha por los datos."
+              },
+              {
+                "id": "C",
+                "text": "No se puede decidir con los datos."
+              },
+              {
+                "id": "D",
+                "text": "La afirmación no tiene relación con los datos."
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "scale-ignored",
+                "rationale": "Interpreta de manera incorrecta la altura relativa de las barras o ignora los valores numéricos de la tabla, concluyendo que teatro no supera a música."
+              },
+              "C": {
+                "misconceptionModelId": "association-as-cause",
+                "rationale": "Considera que una comparación entre categorías no puede evaluarse a partir de una representación de datos y la trata como si exigiera información adicional."
+              },
+              "D": {
+                "misconceptionModelId": "plurality-as-majority",
+                "rationale": "Confunde una afirmación comparativa entre dos categorías con una afirmación sobre la mayoría del grupo y descarta indebidamente la comparación que sí muestran los datos."
+              }
+            },
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "CLAIM_VERDICT",
+              "value": "SUPPORTED"
+            },
+            "answerCheck": {
+              "kind": "NOT_COMPUTABLE",
+              "reason": "No arithmetic expression was declared for this answer."
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null,
+          "rationale": "La representación muestra que teatro fue escogido por 15 estudiantes y música por 9. La comparación solicitada se puede realizar directamente con esos valores, y 15 es mayor que 9; por eso la afirmación está respaldada. La opción B resulta de ignorar o leer mal la escala o los valores. La opción C trata una comparación observable como si requiriera información externa. La opción D confunde una comparación entre dos actividades con una afirmación sobre la mayoría del curso.",
+          "usesStimulusValues": [
+            15,
+            9
+          ],
+          "proposedSupportingConceptStableIds": [
+            "math.stat.data-representation"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.stat.data-representation",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Representación e interpretación de datos"
+          },
+          "taskFamily": {
+            "id": "tf.math.data.judge-claim-against-display",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "ICFES",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "ICFES.SABER11_MATEMATICAS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.saber11.math",
+              "version": "V2.1 Saber 11 2026 · 50 posiciones",
+              "componentKey": "math",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "icfes-marco-matematicas-saber11",
+                  "icfes-guia-saber11-2026",
+                  "icfes-resolucion-268-2020"
+                ],
+                "recordedIn": "SABER11_MATH_V2.key / version.label / sections[math]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "fb4b7c2b24957a959fce917b717e42f9b09e0039cd6dc4b1dc2a503b5b351f34",
+            "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "8bfe08a21e8c61924b4c2ebfbc68a5c8528cf0484f2777628f542690f37357b3",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "19.data-judge-claim.icfes#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:07:44.534Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|20.data-relative-change.cambridge-p1#a1",
+        "unitKey": "20.data-relative-change.cambridge-p1#a1",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "236d61357d1295262f75ce1c3227ed9a6ace37ced818bfa90bd898f081a69d01",
+        "primaryConceptStableId": "math.stat.data-representation",
+        "language": "en",
+        "responseFormat": "SHORT_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 4,
+        "instruction": null,
+        "stimulusKey": "stim|20.data-relative-change.cambridge-p1#a1",
+        "content": {
+          "stem": "Give your answers to part (b) correct to 1 decimal place.",
+          "context": {
+            "kind": "SCIENTIFIC",
+            "description": "Measurements of microorganism counts in water samples collected from several sites."
+          },
+          "declaredModel": {
+            "construct": "RELATIVE_CHANGE_OR_SHARE_FROM_TABULATED_VALUES",
+            "parameters": {
+              "vi": 12500,
+              "vj": 18750
+            }
+          },
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Write down the microorganism counts for sites A and C.",
+                "commandTerm": "write down",
+                "marks": 1,
+                "markScheme": [
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Identifies 12500 for site A and 18750 for site C."
+                  }
+                ],
+                "finalAnswer": "12500 microorganisms/mL and 18750 microorganisms/mL, respectively.",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "The response requires locating and reporting two table entries together."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Calculate the percentage increase in the microorganism count from site A to site C.",
+                "commandTerm": "calculate",
+                "marks": 3,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Uses the relative-change calculation (18750 - 12500) / 12500 × 100."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Substitutes the two correct table values into the calculation."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Gives the percentage increase as 50.0% to 1 decimal place."
+                  }
+                ],
+                "finalAnswer": "50.0%",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "50.0",
+                  "equivalentFormsAllowed": true,
+                  "decimalPlaces": 1
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "RELATIVE_CHANGE_PERCENT"
+                },
+                "answerCheck": {
+                  "kind": "ARITHMETIC_EXPRESSION",
+                  "expression": "(18750-12500)/12500*100"
+                }
+              }
+            ],
+            "totalMarks": 4,
+            "workingOutline": [
+              "Read the values for sites A and C from the table: 12500 and 18750 microorganisms/mL.",
+              "Find the absolute increase: 18750 - 12500 = 6250.",
+              "Divide the increase by the original site A value and multiply by 100: 6250 / 12500 × 100 = 50.0%.",
+              "State the result as a percentage increase to 1 decimal place."
+            ]
+          },
+          "credit": null,
+          "rationale": "The learner first interprets the tabulated representation by locating the two required measurements, then computes a relative change that is not directly displayed. The values are multi-digit, lie within the required ranges, are unequal, and produce a unique rounded result among the table pairs. The two parts use suitable allowed command terms, with the lead term used for the interpretation step.",
+          "usesStimulusValues": [
+            12500,
+            14280,
+            18750,
+            16100,
+            20900
+          ],
+          "proposedSupportingConceptStableIds": [
+            "math.stat.data-representation"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.stat.data-representation",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Representación e interpretación de datos"
+          },
+          "taskFamily": {
+            "id": "tf.math.data.rate-of-change-from-realistic-dataset",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "CAMBRIDGE",
+            "version": "0.3.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "CAMBRIDGE.9709.P1",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "SYLLABUS_VERSION",
+              "targetIdentity": "9709",
+              "version": "2026-2027",
+              "componentKey": "p1",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "cie-9709-syllabus-2026-2027"
+                ],
+                "recordedIn": "AICE_SYLLABI[code 9709].code / versionKey / components[p1]"
+              }
+            }
+          },
+          "systemVersionBinding": {
+            "targetType": "SYLLABUS_VERSION",
+            "targetIdentity": "9709",
+            "version": "2026-2027",
+            "componentKey": null,
+            "provenance": {
+              "kind": "AUTHORITATIVE_SOURCE",
+              "sourceKeys": [
+                "cie-9709-syllabus-2026-2027"
+              ],
+              "recordedIn": "AICE_SYLLABI[code 9709].code / versionKey"
+            }
+          },
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "236d61357d1295262f75ce1c3227ed9a6ace37ced818bfa90bd898f081a69d01",
+            "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "7a9877424b87487ac7ed9a7591bd9229594ad21df686c00bac6619ed197c5f33",
+            "template": {
+              "id": "spec-constructed-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "20.data-relative-change.cambridge-p1#a1",
+            "attempt": 1,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:08:03.156Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|01.rate-comparison.paa#a2",
+        "unitKey": "01.rate-comparison.paa#a2",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "f58949d46019205c2fbd6c337e4ee61dcb589488f21c853e08356abb6fc146a5",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": null,
+        "content": {
+          "stem": "Una tienda ofrece dos promociones para una merienda. En la promoción 1 pagas 6 euros y recibes 15 unidades. En la promoción 2 pagas 8 euros y recibes 18 unidades. ¿Cuál opción presenta la decisión correcta sobre qué promoción ofrece más unidades por euro y la diferencia entre ambas?",
+          "context": {
+            "kind": "PERSONAL",
+            "description": "Una persona compara dos promociones de una tienda según la cantidad que recibe por cada euro pagado."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 6,
+              "q1": 15,
+              "p2": 8,
+              "q2": 18
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "Promoción 1: 2.5 unidades por euro; promoción 2: 2.25 unidades por euro; diferencia: 0.25 unidades por euro."
+              },
+              {
+                "id": "B",
+                "text": "Promoción 2: 2.5 unidades por euro; promoción 1: 2.25 unidades por euro; diferencia: 0.25 unidades por euro."
+              },
+              {
+                "id": "C",
+                "text": "Promoción 2: 0.4 unidades por euro; promoción 1: 0.444 unidades por euro; diferencia: 0.044 unidades por euro."
+              },
+              {
+                "id": "D",
+                "text": "Promoción 2: 9 unidades por euro; promoción 1: 10 unidades por euro; diferencia: 1 unidad por euro."
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "one-quantity",
+                "rationale": "Se escoge la promoción con mayor cantidad recibida y se asignan incorrectamente las tasas, sin comparar de forma consistente lo recibido por cada euro."
+              },
+              "C": {
+                "misconceptionModelId": "inverted-rate",
+                "rationale": "Se calculan razones invertidas, euros por unidad, y se presentan como si fueran unidades por euro."
+              },
+              "D": {
+                "misconceptionModelId": "difference",
+                "rationale": "Se comparan las diferencias directas entre las cantidades recibidas, 18 - 15, y entre los pagos, 8 - 6, en lugar de formar tasas unitarias."
+              }
+            },
+            "target": {
+              "kind": "NOT_MACHINE_CHECKABLE",
+              "reason": "La respuesta combina dos tasas unitarias, su diferencia y la promoción favorecida."
+            },
+            "answerCheck": {
+              "kind": "NOT_COMPUTABLE",
+              "reason": "No arithmetic expression was declared for this answer."
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null,
+          "rationale": "La comparación pertinente es la cantidad recibida por cada euro pagado. La promoción 1 ofrece 15 / 6 = 2.5 unidades por euro y la promoción 2 ofrece 18 / 8 = 2.25 unidades por euro. La diferencia es 2.5 - 2.25 = 0.25 unidades por euro, por lo que favorece a la promoción 1. Las demás alternativas representan elegir por una sola cantidad, invertir las razones o comparar diferencias directas.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.num.ratio-proportion"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.num.ratio-proportion",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Proporcionalidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.proportion.rate-comparison-model",
+            "version": "0.2.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "PAA",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "PAA.MATEMATICAS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.paa",
+              "version": "V2.1 PAA revisada (guía 2021)",
+              "componentKey": "matematicas",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "cb-paa-guia-2021",
+                  "cb-paa-preguntas-respuestas-2017",
+                  "cb-paa-practice-test-2018"
+                ],
+                "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "f58949d46019205c2fbd6c337e4ee61dcb589488f21c853e08356abb6fc146a5",
+            "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "4275e5cbe90de593095046dd540f95ac8bac98afb2a468aa2df915156cdab588",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "01.rate-comparison.paa#a2",
+            "attempt": 2,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:08:17.425Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|06.approach.school.standard#a2",
+        "unitKey": "06.approach.school.standard#a2",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "aeadb00606e82f63e33c94fd50723d59f797f500f88dede09010e5058d4d3b11",
+        "primaryConceptStableId": "math.num.ratio-proportion",
+        "language": "es",
+        "responseFormat": "SHORT_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 6,
+        "instruction": null,
+        "stimulusKey": null,
+        "content": {
+          "stem": "Un ayuntamiento ofrece dos abonos mensuales de transporte público. El abono 1 cuesta 24 euros y permite realizar 84 viajes. El abono 2 cuesta 35 euros y permite realizar 105 viajes. Se quiere comparar cuántos viajes se obtienen por cada euro pagado.",
+          "context": {
+            "kind": "SOCIETAL",
+            "description": "Comparación de dos abonos reales de transporte público mediante los viajes obtenidos por euro."
+          },
+          "declaredModel": {
+            "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+            "parameters": {
+              "p1": 24,
+              "q1": 84,
+              "p2": 35,
+              "q2": 105
+            }
+          },
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Calcula los viajes por euro de cada abono.",
+                "commandTerm": null,
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Divide los viajes de cada abono entre su precio correspondiente."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtiene 3.5 viajes por euro para el abono 1 y 3 viajes por euro para el abono 2."
+                  }
+                ],
+                "finalAnswer": "Abono 1: 84/24 = 3.5 viajes por euro; abono 2: 105/35 = 3 viajes por euro.",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "La respuesta contiene dos tasas unitarias que deben asociarse correctamente con los dos abonos."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Calcula la diferencia entre las dos tasas unitarias.",
+                "commandTerm": null,
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Resta una tasa unitaria de la otra."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtiene una diferencia de 0.5 viajes por euro."
+                  }
+                ],
+                "finalAnswer": "3.5 - 3 = 0.5 viajes por euro.",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "0.5",
+                  "equivalentFormsAllowed": true,
+                  "decimalPlaces": 1
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "UNIT_RATE_DIFFERENCE"
+                },
+                "answerCheck": {
+                  "kind": "ARITHMETIC_EXPRESSION",
+                  "expression": "3.5 - 3"
+                }
+              },
+              {
+                "label": "c",
+                "prompt": "Justifica qué abono ofrece más viajes por euro.",
+                "commandTerm": null,
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "REASONING",
+                    "marks": 2,
+                    "criterion": "Relaciona la mayor tasa unitaria, 3.5 frente a 3, con la elección del abono 1 y concluye que este ofrece más viajes por euro."
+                  }
+                ],
+                "finalAnswer": "El abono 1, porque su tasa es mayor: ofrece 3.5 viajes por euro frente a 3 viajes por euro del abono 2.",
+                "numericKey": null,
+                "target": {
+                  "kind": "VERDICT",
+                  "verdict": "OPTION_WITH_HIGHER_UNIT_RATE",
+                  "value": "OPTION_1"
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              }
+            ],
+            "totalMarks": 6,
+            "workingOutline": [
+              "Para cada abono, dividir el número de viajes entre el precio en euros.",
+              "Comparar 84/24 = 3.5 con 105/35 = 3.",
+              "Calcular la diferencia 3.5 - 3 = 0.5 viajes por euro.",
+              "Elegir el abono 1 porque tiene la tasa unitaria mayor y justificar la elección con ambas tasas."
+            ]
+          },
+          "credit": [
+            {
+              "code": "FULL_CREDIT",
+              "description": "Realiza correctamente las dos tasas unitarias, calcula la diferencia y justifica que el abono 1 es superior mediante la comparación de las tasas."
+            },
+            {
+              "code": "PARTIAL_CREDIT",
+              "description": "Muestra un procedimiento adecuado o identifica correctamente el abono superior, pero contiene un error de cálculo, omite una tasa o da una justificación incompleta."
+            },
+            {
+              "code": "NO_CREDIT",
+              "description": "No establece tasas unitarias pertinentes ni identifica correctamente el abono con mayor número de viajes por euro."
+            }
+          ],
+          "rationale": "La situación exige formular y comparar tasas unitarias antes de decidir qué abono ofrece más viajes por euro. Las cantidades elegidas producen tasas decimales terminantes, la opción con más viajes no es automáticamente la mejor y ambas cantidades son necesarias para la comparación.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.num.ratio-proportion"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.num.ratio-proportion",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Proporcionalidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.proportion.rate-comparison-model",
+            "version": "0.2.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "SCHOOL_STEM_PERFORMANCE",
+            "version": "0.1.0-design"
+          },
+          "componentProfile": null,
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "aeadb00606e82f63e33c94fd50723d59f797f500f88dede09010e5058d4d3b11",
+            "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "ca90d3c02e007b0cc05a64e2ec389fa9a0aee6360e696bb52f3eae6dcc8a5ac0",
+            "template": {
+              "id": "spec-constructed-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "06.approach.school.standard#a2",
+            "attempt": 2,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:08:52.901Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|13.quadratic-factorising.cambridge-p1#a2",
+        "unitKey": "13.quadratic-factorising.cambridge-p1#a2",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "673c8a4773fb6a9809ce76e328d11d0c2872f6f01ad58a03884013732058bf13",
+        "primaryConceptStableId": "math.alg.quadratics",
+        "language": "en",
+        "responseFormat": "SHORT_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 6,
+        "instruction": null,
+        "stimulusKey": null,
+        "content": {
+          "stem": "Consider the quadratic equation\n\n2x^2 + 2x - 12 = 0.\n\nUse algebraic working in each part.",
+          "context": {
+            "kind": "ABSTRACT",
+            "description": "An algebraic quadratic equation is given directly with no applied situation."
+          },
+          "declaredModel": {
+            "construct": "QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING",
+            "parameters": {
+              "a": 2,
+              "r1": -3,
+              "r2": 2
+            }
+          },
+          "selected": null,
+          "numeric": null,
+          "constructed": {
+            "parts": [
+              {
+                "label": "a",
+                "prompt": "Work out the factorised form of the equation.",
+                "commandTerm": "work out",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Rearranges or groups the terms correctly to obtain a factorised quadratic expression."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Gives the correct factorised equation, 2(x + 3)(x - 2) = 0."
+                  }
+                ],
+                "finalAnswer": "2(x + 3)(x - 2) = 0",
+                "numericKey": null,
+                "target": {
+                  "kind": "NOT_MACHINE_CHECKABLE",
+                  "reason": "A factorised algebraic expression must be assessed symbolically rather than as one numeric value."
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "b",
+                "prompt": "Work out the lesser root of the equation.",
+                "commandTerm": "work out",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Uses the factorised equation to set the appropriate factor equal to zero."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtains the lesser root x = -3."
+                  }
+                ],
+                "finalAnswer": "x = -3",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "-3",
+                  "equivalentFormsAllowed": true,
+                  "decimalPlaces": 0
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "LESSER_ROOT"
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              },
+              {
+                "label": "c",
+                "prompt": "Calculate the greater root of the equation.",
+                "commandTerm": "calculate",
+                "marks": 2,
+                "markScheme": [
+                  {
+                    "kind": "METHOD",
+                    "marks": 1,
+                    "criterion": "Uses the remaining factor in the factorised equation and sets it equal to zero."
+                  },
+                  {
+                    "kind": "ACCURACY",
+                    "marks": 1,
+                    "criterion": "Obtains the greater root x = 2."
+                  }
+                ],
+                "finalAnswer": "x = 2",
+                "numericKey": {
+                  "kind": "NUMERIC",
+                  "value": "2",
+                  "equivalentFormsAllowed": true,
+                  "decimalPlaces": 0
+                },
+                "target": {
+                  "kind": "QUANTITY",
+                  "quantity": "GREATER_ROOT"
+                },
+                "answerCheck": {
+                  "kind": "NOT_COMPUTABLE",
+                  "reason": "No arithmetic expression was declared for this answer."
+                }
+              }
+            ],
+            "totalMarks": 6,
+            "workingOutline": [
+              "Rewrite 2x^2 + 2x - 12 as 2(x^2 + x - 6).",
+              "Factorise x^2 + x - 6 as (x + 3)(x - 2), giving 2(x + 3)(x - 2) = 0.",
+              "Set x + 3 = 0 to obtain the lesser root x = -3.",
+              "Set x - 2 = 0 to obtain the greater root x = 2."
+            ]
+          },
+          "credit": null,
+          "rationale": "The item requires the learner to factorise a quadratic equation and then read both rational roots from the factors. The three parts preserve the solve sequence while separately eliciting the factorised equation, the lesser root and the greater root. The values a = 2, r1 = -3 and r2 = 2 produce integer coefficients and are not among the excluded parameter sets.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.alg.quadratics"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.alg.quadratics",
+            "canonicalSubject": "Mathematics",
+            "canonicalName": "Quadratic functions and inequalities"
+          },
+          "taskFamily": {
+            "id": "tf.math.quadratic.solve-by-factorising",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "CAMBRIDGE",
+            "version": "0.3.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "CAMBRIDGE.9709.P1",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "SYLLABUS_VERSION",
+              "targetIdentity": "9709",
+              "version": "2026-2027",
+              "componentKey": "p1",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "cie-9709-syllabus-2026-2027"
+                ],
+                "recordedIn": "AICE_SYLLABI[code 9709].code / versionKey / components[p1]"
+              }
+            }
+          },
+          "systemVersionBinding": {
+            "targetType": "SYLLABUS_VERSION",
+            "targetIdentity": "9709",
+            "version": "2026-2027",
+            "componentKey": null,
+            "provenance": {
+              "kind": "AUTHORITATIVE_SOURCE",
+              "sourceKeys": [
+                "cie-9709-syllabus-2026-2027"
+              ],
+              "recordedIn": "AICE_SYLLABI[code 9709].code / versionKey"
+            }
+          },
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "673c8a4773fb6a9809ce76e328d11d0c2872f6f01ad58a03884013732058bf13",
+            "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "c273dfc7eb684e9ea8974eb31112be392790c21f849940a46b628a3efbed6c7d",
+            "template": {
+              "id": "spec-constructed-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "13.quadratic-factorising.cambridge-p1#a2",
+            "attempt": 2,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:09:09.199Z"
+          }
+        }
+      },
+      {
+        "v": 1,
+        "candidateKey": "cand|18.probability-compare.icfes#a2",
+        "unitKey": "18.probability-compare.icfes#a2",
+        "batchKey": "qb-r2e-pre-registered",
+        "specificationId": "ef378592e7bb493245f24edc006fea2ea82103097ae28c47198c875eaee29b0e",
+        "primaryConceptStableId": "math.prob.probability",
+        "language": "es",
+        "responseFormat": "SELECTED_RESPONSE",
+        "difficultyBand": "STANDARD",
+        "marks": 1,
+        "instruction": "Selecciona la única opción correcta.",
+        "stimulusKey": null,
+        "content": {
+          "stem": "En una feria puedes participar en uno de dos juegos, pero solo puedes elegir uno. En el juego 1 se extrae al azar una ficha de una bolsa con 30 fichas; 9 fichas permiten ganar un premio. En el juego 2 se extrae al azar una ficha de otra bolsa con 50 fichas; 14 fichas permiten ganar el mismo premio. ¿Cuál juego ofrece una mayor probabilidad de ganar?",
+          "context": {
+            "kind": "PERSONAL",
+            "description": "Una persona debe elegir entre dos juegos de feria con bolsas que contienen distintas cantidades de fichas ganadoras y no ganadoras."
+          },
+          "declaredModel": {
+            "construct": "COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES",
+            "parameters": {
+              "n1": 30,
+              "k1": 9,
+              "n2": 50,
+              "k2": 14
+            }
+          },
+          "selected": {
+            "options": [
+              {
+                "id": "A",
+                "text": "El juego 1"
+              },
+              {
+                "id": "B",
+                "text": "El juego 2"
+              },
+              {
+                "id": "C",
+                "text": "Los dos juegos ofrecen la misma probabilidad"
+              },
+              {
+                "id": "D",
+                "text": "Ninguno de los dos juegos ofrece una probabilidad mayor"
+              }
+            ],
+            "answerKey": "A",
+            "distractors": {
+              "B": {
+                "misconceptionModelId": "count-comparison",
+                "rationale": "Compara solamente la cantidad de fichas ganadoras y no considera la cantidad total de fichas de cada bolsa."
+              },
+              "C": {
+                "misconceptionModelId": "pooled-space",
+                "rationale": "Trata las dos bolsas como si formaran un único espacio de resultados o supone que las diferencias entre numeradores y denominadores se compensan."
+              },
+              "D": {
+                "misconceptionModelId": "total-comparison",
+                "rationale": "Considera solamente que las cantidades totales son distintas y concluye erróneamente que eso impide que una opción tenga mayor probabilidad."
+              }
+            },
+            "target": {
+              "kind": "VERDICT",
+              "verdict": "OPTION_WITH_HIGHER_PROBABILITY",
+              "value": "OPTION_1"
+            },
+            "answerCheck": {
+              "kind": "NOT_COMPUTABLE",
+              "reason": "No arithmetic expression was declared for this answer."
+            }
+          },
+          "numeric": null,
+          "constructed": null,
+          "credit": null,
+          "rationale": "Para cada juego, el espacio de resultados está formado por todas las fichas de su bolsa y el evento favorable por las fichas que permiten ganar. Así, las probabilidades son 9/30 = 0.30 y 14/50 = 0.28. Al compararlas, 0.30 es mayor que 0.28; por tanto, la opción correcta es el juego 1.",
+          "usesStimulusValues": null,
+          "proposedSupportingConceptStableIds": [
+            "math.prob.probability"
+          ]
+        },
+        "contentUseClass": "DEV_TEST_CONTENT",
+        "provenance": "STUDYUS_GENERATED",
+        "lineage": {
+          "kind": "MODEL",
+          "primaryConcept": {
+            "stableId": "math.prob.probability",
+            "canonicalSubject": "Matemáticas",
+            "canonicalName": "Probabilidad"
+          },
+          "taskFamily": {
+            "id": "tf.math.probability.compare-chances-to-decide",
+            "version": "0.1.0-draft"
+          },
+          "learningApproach": {
+            "recordedAs": "STANDARD_BY_ABSENCE"
+          },
+          "systemProfile": {
+            "id": "ICFES",
+            "version": "0.2.0-illustrative"
+          },
+          "componentProfile": {
+            "id": "ICFES.SABER11_MATEMATICAS",
+            "version": "0.4.0-illustrative",
+            "versionBinding": {
+              "targetType": "EXAM_VERSION",
+              "targetIdentity": "v2.saber11.math",
+              "version": "V2.1 Saber 11 2026 · 50 posiciones",
+              "componentKey": "math",
+              "provenance": {
+                "kind": "AUTHORITATIVE_SOURCE",
+                "sourceKeys": [
+                  "icfes-marco-matematicas-saber11",
+                  "icfes-guia-saber11-2026",
+                  "icfes-resolucion-268-2020"
+                ],
+                "recordedIn": "SABER11_MATH_V2.key / version.label / sections[math]"
+              }
+            }
+          },
+          "systemVersionBinding": null,
+          "disciplinePolicy": {
+            "id": "studyus.adaptation.mathematics",
+            "version": "0.2.0-provisional"
+          },
+          "adaptationSpecification": {
+            "id": "ef378592e7bb493245f24edc006fea2ea82103097ae28c47198c875eaee29b0e",
+            "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2"
+          },
+          "contentUseClass": "DEV_TEST_CONTENT",
+          "generationRequest": {
+            "promptHash": "e46e532202a6729f73af50fce222b84b7fe71efceffe668e6e06ff53fe58c1c0",
+            "template": {
+              "id": "spec-selected-response",
+              "version": "2"
+            },
+            "policy": {
+              "id": "qb-r2e-live-generation",
+              "version": "1"
+            },
+            "harness": {
+              "id": "studyus-specification-generation-harness",
+              "version": "2"
+            },
+            "responseSchema": {
+              "id": "studyus-specification-generation-response",
+              "version": "2"
+            },
+            "unitKey": "18.probability-compare.icfes#a2",
+            "attempt": 2,
+            "requestedBy": "qb-r2e-lane"
+          },
+          "generationRun": {
+            "runId": "qb-r2e-20261011190328",
+            "provider": "live:openai:chat-completions",
+            "model": "gpt-5.6-luna",
+            "generatedAt": "2026-10-11T19:09:37.639Z"
+          }
+        }
+      }
+    ],
+    "failures": [
+      {
+        "unitKey": "02.rate-comparison.ib-p1#a1",
+        "specificationId": "0c02b938fd987b43dcd03500b93fa59cc34a9043d169fc337180c72a7b3d1c8f",
+        "attempt": 1,
+        "promptHash": "8dd7d9275d18952dbb7d072fccfc445728d7c5259cbc3632812db0e6a052ac15",
+        "code": "RESPONSE_QUANTITY_TARGET_WITHOUT_A_NUMERIC_VALUE",
+        "detail": "a"
+      },
+      {
+        "unitKey": "16.quadratic-optimum.pisa#a1",
+        "specificationId": "568614ee8c5bc2935df2339fb9440fec4aee454479794942bd44695f7ff5069d",
+        "attempt": 1,
+        "promptHash": "78f0ea2d9d58c532dfc17ed6fc6e6f2414e8f7a870c8efd3ebd30468c48c37be",
+        "code": "RESPONSE_REPEATS_FIXED_INSTRUCTION",
+        "detail": ""
+      },
+      {
+        "unitKey": "02.rate-comparison.ib-p1#a2",
+        "specificationId": "0c02b938fd987b43dcd03500b93fa59cc34a9043d169fc337180c72a7b3d1c8f",
+        "attempt": 2,
+        "promptHash": "0fc56e73b8dcb5df5cdaa6ad5d1205d9adf202eb9aaf114f3b2ab3e7d132e8ec",
+        "code": "RESPONSE_QUANTITY_TARGET_WITHOUT_A_NUMERIC_VALUE",
+        "detail": "a"
+      },
+      {
+        "unitKey": "16.quadratic-optimum.pisa#a2",
+        "specificationId": "568614ee8c5bc2935df2339fb9440fec4aee454479794942bd44695f7ff5069d",
+        "attempt": 2,
+        "promptHash": "f5a4e0171a895f324886dfd34b66f243bce309eb663c07663bc1b65406d1bbe0",
+        "code": "RESPONSE_REPEATS_FIXED_INSTRUCTION",
+        "detail": ""
+      }
+    ]
+  }
+}

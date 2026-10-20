@@ -351,15 +351,17 @@ describe('Part 12-19 -- resolveCanonicalLaunch (session-start enforcement bounda
     expect(s.launchTarget).toContain('maxQuestions=10');
   });
 
-  it('EXECUTABLE TRANSFER launches READY as of CANON-V2-ARCH-CLEANUP -- into the distinct canonical_transfer mode, never a legacy Transfer path', () => {
+  it('EXECUTABLE TRANSFER launches READY -- into the APPLY transfer ladder page (overnight 2026-10-16), never the fixed 3-challenge quiz or a legacy Transfer path', () => {
     const s = resolveCanonicalLaunch({
       subjectId: 'subj1',
       conceptId: CONCEPT,
       decision: decision({ stage: 'TRANSFER', nextCanonicalAction: 'TRANSFER', activityContract: { ...decision().activityContract!, activityType: 'TRANSFER', itemCount: { min: 3, max: 3 } } }),
     });
     expect(s.launchStatus).toBe('READY');
-    expect(s.launchTarget).toContain('mode=canonical_transfer');
-    expect(s.launchTarget).toContain('maxQuestions=3');
+    expect(s.launchTarget).toBe(`/dashboard/apply/${CONCEPT}?subjectId=subj1`);
+    expect(s.launchTarget).not.toContain('canonical_transfer');
+    expect(s.launchTarget).not.toContain('distance');
+    expect(s.launchParams).toEqual({ subjectId: 'subj1', conceptId: CONCEPT, mode: 'transfer_ladder' });
   });
 
   it('EXECUTABLE LEARN_CHECK (post-cutover, no recognition yet) launches READY as of CANON-V2-ARCH-CLEANUP -- into the dedicated canonical_learn_check mode', () => {

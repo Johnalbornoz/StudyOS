@@ -16,7 +16,7 @@
 export { CANONICAL_POLICY, POLICY_VERSION } from './policy';
 export type { CanonicalPolicy, DifficultyRange } from './policy';
 
-export { qualifyEvidence } from './evidence-qualification';
+export { qualifyEvidence, meetsTransferLevel, transferLevelRank } from './evidence-qualification';
 export type { EvidenceQualificationVerdict, QualificationContext } from './evidence-qualification';
 
 export { buildActivityContract } from './activity-contract';
@@ -24,12 +24,25 @@ export { buildActivityContract } from './activity-contract';
 export {
   resolveLearnDifficulty,
   resolvePracticeDifficulty,
+  resolvePracticeBase,
+  practiceMixForItemCount,
+  practiceSessionBaseLevel,
+  practiceSessionEarnedRise,
+  plannedPlusOneItems,
+  computePracticeExposure,
+  PRACTICE_MAX_BASE,
+  resolveProveLevelMix,
+  isAdvancedPracticeEvidence,
+  servedLevelCounts,
+  PROVE_ADVANCED_LEVEL4_COUNT,
+  PROVE_BASE_LEVEL,
+  PROVE_ADVANCED_LEVEL,
   resolveProveDifficulty,
   resolveReinforceDifficulty,
   resolveRetentionDifficulty,
   resolveTransferDifficulty,
 } from './difficulty-policy';
-export type { DifficultyResolution } from './difficulty-policy';
+export type { DifficultyResolution, PracticeBaseResolution, ProveLevelMixResolution } from './difficulty-policy';
 
 export { evaluateCanonicalLearningState, rebuildConceptCanonicalState, STAGE_ORDER } from './engine';
 
@@ -39,6 +52,9 @@ export type {
   CanonicalPedagogicalDecision,
   DifficultyDecision,
   DifficultyReasonCode,
+  PracticeExposure,
+  PracticeMix,
+  ProveMix,
   EvidenceQualificationReasonCode,
   EvidenceQualificationResult,
   NextCanonicalAction,
@@ -55,7 +71,11 @@ export type {
   RollbackCase,
   RollbackDecision,
   SatisfactionBasis,
+  StageActivityType,
   TransferChallengeDepth,
+  TransferLadderChallenge,
+  TransferLevel,
+  ConsolidationLevel,
   TransferFailureDiagnostic,
   WaitingReason,
 } from './types';

@@ -1,0 +1,463 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r2.red-a",
+    "component": "redaccion",
+    "language": "es",
+    "stimulusKind": "SHORT_SOURCE_TEXT",
+    "stimulusBrief": "Párrafo ORIGINAL de 110 a 170 palabras sobre la organización de una feria de ciencias, escrito como borrador de estudiante con las oraciones NUMERADAS así: (1) ... (2) ... hasta (6) u (8). Debe contener a propósito: una oración con información redundante, un lugar donde falta un conector lógico, y un lugar donde convendría añadir un detalle.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.red.elision",
+        "conceptStableId": "write.concision-elision",
+        "difficulty": 3,
+        "focus": "qué parte de una oración numerada es redundante y debe eliminarse, o cuál es la versión más concisa sin perder información"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.red.cohesion",
+        "conceptStableId": "write.cohesion-connectors",
+        "difficulty": 3,
+        "focus": "qué conector o transición une mejor dos oraciones numeradas según su relación lógica"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.red.adicion",
+        "conceptStableId": "write.stylistic-addition",
+        "difficulty": 3,
+        "focus": "qué oración conviene añadir en un punto indicado para ampliar o precisar la idea"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Borrador sobre la feria de ciencias",
+      "text": "(1) Nuestra escuela realizará una feria de ciencias el viernes 18 de septiembre en el patio cubierto. (2) El comité estudiantil eligió ese espacio porque tiene enchufes, mesas móviles y acceso para visitantes. (3) Durante el recreo del jueves, los integrantes acomodarán las mesas por áreas temáticas. (4) Los voluntarios pegarán etiquetas con el nombre de cada proyecto y de su equipo. (5) Además, enviaremos invitaciones digitales a las familias y publicaremos el horario en el sitio escolar. (6) La feria empezará a las nueve de la mañana y comenzará a las 9:00 a. m. (7) Al final, una comisión recogerá los materiales y anotará mejoras para la próxima edición.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué parte de la oración (6) debe eliminarse para expresar la idea de manera más concisa?",
+        "options": [
+          {
+            "text": "La expresión «y comenzará a las 9:00 a. m.»",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Esa expresión repite la misma hora indicada previamente con palabras diferentes."
+          },
+          {
+            "text": "La expresión «La feria empezará»",
+            "isKey": false,
+            "misconception": "ELIMINA_IDEA_PRINCIPAL",
+            "rationale": "Es tentadora porque acorta la oración, pero elimina la información central sobre el inicio de la feria."
+          },
+          {
+            "text": "La expresión «a las nueve de la mañana»",
+            "isKey": false,
+            "misconception": "ELIMINA_DATO_ESPECIFICO",
+            "rationale": "Quitar esta parte dejaría una hora, pero no elimina la repetición de manera tan directa como su equivalente final."
+          },
+          {
+            "text": "La expresión «La feria»",
+            "isKey": false,
+            "misconception": "ELIMINA_SUJETO_NECESARIO",
+            "rationale": "Podría parecer prescindible por ser conocido el tema, pero el sujeto permite identificar qué actividad empezará."
+          }
+        ],
+        "evidenceQuote": "La feria empezará a las nueve de la mañana y comenzará a las 9:00 a. m."
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué conector conviene colocar al inicio de la oración (4) para relacionarla con la oración (3)?",
+        "options": [
+          {
+            "text": "Luego,",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El conector ordena las acciones de preparación como una secuencia."
+          },
+          {
+            "text": "Sin embargo,",
+            "isKey": false,
+            "misconception": "CONFUNDE_SECUENCIA_CON_CONTRASTE",
+            "rationale": "Es atractivo porque introduce una nueva acción, pero entre las dos tareas no hay oposición."
+          },
+          {
+            "text": "Por eso,",
+            "isKey": false,
+            "misconception": "CONFUNDE_SECUENCIA_CON_CAUSA",
+            "rationale": "Puede sugerir que una acción produce la otra, pero el texto presenta tareas consecutivas de organización."
+          },
+          {
+            "text": "En cambio,",
+            "isKey": false,
+            "misconception": "INTRODUCE_CONTRASTE_INEXISTENTE",
+            "rationale": "Este conector requiere comparar ideas opuestas, relación que no aparece entre las dos oraciones."
+          }
+        ],
+        "evidenceQuote": "Durante el recreo del jueves, los integrantes acomodarán las mesas por áreas temáticas. Los voluntarios pegarán etiquetas"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Cuál oración conviene añadir después de la oración (5) para precisar la información destinada a las familias?",
+        "options": [
+          {
+            "text": "El horario señalará las demostraciones que requieren registro anticipado.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La oración amplía de manera útil el contenido del horario que se publicará para las familias."
+          },
+          {
+            "text": "Las familias recibirán invitaciones digitales por correo.",
+            "isKey": false,
+            "misconception": "REPETICION_DETALLE_EXPLICITO",
+            "rationale": "Retoma una acción ya anunciada en la oración (5), sin aportar una precisión nueva."
+          },
+          {
+            "text": "El patio cubierto tendrá enchufes y mesas móviles.",
+            "isKey": false,
+            "misconception": "REPETICION_DETALLE_PREVIO",
+            "rationale": "Repite características del lugar explicadas en la oración (2), en vez de ampliar la comunicación con las familias."
+          },
+          {
+            "text": "La comisión recogerá los materiales al terminar.",
+            "isKey": false,
+            "misconception": "ANTICIPA_IDEA_POSTERIOR",
+            "rationale": "La idea se relaciona con el cierre de la feria y ya aparece desarrollada en la oración (7)."
+          }
+        ],
+        "evidenceQuote": "Además, enviaremos invitaciones digitales a las familias y publicaremos el horario en el sitio escolar."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "65bab23d-3ec6-4d81-8dd6-c593c0d95b7a",
+    "generatedAt": "2026-10-14T01:31:16.484Z",
+    "unitId": "paa-pilot.r2.red-a"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "403e6cd4-5df3-4553-a5e3-c883120ec62b",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [
+              "D"
+            ],
+            "ambiguous": true,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "d6d9ff2f-3849-43bb-ac36-67ea0dcb42d9",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "B",
+            "otherDefensible": [
+              "C"
+            ],
+            "ambiguous": true,
+            "answerableFromStimulusAlone": false,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.red-elision.905ad5815c80",
+        "slot": "s1",
+        "objectiveCode": "paa.red.elision",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.elision / write.concision-elision"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.eb42cb450e33@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-cohesion.0dcc5126c173",
+        "slot": "s2",
+        "objectiveCode": "paa.red.cohesion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "KEY_SUPPORTED_BY_STIMULUS"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.cohesion / write.cohesion-connectors"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.eb42cb450e33@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": false,
+            "detail": "the cited support is not in the stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-adicion.3985625aed7b",
+        "slot": "s3",
+        "objectiveCode": "paa.red.adicion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "ANSWER_VALIDITY",
+          "SINGLE_DEFENSIBLE_ANSWER"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.adicion / write.stylistic-addition"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.redaccion.eb42cb450e33@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": false,
+            "detail": "A:other B:other"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": false,
+            "detail": "A:ambiguous | B:ambiguous needs-outside-knowledge"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

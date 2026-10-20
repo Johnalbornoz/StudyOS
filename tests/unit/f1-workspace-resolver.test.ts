@@ -31,9 +31,15 @@ describe('resolveAvailableWorkspaces', () => {
     expect(await resolveAvailableWorkspaces('u1')).toEqual(['PARENT', 'TEACHER']);
   });
 
-  it('Teacher + Institution Admin yields TEACHER + INSTITUTION', async () => {
-    dbQueryMock.mockResolvedValueOnce(rolesRow(['TEACHER', 'INSTITUTION_ADMIN']));
+  it('Teacher + Institution Admin (coordinating an ACTIVE institution) yields TEACHER + INSTITUTION', async () => {
+    dbQueryMock.mockResolvedValueOnce(rolesRow(['TEACHER', 'INSTITUTION_ADMIN'])).mockResolvedValueOnce({ rows: [{ '?': 1 }] });
     expect(await resolveAvailableWorkspaces('u1')).toEqual(['TEACHER', 'INSTITUTION']);
+  });
+
+  it('Track A: a removed coordinator (no APPROVED membership in an ACTIVE institution) keeps no INSTITUTION workspace', async () => {
+    dbQueryMock.mockResolvedValueOnce(rolesRow(['TEACHER', 'INSTITUTION_ADMIN'])).mockResolvedValueOnce({ rows: [] });
+    expect(await resolveAvailableWorkspaces('u1')).toEqual(['TEACHER']);
+    expect(String(dbQueryMock.mock.calls[1][0])).toMatch(/im\.status = 'APPROVED' AND i\.status = 'ACTIVE'/);
   });
 
   it('a user with zero active roles gets zero workspaces', async () => {

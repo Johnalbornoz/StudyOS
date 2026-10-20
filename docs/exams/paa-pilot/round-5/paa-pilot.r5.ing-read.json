@@ -1,0 +1,584 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r5.ing-read",
+    "component": "ingles",
+    "language": "en",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "An ORIGINAL English passage of 200 to 260 words (CEFR B1-B2) about a volunteer group that cleans a local beach. Clear main idea, concrete details, one implied attitude or purpose, and two words whose meaning depends on context.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.literal",
+        "difficulty": 2,
+        "focus": "a detail stated in the passage"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.interpretive",
+        "difficulty": 3,
+        "focus": "something the passage implies, or the writer's purpose"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.literal",
+        "difficulty": 3,
+        "focus": "the main idea of the passage"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.interpretive",
+        "difficulty": 3,
+        "focus": "the meaning of a word or phrase as it is used in the passage (quote it)"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Saturday at Willow Bay",
+      "text": "On the first Saturday of each month, the Willow Bay Volunteers meet at the small beach beside the river. The group began two years ago when local resident Mara Iles noticed plastic bottles collecting near the boat ramp after heavy rain. At first, six neighbours came with bags and gloves. Now, around thirty people usually attend, including families, students, and two shop owners.\n\nThe volunteers arrive at 9 a.m. and collect litter for about ninety minutes. They work in pairs because some rubbish is hidden among rocks or under wet leaves. Afterward, they sort what they have found into glass, metal, plastic, and general waste. The town recycling team collects the separate bags on Monday.\n\nCleaning the beach is not the group’s whole purpose. Before each event, Mara gives a short talk about avoiding single-use packaging and keeping rubbish out of drains. Children receive a simple map and mark places where they find the most litter. The group shares this information with the town council, which recently placed two new bins near the boat ramp.\n\nLast month, the volunteers found less plastic than usual but more small pieces of fishing line. Mara called this a mixed result: the beach looked cleaner, yet the line could harm birds. She thanked everyone for returning each month and said that steady effort was more useful than one large clean-up. At the end, the group has tea at a nearby café and plans the next visit.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "What do the volunteers do after they collect litter?",
+        "options": [
+          {
+            "text": "They separate the waste into different types.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The passage states that the volunteers sort the litter into glass, metal, plastic, and general waste."
+          },
+          {
+            "text": "They deliver the waste to the recycling team.",
+            "isKey": false,
+            "misconception": "CONFUSES_GROUP_RESPONSIBILITIES",
+            "rationale": "This is tempting because recycling is mentioned, but the town recycling team collects the bags on Monday."
+          },
+          {
+            "text": "They place new bins beside the boat ramp.",
+            "isKey": false,
+            "misconception": "CONFUSES_ACTIONS_BY_OTHERS",
+            "rationale": "New bins were placed by the town council, not by the volunteers after a clean-up."
+          },
+          {
+            "text": "They search the river for hidden rubbish.",
+            "isKey": false,
+            "misconception": "INVENTS_UNSTATED_ACTIVITY",
+            "rationale": "The volunteers search among rocks and leaves on the beach, not in the river."
+          }
+        ],
+        "evidenceQuote": "Afterward, they sort what they have found into glass, metal, plastic, and general waste."
+      },
+      {
+        "slot": "s2",
+        "stem": "What does the passage suggest about the volunteers' wider goal?",
+        "options": [
+          {
+            "text": "They want people to create less litter.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The talks about packaging and drains show that the group wants to prevent rubbish as well as remove it."
+          },
+          {
+            "text": "They want shops to sell more reusable bags.",
+            "isKey": false,
+            "misconception": "OVERGENERALIZES_FROM_TOPIC",
+            "rationale": "Reusable items might help, but the passage does not describe a goal about shop sales."
+          },
+          {
+            "text": "They want families to visit the café weekly.",
+            "isKey": false,
+            "misconception": "MISREADS_SOCIAL_DETAIL_AS_PURPOSE",
+            "rationale": "The café visit happens after the work and is not presented as the group’s wider goal."
+          },
+          {
+            "text": "They want the council to close the boat ramp.",
+            "isKey": false,
+            "misconception": "INVENTS_UNSTATED_POLICY",
+            "rationale": "The council adds bins near the boat ramp; there is no suggestion that it should be closed."
+          }
+        ],
+        "evidenceQuote": "Before each event, Mara gives a short talk about avoiding single-use packaging and keeping rubbish out of drains."
+      },
+      {
+        "slot": "s3",
+        "stem": "Which statement best expresses the main idea of the passage?",
+        "options": [
+          {
+            "text": "A volunteer group cleans a beach and encourages waste prevention.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The passage describes regular beach cleaning as well as education and information-sharing to reduce future litter."
+          },
+          {
+            "text": "A town council replaces bins after a beach inspection.",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_MINOR_DETAIL",
+            "rationale": "The new bins are one result of the group’s work, not the central focus of the passage."
+          },
+          {
+            "text": "A café organises social events for local residents.",
+            "isKey": false,
+            "misconception": "CONFUSES_ENDING_DETAIL_WITH_MAIN_IDEA",
+            "rationale": "The café is mentioned briefly at the end, while the passage mainly concerns the volunteer group."
+          },
+          {
+            "text": "A recycling team collects waste from several neighbourhoods.",
+            "isKey": false,
+            "misconception": "SELECTS_RELATED_BUT_SECONDARY_TOPIC",
+            "rationale": "The recycling team has a small role, but the passage focuses on the volunteers and their aims."
+          }
+        ],
+        "evidenceQuote": "Cleaning the beach is not the group’s whole purpose."
+      },
+      {
+        "slot": "s4",
+        "stem": "In the passage, what does “sort” mean in “they sort what they have found”?",
+        "options": [
+          {
+            "text": "To separate items into groups.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The volunteers put the collected rubbish into groups based on its material."
+          },
+          {
+            "text": "To carry items to another place.",
+            "isKey": false,
+            "misconception": "CONFUSES_SORT_WITH_TRANSPORT",
+            "rationale": "The passage describes separating rubbish, while collection by the recycling team happens later."
+          },
+          {
+            "text": "To repair items for future use.",
+            "isKey": false,
+            "misconception": "CONFUSES_SORT_WITH_REPAIR",
+            "rationale": "Nothing in the passage says that the volunteers fix or reuse the items they find."
+          },
+          {
+            "text": "To count items for a report.",
+            "isKey": false,
+            "misconception": "CONFUSES_SORT_WITH_COUNTING",
+            "rationale": "Children mark litter locations on a map, but sorting means grouping waste by type."
+          }
+        ],
+        "evidenceQuote": "Afterward, they sort what they have found into glass, metal, plastic, and general waste."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "5d70ddaa-1959-40ca-840e-fe76e502c31a",
+    "generatedAt": "2026-10-16T03:40:28.629Z",
+    "unitId": "paa-pilot.r5.ing-read"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "5ca9faf4-faf0-4ccf-a4bc-0d12df2c7284",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "7e53fc1a-e631-4402-b83e-f035dda20a3d",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.ing-lectura.f5bdb95b2b21",
+        "slot": "s1",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.literal"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.0699c9a9d4b9@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lectura.44d05cb799f4",
+        "slot": "s2",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.interpretive"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.0699c9a9d4b9@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lectura.da1a0f3c2052",
+        "slot": "s3",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.literal"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.0699c9a9d4b9@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lectura.fb0ef761ee8c",
+        "slot": "s4",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.interpretive"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.0699c9a9d4b9@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

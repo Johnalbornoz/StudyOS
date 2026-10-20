@@ -3,8 +3,9 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getSimulationAttempt, pauseSimulationAttempt } from '@/lib/simulation/attempt.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const authContext = await verifyAuth();
@@ -19,11 +20,16 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
   try {
     const paused = await pauseSimulationAttempt(id);
-    return NextResponse.json({ success: true, data: { attempt: paused } });
+    const { navigationState: _hidden, ...publicAttempt } = paused;
+    void _hidden;
+    return NextResponse.json({ success: true, data: { attempt: publicAttempt } });
   } catch (err) {
     if (err instanceof Error && err.message === 'PAUSE_NOT_ALLOWED') {
       return NextResponse.json({ error: 'PAUSE_NOT_ALLOWED' }, { status: 409 });
     }
-    throw err;
+    return NextResponse.json({ error: 'INVALID_STATUS' }, { status: 409 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/simulation/attempts/[id]/pause', handlePOST);

@@ -1,0 +1,38 @@
+{
+  "runId": "qf5-live-006",
+  "batchId": "AICE.9709.PURE:C1:001",
+  "phase": "C1",
+  "profileId": "AICE.9709.PURE",
+  "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.4.0",
+  "cumulativeSpendUsd": 4.500415,
+  "timestamp": "2026-10-12T13:24:50.546Z",
+  "candidateIds": [
+    "v2.aice.9709-a/p1/aice.9709.p1.quadratics#0/004#0",
+    "v2.aice.9709-a/p1/aice.9709.p1.quadratics#0/004#1",
+    "v2.aice.9709-a/p1/aice.9709.p1.series#0/004#0"
+  ],
+  "decisions": {
+    "v2.aice.9709-a/p1/aice.9709.p1.quadratics#0/004#1": "HUMAN_REVIEW",
+    "v2.aice.9709-a/p1/aice.9709.p1.series#0/004#0": "AUTO_REJECT"
+  },
+  "metrics": {
+    "rawGenerated": 3,
+    "structuralPass": 3,
+    "answerPass": 3,
+    "constructPass": 3,
+    "difficultyMatch": 0,
+    "autoApproved": 0,
+    "humanReview": 1,
+    "autoRejected": 1,
+    "specifications": 2,
+    "firstAttemptPass": 0,
+    "regenerated": 1,
+    "specificationIssues": 0,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 0.5,
+    "humanReviewRate": 0.5,
+    "rejectionRate": 0.5
+  },
+  "hash": "9b4ef771eaed9a088e379ec9cd75183c158ed9f23ceb8ef2a62d5be3b128dde2"
+}

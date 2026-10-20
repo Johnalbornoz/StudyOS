@@ -41,10 +41,12 @@ export async function runDiagnosis(params: {
   conceptId: string;
   subjectId?: string;
   scope?: DiagnosisScope;
+  /** G6: an exam-target diagnosis reads only evidence in that target's exam scope (absent = the Learning OS view). */
+  examTargetId?: string;
 }): Promise<StoredGapDiagnosis> {
   const scope = params.scope ?? {};
   const [evidence, activeMisconceptionSignatureIds, policy, canonicalContext] = await Promise.all([
-    fetchEvidenceForDiagnosis(params.studentId, params.conceptId),
+    fetchEvidenceForDiagnosis(params.studentId, params.conceptId, undefined, params.examTargetId ? { examTargetId: params.examTargetId } : undefined),
     getActiveMisconceptionSignatureIdsForConcept(params.studentId, params.conceptId),
     getActiveDiagnosticPolicy(),
     readCanonicalContextForExplanation(params.studentId, params.conceptId),

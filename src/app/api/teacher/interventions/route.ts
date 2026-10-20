@@ -8,6 +8,7 @@
  * this route performs no independent authorization logic.
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
@@ -17,6 +18,11 @@ import {
   TeacherInterventionInvalidTargetError,
   TeacherInterventionExamProfileMismatchError,
 } from '@/lib/teacher/intervention.service';
+import { checkConceptAssignmentScope, checkUnscopedTargetAssignment } from '@/lib/teacher/concept-assignment-scope';
+import { findTeacherExamPracticeOption, TeacherExamPracticeAccessDeniedError } from '@/lib/teacher/exam-practice-options.service';
+import { getUserInterfaceLanguage } from '@/lib/i18n/language';
+import { getTeacherL8Messages } from '@/lib/i18n/teacher-l8-messages';
+import { fillMessage } from '@/lib/i18n/roles-messages';
 import { logPilotEvent } from '@/lib/observability/pilot-events';
 
 // F13: this schema was never extended when F11-C4 added the EXAM
@@ -57,7 +63,7 @@ const AssignSchema = z.object({
   dueAt: z.string().datetime().optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
@@ -69,8 +75,51 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
   }
 
+  // L8 (final): a CONCEPT target must sit inside the subject the Teacher holds for THIS class -- owning the
+  // concept is not enough (a Mathematics teacher does not assign the learner's Reading concept). Ownership and
+  // the genuine-teacher chain are still decided by assignTeacherIntervention below.
+  if (validated.target.targetType === 'CONCEPT') {
+    const scope = await checkConceptAssignmentScope(actor.id, validated.classId, validated.studentId, validated.target.conceptId);
+    if (scope === 'NOT_TEACHER_OF_LEARNER_IN_CLASS') {
+      logPilotEvent('authorization_denied', { route: '/api/teacher/interventions', actorUserId: actor.id });
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+    if (scope !== 'IN_SCOPE') return NextResponse.json({ error: 'CONCEPT_NOT_IN_CLASS_SUBJECT' }, { status: 400 });
+  }
+
+  // L8 (fail-closed patch): every Teacher academic assignment must be provably scoped to the class subject.
+  // A SKILL or COMPETENCY target has no governed relation to a canonical subject, so it is refused for an
+  // otherwise authorized teacher / class / learner (400); an unauthorized actor still gets 403.
+  if (validated.target.targetType === 'SKILL' || validated.target.targetType === 'COMPETENCY') {
+    const decision = await checkUnscopedTargetAssignment(actor.id, validated.classId, validated.studentId);
+    if (decision === 'NOT_TEACHER_OF_LEARNER_IN_CLASS') {
+      logPilotEvent('authorization_denied', { route: '/api/teacher/interventions', actorUserId: actor.id });
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+    return NextResponse.json({ error: 'TARGET_NOT_SUBJECT_SCOPED' }, { status: 400 });
+  }
+
+  // L8-R1: an EXAM target must be one of the exam-practice options of THIS learner in THIS class (the learner's
+  // own preparation, within the class subject) -- never another learner's profile, another subject's objective
+  // or a whole-exam task of a multi-subject exam. The assignment itself, and its own authorization chain, are
+  // unchanged below; the title is derived here so the task is readable on the Teacher's and the Student's lists.
+  let title: string | undefined;
+  if (validated.target.targetType === 'EXAM') {
+    let option;
+    try {
+      option = await findTeacherExamPracticeOption(actor.id, validated.classId, validated.studentId, validated.target);
+    } catch (error) {
+      if (!(error instanceof TeacherExamPracticeAccessDeniedError)) throw error;
+      logPilotEvent('authorization_denied', { route: '/api/teacher/interventions', actorUserId: actor.id });
+      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+    }
+    if (!option) return NextResponse.json({ error: 'EXAM_TARGET_OUT_OF_SCOPE' }, { status: 400 });
+    const m = getTeacherL8Messages(await getUserInterfaceLanguage(actor.id).catch(() => 'es'));
+    title = `${option.examName} · ${fillMessage(m[`l8.exam.kind.${option.kind}`], { target: option.targetLabel })}`.slice(0, 200);
+  }
+
   try {
-    const intervention = await assignTeacherIntervention(actor.id, validated);
+    const intervention = await assignTeacherIntervention(actor.id, title ? { ...validated, title } : validated);
     logPilotEvent('assignment_created', { route: '/api/teacher/interventions', studentId: validated.studentId, interventionType: validated.interventionType });
     return NextResponse.json({ success: true, data: { intervention } });
   } catch (error) {
@@ -89,3 +138,6 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/teacher/interventions', handlePOST);

@@ -1,0 +1,2144 @@
+{
+  "kind": "QF52_GOVERNANCE",
+  "policyVersion": "HUMAN50_POLICY_V1",
+  "policyHash": "445c7793e7e79a648f2372e508a0c3192037b3bfe52df4fd77915cf0cdcc0e3b",
+  "note": "state = HUMAN_CERTIFIED only where a recorded approval of exactly this content exists and every automated condition also holds. Everything else that passes is AUTOMATED_CERTIFIED_PILOT: no person reviewed it.",
+  "cores": [
+    {
+      "objectType": "CONSTRUCT_CORE",
+      "objectId": "tf.math.quadratic.solve-rational-roots",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "272f90a78b1ef155fa11251f952becde93b3ea7e53b14f82b5de9e56bfdaf3f8",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": {
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "decidedAt": "2026-10-13T12:11:00Z"
+      },
+      "state": "HUMAN_CERTIFIED",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CONTENT_INTACT",
+          "passed": true,
+          "detail": "the stored contract matches its content hash"
+        },
+        {
+          "code": "CANONICAL_CONCEPT_EXISTS",
+          "passed": true,
+          "detail": "math.alg.quadratics: one primary concept, established as assessed by at least one registered component"
+        },
+        {
+          "code": "TARGET_UNDERSTANDING_EXPLICIT",
+          "passed": true,
+          "detail": "what is observed, and on what"
+        },
+        {
+          "code": "REASONING_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "actions: SOLVE"
+        },
+        {
+          "code": "MINIMUM_SUCCESSFUL_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "3 steps"
+        },
+        {
+          "code": "SOLUTION_INVARIANTS_EXPLICIT",
+          "passed": true,
+          "detail": "relationships, constraints and solution rules"
+        },
+        {
+          "code": "MISCONCEPTION_MODELS_EXPLICIT",
+          "passed": true,
+          "detail": "3 models"
+        },
+        {
+          "code": "SHORTCUT_CONSTRAINTS_EXPLICIT",
+          "passed": true,
+          "detail": "2 constraints"
+        },
+        {
+          "code": "NO_OPEN_BYPASS",
+          "passed": true,
+          "detail": "every bypass is closed by a rule or an excluded format"
+        },
+        {
+          "code": "REPRESENTATION_REQUIREMENTS_EXPLICIT",
+          "passed": true,
+          "detail": "formats NUMERIC_ENTRY, MATH_EXPRESSION, SHORT_RESPONSE; stimulus NONE"
+        },
+        {
+          "code": "DIFFICULTY_MECHANISM_EXPLICIT",
+          "passed": true,
+          "detail": "levers leading-coefficient, root-signs, rearrangement; hardest band: MULTI_STAGE_DEPENDENCY"
+        },
+        {
+          "code": "PROVENANCE_EXPLICIT",
+          "passed": true,
+          "detail": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; the core declares no copied protected expression."
+        },
+        {
+          "code": "NO_CONSTRUCT_CONTRADICTION",
+          "passed": true,
+          "detail": "no required method that an answer-only response cannot show; no format both allowed and excluded"
+        }
+      ]
+    },
+    {
+      "objectType": "CONSTRUCT_CORE",
+      "objectId": "tf.math.proportion.missing-value",
+      "objectVersion": "1.0.0-rc.2",
+      "contentHash": "12c5621fc69540728789251e1a8c02aa9ac8b24429efde6d42f387a29a2d307b",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": {
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "decidedAt": "2026-10-13T12:11:00Z"
+      },
+      "state": "HUMAN_CERTIFIED",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CONTENT_INTACT",
+          "passed": true,
+          "detail": "the stored contract matches its content hash"
+        },
+        {
+          "code": "CANONICAL_CONCEPT_EXISTS",
+          "passed": true,
+          "detail": "math.num.ratio-proportion: one primary concept, established as assessed by at least one registered component"
+        },
+        {
+          "code": "TARGET_UNDERSTANDING_EXPLICIT",
+          "passed": true,
+          "detail": "what is observed, and on what"
+        },
+        {
+          "code": "REASONING_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "actions: SOLVE"
+        },
+        {
+          "code": "MINIMUM_SUCCESSFUL_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "3 steps"
+        },
+        {
+          "code": "SOLUTION_INVARIANTS_EXPLICIT",
+          "passed": true,
+          "detail": "relationships, constraints and solution rules"
+        },
+        {
+          "code": "MISCONCEPTION_MODELS_EXPLICIT",
+          "passed": true,
+          "detail": "3 models"
+        },
+        {
+          "code": "SHORTCUT_CONSTRAINTS_EXPLICIT",
+          "passed": true,
+          "detail": "2 constraints"
+        },
+        {
+          "code": "NO_OPEN_BYPASS",
+          "passed": true,
+          "detail": "every bypass is closed by a rule or an excluded format"
+        },
+        {
+          "code": "REPRESENTATION_REQUIREMENTS_EXPLICIT",
+          "passed": true,
+          "detail": "formats SELECTED_RESPONSE, NUMERIC_ENTRY, SHORT_RESPONSE; stimulus NONE"
+        },
+        {
+          "code": "DIFFICULTY_MECHANISM_EXPLICIT",
+          "passed": true,
+          "detail": "levers scale-factor, unit-conversion; hardest band: MULTI_STAGE_DEPENDENCY"
+        },
+        {
+          "code": "PROVENANCE_EXPLICIT",
+          "passed": true,
+          "detail": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; the core declares no copied protected expression."
+        },
+        {
+          "code": "NO_CONSTRUCT_CONTRADICTION",
+          "passed": true,
+          "detail": "no required method that an answer-only response cannot show; no format both allowed and excluded"
+        }
+      ]
+    },
+    {
+      "objectType": "CONSTRUCT_CORE",
+      "objectId": "tf.math.linear.line-through-two-points",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "57fb88f05a10e50a6f7ee6350183bab17b38f0fa543a62774c04b7515fb221cd",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CONTENT_INTACT",
+          "passed": true,
+          "detail": "the stored contract matches its content hash"
+        },
+        {
+          "code": "CANONICAL_CONCEPT_EXISTS",
+          "passed": true,
+          "detail": "math.fun.linear-functions-lines: one primary concept, established as assessed by at least one registered component"
+        },
+        {
+          "code": "TARGET_UNDERSTANDING_EXPLICIT",
+          "passed": true,
+          "detail": "what is observed, and on what"
+        },
+        {
+          "code": "REASONING_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "actions: COMPUTE, REPRESENT"
+        },
+        {
+          "code": "MINIMUM_SUCCESSFUL_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "2 steps"
+        },
+        {
+          "code": "SOLUTION_INVARIANTS_EXPLICIT",
+          "passed": true,
+          "detail": "relationships, constraints and solution rules"
+        },
+        {
+          "code": "MISCONCEPTION_MODELS_EXPLICIT",
+          "passed": true,
+          "detail": "3 models"
+        },
+        {
+          "code": "SHORTCUT_CONSTRAINTS_EXPLICIT",
+          "passed": true,
+          "detail": "2 constraints"
+        },
+        {
+          "code": "NO_OPEN_BYPASS",
+          "passed": true,
+          "detail": "every bypass is closed by a rule or an excluded format"
+        },
+        {
+          "code": "REPRESENTATION_REQUIREMENTS_EXPLICIT",
+          "passed": true,
+          "detail": "formats SELECTED_RESPONSE, NUMERIC_ENTRY, MATH_EXPRESSION, SHORT_RESPONSE; stimulus NONE"
+        },
+        {
+          "code": "DIFFICULTY_MECHANISM_EXPLICIT",
+          "passed": true,
+          "detail": "levers coordinate-signs, slope-form, asked-quantity; hardest band: MISCONCEPTION_RESISTANCE"
+        },
+        {
+          "code": "PROVENANCE_EXPLICIT",
+          "passed": true,
+          "detail": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; the core declares no copied protected expression."
+        },
+        {
+          "code": "NO_CONSTRUCT_CONTRADICTION",
+          "passed": true,
+          "detail": "no required method that an answer-only response cannot show; no format both allowed and excluded"
+        }
+      ]
+    },
+    {
+      "objectType": "CONSTRUCT_CORE",
+      "objectId": "tf.math.probability.single-event-equally-likely",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "d37842b3766e21c35114a4cd10612bbafba111362f38f68b0e0d44b1dba75a58",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CONTENT_INTACT",
+          "passed": true,
+          "detail": "the stored contract matches its content hash"
+        },
+        {
+          "code": "CANONICAL_CONCEPT_EXISTS",
+          "passed": true,
+          "detail": "math.prob.probability: one primary concept, established as assessed by at least one registered component"
+        },
+        {
+          "code": "TARGET_UNDERSTANDING_EXPLICIT",
+          "passed": true,
+          "detail": "what is observed, and on what"
+        },
+        {
+          "code": "REASONING_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "actions: COMPUTE"
+        },
+        {
+          "code": "MINIMUM_SUCCESSFUL_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "3 steps"
+        },
+        {
+          "code": "SOLUTION_INVARIANTS_EXPLICIT",
+          "passed": true,
+          "detail": "relationships, constraints and solution rules"
+        },
+        {
+          "code": "MISCONCEPTION_MODELS_EXPLICIT",
+          "passed": true,
+          "detail": "3 models"
+        },
+        {
+          "code": "SHORTCUT_CONSTRAINTS_EXPLICIT",
+          "passed": true,
+          "detail": "2 constraints"
+        },
+        {
+          "code": "NO_OPEN_BYPASS",
+          "passed": true,
+          "detail": "every bypass is closed by a rule or an excluded format"
+        },
+        {
+          "code": "REPRESENTATION_REQUIREMENTS_EXPLICIT",
+          "passed": true,
+          "detail": "formats SELECTED_RESPONSE, NUMERIC_ENTRY, SHORT_RESPONSE; stimulus NONE"
+        },
+        {
+          "code": "DIFFICULTY_MECHANISM_EXPLICIT",
+          "passed": true,
+          "detail": "levers event-form, answer-form; hardest band: MULTI_STAGE_DEPENDENCY"
+        },
+        {
+          "code": "PROVENANCE_EXPLICIT",
+          "passed": true,
+          "detail": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; the core declares no copied protected expression."
+        },
+        {
+          "code": "NO_CONSTRUCT_CONTRADICTION",
+          "passed": true,
+          "detail": "no required method that an answer-only response cannot show; no format both allowed and excluded"
+        }
+      ]
+    },
+    {
+      "objectType": "CONSTRUCT_CORE",
+      "objectId": "tf.math.geometry.right-triangle-missing-side",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "0ac7df44f16a27167c2947d0752e19a28a341befd74cae28356bf2e262308e84",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CONTENT_INTACT",
+          "passed": true,
+          "detail": "the stored contract matches its content hash"
+        },
+        {
+          "code": "CANONICAL_CONCEPT_EXISTS",
+          "passed": true,
+          "detail": "math.geo.pythagorean-theorem: one primary concept, established as assessed by at least one registered component"
+        },
+        {
+          "code": "TARGET_UNDERSTANDING_EXPLICIT",
+          "passed": true,
+          "detail": "what is observed, and on what"
+        },
+        {
+          "code": "REASONING_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "actions: COMPUTE"
+        },
+        {
+          "code": "MINIMUM_SUCCESSFUL_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "3 steps"
+        },
+        {
+          "code": "SOLUTION_INVARIANTS_EXPLICIT",
+          "passed": true,
+          "detail": "relationships, constraints and solution rules"
+        },
+        {
+          "code": "MISCONCEPTION_MODELS_EXPLICIT",
+          "passed": true,
+          "detail": "3 models"
+        },
+        {
+          "code": "SHORTCUT_CONSTRAINTS_EXPLICIT",
+          "passed": true,
+          "detail": "1 constraints"
+        },
+        {
+          "code": "NO_OPEN_BYPASS",
+          "passed": true,
+          "detail": "every bypass is closed by a rule or an excluded format"
+        },
+        {
+          "code": "REPRESENTATION_REQUIREMENTS_EXPLICIT",
+          "passed": true,
+          "detail": "formats NUMERIC_ENTRY, SHORT_RESPONSE; stimulus NONE"
+        },
+        {
+          "code": "DIFFICULTY_MECHANISM_EXPLICIT",
+          "passed": true,
+          "detail": "levers asked-side, side-size, situation; hardest band: TRANSFER"
+        },
+        {
+          "code": "PROVENANCE_EXPLICIT",
+          "passed": true,
+          "detail": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; the core declares no copied protected expression."
+        },
+        {
+          "code": "NO_CONSTRUCT_CONTRADICTION",
+          "passed": true,
+          "detail": "no required method that an answer-only response cannot show; no format both allowed and excluded"
+        }
+      ]
+    },
+    {
+      "objectType": "CONSTRUCT_CORE",
+      "objectId": "tf.math.statistics.mean-of-a-data-set",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "f4d39f6d8a1ed8f9414d8b7078ca20c8fffad74797f1a52b6b05222409ac6444",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CONTENT_INTACT",
+          "passed": true,
+          "detail": "the stored contract matches its content hash"
+        },
+        {
+          "code": "CANONICAL_CONCEPT_EXISTS",
+          "passed": true,
+          "detail": "math.stat.central-tendency: one primary concept, established as assessed by at least one registered component"
+        },
+        {
+          "code": "TARGET_UNDERSTANDING_EXPLICIT",
+          "passed": true,
+          "detail": "what is observed, and on what"
+        },
+        {
+          "code": "REASONING_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "actions: COMPUTE"
+        },
+        {
+          "code": "MINIMUM_SUCCESSFUL_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "2 steps"
+        },
+        {
+          "code": "SOLUTION_INVARIANTS_EXPLICIT",
+          "passed": true,
+          "detail": "relationships, constraints and solution rules"
+        },
+        {
+          "code": "MISCONCEPTION_MODELS_EXPLICIT",
+          "passed": true,
+          "detail": "3 models"
+        },
+        {
+          "code": "SHORTCUT_CONSTRAINTS_EXPLICIT",
+          "passed": true,
+          "detail": "1 constraints"
+        },
+        {
+          "code": "NO_OPEN_BYPASS",
+          "passed": true,
+          "detail": "every bypass is closed by a rule or an excluded format"
+        },
+        {
+          "code": "REPRESENTATION_REQUIREMENTS_EXPLICIT",
+          "passed": true,
+          "detail": "formats NUMERIC_ENTRY, SHORT_RESPONSE; stimulus NONE"
+        },
+        {
+          "code": "DIFFICULTY_MECHANISM_EXPLICIT",
+          "passed": true,
+          "detail": "levers asked-quantity, data-visibility; hardest band: NON_OBVIOUS_STRATEGY"
+        },
+        {
+          "code": "PROVENANCE_EXPLICIT",
+          "passed": true,
+          "detail": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; the core declares no copied protected expression."
+        },
+        {
+          "code": "NO_CONSTRUCT_CONTRADICTION",
+          "passed": true,
+          "detail": "no required method that an answer-only response cannot show; no format both allowed and excluded"
+        }
+      ]
+    },
+    {
+      "objectType": "CONSTRUCT_CORE",
+      "objectId": "tf.math.percent.part-increase-original",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "a5bc5a3fd263aa625bbf2bc969eeb1dc5249f89c10aaec6f53bef3e4022001a9",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CONTENT_INTACT",
+          "passed": true,
+          "detail": "the stored contract matches its content hash"
+        },
+        {
+          "code": "CANONICAL_CONCEPT_EXISTS",
+          "passed": true,
+          "detail": "math.num.percent: one primary concept, established as assessed by at least one registered component"
+        },
+        {
+          "code": "TARGET_UNDERSTANDING_EXPLICIT",
+          "passed": true,
+          "detail": "what is observed, and on what"
+        },
+        {
+          "code": "REASONING_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "actions: COMPUTE"
+        },
+        {
+          "code": "MINIMUM_SUCCESSFUL_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "2 steps"
+        },
+        {
+          "code": "SOLUTION_INVARIANTS_EXPLICIT",
+          "passed": true,
+          "detail": "relationships, constraints and solution rules"
+        },
+        {
+          "code": "MISCONCEPTION_MODELS_EXPLICIT",
+          "passed": true,
+          "detail": "3 models"
+        },
+        {
+          "code": "SHORTCUT_CONSTRAINTS_EXPLICIT",
+          "passed": true,
+          "detail": "1 constraints"
+        },
+        {
+          "code": "NO_OPEN_BYPASS",
+          "passed": true,
+          "detail": "every bypass is closed by a rule or an excluded format"
+        },
+        {
+          "code": "REPRESENTATION_REQUIREMENTS_EXPLICIT",
+          "passed": true,
+          "detail": "formats NUMERIC_ENTRY, SHORT_RESPONSE; stimulus NONE"
+        },
+        {
+          "code": "DIFFICULTY_MECHANISM_EXPLICIT",
+          "passed": true,
+          "detail": "levers direction; hardest band: NON_OBVIOUS_STRATEGY"
+        },
+        {
+          "code": "PROVENANCE_EXPLICIT",
+          "passed": true,
+          "detail": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; the core declares no copied protected expression."
+        },
+        {
+          "code": "NO_CONSTRUCT_CONTRADICTION",
+          "passed": true,
+          "detail": "no required method that an answer-only response cannot show; no format both allowed and excluded"
+        }
+      ]
+    },
+    {
+      "objectType": "CONSTRUCT_CORE",
+      "objectId": "tf.math.linear-equation.solve-one-unknown",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "9bb77e19a61f29ddfdf6e53da678038220e5f5c4e89076cbaf4eeb7293723c12",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CONTENT_INTACT",
+          "passed": true,
+          "detail": "the stored contract matches its content hash"
+        },
+        {
+          "code": "CANONICAL_CONCEPT_EXISTS",
+          "passed": true,
+          "detail": "math.alg.linear-equations: one primary concept, established as assessed by at least one registered component"
+        },
+        {
+          "code": "TARGET_UNDERSTANDING_EXPLICIT",
+          "passed": true,
+          "detail": "what is observed, and on what"
+        },
+        {
+          "code": "REASONING_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "actions: SOLVE"
+        },
+        {
+          "code": "MINIMUM_SUCCESSFUL_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "3 steps"
+        },
+        {
+          "code": "SOLUTION_INVARIANTS_EXPLICIT",
+          "passed": true,
+          "detail": "relationships, constraints and solution rules"
+        },
+        {
+          "code": "MISCONCEPTION_MODELS_EXPLICIT",
+          "passed": true,
+          "detail": "3 models"
+        },
+        {
+          "code": "SHORTCUT_CONSTRAINTS_EXPLICIT",
+          "passed": true,
+          "detail": "1 constraints"
+        },
+        {
+          "code": "NO_OPEN_BYPASS",
+          "passed": true,
+          "detail": "every bypass is closed by a rule or an excluded format"
+        },
+        {
+          "code": "REPRESENTATION_REQUIREMENTS_EXPLICIT",
+          "passed": true,
+          "detail": "formats NUMERIC_ENTRY, SHORT_RESPONSE; stimulus NONE"
+        },
+        {
+          "code": "DIFFICULTY_MECHANISM_EXPLICIT",
+          "passed": true,
+          "detail": "levers equation-form, solution-form; hardest band: MULTI_STAGE_DEPENDENCY"
+        },
+        {
+          "code": "PROVENANCE_EXPLICIT",
+          "passed": true,
+          "detail": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; the core declares no copied protected expression."
+        },
+        {
+          "code": "NO_CONSTRUCT_CONTRADICTION",
+          "passed": true,
+          "detail": "no required method that an answer-only response cannot show; no format both allowed and excluded"
+        }
+      ]
+    },
+    {
+      "objectType": "CONSTRUCT_CORE",
+      "objectId": "tf.math.linear-system.solve-two-unknowns",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "c68727d7798d4440ea2384aded4c029a25c7c28ee49559aa08a0dfa4bfb1bdf7",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CONTENT_INTACT",
+          "passed": true,
+          "detail": "the stored contract matches its content hash"
+        },
+        {
+          "code": "CANONICAL_CONCEPT_EXISTS",
+          "passed": true,
+          "detail": "math.alg.linear-systems: one primary concept, established as assessed by at least one registered component"
+        },
+        {
+          "code": "TARGET_UNDERSTANDING_EXPLICIT",
+          "passed": true,
+          "detail": "what is observed, and on what"
+        },
+        {
+          "code": "REASONING_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "actions: SOLVE"
+        },
+        {
+          "code": "MINIMUM_SUCCESSFUL_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "2 steps"
+        },
+        {
+          "code": "SOLUTION_INVARIANTS_EXPLICIT",
+          "passed": true,
+          "detail": "relationships, constraints and solution rules"
+        },
+        {
+          "code": "MISCONCEPTION_MODELS_EXPLICIT",
+          "passed": true,
+          "detail": "2 models"
+        },
+        {
+          "code": "SHORTCUT_CONSTRAINTS_EXPLICIT",
+          "passed": true,
+          "detail": "1 constraints"
+        },
+        {
+          "code": "NO_OPEN_BYPASS",
+          "passed": true,
+          "detail": "every bypass is closed by a rule or an excluded format"
+        },
+        {
+          "code": "REPRESENTATION_REQUIREMENTS_EXPLICIT",
+          "passed": true,
+          "detail": "formats NUMERIC_ENTRY, SHORT_RESPONSE; stimulus NONE"
+        },
+        {
+          "code": "DIFFICULTY_MECHANISM_EXPLICIT",
+          "passed": true,
+          "detail": "levers elimination; hardest band: MULTI_STAGE_DEPENDENCY"
+        },
+        {
+          "code": "PROVENANCE_EXPLICIT",
+          "passed": true,
+          "detail": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; the core declares no copied protected expression."
+        },
+        {
+          "code": "NO_CONSTRUCT_CONTRADICTION",
+          "passed": true,
+          "detail": "no required method that an answer-only response cannot show; no format both allowed and excluded"
+        }
+      ]
+    },
+    {
+      "objectType": "CONSTRUCT_CORE",
+      "objectId": "tf.math.geometry.rectangle-area-perimeter",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "193ba7c26e9989915550fc57b525b634a72e7be233f45bc7b451014a94104e3d",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CONTENT_INTACT",
+          "passed": true,
+          "detail": "the stored contract matches its content hash"
+        },
+        {
+          "code": "CANONICAL_CONCEPT_EXISTS",
+          "passed": true,
+          "detail": "math.geo.plane-figures-area-perimeter: one primary concept, established as assessed by at least one registered component"
+        },
+        {
+          "code": "TARGET_UNDERSTANDING_EXPLICIT",
+          "passed": true,
+          "detail": "what is observed, and on what"
+        },
+        {
+          "code": "REASONING_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "actions: COMPUTE"
+        },
+        {
+          "code": "MINIMUM_SUCCESSFUL_PATH_EXPLICIT",
+          "passed": true,
+          "detail": "3 steps"
+        },
+        {
+          "code": "SOLUTION_INVARIANTS_EXPLICIT",
+          "passed": true,
+          "detail": "relationships, constraints and solution rules"
+        },
+        {
+          "code": "MISCONCEPTION_MODELS_EXPLICIT",
+          "passed": true,
+          "detail": "3 models"
+        },
+        {
+          "code": "SHORTCUT_CONSTRAINTS_EXPLICIT",
+          "passed": true,
+          "detail": "1 constraints"
+        },
+        {
+          "code": "NO_OPEN_BYPASS",
+          "passed": true,
+          "detail": "every bypass is closed by a rule or an excluded format"
+        },
+        {
+          "code": "REPRESENTATION_REQUIREMENTS_EXPLICIT",
+          "passed": true,
+          "detail": "formats NUMERIC_ENTRY, SHORT_RESPONSE; stimulus NONE"
+        },
+        {
+          "code": "DIFFICULTY_MECHANISM_EXPLICIT",
+          "passed": true,
+          "detail": "levers given-measures; hardest band: MULTI_STAGE_DEPENDENCY"
+        },
+        {
+          "code": "PROVENANCE_EXPLICIT",
+          "passed": true,
+          "detail": "Rendered deterministically from a StudyUs-authored construct core by a StudyUs-authored renderer; the core declares no copied protected expression."
+        },
+        {
+          "code": "NO_CONSTRUCT_CONTRADICTION",
+          "passed": true,
+          "detail": "no required method that an answer-only response cannot show; no format both allowed and excluded"
+        }
+      ]
+    }
+  ],
+  "envelopes": [
+    {
+      "objectType": "RENDERER_ENVELOPE",
+      "objectId": "parametric.quadratic-solve@1.0.0",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": {
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "decidedAt": "2026-10-13T12:11:00Z"
+      },
+      "state": "HUMAN_CERTIFIED",
+      "failed": [],
+      "checks": [
+        {
+          "code": "ENVELOPE_IS_OF_THIS_CORE_AND_RENDERER",
+          "passed": true,
+          "detail": "parametric.quadratic-solve@1.0.0 for tf.math.quadratic.solve-rational-roots@1.0.0-rc.1"
+        },
+        {
+          "code": "DETERMINISTIC_STRATEGY",
+          "passed": true,
+          "detail": "PARAMETRIC_DETERMINISTIC"
+        },
+        {
+          "code": "EVERY_PARAMETER_BRANCH_BOUNDED",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 36 parameter sets; STANDARD: 72 parameter sets; CHALLENGE: 72 parameter sets"
+        },
+        {
+          "code": "RANGES_INSIDE_THE_CORE",
+          "passed": true,
+          "detail": "no range reaches outside the core"
+        },
+        {
+          "code": "KEYS_INDEPENDENTLY_VERIFIED",
+          "passed": true,
+          "detail": "180 keys recomputed by a second route; 0 do not hold"
+        },
+        {
+          "code": "EVERY_INSTANCE_IS_OF_ITS_BAND",
+          "passed": true,
+          "detail": "0 parameter sets miss a lever setting of their band"
+        },
+        {
+          "code": "NO_KEY_IS_A_MISCONCEPTION_ANSWER",
+          "passed": true,
+          "detail": "0 collisions"
+        },
+        {
+          "code": "ONE_WORDING_ONE_KEY",
+          "passed": true,
+          "detail": "0 wordings with two keys"
+        },
+        {
+          "code": "KEYS_ARE_POSITIVE",
+          "passed": true,
+          "detail": "0 non-positive keys"
+        },
+        {
+          "code": "SWEEP_CLEAN",
+          "passed": true,
+          "detail": "the whole envelope, exhaustively"
+        },
+        {
+          "code": "DIFFICULTY_MAPPING_DEFINED",
+          "passed": true,
+          "detail": "FOUNDATIONAL -> 2, STANDARD -> 3, CHALLENGE -> 4"
+        },
+        {
+          "code": "REPRESENTATION_SUPPORTED",
+          "passed": true,
+          "detail": "text only"
+        },
+        {
+          "code": "SEED_DETERMINISM",
+          "passed": true,
+          "detail": "the same seeds rendered twice give the same bytes"
+        },
+        {
+          "code": "ENOUGH_DISTINCT_INSTANCES",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 36; STANDARD: 72; CHALLENGE: 72"
+        }
+      ]
+    },
+    {
+      "objectType": "RENDERER_ENVELOPE",
+      "objectId": "parametric.proportion-missing-value@1.0.0",
+      "objectVersion": "1.0.0-rc.2",
+      "contentHash": "48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": {
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "decidedAt": "2026-10-13T12:11:00Z"
+      },
+      "state": "HUMAN_CERTIFIED",
+      "failed": [],
+      "checks": [
+        {
+          "code": "ENVELOPE_IS_OF_THIS_CORE_AND_RENDERER",
+          "passed": true,
+          "detail": "parametric.proportion-missing-value@1.0.0 for tf.math.proportion.missing-value@1.0.0-rc.2"
+        },
+        {
+          "code": "DETERMINISTIC_STRATEGY",
+          "passed": true,
+          "detail": "PARAMETRIC_DETERMINISTIC"
+        },
+        {
+          "code": "EVERY_PARAMETER_BRANCH_BOUNDED",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 6380 parameter sets; STANDARD: 4980 parameter sets; CHALLENGE: 13453 parameter sets"
+        },
+        {
+          "code": "RANGES_INSIDE_THE_CORE",
+          "passed": true,
+          "detail": "no range reaches outside the core"
+        },
+        {
+          "code": "KEYS_INDEPENDENTLY_VERIFIED",
+          "passed": true,
+          "detail": "24813 keys recomputed by a second route; 0 do not hold"
+        },
+        {
+          "code": "EVERY_INSTANCE_IS_OF_ITS_BAND",
+          "passed": true,
+          "detail": "0 parameter sets miss a lever setting of their band"
+        },
+        {
+          "code": "NO_KEY_IS_A_MISCONCEPTION_ANSWER",
+          "passed": true,
+          "detail": "0 collisions"
+        },
+        {
+          "code": "ONE_WORDING_ONE_KEY",
+          "passed": true,
+          "detail": "0 wordings with two keys"
+        },
+        {
+          "code": "KEYS_ARE_POSITIVE",
+          "passed": true,
+          "detail": "0 non-positive keys"
+        },
+        {
+          "code": "SWEEP_CLEAN",
+          "passed": true,
+          "detail": "the whole envelope, exhaustively"
+        },
+        {
+          "code": "DIFFICULTY_MAPPING_DEFINED",
+          "passed": true,
+          "detail": "FOUNDATIONAL -> 2, STANDARD -> 3, CHALLENGE -> 4"
+        },
+        {
+          "code": "REPRESENTATION_SUPPORTED",
+          "passed": true,
+          "detail": "text only"
+        },
+        {
+          "code": "SEED_DETERMINISM",
+          "passed": true,
+          "detail": "the same seeds rendered twice give the same bytes"
+        },
+        {
+          "code": "ENOUGH_DISTINCT_INSTANCES",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 110; STANDARD: 120; CHALLENGE: 397"
+        }
+      ]
+    },
+    {
+      "objectType": "RENDERER_ENVELOPE",
+      "objectId": "parametric.line-slope@1.0.0",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "445797d39d6bdad24ee1b952e3e0e30ce1f660306d60ec013472b06ff1d10442",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "ENVELOPE_IS_OF_THIS_CORE_AND_RENDERER",
+          "passed": true,
+          "detail": "parametric.line-slope@1.0.0 for tf.math.linear.line-through-two-points@1.0.0-rc.1"
+        },
+        {
+          "code": "DETERMINISTIC_STRATEGY",
+          "passed": true,
+          "detail": "PARAMETRIC_DETERMINISTIC"
+        },
+        {
+          "code": "EVERY_PARAMETER_BRANCH_BOUNDED",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 1443 parameter sets; STANDARD: 1177 parameter sets; CHALLENGE: 12123 parameter sets"
+        },
+        {
+          "code": "RANGES_INSIDE_THE_CORE",
+          "passed": true,
+          "detail": "no range reaches outside the core"
+        },
+        {
+          "code": "KEYS_INDEPENDENTLY_VERIFIED",
+          "passed": true,
+          "detail": "14743 keys recomputed by a second route; 0 do not hold"
+        },
+        {
+          "code": "EVERY_INSTANCE_IS_OF_ITS_BAND",
+          "passed": true,
+          "detail": "0 parameter sets miss a lever setting of their band"
+        },
+        {
+          "code": "NO_KEY_IS_A_MISCONCEPTION_ANSWER",
+          "passed": true,
+          "detail": "0 collisions"
+        },
+        {
+          "code": "ONE_WORDING_ONE_KEY",
+          "passed": true,
+          "detail": "0 wordings with two keys"
+        },
+        {
+          "code": "KEYS_ARE_POSITIVE",
+          "passed": true,
+          "detail": "0 non-positive keys"
+        },
+        {
+          "code": "SWEEP_CLEAN",
+          "passed": true,
+          "detail": "the whole envelope, exhaustively"
+        },
+        {
+          "code": "DIFFICULTY_MAPPING_DEFINED",
+          "passed": true,
+          "detail": "FOUNDATIONAL -> 2, STANDARD -> 3, CHALLENGE -> 4"
+        },
+        {
+          "code": "REPRESENTATION_SUPPORTED",
+          "passed": true,
+          "detail": "text only"
+        },
+        {
+          "code": "SEED_DETERMINISM",
+          "passed": true,
+          "detail": "the same seeds rendered twice give the same bytes"
+        },
+        {
+          "code": "ENOUGH_DISTINCT_INSTANCES",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 15; STANDARD: 15; CHALLENGE: 125"
+        }
+      ]
+    },
+    {
+      "objectType": "RENDERER_ENVELOPE",
+      "objectId": "parametric.single-draw-probability@1.0.0",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "dc33b197f0cd98ff34a967bb47c311eb316313c09029e99187296eaf972480ea",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "ENVELOPE_IS_OF_THIS_CORE_AND_RENDERER",
+          "passed": true,
+          "detail": "parametric.single-draw-probability@1.0.0 for tf.math.probability.single-event-equally-likely@1.0.0-rc.1"
+        },
+        {
+          "code": "DETERMINISTIC_STRATEGY",
+          "passed": true,
+          "detail": "PARAMETRIC_DETERMINISTIC"
+        },
+        {
+          "code": "EVERY_PARAMETER_BRANCH_BOUNDED",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 1338 parameter sets; STANDARD: 766 parameter sets; CHALLENGE: 766 parameter sets"
+        },
+        {
+          "code": "RANGES_INSIDE_THE_CORE",
+          "passed": true,
+          "detail": "no range reaches outside the core"
+        },
+        {
+          "code": "KEYS_INDEPENDENTLY_VERIFIED",
+          "passed": true,
+          "detail": "2870 keys recomputed by a second route; 0 do not hold"
+        },
+        {
+          "code": "EVERY_INSTANCE_IS_OF_ITS_BAND",
+          "passed": true,
+          "detail": "0 parameter sets miss a lever setting of their band"
+        },
+        {
+          "code": "NO_KEY_IS_A_MISCONCEPTION_ANSWER",
+          "passed": true,
+          "detail": "0 collisions"
+        },
+        {
+          "code": "ONE_WORDING_ONE_KEY",
+          "passed": true,
+          "detail": "0 wordings with two keys"
+        },
+        {
+          "code": "KEYS_ARE_POSITIVE",
+          "passed": true,
+          "detail": "0 non-positive keys"
+        },
+        {
+          "code": "SWEEP_CLEAN",
+          "passed": true,
+          "detail": "the whole envelope, exhaustively"
+        },
+        {
+          "code": "DIFFICULTY_MAPPING_DEFINED",
+          "passed": true,
+          "detail": "FOUNDATIONAL -> 2, STANDARD -> 3, CHALLENGE -> 4"
+        },
+        {
+          "code": "REPRESENTATION_SUPPORTED",
+          "passed": true,
+          "detail": "text only"
+        },
+        {
+          "code": "SEED_DETERMINISM",
+          "passed": true,
+          "detail": "the same seeds rendered twice give the same bytes"
+        },
+        {
+          "code": "ENOUGH_DISTINCT_INSTANCES",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 206; STANDARD: 122; CHALLENGE: 122"
+        }
+      ]
+    },
+    {
+      "objectType": "RENDERER_ENVELOPE",
+      "objectId": "parametric.right-triangle-side@1.0.0",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "b17f92f1392b79a2a9e5b4d9a2d196cfe6c15439b1ab2c204dc3e4d89cb1f037",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "ENVELOPE_IS_OF_THIS_CORE_AND_RENDERER",
+          "passed": true,
+          "detail": "parametric.right-triangle-side@1.0.0 for tf.math.geometry.right-triangle-missing-side@1.0.0-rc.1"
+        },
+        {
+          "code": "DETERMINISTIC_STRATEGY",
+          "passed": true,
+          "detail": "PARAMETRIC_DETERMINISTIC"
+        },
+        {
+          "code": "EVERY_PARAMETER_BRANCH_BOUNDED",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 11 parameter sets; STANDARD: 34 parameter sets; CHALLENGE: 80 parameter sets"
+        },
+        {
+          "code": "RANGES_INSIDE_THE_CORE",
+          "passed": true,
+          "detail": "no range reaches outside the core"
+        },
+        {
+          "code": "KEYS_INDEPENDENTLY_VERIFIED",
+          "passed": true,
+          "detail": "125 keys recomputed by a second route; 0 do not hold"
+        },
+        {
+          "code": "EVERY_INSTANCE_IS_OF_ITS_BAND",
+          "passed": true,
+          "detail": "0 parameter sets miss a lever setting of their band"
+        },
+        {
+          "code": "NO_KEY_IS_A_MISCONCEPTION_ANSWER",
+          "passed": true,
+          "detail": "0 collisions"
+        },
+        {
+          "code": "ONE_WORDING_ONE_KEY",
+          "passed": true,
+          "detail": "0 wordings with two keys"
+        },
+        {
+          "code": "KEYS_ARE_POSITIVE",
+          "passed": true,
+          "detail": "0 non-positive keys"
+        },
+        {
+          "code": "SWEEP_CLEAN",
+          "passed": true,
+          "detail": "the whole envelope, exhaustively"
+        },
+        {
+          "code": "DIFFICULTY_MAPPING_DEFINED",
+          "passed": true,
+          "detail": "FOUNDATIONAL -> 2, STANDARD -> 3, CHALLENGE -> 4"
+        },
+        {
+          "code": "REPRESENTATION_SUPPORTED",
+          "passed": true,
+          "detail": "text only"
+        },
+        {
+          "code": "SEED_DETERMINISM",
+          "passed": true,
+          "detail": "the same seeds rendered twice give the same bytes"
+        },
+        {
+          "code": "ENOUGH_DISTINCT_INSTANCES",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 11; STANDARD: 34; CHALLENGE: 80"
+        }
+      ]
+    },
+    {
+      "objectType": "RENDERER_ENVELOPE",
+      "objectId": "parametric.data-set-mean@1.0.0",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "17429679d656a2f3588844f93b6a92df50b8541e80a384b931eab91e8cf9679d",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "ENVELOPE_IS_OF_THIS_CORE_AND_RENDERER",
+          "passed": true,
+          "detail": "parametric.data-set-mean@1.0.0 for tf.math.statistics.mean-of-a-data-set@1.0.0-rc.1"
+        },
+        {
+          "code": "DETERMINISTIC_STRATEGY",
+          "passed": true,
+          "detail": "PARAMETRIC_DETERMINISTIC"
+        },
+        {
+          "code": "EVERY_PARAMETER_BRANCH_BOUNDED",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 209 parameter sets; STANDARD: 1535 parameter sets; CHALLENGE: 820 parameter sets"
+        },
+        {
+          "code": "RANGES_INSIDE_THE_CORE",
+          "passed": true,
+          "detail": "no range reaches outside the core"
+        },
+        {
+          "code": "KEYS_INDEPENDENTLY_VERIFIED",
+          "passed": true,
+          "detail": "2564 keys recomputed by a second route; 0 do not hold"
+        },
+        {
+          "code": "EVERY_INSTANCE_IS_OF_ITS_BAND",
+          "passed": true,
+          "detail": "0 parameter sets miss a lever setting of their band"
+        },
+        {
+          "code": "NO_KEY_IS_A_MISCONCEPTION_ANSWER",
+          "passed": true,
+          "detail": "0 collisions"
+        },
+        {
+          "code": "ONE_WORDING_ONE_KEY",
+          "passed": true,
+          "detail": "0 wordings with two keys"
+        },
+        {
+          "code": "KEYS_ARE_POSITIVE",
+          "passed": true,
+          "detail": "0 non-positive keys"
+        },
+        {
+          "code": "SWEEP_CLEAN",
+          "passed": true,
+          "detail": "the whole envelope, exhaustively"
+        },
+        {
+          "code": "DIFFICULTY_MAPPING_DEFINED",
+          "passed": true,
+          "detail": "FOUNDATIONAL -> 2, STANDARD -> 3, CHALLENGE -> 4"
+        },
+        {
+          "code": "REPRESENTATION_SUPPORTED",
+          "passed": true,
+          "detail": "text only"
+        },
+        {
+          "code": "SEED_DETERMINISM",
+          "passed": true,
+          "detail": "the same seeds rendered twice give the same bytes"
+        },
+        {
+          "code": "ENOUGH_DISTINCT_INSTANCES",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 6; STANDARD: 44; CHALLENGE: 25"
+        }
+      ]
+    },
+    {
+      "objectType": "RENDERER_ENVELOPE",
+      "objectId": "parametric.percent-of-a-quantity@1.0.0",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "741f482f4626b7f87846868cb8b149e6638c0a78df3eac3f2141b72a4a32ccb6",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "ENVELOPE_IS_OF_THIS_CORE_AND_RENDERER",
+          "passed": true,
+          "detail": "parametric.percent-of-a-quantity@1.0.0 for tf.math.percent.part-increase-original@1.0.0-rc.1"
+        },
+        {
+          "code": "DETERMINISTIC_STRATEGY",
+          "passed": true,
+          "detail": "PARAMETRIC_DETERMINISTIC"
+        },
+        {
+          "code": "EVERY_PARAMETER_BRANCH_BOUNDED",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 48 parameter sets; STANDARD: 84 parameter sets; CHALLENGE: 84 parameter sets"
+        },
+        {
+          "code": "RANGES_INSIDE_THE_CORE",
+          "passed": true,
+          "detail": "no range reaches outside the core"
+        },
+        {
+          "code": "KEYS_INDEPENDENTLY_VERIFIED",
+          "passed": true,
+          "detail": "216 keys recomputed by a second route; 0 do not hold"
+        },
+        {
+          "code": "EVERY_INSTANCE_IS_OF_ITS_BAND",
+          "passed": true,
+          "detail": "0 parameter sets miss a lever setting of their band"
+        },
+        {
+          "code": "NO_KEY_IS_A_MISCONCEPTION_ANSWER",
+          "passed": true,
+          "detail": "0 collisions"
+        },
+        {
+          "code": "ONE_WORDING_ONE_KEY",
+          "passed": true,
+          "detail": "0 wordings with two keys"
+        },
+        {
+          "code": "KEYS_ARE_POSITIVE",
+          "passed": true,
+          "detail": "0 non-positive keys"
+        },
+        {
+          "code": "SWEEP_CLEAN",
+          "passed": true,
+          "detail": "the whole envelope, exhaustively"
+        },
+        {
+          "code": "DIFFICULTY_MAPPING_DEFINED",
+          "passed": true,
+          "detail": "FOUNDATIONAL -> 2, STANDARD -> 3, CHALLENGE -> 4"
+        },
+        {
+          "code": "REPRESENTATION_SUPPORTED",
+          "passed": true,
+          "detail": "text only"
+        },
+        {
+          "code": "SEED_DETERMINISM",
+          "passed": true,
+          "detail": "the same seeds rendered twice give the same bytes"
+        },
+        {
+          "code": "ENOUGH_DISTINCT_INSTANCES",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 48; STANDARD: 84; CHALLENGE: 84"
+        }
+      ]
+    },
+    {
+      "objectType": "RENDERER_ENVELOPE",
+      "objectId": "parametric.linear-equation@1.0.0",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "819de9fd5f4ad385fa858290233140525f11529369389c2111e4f781e6a1cab7",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "ENVELOPE_IS_OF_THIS_CORE_AND_RENDERER",
+          "passed": true,
+          "detail": "parametric.linear-equation@1.0.0 for tf.math.linear-equation.solve-one-unknown@1.0.0-rc.1"
+        },
+        {
+          "code": "DETERMINISTIC_STRATEGY",
+          "passed": true,
+          "detail": "PARAMETRIC_DETERMINISTIC"
+        },
+        {
+          "code": "EVERY_PARAMETER_BRANCH_BOUNDED",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 1920 parameter sets; STANDARD: 3024 parameter sets; CHALLENGE: 497 parameter sets"
+        },
+        {
+          "code": "RANGES_INSIDE_THE_CORE",
+          "passed": true,
+          "detail": "no range reaches outside the core"
+        },
+        {
+          "code": "KEYS_INDEPENDENTLY_VERIFIED",
+          "passed": true,
+          "detail": "5441 keys recomputed by a second route; 0 do not hold"
+        },
+        {
+          "code": "EVERY_INSTANCE_IS_OF_ITS_BAND",
+          "passed": true,
+          "detail": "0 parameter sets miss a lever setting of their band"
+        },
+        {
+          "code": "NO_KEY_IS_A_MISCONCEPTION_ANSWER",
+          "passed": true,
+          "detail": "0 collisions"
+        },
+        {
+          "code": "ONE_WORDING_ONE_KEY",
+          "passed": true,
+          "detail": "0 wordings with two keys"
+        },
+        {
+          "code": "KEYS_ARE_POSITIVE",
+          "passed": true,
+          "detail": "0 non-positive keys"
+        },
+        {
+          "code": "SWEEP_CLEAN",
+          "passed": true,
+          "detail": "the whole envelope, exhaustively"
+        },
+        {
+          "code": "DIFFICULTY_MAPPING_DEFINED",
+          "passed": true,
+          "detail": "FOUNDATIONAL -> 2, STANDARD -> 3, CHALLENGE -> 4"
+        },
+        {
+          "code": "REPRESENTATION_SUPPORTED",
+          "passed": true,
+          "detail": "text only"
+        },
+        {
+          "code": "SEED_DETERMINISM",
+          "passed": true,
+          "detail": "the same seeds rendered twice give the same bytes"
+        },
+        {
+          "code": "ENOUGH_DISTINCT_INSTANCES",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 96; STANDARD: 252; CHALLENGE: 497"
+        }
+      ]
+    },
+    {
+      "objectType": "RENDERER_ENVELOPE",
+      "objectId": "parametric.linear-system@1.0.0",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "8135e87d7789e01ffcdb580b78395273a6d87cc753e81dae0d88f5d1c50ee57e",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "ENVELOPE_IS_OF_THIS_CORE_AND_RENDERER",
+          "passed": true,
+          "detail": "parametric.linear-system@1.0.0 for tf.math.linear-system.solve-two-unknowns@1.0.0-rc.1"
+        },
+        {
+          "code": "DETERMINISTIC_STRATEGY",
+          "passed": true,
+          "detail": "PARAMETRIC_DETERMINISTIC"
+        },
+        {
+          "code": "EVERY_PARAMETER_BRANCH_BOUNDED",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 105 parameter sets; STANDARD: 528 parameter sets; CHALLENGE: 4129 parameter sets"
+        },
+        {
+          "code": "RANGES_INSIDE_THE_CORE",
+          "passed": true,
+          "detail": "no range reaches outside the core"
+        },
+        {
+          "code": "KEYS_INDEPENDENTLY_VERIFIED",
+          "passed": true,
+          "detail": "4762 keys recomputed by a second route; 0 do not hold"
+        },
+        {
+          "code": "EVERY_INSTANCE_IS_OF_ITS_BAND",
+          "passed": true,
+          "detail": "0 parameter sets miss a lever setting of their band"
+        },
+        {
+          "code": "NO_KEY_IS_A_MISCONCEPTION_ANSWER",
+          "passed": true,
+          "detail": "0 collisions"
+        },
+        {
+          "code": "ONE_WORDING_ONE_KEY",
+          "passed": true,
+          "detail": "0 wordings with two keys"
+        },
+        {
+          "code": "KEYS_ARE_POSITIVE",
+          "passed": true,
+          "detail": "0 non-positive keys"
+        },
+        {
+          "code": "SWEEP_CLEAN",
+          "passed": true,
+          "detail": "the whole envelope, exhaustively"
+        },
+        {
+          "code": "DIFFICULTY_MAPPING_DEFINED",
+          "passed": true,
+          "detail": "FOUNDATIONAL -> 2, STANDARD -> 3, CHALLENGE -> 4"
+        },
+        {
+          "code": "REPRESENTATION_SUPPORTED",
+          "passed": true,
+          "detail": "text only"
+        },
+        {
+          "code": "SEED_DETERMINISM",
+          "passed": true,
+          "detail": "the same seeds rendered twice give the same bytes"
+        },
+        {
+          "code": "ENOUGH_DISTINCT_INSTANCES",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 105; STANDARD: 528; CHALLENGE: 4129"
+        }
+      ]
+    },
+    {
+      "objectType": "RENDERER_ENVELOPE",
+      "objectId": "parametric.rectangle-measures@1.0.0",
+      "objectVersion": "1.0.0-rc.1",
+      "contentHash": "b2c2616810ea9b94e29d3808c483cb4daa270b98ca5d564933ace44308925b22",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "ENVELOPE_IS_OF_THIS_CORE_AND_RENDERER",
+          "passed": true,
+          "detail": "parametric.rectangle-measures@1.0.0 for tf.math.geometry.rectangle-area-perimeter@1.0.0-rc.1"
+        },
+        {
+          "code": "DETERMINISTIC_STRATEGY",
+          "passed": true,
+          "detail": "PARAMETRIC_DETERMINISTIC"
+        },
+        {
+          "code": "EVERY_PARAMETER_BRANCH_BOUNDED",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 142 parameter sets; STANDARD: 143 parameter sets; CHALLENGE: 143 parameter sets"
+        },
+        {
+          "code": "RANGES_INSIDE_THE_CORE",
+          "passed": true,
+          "detail": "no range reaches outside the core"
+        },
+        {
+          "code": "KEYS_INDEPENDENTLY_VERIFIED",
+          "passed": true,
+          "detail": "428 keys recomputed by a second route; 0 do not hold"
+        },
+        {
+          "code": "EVERY_INSTANCE_IS_OF_ITS_BAND",
+          "passed": true,
+          "detail": "0 parameter sets miss a lever setting of their band"
+        },
+        {
+          "code": "NO_KEY_IS_A_MISCONCEPTION_ANSWER",
+          "passed": true,
+          "detail": "0 collisions"
+        },
+        {
+          "code": "ONE_WORDING_ONE_KEY",
+          "passed": true,
+          "detail": "0 wordings with two keys"
+        },
+        {
+          "code": "KEYS_ARE_POSITIVE",
+          "passed": true,
+          "detail": "0 non-positive keys"
+        },
+        {
+          "code": "SWEEP_CLEAN",
+          "passed": true,
+          "detail": "the whole envelope, exhaustively"
+        },
+        {
+          "code": "DIFFICULTY_MAPPING_DEFINED",
+          "passed": true,
+          "detail": "FOUNDATIONAL -> 2, STANDARD -> 3, CHALLENGE -> 4"
+        },
+        {
+          "code": "REPRESENTATION_SUPPORTED",
+          "passed": true,
+          "detail": "text only"
+        },
+        {
+          "code": "SEED_DETERMINISM",
+          "passed": true,
+          "detail": "the same seeds rendered twice give the same bytes"
+        },
+        {
+          "code": "ENOUGH_DISTINCT_INSTANCES",
+          "passed": true,
+          "detail": "FOUNDATIONAL: 142; STANDARD: 143; CHALLENGE: 143"
+        }
+      ]
+    }
+  ],
+  "blueprints": [
+    {
+      "objectType": "BLUEPRINT_CLASSIFICATION",
+      "objectId": "v2.paa/matematicas",
+      "objectVersion": "qf52-2",
+      "contentHash": "69243fec6fea5f9e17ad2c491a542cabbe07372b389ef4850f945925e98e2b23",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CLASS_FOLLOWS_FROM_THE_RECORDED_FACTS",
+          "passed": true,
+          "detail": "{\"itemBankable\":true,\"declaredFixture\":false,\"fullFormDocumented\":false,\"distributionPartlyDocumented\":false,\"officialItemCount\":55,\"governedSlots\":12} -> REDUCED"
+        },
+        {
+          "code": "STRUCTURAL_EVIDENCE_SUFFICIENT",
+          "passed": true,
+          "detail": "12 governed positions"
+        },
+        {
+          "code": "CLASS_ADMITS_STUDENT_USE",
+          "passed": true,
+          "detail": "REDUCED"
+        },
+        {
+          "code": "NOT_FULL_WITHOUT_THE_FULL_FORM",
+          "passed": true,
+          "detail": "12 of 55"
+        },
+        {
+          "code": "BUCKETS_WITHIN_THE_GOVERNED_POSITIONS",
+          "passed": true,
+          "detail": "12 positions in 5 linked buckets, of 12 governed"
+        },
+        {
+          "code": "EVERY_BUCKET_LINKS_AN_ASSESSED_CONCEPT",
+          "passed": true,
+          "detail": "each linked concept is established as assessed by this component"
+        },
+        {
+          "code": "BUCKETS_ARE_OF_THIS_COMPONENT",
+          "passed": true,
+          "detail": "PAA.MATEMATICAS"
+        }
+      ]
+    },
+    {
+      "objectType": "BLUEPRINT_CLASSIFICATION",
+      "objectId": "v2.ib.math-aa-hl/p1",
+      "objectVersion": "step4b-pilot-1",
+      "contentHash": "417200c0761b691942d8ebe3b2491e97e87220e5e1d59a885be96e35ecc6b82d",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": {
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "decidedAt": "2026-10-13T12:11:00Z"
+      },
+      "state": "HUMAN_CERTIFIED",
+      "failed": [],
+      "checks": [
+        {
+          "code": "CLASS_FOLLOWS_FROM_THE_RECORDED_FACTS",
+          "passed": true,
+          "detail": "{\"itemBankable\":true,\"declaredFixture\":false,\"fullFormDocumented\":false,\"distributionPartlyDocumented\":false,\"officialItemCount\":null,\"governedSlots\":5} -> REDUCED"
+        },
+        {
+          "code": "STRUCTURAL_EVIDENCE_SUFFICIENT",
+          "passed": true,
+          "detail": "5 governed positions"
+        },
+        {
+          "code": "CLASS_ADMITS_STUDENT_USE",
+          "passed": true,
+          "detail": "REDUCED"
+        },
+        {
+          "code": "NOT_FULL_WITHOUT_THE_FULL_FORM",
+          "passed": true,
+          "detail": "5 of no official count"
+        },
+        {
+          "code": "BUCKETS_WITHIN_THE_GOVERNED_POSITIONS",
+          "passed": true,
+          "detail": "1 positions in 1 linked buckets, of 5 governed"
+        },
+        {
+          "code": "EVERY_BUCKET_LINKS_AN_ASSESSED_CONCEPT",
+          "passed": true,
+          "detail": "each linked concept is established as assessed by this component"
+        },
+        {
+          "code": "BUCKETS_ARE_OF_THIS_COMPONENT",
+          "passed": true,
+          "detail": "IB.MATH_AA_HL.P1"
+        }
+      ]
+    }
+  ],
+  "adapters": [
+    {
+      "objectType": "ASSESSMENT_ADAPTER",
+      "objectId": "PAA.MATEMATICAS",
+      "objectVersion": "0.2.0-illustrative+0.4.0-illustrative",
+      "contentHash": "ff003ca66fdbbf94ad39696649cb7d7b811312336165a0c05d2ac4ace9d1b30d",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": {
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "decidedAt": "2026-10-13T12:11:00Z"
+      },
+      "state": "HUMAN_CERTIFIED",
+      "failed": [],
+      "checks": [
+        {
+          "code": "SYSTEM_VERSION_ACTIVE",
+          "passed": true,
+          "detail": "PAA is ACTIVE; version 0-2-0-illustrative is ACTIVE"
+        },
+        {
+          "code": "GOVERNED_RULE_PROFILE",
+          "passed": true,
+          "detail": "EA1_COMPONENT_PROFILE"
+        },
+        {
+          "code": "NO_RETIRED_CONFIGURATION",
+          "passed": true,
+          "detail": "cites only active configurations"
+        },
+        {
+          "code": "EVERY_RULE_IS_TRACEABLE_OR_LABELLED_POLICY",
+          "passed": true,
+          "detail": "15 rules: 3 official with sources, 12 labelled StudyUs policy"
+        },
+        {
+          "code": "NO_UNRESOLVED_CONFLICT",
+          "passed": true,
+          "detail": "differences from a generation profile ask nothing of the adapter"
+        },
+        {
+          "code": "FORMATS_COHERENT",
+          "passed": true,
+          "detail": "SELECTED_RESPONSE, NUMERIC_ENTRY"
+        },
+        {
+          "code": "MARKS_COHERENT",
+          "passed": true,
+          "detail": "ONE_MARK_PER_ITEM / KEY_ONLY"
+        },
+        {
+          "code": "COMMAND_TERMS_SOURCED",
+          "passed": true,
+          "detail": "no controlled vocabulary"
+        },
+        {
+          "code": "CALCULATOR_COHERENT",
+          "passed": true,
+          "detail": "NONE"
+        },
+        {
+          "code": "REPRESENTATION_RULES_COHERENT",
+          "passed": true,
+          "detail": "stimulus NONE, OWN_STIMULUS, SHARED_STIMULUS; contexts ABSTRACT, PERSONAL, OCCUPATIONAL, SOCIETAL, SCIENTIFIC"
+        }
+      ]
+    },
+    {
+      "objectType": "ASSESSMENT_ADAPTER",
+      "objectId": "IB.MATH_AA_HL.P1",
+      "objectVersion": "0.2.0-illustrative+0.4.0-illustrative",
+      "contentHash": "177c6035be157c5d1e5b9704da666dfe70b08492927e0e76c80c1a1c31c31200",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": {
+        "reviewerId": "INTERNAL_PILOT_REVIEWER",
+        "decidedAt": "2026-10-13T12:11:00Z"
+      },
+      "state": "HUMAN_CERTIFIED",
+      "failed": [],
+      "checks": [
+        {
+          "code": "SYSTEM_VERSION_ACTIVE",
+          "passed": true,
+          "detail": "IB is ACTIVE; version 0-2-0-illustrative is ACTIVE"
+        },
+        {
+          "code": "GOVERNED_RULE_PROFILE",
+          "passed": true,
+          "detail": "EA1_COMPONENT_PROFILE"
+        },
+        {
+          "code": "NO_RETIRED_CONFIGURATION",
+          "passed": true,
+          "detail": "cites only active configurations"
+        },
+        {
+          "code": "EVERY_RULE_IS_TRACEABLE_OR_LABELLED_POLICY",
+          "passed": true,
+          "detail": "15 rules: 4 official with sources, 11 labelled StudyUs policy"
+        },
+        {
+          "code": "NO_UNRESOLVED_CONFLICT",
+          "passed": true,
+          "detail": "differences from a generation profile ask nothing of the adapter"
+        },
+        {
+          "code": "FORMATS_COHERENT",
+          "passed": true,
+          "detail": "MATH_EXPRESSION, SHORT_RESPONSE, EXTENDED_RESPONSE"
+        },
+        {
+          "code": "MARKS_COHERENT",
+          "passed": true,
+          "detail": "MULTI_MARK_PARTS / METHOD_AND_ACCURACY"
+        },
+        {
+          "code": "COMMAND_TERMS_SOURCED",
+          "passed": true,
+          "detail": "6 governed terms"
+        },
+        {
+          "code": "CALCULATOR_COHERENT",
+          "passed": true,
+          "detail": "NONE"
+        },
+        {
+          "code": "REPRESENTATION_RULES_COHERENT",
+          "passed": true,
+          "detail": "stimulus NONE, OWN_STIMULUS; contexts ABSTRACT, SCIENTIFIC, OCCUPATIONAL, PERSONAL, SOCIETAL"
+        }
+      ]
+    },
+    {
+      "objectType": "ASSESSMENT_ADAPTER",
+      "objectId": "IB.MATH_AA_HL.P2",
+      "objectVersion": "0.2.0-illustrative+0.4.0-illustrative",
+      "contentHash": "b2513c1b679d30e36a1727480bb1dbe617b5f7d415b597f5e68f857fff5a09c5",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "SYSTEM_VERSION_ACTIVE",
+          "passed": true,
+          "detail": "IB is ACTIVE; version 0-2-0-illustrative is ACTIVE"
+        },
+        {
+          "code": "GOVERNED_RULE_PROFILE",
+          "passed": true,
+          "detail": "EA1_COMPONENT_PROFILE"
+        },
+        {
+          "code": "NO_RETIRED_CONFIGURATION",
+          "passed": true,
+          "detail": "cites only active configurations"
+        },
+        {
+          "code": "EVERY_RULE_IS_TRACEABLE_OR_LABELLED_POLICY",
+          "passed": true,
+          "detail": "15 rules: 4 official with sources, 11 labelled StudyUs policy"
+        },
+        {
+          "code": "NO_UNRESOLVED_CONFLICT",
+          "passed": true,
+          "detail": "differences from a generation profile ask nothing of the adapter"
+        },
+        {
+          "code": "FORMATS_COHERENT",
+          "passed": true,
+          "detail": "MATH_EXPRESSION, SHORT_RESPONSE, EXTENDED_RESPONSE"
+        },
+        {
+          "code": "MARKS_COHERENT",
+          "passed": true,
+          "detail": "MULTI_MARK_PARTS / METHOD_AND_ACCURACY"
+        },
+        {
+          "code": "COMMAND_TERMS_SOURCED",
+          "passed": true,
+          "detail": "6 governed terms"
+        },
+        {
+          "code": "CALCULATOR_COHERENT",
+          "passed": true,
+          "detail": "GDC_REQUIRED"
+        },
+        {
+          "code": "REPRESENTATION_RULES_COHERENT",
+          "passed": true,
+          "detail": "stimulus NONE, OWN_STIMULUS; contexts ABSTRACT, SCIENTIFIC, OCCUPATIONAL, PERSONAL, SOCIETAL"
+        }
+      ]
+    },
+    {
+      "objectType": "ASSESSMENT_ADAPTER",
+      "objectId": "CAMBRIDGE.9709.P1",
+      "objectVersion": "0.3.0-illustrative+0.4.0-illustrative",
+      "contentHash": "a3470fa38abc1351ea484d211d88b2ffa8adf211e5cf7d632e3b682d34f583bb",
+      "automated": "REVIEW_REQUIRED",
+      "humanApproval": null,
+      "state": "REVIEW_REQUIRED",
+      "failed": [
+        "COMMAND_TERMS_SOURCED"
+      ],
+      "checks": [
+        {
+          "code": "SYSTEM_VERSION_ACTIVE",
+          "passed": true,
+          "detail": "CAMBRIDGE is ACTIVE; version 0-3-0-illustrative is ACTIVE"
+        },
+        {
+          "code": "GOVERNED_RULE_PROFILE",
+          "passed": true,
+          "detail": "EA1_COMPONENT_PROFILE"
+        },
+        {
+          "code": "NO_RETIRED_CONFIGURATION",
+          "passed": true,
+          "detail": "cites only active configurations"
+        },
+        {
+          "code": "EVERY_RULE_IS_TRACEABLE_OR_LABELLED_POLICY",
+          "passed": true,
+          "detail": "15 rules: 3 official with sources, 12 labelled StudyUs policy"
+        },
+        {
+          "code": "NO_UNRESOLVED_CONFLICT",
+          "passed": true,
+          "detail": "differences from a generation profile ask nothing of the adapter"
+        },
+        {
+          "code": "FORMATS_COHERENT",
+          "passed": true,
+          "detail": "MATH_EXPRESSION, SHORT_RESPONSE, EXTENDED_RESPONSE"
+        },
+        {
+          "code": "MARKS_COHERENT",
+          "passed": true,
+          "detail": "MULTI_MARK_PARTS / METHOD_AND_ACCURACY"
+        },
+        {
+          "code": "COMMAND_TERMS_SOURCED",
+          "passed": false,
+          "detail": "4 governed terms"
+        },
+        {
+          "code": "CALCULATOR_COHERENT",
+          "passed": true,
+          "detail": "SCIENTIFIC_REQUIRED"
+        },
+        {
+          "code": "REPRESENTATION_RULES_COHERENT",
+          "passed": true,
+          "detail": "stimulus NONE, OWN_STIMULUS; contexts ABSTRACT, SCIENTIFIC, OCCUPATIONAL, PERSONAL, SOCIETAL"
+        }
+      ]
+    },
+    {
+      "objectType": "ASSESSMENT_ADAPTER",
+      "objectId": "PISA.MATHEMATICS",
+      "objectVersion": "0.2.1-illustrative-pisa2022+0.4.1-illustrative-pisa2022",
+      "contentHash": "459d0517bd8d823c5a28ff9fe504bc00c6f64a0075a6b19e584405d6dc34d7cb",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "SYSTEM_VERSION_ACTIVE",
+          "passed": true,
+          "detail": "PISA is ACTIVE; version 0-2-1-illustrative-pisa2022 is ACTIVE"
+        },
+        {
+          "code": "GOVERNED_RULE_PROFILE",
+          "passed": true,
+          "detail": "EA1_COMPONENT_PROFILE"
+        },
+        {
+          "code": "NO_RETIRED_CONFIGURATION",
+          "passed": true,
+          "detail": "cites only active configurations"
+        },
+        {
+          "code": "EVERY_RULE_IS_TRACEABLE_OR_LABELLED_POLICY",
+          "passed": true,
+          "detail": "15 rules: 5 official with sources, 10 labelled StudyUs policy"
+        },
+        {
+          "code": "NO_UNRESOLVED_CONFLICT",
+          "passed": true,
+          "detail": "differences from a generation profile ask nothing of the adapter"
+        },
+        {
+          "code": "FORMATS_COHERENT",
+          "passed": true,
+          "detail": "SELECTED_RESPONSE, MULTI_SELECT, NUMERIC_ENTRY, MATH_EXPRESSION, SHORT_RESPONSE"
+        },
+        {
+          "code": "MARKS_COHERENT",
+          "passed": true,
+          "detail": "CODED_CREDIT / CODED_CREDIT_LEVELS"
+        },
+        {
+          "code": "COMMAND_TERMS_SOURCED",
+          "passed": true,
+          "detail": "no controlled vocabulary"
+        },
+        {
+          "code": "CALCULATOR_COHERENT",
+          "passed": true,
+          "detail": "ALLOWED"
+        },
+        {
+          "code": "REPRESENTATION_RULES_COHERENT",
+          "passed": true,
+          "detail": "stimulus OWN_STIMULUS, SHARED_STIMULUS, NONE; contexts PERSONAL, OCCUPATIONAL, SOCIETAL, SCIENTIFIC"
+        }
+      ]
+    },
+    {
+      "objectType": "ASSESSMENT_ADAPTER",
+      "objectId": "ICFES.SABER11_MATEMATICAS",
+      "objectVersion": "0.2.0-illustrative+0.4.0-illustrative",
+      "contentHash": "ed4ad18a4c1420083413ac171c97d7343c631e792500e9fe013f197176971d4e",
+      "automated": "AUTOMATED_CERTIFIED_PILOT",
+      "humanApproval": null,
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "failed": [],
+      "checks": [
+        {
+          "code": "SYSTEM_VERSION_ACTIVE",
+          "passed": true,
+          "detail": "ICFES is ACTIVE; version 0-2-0-illustrative is ACTIVE"
+        },
+        {
+          "code": "GOVERNED_RULE_PROFILE",
+          "passed": true,
+          "detail": "EA1_COMPONENT_PROFILE"
+        },
+        {
+          "code": "NO_RETIRED_CONFIGURATION",
+          "passed": true,
+          "detail": "cites only active configurations"
+        },
+        {
+          "code": "EVERY_RULE_IS_TRACEABLE_OR_LABELLED_POLICY",
+          "passed": true,
+          "detail": "15 rules: 4 official with sources, 11 labelled StudyUs policy"
+        },
+        {
+          "code": "NO_UNRESOLVED_CONFLICT",
+          "passed": true,
+          "detail": "differences from a generation profile ask nothing of the adapter"
+        },
+        {
+          "code": "FORMATS_COHERENT",
+          "passed": true,
+          "detail": "SELECTED_RESPONSE"
+        },
+        {
+          "code": "MARKS_COHERENT",
+          "passed": true,
+          "detail": "ONE_MARK_PER_ITEM / KEY_ONLY"
+        },
+        {
+          "code": "COMMAND_TERMS_SOURCED",
+          "passed": true,
+          "detail": "no controlled vocabulary"
+        },
+        {
+          "code": "CALCULATOR_COHERENT",
+          "passed": true,
+          "detail": "NONE"
+        },
+        {
+          "code": "REPRESENTATION_RULES_COHERENT",
+          "passed": true,
+          "detail": "stimulus NONE, OWN_STIMULUS, SHARED_STIMULUS; contexts PERSONAL, OCCUPATIONAL, SOCIETAL, SCIENTIFIC, ABSTRACT"
+        }
+      ]
+    }
+  ],
+  "adaptersWithoutAGovernedRuleProfile": [
+    "PAA.LECTURA",
+    "PAA.REDACCION",
+    "PAA.INGLES",
+    "PISA.READING",
+    "PISA.SCIENCE",
+    "IB.MATH_AA.HL.P3",
+    "IB.MATH_AA.SL.P1",
+    "IB.MATH_AA.SL.P2",
+    "IB.MATH_AI.SL.P1",
+    "IB.MATH_AI.SL.P2",
+    "IB.MATH_AI.HL.P1",
+    "IB.MATH_AI.HL.P2",
+    "IB.MATH_AI.HL.P3",
+    "IB.PHYSICS.SL.P1A",
+    "IB.PHYSICS.SL.P1B",
+    "IB.PHYSICS.SL.P2",
+    "IB.PHYSICS.HL.P1A",
+    "IB.PHYSICS.HL.P1B",
+    "IB.PHYSICS.HL.P2",
+    "IB.CHEMISTRY.SL.P1A",
+    "IB.CHEMISTRY.SL.P1B",
+    "IB.CHEMISTRY.SL.P2",
+    "IB.CHEMISTRY.HL.P1A",
+    "IB.CHEMISTRY.HL.P1B",
+    "IB.CHEMISTRY.HL.P2",
+    "IB.BIOLOGY.SL.P1A",
+    "IB.BIOLOGY.SL.P1B",
+    "IB.BIOLOGY.SL.P2",
+    "IB.BIOLOGY.HL.P1A",
+    "IB.BIOLOGY.HL.P1B",
+    "IB.BIOLOGY.HL.P2",
+    "CAMBRIDGE.0580.EXTENDED.P2",
+    "CAMBRIDGE.0580.EXTENDED.P4",
+    "AICE.9709.PURE",
+    "AICE.9709.MECHANICS",
+    "AICE.9709.STATISTICS",
+    "AICE.9702.MCQ",
+    "AICE.9702.STRUCTURED",
+    "AICE.9702.PLANNING",
+    "AICE.9701.MCQ",
+    "AICE.9701.STRUCTURED",
+    "AICE.9701.PLANNING",
+    "AICE.9700.MCQ",
+    "AICE.9700.STRUCTURED",
+    "AICE.9700.PLANNING",
+    "AICE.9708.MCQ",
+    "AICE.9708.WRITTEN",
+    "AICE.9093.WRITTEN",
+    "AICE.9239.WRITTEN"
+  ]
+}

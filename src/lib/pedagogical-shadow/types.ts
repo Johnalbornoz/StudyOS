@@ -140,6 +140,40 @@ export interface StudyUSEvidenceRow {
    * for this yet; documented as an adapter gap, never guessed.
    */
   transferFailureDiagnostic?: TransferFailureDiagnostic;
+  /**
+   * 2026-10-16 contract 1.1 -- `learning_evidence.metadata.learnSession`, written by the guided LEARN flow
+   * (source_type 'LEARN_GUIDED', metadata.activityType 'LEARN_CHECK'). Raw jsonb, validated by the adapter.
+   */
+  learnSession?: unknown;
+  /** D78 -- raw `metadata.practiceExposure` (PRACTICE rows written since D78), validated by the adapter (parsePracticeExposure). */
+  practiceExposure?: unknown;
+  /**
+   * 2026-10-16 contract 1.2 -- `learning_evidence.metadata.transferLadder`, written by the APPLY ladder flow
+   * (metadata.activityType 'TRANSFER'). Raw jsonb, validated by the adapter.
+   */
+  /**
+   * metadata.assignmentId -- the teacher assignment (teacher_interventions.id) a subject Test / Mock attempt belongs to.
+   * Overnight rule S (2026-10-16): only the LATEST completed attempt of an assignment counts for the Knowledge State
+   * and the revalidation alerts; earlier attempts stay in History.
+   */
+  assignmentId?: string | null;
+  transferLadder?: unknown;
+}
+
+/** Contract 1.1 shape of `metadata.learnSession` (what the adapter accepts). */
+export interface StudyUSLearnSession {
+  version: 'learn-guided-v1';
+  interactionCount: number;
+  closedBy: 'AI' | 'CAP';
+  weaknesses: string[];
+  misconceptionIds?: string[];
+}
+
+/** Contract 1.2 shape of `metadata.transferLadder` (what the adapter accepts). */
+export interface StudyUSTransferLadder {
+  version: 'transfer-ladder-v1';
+  challenges: Array<{ level: 'NEAR' | 'MID' | 'FAR'; scorePercent: number; passed: boolean; certified: boolean; taskId: string; contextDomain: string | null }>;
+  highestLevelReached: 'NEAR' | 'MID' | 'FAR' | null;
 }
 
 export type ScoreShape = 'PERCENT_0_100' | 'FRACTION_0_1' | 'RATIO';
@@ -147,11 +181,19 @@ export type ScoreShape = 'PERCENT_0_100' | 'FRACTION_0_1' | 'RATIO';
 /** The ONE closed vocabulary for "why this row could not be mapped (fully or at all)." Every gap the adapter finds cites one of these -- never a bespoke ad hoc string, and never silence. */
 export type AdapterUnresolvedReason =
   | 'LEARN_CHECK_SOURCE_UNAVAILABLE'
+  /** Overnight rule S: an earlier attempt of the same teacher assignment (only the latest completed attempt counts). */
+  | 'SUPERSEDED_BY_LATER_ATTEMPT'
   | 'UNSUPPORTED_ACTIVITY_TYPE'
   | 'UNKNOWN_SOURCE'
   | 'ITEM_COUNT_NOT_AVAILABLE'
   | 'TRANSFER_CHALLENGE_BREAKDOWN_UNAVAILABLE'
-  | 'TRANSFER_DEPTH_TAXONOMY_MISMATCH';
+  | 'TRANSFER_DEPTH_TAXONOMY_MISMATCH'
+  /** 2026-10-16: a LEARN_CHECK row whose `metadata.learnSession` is present but not a valid learn-guided-v1 shape -- the row is not mapped (never read as a legacy quiz). */
+  | 'LEARN_SESSION_MALFORMED'
+  /** 2026-10-16: a TRANSFER row whose `metadata.transferLadder` is malformed, or whose declared highestLevelReached disagrees with its own challenges -- mapped without a ladder (UNRESOLVED, never a pass). */
+  | 'TRANSFER_LADDER_MALFORMED'
+  /** 2026-10-16: an assessment-verification follow-up question (source_type SOLO_VERIFICATION) tagged with the Test/Mock activity type -- not a (session, concept) result, so it is not an INTERNAL_ASSESSMENT item. */
+  | 'INTERNAL_ASSESSMENT_VERIFICATION_FOLLOWUP';
 
 export interface AdapterUnresolvedMapping {
   reason: AdapterUnresolvedReason;

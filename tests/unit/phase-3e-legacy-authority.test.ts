@@ -60,7 +60,7 @@ describe('41. Today / Learning Debt / Study Plan import no legacy recommendation
     'src/app/dashboard/today/page.tsx',
     'src/app/dashboard/learning-debt/page.tsx',
     'src/services/study-plan.service.ts',
-    'src/app/dashboard/study-plan/page.tsx',
+    'src/app/dashboard/plan/SchedulePanel.tsx', // L6 ST-4: the Study Plan view, now the schedule tab of /dashboard/plan
   ];
 
   it('none of the migrated files import getTodayPlan, buildBestNextAction, nbaPriority, or getStudentStudyPriorities', () => {

@@ -1,0 +1,127 @@
+{
+  "ICFES.SABER11.MATEMATICAS:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0.5 < 0.8",
+      "HUMAN_REVIEW 0.3333 > 0.1"
+    ],
+    "size": 6,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.4.0"
+    }
+  },
+  "PAA.MATEMATICAS:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "HUMAN_REVIEW 0.8333 > 0.1"
+    ],
+    "size": 6,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.4.0"
+    }
+  },
+  "PISA.MATHEMATICS:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0.2 < 0.8",
+      "HUMAN_REVIEW 0.6 > 0.1"
+    ],
+    "size": 5,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.4.0"
+    }
+  },
+  "IB.MATH_AA.HL.P1:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "BATCH_TOO_SMALL: 2 of 5",
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "HUMAN_REVIEW 0.5 > 0.1"
+    ],
+    "size": 2,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.4.0"
+    }
+  },
+  "CAMBRIDGE.0580.EXTENDED.P4:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "BATCH_TOO_SMALL: 2 of 5",
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "PROVENANCE_ISSUES = 1 (must be 0)",
+      "HUMAN_REVIEW 0.5 > 0.1"
+    ],
+    "size": 2,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.4.0"
+    }
+  },
+  "AICE.9709.PURE:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "BATCH_TOO_SMALL: 2 of 5",
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "PROVENANCE_ISSUES = 1 (must be 0)",
+      "HUMAN_REVIEW 0.5 > 0.1"
+    ],
+    "size": 2,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.4.0"
+    }
+  },
+  "PISA.SCIENCE:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0 < 0.8",
+      "HUMAN_REVIEW 1 > 0.1"
+    ],
+    "size": 2,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.4.0"
+    }
+  },
+  "PAA.LECTURA:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "FIRST_ATTEMPT_PASS 0.5 < 0.8",
+      "SCHEMA_FAILURES = 1 (must be 0)"
+    ],
+    "size": 2,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.4.0"
+    }
+  },
+  "ICFES.SABER11.MATEMATICAS[STANDARD+FOUNDATIONAL]:C1": {
+    "phase": "C1",
+    "pass": false,
+    "unmet": [
+      "BATCH_TOO_SMALL: 18 of 20",
+      "FIRST_ATTEMPT_PASS 0.5 < 0.8",
+      "STAGE_ERRORS = 1 (must be 0)",
+      "SCHEMA_FAILURES = 1 (must be 0)",
+      "HUMAN_REVIEW 0.4444 > 0.1"
+    ],
+    "size": 18,
+    "versions": {
+      "profileVersion": "qf-v5-profiles-1.1.0-provisional",
+      "validatorVersion": "qf-v5-validators-1.4.0"
+    }
+  }
+}

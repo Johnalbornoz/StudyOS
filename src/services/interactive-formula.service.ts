@@ -1,4 +1,5 @@
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
 import { executeAI, getPrompt } from '@/lib/ai';
 import { callModel } from '@/lib/ai/adapters/call-model';
 import { resolveModels } from '@/lib/ai/model-routing';
@@ -160,7 +161,7 @@ ${contextChunks.length > 0 ? `\nContext from the student's material:\n${contextC
           model: route.primary,
           maxTokens: budget.maxOutputTokens,
           reasoningEffort: budget.reasoningEffort,
-          system: systemPrompt,
+          system: withStudentFacingPolicy(systemPrompt),
           user: userPrompt,
         },
         signal

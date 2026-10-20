@@ -8,7 +8,7 @@
  * requirement state machine (`engine.ts`) never re-implements or
  * shortcuts this check.
  */
-import { CANONICAL_POLICY } from './policy';
+import { CANONICAL_POLICY, type TransferLevel } from './policy';
 import type {
   EvidenceQualificationReasonCode,
   EvidenceQualificationResult,
@@ -50,6 +50,16 @@ function inRange(value: number, range: { min: number; max: number }): boolean {
   return value >= range.min && value <= range.max;
 }
 
+/** Contract 1.2: ladder level rank (NEAR 0, MID 1, FAR 2); -1 for no level. Read from the one policy list. */
+export function transferLevelRank(level: TransferLevel | null | undefined): number {
+  return level ? CANONICAL_POLICY.transfer.levels.indexOf(level) : -1;
+}
+
+/** Whether `level` is at least `minimum` on the ladder (`null` never is). */
+export function meetsTransferLevel(level: TransferLevel | null | undefined, minimum: TransferLevel): boolean {
+  return level != null && transferLevelRank(level) >= transferLevelRank(minimum);
+}
+
 /** Pure. No IO. The single entry point every requirement check must call -- never inlined ad hoc at a call site. */
 export function qualifyEvidence(item: RawEvidenceItem, ctx: QualificationContext): EvidenceQualificationVerdict {
   const { targetStage, prerequisiteSatisfied, eligibleFrom } = ctx;
@@ -71,17 +81,29 @@ export function qualifyEvidence(item: RawEvidenceItem, ctx: QualificationContext
     return { result: 'DOES_NOT_QUALIFY', reasonCode: 'TEMPORALLY_INELIGIBLE' };
   }
 
+  // Contract 1.3: an INTERNAL_ASSESSMENT item is never the activity type of any stage, so it is always
+  // WRONG_ACTIVITY_TYPE above -- it never satisfies a stage. Its revalidation effect lives in engine.ts's replay.
   switch (targetStage) {
     case 'LEARN': {
-      // CANON-R2R1 Part 3/5: a comprehension checkpoint, never mere
-      // activity existence. The bar is EXCLUSIVE -- exactly 80% still
-      // fails; only a score strictly greater than 80 qualifies.
-      // Assistance is explicitly allowed (no independence check here).
+      // Contract 1.1 (2026-10-16): LEARN is a guided understanding session of 4-7 interactions with NO score gate.
+      // Assistance is explicitly allowed (no independence check). Anything that is neither a well-formed guided
+      // session nor a completed legacy check is UNRESOLVED -- never a pass, never a failure.
       const p = CANONICAL_POLICY.learn;
-      if (item.scorePercent <= p.minimumScorePercentExclusive) {
-        return { result: 'DOES_NOT_QUALIFY', reasonCode: 'INSUFFICIENT_SCORE' };
+      const isGuidedSession = item.learnInteractionCount !== undefined || item.learnClosedBy !== undefined;
+      if (isGuidedSession) {
+        const n = item.learnInteractionCount;
+        if (n === undefined || !Number.isInteger(n) || n < p.minInteractions || n > p.maxInteractions) {
+          return { result: 'UNRESOLVED', reasonCode: 'UNRESOLVED_POLICY' };
+        }
+        // AI closes once it judges understanding (any count from 4 to 7); CAP closes only at exactly 7.
+        if (item.learnClosedBy === 'AI' && n >= p.minInteractions) return { result: 'QUALIFIES', reasonCode: 'LEARN_COMPLETED' };
+        if (item.learnClosedBy === 'CAP' && n === p.maxInteractions) return { result: 'QUALIFIES', reasonCode: 'LEARN_COMPLETED' };
+        return { result: 'UNRESOLVED', reasonCode: 'UNRESOLVED_POLICY' };
       }
-      return { result: 'QUALIFIES', reasonCode: 'PASSING_SCORE' };
+      // Legacy LEARN_CHECK quiz row (no learnSession): qualifies once completed with >= minInteractions items; its
+      // score no longer gates. A row with fewer (or an unknown, 0) item count is UNRESOLVED.
+      if (item.itemCount >= p.minInteractions) return { result: 'QUALIFIES', reasonCode: 'LEARN_COMPLETED' };
+      return { result: 'UNRESOLVED', reasonCode: 'UNRESOLVED_POLICY' };
     }
 
     case 'PRACTICE': {
@@ -133,33 +155,23 @@ export function qualifyEvidence(item: RawEvidenceItem, ctx: QualificationContext
     }
 
     case 'TRANSFER': {
+      // Contract 1.2 (2026-10-16): the adaptive APPLY ladder. The 70% per-challenge floor and the 80% overall mean are
+      // retired -- a challenge passes at >= 80 (already folded into `transferHighestLevel` by the adapter), and only
+      // the highest passed AND certified level decides. A critical misconception was already handled above (Case D).
       const p = CANONICAL_POLICY.transfer;
       if (p.independenceRequired && !item.independent) {
         return { result: 'DOES_NOT_QUALIFY', reasonCode: 'ASSISTED_WHEN_INDEPENDENCE_REQUIRED' };
       }
-      if (!inRange(item.difficulty, p.difficulty)) {
-        return { result: 'DOES_NOT_QUALIFY', reasonCode: 'NOT_APPLICABLE' };
-      }
-      if (!item.perChallengeScores || item.perChallengeScores.length !== p.challengeCount) {
+      // A legacy 3-challenge NEAR/CONTEXTUAL/HIGHER row (or any row without a ladder): UNRESOLVED -- no
+      // qualification, no rollback, and never a CONTEXTUAL/HIGHER -> MID/FAR mapping.
+      if (!Array.isArray(item.transferLadder)) {
         return { result: 'UNRESOLVED', reasonCode: 'UNRESOLVED_POLICY' };
       }
-      if (item.reasoningProvided === false) {
-        return { result: 'DOES_NOT_QUALIFY', reasonCode: 'MISSING_REQUIRED_REASONING' };
+      if (meetsTransferLevel(item.transferHighestLevel ?? null, p.consolidatedMinimumLevel)) {
+        return { result: 'QUALIFIES', reasonCode: 'TRANSFER_LEVEL_REACHED' };
       }
-      // CANON-R2R1 Part 1: FINAL product decision, superseding the
-      // implementation-created <50% floor. Every challenge must
-      // independently reach 70% -- no compensation by a stronger
-      // challenge elsewhere -- AND the overall average independently
-      // meets 80%. Neither check alone is sufficient (the spec's own
-      // 100/75/70 example: overall 81.67% >= 80 AND every challenge
-      // >= 70% -> PASS; a 70/70/70 ledger meets the per-challenge floor
-      // but its 70% overall average still FAILS).
-      const hasChallengeBelowFloor = item.perChallengeScores.some((s) => s < p.perChallengeMinimumScorePercent);
-      const overall = item.perChallengeScores.reduce((a, b) => a + b, 0) / item.perChallengeScores.length;
-      if (hasChallengeBelowFloor || overall < p.minimumOverallScorePercent) {
-        return { result: 'DOES_NOT_QUALIFY', reasonCode: 'FAILED_ATTEMPT' };
-      }
-      return { result: 'QUALIFIES', reasonCode: 'PASSING_SCORE' };
+      // NEAR or nothing: does not qualify, but this is NOT a FAILED_ATTEMPT (no rollback; the concept stays in TRANSFER).
+      return { result: 'DOES_NOT_QUALIFY', reasonCode: 'TRANSFER_LEVEL_BELOW_CONSOLIDATION' };
     }
 
     default: {

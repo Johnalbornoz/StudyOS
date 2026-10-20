@@ -169,7 +169,10 @@ export default function HierarchicalConceptList({
   hierarchy,
   masteryStates,
   journeyStages,
+  canonicalAssessment = false,
 }: {
+  /** The server's assessment cutover flag (read by the server page), passed through to each concept row. */
+  canonicalAssessment?: boolean;
   subjectId: string;
   studentId: string;
   locale: Locale;
@@ -262,6 +265,7 @@ export default function HierarchicalConceptList({
                             subjectId={subjectId}
                             studentId={studentId}
                             locale={locale}
+                            canonicalAssessment={canonicalAssessment}
                             concepts={subtopic.concepts.map((c) => ({
                               conceptId: c.id,
                               label: c.label,
@@ -298,6 +302,7 @@ export default function HierarchicalConceptList({
                 subjectId={subjectId}
                 studentId={studentId}
                 locale={locale}
+                canonicalAssessment={canonicalAssessment}
                 concepts={hierarchy.unassigned.map((c) => ({
                   conceptId: c.id,
                   label: c.label,

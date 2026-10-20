@@ -1,0 +1,5230 @@
+{
+ "kind": "CONTENT_FACTORY_REPROJECTION_SPEC",
+ "batchId": "CF-IB-AAHL-01",
+ "sourcePlanHash": "a9906fa3342f6f6f59acd808d23125bc8923b08e6060ac410f857d5edeadc693",
+ "instances": 30,
+ "failures": [],
+ "restatementLoophole": 30,
+ "specs": [
+  {
+   "instanceId": "24b6a571e7259f94dc1597e2d17130855654749cd11d525b55abadd1c2533448",
+   "form": "STANDARD_FORM",
+   "coefficients": {
+    "a": 1,
+    "b": -3,
+    "c": 2
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² − 3x + 2 = 0. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "1"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 1
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 2)(x − 1) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x-1)(x-2)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "1",
+     "b": "2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 3,
+     "method": 1,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "24b6a571e7259f94dc1597e2d17130855654749cd11d525b55abadd1c2533448",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/foundational/0001",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|STANDARD_FORM|1|1|2",
+     "sourceRubricDigest": "a900972f68c2b04d4726dc4980309a7c3e6d0c0399f0f80a5aa3bf1a58279b0e",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 2)(x − 1) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 1"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:A1": "part a",
+      "2:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "5c7117947646623d2cbb45305aa8ba6ae96aea5de9da015441eaf652e295ac01",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "ac62d11ef4df1e826cded184fb6cc05ad6eceaac87bf1f7fe3e042fb402e34c4",
+   "form": "STANDARD_FORM",
+   "coefficients": {
+    "a": 1,
+    "b": -7,
+    "c": 6
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² − 7x + 6 = 0. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "1"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "6"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 1
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 1)(x − 6) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x-1)(x-6)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "1",
+     "b": "6",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 3,
+     "method": 1,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "ac62d11ef4df1e826cded184fb6cc05ad6eceaac87bf1f7fe3e042fb402e34c4",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/foundational/0002",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|STANDARD_FORM|1|1|6",
+     "sourceRubricDigest": "2c082f2cfc96362b1392a99b26742bb99cc539af0059424c4f4a34770fe5c739",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 1)(x − 6) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 1"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 6"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:A1": "part a",
+      "2:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "bbfe8d03e31cc373aed8c85b965b6593654fa282a8c4163c930f679c483d8d2d",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "efd7ad50b382b75c0366cf678f78d054b99e2de8048611538176d21ee9ea97e8",
+   "form": "STANDARD_FORM",
+   "coefficients": {
+    "a": 1,
+    "b": -12,
+    "c": 32
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² − 12x + 32 = 0. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "4"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "8"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 1
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 4)(x − 8) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x-4)(x-8)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "4",
+     "b": "8",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 3,
+     "method": 1,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "efd7ad50b382b75c0366cf678f78d054b99e2de8048611538176d21ee9ea97e8",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/foundational/0003",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|STANDARD_FORM|1|4|8",
+     "sourceRubricDigest": "7be76faf1fb4b648b8ed03fa41510a5c3cd52d4e590fdcf83d1bc76eae378be3",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 4)(x − 8) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 4"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 8"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:A1": "part a",
+      "2:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "35136cf1f47545113f4ca39f9b61a075d96fd9fdde9c322b00f20e84f3977630",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "0f93e3bd1a4a8cdde8f0a52b5601a457a10f88701fa09658e8096cc5fcb23210",
+   "form": "STANDARD_FORM",
+   "coefficients": {
+    "a": 1,
+    "b": -13,
+    "c": 40
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² − 13x + 40 = 0. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "5"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "8"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 1
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x − 5) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x-5)(x-8)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "5",
+     "b": "8",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 3,
+     "method": 1,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "0f93e3bd1a4a8cdde8f0a52b5601a457a10f88701fa09658e8096cc5fcb23210",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/foundational/0004",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|STANDARD_FORM|1|5|8",
+     "sourceRubricDigest": "50203204d7348a4e69d7bc15e7aad5914095829d1d9592282ff8ef27b0039d03",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x − 5) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 5"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 8"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:A1": "part a",
+      "2:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "05d083e39d94dcae668e368a6526d4eb3d213489fa5c28f50b77cd4766bf6b00",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "19af757a10fa0a55e6c918aca8acaa9210ab732f0cf767a57b1a55050bb2151f",
+   "form": "STANDARD_FORM",
+   "coefficients": {
+    "a": 1,
+    "b": -9,
+    "c": 18
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² − 9x + 18 = 0. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "3"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "6"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 1
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x − 6) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x-3)(x-6)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "3",
+     "b": "6",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 3,
+     "method": 1,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "19af757a10fa0a55e6c918aca8acaa9210ab732f0cf767a57b1a55050bb2151f",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/foundational/0006",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|STANDARD_FORM|1|3|6",
+     "sourceRubricDigest": "7acd9119178c4695cf2853596230584646a3a7fc49938a49e4bb400bae329424",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x − 6) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 3"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 6"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:A1": "part a",
+      "2:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "1ee344af345094d65a31bf02c4a20c0273a9731218580f6bd6448442902bc2e4",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "d00e4f8be5cf295b3922f941d3246368b507491fca31ea684f75950c87e56320",
+   "form": "STANDARD_FORM",
+   "coefficients": {
+    "a": 1,
+    "b": -9,
+    "c": 8
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² − 9x + 8 = 0. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "1"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "8"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 1
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 1)(x − 8) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x-1)(x-8)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "1",
+     "b": "8",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 3,
+     "method": 1,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "d00e4f8be5cf295b3922f941d3246368b507491fca31ea684f75950c87e56320",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/foundational/0008",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|STANDARD_FORM|1|1|8",
+     "sourceRubricDigest": "dce383bd8bd75a4dd107e32c0f0cd3189e5aa0b72c747f41032543b2f38e11a9",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 1)(x − 8) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 1"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 8"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:A1": "part a",
+      "2:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "f38a9095f29d20cd2dbf40a6b657fa494363702b6b889d45cc6bc8c28916de3d",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "4bb71003ae97ab8ce723997b59a8321a7fb53f460cc2490fbfbe322d8df96b76",
+   "form": "STANDARD_FORM",
+   "coefficients": {
+    "a": 1,
+    "b": -17,
+    "c": 72
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² − 17x + 72 = 0. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "8"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "9"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 1
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 9)(x − 8) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x-8)(x-9)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "8",
+     "b": "9",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 3,
+     "method": 1,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "4bb71003ae97ab8ce723997b59a8321a7fb53f460cc2490fbfbe322d8df96b76",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/foundational/0009",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|STANDARD_FORM|1|8|9",
+     "sourceRubricDigest": "d02fc0dda819b63072a770e8679974bb4d3ade7917f7c3cf198146099c7d7ac1",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 9)(x − 8) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 8"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 9"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:A1": "part a",
+      "2:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "cac175d225a9c93ce3b0c1bed29968c55145a316024b1fc950c5699267cf94bf",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "b4c55939e396db5d68b2395ec5b55bbd40bbb3e9aca5884a9fb761eb59f2be82",
+   "form": "STANDARD_FORM",
+   "coefficients": {
+    "a": 1,
+    "b": -6,
+    "c": 5
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² − 6x + 5 = 0. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "1"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "5"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 1
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 1)(x − 5) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x-1)(x-5)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "1",
+     "b": "5",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 3,
+     "method": 1,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "b4c55939e396db5d68b2395ec5b55bbd40bbb3e9aca5884a9fb761eb59f2be82",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/foundational/0010",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|STANDARD_FORM|1|1|5",
+     "sourceRubricDigest": "02d7c90e25019b6442ae6c093611c758c34e6c4766d8f71b21fb1aafdd31d336",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 1)(x − 5) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 1"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 5"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:A1": "part a",
+      "2:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "6a497d1ab302505e3e04b679db7ef8d53c3eb3342901b1df949b5bdfc789708d",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "79908f0d633fe58787c407e46a24fa26e29f5542cf63d52269219b581e957528",
+   "form": "STANDARD_FORM",
+   "coefficients": {
+    "a": 1,
+    "b": -11,
+    "c": 28
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² − 11x + 28 = 0. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "4"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "7"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 1
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 7)(x − 4) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x-4)(x-7)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "4",
+     "b": "7",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 3,
+     "method": 1,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "79908f0d633fe58787c407e46a24fa26e29f5542cf63d52269219b581e957528",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/foundational/0013",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|STANDARD_FORM|1|4|7",
+     "sourceRubricDigest": "07b33e6d33a369679d187d9e34c136fba84dd0e1b126abfe05c50c765fe7245b",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 7)(x − 4) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 4"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 7"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:A1": "part a",
+      "2:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "dff30b9416140dd575c28599b631e78c485dd029d320c7dfad9676bd6408762c",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "4f3ef5b38813a2b1037db7fd017d2f9235d368af85b089d9f0c5de22d72c05bb",
+   "form": "STANDARD_FORM",
+   "coefficients": {
+    "a": 1,
+    "b": -5,
+    "c": 6
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² − 5x + 6 = 0. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "3"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 1
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x − 2) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x-2)(x-3)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "2",
+     "b": "3",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 3,
+     "method": 1,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "4f3ef5b38813a2b1037db7fd017d2f9235d368af85b089d9f0c5de22d72c05bb",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/foundational/0015",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|STANDARD_FORM|1|2|3",
+     "sourceRubricDigest": "3f56eaf4be3a35a5f9ecda1b45bfd34952f6723dcabe7ed2723921019ce53030",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x − 2) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 2"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 3"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:A1": "part a",
+      "2:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "15c54581a121642f0b6085e005efece23acdbd162ad7589cf58fb6688caa5cab",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "28e9b9af506033b7eb631c7ee73c6f209631b4362f51ff3eeae8f984c2fca201",
+   "form": "TERMS_ON_BOTH_SIDES",
+   "coefficients": {
+    "a": 1,
+    "b": -5,
+    "c": -6
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² = 5x + 6. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-1"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "6"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to x² − 5x − 6 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "x^2-5x-6=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 6)(x + 1) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+1)(x-6)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-1",
+     "b": "6",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "28e9b9af506033b7eb631c7ee73c6f209631b4362f51ff3eeae8f984c2fca201",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/standard/0001",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|TERMS_ON_BOTH_SIDES|1|-1|6",
+     "sourceRubricDigest": "16af60d5dc5dba8e74fb34c866312d52ca7b354ad44003fb19dc29cd034a70ca",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to x² − 5x − 6 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 6)(x + 1) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -1"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 6"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "9cf17e05a40b3bdb15fbdad2b407a0616186331d43b3222a6e8b9193903476c4",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "d3c8d7eed3db778dff4abdb62899760796294aaae9b3b075351ee4ccc75e8304",
+   "form": "TERMS_ON_BOTH_SIDES",
+   "coefficients": {
+    "a": 1,
+    "b": -7,
+    "c": -8
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² = 7x + 8. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-1"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "8"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to x² − 7x − 8 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "x^2-7x-8=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x + 1) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+1)(x-8)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-1",
+     "b": "8",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "d3c8d7eed3db778dff4abdb62899760796294aaae9b3b075351ee4ccc75e8304",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/standard/0003",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|TERMS_ON_BOTH_SIDES|1|-1|8",
+     "sourceRubricDigest": "35af2700b87b3ddd0c61ae18c42730e9838b4752324044d6ee4e3475b1cc399f",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to x² − 7x − 8 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x + 1) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -1"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 8"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "72e72ddfc88f6d308e485562c0b4f06a179d6f29469fa3120366a5c6035acac2",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "d30d48406c321cb09b4bd43f893cf80ffa172ad96652aaabec471d278e3cb703",
+   "form": "TERMS_ON_BOTH_SIDES",
+   "coefficients": {
+    "a": 1,
+    "b": -1,
+    "c": -12
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² = x + 12. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-3"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "4"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to x² − x − 12 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "x^2-1x-12=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 4)(x + 3) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+3)(x-4)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-3",
+     "b": "4",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "d30d48406c321cb09b4bd43f893cf80ffa172ad96652aaabec471d278e3cb703",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/standard/0004",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|TERMS_ON_BOTH_SIDES|1|-3|4",
+     "sourceRubricDigest": "079cc18729c575c375922c9f4715ef187fd2844abba4fee0c76deecc3421d12e",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to x² − x − 12 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 4)(x + 3) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -3"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 4"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "e9325b9f055f0bac84f9335afef35982c4c8f17b6d266a829df6673a8b7341fa",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "3b45234b1ba72c085b546b93ad90fea4a1ea750aa2cba952f16dd3b25a9cb839",
+   "form": "TERMS_ON_BOTH_SIDES",
+   "coefficients": {
+    "a": 1,
+    "b": 1,
+    "c": -72
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² = −x + 72. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-9"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "8"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to x² + x − 72 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "x^2+1x-72=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x + 9) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+9)(x-8)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-9",
+     "b": "8",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "3b45234b1ba72c085b546b93ad90fea4a1ea750aa2cba952f16dd3b25a9cb839",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/standard/0005",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|TERMS_ON_BOTH_SIDES|1|-9|8",
+     "sourceRubricDigest": "f3a7811aa5b903c56dd80e84594b154aebdef920e725dfdfddedb0d321f398c4",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to x² + x − 72 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x + 9) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -9"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 8"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "dc99ff4042e69edabf8c53e111ae4f30f35549d5a14356d82bb9a0a7c2c4d8fe",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "1352ad417c74c0785b6eb03c885cb9a3995c585bff8920774cdd4a6a660583cf",
+   "form": "TERMS_ON_BOTH_SIDES",
+   "coefficients": {
+    "a": 1,
+    "b": -1,
+    "c": -56
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² = x + 56. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-7"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "8"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to x² − x − 56 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "x^2-1x-56=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x + 7) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+7)(x-8)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-7",
+     "b": "8",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "1352ad417c74c0785b6eb03c885cb9a3995c585bff8920774cdd4a6a660583cf",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/standard/0006",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|TERMS_ON_BOTH_SIDES|1|-7|8",
+     "sourceRubricDigest": "fa7cdf66c45a6d9085fe1b8a7be60b5f0a47bd77d113f43f1e704975ef424896",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to x² − x − 56 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x + 7) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -7"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 8"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "11ff38c0a0a4bfb13fa15e0070c4efbf20c50630d94ced9778f89925c538c6e9",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "1a80dbf769ccffab5919247648fa6de1148309afa4992ab33600b7ff7a277092",
+   "form": "TERMS_ON_BOTH_SIDES",
+   "coefficients": {
+    "a": 1,
+    "b": 2,
+    "c": -35
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² = −2x + 35. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-7"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "5"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to x² + 2x − 35 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "x^2+2x-35=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 5)(x + 7) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+7)(x-5)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-7",
+     "b": "5",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "1a80dbf769ccffab5919247648fa6de1148309afa4992ab33600b7ff7a277092",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/standard/0007",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|TERMS_ON_BOTH_SIDES|1|-7|5",
+     "sourceRubricDigest": "8ea04189d94be6774c124d395d55fd97876d4975818eb525f50076c5f0e34ec3",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to x² + 2x − 35 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 5)(x + 7) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -7"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 5"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "ead412e7e36c7cb0db1c8fd74f6b27b77952c9c766cd63293ead9e4ab09db254",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "d6cbc9c23dcfc862546b20529f9ee8577621658f6fc5f0f0d82a8e6030bbcd8b",
+   "form": "TERMS_ON_BOTH_SIDES",
+   "coefficients": {
+    "a": 1,
+    "b": 1,
+    "c": -2
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² = −x + 2. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "1"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to x² + x − 2 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "x^2+1x-2=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 1)(x + 2) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+2)(x-1)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-2",
+     "b": "1",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "d6cbc9c23dcfc862546b20529f9ee8577621658f6fc5f0f0d82a8e6030bbcd8b",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/standard/0008",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|TERMS_ON_BOTH_SIDES|1|-2|1",
+     "sourceRubricDigest": "81a037240bc2117d1a6e331aa7ec5abee45eac41f5bc4f620b4cae1f0d70e218",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to x² + x − 2 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 1)(x + 2) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -2"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 1"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "f4b43e1e8b197355381dba96ab365bcb67b7f00c37b374417ad116e8c7b0f840",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "21b072e36e77f683dad08c14ab302ea928dfedb7d2baa1a30f1522de76518311",
+   "form": "TERMS_ON_BOTH_SIDES",
+   "coefficients": {
+    "a": 1,
+    "b": 5,
+    "c": -24
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² = −5x + 24. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-8"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "3"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to x² + 5x − 24 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "x^2+5x-24=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x + 8) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+8)(x-3)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-8",
+     "b": "3",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "21b072e36e77f683dad08c14ab302ea928dfedb7d2baa1a30f1522de76518311",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/standard/0009",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|TERMS_ON_BOTH_SIDES|1|-8|3",
+     "sourceRubricDigest": "57e1e1f193dfe64927579d4d31276a159ef4bb48cb1bc2c044baf40b73532ae3",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to x² + 5x − 24 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x + 8) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -8"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 3"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "03531208e38efce7674b3832a335176ca79857b21ea90cc12f32545d1b0691b2",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "b4a7bf4025fe57f1e9075253e344cab3f44654ff95589651458145eada5ccba4",
+   "form": "TERMS_ON_BOTH_SIDES",
+   "coefficients": {
+    "a": 1,
+    "b": 4,
+    "c": -21
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² = −4x + 21. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-7"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "3"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to x² + 4x − 21 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "x^2+4x-21=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x + 7) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+7)(x-3)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-7",
+     "b": "3",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "b4a7bf4025fe57f1e9075253e344cab3f44654ff95589651458145eada5ccba4",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/standard/0010",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|TERMS_ON_BOTH_SIDES|1|-7|3",
+     "sourceRubricDigest": "1ba4e31485aacfe80b4828d9bf221a443da0493a06bc794473e0960f31a80403",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to x² + 4x − 21 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 3)(x + 7) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -7"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 3"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "aa232f38f62df832ae475d3c64c88dbd52db5ff3b68240bf45bd9ed960bf6443",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "3ec11d1b7e8588f5d86a9f152355669bc4845660f316828e914f75c2d6022342",
+   "form": "TERMS_ON_BOTH_SIDES",
+   "coefficients": {
+    "a": 1,
+    "b": -5,
+    "c": -24
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x² = 5x + 24. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-3"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "8"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to x² − 5x − 24 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "x^2-5x-24=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x + 3) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+3)(x-8)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-3",
+     "b": "8",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "3ec11d1b7e8588f5d86a9f152355669bc4845660f316828e914f75c2d6022342",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/standard/0011",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|TERMS_ON_BOTH_SIDES|1|-3|8",
+     "sourceRubricDigest": "d51e74aeb6a44ec7ea57850cd31246e171da1eeaf32afe9b917c790c5d736426",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to x² − 5x − 24 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (x − 8)(x + 3) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -3"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 8"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "676533efd7156f4bf20d242a9d5d49832646ce3d6e186362fd577b09f1b2be63",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "129c0e1d6330d3beeab52b19d0af486e7ae6431e3e998de2fd9a625740aaefd9",
+   "form": "PRODUCT_TO_EXPAND",
+   "coefficients": {
+    "a": 2,
+    "b": -5,
+    "c": -52
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x(2x − 5) = 52. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-4"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "13/2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to 2x² − 5x − 52 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "2x^2-5x-52=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (2x − 13)(x + 4) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+4)(2x-13)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-4",
+     "b": "13/2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [
+      "6.5"
+     ],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "129c0e1d6330d3beeab52b19d0af486e7ae6431e3e998de2fd9a625740aaefd9",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/challenge/0001",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|PRODUCT_TO_EXPAND|2|-4|6.5",
+     "sourceRubricDigest": "9848311c93123ee21160b256a15ff83cb89fd4a95093a0e23e1e35941243bc24",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to 2x² − 5x − 52 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 13)(x + 4) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -4"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 13/2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "00b6f10f67095ddc79e20d9ea8210cd3bde34445c34a258d553d1a10056db1a4",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "428bcf0c5ba62a7ebdebcbed5429352d674df6b3fbe4d2fb5c77c501367162e0",
+   "form": "PRODUCT_TO_EXPAND",
+   "coefficients": {
+    "a": 2,
+    "b": 13,
+    "c": -45
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x(2x + 13) = 45. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-9"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "5/2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to 2x² + 13x − 45 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "2x^2+13x-45=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (2x − 5)(x + 9) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+9)(2x-5)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-9",
+     "b": "5/2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [
+      "2.5"
+     ],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "428bcf0c5ba62a7ebdebcbed5429352d674df6b3fbe4d2fb5c77c501367162e0",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/challenge/0002",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|PRODUCT_TO_EXPAND|2|-9|2.5",
+     "sourceRubricDigest": "7d8135aed54997c70bbd02ebd92b438e449a04599e220b555e8623b92fd5f490",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to 2x² + 13x − 45 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 5)(x + 9) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -9"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 5/2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "692f31958b67747e758608da97ccf1aadfcd83117478a9d45f000de586dfca46",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "55dbc92ed7641fb045f81883dc28c80124190a3dfee70c454fba13a0dee84fc1",
+   "form": "PRODUCT_TO_EXPAND",
+   "coefficients": {
+    "a": 2,
+    "b": 5,
+    "c": -25
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x(2x + 5) = 25. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-5"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "5/2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to 2x² + 5x − 25 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "2x^2+5x-25=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (2x − 5)(x + 5) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+5)(2x-5)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-5",
+     "b": "5/2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [
+      "2.5"
+     ],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "55dbc92ed7641fb045f81883dc28c80124190a3dfee70c454fba13a0dee84fc1",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/challenge/0003",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|PRODUCT_TO_EXPAND|2|-5|2.5",
+     "sourceRubricDigest": "b7ebf4ca9a6e29ae7e05647182274c4a6b45541dc76f79891012fa440b8130e7",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to 2x² + 5x − 25 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 5)(x + 5) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -5"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 5/2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "3a6cba6604de06fc5bc01aa6de9f4bde8148a1181ac666ffbf8d80fb9e6d7b6b",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "cfee2a0b41c605f48d9caae590ea901c5c6341c99f161f6ee12c897164aafeee",
+   "form": "PRODUCT_TO_EXPAND",
+   "coefficients": {
+    "a": 2,
+    "b": 11,
+    "c": -40
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x(2x + 11) = 40. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-8"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "5/2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to 2x² + 11x − 40 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "2x^2+11x-40=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (2x − 5)(x + 8) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+8)(2x-5)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-8",
+     "b": "5/2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [
+      "2.5"
+     ],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "cfee2a0b41c605f48d9caae590ea901c5c6341c99f161f6ee12c897164aafeee",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/challenge/0004",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|PRODUCT_TO_EXPAND|2|-8|2.5",
+     "sourceRubricDigest": "3018f80d889e8160c1bc5d7e9b028f703cf2009adbcdcda211c45078da30c031",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to 2x² + 11x − 40 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 5)(x + 8) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -8"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 5/2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "f34ee87f933e47c05af249e159c79f1420cb7919929f5604c05839736c788d29",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "5a3da8e842ed9939035a5b28f5a265d6972690b5c0e3b6abe27469182c2e24ba",
+   "form": "PRODUCT_TO_EXPAND",
+   "coefficients": {
+    "a": 2,
+    "b": 7,
+    "c": -30
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x(2x + 7) = 30. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-6"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "5/2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to 2x² + 7x − 30 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "2x^2+7x-30=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (2x − 5)(x + 6) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+6)(2x-5)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-6",
+     "b": "5/2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [
+      "2.5"
+     ],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "5a3da8e842ed9939035a5b28f5a265d6972690b5c0e3b6abe27469182c2e24ba",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/challenge/0005",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|PRODUCT_TO_EXPAND|2|-6|2.5",
+     "sourceRubricDigest": "76ee506173b35d80e249abba02905ec211f027b295939f933318a317bdb71c81",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to 2x² + 7x − 30 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 5)(x + 6) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -6"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 5/2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "d024715e537137a06d9fcacb2f0d28f736b8134bd58ac7a13555da1f339e6400",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "396a92d3750b3b64956a420ab80a921925e724ad7a3075707526b96e8974c4a4",
+   "form": "PRODUCT_TO_EXPAND",
+   "coefficients": {
+    "a": 2,
+    "b": -3,
+    "c": -14
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x(2x − 3) = 14. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "7/2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to 2x² − 3x − 14 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "2x^2-3x-14=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (2x − 7)(x + 2) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+2)(2x-7)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-2",
+     "b": "7/2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [
+      "3.5"
+     ],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "396a92d3750b3b64956a420ab80a921925e724ad7a3075707526b96e8974c4a4",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/challenge/0006",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|PRODUCT_TO_EXPAND|2|-2|3.5",
+     "sourceRubricDigest": "db98c72cd7318867f977bf19a53135f939bf1bc74e53c765f12a25021b4cd225",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to 2x² − 3x − 14 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 7)(x + 2) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -2"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 7/2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "a90769fb0f220257f800f9e0d726c52188250b2c86f99c3d0acf156a2333a0a8",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "63c30e2c22bfc23adc8ec2d0c6147d0b67ddca38b077efc6e902dba810ee2f59",
+   "form": "PRODUCT_TO_EXPAND",
+   "coefficients": {
+    "a": 2,
+    "b": 11,
+    "c": -21
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x(2x + 11) = 21. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-7"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "3/2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to 2x² + 11x − 21 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "2x^2+11x-21=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (2x − 3)(x + 7) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+7)(2x-3)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-7",
+     "b": "3/2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [
+      "1.5"
+     ],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "63c30e2c22bfc23adc8ec2d0c6147d0b67ddca38b077efc6e902dba810ee2f59",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/challenge/0007",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|PRODUCT_TO_EXPAND|2|-7|1.5",
+     "sourceRubricDigest": "ce8af5fe24914b0f15fa5cdd9d998bc09b4acd91df88516fb85ecc2d2a5bf249",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to 2x² + 11x − 21 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 3)(x + 7) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -7"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 3/2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "7b5b255b3f953ad4df117c03a9793cbaa5363fa2fea5504cab2bd773056c2550",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "6348ed03bcbebd1d36761dfbb892d1f2f4f4c420a5cfa5c92ae7e60c2797ff4e",
+   "form": "PRODUCT_TO_EXPAND",
+   "coefficients": {
+    "a": 2,
+    "b": 7,
+    "c": -99
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x(2x + 7) = 99. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-9"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "11/2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to 2x² + 7x − 99 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "2x^2+7x-99=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (2x − 11)(x + 9) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+9)(2x-11)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-9",
+     "b": "11/2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [
+      "5.5"
+     ],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "6348ed03bcbebd1d36761dfbb892d1f2f4f4c420a5cfa5c92ae7e60c2797ff4e",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/challenge/0008",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|PRODUCT_TO_EXPAND|2|-9|5.5",
+     "sourceRubricDigest": "96410ae564f9324f11c73a429c56efa77edcb50025a2fb22cd76ce8c50b148f1",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to 2x² + 7x − 99 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 11)(x + 9) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -9"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 11/2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "413484cf2506c902f9ce3c905c3fb24046cf617aa9ac491cf5d6785dbecfee1a",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "c600169d810a5556b111dd4ca7d931f2e4d6c34dfbd60a31dc98e211cf2461de",
+   "form": "PRODUCT_TO_EXPAND",
+   "coefficients": {
+    "a": 2,
+    "b": -5,
+    "c": -75
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x(2x − 5) = 75. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-5"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "15/2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to 2x² − 5x − 75 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "2x^2-5x-75=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (2x − 15)(x + 5) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+5)(2x-15)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-5",
+     "b": "15/2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [
+      "7.5"
+     ],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "c600169d810a5556b111dd4ca7d931f2e4d6c34dfbd60a31dc98e211cf2461de",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/challenge/0009",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|PRODUCT_TO_EXPAND|2|-5|7.5",
+     "sourceRubricDigest": "a7da0a6549e0e1f38a1a784278c0017347e4cb94d53dd92365582ff0cc8f9eec",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to 2x² − 5x − 75 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 15)(x + 5) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -5"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 15/2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "d7af0a13aeb924af5d1184f50b8851c766adcbe6805fdfc7d995aa62ab69bf35",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  },
+  {
+   "instanceId": "9c6058bd4d2d14053d8a510eff03f2bf38a4b530e4a247bd6486bf93a2269705",
+   "form": "PRODUCT_TO_EXPAND",
+   "coefficients": {
+    "a": 2,
+    "b": -5,
+    "c": -18
+   },
+   "lineage": {
+    "systemId": "IB",
+    "systemVersionId": "0-2-0-illustrative",
+    "adapterId": "IB.MATH_AA_HL.P1",
+    "blueprintId": "v2.ib.math-aa-hl/p1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "coreId": "tf.math.quadratic.solve-rational-roots",
+    "coreVersion": "1.0.0-rc.1",
+    "conceptId": "math.alg.quadratics",
+    "rightsCategory": "STUDYUS_ORIGINAL_DETERMINISTIC"
+   },
+   "target": {
+    "projectionVersion": "exam-bank-projection-3 (PROPOSED, Track B)",
+    "learner": {
+     "language": "en",
+     "itemType": "MULTI_PART_MATH",
+     "calculator": "NONE",
+     "workingShown": true,
+     "stem": "Solve the equation x(2x − 5) = 18. Show all necessary working.",
+     "parts": [
+      {
+       "id": "a",
+       "prompt": "Write down the smaller solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "-2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      },
+      {
+       "id": "b",
+       "prompt": "Write down the larger solution.",
+       "marks": 1,
+       "rubricCode": "A1",
+       "math": {
+        "kind": "NUMBER",
+        "answers": [
+         "9/2"
+        ],
+        "requiredForm": "ANY",
+        "significantFigures": null,
+        "decimalPlaces": null,
+        "tolerance": {
+         "absolute": 0,
+         "relative": 0
+        },
+        "units": null
+       }
+      }
+     ],
+     "working": {
+      "required": true,
+      "marksAttached": 2
+     }
+    },
+    "method": [
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Rearranges to 2x² − 5x − 18 = 0.",
+      "marks": 1,
+      "intermediates": [
+       "2x^2-5x-18=0"
+      ],
+      "requiredEvidenceForm": "EXPANDED_STANDARD_FORM_EQUALS_ZERO",
+      "mustDifferInFormFromTheGivenEquation": true
+     },
+     {
+      "rubricCode": "M1",
+      "criterionVerbatim": "Applies a valid method to the equation in standard form (for example factorising: (2x − 9)(x + 2) = 0; the quadratic formula; completing the square).",
+      "marks": 1,
+      "intermediates": [
+       "(x+2)(2x-9)=0"
+      ],
+      "acceptedMethodFamilies": [
+       "FACTORISING",
+       "QUADRATIC_FORMULA",
+       "COMPLETING_THE_SQUARE"
+      ],
+      "requiredEvidenceForm": "FACTORED_LINEAR_FACTORS | FORMULA_SUBSTITUTION | COMPLETED_SQUARE",
+      "mustDifferInFormFromTheGivenEquation": true
+     }
+    ],
+    "orderedRoots": {
+     "order": "ASCENDING",
+     "a": "-2",
+     "b": "9/2",
+     "solutionSetSemantics": "BOTH_PARTS_REQUIRED (never a single NUMBER key with the roots as alternatives)"
+    },
+    "accuracy": {
+     "exact": true,
+     "significantFigures": "NOT_APPLICABLE (exact rational roots)",
+     "tolerance": 0,
+     "decimalEquivalentsAccepted": [
+      "4.5"
+     ],
+     "ambiguousDecimal": false
+    },
+    "units": "NONE",
+    "marks": {
+     "total": 4,
+     "method": 2,
+     "accuracy": 2,
+     "unchanged": true
+    },
+    "scoringProvenance": {
+     "sourceInstanceId": "9c6058bd4d2d14053d8a510eff03f2bf38a4b530e4a247bd6486bf93a2269705",
+     "sourceSeed": "qf52-batch-1/quadratic.solve-rational-roots/IB.MATH_AA_HL.P1/challenge/0010",
+     "sourceRecognitionId": "tf.math.quadratic.solve-rational-roots|PRODUCT_TO_EXPAND|2|-2|4.5",
+     "sourceRubricDigest": "62c8e3cc3476b8ba3dbd1098b6b102692e1e70949815906ca2aace8ab8fd6fa9",
+     "sourceRubricVerbatim": [
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Rearranges to 2x² − 5x − 18 = 0."
+      },
+      {
+       "code": "M1",
+       "kind": "METHOD",
+       "marks": 1,
+       "criterion": "Applies a valid method to the equation in standard form (for example factorising: (2x − 9)(x + 2) = 0; the quadratic formula; completing the square)."
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = -2"
+      },
+      {
+       "code": "A1",
+       "kind": "ACCURACY",
+       "marks": 1,
+       "criterion": "x = 9/2"
+      }
+     ],
+     "sourceCertification": {
+      "state": "AUTOMATED_CERTIFIED_PILOT",
+      "mode": "INHERITED_DETERMINISTIC_CERTIFICATION",
+      "policy": "HUMAN50_POLICY_V1",
+      "unchanged": true
+     },
+     "rubricCodeToTarget": {
+      "0:M1": "working",
+      "1:M1": "working",
+      "2:A1": "part a",
+      "3:A1": "part b"
+     }
+    }
+   },
+   "targetDigest": "94fb376c6f639d8e28351dc073cdf9bc2128ecd49f86623da2ead833aab70e12",
+   "checks": {
+    "partA_key_correct": true,
+    "partB_key_correct": true,
+    "partA_rejects_partB_root": true,
+    "partB_rejects_partA_root": true,
+    "decimal_form_accepted": true,
+    "accuracy_points_match_roots": true,
+    "factored_equivalent_to_standard": true
+   },
+   "currentRuleRestatementEarnsMethodMark": true,
+   "identityNote": "The target changes the learner-facing content, so its content hash differs: Track B issues a NEW instance (reprojectionOf = sourceInstanceId) under a re-certified IB renderer envelope; the source instance and its certification are kept unchanged."
+  }
+ ]
+}

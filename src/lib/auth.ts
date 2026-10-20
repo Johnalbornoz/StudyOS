@@ -43,17 +43,18 @@
  *   provisioning path. If you need a student's ID, call
  *   `getOrCreateStudentId` (or read `students.clerk_id`/`profiles.clerk_id`
  *   for lookups) -- never mint a UUID or write directly to `students`/
- *   `profiles`/`student_profiles` from anywhere else. (See
- *   `src/services/student.service.ts` for a documented example of what
- *   NOT to do -- a dead, pre-existing alternate path that would violate
- *   this contract if it were ever wired up again.)
+ *   `profiles`/`student_profiles` from anywhere else. (A dead alternate
+ *   provisioning path, `src/services/student.service.ts`, violated this
+ *   contract and was removed in the technical cleanup.)
  * - Any future consolidation of `students`/`profiles` into one table is
  *   out of scope here and belongs to a separate migration project.
  */
 
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { getOrCreateCanonicalUser, hasRole } from '@/lib/identity/canonical-user.service';
+import { resolveVerifiedPrimaryEmail } from '@/lib/identity/verified-email';
+import { STUDENT_OWNER_MATCH_SQL, activeRoleSql, resolveOwnedStudent } from '@/lib/identity/access-predicates';
 
 export type UserRole = 'student' | 'teacher' | 'admin';
 
@@ -81,48 +82,48 @@ export async function verifyAuth(): Promise<AuthContext | null> {
 }
 
 /**
- * Verify student access to their own data
+ * Verify student access to their own data -- OWNER ONLY (default-deny).
  *
- * Rules:
- * - Students can only access their own studentId
- * - Teachers can access students they teach
- * - Admins can access any student
+ * Foundation (roles/exams shared, ADR-F06): this guard protects the
+ * Student's own learning routes (plan, cognitive submit, record-evidence,
+ * assessments, ...), several of which WRITE canonical evidence. It used to
+ * honour a Clerk session-claim `role`: 'admin' passed for ANY student and
+ * 'teacher' could read -- and, via record-evidence, write independent
+ * evidence -- for a taught student. Those were a second, non-canonical role
+ * model (canonical roles live in user_roles) and let a non-owner manipulate
+ * cognitive state. Teacher / Parent / Institution / StudyUs-admin reads go
+ * through their own scoped read models (src/lib/authorization,
+ * src/lib/teacher, src/lib/parent, src/lib/admin), never through this guard.
+ * `role` is kept in the signature so callers are unchanged; it no longer
+ * grants anything.
  */
 export async function verifyStudentAccess(
   userId: string,
   studentId: string,
-  role: UserRole
+  _role?: UserRole
 ): Promise<boolean> {
-  // Admins can access anyone
-  if (role === 'admin') {
-    return true;
-  }
-
-  // Students can only access themselves
-  if (role === 'student') {
-    const isOwner = await isUserStudent(userId, studentId);
-    return isOwner;
-  }
-
-  // Teachers can access their students
-  if (role === 'teacher') {
-    const canTeach = await canTeacherAccessStudent(userId, studentId);
-    return canTeach;
-  }
-
-  return false;
+  return isUserStudent(userId, studentId);
 }
 
 /**
- * Check if userId is the owner of studentId
+ * Check if userId (the Clerk id) is the owner of studentId.
+ *
+ * L10 SF-1: ownership alone is not enough. The account must be ACTIVE and
+ * hold an ACTIVE STUDENT role, both read on every call, so a revoked role or
+ * a suspended account is denied on the next request (L4-04, L4-12).
+ * L10 SF-2: ownership uses the one shared definition
+ * (STUDENT_OWNER_MATCH_SQL), the same one the exam family uses.
  */
 async function isUserStudent(userId: string, studentId: string): Promise<boolean> {
   try {
     const result = await db.query(
-      `SELECT 1 FROM students WHERE clerk_id = $1 AND id = $2`,
+      `SELECT 1 FROM students s
+       JOIN users u ON ${STUDENT_OWNER_MATCH_SQL}
+       WHERE u.clerk_id = $1 AND s.id = $2 AND ${activeRoleSql('u.id', 'STUDENT')}
+       LIMIT 1`,
       [userId, studentId]
     );
-    return (result.rowCount ?? 0) > 0;
+    return (result.rowCount ?? result.rows?.length ?? 0) > 0;
   } catch (error) {
     console.error('Error checking student ownership:', error);
     return false;
@@ -215,32 +216,104 @@ async function linkStudentToCanonicalUser(studentId: string): Promise<void> {
   );
 }
 
+/** Thrown when a students row would be created for an identity without an ACTIVE STUDENT role. */
+export class StudentRoleRequiredError extends Error {
+  /** L10-R1 -- the shared auth error contract: an authenticated caller without an ACTIVE Student role is FORBIDDEN (403), never a server error. */
+  readonly status = 403;
+  readonly code = 'STUDENT_ROLE_REQUIRED';
+  constructor() {
+    super('STUDENT_ROLE_REQUIRED');
+    this.name = 'StudentRoleRequiredError';
+  }
+}
+
+/**
+ * L10-R1 -- maps an authorization error to its HTTP meaning, for any caller
+ * that has to turn one into a response. Returns null for anything that is
+ * not an authorization error (which stays a real failure).
+ *
+ * Where it applies today: no API route calls `getOrCreateStudentId` -- every
+ * Student API route goes through `requireStudentId` (null) or
+ * `verifyStudentAccess` (false) and answers 403 itself; a unit test keeps it
+ * that way. The callers of `getOrCreateStudentId` are Server Component pages,
+ * which the proxy's workspace guard keeps from rendering for an account
+ * without an ACTIVE Student role.
+ */
+export function authFailureOf(error: unknown): { status: 403; error: string } | null {
+  if (error instanceof StudentRoleRequiredError) return { status: error.status, error: error.code };
+  return null;
+}
+
 /**
  * Resolve a Clerk user ID to the internal student UUID (shared by
  * profiles.id and students.id), creating the rows on first use. Also
  * repairs the case where a students row exists without its matching
  * profiles/student_profiles rows (e.g. from before this fix landed).
  */
+/**
+ * Track A -- the Clerk profile (email, name) of THIS clerkUserId. Inside a
+ * request made by someone else (an admin granting a Student role to another
+ * account) `currentUser()` is the ADMIN, so its email/name must never be
+ * copied onto the target's new students/profiles row: fall back to the
+ * Backend API lookup of the target itself.
+ */
+export async function resolveClerkIdentity(
+  clerkUserId: string
+): Promise<{ email: string | null; name: string | null; verifiedEmail: string | null }> {
+  // L10 SF-6 (CR-L4-10, CR-L4R1-01): no `emailAddresses[0]` fallback. `email`
+  // is the PRIMARY address (what gets stored on the account's own rows);
+  // `verifiedEmail` is the same address only when Clerk reports it verified,
+  // and is the only value an authorization or invitation match may use.
+  const fromUser = (u: any) => ({
+    email: u?.primaryEmailAddress?.emailAddress || null,
+    name: u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null : null,
+    verifiedEmail: resolveVerifiedPrimaryEmail(u),
+  });
+  const sessionUser = await currentUser().catch(() => null);
+  if (sessionUser && (!sessionUser.id || sessionUser.id === clerkUserId)) return fromUser(sessionUser);
+  try {
+    const client = await clerkClient();
+    return fromUser(await client.users.getUser(clerkUserId));
+  } catch {
+    return { email: null, name: null, verifiedEmail: null };
+  }
+}
+
 export async function getOrCreateStudentId(clerkUserId: string): Promise<string> {
-  const existing = await db.query(
-    `SELECT id FROM students WHERE clerk_id = $1`,
-    [clerkUserId]
-  );
-  if (existing.rows.length > 0) {
-    const studentId = existing.rows[0].id;
-    await ensureProfileRows(studentId, null);
-    await linkStudentToCanonicalUser(studentId);
-    return studentId;
+  // L10 SF-1 / SF-2: the existing-row path goes through the one shared
+  // resolver and is no longer unconditional. A learner whose STUDENT role was
+  // revoked, or whose account is not ACTIVE, is refused here exactly as a
+  // never-granted identity is refused below -- 32 Student routes call this
+  // function with no other role check, so this is where revocation has to
+  // bite for them. A students row with no canonical `users` row resolves to
+  // nothing and falls through to the role check below, which refuses it.
+  const owned = await resolveOwnedStudent({ clerkId: clerkUserId });
+  if (owned) {
+    if (!owned.accessActive) throw new StudentRoleRequiredError();
+    await ensureProfileRows(owned.studentId, null);
+    await linkStudentToCanonicalUser(owned.studentId);
+    return owned.studentId;
   }
 
-  const user = await currentUser();
-  const email =
-    user?.primaryEmailAddress?.emailAddress ||
-    user?.emailAddresses?.[0]?.emailAddress ||
-    `${clerkUserId}@placeholder.local`;
-  const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null;
+  // Foundation (multi-role contract, ADR-F01/F06): a NEW students row is only
+  // ever created for an identity that holds an ACTIVE STUDENT role. Roles are
+  // granted first (role-select / admin console, both of which then call this
+  // function), so legitimate provisioning is unchanged; what this closes is a
+  // Parent-only / Teacher-only / admin-only identity silently becoming a
+  // Student by calling one of the many Student routes that use this function
+  // directly. The existing-row path above is untouched.
+  const studentRole = await db.query(
+    `SELECT 1 FROM user_roles r JOIN users u ON u.id = r.user_id
+     WHERE u.clerk_id = $1 AND r.role = 'STUDENT' AND r.status = 'ACTIVE' AND u.status = 'ACTIVE' LIMIT 1`,
+    [clerkUserId]
+  );
+  if ((studentRole.rows?.length ?? 0) === 0) {
+    throw new StudentRoleRequiredError();
+  }
 
-  return upsertStudentRecord(clerkUserId, email, name);
+  const identity = await resolveClerkIdentity(clerkUserId);
+  const email = identity.email || `${clerkUserId}@placeholder.local`;
+  return upsertStudentRecord(clerkUserId, email, identity.name);
 }
 
 /**
@@ -274,9 +347,23 @@ export async function upsertStudentFromWebhook(
  */
 export async function requireStudentId(clerkUserId: string): Promise<string | null> {
   const canonicalUser = await getOrCreateCanonicalUser(clerkUserId);
+  if (canonicalUser.status !== 'ACTIVE') return null; // L10 SF-1: a suspended/archived account holds no usable role
   const isStudent = await hasRole(canonicalUser.id, 'STUDENT');
   if (!isStudent) return null;
   return getOrCreateStudentId(clerkUserId);
+}
+
+/**
+ * Track A -- the role-checked gate for Parent-only routes, the PARENT twin of
+ * `requireStudentId`: returns null (never provisions a parent profile) when
+ * the caller holds no ACTIVE PARENT role. Callers treat null as 403.
+ */
+export async function requireParentProfileId(clerkUserId: string): Promise<string | null> {
+  const canonicalUser = await getOrCreateCanonicalUser(clerkUserId);
+  if (canonicalUser.status !== 'ACTIVE') return null; // L10 SF-1
+  const isParent = await hasRole(canonicalUser.id, 'PARENT');
+  if (!isParent) return null;
+  return getOrCreateParentId(clerkUserId);
 }
 
 /**
@@ -308,10 +395,7 @@ export async function getOrCreateParentId(clerkUserId: string): Promise<string> 
     return profileId;
   }
 
-  const user = await currentUser();
-  const email =
-    user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || null;
-  const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || null : null;
+  const { email, name } = await resolveClerkIdentity(clerkUserId);
 
   const canonicalUser = await getOrCreateCanonicalUser(clerkUserId, email);
 
@@ -320,30 +404,6 @@ export async function getOrCreateParentId(clerkUserId: string): Promise<string> 
     [name, clerkUserId, canonicalUser.id]
   );
   return inserted.rows[0].id;
-}
-
-/**
- * F2: real implementation, replacing the permanent pre-F2 stub that
- * always returned `false`. Delegates entirely to the canonical
- * authorization service (src/lib/authorization) -- requires an
- * APPROVED TEACHER institution_membership AND an ACTIVE
- * teacher_assignment AND an ACTIVE class_enrollment linking
- * `studentId` to a class that assignment covers. `teacherId` here is
- * the Clerk user id, exactly as verifyStudentAccess already passes it
- * -- the signature/contract of this function is unchanged, only its
- * body now does real, fail-closed work instead of a hardcoded `false`.
- */
-async function canTeacherAccessStudent(
-  teacherId: string,
-  studentId: string
-): Promise<boolean> {
-  try {
-    const { canTeacherAccessStudentByClerkId } = await import('./authorization');
-    return await canTeacherAccessStudentByClerkId(teacherId, studentId);
-  } catch (error) {
-    console.error('Error checking teacher access:', error);
-    return false;
-  }
 }
 
 /**

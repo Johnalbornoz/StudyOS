@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { guardAdminUsersRoute } from '@/lib/admin/route-guard';
-import { addRole, getClerkIdForCanonicalUser, PrivilegedRoleForbiddenError } from '@/services/user-admin.service';
+import { addRole, getClerkIdForCanonicalUser, PrivilegedRoleForbiddenError, PersonaExistsError } from '@/services/user-admin.service';
 
 /** `role` is structurally limited to the three self-service roles -- INSTITUTION_ADMIN and STUDYUS_ADMIN cannot even parse, mirroring assignSelfServiceRole's own compile-time exclusion (src/lib/identity/types.ts). */
 const Schema = z.object({ role: z.enum(['STUDENT', 'PARENT', 'TEACHER']) });
@@ -25,6 +25,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await addRole(guard.admin.actor.id, userId, validated.role, targetClerkId);
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof PersonaExistsError) {
+      return NextResponse.json({ error: 'PERSONA_EXISTS' }, { status: 409 });
+    }
     if (error instanceof PrivilegedRoleForbiddenError) {
       return NextResponse.json({ error: 'PRIVILEGED_ROLE_FORBIDDEN' }, { status: 403 });
     }

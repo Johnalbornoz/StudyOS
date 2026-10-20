@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildDeploymentVersion, type DeploymentVersion } from '@/lib/deployment-version';
+import { isCanonicalEngineV1Enabled } from '@/lib/pedagogical-decision/feature-gate';
+import { studentCatalogExposure } from '@/lib/exam-core/student-exposure';
 
 /**
  * Deployment provenance endpoint (Step 6L-C1-R1 hardening).
@@ -10,7 +12,7 @@ import { buildDeploymentVersion, type DeploymentVersion } from '@/lib/deployment
  * correct and closed proves the endpoint is.
  */
 
-const ALLOWED_KEYS = ['commitSha', 'environment', 'buildTime', 'commitRef', 'deploymentTarget', 'deploymentId'].sort();
+const ALLOWED_KEYS = ['commitSha', 'environment', 'buildTime', 'commitRef', 'deploymentTarget', 'deploymentId', 'canonicalEngineV1Enabled', 'studentCatalogExposure'].sort();
 
 describe('buildDeploymentVersion', () => {
   it('A. returns ONLY the allowed fields, nothing else', () => {
@@ -35,6 +37,8 @@ describe('buildDeploymentVersion', () => {
       commitRef: null,
       deploymentTarget: null,
       deploymentId: null,
+      canonicalEngineV1Enabled: false,
+      studentCatalogExposure: 'FULL',
     });
   });
 
@@ -66,7 +70,7 @@ describe('buildDeploymentVersion', () => {
   it('D. handles an absent commit SHA (and absent buildTime) safely -- null, never undefined, never a throw', () => {
     const out = buildDeploymentVersion({ VERCEL_ENV: 'development' });
     expect(out).toEqual<DeploymentVersion>({
-      commitSha: null, environment: 'development', buildTime: null, commitRef: null, deploymentTarget: null, deploymentId: null,
+      commitSha: null, environment: 'development', buildTime: null, commitRef: null, deploymentTarget: null, deploymentId: null, canonicalEngineV1Enabled: false, studentCatalogExposure: 'FULL',
     });
     // empty string is treated as absent, not echoed back
     const out2 = buildDeploymentVersion({ VERCEL_GIT_COMMIT_SHA: '', VERCEL_GIT_COMMIT_AUTHOR_DATE: '' });
@@ -99,6 +103,20 @@ describe('buildDeploymentVersion', () => {
     expect(buildDeploymentVersion({ STUDYUS_COMMIT_SHA: 'cli-sha' }).commitSha).toBe('cli-sha');
     expect(buildDeploymentVersion({ STUDYUS_COMMIT_SHA: 'cli-sha', VERCEL_GIT_COMMIT_SHA: 'git-sha' }).commitSha).toBe('git-sha');
     expect(buildDeploymentVersion({ STUDYUS_COMMIT_SHA: '' }).commitSha).toBeNull();
+  });
+
+  it('I. reports non-secret flag state: canonicalEngineV1Enabled and the effective studentCatalogExposure, in parity with their readers', () => {
+    const matrix: Array<string | undefined> = [undefined, '', 'true', 'TRUE', 'false', '1', 'PILOT', 'pilot', ' Pilot ', 'FULL', 'bogus'];
+    for (const v of matrix) {
+      const env = { CANONICAL_ENGINE_V1_ENABLED: v, STUDENT_CATALOG_EXPOSURE: v };
+      const out = buildDeploymentVersion(env);
+      expect(out.canonicalEngineV1Enabled).toBe(isCanonicalEngineV1Enabled(env));
+      expect(out.studentCatalogExposure).toBe(studentCatalogExposure(env));
+    }
+    expect(buildDeploymentVersion({ CANONICAL_ENGINE_V1_ENABLED: 'true' }).canonicalEngineV1Enabled).toBe(true);
+    expect(buildDeploymentVersion({ STUDENT_CATALOG_EXPOSURE: 'PILOT' }).studentCatalogExposure).toBe('PILOT');
+    // the raw value is never echoed
+    expect(JSON.stringify(buildDeploymentVersion({ STUDENT_CATALOG_EXPOSURE: 'secret-looking-value' }))).not.toContain('secret-looking-value');
   });
 
   it('E. is pure -- no DB/network/AI import in the module, no process.env read of its own', async () => {

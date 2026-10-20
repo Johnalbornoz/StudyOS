@@ -1,0 +1,6196 @@
+{
+  "kind": "EA1_MATH_ADAPTATION_MATRIX",
+  "v": 2,
+  "about": "EA-1 mathematics proof of concept. Ten DRAFT, UNREVIEWED assessment task families adapted into six component profiles of five PROVISIONAL, ILLUSTRATIVE, MIXED-AUTHORITY assessment-system profiles (and into the five system profiles alone, as generic practice) under a PROVISIONAL discipline policy. DEV_TEST_CONTENT specifications only: a draft family may produce nothing else, and no question was generated. Assessment applicability is read from the repository and never inferred. Nothing here is reviewed, certified or approved.",
+  "engine": {
+    "id": "studyus-adaptation-engine",
+    "version": "3"
+  },
+  "disciplinePolicy": {
+    "policyId": "studyus.adaptation.mathematics",
+    "version": "0.2.0-provisional",
+    "status": "PROVISIONAL"
+  },
+  "applicabilityThreshold": {
+    "policyId": "studyus.assessment-applicability-threshold",
+    "version": "1"
+  },
+  "request": {
+    "purpose": "PRACTICE",
+    "difficultyBand": "STANDARD",
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "languageBySystem": {
+      "PAA": "es",
+      "IB": "en",
+      "CAMBRIDGE": "en",
+      "PISA": "es",
+      "ICFES": "es"
+    }
+  },
+  "systemProfiles": [
+    {
+      "profileId": "PAA",
+      "version": "0.2.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "basis": "MIXED_AUTHORITY",
+      "examFamilyCode": "PAA",
+      "componentDependentDimensions": [
+        "responseFormats",
+        "timePressure",
+        "calculatorPolicy"
+      ],
+      "officialRules": []
+    },
+    {
+      "profileId": "IB",
+      "version": "0.2.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "basis": "MIXED_AUTHORITY",
+      "examFamilyCode": "IB",
+      "componentDependentDimensions": [
+        "responseFormats",
+        "timePressure",
+        "commandTerms",
+        "calculatorPolicy"
+      ],
+      "officialRules": []
+    },
+    {
+      "profileId": "CAMBRIDGE",
+      "version": "0.3.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "basis": "MIXED_AUTHORITY",
+      "examFamilyCode": "CAMBRIDGE",
+      "componentDependentDimensions": [
+        "timePressure",
+        "calculatorPolicy"
+      ],
+      "officialRules": [
+        "competencyEmphasis"
+      ]
+    },
+    {
+      "profileId": "PISA",
+      "version": "0.2.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "basis": "MIXED_AUTHORITY",
+      "examFamilyCode": "PISA",
+      "componentDependentDimensions": [
+        "responseFormats",
+        "timePressure",
+        "contextExpectations",
+        "calculatorPolicy",
+        "competencyEmphasis",
+        "competencyElicitation"
+      ],
+      "officialRules": []
+    },
+    {
+      "profileId": "ICFES",
+      "version": "0.2.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "basis": "MIXED_AUTHORITY",
+      "examFamilyCode": "ICFES",
+      "componentDependentDimensions": [
+        "responseFormats",
+        "timePressure",
+        "calculatorPolicy",
+        "competencyEmphasis",
+        "competencyElicitation",
+        "blueprintConstraints"
+      ],
+      "officialRules": []
+    }
+  ],
+  "componentProfiles": [
+    {
+      "componentId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "version": "0.4.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "localSubject": "Matemáticas",
+      "overrides": [
+        "responseFormats",
+        "timePressure",
+        "calculatorPolicy"
+      ],
+      "officialRulesInForce": [
+        "responseFormats",
+        "timePressure",
+        "calculatorPolicy"
+      ],
+      "studyusPolicyRulesInForce": [
+        "commandTerms",
+        "markStructure",
+        "reasoningDepth",
+        "contextExpectations",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyEmphasis",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    },
+    {
+      "componentId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "version": "0.4.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "localSubject": "Mathematics: analysis and approaches",
+      "overrides": [
+        "responseFormats",
+        "timePressure",
+        "commandTerms",
+        "calculatorPolicy"
+      ],
+      "officialRulesInForce": [
+        "responseFormats",
+        "timePressure",
+        "commandTerms",
+        "calculatorPolicy"
+      ],
+      "studyusPolicyRulesInForce": [
+        "markStructure",
+        "reasoningDepth",
+        "contextExpectations",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyEmphasis",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    },
+    {
+      "componentId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "version": "0.4.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "localSubject": "Mathematics: analysis and approaches",
+      "overrides": [
+        "responseFormats",
+        "timePressure",
+        "commandTerms",
+        "calculatorPolicy"
+      ],
+      "officialRulesInForce": [
+        "responseFormats",
+        "timePressure",
+        "commandTerms",
+        "calculatorPolicy"
+      ],
+      "studyusPolicyRulesInForce": [
+        "markStructure",
+        "reasoningDepth",
+        "contextExpectations",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyEmphasis",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    },
+    {
+      "componentId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "version": "0.4.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "localSubject": "Mathematics (9709)",
+      "overrides": [
+        "timePressure",
+        "calculatorPolicy"
+      ],
+      "officialRulesInForce": [
+        "timePressure",
+        "calculatorPolicy",
+        "competencyEmphasis"
+      ],
+      "studyusPolicyRulesInForce": [
+        "responseFormats",
+        "commandTerms",
+        "markStructure",
+        "reasoningDepth",
+        "contextExpectations",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    },
+    {
+      "componentId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "version": "0.4.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "localSubject": "Matemáticas",
+      "overrides": [
+        "responseFormats",
+        "timePressure",
+        "contextExpectations",
+        "calculatorPolicy",
+        "competencyEmphasis",
+        "competencyElicitation"
+      ],
+      "officialRulesInForce": [
+        "responseFormats",
+        "timePressure",
+        "contextExpectations",
+        "calculatorPolicy",
+        "competencyEmphasis"
+      ],
+      "studyusPolicyRulesInForce": [
+        "commandTerms",
+        "markStructure",
+        "reasoningDepth",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    },
+    {
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "version": "0.4.0-illustrative",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "localSubject": "Matemáticas",
+      "overrides": [
+        "responseFormats",
+        "timePressure",
+        "calculatorPolicy",
+        "competencyEmphasis",
+        "competencyElicitation",
+        "blueprintConstraints"
+      ],
+      "officialRulesInForce": [
+        "responseFormats",
+        "timePressure",
+        "calculatorPolicy",
+        "competencyEmphasis"
+      ],
+      "studyusPolicyRulesInForce": [
+        "commandTerms",
+        "markStructure",
+        "reasoningDepth",
+        "contextExpectations",
+        "stimulusExpectations",
+        "responseLength",
+        "rubricStyle",
+        "competencyElicitation",
+        "transferExpectations",
+        "authenticityRequirements",
+        "blueprintConstraints"
+      ]
+    }
+  ],
+  "families": [
+    {
+      "familyId": "tf.math.proportion.missing-value",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Proporcionalidad",
+      "evidenceActions": [
+        "SOLVE"
+      ],
+      "construct": "DIRECT_PROPORTION_MISSING_VALUE",
+      "calculatorDependency": "NONE",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11"
+    },
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Proporcionalidad",
+      "evidenceActions": [
+        "FORMULATE",
+        "SOLVE",
+        "INTERPRET"
+      ],
+      "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+      "calculatorDependency": "HELPFUL",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e"
+    },
+    {
+      "familyId": "tf.math.linear.line-through-two-points",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Rectas y funciones lineales",
+      "evidenceActions": [
+        "COMPUTE",
+        "REPRESENT"
+      ],
+      "construct": "LINE_THROUGH_TWO_POINTS",
+      "calculatorDependency": "NONE",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62"
+    },
+    {
+      "familyId": "tf.math.linear.constant-rate-model",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.fun.linear-functions-lines",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Rectas y funciones lineales",
+      "evidenceActions": [
+        "FORMULATE",
+        "INTERPRET"
+      ],
+      "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+      "calculatorDependency": "NONE",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5"
+    },
+    {
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.alg.quadratics",
+      "canonicalSubject": "Mathematics",
+      "canonicalName": "Quadratic functions and inequalities",
+      "evidenceActions": [
+        "SOLVE"
+      ],
+      "construct": "QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING",
+      "calculatorDependency": "NONE",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d"
+    },
+    {
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.alg.quadratics",
+      "canonicalSubject": "Mathematics",
+      "canonicalName": "Quadratic functions and inequalities",
+      "evidenceActions": [
+        "FORMULATE",
+        "SOLVE",
+        "INTERPRET"
+      ],
+      "construct": "QUADRATIC_MODEL_VERTEX_OPTIMUM",
+      "calculatorDependency": "HELPFUL",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505"
+    },
+    {
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.prob.probability",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Probabilidad",
+      "evidenceActions": [
+        "COMPUTE"
+      ],
+      "construct": "CLASSICAL_PROBABILITY_SINGLE_DRAW",
+      "calculatorDependency": "NONE",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d"
+    },
+    {
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.prob.probability",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Probabilidad",
+      "evidenceActions": [
+        "FORMULATE",
+        "COMPUTE",
+        "EVALUATE"
+      ],
+      "construct": "COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES",
+      "calculatorDependency": "HELPFUL",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2"
+    },
+    {
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Representación e interpretación de datos",
+      "evidenceActions": [
+        "INTERPRET",
+        "COMPUTE"
+      ],
+      "construct": "RELATIVE_CHANGE_OR_SHARE_FROM_TABULATED_VALUES",
+      "calculatorDependency": "REQUIRED",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9"
+    },
+    {
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "version": "0.1.0-draft",
+      "lifecycle": "DRAFT",
+      "reviewStatus": "UNREVIEWED",
+      "primaryConceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "canonicalName": "Representación e interpretación de datos",
+      "evidenceActions": [
+        "INTERPRET",
+        "EVALUATE"
+      ],
+      "construct": "CLAIM_EVALUATION_AGAINST_A_DATA_DISPLAY",
+      "calculatorDependency": "NONE",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f"
+    }
+  ],
+  "cells": [
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "16c0c96807811bc717f761b3436ea87a4b2a0c8f45c48260e9afc90d98428735",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "046b88c9d4eb16b60c0f589e115da07ed4e5e4999f3a8c2f85561578941b876b",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "81b7863c0e5979f865488cb34227645d4a191e674de4c5f9a1ba884ba42c2ef1",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "ff9b9b5d864b2f950064e3aa3db51571939678c80bc3051165affee34d6c2443",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "ae1b954dc2b47781be99eb24bb15414af9a743b195bb3f0ec6039346a4397adf",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "331ba0356c152b384f115639037391a4fc89ff3797b9ac2df32d51519eccc429",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "7e27dd3bfece2220b1e5bdc97b5e45508dcb0d4ae1b45321ee526b713bdc408f",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "05d4e5734dee35475ce4697dbe57add7687498e854f5fd8fadf3c806598c2aae",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family works on realistic multi-digit data by design and needs a calculator; a system that allows none cannot host it."
+      }
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "760d63617361e9767a99cc78dd2592f38a8972dfc63ff9d72de6fd87940094bd",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P1",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "8f64a590b11c8d197bc801b401a2157c4afd07970b85f9591a47720fcd558c17",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "1bd8cf88f079169041cdc5e75e676ada78bd7e5fb5b8e189477b38569d87dfc4",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "55edc1d66e6c3ea83f79e98799bbecdd0a6a711822fe5dffb4495b4b1edae34c",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "f16db8e27c84c70eec9cda957238e5825c18eac486bd8aa1c636b08bc3645d24",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "04322b69f5c8423bcb602a5c79e00bd88d3644905f02e5ab3d63b6b90c08b145",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "6ebec5925a89411afb55fb2ca31967cc0807ab7878aa06da16ace8cda2d54ef5",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P1",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "5ac48a459384897110a14e3414f967405f16c59e64996eae8a3894e24c44b8f2",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "32d7f2591e28cd681f545a26b6550b754a8b4884e8c8e03564a87ce5c950cb9f",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P1",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE",
+        "detail": "the family requires a tool and the profile allows only NONE"
+      }
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "2ec4537e4ead4282eeaf73e1880464892d4db5e56da9e9efd546a458aa69e21b",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P2",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "84f087e1b3817af2e357805796d50c860fb5d50897e51fdb0df8e277be309415",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P2",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "6a07708a93f421e1e5a32e1599cbe0385559c17d5ced1082d6f78266db805b25",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P2",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "60bf5efe9d969b2eb7e888c3fa2c3df150621603ff19b540cfd6208af8f2bf75",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P2",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "ed4eff5a34c82416f5cfcf1d49d6f80884ae5d9ccdc803a2f2338e8258e6e214",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P2",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "34fd322f8ed7a3d74e4e37145216f33aad643ba4e2c763c91f21f09ab4518d5b",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P2",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "7f2280f3fbde166e9ad50bfa7aebd8d672fae730513ff3b4f44d0fcaddf511bf",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P2",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "68bb3c48ad7aa25080844b7adb446f5bc76b05910061fd2da0191b17cab46822",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P2",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "3b26cf7cf362e0a7889101afa53c01e962dbef651881a0d97d84951d6ea6fc4c",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P2",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "43624ff45178507e25cc56d097ad4d5d1b70146f1e1ec9bad195298410ad1dcb",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "systemProfileId": "IB",
+      "componentId": "IB.MATH_AA_HL.P2",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "4ce11e8886849eea1009df9088ce1fa08b6f63fb65d1b7c28139bdb0073ab939",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": "CAMBRIDGE.9709.P1",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "0e21f6f2808ed6cc26a4b6b6132c53d28797beb1909b6a7e1f5a82bedba65875",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": "CAMBRIDGE.9709.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "dd70ad0f416cb8e816f4362b263edc9d1d97f7b2bc9a38e5d40313724a4a0aaf",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": "CAMBRIDGE.9709.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "ab2306efb125e3fa291f63e73be69cff0f6292533b7d558fef3764ded928df27",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": "CAMBRIDGE.9709.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "2be495b9fefbf7c2009bafc357a55b4b997d5c90b38e3a46aeea7c8d94fcad5f",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": "CAMBRIDGE.9709.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "673c8a4773fb6a9809ce76e328d11d0c2872f6f01ad58a03884013732058bf13",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": "CAMBRIDGE.9709.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "74fb22c240f16aaf999ae5f318b9befecf66f9cccdf588f2017f3ca7825cbc0d",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": "CAMBRIDGE.9709.P1",
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "e1c054e8a49d0776631cb2039bcd5724cf162327fe1b0614e259f027d7a96f6a",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": "CAMBRIDGE.9709.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "b0c18490a31d974eadbdae181cbe1824e912212a97a607da555680f075582757",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": "CAMBRIDGE.9709.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "236d61357d1295262f75ce1c3227ed9a6ace37ced818bfa90bd898f081a69d01",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": "CAMBRIDGE.9709.P1",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "daa7453aedf3ba5a6ae2a956820837c68a032115d794ed754643c42dfdf9d99f",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "ff2817e3aeaa35e986ddf43376a45239e3431026b0198f72ef1dd55dc2a94d41",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "03b9473dcceefe21138eac38f191433e21f757d80eba02181182fe9d600a3ec9",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "568614ee8c5bc2935df2339fb9440fec4aee454479794942bd44695f7ff5069d",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "64189ae4f974a81eb941513f6b7305c6e3dbfa2f882cd2e0861e0dbd790dab69",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "8690aaeb90263db38e19a5550dcc3d463bbae6196f75d2ea6ac4b5ab35d77d2a",
+      "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "481a3e54a877cf39c0df694478908fcc865bf7f619c5ff5a529c8ca80cf7d78d",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "b26fccda3417d454ad0a500b794a17116d90c05bc6be265aa5e414d0b567902f",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "eb6c9f767b3e5c72f7e20c9607dc1a141775fa58cf3535cb7af8b27019cb2473",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "0dc708a903798b79aaead7d6c48e8bacb0cff5b7a2650af6039fb0467715db08",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "7d963c5188d585242266f2b4e6ae7f795d02eacef402ae80f198321c5335c963",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family excludes selected response (options allow substitution instead of the method), and a system that offers nothing else cannot host it."
+      }
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family excludes selected response (options allow substitution instead of the method), and a system that offers nothing else cannot host it."
+      }
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "da0547d379b67c9a4c2ebd663fc4f6e1e21d60a5ec0681161833432c33d81099",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "ef378592e7bb493245f24edc006fea2ea82103097ae28c47198c875eaee29b0e",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family works on realistic multi-digit data by design and needs a calculator; a system that allows none cannot host it."
+      }
+    },
+    {
+      "level": "COMPONENT",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "fb4b7c2b24957a959fce917b717e42f9b09e0039cd6dc4b1dc2a503b5b351f34",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "PAA",
+      "systemProfileId": "PAA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "70fba1fca8dc888eb9f7cc29872aa2eb9c0f3127896151217267a3d1d44f3b40",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "PAA",
+      "systemProfileId": "PAA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "3f35cb535105c218c327a25dc1ad0ecb7e6e08854076f8c346e044fd0a291dbe",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "PAA",
+      "systemProfileId": "PAA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "4eef14f6c92d0ccd09d51f8e6e90f240fdd46383bc0f98a8c794dbdef7a6cb64",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "PAA",
+      "systemProfileId": "PAA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "dfdd29a83e253d8600a565cfa5699acaa30c12afe909cdf85d3584e68026c391",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "PAA",
+      "systemProfileId": "PAA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "COMPONENT_REQUIRED",
+        "detail": "PAA has component-dependent dimensions (responseFormats, timePressure, calculatorPolicy) and no component is targeted: family constraint RESPONSE_FORMAT_ONLY"
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "PAA",
+      "systemProfileId": "PAA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "COMPONENT_REQUIRED",
+        "detail": "PAA has component-dependent dimensions (responseFormats, timePressure, calculatorPolicy) and no component is targeted: family constraint RESPONSE_FORMAT_ONLY"
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "PAA",
+      "systemProfileId": "PAA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "4ec749b8e04fa582f91c714fb167c05d84a3c634889d259789da9220519059fc",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "PAA",
+      "systemProfileId": "PAA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "5dc43dcb31d37175c59c0572ad32eebe853a3e8fd6bd167d56c1acd48f3c5886",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "PAA",
+      "systemProfileId": "PAA",
+      "componentId": null,
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family works on realistic multi-digit data by design and needs a calculator; a system that allows none cannot host it."
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "PAA",
+      "systemProfileId": "PAA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "bbdbef2f7f29640ca24e7bb9a511da91106a44ac1097a40122c6160cfe7587e8",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "IB",
+      "systemProfileId": "IB",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "75fce8a825bf76b9c70f9e7a7fb8fe97c98e38d381463a833016f52a8b83998b",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "IB",
+      "systemProfileId": "IB",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "70d3dba0032a5c58be8bad241e6cf6051b581ab73511daa79ea151014b05eda6",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "IB",
+      "systemProfileId": "IB",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "fffc7d15120a191120cdcf8f4fec931b6d312592e39b41d78f50e5bfe23fea21",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "IB",
+      "systemProfileId": "IB",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "b8c752e6411989526c8d07a910982f8ff935f456e2ac96040feb6600da4889d0",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "IB",
+      "systemProfileId": "IB",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "02e6b3e998952887a5110916a3348a030dc56106d13e479d714a4e5959209643",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "IB",
+      "systemProfileId": "IB",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "350419d2db87cb8a1421bb525bd6cc5fb599cab530b4185542f33b6af817ce7a",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "IB",
+      "systemProfileId": "IB",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "5a4a9b16b7a28032415a16bb52c3c51176c09c0aedc476681128ed650f6d9f26",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "IB",
+      "systemProfileId": "IB",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "9a3f05866a73757503f6e06949db00e4f543888db55aa2846a11b52ec416a6aa",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "IB",
+      "systemProfileId": "IB",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "COMPONENT_REQUIRED",
+        "detail": "IB has component-dependent dimensions (responseFormats, timePressure, commandTerms, calculatorPolicy) and no component is targeted: family constraint CALCULATOR_ONLY; the family requires a tool"
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "IB",
+      "systemProfileId": "IB",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "6d74b218368af9bbe37b891290c6d6861bb229b9dea4286e16f2d9db7066c6d8",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "CAMBRIDGE",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "934687d6a087c3f950cdbe85b92110fbc27b849872bb0cf2dfb53bb8e460ed44",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "CAMBRIDGE",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "fb5ccaeeafa7674a992a6265d944043afd0bd2ed1ec4e51f7752b14492979935",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "CAMBRIDGE",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "fa1e9010805aae6a6e76b1371e8da0f748ec88732d63231ce87b14e3d5fc24dd",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "CAMBRIDGE",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "e6d2310b2cadbc988a3fbd31e1c96ff86f669f0fa5860db26a9e0b9ffa62d2c0",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "CAMBRIDGE",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "dc4dcf3fd906fc4fca9b6e5b11c9911cc92b4dc8153ef44d9a490034dbc3a2ba",
+      "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "CAMBRIDGE",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "890e21f2ae129a2532122a207fed3ec6d5ccf4026f67bb20af944441359237f1",
+      "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "CAMBRIDGE",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED_WITH_CONSTRAINTS",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "e94f36dbae1fffa429818caeb87671a569956d9cffe94a7b1dc5ff5e81648ff9",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "CAMBRIDGE",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "ee8db59bef5b7b4d3d7c33fe0b6287eecb856f1bfd1d0c3692fcab7caa515bbf",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "CAMBRIDGE",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "COMPONENT_REQUIRED",
+        "detail": "CAMBRIDGE has component-dependent dimensions (timePressure, calculatorPolicy) and no component is targeted: the family requires a tool"
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "CAMBRIDGE",
+      "systemProfileId": "CAMBRIDGE",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "60aea00f74c09205da18b0c86958c140fe961e787ee1f6e6eb2c83e7af9a428f",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "PISA",
+      "systemProfileId": "PISA",
+      "componentId": null,
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "PISA",
+      "systemProfileId": "PISA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "492cfb8758336166eb2bde47c8ae9d4ed2bd64b0f61f6c29def0992423a97a7c",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "PISA",
+      "systemProfileId": "PISA",
+      "componentId": null,
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "PISA",
+      "systemProfileId": "PISA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "5824d593fad2fa7dc5ea6b8a00410cd09ea796b8c08b8676f50b3d0940f7ac21",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "PISA",
+      "systemProfileId": "PISA",
+      "componentId": null,
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "PISA",
+      "systemProfileId": "PISA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "COMPONENT_REQUIRED",
+        "detail": "responseFormats is component-dependent and the system-level fallback does not fit (RESPONSE_FORMAT_NOT_ALLOWED: no format is allowed by both: family NUMERIC_ENTRY, SHORT_RESPONSE, EXTENDED_RESPONSE / profile SELECTED_RESPONSE)"
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "PISA",
+      "systemProfileId": "PISA",
+      "componentId": null,
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The task hands the learner the structure and asks only for the working: nothing is formulated from a situation and nothing is interpreted back into one, so it cannot show transfer."
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "PISA",
+      "systemProfileId": "PISA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "7f3d4175c02baf33c663f2c3becf88e95590dee9eba3cbc0fd78e2fecf37cc79",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "PISA",
+      "systemProfileId": "PISA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "COMPONENT_REQUIRED",
+        "detail": "PISA has component-dependent dimensions (responseFormats, timePressure, contextExpectations, calculatorPolicy, competencyEmphasis, competencyElicitation) and no component is targeted: the family requires a tool"
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "PISA",
+      "systemProfileId": "PISA",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "c930dcaaffb3498bfa9cfff0d8d0057231de3328a69c3318501a15fb4af63e53",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "ICFES",
+      "systemProfileId": "ICFES",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "26b49cc488178792a98acfdc90df78ea3415d370df84719571faaa876af59e39",
+      "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "ICFES",
+      "systemProfileId": "ICFES",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "089580037c64562a776ee6a5423a9583696760e73fc2489952e6cb1be0463998",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.linear.line-through-two-points",
+      "targetId": "ICFES",
+      "systemProfileId": "ICFES",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "3336a355cc281a1a601168a6b85cf77bcce2864ce915594445222ba82c488e22",
+      "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "ICFES",
+      "systemProfileId": "ICFES",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "a1e9e6022cc2b52177e71c5a5ad83068c7ad9fe2951e6fb6069287c6eba2d947",
+      "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "ICFES",
+      "systemProfileId": "ICFES",
+      "componentId": null,
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family excludes selected response (options allow substitution instead of the method), and a system that offers nothing else cannot host it."
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "ICFES",
+      "systemProfileId": "ICFES",
+      "componentId": null,
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family excludes selected response (options allow substitution instead of the method), and a system that offers nothing else cannot host it."
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "ICFES",
+      "systemProfileId": "ICFES",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "d4568e76473444efde890063fe922a46af6da12f30f771764e7050a20bdd992c",
+      "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "ICFES",
+      "systemProfileId": "ICFES",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "b7eabd857342fff01288c91613b7e220dd758087308932d6490f80030829fb18",
+      "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+      "refusal": null
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "ICFES",
+      "systemProfileId": "ICFES",
+      "componentId": null,
+      "declaredSupport": "UNSUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "REFUSED",
+      "specificationId": null,
+      "invariantHash": null,
+      "refusal": {
+        "code": "PROFILE_UNSUPPORTED_BY_FAMILY",
+        "detail": "The family works on realistic multi-digit data by design and needs a calculator; a system that allows none cannot host it."
+      }
+    },
+    {
+      "level": "SYSTEM",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "ICFES",
+      "systemProfileId": "ICFES",
+      "componentId": null,
+      "declaredSupport": "SUPPORTED",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "outcome": "SPECIFICATION",
+      "specificationId": "a9d8412d28fa1f662ffc862019b223fd20bcd5f7b9581d18673dc8bdaffbebe8",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null
+    }
+  ],
+  "summary": {
+    "componentLevel": {
+      "attempts": 60,
+      "specifications": 51,
+      "refusals": 9,
+      "declaredSupport": {
+        "SUPPORTED": 42,
+        "SUPPORTED_WITH_CONSTRAINTS": 10,
+        "UNSUPPORTED": 8
+      },
+      "refusalCodes": {
+        "PROFILE_UNSUPPORTED_BY_FAMILY": 8,
+        "TOOL_REQUIRED_BY_FAMILY_FORBIDDEN_BY_PROFILE": 1
+      },
+      "specificationsByTarget": {
+        "PAA.MATEMATICAS": 9,
+        "IB.MATH_AA_HL.P1": 9,
+        "IB.MATH_AA_HL.P2": 10,
+        "CAMBRIDGE.9709.P1": 10,
+        "PISA.MATHEMATICS": 6,
+        "ICFES.SABER11_MATEMATICAS": 7
+      }
+    },
+    "systemLevel": {
+      "attempts": 50,
+      "specifications": 36,
+      "refusals": 14,
+      "declaredSupport": {
+        "SUPPORTED": 35,
+        "SUPPORTED_WITH_CONSTRAINTS": 7,
+        "UNSUPPORTED": 8
+      },
+      "refusalCodes": {
+        "COMPONENT_REQUIRED": 6,
+        "PROFILE_UNSUPPORTED_BY_FAMILY": 8
+      },
+      "specificationsByTarget": {
+        "PAA": 7,
+        "IB": 9,
+        "CAMBRIDGE": 9,
+        "PISA": 4,
+        "ICFES": 7
+      }
+    },
+    "applicabilityOfComponentSpecifications": {
+      "byBasis": {
+        "NONE": 36,
+        "OFFICIAL_EXAM_STRUCTURE": 9,
+        "REVIEWED_CATALOGUE_LINK": 6
+      },
+      "byStatus": {
+        "ESTABLISHED": 15,
+        "NOT_ESTABLISHED": 36
+      }
+    },
+    "evidenceBearingAttempts": {
+      "attempts": 60,
+      "specifications": 0,
+      "refusalCodes": {
+        "FAMILY_NOT_REVIEWED_FOR_EVIDENCE_BEARING_CONTENT": 60
+      }
+    },
+    "familiesReachingSeveralSystems": 10,
+    "minimumCrossSystemDifference": 3,
+    "minimumSameSystemDifference": 2,
+    "crossSystemDifferenceDistribution": {
+      "differ-in-03": 11,
+      "differ-in-04": 9,
+      "differ-in-05": 6,
+      "differ-in-06": 4,
+      "differ-in-07": 9,
+      "differ-in-08": 6,
+      "differ-in-09": 14,
+      "differ-in-10": 17,
+      "differ-in-11": 23,
+      "differ-in-12": 1
+    },
+    "invariantHashIdenticalWithinEveryFamily": true
+  },
+  "fidelity": [
+    {
+      "familyId": "tf.math.proportion.missing-value",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.num.ratio-proportion"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "DIRECT_PROPORTION_MISSING_VALUE",
+        "evidenceActions": [
+          "SOLVE"
+        ],
+        "invariantHash": "32ef5fc98dd0e92947b828c59d93009813c446c7ccc949313ed0d869ba7d6d11",
+        "identicalAcrossTargets": true
+      },
+      "targets": [
+        "PAA.MATEMATICAS",
+        "IB.MATH_AA_HL.P1",
+        "IB.MATH_AA_HL.P2",
+        "CAMBRIDGE.9709.P1",
+        "ICFES.SABER11_MATEMATICAS"
+      ],
+      "variableByTarget": {
+        "PAA.MATEMATICAS": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "additive",
+              "inverted",
+              "wrong-pair"
+            ]
+          }
+        },
+        "IB.MATH_AA_HL.P1": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "solve",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P2": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "solve",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE.9709.P1": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "ICFES.SABER11_MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED",
+            "situation": "An everyday pairing of two quantities that only names them (amount and cost, time and distance at a steady rate)."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULACION_EJECUCION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "additive",
+              "inverted",
+              "wrong-pair"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P1",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": true,
+          "differing": [
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        }
+      ],
+      "minimumCrossSystemDifference": 3
+    },
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.num.ratio-proportion"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "UNIT_RATE_COMPARISON_OF_TWO_OPTIONS",
+        "evidenceActions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+        "identicalAcrossTargets": true
+      },
+      "targets": [
+        "PAA.MATEMATICAS",
+        "IB.MATH_AA_HL.P1",
+        "IB.MATH_AA_HL.P2",
+        "CAMBRIDGE.9709.P1",
+        "PISA.MATHEMATICS",
+        "ICFES.SABER11_MATEMATICAS"
+      ],
+      "variableByTarget": {
+        "PAA.MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice an individual makes between two offers."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "IB.MATH_AA_HL.P1": {
+          "context": {
+            "kind": "OCCUPATIONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice between two suppliers, tools or processes at work."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P2": {
+          "context": {
+            "kind": "OCCUPATIONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice between two suppliers, tools or processes at work."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE.9709.P1": {
+          "context": {
+            "kind": "OCCUPATIONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice between two suppliers, tools or processes at work."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1",
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA.MATHEMATICS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED",
+            "situation": "A choice an individual makes between two offers."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULATE",
+            "EMPLOY",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        },
+        "ICFES.SABER11_MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED",
+            "situation": "A choice an individual makes between two offers."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "INTERPRETACION_REPRESENTACION",
+            "FORMULACION_EJECUCION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "one-quantity",
+              "inverted-rate",
+              "difference"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P1",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": true,
+          "differing": [
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PISA.MATHEMATICS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        }
+      ],
+      "minimumCrossSystemDifference": 3
+    },
+    {
+      "familyId": "tf.math.linear.line-through-two-points",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.fun.linear-functions-lines"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "LINE_THROUGH_TWO_POINTS",
+        "evidenceActions": [
+          "COMPUTE",
+          "REPRESENT"
+        ],
+        "invariantHash": "2b1ad923d260bb1113f31bb5d30e972e03498834c4b1b462901b0c6e22111c62",
+        "identicalAcrossTargets": true
+      },
+      "targets": [
+        "PAA.MATEMATICAS",
+        "IB.MATH_AA_HL.P1",
+        "IB.MATH_AA_HL.P2",
+        "CAMBRIDGE.9709.P1",
+        "ICFES.SABER11_MATEMATICAS"
+      ],
+      "variableByTarget": {
+        "PAA.MATEMATICAS": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "run-over-rise",
+              "mixed-order",
+              "point-as-intercept"
+            ]
+          }
+        },
+        "IB.MATH_AA_HL.P1": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "calculate",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P2": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "calculate",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE.9709.P1": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "calculate",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "ICFES.SABER11_MATEMATICAS": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "INTERPRETACION_REPRESENTACION",
+            "FORMULACION_EJECUCION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "run-over-rise",
+              "mixed-order",
+              "point-as-intercept"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P1",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": true,
+          "differing": [
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        }
+      ],
+      "minimumCrossSystemDifference": 3
+    },
+    {
+      "familyId": "tf.math.linear.constant-rate-model",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.fun.linear-functions-lines"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "LINEAR_MODEL_FIXED_START_CONSTANT_RATE",
+        "evidenceActions": [
+          "FORMULATE",
+          "INTERPRET"
+        ],
+        "invariantHash": "d881e9aa873e0e6c911b374058d79d37793191830784594bc52fbee90d02b4c5",
+        "identicalAcrossTargets": true
+      },
+      "targets": [
+        "PAA.MATEMATICAS",
+        "IB.MATH_AA_HL.P1",
+        "IB.MATH_AA_HL.P2",
+        "CAMBRIDGE.9709.P1",
+        "PISA.MATHEMATICS",
+        "ICFES.SABER11_MATEMATICAS"
+      ],
+      "variableByTarget": {
+        "PAA.MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A cost, a saving or a distance that grows steadily for one person."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "swapped-parameters",
+              "no-start",
+              "slope-as-total"
+            ]
+          }
+        },
+        "IB.MATH_AA_HL.P1": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that changes at a constant rate."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P2": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that changes at a constant rate."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE.9709.P1": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that changes at a constant rate."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA.MATHEMATICS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED",
+            "situation": "A cost, a saving or a distance that grows steadily for one person."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [
+            "FORMULATE",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "swapped-parameters",
+              "no-start",
+              "slope-as-total"
+            ]
+          }
+        },
+        "ICFES.SABER11_MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED",
+            "situation": "A cost, a saving or a distance that grows steadily for one person."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "INTERPRETACION_REPRESENTACION",
+            "FORMULACION_EJECUCION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "swapped-parameters",
+              "no-start",
+              "slope-as-total"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P1",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "stimulus",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": true,
+          "differing": [
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "stimulus",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "stimulus",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "stimulus",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PISA.MATHEMATICS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "stimulus",
+            "competencies",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        }
+      ],
+      "minimumCrossSystemDifference": 3
+    },
+    {
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.alg.quadratics"
+        ],
+        "canonicalSubject": "Mathematics",
+        "construct": "QUADRATIC_EQUATION_RATIONAL_ROOTS_BY_FACTORISING",
+        "evidenceActions": [
+          "SOLVE"
+        ],
+        "invariantHash": "76feb851c8c703789fce2eaede0ed1593a7b5f12d0317209a75af6e8057b574d",
+        "identicalAcrossTargets": true
+      },
+      "targets": [
+        "PAA.MATEMATICAS",
+        "IB.MATH_AA_HL.P1",
+        "IB.MATH_AA_HL.P2",
+        "CAMBRIDGE.9709.P1"
+      ],
+      "variableByTarget": {
+        "PAA.MATEMATICAS": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "NUMERIC_ENTRY",
+            "productionFormat": "STUDENT_PRODUCED"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P1": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "solve",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P2": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "solve",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE.9709.P1": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P1",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": true,
+          "differing": [
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        }
+      ],
+      "minimumCrossSystemDifference": 4
+    },
+    {
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.alg.quadratics"
+        ],
+        "canonicalSubject": "Mathematics",
+        "construct": "QUADRATIC_MODEL_VERTEX_OPTIMUM",
+        "evidenceActions": [
+          "FORMULATE",
+          "SOLVE",
+          "INTERPRET"
+        ],
+        "invariantHash": "a3cde41ee0c14d8eb52a2ca9608e72117aebb166af8572b281f511af934d9505",
+        "identicalAcrossTargets": true
+      },
+      "targets": [
+        "PAA.MATEMATICAS",
+        "IB.MATH_AA_HL.P1",
+        "IB.MATH_AA_HL.P2",
+        "CAMBRIDGE.9709.P1",
+        "PISA.MATHEMATICS"
+      ],
+      "variableByTarget": {
+        "PAA.MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A plan with a fixed total to share between two uses."
+          },
+          "responseFormat": {
+            "format": "NUMERIC_ENTRY",
+            "productionFormat": "STUDENT_PRODUCED"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P1": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that rises and then falls."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P2": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that rises and then falls."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE.9709.P1": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A measured quantity that rises and then falls."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1",
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA.MATHEMATICS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED",
+            "situation": "A plan with a fixed total to share between two uses."
+          },
+          "responseFormat": {
+            "format": "NUMERIC_ENTRY",
+            "productionFormat": "STUDENT_PRODUCED"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULATE",
+            "EMPLOY",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P1",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": true,
+          "differing": [
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy"
+          ]
+        }
+      ],
+      "minimumCrossSystemDifference": 4
+    },
+    {
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.prob.probability"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "CLASSICAL_PROBABILITY_SINGLE_DRAW",
+        "evidenceActions": [
+          "COMPUTE"
+        ],
+        "invariantHash": "f5853a468884a240407ed9c3f65f81c1cdbcebfe5066bbbb4ac550cd8799576d",
+        "identicalAcrossTargets": true
+      },
+      "targets": [
+        "PAA.MATEMATICAS",
+        "IB.MATH_AA_HL.P1",
+        "IB.MATH_AA_HL.P2",
+        "CAMBRIDGE.9709.P1",
+        "ICFES.SABER11_MATEMATICAS"
+      ],
+      "variableByTarget": {
+        "PAA.MATEMATICAS": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "odds",
+              "categories",
+              "complement"
+            ]
+          }
+        },
+        "IB.MATH_AA_HL.P1": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "calculate",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P2": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "calculate",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE.9709.P1": {
+          "context": {
+            "kind": "ABSTRACT",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "The quantities or the expression are given directly, with no situation."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "calculate",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "ICFES.SABER11_MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED",
+            "situation": "A draw, a spin or a pick whose outcomes are listed by counts."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULACION_EJECUCION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "odds",
+              "categories",
+              "complement"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P1",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": true,
+          "differing": [
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        }
+      ],
+      "minimumCrossSystemDifference": 3
+    },
+    {
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.prob.probability"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "COMPARISON_OF_TWO_CLASSICAL_PROBABILITIES",
+        "evidenceActions": [
+          "FORMULATE",
+          "COMPUTE",
+          "EVALUATE"
+        ],
+        "invariantHash": "955b0a992207974ea0ddc2cd0888828d9c306779b5b5fc82f60b3b853fd331c2",
+        "identicalAcrossTargets": true
+      },
+      "targets": [
+        "PAA.MATEMATICAS",
+        "IB.MATH_AA_HL.P1",
+        "IB.MATH_AA_HL.P2",
+        "CAMBRIDGE.9709.P1",
+        "PISA.MATHEMATICS",
+        "ICFES.SABER11_MATEMATICAS"
+      ],
+      "variableByTarget": {
+        "PAA.MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A choice between two games, routes or offers."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "count-comparison",
+              "total-comparison",
+              "pooled-space"
+            ]
+          }
+        },
+        "IB.MATH_AA_HL.P1": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "Two samples or two trials whose results are compared."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P2": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "Two samples or two trials whose results are compared."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "find",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE.9709.P1": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "Two samples or two trials whose results are compared."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "work out",
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "AO1",
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA.MATHEMATICS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED",
+            "situation": "A choice between two games, routes or offers."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULATE",
+            "EMPLOY",
+            "INTERPRET_EVALUATE",
+            "REASON"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "count-comparison",
+              "total-comparison",
+              "pooled-space"
+            ]
+          }
+        },
+        "ICFES.SABER11_MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED",
+            "situation": "A choice between two games, routes or offers."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "NONE",
+            "kinds": []
+          },
+          "competencies": [
+            "FORMULACION_EJECUCION",
+            "ARGUMENTACION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "count-comparison",
+              "total-comparison",
+              "pooled-space"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P1",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": true,
+          "differing": [
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PISA.MATHEMATICS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        }
+      ],
+      "minimumCrossSystemDifference": 3
+    },
+    {
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.stat.data-representation"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "RELATIVE_CHANGE_OR_SHARE_FROM_TABULATED_VALUES",
+        "evidenceActions": [
+          "INTERPRET",
+          "COMPUTE"
+        ],
+        "invariantHash": "48d3f1a29328dd832310a34771d5af13730ebebaa8691da388e1161f7aff58e9",
+        "identicalAcrossTargets": true
+      },
+      "targets": [
+        "IB.MATH_AA_HL.P2",
+        "CAMBRIDGE.9709.P1",
+        "PISA.MATHEMATICS"
+      ],
+      "variableByTarget": {
+        "IB.MATH_AA_HL.P2": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "Measurements by sample or by period."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "write down",
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH",
+              "DATA_SET"
+            ]
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE.9709.P1": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "Measurements by sample or by period."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "write down",
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH",
+              "DATA_SET"
+            ]
+          },
+          "competencies": [
+            "AO1",
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA.MATHEMATICS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED",
+            "situation": "A household or personal record over time."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH",
+              "DATA_SET"
+            ]
+          },
+          "competencies": [
+            "EMPLOY",
+            "INTERPRET_EVALUATE"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "absolute-difference",
+              "wrong-base",
+              "neighbour-value"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        }
+      ],
+      "minimumCrossSystemDifference": 3
+    },
+    {
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "invariant": {
+        "primaryConceptStableIds": [
+          "math.stat.data-representation"
+        ],
+        "canonicalSubject": "Matemáticas",
+        "construct": "CLAIM_EVALUATION_AGAINST_A_DATA_DISPLAY",
+        "evidenceActions": [
+          "INTERPRET",
+          "EVALUATE"
+        ],
+        "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+        "identicalAcrossTargets": true
+      },
+      "targets": [
+        "PAA.MATEMATICAS",
+        "IB.MATH_AA_HL.P1",
+        "IB.MATH_AA_HL.P2",
+        "CAMBRIDGE.9709.P1",
+        "PISA.MATHEMATICS",
+        "ICFES.SABER11_MATEMATICAS"
+      ],
+      "variableByTarget": {
+        "PAA.MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A statement about a class, a team or a household."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "ITEM"
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "association-as-cause",
+              "scale-ignored",
+              "plurality-as-majority"
+            ]
+          }
+        },
+        "IB.MATH_AA_HL.P1": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A conclusion drawn from a small set of measurements."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "write down",
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": null
+        },
+        "IB.MATH_AA_HL.P2": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A conclusion drawn from a small set of measurements."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "write down",
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [],
+          "timeBudget": {
+            "secondsPerUnit": 65.45,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "GDC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "CAMBRIDGE.9709.P1": {
+          "context": {
+            "kind": "SCIENTIFIC",
+            "authenticity": "NONE",
+            "transfer": "NOT_REQUIRED",
+            "situation": "A conclusion drawn from a small set of measurements."
+          },
+          "responseFormat": {
+            "format": "SHORT_RESPONSE",
+            "productionFormat": null
+          },
+          "reasoningDepth": {
+            "depth": "METHOD_SHOWN",
+            "workingShown": true,
+            "justificationRequired": false
+          },
+          "commandTerm": "write down",
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [
+            "AO2"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": 88,
+            "unit": "MARK"
+          },
+          "markStructure": "MULTI_MARK_PARTS",
+          "rubricStyle": "METHOD_AND_ACCURACY",
+          "toolPolicy": {
+            "calculator": "SCIENTIFIC_REQUIRED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": null
+        },
+        "PISA.MATHEMATICS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+            "transfer": "REQUIRED",
+            "situation": "A statement about a class, a team or a household."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [
+            "INTERPRET_EVALUATE",
+            "REASON"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "CODED_CREDIT",
+          "rubricStyle": "CODED_CREDIT_LEVELS",
+          "toolPolicy": {
+            "calculator": "ALLOWED"
+          },
+          "numericProfile": "REALISTIC_VALUES",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "association-as-cause",
+              "scale-ignored",
+              "plurality-as-majority"
+            ]
+          }
+        },
+        "ICFES.SABER11_MATEMATICAS": {
+          "context": {
+            "kind": "PERSONAL",
+            "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+            "transfer": "EXPECTED",
+            "situation": "A statement about a class, a team or a household."
+          },
+          "responseFormat": {
+            "format": "SELECTED_RESPONSE",
+            "productionFormat": "MULTIPLE_CHOICE"
+          },
+          "reasoningDepth": {
+            "depth": "ANSWER_ONLY",
+            "workingShown": false,
+            "justificationRequired": false
+          },
+          "commandTerm": null,
+          "stimulus": {
+            "mode": "OWN_STIMULUS",
+            "kinds": [
+              "TABLE",
+              "GRAPH"
+            ]
+          },
+          "competencies": [
+            "INTERPRETACION_REPRESENTACION",
+            "ARGUMENTACION"
+          ],
+          "timeBudget": {
+            "secondsPerUnit": null,
+            "unit": null
+          },
+          "markStructure": "ONE_MARK_PER_ITEM",
+          "rubricStyle": "KEY_ONLY",
+          "toolPolicy": {
+            "calculator": "NONE"
+          },
+          "numericProfile": "EXACT_WITHOUT_TOOL",
+          "distractors": {
+            "source": "FAMILY_MISCONCEPTION_MODELS",
+            "misconceptionModelIds": [
+              "association-as-cause",
+              "scale-ignored",
+              "plurality-as-majority"
+            ]
+          }
+        }
+      },
+      "pairwise": [
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P1",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "PAA.MATEMATICAS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "timeBudget"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "IB.MATH_AA_HL.P2",
+          "sameSystem": true,
+          "differing": [
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "CAMBRIDGE.9709.P1",
+          "sameSystem": false,
+          "differing": [
+            "competencies",
+            "timeBudget",
+            "toolPolicy"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "IB.MATH_AA_HL.P2",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "PISA.MATHEMATICS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "distractors"
+          ]
+        },
+        {
+          "a": "CAMBRIDGE.9709.P1",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "responseFormat",
+            "reasoningDepth",
+            "commandTerm",
+            "competencies",
+            "timeBudget",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile",
+            "distractors"
+          ]
+        },
+        {
+          "a": "PISA.MATHEMATICS",
+          "b": "ICFES.SABER11_MATEMATICAS",
+          "sameSystem": false,
+          "differing": [
+            "context",
+            "competencies",
+            "markStructure",
+            "rubricStyle",
+            "toolPolicy",
+            "numericProfile"
+          ]
+        }
+      ],
+      "minimumCrossSystemDifference": 3
+    }
+  ]
+}

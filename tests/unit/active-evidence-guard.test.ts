@@ -17,7 +17,6 @@ vi.mock('@/lib/db', () => ({ db: { query: (...a: any[]) => queryMock(...a) } }))
 
 import {
   getActiveInstructionRestriction,
-  canProvideInstructionalAssistance,
   getActiveRestrictedEvidenceForStudent,
 } from '@/services/active-evidence-guard.service';
 
@@ -145,13 +144,6 @@ describe('release tests 12-16: unrestricted/inactive states allow', () => {
   });
 });
 
-describe('canProvideInstructionalAssistance -- convenience boolean form', () => {
-  it('mirrors getActiveInstructionRestriction.allowed', async () => {
-    getStudentActiveQuizzesMock.mockResolvedValue([quiz({ activityType: 'SOLO_CHECK', evidenceMode: 'INDEPENDENT' })]);
-    expect(await canProvideInstructionalAssistance({ studentId: STUDENT, subjectId: SUBJECT })).toBe(false);
-  });
-});
-
 describe('release test 26: query cost bounded, independent of history size', () => {
   it('a restricted quiz session short-circuits before ever querying verification', async () => {
     getStudentActiveQuizzesMock.mockResolvedValue([quiz({ activityType: 'SOLO_CHECK', evidenceMode: 'INDEPENDENT' })]);
@@ -230,9 +222,28 @@ describe('Phase 5-R4: getActiveRestrictedEvidenceForStudent -- global, subject/c
     expect((await getActiveRestrictedEvidenceForStudent(STUDENT)).allowed).toBe(true);
   });
 
-  it('release test 28: query cost bounded -- at most 2 reads, same as the underlying scoped function', async () => {
+  it('release test 28: query cost bounded -- at most 3 reads (the scoped function\'s 2, plus Track B\'s open-exam-simulation read)', async () => {
     await getActiveRestrictedEvidenceForStudent(STUDENT);
     expect(getStudentActiveQuizzesMock).toHaveBeenCalledTimes(1);
+    expect(queryMock).toHaveBeenCalledTimes(2);
+    const [sql] = queryMock.mock.calls[1];
+    expect(sql).toMatch(/FROM simulation_attempts/);
+    expect(sql).toMatch(/status IN \('ACTIVE','PAUSED'\)/);
+    expect(sql).toMatch(/LIMIT 1/);
+  });
+
+  it('Track B: an open exam simulation restricts the Tutor student-wide (ASSESSMENT evidence)', async () => {
+    getStudentActiveQuizzesMock.mockResolvedValue([]);
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'sim-1' }] });
+    const state = await getActiveRestrictedEvidenceForStudent(STUDENT);
+    expect(state).toMatchObject({ allowed: false, reason: 'ACTIVE_EXAM_SIMULATION', evidenceMode: 'ASSESSMENT', sessionId: 'sim-1' });
+  });
+
+  it('Track B: an earlier restriction wins and the exam read is skipped', async () => {
+    getStudentActiveQuizzesMock.mockResolvedValue([]);
+    queryMock.mockResolvedValueOnce({ rows: [{ concept_id: CONCEPT, quiz_session_id: 'qs-1' }] });
+    const state = await getActiveRestrictedEvidenceForStudent(STUDENT);
+    expect(state.reason).toBe('ACTIVE_VERIFICATION');
     expect(queryMock).toHaveBeenCalledTimes(1);
   });
 });

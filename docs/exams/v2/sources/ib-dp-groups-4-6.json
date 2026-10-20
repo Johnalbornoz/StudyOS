@@ -1,0 +1,2189 @@
+{
+  "researchedAt": "2026-10-01",
+  "notes": "minutes=null means no timed sitting/no official per-part timing. IA 'minutes' are recommended teaching hours x60, not exam time. Science Paper 1A/1B have no separate official time; see paper1Combined.",
+  "subjects": [
+    {
+      "group": 4,
+      "key": "biology",
+      "name": "Biology",
+      "curriculumVersion": "Biology guide, first assessment 2025 (published Feb 2023)",
+      "firstAssessment": 2025,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1a",
+          "name": "Paper 1A",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 30,
+            "HL": 40
+          },
+          "weightPercent": null,
+          "format": "Multiple choice: SL 30 items (SL material only); HL 40 items (SL + additional HL material); 1 mark each, no negative marking",
+          "calculator": "CALCULATOR",
+          "resources": "No data booklet for biology",
+          "notes": "Sat together with Paper 1B in one uninterrupted sitting; separate booklet. Paper 1 total: SL 90 min / HL 120 min; IB does not split time between 1A and 1B."
+        },
+        {
+          "key": "p1b",
+          "name": "Paper 1B",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 25,
+            "HL": 35
+          },
+          "weightPercent": null,
+          "format": "Four data-based questions related to experimental work and the syllabus (syllabus related, addressing all themes)",
+          "calculator": "CALCULATOR",
+          "resources": "n/a",
+          "notes": "Paper 1 (1A+1B) combined: SL 90 min, 55 marks, 36%; HL 120 min, 75 marks, 36%. Tests AO1-AO3."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 150
+          },
+          "marks": {
+            "SL": 50,
+            "HL": 80
+          },
+          "weightPercent": {
+            "SL": 44,
+            "HL": 44
+          },
+          "format": "Section A: data-based question + short-answer questions (SL 34 marks; HL 48 marks). Section B: extended-response questions (SL 16 marks, answer 1 of 2; HL 32 marks, answer 2 of 3)",
+          "calculator": "CALCULATOR",
+          "resources": "n/a",
+          "notes": "Tests AO1-AO3."
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: scientific investigation",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 600,
+            "HL": 600
+          },
+          "marks": {
+            "SL": 24,
+            "HL": 24
+          },
+          "weightPercent": {
+            "SL": 20,
+            "HL": 20
+          },
+          "format": "Open-ended scientific investigation written up as a report (max 3,000 words); requirements identical at SL and HL",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Minutes = 10 recommended teaching hours, not a timed sitting. Internally assessed, externally moderated."
+        }
+      ],
+      "paper1Combined": {
+        "minutes": {
+          "SL": 90,
+          "HL": 120
+        },
+        "marks": {
+          "SL": 55,
+          "HL": 75
+        },
+        "weightPercent": {
+          "SL": 36,
+          "HL": 36
+        }
+      },
+      "assessmentObjectives": [
+        "AO1 Demonstrate knowledge of terminology, facts and concepts; skills, techniques and methodologies",
+        "AO2 Understand and apply knowledge of terminology and concepts; skills, techniques and methodologies",
+        "AO3 Analyse, evaluate and synthesize experimental procedures, primary and secondary data, trends, patterns and predictions",
+        "AO4 Demonstrate the application of skills necessary to carry out insightful and ethical investigations"
+      ],
+      "sourceKeys": [
+        "ib-biology-guide-2025"
+      ],
+      "confidence": "HIGH",
+      "gaps": "Guide gives no separate time split between Paper 1A and 1B (secondary sites quoting 45/45 min are unofficial). Collaborative sciences project: compulsory interdisciplinary project (10 recommended teaching hours, SL and HL) shared by all DP sciences; NOT assessed / carries no marks."
+    },
+    {
+      "group": 4,
+      "key": "chemistry",
+      "name": "Chemistry",
+      "curriculumVersion": "Chemistry guide, first assessment 2025 (published Feb 2023, updated May 2023, Mar 2024)",
+      "firstAssessment": 2025,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1a",
+          "name": "Paper 1A",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 30,
+            "HL": 40
+          },
+          "weightPercent": null,
+          "format": "Multiple choice: SL 30 items (SL material only); HL 40 items (SL + AHL); no negative marking",
+          "calculator": "CALCULATOR",
+          "resources": "Chemistry data booklet (clean copy) required",
+          "notes": "Same sitting as 1B, separate booklet."
+        },
+        {
+          "key": "p1b",
+          "name": "Paper 1B",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 25,
+            "HL": 35
+          },
+          "weightPercent": null,
+          "format": "Data-based questions and questions on experimental work",
+          "calculator": "CALCULATOR",
+          "resources": "Chemistry data booklet",
+          "notes": "Paper 1 combined: SL 90 min/55 marks/36%; HL 120 min/75 marks/36%."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 150
+          },
+          "marks": {
+            "SL": 50,
+            "HL": 90
+          },
+          "weightPercent": {
+            "SL": 44,
+            "HL": 44
+          },
+          "format": "Short-answer and extended-response questions (no sections/choice specified in guide)",
+          "calculator": "CALCULATOR",
+          "resources": "Chemistry data booklet",
+          "notes": ""
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: scientific investigation",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 600,
+            "HL": 600
+          },
+          "marks": {
+            "SL": 24,
+            "HL": 24
+          },
+          "weightPercent": {
+            "SL": 20,
+            "HL": 20
+          },
+          "format": "Open-ended scientific investigation written up as a report (max 3,000 words); requirements identical at SL and HL",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Minutes = 10 recommended teaching hours, not a timed sitting. Internally assessed, externally moderated."
+        }
+      ],
+      "paper1Combined": {
+        "minutes": {
+          "SL": 90,
+          "HL": 120
+        },
+        "marks": {
+          "SL": 55,
+          "HL": 75
+        },
+        "weightPercent": {
+          "SL": 36,
+          "HL": 36
+        }
+      },
+      "assessmentObjectives": [
+        "AO1 Demonstrate knowledge of terminology, facts and concepts; skills, techniques and methodologies",
+        "AO2 Understand and apply knowledge of terminology and concepts; skills, techniques and methodologies",
+        "AO3 Analyse, evaluate and synthesize experimental procedures, primary and secondary data, trends, patterns and predictions",
+        "AO4 Demonstrate the application of skills necessary to carry out insightful and ethical investigations"
+      ],
+      "sourceKeys": [
+        "ib-chemistry-guide-2025"
+      ],
+      "confidence": "HIGH",
+      "gaps": "No official 1A/1B time split. Collaborative sciences project: compulsory interdisciplinary project (10 recommended teaching hours, SL and HL) shared by all DP sciences; NOT assessed / carries no marks."
+    },
+    {
+      "group": 4,
+      "key": "physics",
+      "name": "Physics",
+      "curriculumVersion": "Physics guide, first assessment 2025 (published Feb 2023, updated May/Aug/Nov 2023)",
+      "firstAssessment": 2025,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1a",
+          "name": "Paper 1A",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 25,
+            "HL": 40
+          },
+          "weightPercent": null,
+          "format": "Multiple choice: SL 25 items (SL only); HL 40 items (SL + AHL); no negative marking",
+          "calculator": "CALCULATOR",
+          "resources": "Physics data booklet (clean copy) required",
+          "notes": "Same sitting as 1B."
+        },
+        {
+          "key": "p1b",
+          "name": "Paper 1B",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 20,
+            "HL": 20
+          },
+          "weightPercent": null,
+          "format": "Data-based questions",
+          "calculator": "CALCULATOR",
+          "resources": "Physics data booklet",
+          "notes": "Paper 1 combined: SL 90 min/45 marks/36%; HL 120 min/60 marks/36%."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 150
+          },
+          "marks": {
+            "SL": 50,
+            "HL": 90
+          },
+          "weightPercent": {
+            "SL": 44,
+            "HL": 44
+          },
+          "format": "Short-answer and extended-response questions",
+          "calculator": "CALCULATOR",
+          "resources": "Physics data booklet",
+          "notes": "SL Paper 2 total corrected from 55 to 50 marks in the May 2023 guide update (older copies show 55)."
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: scientific investigation",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 600,
+            "HL": 600
+          },
+          "marks": {
+            "SL": 24,
+            "HL": 24
+          },
+          "weightPercent": {
+            "SL": 20,
+            "HL": 20
+          },
+          "format": "Open-ended scientific investigation written up as a report (max 3,000 words); requirements identical at SL and HL",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Minutes = 10 recommended teaching hours, not a timed sitting. Internally assessed, externally moderated."
+        }
+      ],
+      "paper1Combined": {
+        "minutes": {
+          "SL": 90,
+          "HL": 120
+        },
+        "marks": {
+          "SL": 45,
+          "HL": 60
+        },
+        "weightPercent": {
+          "SL": 36,
+          "HL": 36
+        }
+      },
+      "assessmentObjectives": [
+        "AO1 Demonstrate knowledge of terminology, facts and concepts; skills, techniques and methodologies",
+        "AO2 Understand and apply knowledge of terminology and concepts; skills, techniques and methodologies",
+        "AO3 Analyse, evaluate and synthesize experimental procedures, primary and secondary data, trends, patterns and predictions",
+        "AO4 Demonstrate the application of skills necessary to carry out insightful and ethical investigations"
+      ],
+      "sourceKeys": [
+        "ib-physics-guide-2025"
+      ],
+      "confidence": "HIGH",
+      "gaps": "Physics mark totals differ from biology/chemistry (SL P1 45, HL P1 60). Some third-party sites wrongly quote SL P1 55 / SL P2 55. Collaborative sciences project: compulsory interdisciplinary project (10 recommended teaching hours, SL and HL) shared by all DP sciences; NOT assessed / carries no marks."
+    },
+    {
+      "group": 4,
+      "key": "sports-exercise-health-science",
+      "name": "Sports, exercise and health science",
+      "curriculumVersion": "SEHS guide, first assessment 2026 (published Feb 2024, updated Mar/Jul 2024)",
+      "firstAssessment": 2026,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1a",
+          "name": "Paper 1A",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 30,
+            "HL": 40
+          },
+          "weightPercent": null,
+          "format": "Multiple choice: SL 30 items (SL only); HL 40 items (SL + AHL); no negative marking",
+          "calculator": "CALCULATOR",
+          "resources": "SEHS data booklet (clean copy) required",
+          "notes": "Same sitting as 1B."
+        },
+        {
+          "key": "p1b",
+          "name": "Paper 1B",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 25,
+            "HL": 25
+          },
+          "weightPercent": null,
+          "format": "Data-based questions and questions on experimental work",
+          "calculator": "CALCULATOR",
+          "resources": "SEHS data booklet",
+          "notes": "Paper 1 combined: SL 90 min/55 marks/36%; HL 105 min/65 marks/36%."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 150
+          },
+          "marks": {
+            "SL": 50,
+            "HL": 80
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 40
+          },
+          "format": "Short-answer and extended-response questions",
+          "calculator": "CALCULATOR",
+          "resources": "SEHS data booklet",
+          "notes": ""
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: scientific investigation",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 600,
+            "HL": 600
+          },
+          "marks": {
+            "SL": 24,
+            "HL": 24
+          },
+          "weightPercent": {
+            "SL": 24,
+            "HL": 24
+          },
+          "format": "Scientific investigation report, max 3,200 words; small-group collaboration allowed if IV/DV differ and data unique",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Weighting 24% (not 20% as in bio/chem/phys). 50% of IA marks on conclusion + evaluation. Minutes = 10 teaching hours."
+        }
+      ],
+      "paper1Combined": {
+        "minutes": {
+          "SL": 90,
+          "HL": 105
+        },
+        "marks": {
+          "SL": 55,
+          "HL": 65
+        },
+        "weightPercent": {
+          "SL": 36,
+          "HL": 36
+        }
+      },
+      "assessmentObjectives": [
+        "AO1 Demonstrate knowledge of terminology, facts and concepts; skills, techniques and methodologies",
+        "AO2 Understand and apply knowledge of terminology and concepts; skills, techniques and methodologies",
+        "AO3 Analyse, evaluate and synthesize experimental procedures, primary and secondary data, trends, patterns and predictions",
+        "AO4 Demonstrate the application of skills necessary to carry out insightful and ethical investigations"
+      ],
+      "sourceKeys": [
+        "ib-sehs-guide-2026",
+        "ib-sehs-subject-brief-2026",
+        "ib-sehs-updates"
+      ],
+      "confidence": "HIGH",
+      "gaps": "External total 76% / IA 24%. Options removed. Collaborative sciences project: compulsory interdisciplinary project (10 recommended teaching hours, SL and HL) shared by all DP sciences; NOT assessed / carries no marks."
+    },
+    {
+      "group": 4,
+      "key": "environmental-systems-societies",
+      "name": "Environmental systems and societies (interdisciplinary: Group 3 and/or Group 4)",
+      "curriculumVersion": "ESS guide, first assessment 2026 (published Feb 2024; updated through Nov 2025)",
+      "firstAssessment": 2026,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1",
+          "name": "Paper 1",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 60,
+            "HL": 120
+          },
+          "marks": {
+            "SL": 35,
+            "HL": 70
+          },
+          "weightPercent": {
+            "SL": 25,
+            "HL": 30
+          },
+          "format": "Unseen case study (resource booklet) with data in various forms; all questions compulsory; analysis and evaluation of the data",
+          "calculator": "GDC",
+          "resources": "Case study resource booklet provided in exam",
+          "notes": "Calculator required for both papers; GDCs permitted. Tests AO1-AO3."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 120,
+            "HL": 150
+          },
+          "marks": {
+            "SL": 60,
+            "HL": 80
+          },
+          "weightPercent": {
+            "SL": 50,
+            "HL": 50
+          },
+          "format": "Section A (40 marks): short-answer and data-based questions. Section B: structured essays, 20 marks each - SL answer 1 of 2 (20 marks); HL answer 2 of 3 (40 marks). Final 9 marks of each essay marked with markbands",
+          "calculator": "GDC",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: individual investigation",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 600,
+            "HL": 600
+          },
+          "marks": {
+            "SL": 30,
+            "HL": 30
+          },
+          "weightPercent": {
+            "SL": 25,
+            "HL": 20
+          },
+          "format": "Individual investigation of an environmental issue/research question (same criteria SL and HL)",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Minutes = 10 teaching hours."
+        }
+      ],
+      "assessmentObjectives": [
+        "AO1 Knowledge and understanding (concepts, theories, perspectives; data; methods and models; case studies)",
+        "AO2 Application and analysis",
+        "AO3 Evaluation and synthesis",
+        "AO4 Use and application of appropriate skills (identify issue/RQ; select and use methodologies ethically)"
+      ],
+      "sourceKeys": [
+        "ib-ess-guide-2026",
+        "ib-ess-updates"
+      ],
+      "confidence": "HIGH",
+      "gaps": "ESS counts toward Group 3, Group 4 or both. HL is new (first assessed 2026); HL uses three HL lenses (environmental law, environmental/ecological economics, environmental ethics). Guide does not say whether ESS students take part in the collaborative sciences project; not verified."
+    },
+    {
+      "group": 4,
+      "key": "computer-science",
+      "name": "Computer science",
+      "curriculumVersion": "Computer science guide, first assessment 2027 (first teaching Aug 2025)",
+      "firstAssessment": 2027,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1",
+          "name": "Paper 1",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 75,
+            "HL": 120
+          },
+          "marks": {
+            "SL": 50,
+            "HL": 80
+          },
+          "weightPercent": {
+            "SL": 35,
+            "HL": 40
+          },
+          "format": "Section A: extended-response questions on Theme A Concepts of computer science (SL 38 marks; HL 56 marks). Section B: questions on the pre-seen case study (SL 12 marks, short-response, 2 challenge questions; HL 24 marks, short- and extended-response, 4 challenges). All compulsory; A and B done together",
+          "calculator": "n/a",
+          "resources": "Pre-seen case study released on PRC 12 months before May session (18 months before Nov)",
+          "notes": "Calculator policy not stated in the 2027 guide (outgoing 2014 guide: no calculators in any CS exam)."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 75,
+            "HL": 120
+          },
+          "marks": {
+            "SL": 50,
+            "HL": 80
+          },
+          "weightPercent": {
+            "SL": 35,
+            "HL": 40
+          },
+          "format": "Extended-response questions on Theme B Computational thinking and problem-solving; all compulsory; one question on algorithmic thinking without code; two versions: Python or Java; some built-in functions may be prohibited per question. HL repeats two SL questions plus HL-only questions",
+          "calculator": "n/a",
+          "resources": "none stated",
+          "notes": ""
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: the computational solution",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 2100,
+            "HL": 2100
+          },
+          "marks": {
+            "SL": 30,
+            "HL": 30
+          },
+          "weightPercent": {
+            "SL": 30,
+            "HL": 20
+          },
+          "format": "Computational solution to a real-world problem of the student's choice",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Minutes = 35 teaching hours."
+        }
+      ],
+      "assessmentObjectives": [
+        "AO1 Demonstrate knowledge and understanding of facts, concepts, principles, terminology and computational-thinking methods",
+        "AO2 Apply and use facts, concepts, methods and presentation methods",
+        "AO3 Construct, synthesize, analyse and evaluate problem specifications, requirements, success criteria, testing strategies, programs, techniques and solutions",
+        "AO4 Demonstrate the application of computational thinking skills to solve real-world problems"
+      ],
+      "sourceKeys": [
+        "ib-cs-guide-2027",
+        "ib-cs-updates"
+      ],
+      "confidence": "HIGH",
+      "gaps": "No Paper 3 and no options in the 2027 course. ibo.org updates page text says '80% external / 20% IA for both levels' but its own table and the guide give SL 70/30, HL 80/20 - use the guide. Calculator policy unverified. Also part of collaborative sciences project (10 h). Outgoing 2014-guide course (see computer-science-legacy) last assessed Nov 2026 (inferred)."
+    },
+    {
+      "group": 4,
+      "key": "computer-science-legacy",
+      "name": "Computer science (outgoing course)",
+      "curriculumVersion": "Computer science guide, first examinations 2014 (assessment outline 'first examinations 2016', updated Mar 2016)",
+      "firstAssessment": 2014,
+      "lastAssessment": 2026,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1",
+          "name": "Paper 1",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 130
+          },
+          "marks": {
+            "SL": 70,
+            "HL": 100
+          },
+          "weightPercent": {
+            "SL": 45,
+            "HL": 40
+          },
+          "format": "Section A: compulsory short-answer (25 marks, ~30 min). Section B: compulsory structured questions (SL 3 questions/45 marks; HL 5 questions/75 marks)",
+          "calculator": "NONE",
+          "resources": "n/a",
+          "notes": "Calculators not permitted in any CS exam."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2 (option)",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 60,
+            "HL": 80
+          },
+          "marks": {
+            "SL": 45,
+            "HL": 65
+          },
+          "weightPercent": {
+            "SL": 25,
+            "HL": 20
+          },
+          "format": "Questions on one option (databases, modelling & simulation, web science, OOP-Java). HL: Section A common (45) + Section B HL extension (20)",
+          "calculator": "NONE",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "p3",
+          "name": "Paper 3 (case study)",
+          "type": "EXTERNAL",
+          "levels": [
+            "HL"
+          ],
+          "minutes": {
+            "HL": 60
+          },
+          "marks": {
+            "HL": 30
+          },
+          "weightPercent": {
+            "HL": 20
+          },
+          "format": "Four compulsory structured questions on the annual pre-released case study",
+          "calculator": "NONE",
+          "resources": "Clean copy of case study issued with paper",
+          "notes": "HL only."
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: solution",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 1800,
+            "HL": 1800
+          },
+          "marks": {
+            "SL": 34,
+            "HL": 34
+          },
+          "weightPercent": {
+            "SL": 30,
+            "HL": 20
+          },
+          "format": "Computational solution (criteria A6 B6 C12 D4 E6)",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Minutes = 30 teaching hours."
+        }
+      ],
+      "assessmentObjectives": [
+        "AO1 Know and understand",
+        "AO2 Apply and use",
+        "AO3 Construct, analyse, evaluate (and formulate)",
+        "AO4 Demonstrate personal and interpersonal skills/use of appropriate techniques (IA)"
+      ],
+      "sourceKeys": [
+        "ib-cs-guide-2014"
+      ],
+      "confidence": "MEDIUM",
+      "gaps": "Last assessment year (Nov 2026) inferred from new course first assessment May 2027, not seen in an IB statement. AO4 wording paraphrased (not re-checked)."
+    },
+    {
+      "group": 4,
+      "key": "design-technology",
+      "name": "Design technology",
+      "curriculumVersion": "Design technology guide, first assessment 2027 (published Feb 2025; first teaching Aug 2025)",
+      "firstAssessment": 2027,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1",
+          "name": "Paper 1",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 60,
+            "HL": 90
+          },
+          "marks": {
+            "SL": 30,
+            "HL": 40
+          },
+          "weightPercent": {
+            "SL": 20,
+            "HL": 25
+          },
+          "format": "Multiple-choice questions on design in theory, design in practice, design in context (SL material only at SL; SL+HL at HL)",
+          "calculator": "CALCULATOR",
+          "resources": "none stated",
+          "notes": "Tests AO1-AO3."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 150
+          },
+          "marks": {
+            "SL": 50,
+            "HL": 80
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 45
+          },
+          "format": "Short-answer and extended-response questions based on the analysis of a product",
+          "calculator": "CALCULATOR",
+          "resources": "none stated",
+          "notes": ""
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: design project",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 3000,
+            "HL": 3000
+          },
+          "marks": {
+            "SL": 33,
+            "HL": 33
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 30
+          },
+          "format": "Individual design project following the design thinking process",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Minutes = 50 teaching hours."
+        }
+      ],
+      "assessmentObjectives": [
+        "AO1 Demonstrate knowledge of facts, concepts, principles, terminology, design methodology, techniques, technology and communication methods",
+        "AO2 Understand and apply that knowledge",
+        "AO3 Construct, analyse and evaluate design briefs, problems, specifications, plans, methods, models, products, data and explanations",
+        "AO4 Demonstrate research, development, experimentation, modelling and personal skills for innovative, ethical, effective design"
+      ],
+      "sourceKeys": [
+        "ib-dt-guide-2027",
+        "ib-dt-updates"
+      ],
+      "confidence": "HIGH",
+      "gaps": "Not first assessed 2025 - first assessment May 2027. No Paper 3 in new course. Third-party sites misquote IA weights (guide: SL 40%, HL 30%). Outgoing course (see design-technology-legacy) last assessed Nov 2026 (inferred)."
+    },
+    {
+      "group": 4,
+      "key": "design-technology-legacy",
+      "name": "Design technology (outgoing course)",
+      "curriculumVersion": "Design technology guide, first assessment 2016",
+      "firstAssessment": 2016,
+      "lastAssessment": 2026,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1",
+          "name": "Paper 1",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 45,
+            "HL": 60
+          },
+          "marks": {
+            "SL": 30,
+            "HL": null
+          },
+          "weightPercent": {
+            "SL": 30,
+            "HL": 20
+          },
+          "format": "Multiple choice (SL core; HL core + HL extension)",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "SL 30 marks from secondary source; HL marks not verified."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 90
+          },
+          "marks": {
+            "SL": null,
+            "HL": null
+          },
+          "weightPercent": {
+            "SL": 30,
+            "HL": 20
+          },
+          "format": "Data-based, short-answer and extended-response questions on core",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "p3",
+          "name": "Paper 3",
+          "type": "EXTERNAL",
+          "levels": [
+            "HL"
+          ],
+          "minutes": {
+            "HL": 90
+          },
+          "marks": {
+            "HL": null
+          },
+          "weightPercent": {
+            "HL": 20
+          },
+          "format": "Structured questions on HL extension material (one based on a case study)",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "HL only."
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: design project",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 2400,
+            "HL": 3600
+          },
+          "marks": {
+            "SL": null,
+            "HL": null
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 40
+          },
+          "format": "Individual design project",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "SL 40 h, HL 60 h."
+        }
+      ],
+      "assessmentObjectives": [],
+      "sourceKeys": [
+        "ib-dt-subject-brief-2016-sl",
+        "ib-dt-subject-brief-2016-hl"
+      ],
+      "confidence": "MEDIUM",
+      "gaps": "Marks per paper and calculator policy NOT verified for legacy course (set to n/a). Last assessment inferred."
+    },
+    {
+      "group": 4,
+      "key": "group4-school-based-syllabuses",
+      "name": "School-based syllabuses (e.g. Astronomy, Marine science)",
+      "curriculumVersion": "School-based syllabuses (SBS) approved per school",
+      "firstAssessment": null,
+      "lastAssessment": null,
+      "levels": [
+        "SL"
+      ],
+      "components": [],
+      "assessmentObjectives": [],
+      "sourceKeys": [
+        "wiki-ib-group4",
+        "astronomy-sbs-guide-2017"
+      ],
+      "confidence": "LOW",
+      "gaps": "Only offered by authorized schools, SL only; assessment structure not researched. Note only."
+    },
+    {
+      "group": 5,
+      "key": "math-aa",
+      "name": "Mathematics: analysis and approaches",
+      "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+      "firstAssessment": 2021,
+      "lastAssessment": 2028,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1",
+          "name": "Paper 1",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 120
+          },
+          "marks": {
+            "SL": 80,
+            "HL": 110
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 30
+          },
+          "format": "Section A: compulsory short-response (~SL 40 / HL ~55 marks). Section B: compulsory extended-response (~SL 40 / HL ~55 marks)",
+          "calculator": "NONE",
+          "resources": "Formula booklet (clean copy)",
+          "notes": "No technology allowed."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 120
+          },
+          "marks": {
+            "SL": 80,
+            "HL": 110
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 30
+          },
+          "format": "Section A: compulsory short-response; Section B: compulsory extended-response (same split as P1)",
+          "calculator": "GDC",
+          "resources": "Formula booklet",
+          "notes": "GDC required at all times."
+        },
+        {
+          "key": "p3",
+          "name": "Paper 3",
+          "type": "EXTERNAL",
+          "levels": [
+            "HL"
+          ],
+          "minutes": {
+            "HL": 60
+          },
+          "marks": {
+            "HL": 55
+          },
+          "weightPercent": {
+            "HL": 20
+          },
+          "format": "Two compulsory extended-response problem-solving questions",
+          "calculator": "GDC",
+          "resources": "Formula booklet",
+          "notes": "HL only."
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: mathematical exploration",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 1800,
+            "HL": 1800
+          },
+          "marks": {
+            "SL": 20,
+            "HL": 20
+          },
+          "weightPercent": {
+            "SL": 20,
+            "HL": 20
+          },
+          "format": "Mathematical exploration: individual written investigation of an area of mathematics (20 marks); 30 teaching hours",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Minutes = 30 teaching hours."
+        }
+      ],
+      "assessmentObjectives": [
+        "Knowledge and understanding",
+        "Problem solving",
+        "Communication and interpretation",
+        "Technology",
+        "Reasoning",
+        "Inquiry approaches"
+      ],
+      "sourceKeys": [
+        "ib-math-aa-guide-2021",
+        "ib-math-aa-updates"
+      ],
+      "confidence": "HIGH",
+      "gaps": "New AA course: first teaching Aug 2027, first assessment May 2029 (ibo.org). Changes: SL P1/P2 75 marks each (was 80); HL P1/P2 100 (was 110); HL P3 50 marks (was 55), 1 hour; same IA criteria SL/HL (A Problem specification 4, B Abstraction 6, C Computation 4, D Interpretation 6). Updates page says P3 was previously 1h15 but the 2021 guide says 60 min - discrepancy. Last assessment of current course Nov 2028 per secondary source (consistent with May 2029 start)."
+    },
+    {
+      "group": 5,
+      "key": "math-ai",
+      "name": "Mathematics: applications and interpretation",
+      "curriculumVersion": "Maths AI guide, first assessment 2021 (published Feb 2019)",
+      "firstAssessment": 2021,
+      "lastAssessment": 2028,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "p1",
+          "name": "Paper 1",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 120
+          },
+          "marks": {
+            "SL": 80,
+            "HL": 110
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 30
+          },
+          "format": "Compulsory short-response questions (no sections)",
+          "calculator": "GDC",
+          "resources": "Formula booklet",
+          "notes": "Technology required."
+        },
+        {
+          "key": "p2",
+          "name": "Paper 2",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 90,
+            "HL": 120
+          },
+          "marks": {
+            "SL": 80,
+            "HL": 110
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 30
+          },
+          "format": "Compulsory extended-response questions (no sections)",
+          "calculator": "GDC",
+          "resources": "Formula booklet",
+          "notes": ""
+        },
+        {
+          "key": "p3",
+          "name": "Paper 3",
+          "type": "EXTERNAL",
+          "levels": [
+            "HL"
+          ],
+          "minutes": {
+            "HL": 60
+          },
+          "marks": {
+            "HL": 55
+          },
+          "weightPercent": {
+            "HL": 20
+          },
+          "format": "Two compulsory extended-response problem-solving questions",
+          "calculator": "GDC",
+          "resources": "Formula booklet",
+          "notes": "HL only."
+        },
+        {
+          "key": "ia",
+          "name": "Internal assessment: mathematical exploration",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 1800,
+            "HL": 1800
+          },
+          "marks": {
+            "SL": 20,
+            "HL": 20
+          },
+          "weightPercent": {
+            "SL": 20,
+            "HL": 20
+          },
+          "format": "Mathematical exploration: individual written investigation of an area of mathematics (20 marks); 30 teaching hours",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        }
+      ],
+      "assessmentObjectives": [
+        "Knowledge and understanding",
+        "Problem solving",
+        "Communication and interpretation",
+        "Technology",
+        "Reasoning",
+        "Inquiry approaches"
+      ],
+      "sourceKeys": [
+        "ib-math-ai-guide-2021",
+        "ib-math-ai-updates"
+      ],
+      "confidence": "HIGH",
+      "gaps": "AI has no no-calculator paper and no Section A/B. New AI course: same mark changes as AA (SL 75/75, HL 100/100/50); removed content incl. SL logarithms, trapezoidal rule; HL complex numbers, vector product, Poisson, some hypothesis tests. The AI updates page does not state dates; May 2029 first assessment assumed same as AA (MEDIUM)."
+    },
+    {
+      "group": 6,
+      "key": "visual-arts",
+      "name": "Visual arts",
+      "curriculumVersion": "Visual arts guide, first assessment 2027 (published Feb 2025)",
+      "firstAssessment": 2027,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "aip",
+          "name": "Art-making inquiries portfolio",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 32,
+            "HL": 32
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 30
+          },
+          "format": "PDF up to 15 screens, max 3,000 words, visual evidence + written; explicit inquiry questions/generative statements; separate sources file",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Criteria A-D 8 marks each."
+        },
+        {
+          "key": "connections",
+          "name": "Connections study",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 24
+          },
+          "weightPercent": {
+            "SL": 20
+          },
+          "format": "PDF up to 10 screens, max 2,500 words; connects one of the student's resolved artworks with own context and at least two artworks by different artists; sources file",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "SL only."
+        },
+        {
+          "key": "artist-project",
+          "name": "Artist project",
+          "type": "EXTERNAL",
+          "levels": [
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "HL": 40
+          },
+          "weightPercent": {
+            "HL": 30
+          },
+          "format": "PDF up to 12 screens, max 2,500 words + video up to 3 min of project artwork realized in chosen context + finalized intentions (max 100 words) + sources file",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "HL only."
+        },
+        {
+          "key": "resolved",
+          "name": "Resolved artworks (SL) / Selected resolved artworks (HL)",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 32,
+            "HL": 40
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 40
+          },
+          "format": "Five resolved artworks (image/video files, video up to 3 min each) + rationale (max 700 words). HL: selected from at least 8 works, PDF up to 8 screens incl. rationale and five artwork texts (total max 1,000 words)",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Teacher-assessed, IB-moderated."
+        }
+      ],
+      "assessmentObjectives": [
+        "Curate visual and written materials to communicate intentions and practice",
+        "Investigate art-making forms, creative strategies, meaning and cultural significance",
+        "Generate intentions and artworks through inquiry",
+        "Refine intentions and art-making through investigation, dialogue and critical reflection",
+        "Resolve artworks to fulfil intentions and convey meaning",
+        "Situate own and others' artworks in context(s), audience(s), communities of practice",
+        "Synthesize concept and form through creative and curatorial practices"
+      ],
+      "sourceKeys": [
+        "ib-va-guide-2027",
+        "ib-va-updates"
+      ],
+      "confidence": "HIGH",
+      "gaps": "User-supplied figures verified exactly. Outgoing course (see visual-arts-legacy) last assessed Nov 2026 (inferred)."
+    },
+    {
+      "group": 6,
+      "key": "visual-arts-legacy",
+      "name": "Visual arts (outgoing course)",
+      "curriculumVersion": "Visual arts guide, first assessment 2017 (updated Feb 2017)",
+      "firstAssessment": 2017,
+      "lastAssessment": 2026,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "comparative",
+          "name": "Comparative study",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": null,
+            "HL": null
+          },
+          "weightPercent": {
+            "SL": 20,
+            "HL": 20
+          },
+          "format": "10-15 screens comparing at least 3 artworks (at least 2 artists); HL +3-5 screens on influence on own practice",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "process-portfolio",
+          "name": "Process portfolio",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": null,
+            "HL": null
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 40
+          },
+          "format": "SL 9-18 screens (>=2 art-making forms); HL 13-25 screens (>=3 forms)",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "exhibition",
+          "name": "Exhibition",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": null,
+            "HL": null
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 40
+          },
+          "format": "Curatorial rationale (SL max 400 words) + artworks (SL 4-7) + exhibition texts + 2 photos",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "HL numbers (8-11 artworks, 700-word rationale) not re-verified."
+        }
+      ],
+      "assessmentObjectives": [],
+      "sourceKeys": [
+        "ib-va-guide-2017"
+      ],
+      "confidence": "MEDIUM",
+      "gaps": "Marks not extracted; HL exhibition details not re-verified; last assessment inferred."
+    },
+    {
+      "group": 6,
+      "key": "music",
+      "name": "Music",
+      "curriculumVersion": "Music guide, first assessment 2022 (published Feb 2020; ibdocs mirror shows update Nov 2025)",
+      "firstAssessment": 2022,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "exploring",
+          "name": "Exploring music in context",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 24,
+            "HL": 24
+          },
+          "weightPercent": {
+            "SL": 30,
+            "HL": 20
+          },
+          "format": "Portfolio (max 2,400 words) of written work on diverse musical material + creating exercise (max 32 bars and/or 1 min audio) + performed adaptation (max 2 min) from 2 areas of inquiry",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "experimenting",
+          "name": "Experimenting with music",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 28,
+            "HL": 28
+          },
+          "weightPercent": {
+            "SL": 30,
+            "HL": 20
+          },
+          "format": "Experimentation report (max 1,500 words) + 3 creating excerpts (total max 5 min) + 3 performing excerpts (total max 5 min) in two areas of inquiry",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "presenting",
+          "name": "Presenting music",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 38,
+            "HL": 38
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 30
+          },
+          "format": "Programme notes (max 600 words) + composition/improvisation (max 6 min) + performance solo/ensemble (max 12 min; excerpts max 2 min)",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "cmm",
+          "name": "The contemporary music-maker",
+          "type": "INTERNAL",
+          "levels": [
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "HL": 32
+          },
+          "weightPercent": {
+            "HL": 30
+          },
+          "format": "Continuous multimedia presentation (max 15 min) documenting a real-life collaborative project: proposal, process and evaluation, realized project",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "HL only."
+        }
+      ],
+      "assessmentObjectives": [
+        "AO1 Demonstrate knowledge and understanding of specified content, contexts and processes",
+        "AO2 Demonstrate application and analysis of knowledge and understanding",
+        "AO3 Demonstrate synthesis and evaluation",
+        "AO4 Select, use and apply a variety of appropriate skills and techniques (HL adds collaboration and project management)"
+      ],
+      "sourceKeys": [
+        "ib-music-guide-2022"
+      ],
+      "confidence": "HIGH",
+      "gaps": "No timed exams. Read the Feb 2020 school-hosted copy; a Nov 2025 update exists - changes not checked."
+    },
+    {
+      "group": 6,
+      "key": "theatre",
+      "name": "Theatre",
+      "curriculumVersion": "Theatre guide, first assessment 2024 (published Feb 2022, updated May 2022)",
+      "firstAssessment": 2024,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "production-proposal",
+          "name": "Production proposal",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 20,
+            "HL": 20
+          },
+          "weightPercent": {
+            "SL": 30,
+            "HL": 20
+          },
+          "format": "Proposal for staging an unstudied published play: max 12 pages text+images, max 4,000 words + sources",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Criteria A 8, B 4, C 8."
+        },
+        {
+          "key": "research-presentation",
+          "name": "Research presentation",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": {
+            "SL": 15,
+            "HL": 15
+          },
+          "marks": {
+            "SL": 24,
+            "HL": 24
+          },
+          "weightPercent": {
+            "SL": 30,
+            "HL": 20
+          },
+          "format": "Video-recorded individual presentation (max 15 min) on an unfamiliar world theatre tradition + sources; may be one 15-min take or three 5-min sections",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Minutes = max recording length."
+        },
+        {
+          "key": "collaborative-project",
+          "name": "Collaborative project",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 24,
+            "HL": 24
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 25
+          },
+          "format": "Original ensemble piece (7-10 min) performed to an audience: project report max 10 pages / 4,000 words + video",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "solo-piece",
+          "name": "Solo theatre piece",
+          "type": "EXTERNAL",
+          "levels": [
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "HL": 24
+          },
+          "weightPercent": {
+            "HL": 35
+          },
+          "format": "Report (max 2,500 words) + unedited video of 4-7 min solo piece applying a theatre theorist's theory",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "HL only."
+        }
+      ],
+      "assessmentObjectives": [
+        "Inquiry",
+        "Development",
+        "Presentation",
+        "Evaluation"
+      ],
+      "sourceKeys": [
+        "ib-theatre-guide-2024",
+        "ib-theatre-updates"
+      ],
+      "confidence": "HIGH",
+      "gaps": "AOs are listed by heading only (1a-4b sub-objectives not transcribed)."
+    },
+    {
+      "group": 6,
+      "key": "film",
+      "name": "Film",
+      "curriculumVersion": "Film guide, second edition, first assessment 2023 (published Apr 2021)",
+      "firstAssessment": 2023,
+      "lastAssessment": null,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "textual-analysis",
+          "name": "Textual analysis",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 28,
+            "HL": 28
+          },
+          "weightPercent": {
+            "SL": 30,
+            "HL": 20
+          },
+          "format": "Written analysis (max 1,750 words) of an extract (max 5 min) from a prescribed film + sources",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "comparative-study",
+          "name": "Comparative study",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 32,
+            "HL": 32
+          },
+          "weightPercent": {
+            "SL": 30,
+            "HL": 20
+          },
+          "format": "Recorded multimedia comparative study (max 10 min) of two films in a chosen area of film focus + sources",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "film-portfolio",
+          "name": "Film portfolio",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 24,
+            "HL": 24
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 25
+          },
+          "format": "Portfolio pages (max 9; 3 per role) + film reel (max 9 min; 3 per role incl. one completed film) across 3 film production roles",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "cfp",
+          "name": "Collaborative film project",
+          "type": "EXTERNAL",
+          "levels": [
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "HL": 24
+          },
+          "weightPercent": {
+            "HL": 35
+          },
+          "format": "Completed original film (max 7 min) by a core production team + project report (max 2,000 words) + sources",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "HL only."
+        }
+      ],
+      "assessmentObjectives": [
+        "AO1 Demonstrate knowledge and understanding of specified contexts and processes",
+        "AO2 Demonstrate application and analysis of knowledge and understanding",
+        "AO3 Demonstrate synthesis and evaluation",
+        "AO4 Select, use and apply a variety of appropriate skills and techniques"
+      ],
+      "sourceKeys": [
+        "ib-film-guide-2023"
+      ],
+      "confidence": "HIGH",
+      "gaps": "No new film course announced on ibo.org curriculum-updates pages as of research."
+    },
+    {
+      "group": 6,
+      "key": "dance",
+      "name": "Dance",
+      "curriculumVersion": "Dance guide, first examinations 2013 (published May 2011) - current course",
+      "firstAssessment": 2013,
+      "lastAssessment": 2028,
+      "levels": [
+        "SL",
+        "HL"
+      ],
+      "components": [
+        {
+          "key": "composition-analysis",
+          "name": "Composition and analysis",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 20,
+            "HL": 30
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 35
+          },
+          "format": "SL: 2 dances composed by student (6-10 min total, 15 marks) + analytical statement max 800 words (5 marks). HL: 3 dances (8-15 min, 20 marks) + statement max 1,000 words (5) + analysis/evaluation of connections (5)",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "dance-investigation",
+          "name": "Dance investigation",
+          "type": "EXTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 20,
+            "HL": 25
+          },
+          "weightPercent": {
+            "SL": 20,
+            "HL": 25
+          },
+          "format": "Formal written report comparing two dance styles from different cultures/traditions (one familiar, one unfamiliar): SL max 1,500 words; HL max 2,500 words incl. comparative discussion of one excerpt from each",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": ""
+        },
+        {
+          "key": "performance",
+          "name": "Performance",
+          "type": "INTERNAL",
+          "levels": [
+            "SL",
+            "HL"
+          ],
+          "minutes": null,
+          "marks": {
+            "SL": 22,
+            "HL": 22
+          },
+          "weightPercent": {
+            "SL": 40,
+            "HL": 40
+          },
+          "format": "SL 1-2 dances (3-6 min); HL 2-3 dances (6-9 min, at least half solo/duet); open showing; + short programme notes (2 marks)",
+          "calculator": "n/a",
+          "resources": "n/a",
+          "notes": "Guide text says 'submitted on DVD' (2011 wording; now digital upload)."
+        }
+      ],
+      "assessmentObjectives": [
+        "AO1 Knowledge and understanding",
+        "AO2 Application and analysis",
+        "AO3 Synthesis and evaluation",
+        "AO4 Selection, use and application of a variety of appropriate skills and techniques"
+      ],
+      "sourceKeys": [
+        "ib-dance-guide-2013",
+        "ib-dance-updates"
+      ],
+      "confidence": "MEDIUM",
+      "gaps": "Source is a 2011 university-hosted copy; later IB clarifications not checked. New dance course: launch Feb 2027, first teaching Aug 2027, first assessment May 2029 - Investigating dance (ext, SL 30/HL 20), Experimenting with dance (ext, 30/20), Presenting dance (int, 40/25), Dance project HL only (ext, 35). Marks for new course not published on page. Last assessment of current course (Nov 2028) inferred."
+    }
+  ],
+  "sources": [
+    {
+      "key": "ib-biology-guide-2025",
+      "title": "Biology guide, first assessment 2025",
+      "publisher": "IBO (copy via ibdocs.re mirror; official PDF also at ibo.org/globalassets/.../subject-guides/biology-guide.pdf)",
+      "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/biology-guide.pdf",
+      "year": 2023,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-chemistry-guide-2025",
+      "title": "Chemistry guide, first assessment 2025",
+      "publisher": "IBO (school-hosted copy, Federal Way PS / finalsite)",
+      "url": "https://resources.finalsite.net/images/v1733865131/fwpsorg/autdznlfvehfhxhbxuqj/ChemistrySLEnglish.pdf",
+      "year": 2024,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-physics-guide-2025",
+      "title": "Physics guide, first assessment 2025 (updated Nov 2023)",
+      "publisher": "IBO (school-hosted copy, Bradfield College)",
+      "url": "https://www.bradfieldcollege.org.uk/wp-content/uploads/2024/12/IB-Physics-SPEC_updated-Nov-2023.pdf",
+      "year": 2023,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-sehs-guide-2026",
+      "title": "Sports, exercise and health science guide, first assessment 2026",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/sports-exercise-health-science-guide.pdf",
+      "year": 2024,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-sehs-subject-brief-2026",
+      "title": "DP Subject Brief: Sports, exercise and health science, first assessment 2026",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/sports-exercise-health-science-september-session-en.pdf",
+      "year": 2023,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-sehs-updates",
+      "title": "Sports, exercise and health science updates",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/university-admission/latest-curriculum-updates/sports-exercise-and-health-science-updates/",
+      "year": 2026,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-ess-guide-2026",
+      "title": "Environmental systems and societies guide, first assessment 2026 (update Nov 2025)",
+      "publisher": "IBO (copy via ibdocs.re mirror)",
+      "url": "https://ibdocs.re/p/IB%20SUBJECT%20GUIDES/Interdisciplinary%20Subjects/Environmental%20Systems%20and%20Societies/Environmental%20Systems%20and%20Societies%20Guide%202026%20-%20English%20(Update%20Nov2025).pdf",
+      "year": 2025,
+      "confidence": "MEDIUM"
+    },
+    {
+      "key": "ib-ess-updates",
+      "title": "Environmental systems and societies updates",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/university-admission/latest-curriculum-updates/environmental-systems-and-societies-updates/",
+      "year": 2026,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-cs-guide-2027",
+      "title": "Computer science guide, first assessment 2027",
+      "publisher": "IBO (copy via ibdocs.re mirror)",
+      "url": "https://ibdocs.re/p/IB%20SUBJECT%20GUIDES/Group%204%20-%20Sciences/Computer%20Science/Computer%20Science%20Guide%202027%20-%20English.pdf",
+      "year": 2025,
+      "confidence": "MEDIUM"
+    },
+    {
+      "key": "ib-cs-updates",
+      "title": "Computer science updates",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/university-admission/latest-curriculum-updates/computer-science-updates/",
+      "year": 2026,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-cs-guide-2014",
+      "title": "Computer science guide, first examinations 2014 (updated Mar 2016)",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/computer-science-guide.pdf",
+      "year": 2016,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-dt-guide-2027",
+      "title": "Design technology guide, first assessment 2027",
+      "publisher": "IBO (copy via ibdocs.re mirror)",
+      "url": "https://ibdocs.re/p/IB%20SUBJECT%20GUIDES/Group%204%20-%20Sciences/Design%20Technology/Design%20Technology%20Guide%202027%20-%20English.pdf",
+      "year": 2025,
+      "confidence": "MEDIUM"
+    },
+    {
+      "key": "ib-dt-updates",
+      "title": "Design technology updates",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/university-admission/latest-curriculum-updates/design-technology-updates/",
+      "year": 2026,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-dt-subject-brief-2016-sl",
+      "title": "DP Subject Brief: Design technology SL, first assessment 2016",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/globalassets/new-structure/recognition/pdfs/designtechsl2016englishw.pdf",
+      "year": 2016,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-dt-subject-brief-2016-hl",
+      "title": "DP Subject Brief: Design technology HL, first assessment 2016",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/globalassets/new-structure/recognition/pdfs/designtechhl2016englishw.pdf",
+      "year": 2016,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-math-aa-guide-2021",
+      "title": "Mathematics: analysis and approaches guide, first assessment 2021",
+      "publisher": "IBO (school-hosted copy, D11 / finalsite)",
+      "url": "https://resources.finalsite.net/images/v1701373021/d11org/afkyrocwzw9kr5xjo2xu/Mathematics-AnalysisandApproaches.pdf",
+      "year": 2020,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-math-aa-updates",
+      "title": "DP mathematics: analysis and approaches updates",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/university-admission/latest-curriculum-updates/dp-mathematics-analysis-and-approaches-updates/",
+      "year": 2026,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-math-ai-guide-2021",
+      "title": "Mathematics: applications and interpretation guide, first assessment 2021",
+      "publisher": "IBO (school-hosted copy, Woodstock School)",
+      "url": "https://www.woodstockschool.in/wp-content/uploads/2019/10/Mathematics-applications-and-interpretation-guide.pdf",
+      "year": 2019,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-math-ai-updates",
+      "title": "DP mathematics: applications and interpretation updates",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/university-admission/latest-curriculum-updates/dp-mathematics-applications-and-interpretation-updates/",
+      "year": 2026,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-va-guide-2027",
+      "title": "Visual arts guide, first assessment 2027",
+      "publisher": "IBO (copy via ibdocs.re mirror)",
+      "url": "https://ibdocs.re/p/IB%20SUBJECT%20GUIDES/Group%206%20-%20The%20Arts/Visual%20Arts/Visual%20Arts%20Guide%202027%20-%20English.pdf",
+      "year": 2025,
+      "confidence": "MEDIUM"
+    },
+    {
+      "key": "ib-va-updates",
+      "title": "Visual arts updates",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/university-admission/latest-curriculum-updates/visual-arts-updates/",
+      "year": 2026,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-va-guide-2017",
+      "title": "Visual arts guide, first assessment 2017",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/visual-arts-guide.pdf",
+      "year": 2017,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-music-guide-2022",
+      "title": "Music guide, first assessment 2022",
+      "publisher": "IBO (school-hosted copy, UWC East Africa)",
+      "url": "https://dp.uwcea.org/docs/Music%20Subject%20Guide.pdf",
+      "year": 2020,
+      "confidence": "MEDIUM"
+    },
+    {
+      "key": "ib-theatre-guide-2024",
+      "title": "Theatre guide, first assessment 2024",
+      "publisher": "IBO (school-hosted copy, UWC East Africa)",
+      "url": "https://dp.uwcea.org/docs/Theatre%20Subject%20Guide%202024-.pdf",
+      "year": 2022,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-theatre-updates",
+      "title": "Theatre updates",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/university-admission/latest-curriculum-updates/theatre/",
+      "year": 2022,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-film-guide-2023",
+      "title": "Film guide, second edition, first assessment 2023",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/subject-guides/film-guide.pdf",
+      "year": 2021,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "ib-dance-guide-2013",
+      "title": "Dance guide, first examinations 2013",
+      "publisher": "IBO (copy hosted by CUNY)",
+      "url": "https://www.cuny.edu/wp-content/uploads/sites/4/page-assets/about/administration/offices/registrar/resources/international-baccalaureate/IB-Dance.pdf",
+      "year": 2011,
+      "confidence": "MEDIUM"
+    },
+    {
+      "key": "ib-dance-updates",
+      "title": "Dance updates (new course, first assessment 2029)",
+      "publisher": "IBO",
+      "url": "https://www.ibo.org/university-admission/latest-curriculum-updates/dance-updates/",
+      "year": 2026,
+      "confidence": "HIGH"
+    },
+    {
+      "key": "wiki-ib-group4",
+      "title": "IB Group 4 subjects",
+      "publisher": "Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/IB_Group_4_subjects",
+      "year": 2026,
+      "confidence": "LOW"
+    },
+    {
+      "key": "astronomy-sbs-guide-2017",
+      "title": "Astronomy guide, school-based syllabus, first assessment 2017",
+      "publisher": "IBO (personal-site copy)",
+      "url": "https://jimmynewland.com/astronomy/IB-Astronomy-SL-Guide-first-exams-2017.pdf",
+      "year": 2015,
+      "confidence": "LOW"
+    }
+  ]
+}

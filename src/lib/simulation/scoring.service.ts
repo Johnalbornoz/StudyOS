@@ -1,19 +1,29 @@
 /**
- * F9 -- scoring integration (task §28). Chooses among the FOUR
- * EXISTING graders by item shape -- exactly as F8's
- * recordInterventionAttempt already does -- then persists via F7's
- * real, unmodified recordExamAttemptItemResponse. No new grading
- * logic anywhere in F9.
+ * F9 -- scoring integration (task §28), extended by Track B: grading now goes
+ * through the exam-core item grader (`gradeExamItem`), which REUSES the
+ * existing graders (gradeStructuredAnswer / gradeAnswer) and adds only
+ * answer-shape validation, deterministic keyed text answers and multi-part
+ * mark schemes. Persistence stays F7's real recordExamAttemptItemResponse.
+ * No exam-family branching anywhere.
  */
+import { examEvidenceKnowledgeStateMode } from '@/lib/exam-readiness/exam-readiness-evidence.service';
+import { executionAuthorityOfExamAttempt } from '@/lib/assessment-execution/assessment-start.service';
 import { db } from '@/lib/db';
-import { gradeStructuredAnswer, gradeAnswer, type GeneratedQuestion } from '@/services/quiz-generation.service';
+import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { recordExamAttemptItemResponse } from '@/lib/assessment/evaluation.service';
 import type { EvaluationResult } from '@/lib/assessment/types';
 import { resolveActivityMetadataForObjective } from '@/lib/curriculum/activity-metadata-bridge.service';
 import { resolveStudentConceptForCanonicalConcept } from '@/lib/readiness/student-concept-resolution.service';
 import { updateMastery } from '@/services/mastery.service';
+import { examItemFromGenerated, type ExamItem } from '@/lib/exam-core/items';
+import { gradeExamItem, gradeFromRubricOutcome, invalidExamItemGrade, type ExamItemGrade } from '@/lib/exam-core/item-grading';
+import { assessSubmission, parsePortfolioAnswer, resolveSubmissionForAnswer, SubmissionError } from '@/lib/exam-core/submissions/submission.service';
+import { recordAssessments } from '@/lib/exam-core/assessment/assessment-store';
+import { examEvidenceScopeMetadata } from '@/lib/exam-core/evidence-scope';
 
-const STRUCTURED_FORMATS = new Set(['single_choice', 'multi_choice', 'matching', 'ordering', 'classification']);
+function isExamItem(q: GeneratedQuestion | ExamItem): q is ExamItem {
+  return !!(q as ExamItem).exam;
+}
 
 /**
  * Also writes real learning_evidence for the response, through the
@@ -21,19 +31,30 @@ const STRUCTURED_FORMATS = new Set(['single_choice', 'multi_choice', 'matching',
  * already use (updateMastery, sourceType 'EXAM_SIMULATION' -- the
  * pre-existing F5 evidence source type, never a new one). A simulation
  * attempt is independent evidence by definition (no hint/scaffold path
- * exists inside an exam attempt) -- ai_assistance_type is always
- * 'NONE'. Metadata keys are attached only when genuinely resolved,
- * never fabricated (mirrors F7/F8's own INV-F7-18/INV-F8-12
- * discipline).
+ * exists inside an exam attempt, and the Tutor is restricted while an
+ * attempt is open) -- ai_assistance_type is always 'NONE'. Metadata keys
+ * are attached only when genuinely resolved, never fabricated (mirrors
+ * F7/F8's own INV-F7-18/INV-F8-12 discipline).
+ *
+ * Track B: an INVALID response (an answer the rendered controls could never
+ * have produced) is recorded with score 0 but NEVER becomes evidence.
+ *
+ * G6: the evidence carries its exam identity (`metadata.examScope`: target,
+ * version, attempt) captured HERE, from the attempt itself -- it keeps
+ * feeding the one Knowledge State per concept, but only its own exam target
+ * may read it as exam-requirement evidence (see exam-core/evidence-scope.ts).
  */
 export async function recordSimulationItemResponse(params: {
   examAttemptId: string;
   studentId: string;
   examVersionId: string;
+  /** G6: the Student's exam target (student_exam_profiles.id) of this attempt. Read from the attempt when omitted; a mismatch is refused. */
+  examTargetId?: string;
   assessmentComponentId: string;
   learningObjectiveId?: string;
   commandTermId?: string | null;
-  question: GeneratedQuestion;
+  /** The SERVER-HELD item (never a client-supplied question). A bare GeneratedQuestion is treated as a 1-mark AI item. */
+  question: GeneratedQuestion | ExamItem;
   studentAnswer: string;
   language?: string;
   /**
@@ -46,44 +67,70 @@ export async function recordSimulationItemResponse(params: {
    * duplicate Evidence is ever written.
    */
   idempotencyKey?: string;
-}): Promise<{ responseId: string; evaluation: EvaluationResult; evidenceWritten: boolean; duplicate: boolean }> {
-  let evaluation: EvaluationResult;
-
-  if (STRUCTURED_FORMATS.has(params.question.answerFormat)) {
-    const result = gradeStructuredAnswer(params.question, params.studentAnswer);
-    evaluation = { rawResponse: params.studentAnswer, score: result.score, maxScore: 1, criteriaBreakdown: null, feedback: result.feedback || null, evaluationModelVersion: null, provenance: null };
-  } else {
-    const result = await gradeAnswer(params.question, params.studentAnswer, params.language ?? 'en');
-    evaluation = {
-      rawResponse: params.studentAnswer,
-      score: result.score,
-      maxScore: 1,
-      criteriaBreakdown: { errorType: result.errorType, reasoningValid: result.reasoningValid, confidence: result.confidence },
-      feedback: result.feedback,
-      evaluationModelVersion: result.aiExecution?.aiModel ?? null,
-      provenance: result.aiExecution ? { ...result.aiExecution } : null,
-    };
-  }
+  /** Track B: the item's position in the frozen plan -- at most one committed response per item. */
+  targetIndex?: number;
+  /** Practice Coach / time review: timing, the inherited speed strategy and whether it was opened before answering. Stored with the grading detail; never part of the score. */
+  coach?: Record<string, unknown> & { assisted: boolean };
+}): Promise<{ responseId: string; evaluation: EvaluationResult; evidenceWritten: boolean; duplicate: boolean; grade: ExamItemGrade }> {
+  const item: ExamItem = isExamItem(params.question) ? params.question : examItemFromGenerated(params.question, params.learningObjectiveId ?? null);
+  let submissionId: string | null = null;
+  const grade = await gradeExamItem(item, params.studentAnswer, params.language ?? 'en', {
+    // V2: a portfolio task is answered with the Student's own submission for THIS attempt position.
+    portfolioGrader: async (it, answer) => {
+      const requested = parsePortfolioAnswer(answer);
+      const bound = requested ? await resolveSubmissionForAnswer({ examAttemptId: params.examAttemptId, targetIndex: params.targetIndex, studentId: params.studentId, submissionId: requested }) : null;
+      if (!bound) return invalidExamItemGrade(it, answer, 'SUBMISSION_NOT_FOUND');
+      try {
+        const { outcome, humanOnlyArtifacts } = await assessSubmission({ submissionId: bound, studentId: params.studentId, item: it, language: params.language ?? 'en' });
+        submissionId = bound;
+        return gradeFromRubricOutcome(it, answer, outcome, it.exam.portfolio!.rubric, { submissionId: bound, humanOnlyArtifacts });
+      } catch (err) {
+        if (err instanceof SubmissionError && err.code === 'INCOMPLETE') return invalidExamItemGrade(it, answer, 'SUBMISSION_INCOMPLETE');
+        throw err;
+      }
+    },
+  });
+  const evaluation = grade.evaluation;
 
   const { id, duplicate } = await recordExamAttemptItemResponse({
     examAttemptId: params.examAttemptId,
     assessmentComponentId: params.assessmentComponentId,
     learningObjectiveId: params.learningObjectiveId,
-    itemSnapshot: params.question as unknown as Record<string, unknown>,
+    approvedItemId: item.exam.approvedItemId ?? undefined,
+    itemSnapshot: item as unknown as Record<string, unknown>,
     evaluation,
     idempotencyKey: params.idempotencyKey,
+    targetIndex: params.targetIndex,
+    itemSource: item.exam.source,
+    v2: {
+      normalizedResponse: grade.normalizedResponse,
+      gradingDetail: params.coach ? { ...(grade.detail ?? {}), coach: params.coach } : grade.detail,
+      reviewStatus: grade.reviewStatus,
+      contentOrigin: item.exam.contentOrigin ?? null,
+      scoringStrategy: grade.scoringStrategy,
+      strictScore: grade.strictFraction * grade.maxMarks,
+    },
   });
+  if (!duplicate && grade.assessments.length > 0) {
+    await recordAssessments({ responseId: id, submissionId: submissionId ?? undefined }, grade.assessments, item.exam.key ?? item.exam.approvedItemId);
+  }
 
   if (duplicate) {
     // The first application already wrote Evidence (if any) -- a retry
     // must never re-run updateMastery a second time for the same
     // logical submission.
-    return { responseId: id, evaluation, evidenceWritten: false, duplicate: true };
+    return { responseId: id, evaluation, evidenceWritten: false, duplicate: true, grade };
   }
 
   let evidenceWritten = false;
-  if (params.learningObjectiveId) {
-    const bridge = await resolveActivityMetadataForObjective(params.learningObjectiveId);
+  // B5: one engine per attempt. An attempt whose instance carries a frozen assessment snapshot is executed by
+  // the canonical loop, which attributes its evidence at completion; this legacy objective -> first-concept
+  // shortcut stands down for it. The score above is unaffected.
+  const legacyEvidenceOwner = (await executionAuthorityOfExamAttempt(params.examAttemptId)) === 'LEGACY';
+  // V2: a response awaiting review is not evidence until a reviewer confirms its mark.
+  if (legacyEvidenceOwner && grade.status === 'ANSWERED' && grade.reviewStatus === 'NONE' && params.learningObjectiveId) {
+    // an ASSISTED response (speed strategy opened before answering) is practice: it writes no mastery evidence
+    const bridge = params.coach?.assisted === true ? null : await resolveActivityMetadataForObjective(params.learningObjectiveId);
     if (bridge && bridge.canonicalConceptIds.length > 0) {
       let studentConceptId: string | null = null;
       for (const canonicalConceptId of bridge.canonicalConceptIds) {
@@ -93,18 +140,21 @@ export async function recordSimulationItemResponse(params: {
       if (studentConceptId) {
         const subjectRow = await db.query(`SELECT subject_id FROM concepts WHERE id = $1`, [studentConceptId]);
         const subjectId = subjectRow.rows[0]?.subject_id;
-        if (subjectId) {
-          const metadata: Record<string, unknown> = { context: { examAttemptId: params.examAttemptId, simulationSource: true } };
+        // SEPARATED (default): exam responses go to Exam Readiness at completion, never to the Knowledge State
+        if (subjectId && examEvidenceKnowledgeStateMode() === 'LEGACY') {
+          const metadata: Record<string, unknown> = { context: { examAttemptId: params.examAttemptId, simulationSource: true, itemSource: item.exam.source } };
           if (bridge.skillIds.length > 0) metadata.skillIds = bridge.skillIds;
           metadata.framework = { examVersionId: params.examVersionId };
+          const examTargetId = await attemptTargetId(params.examAttemptId, params.examTargetId);
+          if (examTargetId) metadata.examScope = examEvidenceScopeMetadata({ examTargetId, examVersionId: params.examVersionId, examAttemptId: params.examAttemptId });
           if (params.commandTermId) metadata.commandTermId = params.commandTermId;
-          if (params.question.type) metadata.questionType = params.question.type;
+          if (item.type) metadata.questionType = item.type;
 
           await updateMastery({
             studentId: params.studentId,
             conceptId: studentConceptId,
             subjectId,
-            evidence: { sourceType: 'EXAM_SIMULATION', result: evaluation.score >= 1 ? 'correct' : evaluation.score > 0 ? 'partial' : 'incorrect', difficulty: params.question.difficulty, scorePercent: evaluation.maxScore > 0 ? (evaluation.score / evaluation.maxScore) * 100 : 0 },
+            evidence: { sourceType: 'EXAM_SIMULATION', result: grade.fraction >= 1 ? 'correct' : grade.fraction > 0 ? 'partial' : 'incorrect', difficulty: item.difficulty, scorePercent: grade.fraction * 100 },
             telemetry: { activityType: 'EXAM_SIMULATION', learningMode: 'AI_NATIVE', aiAssistanceType: 'NONE' },
             metadata,
             identity: params.idempotencyKey ? { operationType: 'EXAM_SIMULATION_RESPONSE', operationId: params.idempotencyKey, conceptId: studentConceptId } : undefined,
@@ -115,7 +165,19 @@ export async function recordSimulationItemResponse(params: {
     }
   }
 
-  return { responseId: id, evaluation, evidenceWritten, duplicate: false };
+  return { responseId: id, evaluation, evidenceWritten, duplicate: false, grade };
+}
+
+/**
+ * G6: the exam target of an attempt, from its own NOT NULL foreign key (never inferred). A caller-supplied
+ * target must agree with it. Unreadable attempt -> null: the evidence still carries context.examAttemptId,
+ * which identifies the same target deterministically.
+ */
+async function attemptTargetId(examAttemptId: string, claimed: string | undefined): Promise<string | null> {
+  const row = (await db.query(`SELECT student_exam_profile_id FROM exam_attempts WHERE id = $1`, [examAttemptId])).rows?.[0];
+  const target = (row?.student_exam_profile_id as string | undefined) ?? null;
+  if (target && claimed && claimed !== target) throw new Error(`G6: exam target mismatch for attempt ${examAttemptId}`);
+  return target;
 }
 
 export async function getSimulationScoreSummary(examAttemptId: string): Promise<{ rawScore: number; maxScore: number; byComponent: Record<string, { score: number; maxScore: number }> }> {

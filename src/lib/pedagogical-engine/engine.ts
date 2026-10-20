@@ -15,17 +15,19 @@
  * History itself is never mutated -- this function only ever reads
  * `evidence`; the ledger a caller holds is untouched.
  */
-import { qualifyEvidence } from './evidence-qualification';
-import { CANONICAL_POLICY } from './policy';
+import { qualifyEvidence, transferLevelRank, meetsTransferLevel } from './evidence-qualification';
+import { CANONICAL_POLICY, type TransferLevel } from './policy';
 import { buildActivityContract } from './activity-contract';
 import {
   resolveLearnDifficulty,
-  resolvePracticeDifficulty,
-  resolveProveDifficulty,
+  practiceSessionBaseLevel,
+  resolvePracticeBase,
+  resolveProveLevelMix,
   resolveReinforceDifficulty,
   resolveRetentionDifficulty,
   resolveTransferDifficulty,
   type DifficultyResolution,
+  type ProveLevelMixResolution,
 } from './difficulty-policy';
 import { STAGE_ORDER } from './types';
 import type {
@@ -44,6 +46,7 @@ import type {
   RollbackDecision,
   SatisfactionBasis,
   PracticeWindowEntry,
+  ConsolidationLevel,
 } from './types';
 
 type Stage = Exclude<PedagogicalStage, 'CONSOLIDATED'>;
@@ -103,9 +106,23 @@ function validateRecognitionSet(recognized: RecognizedRequirement[] | undefined)
  * later qualifying attempt is not reported, since it is no longer the
  * reason the learner is where they are).
  */
-/** CANON-V2-REMEDIATION Part 1A -- "2 of the last 3 VALID Practice attempts" (Policy V2 Section 3). Named here so the decision can explain the window it used; the values are unchanged. */
-const PRACTICE_WINDOW_SIZE = 3;
-const PRACTICE_REQUIRED_PASSES = 2;
+/**
+ * Overnight 2026-10-16 practice rule (contract section 0; supersedes "each of the last 3 >= 80"): the LAST 3 completed
+ * valid Practice attempts, their AVERAGE >= 80% AND the LATEST >= 80% (e.g. 75, 82, 88 -> ready; 100, 100, 50 -> not).
+ * Read from the one policy object; named here so the decision can explain the window.
+ */
+const PRACTICE_WINDOW_SIZE = CANONICAL_POLICY.practice.windowSize;
+/** Shown in the progress explanation: the window rule needs the LATEST practice to pass (1), not every one. */
+const PRACTICE_REQUIRED_PASSES = 1;
+const PRACTICE_MINIMUM_WINDOW_AVERAGE = CANONICAL_POLICY.practice.minimumWindowAveragePercent;
+/** The rolling-window rule (pure): a full window of 3, its average at the bar, and the latest practice passing. */
+function practiceWindowSatisfied(window: readonly { scorePercent: number; passed: boolean }[]): boolean {
+  const last = window.slice(-PRACTICE_WINDOW_SIZE);
+  if (last.length < PRACTICE_WINDOW_SIZE) return false;
+  const average = last.reduce((a, e) => a + e.scorePercent, 0) / last.length;
+  const latestPasses = !CANONICAL_POLICY.practice.latestMustPass || last[last.length - 1].passed;
+  return average >= PRACTICE_MINIMUM_WINDOW_AVERAGE && latestPasses;
+}
 
 function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, RecognizedRequirement> | null) {
   const sorted = sortEvidence(evidence);
@@ -161,8 +178,19 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
    * never carry over and contaminate a new one.
    */
   let retainStrikeCount = 0;
+  // Projection support (READY_TO_PROVE): genuine Prove attempts made since Practice was last satisfied.
+  let proveAttemptsInCycle = 0;
   let transferSatisfied = false;
   let transferBasis: SatisfactionBasis = null;
+  /**
+   * Contract 1.2 -- the best APPLY ladder level reached in the current cycle. A weaker later attempt never lowers it;
+   * only a rollback that invalidates TRANSFER (Case D, internal-assessment revalidation) resets it.
+   */
+  let transferBestLevel: TransferLevel | null = null;
+  /** Contract 1.1 -- weaknesses of the latest qualifying guided LEARN session. */
+  let learnWeaknesses: string[] = [];
+  /** Contract 1.3 -- consecutive internal-assessment alerts (60-79) while Practice is satisfied. */
+  let internalAssessmentAlertCount = 0;
   let highestQualifyingPracticeDifficulty: number | null = null;
   let lastRollback: RollbackDecision | null = null;
 
@@ -210,6 +238,29 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
     return { triggeredBy, case: rollbackCase, rolledBackTo, reasonCodes };
   }
 
+  /**
+   * A rollback that lands on PRACTICE and invalidates every stage above it (Case D, internal-assessment
+   * revalidation): Practice, Prove, Retain and Transfer are no longer satisfied, a brand new Practice cycle starts
+   * (window reset), and the internal-assessment alert counter restarts. LEARN is never touched. History is untouched.
+   */
+  function resetFromPractice(): void {
+    practiceSatisfied = false;
+    practiceBasis = null;
+    practiceWindow = [];
+    proveSatisfied = false;
+    proveBasis = null;
+    proveQualifyingAt = null;
+    proveQualifyingDifficulty = null;
+    retainSatisfied = false;
+    retainBasis = null;
+    retainQualifyingScore = null;
+    retainStrikeCount = 0;
+    transferSatisfied = false;
+    transferBasis = null;
+    transferBestLevel = null;
+    internalAssessmentAlertCount = 0;
+  }
+
   // LEARN: order-independent -- any single qualifying LEARN_CHECK item
   // is enough, and nothing downstream can ever roll LEARN back
   // (Invariant: LEARN is a comprehension checkpoint, never mastery).
@@ -222,6 +273,9 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
     if (verdict.result === 'QUALIFIES') {
       learnSatisfied = true;
       learnBasis = 'V1_EVIDENCE';
+      // Contract 1.1: the LATEST qualifying guided session's weaknesses feed PRACTICE generation (sorted replay, so a
+      // later qualifying session overwrites an earlier one; a legacy quiz row carries no session and changes nothing).
+      if (item.learnInteractionCount !== undefined) learnWeaknesses = [...(item.learnWeaknesses ?? [])];
       acc.LEARN.qualifyingCount++;
       acc.LEARN.qualifyingIds.push(item.id);
     } else {
@@ -238,8 +292,12 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
       if (verdict.result === 'QUALIFIES') {
         acc.PRACTICE.qualifyingCount++;
         acc.PRACTICE.qualifyingIds.push(item.id);
+        // D78: a session that carried the +1 exposure item counts at its BASE level -- one +1 item
+        // never makes it "practice at base+1". Legacy rows (no exposure record) keep their
+        // administered difficulty (history is not rewritten).
+        const qualifyingLevel = item.practiceExposure ? practiceSessionBaseLevel(item) : item.difficulty;
         highestQualifyingPracticeDifficulty =
-          highestQualifyingPracticeDifficulty == null ? item.difficulty : Math.max(highestQualifyingPracticeDifficulty, item.difficulty);
+          highestQualifyingPracticeDifficulty == null ? qualifyingLevel : Math.max(highestQualifyingPracticeDifficulty, qualifyingLevel);
       } else {
         acc.PRACTICE.nonQualifyingCount++;
         acc.PRACTICE.nonQualifyingIds.push(item.id);
@@ -258,8 +316,8 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
       const isWindowEligible = verdict.reasonCode === 'PASSING_SCORE' || verdict.reasonCode === 'INSUFFICIENT_SCORE';
       if (isWindowEligible) {
         practiceWindow.push({ evidenceId: item.id, scorePercent: item.scorePercent, passed: verdict.result === 'QUALIFIES', timestamp: item.timestamp });
-        const passesInWindow = practiceWindow.slice(-PRACTICE_WINDOW_SIZE).filter((e) => e.passed).length;
-        if (!practiceSatisfied && passesInWindow >= PRACTICE_REQUIRED_PASSES) {
+        if (!practiceSatisfied && practiceWindowSatisfied(practiceWindow)) {
+          proveAttemptsInCycle = 0;
           practiceSatisfied = true;
           practiceBasis = 'V1_EVIDENCE';
           // A newly-satisfied Practice window resolves any rollback that
@@ -272,6 +330,15 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
 
     if (item.activityType === 'PROVE') {
       const verdict = qualifyEvidence(item, { targetStage: 'PROVE', prerequisiteSatisfied: practiceSatisfied });
+      // 2026-10-17 pilot policy: once PROVE has passed in this cycle, a later optional attempt never undoes it (it is
+      // recorded in History only). A new cycle starts only when Retain's two-strike rule invalidates the pass.
+      if (proveSatisfied && CANONICAL_POLICY.prove.failureStaysInProve) {
+        acc.PROVE.nonQualifyingCount++;
+        acc.PROVE.nonQualifyingIds.push(item.id);
+        acc.PROVE.reasonCodes.add(verdict.reasonCode);
+        continue;
+      }
+      if (practiceSatisfied && verdict.reasonCode !== 'PREMATURE_STAGE_EVIDENCE') proveAttemptsInCycle++;
       acc.PROVE.reasonCodes.add(verdict.reasonCode);
       if (verdict.result === 'QUALIFIES') {
         proveSatisfied = true;
@@ -300,7 +367,7 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
         // basis for the rest of this replay -- newer v1 failure beats
         // legacy recognition -- simply by resetting the same booleans a
         // pre-CANON-R4R1 failure already reset.
-        if (verdict.reasonCode === 'FAILED_ATTEMPT') {
+        if (verdict.reasonCode === 'FAILED_ATTEMPT' && !CANONICAL_POLICY.prove.failureStaysInProve) {
           proveSatisfied = false;
           proveBasis = null;
           proveQualifyingDifficulty = null;
@@ -312,6 +379,7 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
           // in History (never mutated) but no longer occupies a window
           // slot for the NEW requalification.
           practiceWindow = [];
+          internalAssessmentAlertCount = 0;
           lastRollback = makeRollback('PROVE', 'PROVE_FAILURE_RETURN_TO_PRACTICE', 'PRACTICE', ['FAILED_ATTEMPT']);
         }
       }
@@ -377,94 +445,53 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
     if (item.activityType === 'TRANSFER') {
       const verdict = qualifyEvidence(item, { targetStage: 'TRANSFER', prerequisiteSatisfied: retainSatisfied });
       acc.TRANSFER.reasonCodes.add(verdict.reasonCode);
+      // Contract 1.2: a ladder attempt that reached the TRANSFER stage legitimately (not premature, not assisted, not
+      // a legacy row, no critical misconception) updates the BEST level -- never lowered by a weaker attempt.
+      if (verdict.reasonCode === 'TRANSFER_LEVEL_REACHED' || verdict.reasonCode === 'TRANSFER_LEVEL_BELOW_CONSOLIDATION') {
+        const level = item.transferHighestLevel ?? null;
+        if (transferLevelRank(level) > transferLevelRank(transferBestLevel)) transferBestLevel = level;
+      }
       if (verdict.result === 'QUALIFIES') {
         acc.TRANSFER.qualifyingCount++;
         acc.TRANSFER.qualifyingIds.push(item.id);
         transferSatisfied = true;
         transferBasis = 'V1_EVIDENCE';
-        // A qualifying Transfer resolves a Case A (application-weak)
-        // rollback -- the retry succeeded, no REINFORCE remains active.
         if (lastRollback?.rolledBackTo === 'TRANSFER') lastRollback = null;
       } else {
         acc.TRANSFER.nonQualifyingCount++;
         acc.TRANSFER.nonQualifyingIds.push(item.id);
         if (verdict.reasonCode === 'CRITICAL_MISCONCEPTION') {
-          // Case D: rollback to the first requirement invalidated by
-          // the misconception. Documented decision: treated as
-          // foundational -- rolls all the way back to PRACTICE, since a
-          // critical misconception undermines every stage built on top
-          // of it, not just Transfer itself. This permanently
-          // invalidates any recognition-seeded basis for every one of
-          // these stages, for the rest of this replay, and -- per
-          // CANON-V2-REMEDIATION Part 1A -- resets the Practice
-          // qualification cycle exactly like any other rollback to
-          // PRACTICE.
-          practiceSatisfied = false;
-          practiceBasis = null;
-          practiceWindow = [];
-          proveSatisfied = false;
-          proveBasis = null;
-          proveQualifyingAt = null;
-          proveQualifyingDifficulty = null;
-          retainSatisfied = false;
-          retainBasis = null;
-          retainQualifyingScore = null;
-          retainStrikeCount = 0;
-          transferSatisfied = false;
-          transferBasis = null;
+          // Case D (unchanged): a critical misconception undermines every stage built on top of it -- rollback to
+          // PRACTICE, resetting the Practice cycle and every stage above it (recognition-seeded bases included).
+          resetFromPractice();
           lastRollback = makeRollback('TRANSFER', 'TRANSFER_CASE_D_CRITICAL_MISCONCEPTION', 'PRACTICE', ['CRITICAL_MISCONCEPTION']);
-        } else if (verdict.reasonCode === 'FAILED_ATTEMPT' || verdict.reasonCode === 'MISSING_REQUIRED_REASONING') {
-          transferSatisfied = false;
-          transferBasis = null;
-          // CANON-V2-REMEDIATION Part 4: qualification (did this attempt
-          // pass?) and rollback DIAGNOSIS (why, and how far back?) stay
-          // fully separate. A per-challenge/overall score pattern never
-          // by itself implies any of the three classifications below --
-          // only the EXPLICIT `transferFailureDiagnostic` signal
-          // (produced by evidence dimensions outside this bare score,
-          // out of this isolated engine's own scope to compute) decides.
-          // Absent that signal, every failure defaults to the most
-          // conservative classification: APPLICATION_CONTEXT_WEAKNESS --
-          // the underlying Prove/Retention evidence remains valid, and
-          // only a Transfer-focused retry is required.
-          const diagnostic = item.transferFailureDiagnostic ?? 'APPLICATION_CONTEXT_WEAKNESS';
-          if (diagnostic === 'FOUNDATIONAL_PROCEDURAL_FAILURE') {
-            // Case C: foundational/procedural failure -- rolls back to
-            // the earliest invalidated requirement, normally PRACTICE.
-            // Resets the Practice qualification cycle (Part 1A).
-            practiceSatisfied = false;
-            practiceBasis = null;
-            practiceWindow = [];
-            proveSatisfied = false;
-            proveBasis = null;
-            proveQualifyingAt = null;
-            proveQualifyingDifficulty = null;
-            retainSatisfied = false;
-            retainBasis = null;
-            retainQualifyingScore = null;
-            retainStrikeCount = 0;
-            lastRollback = makeRollback('TRANSFER', 'TRANSFER_CASE_C_FOUNDATIONAL_PROCEDURAL_FAILURE', 'PRACTICE', [verdict.reasonCode]);
-          } else if (diagnostic === 'RETENTION_WEAKNESS') {
-            // Case B (CANON-V2-REMEDIATION, newly implemented): the
-            // learner fails to retrieve previously-demonstrated
-            // knowledge, but there is no explicit foundational/
-            // procedural breakdown and no critical misconception --
-            // PROVE remains valid. Rollback ONLY to RETAIN; its own
-            // eligibility gate is anchored to the UNCHANGED
-            // `proveQualifyingAt`, which is already in the past by the
-            // time a Transfer attempt was even reachable -- so RETAIN
-            // recomputes as immediately EXECUTABLE, never WAITING, with
-            // no new 3-day wait.
-            retainSatisfied = false;
-            retainBasis = null;
-            retainQualifyingScore = null;
-            lastRollback = makeRollback('TRANSFER', 'TRANSFER_CASE_B_RETENTION_WEAKNESS', 'RETAIN', [verdict.reasonCode]);
-          } else {
-            // Case A: application-weak, knowledge intact -- Prove and
-            // Retention remain valid; only a Transfer-focused REINFORCE
-            // + a new Transfer attempt is required.
-            lastRollback = makeRollback('TRANSFER', 'TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS', 'TRANSFER', [verdict.reasonCode]);
-          }
+        }
+        // Contract 1.2: TRANSFER_LEVEL_BELOW_CONSOLIDATION (NEAR or nothing) is never a FAILED_ATTEMPT -- no
+        // rollback, no prior stage lost, and a best level already reached (or a satisfied TRANSFER) is kept. The
+        // retired 3-challenge rule's Cases A/B/C can no longer arise (legacy rows are UNRESOLVED), so no
+        // `transferFailureDiagnostic` is consulted any more.
+      }
+    }
+
+    if (item.activityType === 'INTERNAL_ASSESSMENT') {
+      // Contract 1.3: subject Test / Mock (any origin) revalidation. Applies only while Practice is satisfied (the
+      // concept is past PRACTICE); before that it is history only. Items are replayed in time order, so every Test
+      // and Mock shares ONE consecutive-alert counter. Never satisfies a stage.
+      if (practiceSatisfied) {
+        const p = CANONICAL_POLICY.internalAssessment;
+        let revalidationReason: EvidenceQualificationReasonCode | null = null;
+        if (item.scorePercent < p.strongContradictionBelow) {
+          revalidationReason = 'INTERNAL_ASSESSMENT_STRONG_CONTRADICTION';
+        } else if (item.scorePercent < p.alertBelow) {
+          internalAssessmentAlertCount++;
+          if (internalAssessmentAlertCount >= p.consecutiveAlertsForRevalidation) revalidationReason = 'INTERNAL_ASSESSMENT_CONSECUTIVE_ALERTS';
+        } else {
+          internalAssessmentAlertCount = 0;
+        }
+        if (revalidationReason) {
+          // LEARN is kept; everything from PRACTICE up is revalidated (resetFromPractice also resets the counter).
+          resetFromPractice();
+          lastRollback = makeRollback('INTERNAL_ASSESSMENT', 'INTERNAL_ASSESSMENT_REVALIDATION', 'PRACTICE', [revalidationReason]);
         }
       }
     }
@@ -480,11 +507,15 @@ function replay(evidence: RawEvidenceItem[], recognizedByStage: Map<Stage, Recog
     proveBasis,
     proveQualifyingAt,
     proveQualifyingDifficulty,
+    proveAttemptsInCycle,
     retainSatisfied,
     retainBasis,
     retainQualifyingScore,
     transferSatisfied,
     transferBasis,
+    transferBestLevel,
+    learnWeaknesses,
+    internalAssessmentAlertCount,
     highestQualifyingPracticeDifficulty,
     acc,
     lastRollback,
@@ -559,6 +590,12 @@ function computeCanonicalRevision(input: PedagogicalEngineInput, policyVersion: 
     reasoningProvided: e.reasoningProvided ?? null,
     novel: e.novel ?? null,
     transferFailureDiagnostic: e.transferFailureDiagnostic ?? null,
+    // 2026-10-16 contracts 1.1/1.2: every field the replay reads is part of the fingerprint.
+    learnInteractionCount: e.learnInteractionCount ?? null,
+    learnClosedBy: e.learnClosedBy ?? null,
+    learnWeaknesses: e.learnWeaknesses ?? null,
+    transferHighestLevel: e.transferHighestLevel ?? null,
+    transferLadder: e.transferLadder ? e.transferLadder.map((c) => [c.level, c.scorePercent, c.passed, c.certified, c.taskId]) : null,
   }));
   const fingerprint = JSON.stringify({
     policyVersion,
@@ -682,10 +719,12 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
   // never a static stage-only midpoint. `practiceDifficulty` is computed
   // unconditionally because REINFORCE's own target derives from it
   // regardless of which stage the rollback landed on.
-  const practiceDifficulty = resolvePracticeDifficulty(state.sorted.filter((e) => e.activityType === 'PRACTICE'));
+  // D78: the earned Practice BASE (floor 2, cap 3, never lowered) + the bounded +1 exposure decision.
+  const practiceDifficulty = resolvePracticeBase(state.sorted.filter((e) => e.activityType === 'PRACTICE'));
   let difficultyResolution: DifficultyResolution;
+  let proveLevelMix: ProveLevelMixResolution | null = null;
   if (applyReinforceShape) {
-    difficultyResolution = resolveReinforceDifficulty(practiceDifficulty.target);
+    difficultyResolution = resolveReinforceDifficulty(practiceDifficulty.base);
   } else {
     switch (stage) {
       case 'LEARN':
@@ -695,7 +734,10 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
         difficultyResolution = practiceDifficulty;
         break;
       case 'PROVE':
-        difficultyResolution = resolveProveDifficulty(state.highestQualifyingPracticeDifficulty);
+        // D79: PROVE = 10 x L3, or 7 x L3 + 3 x L4 with qualifying advanced Practice evidence;
+        // difficulty.target stays 3 (resolveProveDifficulty is no longer consulted by the engine).
+        proveLevelMix = resolveProveLevelMix(state.sorted.filter((e) => e.activityType === 'PRACTICE'));
+        difficultyResolution = proveLevelMix;
         break;
       case 'RETAIN':
         difficultyResolution = resolveRetentionDifficulty(state.proveQualifyingDifficulty);
@@ -719,7 +761,10 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
     }
   }
 
-  const activityContract = buildActivityContract(stage, applyReinforceShape ? 'REINFORCE' : null, difficultyResolution);
+  const activityContract = buildActivityContract(stage, applyReinforceShape ? 'REINFORCE' : null, difficultyResolution, {
+    plusOneEligible: practiceDifficulty.exposure.plusOneEligible,
+    reasonCode: practiceDifficulty.exposure.reasonCode,
+  }, proveLevelMix?.mix ?? null);
 
   // CANON-R2R1 Part 21 -- a closed enum, never left for a consumer to
   // infer from `stage` alone.
@@ -791,6 +836,13 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
 
   const canonicalRevision = computeCanonicalRevision(input, policyVersion, state.sorted);
 
+  // Contract 1.2: the consolidation level follows the best ladder level, and only when CONSOLIDATED rests on real
+  // ladder evidence (a legacy-recognized TRANSFER carries no level, so it reports null rather than an invented one).
+  let consolidationLevel: ConsolidationLevel | null = null;
+  if (stage === 'CONSOLIDATED' && state.transferBasis === 'V1_EVIDENCE' && meetsTransferLevel(state.transferBestLevel, CANONICAL_POLICY.transfer.consolidatedMinimumLevel)) {
+    consolidationLevel = state.transferBestLevel === 'FAR' ? 'HIGH' : 'MEDIUM';
+  }
+
   return {
     policyVersion,
     canonicalRevision,
@@ -815,6 +867,7 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
     // `retainStatus`'s own `eligibleFrom` computation above already
     // used. Never independently recomputed.
     lastQualifyingProveAt: state.proveQualifyingAt,
+    proveAttemptsInCycle: state.proveAttemptsInCycle,
     // Read-only explanation of the SAME window the replay above used to
     // decide PRACTICE -- never a second computation of the rule.
     practiceProgress: {
@@ -824,8 +877,16 @@ export function evaluateCanonicalLearningState(input: PedagogicalEngineInput): C
       difficulty: { ...CANONICAL_POLICY.practice.difficulty },
       recentValidAttempts: state.practiceWindow.slice(-PRACTICE_WINDOW_SIZE).map((e) => ({ ...e })),
       passesInWindow: state.practiceWindow.slice(-PRACTICE_WINDOW_SIZE).filter((e) => e.passed).length,
+      // PRACTICE_1..3_SCORE and ROLLING_3_AVERAGE (null until the window holds 3 completed practices)
+      windowAveragePercent: state.practiceWindow.length >= PRACTICE_WINDOW_SIZE ? Math.round((state.practiceWindow.slice(-PRACTICE_WINDOW_SIZE).reduce((a, e) => a + e.scorePercent, 0) / PRACTICE_WINDOW_SIZE) * 10) / 10 : null,
+      minimumWindowAveragePercent: PRACTICE_MINIMUM_WINDOW_AVERAGE,
       satisfied: state.practiceSatisfied,
     },
+    learnWeaknesses: [...state.learnWeaknesses],
+    transferLevelReached: state.transferBestLevel,
+    consolidationLevel,
+    internalAssessmentAlertCount: state.internalAssessmentAlertCount,
+    revalidationRequired: state.lastRollback?.case === 'INTERNAL_ASSESSMENT_REVALIDATION',
   };
 }
 

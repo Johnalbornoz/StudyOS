@@ -44,7 +44,12 @@ function jsonReq(body: any) {
 
 beforeEach(() => {
   authMock.mockReset().mockResolvedValue({ userId: 'clerk-student-1' });
-  currentUserMock.mockReset().mockResolvedValue({ primaryEmailAddress: { emailAddress: 'me@studyus.test' }, emailAddresses: [] });
+  currentUserMock.mockReset().mockResolvedValue({
+    // L10 SF-6: invitations are matched on the VERIFIED PRIMARY address only.
+    primaryEmailAddressId: 'idn_1',
+    primaryEmailAddress: { emailAddress: 'me@studyus.test' },
+    emailAddresses: [{ id: 'idn_1', emailAddress: 'me@studyus.test', verification: { status: 'verified' } }],
+  });
   requireStudentIdMock.mockReset().mockResolvedValue('student-1');
   inviteParentByEmailMock.mockReset();
   listPendingInvitationsForEmailMock.mockReset().mockResolvedValue([]);

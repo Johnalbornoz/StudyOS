@@ -5,8 +5,27 @@ import { db } from '@/lib/db';
 // person this should ever apply to.
 const ADMIN_EMAILS = ['john@jalbornoz.com'];
 
-export function isAdminEmail(email: string | null | undefined): boolean {
-  return !!email && ADMIN_EMAILS.includes(email.toLowerCase());
+/**
+ * Track A -- the automated institution / coordinator E2E needs a Platform
+ * Admin that is NOT a real person. This one Clerk *test* identity is also
+ * allowlisted, but only where it can exist at all: the DEV Clerk instance
+ * (test secret key) on the hosted `dev` environment or a local run. On
+ * Preview / Production (live keys, other targets) it is never allowlisted.
+ * The canonical STUDYUS_ADMIN role is still required on top (INV-ADMIN2A-01).
+ */
+export const DEV_FIXTURE_PLATFORM_ADMIN_EMAIL = 'studyus-ta-platform-admin+clerk_test@example.com';
+
+export function isDevFixtureAdminEnvironment(env: Record<string, string | undefined> = process.env): boolean {
+  const testClerk = (env.CLERK_SECRET_KEY ?? '').startsWith('sk_test_');
+  const devTarget = env.VERCEL ? env.VERCEL_TARGET_ENV === 'dev' : true;
+  return testClerk && devTarget && env.VERCEL_ENV !== 'production';
+}
+
+export function isAdminEmail(email: string | null | undefined, env: Record<string, string | undefined> = process.env): boolean {
+  if (!email) return false;
+  const normalized = email.toLowerCase();
+  if (ADMIN_EMAILS.includes(normalized)) return true;
+  return normalized === DEV_FIXTURE_PLATFORM_ADMIN_EMAIL && isDevFixtureAdminEnvironment(env);
 }
 
 export interface StudentSummary {

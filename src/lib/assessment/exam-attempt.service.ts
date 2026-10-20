@@ -28,8 +28,17 @@ export async function startExamAttempt(params: { studentExamProfileId: string; e
   const examVersion = await getExamVersion(params.examVersionId);
   if (!examVersion) throw new Error(`exam version ${params.examVersionId} not found`);
 
-  const [components, blueprint] = await Promise.all([listComponentsForVersion(params.examVersionId), getBlueprintForVersion(params.examVersionId)]);
+  const [components, blueprint, scoringModelRow] = await Promise.all([
+    listComponentsForVersion(params.examVersionId),
+    getBlueprintForVersion(params.examVersionId),
+    examVersion.scoringModelId ? db.query(`SELECT id, name, scoring_type, config, status FROM scoring_models WHERE id = $1`, [examVersion.scoringModelId]) : Promise.resolve(null),
+  ]);
   const objectiveTargets = blueprint ? await listObjectiveTargets(blueprint.id) : [];
+  // Track B: the scoring POLICY is frozen with the attempt, so the result is
+  // always reproducible from the attempt's own frozen configuration -- a later
+  // edit to scoring_models.config never re-scores an attempt in flight.
+  const sm = scoringModelRow?.rows[0];
+  const scoringModel = sm ? { id: sm.id, name: sm.name, scoringType: sm.scoring_type, config: sm.config ?? null, status: sm.status } : null;
 
   // The actual immutability guarantee: a full, self-contained snapshot of
   // everything this attempt depends on, captured at the exact moment of
@@ -39,6 +48,7 @@ export async function startExamAttempt(params: { studentExamProfileId: string; e
     components,
     blueprint,
     objectiveTargets,
+    scoringModel,
     frozenAt: new Date().toISOString(),
   };
 

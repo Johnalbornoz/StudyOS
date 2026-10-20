@@ -7,6 +7,13 @@
  * compatibility layer (`src/lib/pedagogical-migration/`) -- no live DB
  * (none is available in this environment), no AI, no React, no
  * Next.js.
+ *
+ * 2026-10-17 pilot pass policy: Learn >= 80% INCLUSIVE on an exactly-5-item
+ * check (tests 26/27); PRACTICE needs the last 3 valid attempts each >=80%;
+ * RETAIN is 5 items; a failed v1 Prove keeps the learner in PROVE and no
+ * longer invalidates PRACTICE -- including a legacy-recognized PRACTICE
+ * (test 22). Retain's two-strike rollback still beats a legacy-recognized
+ * PROVE (tests 19-21).
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'fs';
@@ -98,7 +105,7 @@ function proveItem(ts: string, score: number, opts: Partial<RawEvidenceItem> = {
 }
 
 function retentionItem(ts: string, score: number, opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
-  return item({ activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 10, correctCount: Math.round((score / 100) * 10), scorePercent: score, difficulty: 3.5, independent: true, novel: true, ...opts });
+  return item({ activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 5, correctCount: Math.round((score / 100) * 5), scorePercent: score, difficulty: 3.5, independent: true, novel: true, ...opts });
 }
 
 function practiceItem(ts: string, score: number, opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
@@ -334,10 +341,9 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
       conceptId: 'c1',
       studentId: 's1',
       now: NOW,
-      // CANON-V2-REMEDIATION Part 1A: PRACTICE now requires 2 of the
-      // last 3 valid attempts (AUDIT-001) -- a single attempt is
-      // insufficient.
-      evidence: [practiceItem('2026-09-10T00:00:00.000Z', 90), practiceItem('2026-09-10T01:00:00.000Z', 90)],
+      // 2026-10-17 pilot policy: PRACTICE requires the last 3 valid
+      // attempts to each pass -- fewer is insufficient.
+      evidence: [practiceItem('2026-09-10T00:00:00.000Z', 90), practiceItem('2026-09-10T01:00:00.000Z', 90), practiceItem('2026-09-10T02:00:00.000Z', 90)],
       activeCriticalMisconception: false,
       recognizedRequirements: [recognized('LEARN')],
     });
@@ -389,7 +395,8 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
       conceptId: 'c1',
       studentId: 's1',
       now: '2026-09-20T00:00:00.000Z',
-      evidence: [retentionItem('2026-09-10T00:00:00.000Z', 50), proveItem('2026-09-18T00:00:00.000Z', 90)],
+      // the rollback (two consecutive Retain failures), then the NEW real v1 Prove
+      evidence: [retentionItem('2026-09-10T00:00:00.000Z', 50), retentionItem('2026-09-10T01:00:00.000Z', 50), proveItem('2026-09-18T00:00:00.000Z', 90)],
       activeCriticalMisconception: false,
       recognizedRequirements: [recognized('LEARN'), recognized('PRACTICE', 'LEGACY_POLICY_RECOGNITION'), recognized('PROVE', 'LEGACY_POLICY_RECOGNITION')],
     });
@@ -399,7 +406,7 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
     expect(decision.requirements.find((r) => r.stage === 'RETAIN')?.waitingUntil).toBe('2026-09-21T00:00:00.000Z');
   });
 
-  it('22. a v1 Prove FAILURE invalidates legacy-recognized Practice progression', () => {
+  it('22. 2026-10-17 pilot policy: a v1 Prove FAILURE no longer invalidates legacy-recognized Practice -- the learner stays in PROVE for an immediate retry (superseding the CANON-R4R1 "Prove failure invalidates recognized Practice" rule)', () => {
     const decision = evaluateCanonicalLearningState({
       conceptId: 'c1',
       studentId: 's1',
@@ -408,9 +415,14 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
       activeCriticalMisconception: false,
       recognizedRequirements: [recognized('LEARN'), recognized('PRACTICE', 'LEGACY_POLICY_RECOGNITION')],
     });
-    expect(decision.requirements.find((r) => r.stage === 'PRACTICE')?.status).toBe('UNSATISFIED');
-    expect(decision.currentStage).toBe('PRACTICE');
-    expect(decision.intervention).toBe('REINFORCE');
+    expect(decision.requirements.find((r) => r.stage === 'PRACTICE')?.status).toBe('SATISFIED');
+    expect(decision.requirements.find((r) => r.stage === 'PRACTICE')?.satisfactionBasis).toBe('LEGACY_POLICY_RECOGNITION');
+    expect(decision.requirements.find((r) => r.stage === 'PROVE')?.status).toBe('UNSATISFIED');
+    expect(decision.requirements.find((r) => r.stage === 'PROVE')?.reasonCodes).toContain('FAILED_ATTEMPT');
+    expect(decision.currentStage).toBe('PROVE');
+    expect(decision.intervention).toBeNull();
+    expect(decision.rollback).toBeNull();
+    expect(decision.nextCanonicalAction).toBe('PROVE');
   });
 
   it('23. newer v1 rollback beats recognition in every case -- precedence is unconditional, not merely "sometimes"', () => {
@@ -437,7 +449,7 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
     expect(src).not.toMatch(/DELETE FROM pedagogical_requirement_recognition/);
   });
 
-  it('25. a future (post-cutover, NOT preexisting) concept requires a real LEARN_CHECK >80 -- no recognition applies at all', () => {
+  it('25. a future (post-cutover, NOT preexisting) concept requires a real LEARN_CHECK >=80 -- no recognition applies at all', () => {
     const decision = evaluateCanonicalLearningState({
       conceptId: 'c1',
       studentId: 's1',
@@ -450,15 +462,33 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
     expect(decision.nextCanonicalAction).toBe('LEARN');
   });
 
-  it('26. Learn 80% still FAILS (unchanged, exclusive bar)', () => {
+  it('26. a completed legacy Learn check PASSES whatever its score (overnight 2026-10-16 contract 1.1: no score gate) -- 80% and 79% both qualify; a check of < 4 items stays UNRESOLVED', () => {
     const decision = evaluateCanonicalLearningState({
       conceptId: 'c1',
       studentId: 's1',
       now: NOW,
-      evidence: [item({ activityType: 'LEARN_CHECK', timestamp: '2026-09-10T00:00:00.000Z', scorePercent: 80, difficulty: 1.5 })],
+      evidence: [item({ activityType: 'LEARN_CHECK', timestamp: '2026-09-10T00:00:00.000Z', itemCount: 5, correctCount: 4, scorePercent: 80, difficulty: 1.5 })],
       activeCriticalMisconception: false,
     });
-    expect(decision.requirements.find((r) => r.stage === 'LEARN')?.status).toBe('UNSATISFIED');
+    expect(decision.requirements.find((r) => r.stage === 'LEARN')?.status).toBe('SATISFIED');
+    const below = evaluateCanonicalLearningState({
+      conceptId: 'c1',
+      studentId: 's1',
+      now: NOW,
+      evidence: [item({ activityType: 'LEARN_CHECK', timestamp: '2026-09-10T00:00:00.000Z', itemCount: 5, correctCount: 4, scorePercent: 79, difficulty: 1.5 })],
+      activeCriticalMisconception: false,
+    });
+    expect(below.requirements.find((r) => r.stage === 'LEARN')?.status).toBe('SATISFIED');
+    expect(below.requirements.find((r) => r.stage === 'LEARN')?.reasonCodes).toEqual(['LEARN_COMPLETED']);
+    const tooShort = evaluateCanonicalLearningState({
+      conceptId: 'c1',
+      studentId: 's1',
+      now: NOW,
+      evidence: [item({ activityType: 'LEARN_CHECK', timestamp: '2026-09-10T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 100, difficulty: 1.5 })],
+      activeCriticalMisconception: false,
+    });
+    expect(tooShort.requirements.find((r) => r.stage === 'LEARN')?.status).toBe('UNSATISFIED');
+    expect(tooShort.requirements.find((r) => r.stage === 'LEARN')?.reasonCodes).toEqual(['UNRESOLVED_POLICY']);
   });
 
   it('27. Learn 81% PASSES', () => {
@@ -466,23 +496,25 @@ describe('CANON-R4R1 Part 27 -- required test matrix (1-35)', () => {
       conceptId: 'c1',
       studentId: 's1',
       now: NOW,
-      evidence: [item({ activityType: 'LEARN_CHECK', timestamp: '2026-09-10T00:00:00.000Z', scorePercent: 81, difficulty: 1.5 })],
+      evidence: [item({ activityType: 'LEARN_CHECK', timestamp: '2026-09-10T00:00:00.000Z', itemCount: 5, correctCount: 4, scorePercent: 81, difficulty: 1.5 })],
       activeCriticalMisconception: false,
     });
     expect(decision.requirements.find((r) => r.stage === 'LEARN')?.status).toBe('SATISFIED');
     expect(decision.requirements.find((r) => r.stage === 'LEARN')?.satisfactionBasis).toBe('V1_EVIDENCE');
   });
 
-  it('28. all CANON-R2R1 thresholds are unchanged', () => {
-    expect(CANONICAL_POLICY.learn.minimumScorePercentExclusive).toBe(80);
+  it('28. the governed thresholds (CANON-R2R1 as amended by the 2026-10-17 pilot pass policy and the overnight 2026-10-16 contracts)', () => {
+    expect(CANONICAL_POLICY.learn.minInteractions).toBe(4);
+    expect(CANONICAL_POLICY.learn.maxInteractions).toBe(7);
     expect(CANONICAL_POLICY.practice.minimumScorePercent).toBe(80);
     expect(CANONICAL_POLICY.prove.itemCount).toBe(10);
     expect(CANONICAL_POLICY.prove.minimumScorePercent).toBe(80);
-    expect(CANONICAL_POLICY.retention.itemCount).toBe(10);
+    expect(CANONICAL_POLICY.retention.itemCount).toBe(5);
     expect(CANONICAL_POLICY.retention.minimumWaitDays).toBe(3);
-    expect(CANONICAL_POLICY.transfer.challengeCount).toBe(3);
-    expect(CANONICAL_POLICY.transfer.minimumOverallScorePercent).toBe(80);
-    expect(CANONICAL_POLICY.transfer.perChallengeMinimumScorePercent).toBe(70);
+    expect(CANONICAL_POLICY.transfer.minChallenges).toBe(3);
+    expect(CANONICAL_POLICY.transfer.maxChallenges).toBe(5);
+    expect(CANONICAL_POLICY.transfer.perChallengePassPercent).toBe(80);
+    expect(CANONICAL_POLICY.transfer.consolidatedMinimumLevel).toBe('MID');
   });
 
   it('29. the Difficulty Policy is unchanged -- a zero-evidence LEARN decision still reports the same default reasonCode', () => {

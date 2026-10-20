@@ -71,7 +71,7 @@ Each executed case is documented with: what was done, what was observed, and whe
 
 ## Support and incident model during the pilot
 
-See `docs/implementation/f15/F15_SUPPORT_AND_INCIDENT_MODEL.md` for the full Sev1–Sev3 model. Summary: for a small, operator-watched pilot, `/api/health` plus manual log review is the monitoring posture; `AI_ENABLED=false` is the primary partial kill switch; app-level rollback (redeploy a prior Vercel deployment) is the primary containment action for a code-level defect.
+See `docs/implementation/f15/F15_SUPPORT_AND_INCIDENT_MODEL.md` for the full Sev1–Sev3 model. Summary: for a small, operator-watched pilot, `/api/health` plus manual log review is the monitoring posture; there is **no** AI kill switch (`AI_ENABLED` does not exist — corrected 2026-10-06, see `TECHNICAL_CLEANUP_REPORT.md`); app-level rollback (redeploy a prior Vercel deployment) is the primary containment action for a code-level defect.
 
 ## Rollback triggers (when to stop the pilot and roll back)
 

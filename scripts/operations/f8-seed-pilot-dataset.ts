@@ -91,7 +91,7 @@ async function main() {
   console.log('  seeded Cambridge IGCSE (F8) Mathematics with 1 objective mapped to the SAME canonical concept as PAA');
 
   // --- F7: PAA exam version/component/blueprint target with a command term ---
-  const paaExamDef = await createExamDefinition({ academicProgrammeId: paaProgramme.id, name: 'PAA (F8)', examFamily: 'ADMISSION_EXAM', purpose: 'university admission', domains: ['Mathematics'] });
+  const paaExamDef = await createExamDefinition({ academicProgrammeId: paaProgramme.id, name: 'PAA (F8)', examFamily: 'PAA', purpose: 'university admission', domains: ['Mathematics'] });
   const scoringModel = await createScoringModel({ name: 'PAA (F8) Partial Credit v1', scoringType: 'PARTIAL_CREDIT' });
   const paaExamVersion = await createExamVersion({ examDefinitionId: paaExamDef.id, versionLabel: '2024', scoringModelId: scoringModel.id, supportedModalities: ['ONLINE'] });
   const componentMath = await createComponent({ examVersionId: paaExamVersion.id, name: 'Mathematics Section', componentType: 'SECTION', academicSubjectId: paaMath.id });

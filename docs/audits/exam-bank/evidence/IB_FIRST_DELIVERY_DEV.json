@@ -1,0 +1,142 @@
+{
+  "kind": "IB_FIRST_DELIVERY_DEV",
+  "run": "5834ae",
+  "database": "DEV",
+  "bankItem": {
+    "approvedItemId": "6e86f8e9-0085-4504-98fc-e4589abbf392",
+    "prompt": "Let f(x) = 4x² − 10x + 27, x ∈ ℝ. Find the minimum value of f(x).",
+    "key": "83/4",
+    "marks": 4
+  },
+  "attempts": [
+    {
+      "examAttemptId": "1c629205-3cd1-4c6c-bf1a-80df773a67cb",
+      "response": {
+        "score": 4,
+        "max": 4,
+        "strategy": "MATHEMATICAL_EQUIVALENCE",
+        "contract": "canonical-response-1",
+        "verdict": "CORRECT"
+      },
+      "evidenceRows": 0
+    },
+    {
+      "examAttemptId": "8f31f325-f119-4fe1-9536-7530f55ff5dd",
+      "response": {
+        "score": 0,
+        "max": 4,
+        "strategy": "MATHEMATICAL_EQUIVALENCE",
+        "contract": "canonical-response-1",
+        "verdict": "INCORRECT"
+      },
+      "evidenceRows": 0
+    },
+    {
+      "examAttemptId": "dd4e1fb2-692c-43a2-be3b-b30543be5150",
+      "response": {
+        "score": 4,
+        "max": 4,
+        "strategy": "MATHEMATICAL_EQUIVALENCE",
+        "contract": "canonical-response-1",
+        "verdict": "CORRECT"
+      },
+      "evidenceRows": 0
+    }
+  ],
+  "examReadinessTarget": {
+    "key": "86140ccb-9a23-4ec7-9552-45b91c3f1b24|5ea23efa-f479-42a5-9364-940c031d3aad|IB|0-2-0-illustrative|MATH_AA_HL|p1|P1|math.alg.quadratics|v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "studentId": "86140ccb-9a23-4ec7-9552-45b91c3f1b24",
+    "examTargetId": "5ea23efa-f479-42a5-9364-940c031d3aad",
+    "assessmentSystem": "IB",
+    "assessmentVersion": "0-2-0-illustrative",
+    "profile": "MATH_AA_HL",
+    "component": "p1",
+    "paper": "P1",
+    "conceptStableId": "math.alg.quadratics",
+    "blueprintBucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "attemptCount": 3,
+    "correctCount": 2,
+    "independentAttemptCount": 3,
+    "independentCorrectCount": 2,
+    "assistedAttemptCount": 0,
+    "assistedCorrectCount": 0,
+    "fractionSum": 2,
+    "timedResponses": 0,
+    "responseTimeMsSum": 0,
+    "difficultyIndexSum": 0,
+    "difficultyIndexed": 0,
+    "responseFormats": [
+      "SHORT_RESPONSE"
+    ],
+    "attemptIds": [
+      "1c629205-3cd1-4c6c-bf1a-80df773a67cb",
+      "8f31f325-f119-4fe1-9536-7530f55ff5dd",
+      "dd4e1fb2-692c-43a2-be3b-b30543be5150"
+    ],
+    "firstAt": "2026-10-14T19:46:16.700Z",
+    "lastAt": "2026-10-14T19:46:16.703Z",
+    "readinessScore": null
+  },
+  "results": [
+    {
+      "id": "B1  the IB Bank row exists: CORE_DERIVED, projection 3, canonical contract, SHORT_RESPONSE, answer marks",
+      "ok": true,
+      "detail": "Let f(x) = 4x² − 10x + 27, x ∈ ℝ. Find the minimum value of f(x). key 83/4 [4]"
+    },
+    {
+      "id": "B2  its instance is certified (automated pilot, inherited deterministic), eligible in the pilot scope, in the human-certified bucket",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "A1  a PRACTICE instance focused on aahl.p1.functions is created and frozen at start: its assessment snapshot holds the certified IB item (one position)",
+      "ok": true,
+      "detail": "snapshot present; holds the item true"
+    },
+    {
+      "id": "A2  the attempt starts and serves exactly that item, as a SHORT_RESPONSE, with no answer key on the wire",
+      "ok": true,
+      "detail": "ITEM_READY"
+    },
+    {
+      "id": "S1  the Student's SHORT_RESPONSE \"20,75\" is scored by the canonical contract: 4/4",
+      "ok": true,
+      "detail": "{\"score\":\"4\",\"max\":\"4\",\"strategy\":\"MATHEMATICAL_EQUIVALENCE\",\"verdict\":\"CORRECT\"}"
+    },
+    {
+      "id": "S2  a second attempt answering \"20.8\" scores 0/4 (exact value required; no partial credit invented)",
+      "ok": true,
+      "detail": "{\"score\":\"0\",\"verdict\":\"INCORRECT\"}"
+    },
+    {
+      "id": "S3  a third attempt answering \"83/4\" (the keyed fraction) scores 4/4",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "X1  no provider was asked for a question (0 QUESTION_GENERATION calls)",
+      "ok": true,
+      "detail": "provider calls of any kind: 0"
+    },
+    {
+      "id": "X2  no Learning Plan membership was created by the exam",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "E1  current writer: no evidence (the Student owns no concept; exam prep never enrols one) -- the known PAA-FOLLOWUP-02 gap, not mutated here",
+      "ok": true,
+      "detail": "0 rows"
+    },
+    {
+      "id": "E2  TARGET model: the three responses become ONE Exam Readiness cell (IB / P1 / functions bucket / math.alg.quadratics), no plan entry, no Knowledge State change",
+      "ok": true,
+      "detail": "{\"attempts\":3,\"correct\":2}"
+    },
+    {
+      "id": "Z1  the fixture Student and everything of theirs is removed",
+      "ok": true,
+      "detail": "0 rows left"
+    }
+  ]
+}

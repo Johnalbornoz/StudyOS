@@ -17,10 +17,11 @@
  */
 import { currentUser } from '@clerk/nextjs/server';
 import { bootstrapStudyUSAdminIfEligible } from '@/lib/admin/authorization';
+import { resolveVerifiedPrimaryEmail } from '@/lib/admin/admin-identity';
 import { ADMIN_HOME } from '@/lib/admin/sections';
 import { getOrCreateCanonicalUser } from './canonical-user.service';
 import { getActiveWorkspace, resolveAvailableWorkspaces, resolveDefaultWorkspace } from './workspace.service';
-import type { Workspace } from './types';
+import { personaWorkspaceOf, type Workspace } from './types';
 
 export const ROLE_SELECT_PATH = '/role-select';
 
@@ -43,7 +44,9 @@ export interface WorkspaceEntryInput {
 /** Pure decision -- see module comment. */
 export function decideWorkspaceEntry({ available, stored, defaultWorkspace }: WorkspaceEntryInput): WorkspaceEntry {
   if (available.length === 0) return { kind: 'REDIRECT', to: ROLE_SELECT_PATH };
-  const active = (stored && available.includes(stored) ? stored : null) ?? defaultWorkspace ?? available[0];
+  // Track A: the account's ONE persona is its home; capabilities
+  // (institution / StudyUs admin) are where a capability-only account lands.
+  const active = personaWorkspaceOf(available, stored) ?? (stored && available.includes(stored) ? stored : null) ?? defaultWorkspace ?? available[0];
   if (active === 'STUDENT') return { kind: 'STUDENT' };
   return { kind: 'REDIRECT', to: WORKSPACE_HOME[active] };
 }
@@ -56,7 +59,7 @@ export async function resolveWorkspaceEntry(clerkUserId: string): Promise<Worksp
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress ?? null;
   const canonical = await getOrCreateCanonicalUser(clerkUserId, email);
-  await bootstrapStudyUSAdminIfEligible(canonical, email);
+  await bootstrapStudyUSAdminIfEligible(canonical, resolveVerifiedPrimaryEmail(user));
 
   const [available, stored, defaultWorkspace] = await Promise.all([
     resolveAvailableWorkspaces(canonical.id),

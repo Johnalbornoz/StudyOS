@@ -47,3 +47,22 @@ export function resolveQuizLanguage(
   }
   return interfaceLanguage;
 }
+
+/**
+ * Track A -- ONE interface-language preference per person, whatever
+ * workspace they are in. A Student's preference has always been keyed by
+ * `students.id` (must never move, or every Student's saved choice would
+ * reset); every other identity is keyed by `users.id`. So a Student+Parent
+ * (or Student+Teacher) account reads -- and `/api/language` writes -- the
+ * Student key from every workspace, instead of a second, never-written
+ * `users.id` preference showing up in the Parent/Teacher workspace.
+ */
+export async function getUserInterfaceLanguage(userId: string): Promise<Locale> {
+  const student = await db.query(
+    `SELECT s.id FROM students s
+     JOIN user_roles r ON r.user_id = s.user_id AND r.role = 'STUDENT' AND r.status = 'ACTIVE'
+     WHERE s.user_id = $1 ORDER BY s.created_at ASC NULLS LAST LIMIT 1`,
+    [userId]
+  );
+  return getInterfaceLanguage(student.rows[0]?.id ?? userId);
+}

@@ -207,8 +207,9 @@ describe('10-14/17 -- the certified canonical_prove generation pipeline wires th
     expect(recoveryCalls).toBe(2);
     expect((GENERATION_SERVICE_SRC.match(/count: recoveryRequestedCount,/g) ?? []).length).toBe(1);
     expect(GENERATION_SERVICE_SRC).toMatch(/export const MAX_DIVERSITY_REGENERATIONS = 2;/);
-    expect(GENERATION_SERVICE_SRC).toMatch(/for \(let round = 0; round < MAX_DIVERSITY_REGENERATIONS && kept\.length < params\.targetCount && diversityRejectedCount > 0; round\+\+\) \{\s*const missing = params\.targetCount - kept\.length;/);
+    expect(GENERATION_SERVICE_SRC).toMatch(/for \(let round = 0; round < MAX_DIVERSITY_REGENERATIONS && kept\.length < params\.targetCount && \(diversityRejectedCount > 0 \|\| rejectedExactDuplicateCount > 0 \|\| levelRejectedCount > 0\); round\+\+\) \{\s*const missing = params\.targetCount - kept\.length;/);
     expect(GENERATION_SERVICE_SRC).toMatch(/count: missing,/);
+    // D75: slots lost to exact prior-item rejections use the SAME bounded rounds (never an unbounded retry)
   });
 
   it('10. when the concurrent chunks\' own novelty-filtered aggregate is short of targetCount, ONE recovery is requested, sized via the proven deficit+1 surplus formula (capped at 2x the per-chunk max)', () => {
@@ -218,9 +219,10 @@ describe('10-14/17 -- the certified canonical_prove generation pipeline wires th
   });
 
   it('11. the recovery round\'s own output is filtered against `excludeFingerprints` carried forward from the initial pass -- filtered against BOTH prior Practice AND everything already accepted, never an isolated exclusion set', () => {
-    const idx = GENERATION_SERVICE_SRC.indexOf('const recoveryFiltered = filterExactDuplicates(recovery.accepted, excludeFingerprints);');
+    // D79: each pass first keeps only the generator's items at the slot's own level (atLevel), unchanged without a level mix
+    const idx = GENERATION_SERVICE_SRC.indexOf('const recoveryFiltered = filterExactDuplicates(atLevel(recovery.accepted), excludeFingerprints);');
     expect(idx).toBeGreaterThan(-1);
-    const initialFilterIdx = GENERATION_SERVICE_SRC.indexOf('const initialFiltered = filterExactDuplicates(chunked.accepted, priorFingerprints);');
+    const initialFilterIdx = GENERATION_SERVICE_SRC.indexOf('const initialFiltered = filterExactDuplicates(atLevel(chunked.accepted), new Set([...priorFingerprints, ...keptBefore.map((q) => fingerprintQuestion(q))]));');
     expect(initialFilterIdx).toBeGreaterThan(-1);
     expect(idx).toBeGreaterThan(initialFilterIdx);
   });
@@ -269,8 +271,14 @@ describe('10-14/17 -- the certified canonical_prove generation pipeline wires th
     // passed to toCanonicalErrorCode(...) at each guard to derive the
     // additive canonicalErrorCode field -- instrumentation reusing the
     // existing reason code, never a new one.
-    const occurrences = (ROUTE_SRC.match(/V1_PROVE_GENERATION_INCOMPLETE/g) ?? []).length;
-    expect(occurrences).toBe(6);
+    // D75 (approved): the generic shortfall keeps V1_PROVE_GENERATION_INCOMPLETE; a shortfall caused by exact
+    // prior-item rejections reports PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE. Both guards (JSON body, observability
+    // summary, toCanonicalErrorCode) read the ONE resolved `proveReasonCode`.
+    // D79 (approved): a level-mix shortfall reports PROVE_LEVEL_MIX_SUPPLY_SHORTAGE through the same ONE `proveReasonCode`.
+    expect(ROUTE_SRC).toMatch(/let proveReasonCode: 'V1_PROVE_GENERATION_INCOMPLETE' \| typeof PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE \| typeof PROVE_LEVEL_MIX_SUPPLY_SHORTAGE = 'V1_PROVE_GENERATION_INCOMPLETE';/);
+    expect((ROUTE_SRC.match(/reason: proveReasonCode,/g) ?? []).length).toBe(2);
+    expect((ROUTE_SRC.match(/emitCanonicalProveSummary\('INCOMPLETE', questions\.length, proveReasonCode\)/g) ?? []).length).toBe(2);
+    expect((ROUTE_SRC.match(/toCanonicalErrorCode\(proveReasonCode\)/g) ?? []).length).toBe(2);
   });
 });
 
@@ -353,7 +361,7 @@ describe('19-24/29 -- Results UI: canonicalResults is the sole next-step authori
   });
 
   it('24. the factual score/correct/incorrect outcome card is NOT gated on isV1Result -- it renders unconditionally, before any v1-specific block', () => {
-    const scoreIdx = QUIZ_PAGE_SRC.indexOf('{results.results.score}%');
+    const scoreIdx = QUIZ_PAGE_SRC.indexOf('{resultDisplay.scorePercent}%'); // BR-SCORE P1-01: the one display source
     const firstV1BlockIdx = QUIZ_PAGE_SRC.indexOf("results.canonicalResultsStatus === 'OK' && results.canonicalResults && (");
     expect(scoreIdx).toBeGreaterThan(-1);
     // the score card renders before any v1-specific block in the JSX...

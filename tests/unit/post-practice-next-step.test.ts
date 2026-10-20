@@ -12,6 +12,11 @@
  * the quiz page, the old Results stayed, and the 4 s backstop showed
  * "No se pudo determinar el siguiente paso" -- a reload then started the
  * difficulty-3 practice.
+ *
+ * D78 (2026-10-17): that same evidence no longer raises the whole session to 3 -- the base stays
+ * 2 (no prior +1 exposure) and the next session carries ONE base+1 item (2,2,3). The continuation
+ * URL is then identical to the current one; the relaunch-nonce behaviour is still covered with a
+ * URL that differs by its params.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
@@ -38,23 +43,27 @@ describe('POST_PRACTICE_NEXT_STEP -- the real E2E session', () => {
   const d = decide(E2E());
   const launch = resolveCanonicalLaunch({ subjectId: SUBJECT, conceptId: CONCEPT, decision: d });
 
-  it('a 100% practice does NOT imply PROVE: 1 of 2 required passes -> still PRACTICE, executable', () => {
+  it('a 100% practice does NOT imply PROVE: only 2 of the 3 practices the window needs (overnight 2026-10-16 policy: average of the last 3 >= 80 AND latest >= 80) -> still PRACTICE, executable', () => {
     expect(d.stage).toBe('PRACTICE');
     expect(d.actionState).toBe('EXECUTABLE');
-    expect(d.practiceProgress).toMatchObject({ passesInWindow: 1, requiredPasses: 2 });
+    // requiredPasses 1 = the LATEST practice must pass; no rolling average until 3 practices exist
+    expect(d.practiceProgress).toMatchObject({ passesInWindow: 1, requiredPasses: 1, windowSize: 3, windowAveragePercent: null, satisfied: false });
+    expect(d.practiceProgress!.recentValidAttempts.map((a) => a.scorePercent)).toEqual([78, 100]);
   });
 
-  it('the continuation LAUNCHes the same stage Results announces (PRACTICE), at the contract difficulty 3', () => {
+  it('the continuation LAUNCHes the same stage Results announces (PRACTICE), at base 2 with one base+1 item (D78)', () => {
     expect(launch.launchStatus).toBe('READY');
     expect(launch.activityType).toBe('PRACTICE');
     expect(launch.launchTarget).toContain('mode=topic_practice');
-    expect(launch.launchTarget).toContain('difficulty=3');
-    expect(d.activityContract?.difficulty.reasonCode).toBe('PRACTICE_SUCCESS_DIFFICULTY_INCREASE');
+    expect(launch.launchTarget).toContain('difficulty=2');
+    expect(d.activityContract?.difficulty.reasonCode).toBe('PRACTICE_BASE_MAINTAINED');
+    expect(d.activityContract?.practiceMix?.items).toEqual([{ level: 2, count: 2 }, { level: 3, count: 1 }]);
   });
 
-  it('root cause reproduced: the target differs from the current URL only by difficulty -> not "same route"', () => {
-    expect(isSameRoute(PREV_PRACTICE_URL, launch.launchTarget!)).toBe(false);
-    expect(isSamePage(PREV_PRACTICE_URL, launch.launchTarget!)).toBe(true);
+  it('a target that differs from the current URL only by difficulty is not "same route" (same page)', () => {
+    const other = PREV_PRACTICE_URL.replace('difficulty=2', 'difficulty=3');
+    expect(isSameRoute(other, launch.launchTarget!)).toBe(false);
+    expect(isSamePage(other, launch.launchTarget!)).toBe(true);
   });
 });
 
@@ -63,9 +72,9 @@ describe('PRACTICE_SESSION_RESTART -- continuing always starts a fresh session w
   const launch = resolveCanonicalLaunch({ subjectId: SUBJECT, conceptId: CONCEPT, decision: d })!;
 
   it('a same-page continuation with different params gets a fresh relaunch nonce', () => {
-    const pushed = buildRelaunchTarget(PREV_PRACTICE_URL, launch.launchTarget!, 'n1');
+    const pushed = buildRelaunchTarget(PREV_PRACTICE_URL.replace('difficulty=2', 'difficulty=3'), launch.launchTarget!, 'n1');
     expect(pushed).toContain(`${RELAUNCH_NONCE_PARAM}=n1`);
-    expect(pushed).toContain('difficulty=3');
+    expect(pushed).toContain('difficulty=2');
   });
 
   it('the pushed URL yields a different activity-instance key -> the quiz page remounts (fresh quizId/questions/results)', () => {
@@ -79,8 +88,10 @@ describe('PRACTICE_SESSION_RESTART -- continuing always starts a fresh session w
     expect(pushed).toContain(`${RELAUNCH_NONCE_PARAM}=n2`);
   });
 
-  it('PRACTICE -> PROVE (2 passes) is also a fresh instance on the same page', () => {
-    const d2 = decide([...E2E(), item('PRACTICE', 90, 3)]);
+  it('PRACTICE -> PROVE (average of the last 3 >= 80 and latest >= 80) is also a fresh instance on the same page', () => {
+    // [78, 100, 70] is not yet a passing window (average 82.7 but the latest 70 fails); [100, 70, 92] is (87.3, latest 92).
+    expect(decide([...E2E(), item('PRACTICE', 70, 3)]).stage).toBe('PRACTICE');
+    const d2 = decide([...E2E(), item('PRACTICE', 70, 3), item('PRACTICE', 92, 3)]);
     expect(d2.stage).toBe('PROVE');
     const l2 = resolveCanonicalLaunch({ subjectId: SUBJECT, conceptId: CONCEPT, decision: d2 });
     expect(l2).toMatchObject({ launchStatus: 'READY', activityType: 'PROVE' });
@@ -119,7 +130,7 @@ describe('one canonical decision after an activity, for every surface', () => {
     const cases: Array<[string, RawEvidenceItem[]]> = [
       ['LEARN', []],
       ['PRACTICE', E2E()],
-      ['PROVE', [...E2E(), item('PRACTICE', 90, 3)]],
+      ['PROVE', [...E2E(), item('PRACTICE', 90, 3), item('PRACTICE', 92, 3)]],
     ];
     for (const [stage, ev] of cases) {
       const d = decide(ev);

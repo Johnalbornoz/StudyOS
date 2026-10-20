@@ -1,0 +1,1549 @@
+{
+  "kind": "QB_POST_CANARY_V5_CHANGED_OUTCOMES",
+  "label": "OFFLINE DIAGNOSTIC -- validators revision 5 over the Canary's candidates -- IN-SAMPLE -- NOT certification evidence, NOT a rescore of the Canary -- DEV_TEST_CONTENT, RIGHTS_NOT_ESTABLISHED, NOT RELEASE CONTENT",
+  "changedItems": 219,
+  "unchangedItems": 2,
+  "byChange": {
+    "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED": 11,
+    "answerKey DETERMINISTIC_RULE_VERIFIED -> STEM_CONSISTENT": 3,
+    "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED": 25,
+    "answerKey FAILED -> INDEPENDENTLY_VERIFIED": 5,
+    "answerKey FAILED -> STEM_CONSISTENT": 1,
+    "answerKey FAILED -> UNVERIFIED": 2,
+    "answerKey HUMAN_REVIEW_REQUIRED -> INDEPENDENTLY_VERIFIED": 7,
+    "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED": 62,
+    "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED": 32,
+    "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT": 57,
+    "answerKey MACHINE_VERIFIED -> UNVERIFIED": 11,
+    "constructPreservation WEAK -> FAIL": 1,
+    "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS": 93,
+    "profileCompliance FAIL -> PASS": 36,
+    "stimulusIntegrity PASS -> FAIL": 1,
+    "structural FAIL -> PASS": 1
+  },
+  "strictPass": {
+    "gained": [
+      "c250-005",
+      "c250-007",
+      "c250-009",
+      "c250-010",
+      "c250-012",
+      "c250-017",
+      "c250-018",
+      "c250-019",
+      "c250-038",
+      "c250-043",
+      "c250-044",
+      "c250-050",
+      "c250-052",
+      "c250-054",
+      "c250-056",
+      "c250-058",
+      "c250-064",
+      "c250-066",
+      "c250-070",
+      "c250-075",
+      "c250-076",
+      "c250-080",
+      "c250-091",
+      "c250-097",
+      "c250-101",
+      "c250-104",
+      "c250-106",
+      "c250-109",
+      "c250-110",
+      "c250-112",
+      "c250-113",
+      "c250-114",
+      "c250-117",
+      "c250-119",
+      "c250-121",
+      "c250-124",
+      "c250-127",
+      "c250-131",
+      "c250-143",
+      "c250-145",
+      "c250-146",
+      "c250-150",
+      "c250-153",
+      "c250-158",
+      "c250-162",
+      "c250-163",
+      "c250-164",
+      "c250-166",
+      "c250-167",
+      "c250-168",
+      "c250-169",
+      "c250-174",
+      "c250-185",
+      "c250-186",
+      "c250-191",
+      "c250-207",
+      "c250-208",
+      "c250-209",
+      "c250-212",
+      "c250-224",
+      "c250-228",
+      "c250-231",
+      "c250-241",
+      "c250-242",
+      "c250-244",
+      "c250-247",
+      "c250-249"
+    ],
+    "lost": [
+      {
+        "slotId": "c250-211",
+        "why": [
+          "stimulusIntegrity PASS -> FAIL: STIMULUS_TEXT_COUNT_DISAGREES_WITH_THE_TABLE_TOTAL:6 invitados/13",
+          "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+        ]
+      }
+    ]
+  },
+  "items": [
+    {
+      "slotId": "c250-001",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-003",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-004",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey FAILED -> INDEPENDENTLY_VERIFIED: A2/A3 the failure came from a declaration, a sign, a unit or a rounding form, not from the stem"
+      ]
+    },
+    {
+      "slotId": "c250-005",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-006",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-007",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-008",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-009",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-010",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-011",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-012",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-013",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-014",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT,WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-015",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-016",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)"
+      ]
+    },
+    {
+      "slotId": "c250-017",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-018",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-019",
+      "changes": [
+        "structural FAIL -> PASS: B1 options that are different equations are different options",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-020",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-021",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-022",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-023",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-024",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-025",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-026",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-027",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-029",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-030",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-032",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-033",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-034",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-035",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-036",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-037",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-038",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-039",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-040",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-041",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-043",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-044",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-045",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-046",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-047",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-048",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 4)",
+        "answerKey FAILED -> INDEPENDENTLY_VERIFIED: A2/A3 the failure came from a declaration, a sign, a unit or a rounding form, not from the stem"
+      ]
+    },
+    {
+      "slotId": "c250-049",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-050",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-051",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-052",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-053",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-054",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-055",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-056",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-057",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-058",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-059",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-060",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-061",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-062",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-063",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-064",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-065",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-066",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-067",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-068",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-069",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-070",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-071",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-073",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-074",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-075",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-076",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-077",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-078",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-079",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey FAILED -> INDEPENDENTLY_VERIFIED: A2/A3 the failure came from a declaration, a sign, a unit or a rounding form, not from the stem"
+      ]
+    },
+    {
+      "slotId": "c250-080",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-082",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-084",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-086",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-087",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-088",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-089",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-090",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey FAILED -> INDEPENDENTLY_VERIFIED: A2/A3 the failure came from a declaration, a sign, a unit or a rounding form, not from the stem"
+      ]
+    },
+    {
+      "slotId": "c250-091",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-092",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-093",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-094",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-096",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-097",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-098",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-099",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 4)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-100",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-101",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-102",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-103",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-104",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-105",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-106",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-107",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT,WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-108",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-109",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-110",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-111",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-112",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-113",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-114",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-115",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-116",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-117",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-118",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-119",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-120",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 1)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-121",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-122",
+      "changes": [
+        "constructPreservation WEAK -> FAIL: KEYED_VALUE_IS_A_CELL_OF_THE_STIMULUS_ROW_THE_QUESTION_NAMES:item:7->161",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-124",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-125",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-126",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 4)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-127",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-128",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-129",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-130",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-131",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 1)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-132",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-133",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-134",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-135",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 1)"
+      ]
+    },
+    {
+      "slotId": "c250-137",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-138",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-139",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-140",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-141",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-142",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-143",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-144",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-145",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-146",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 3)",
+        "answerKey FAILED -> UNVERIFIED: A2/A3 the failure came from a declaration, a sign, a unit or a rounding form, not from the stem"
+      ]
+    },
+    {
+      "slotId": "c250-147",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-148",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-149",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-150",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-151",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 1)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-153",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey FAILED -> STEM_CONSISTENT: A2/A3 the failure came from a declaration, a sign, a unit or a rounding form, not from the stem"
+      ]
+    },
+    {
+      "slotId": "c250-154",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-155",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-156",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-158",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-159",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-160",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-161",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-162",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-163",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-164",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-165",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-166",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-167",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-168",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-169",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-170",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-172",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-173",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-174",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-175",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-176",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-183",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 2)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-184",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-185",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-186",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-187",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-191",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-193",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-194",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey FAILED -> UNVERIFIED: A2/A3 the failure came from a declaration, a sign, a unit or a rounding form, not from the stem"
+      ]
+    },
+    {
+      "slotId": "c250-196",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-199",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-200",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-201",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-203",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-204",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-205",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 4)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-206",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (PARAMETER_NOT_OF_THE_CONSTRUCT,PARAMETER_NOT_OF_THE_CONSTRUCT)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-207",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-208",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-209",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-210",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-211",
+      "changes": [
+        "stimulusIntegrity PASS -> FAIL: STIMULUS_TEXT_COUNT_DISAGREES_WITH_THE_TABLE_TOTAL:6 invitados/13",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-212",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-213",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-214",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-215",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-216",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-217",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-218",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-219",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-220",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-221",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-222",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-223",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-224",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-225",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-226",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 2)"
+      ]
+    },
+    {
+      "slotId": "c250-228",
+      "changes": [
+        "profileCompliance FAIL -> PASS: D1 declaration-quality issues no longer block (WORKING_OUTLINE_SHORTER_THAN_THE_METHOD_POINTS)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-229",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-230",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-231",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 1)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-232",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-233",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-234",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-235",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-237",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-238",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-240",
+      "changes": [
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-241",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 1)",
+        "answerKey FAILED -> INDEPENDENTLY_VERIFIED: A2/A3 the failure came from a declaration, a sign, a unit or a rounding form, not from the stem"
+      ]
+    },
+    {
+      "slotId": "c250-242",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-243",
+      "changes": [
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-244",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-245",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-246",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 1)",
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-247",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey MACHINE_VERIFIED -> STEM_CONSISTENT: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-248",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 a signal alone is not a material duplicate (signals: 4)",
+        "answerKey MACHINE_VERIFIED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    },
+    {
+      "slotId": "c250-249",
+      "changes": [
+        "originality REVIEW_STRUCTURAL_SIMILARITY -> PASS: C1/C2 scenario similarity is not applied to an abstract item (signals: 0)",
+        "answerKey DETERMINISTIC_RULE_VERIFIED -> INDEPENDENTLY_VERIFIED: A1 recomputed from the stem and the asked quantity read"
+      ]
+    },
+    {
+      "slotId": "c250-250",
+      "changes": [
+        "answerKey HUMAN_REVIEW_REQUIRED -> UNVERIFIED: A1/A4 no verification from declarations: the asked quantity or the givens were not read"
+      ]
+    }
+  ]
+}

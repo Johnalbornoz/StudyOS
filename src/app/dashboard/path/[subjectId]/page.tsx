@@ -16,6 +16,7 @@ import StartSessionButton from '../../StartSessionButton';
 import JourneyStrip from '../JourneyStrip';
 import { journeyReason } from '../journeyReason';
 import LocalDateText from '@/components/ui/LocalDateText';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 
 /** R29: safe, learner-content-free observability. */
 function logMyPath(label: string, meta: Record<string, unknown> = {}): void {
@@ -163,9 +164,9 @@ export default async function SubjectPathPage({ params }: { params: Promise<{ su
   return (
     <div>
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6, display: 'flex', gap: 6 }}>
-        <Link href="/dashboard/path" style={{ color: 'var(--text-muted)' }}>{t['myPath.title']}</Link> / {subject.name}
+        <Link href="/dashboard/path" style={{ color: 'var(--text-muted)' }}>{t['myPath.title']}</Link> / {localizeSubjectName(subject.name, locale)}
       </div>
-      <h1 style={{ marginBottom: 'var(--space-6)' }}>{subject.name}</h1>
+      <h1 style={{ marginBottom: 'var(--space-6)' }}>{localizeSubjectName(subject.name, locale)}</h1>
 
       {unresolved && (
         <div className="card empty-state">

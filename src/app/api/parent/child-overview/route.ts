@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrCreateParentId } from '@/lib/auth';
+import { requireParentProfileId } from '@/lib/auth';
 import { getChildOverview, verifyParentAccess } from '@/services/parent.service';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
@@ -17,7 +17,8 @@ async function handleGET(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: 'Missing studentId' }, { status: 400 });
   }
 
-  const parentId = await getOrCreateParentId(clerkUserId);
+  const parentId = await requireParentProfileId(clerkUserId);
+  if (!parentId) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   const canAccess = await verifyParentAccess(parentId, studentId);
   if (!canAccess) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });

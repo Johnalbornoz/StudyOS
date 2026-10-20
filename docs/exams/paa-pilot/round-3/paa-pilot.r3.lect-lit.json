@@ -1,0 +1,457 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r3.lect-lit",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Fragmento narrativo literario ORIGINAL de 260 a 340 palabras sobre una maestra que encuentra un cuaderno olvidado en un aula vacía. Narrador definido (primera o tercera persona), al menos dos figuras retóricas claras (símil, metáfora, personificación o hipérbole) y un ambiente bien construido. No imites a ningún autor conocido.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.narrative-elements",
+        "difficulty": 3,
+        "focus": "el tipo de narrador o la voz narrativa del fragmento"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.figurative-language",
+        "difficulty": 3,
+        "focus": "la figura retórica presente en una expresión citada del fragmento"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.figurative-language",
+        "difficulty": 4,
+        "focus": "el efecto o sentido de una imagen figurada citada del fragmento"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "El cuaderno junto a la ventana",
+      "text": "Al terminar la reunión de padres, regresé al aula 6 para recoger mi bufanda. Afuera, la lluvia golpeaba los ventanales con dedos impacientes, y el edificio entero parecía contener la respiración. Eran casi las ocho; los demás docentes ya se habían ido y el pasillo bostezaba bajo la luz amarilla de los tubos.\n\nYo había dejado las llaves en la sala de maestros, así que empujé la puerta con el hombro. El aula olía a tiza húmeda y a papel recién borrado. Sobre los pupitres quedaban algunas migas de plastilina, una regla torcida y el silencio, sentado en cada silla como un alumno obediente.\n\nEntonces lo vi: un cuaderno azul junto a la ventana. No tenía nombre en la portada. Lo tomé pensando que pertenecería a alguno de mis estudiantes, pero sus hojas estaban llenas de dibujos diminutos: casas con ruedas, árboles que daban lámparas en vez de frutos y un mapa de la ciudad cruzado por ríos color violeta. En la última página había una frase escrita con lápiz: “Mañana le mostraré el camino a alguien”.\n\nSentí que el cuaderno pesaba más que todos los libros del estante. Miré los nombres pegados en los pupitres y recordé que Mara, una niña recién llegada, había pasado la tarde preguntando dónde quedaba la biblioteca. Hablaba poco, pero observaba las puertas con una atención de exploradora.\n\nGuardé el cuaderno en mi bolso. Al salir, apagué la luz y el aula quedó detrás de mí, pequeña y oscura, como una caja que protegía un secreto. Decidí llegar temprano al día siguiente. Quizá Mara no necesitaba que yo encontrara un lugar por ella; quizá bastaba con caminar a su lado mientras lo buscaba.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué tipo de voz narrativa predomina en el fragmento?",
+        "options": [
+          {
+            "text": "Una narradora protagonista que relata sus propias acciones y pensamientos.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La narradora usa la primera persona y cuenta lo que hace, percibe y decide dentro de los acontecimientos."
+          },
+          {
+            "text": "Una narradora testigo que observa acciones ajenas desde afuera.",
+            "isKey": false,
+            "misconception": "CONFUSES_FIRST_PERSON_ROLES",
+            "rationale": "Aunque usa primera persona, no se limita a observar: participa directamente en los hechos y expresa sus pensamientos."
+          },
+          {
+            "text": "Un narrador omnisciente que conoce la mente de todos los personajes.",
+            "isKey": false,
+            "misconception": "ATTRIBUTES_OMNISCIENCE",
+            "rationale": "El relato presenta las percepciones de la maestra, pero no revela de forma directa los pensamientos de los demás personajes."
+          },
+          {
+            "text": "Un narrador objetivo que registra hechos sin intervenir emocionalmente.",
+            "isKey": false,
+            "misconception": "IGNORES_SUBJECTIVE_LANGUAGE",
+            "rationale": "La voz expresa sensaciones y valoraciones, como cuando siente el peso simbólico del cuaderno."
+          }
+        ],
+        "evidenceQuote": "Yo había dejado las llaves en la sala de maestros"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué figura retórica aparece en la expresión “el pasillo bostezaba bajo la luz amarilla de los tubos”?",
+        "options": [
+          {
+            "text": "Una personificación que atribuye una acción humana al pasillo.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Bostezar es una acción propia de seres vivos; se asigna al pasillo para reforzar la quietud y el cansancio del lugar."
+          },
+          {
+            "text": "Una comparación que relaciona el pasillo con una persona cansada.",
+            "isKey": false,
+            "misconception": "CONFUSES_PERSONIFICATION_WITH_SIMILE",
+            "rationale": "No se emplea un nexo comparativo, sino que se atribuye directamente al pasillo una acción humana."
+          },
+          {
+            "text": "Una hipérbole que aumenta de forma desmedida el tamaño del pasillo.",
+            "isKey": false,
+            "misconception": "CONFUSES_EXAGGERATION_WITH_PERSONIFICATION",
+            "rationale": "La expresión no exagera una dimensión; presenta al pasillo como si pudiera realizar una acción humana."
+          },
+          {
+            "text": "Una metáfora que sustituye el pasillo por una fuente de luz.",
+            "isKey": false,
+            "misconception": "MISIDENTIFIES_FIGURATIVE_OBJECT",
+            "rationale": "La imagen se centra en el acto de bostezar, no en identificar el pasillo con una fuente de luz."
+          }
+        ],
+        "evidenceQuote": "el pasillo bostezaba bajo la luz amarilla de los tubos"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué efecto produce la imagen “el silencio, sentado en cada silla como un alumno obediente”?",
+        "options": [
+          {
+            "text": "Refuerza la sensación de un aula vacía, ordenada y quieta.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La comparación convierte el silencio en una presencia disciplinada y sugiere que el aula conserva la calma de los estudiantes ausentes."
+          },
+          {
+            "text": "Anticipa la llegada ruidosa de un grupo de estudiantes.",
+            "isKey": false,
+            "misconception": "REVERSES_MOOD",
+            "rationale": "La imagen construye una atmósfera silenciosa e inmóvil, no anuncia una irrupción bulliciosa."
+          },
+          {
+            "text": "Describe la conducta habitual de los estudiantes durante la clase.",
+            "isKey": false,
+            "misconception": "READS_FIGURATIVE_LANGUAGE_LITERALLY",
+            "rationale": "El enunciado no informa sobre una clase real; usa a un alumno obediente como término de comparación para el silencio."
+          },
+          {
+            "text": "Explica el origen material de las sillas dentro del aula.",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_IRRELEVANT_DETAIL",
+            "rationale": "La imagen no trata de la fabricación de las sillas, sino del ambiente que se percibe en el aula vacía."
+          }
+        ],
+        "evidenceQuote": "el silencio, sentado en cada silla como un alumno obediente"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "adcaf4b8-6031-4fa5-8b20-274645940164",
+    "generatedAt": "2026-10-14T01:35:00.158Z",
+    "unitId": "paa-pilot.r3.lect-lit"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "4688e3f4-a99e-4a9e-ab43-335e9f471d53",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "21e4fcc9-f82f-4a07-bc30-4c40459b0c33",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-literario.67dc96ddbfb2",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.literario",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "STRUCTURE",
+          "SCORING_COMPATIBILITY"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": false,
+            "detail": "ABSOLUTE_WORDING_SINGLES_OUT_AN_OPTION"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.narrative-elements"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.5eadfa3bab96@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": false,
+            "detail": "SELECTED_RESPONSE_NOT_CERTIFIABLE: ABSOLUTE_WORDING_SINGLES_OUT_AN_OPTION"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-literario.f3d71d6f36ba",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.literario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.figurative-language"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.5eadfa3bab96@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-literario.f08dc8f2d512",
+        "slot": "s3",
+        "objectiveCode": "paa.lect.literario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.figurative-language"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.5eadfa3bab96@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

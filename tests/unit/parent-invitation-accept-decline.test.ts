@@ -30,7 +30,8 @@ describe('acceptParentInvitation -- fails closed unless the invitation truly bel
   it('accepts and creates the REAL parent_student_relationships row when the invitation matches the verified email', async () => {
     const client = makeClient([
       { rows: [] }, // BEGIN
-      { rows: [{ id: 'inv-1', student_id: 'student-1', invited_email: 'parent@test.com' }] }, // SELECT ... FOR UPDATE
+      { rows: [{ id: 'inv-1', student_id: 'student-1', invited_email: 'parent@test.com', created_at: '2026-10-01T00:00:00Z', expired: false }] }, // SELECT ... FOR UPDATE
+      { rows: [] }, // L10 SF-7: SELECT existing relationship ... FOR UPDATE (none)
       { rows: [] }, // INSERT relationship
       { rows: [] }, // UPDATE invitation
       { rows: [] }, // COMMIT
@@ -39,7 +40,7 @@ describe('acceptParentInvitation -- fails closed unless the invitation truly bel
 
     const ok = await acceptParentInvitation('inv-1', 'parent-profile-1', 'PARENT@test.com'); // case-insensitive match
     expect(ok).toBe(true);
-    const relationshipInsert = client.query.mock.calls[2][0];
+    const relationshipInsert = client.query.mock.calls[3][0];
     expect(relationshipInsert).toMatch(/INSERT INTO parent_student_relationships/);
     expect(relationshipInsert).toMatch(/'accepted'/);
   });

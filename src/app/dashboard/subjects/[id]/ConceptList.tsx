@@ -9,6 +9,7 @@ import type { MasteryState } from '@/services/knowledge-state.service';
 import type { LearnerJourneyStage } from '@/lib/lx/concept-journey';
 import { deriveJourneyProgress } from '@/lib/lx/journey-progress';
 import { journeyStageTone, progressFillClass } from '@/lib/experience/progress-tone';
+import { isEntitlementRequired } from '@/lib/lx/access-required';
 
 
 interface ConceptRow {
@@ -37,6 +38,8 @@ export default function ConceptList({
   studentId: string;
   locale: Locale;
   concepts: ConceptRow[];
+  /** Kept for the server page's call signature; the row no longer launches an independent check (PED-03). */
+  canonicalAssessment?: boolean;
 }) {
   const t = getMessages(locale);
   const router = useRouter();
@@ -47,6 +50,8 @@ export default function ConceptList({
   const [explanations, setExplanations] = useState<Record<string, ConceptExplanationData>>({});
   const [explainLoadingId, setExplainLoadingId] = useState<string | null>(null);
   const [explainErrorId, setExplainErrorId] = useState<string | null>(null);
+  // CR-L6-03: the server refused with the licence gate -- the shared access-required state, not the generic error
+  const [explainAccessId, setExplainAccessId] = useState<string | null>(null);
 
   async function handleDelete(conceptId: string) {
     if (!confirm(t['subjectDetail.deleteConceptConfirm'])) return;
@@ -75,11 +80,14 @@ export default function ConceptList({
 
     setExplainLoadingId(conceptId);
     setExplainErrorId(null);
+    setExplainAccessId(null);
     try {
       const res = await fetch(`/api/concepts/${conceptId}/explanation?studentId=${studentId}&language=${locale}`);
       const body = await res.json();
       if (res.ok) {
         setExplanations((prev) => ({ ...prev, [conceptId]: body.data.explanation }));
+      } else if (isEntitlementRequired(res.status, body)) {
+        setExplainAccessId(conceptId);
       } else {
         setExplainErrorId(conceptId);
       }
@@ -135,13 +143,12 @@ export default function ConceptList({
             >
               {expandedId === c.conceptId ? t['subjectDetail.learnMoreCollapse'] : t['subjectDetail.learnMoreAction']}
             </button>
-            <Link
-              href={`/dashboard/quiz?subjectId=${subjectId}&conceptId=${c.conceptId}&mode=quick_check`}
-              className="btn btn-ghost"
-              style={{ fontSize: 13 }}
-            >
-              {t['quiz.modeQuickCheck']}
-            </Link>
+            {/*
+              PED-03 (2026-10-17): the concept row no longer offers an ungated "Comprobación individual" (quick_check).
+              It launched a 6-question (or, via the canonical setup, a 1-2 question) check that no canonical gate can
+              accept -- "Correcto (100%)" while the concept stayed in Demostrar. The concept's own Prove (exactly 10
+              independent questions) is launched from Concept Mission when the canonical stage is PROVE.
+            */}
             {/*
               RELEASE-R1 PART A/C: this used to be a bare
               `/dashboard/quiz?subjectId=...&conceptId=...` link with NO
@@ -179,6 +186,7 @@ export default function ConceptList({
               locale={locale}
               loading={explainLoadingId === c.conceptId}
               error={explainErrorId === c.conceptId}
+              accessRequired={explainAccessId === c.conceptId}
               data={explanations[c.conceptId]}
               conceptId={c.conceptId}
               studentId={studentId}

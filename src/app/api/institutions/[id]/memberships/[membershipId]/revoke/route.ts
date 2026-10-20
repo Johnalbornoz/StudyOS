@@ -11,6 +11,7 @@ import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessInstitution } from '@/lib/authorization';
 import { db } from '@/lib/db';
 import { revokeMembership } from '@/services/institution.service';
+import { onTeacherMembershipDecided } from '@/lib/institution/membership-events';
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string; membershipId: string }> }) {
   const { id: institutionId, membershipId } = await params;
@@ -21,11 +22,15 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   const allowed = await canAccessInstitution(actor.id, institutionId, 'INSTITUTION_MEMBER_APPROVE');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
-  const belongs = await db.query(`SELECT 1 FROM institution_memberships WHERE id = $1 AND institution_id = $2`, [membershipId, institutionId]);
+  const belongs = await db.query(
+    `SELECT 1 FROM institution_memberships WHERE id = $1 AND institution_id = $2 AND membership_role = 'TEACHER'`,
+    [membershipId, institutionId]
+  );
   if (belongs.rows.length === 0) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
   const revoked = await revokeMembership(membershipId, actor.id);
   if (!revoked) return NextResponse.json({ error: 'NOT_APPROVED' }, { status: 409 });
 
+  await onTeacherMembershipDecided(membershipId, actor.id, 'REVOKED');
   return NextResponse.json({ success: true });
 }

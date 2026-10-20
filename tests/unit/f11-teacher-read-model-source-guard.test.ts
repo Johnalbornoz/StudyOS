@@ -33,10 +33,13 @@ describe('F11-A Teacher Read Model resolves access through Teacher-specific prim
     expect(src).not.toMatch(/import\s*\{[^}]*\bcanAccessLearner\b[^}]*\}\s*from\s*['"]@\/lib\/authorization['"]/);
   });
 
-  it('read-model.service.ts imports canTeacherAccessLearner and canAccessClass from the canonical F2 authorization module', () => {
+  // L10 SF-4 (CR-L8-01 / CR-L8-02): the class gate is the TEACHER-ONLY primitive. `canAccessClass` also admits
+  // institution admins, which made the Teacher read model a second way in for a Coordinator; it is no longer imported.
+  it('read-model.service.ts imports canTeacherAccessLearner and resolveTeacherClassScope from the canonical F2 authorization module, and not canAccessClass', () => {
     const src = readFileSync(join(process.cwd(), 'src/lib/teacher/read-model.service.ts'), 'utf-8');
     expect(src).toMatch(/import\s*\{[^}]*\bcanTeacherAccessLearner\b[^}]*\}\s*from\s*['"]@\/lib\/authorization['"]/);
-    expect(src).toMatch(/import\s*\{[^}]*\bcanAccessClass\b[^}]*\}\s*from\s*['"]@\/lib\/authorization['"]/);
+    expect(src).toMatch(/import\s*\{[^}]*\bresolveTeacherClassScope\b[^}]*\}\s*from\s*['"]@\/lib\/authorization['"]/);
+    expect(src).not.toMatch(/\bcanAccessClass\b\s*[,}(]/);
   });
 
   it('every exported getTeacher* function taking a studentId or classId re-validates authorization as its own first action', () => {

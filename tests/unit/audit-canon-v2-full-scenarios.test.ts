@@ -6,9 +6,14 @@
  * second chance / hard failure), 6/7/8 (Transfer classification), 9
  * (critical misconception), and 10 (the real regression sequence) each
  * have their own dedicated audit file; this file covers Scenario 1
- * (happy path) and Scenario 3 (Prove failure -> requalification cycle),
- * which the audit found to be CORRECTLY implemented end-to-end and are
- * recorded here as golden-path regression coverage. Test-only.
+ * (happy path) and Scenario 3 (Prove failure -> retry), recorded here as
+ * golden-path regression coverage. Test-only.
+ *
+ * 2026-10-17 pilot pass policy as amended by the overnight 2026-10-16
+ * contracts: PRACTICE needs the average of the last 3 valid attempts >=80%
+ * AND the latest >=80%, so the happy path carries 3 Practices; a failed
+ * PROVE stays in PROVE with an immediate retry (no Practice requalification
+ * cycle); RETAIN is a 5-item check; APPLY is the NEAR/MID/FAR ladder.
  */
 import { describe, it, expect } from 'vitest';
 import { evaluateCanonicalLearningState, type RawEvidenceItem, type PedagogicalEngineInput } from '@/lib/pedagogical-engine';
@@ -41,18 +46,23 @@ function prove(ts: string, score: number) {
   return item({ activityType: 'PROVE', timestamp: ts, itemCount: 10, correctCount: Math.round((score / 100) * 10), scorePercent: score, difficulty: 3.5, independent: true });
 }
 function retain(ts: string, score: number) {
-  return item({ activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 10, correctCount: Math.round((score / 100) * 10), scorePercent: score, difficulty: 3.5, independent: true, novel: true });
+  return item({ activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 5, correctCount: Math.round((score / 100) * 5), scorePercent: score, difficulty: 3.5, independent: true, novel: true });
 }
-function transfer(ts: string, scores: number[]) {
+/** An APPLY ladder NEAR -> MID -> FAR with these scores (a challenge passes, certified, at >= 80). */
+function transfer(ts: string, scores: [number, number, number]) {
+  const levels = ['NEAR', 'MID', 'FAR'] as const;
+  const ladder = scores.map((scorePercent, i) => ({ level: levels[i], scorePercent, passed: scorePercent >= 80, certified: true, taskId: `t${i}`, contextDomain: null }));
+  const passed = ladder.filter((c) => c.passed).map((c) => c.level);
   const overall = scores.reduce((a, b) => a + b, 0) / scores.length;
-  return item({ activityType: 'TRANSFER', timestamp: ts, itemCount: 3, correctCount: scores.filter((s) => s >= 80).length, scorePercent: overall, difficulty: 4.5, independent: true, perChallengeScores: scores, reasoningProvided: true });
+  return item({ activityType: 'TRANSFER', timestamp: ts, itemCount: 3, correctCount: passed.length, scorePercent: overall, difficulty: 4.5, independent: true, transferLadder: ladder, transferHighestLevel: passed.length ? passed[passed.length - 1] : null });
 }
 
-describe('SCENARIO 1 -- HAPPY PATH: LEARN -> PRACTICE(x2) -> PROVE -> wait 3 days -> RETAIN -> TRANSFER -> CONSOLIDATED', () => {
+describe('SCENARIO 1 -- HAPPY PATH: LEARN -> PRACTICE(x3) -> PROVE -> wait 3 days -> RETAIN -> APPLY ladder to FAR -> CONSOLIDATED (HIGH)', () => {
   const evidence = [
     learnCheck('2026-01-01T00:00:00.000Z', 90),
     practice('2026-01-02T00:00:00.000Z', 90),
     practice('2026-01-02T01:00:00.000Z', 90),
+    practice('2026-01-02T02:00:00.000Z', 90),
     prove('2026-01-03T00:00:00.000Z', 90),
     retain('2026-01-06T00:00:00.000Z', 90), // exactly 3 days after Prove
     transfer('2026-01-15T00:00:00.000Z', [90, 90, 90]),
@@ -63,21 +73,23 @@ describe('SCENARIO 1 -- HAPPY PATH: LEARN -> PRACTICE(x2) -> PROVE -> wait 3 day
     expect(d.stage).toBe('PRACTICE');
   });
 
-  it('after 2 Practice passes -> PROVE unlocked, EXECUTABLE', () => {
-    const d = evaluateCanonicalLearningState(baseInput({ evidence: evidence.slice(0, 3), now: '2026-01-02T12:00:00.000Z' }));
+  it('after 2 Practice passes -> still PRACTICE; after 3 Practice passes -> PROVE unlocked, EXECUTABLE', () => {
+    const two = evaluateCanonicalLearningState(baseInput({ evidence: evidence.slice(0, 3), now: '2026-01-02T12:00:00.000Z' }));
+    expect(two.stage).toBe('PRACTICE');
+    const d = evaluateCanonicalLearningState(baseInput({ evidence: evidence.slice(0, 4), now: '2026-01-02T12:00:00.000Z' }));
     expect(d.stage).toBe('PROVE');
     expect(d.actionState).toBe('EXECUTABLE');
   });
 
   it('after a qualifying Prove -> RETAIN WAITING with a 3-day nextEligibleAt', () => {
-    const d = evaluateCanonicalLearningState(baseInput({ evidence: evidence.slice(0, 4), now: '2026-01-04T00:00:00.000Z' }));
+    const d = evaluateCanonicalLearningState(baseInput({ evidence: evidence.slice(0, 5), now: '2026-01-04T00:00:00.000Z' }));
     expect(d.stage).toBe('RETAIN');
     expect(d.actionState).toBe('WAITING');
     expect(d.nextEligibleAt).toBe('2026-01-06T00:00:00.000Z');
   });
 
   it('at exactly 3 days + a qualifying Retain -> TRANSFER unlocked', () => {
-    const d = evaluateCanonicalLearningState(baseInput({ evidence: evidence.slice(0, 5), now: '2026-01-06T00:00:00.000Z' }));
+    const d = evaluateCanonicalLearningState(baseInput({ evidence: evidence.slice(0, 6), now: '2026-01-06T00:00:00.000Z' }));
     expect(d.stage).toBe('TRANSFER');
     expect(d.actionState).toBe('EXECUTABLE');
   });
@@ -87,6 +99,7 @@ describe('SCENARIO 1 -- HAPPY PATH: LEARN -> PRACTICE(x2) -> PROVE -> wait 3 day
     expect(d.stage).toBe('CONSOLIDATED');
     expect(d.actionState).toBe('CONSOLIDATED');
     expect(d.journeyProgressPercent).toBe(100);
+    expect(d.consolidationLevel).toBe('HIGH');
   });
 
   it('every requirement in the final decision carries satisfactionBasis V1_EVIDENCE (no fabrication anywhere in the happy path)', () => {
@@ -98,18 +111,23 @@ describe('SCENARIO 1 -- HAPPY PATH: LEARN -> PRACTICE(x2) -> PROVE -> wait 3 day
   });
 });
 
-describe('SCENARIO 3 -- PROVE FAILURE: Practice qualifies, Prove fails, Practice requalifies, new Prove passes', () => {
-  it('full replay reaches PROVE SATISFIED again after the requalification cycle, with the failed Prove preserved as immutable history', () => {
+describe('SCENARIO 3 -- PROVE FAILURE: Practice qualifies, Prove fails (stays PROVE), immediate Prove retry passes (2026-10-17 pilot policy)', () => {
+  it('after the failed Prove the learner stays in PROVE (no rollback, Practice still satisfied); the immediate retry reaches PROVE SATISFIED, with the failed Prove preserved as immutable history', () => {
     const failedProve = prove('2026-01-03T00:00:00.000Z', 50);
-    const evidence = [
+    const before = [
       learnCheck('2026-01-01T00:00:00.000Z', 90),
       practice('2026-01-02T00:00:00.000Z', 90),
       practice('2026-01-02T01:00:00.000Z', 90),
+      practice('2026-01-02T02:00:00.000Z', 90),
       failedProve,
-      practice('2026-01-04T00:00:00.000Z', 90),
-      practice('2026-01-04T01:00:00.000Z', 90),
-      prove('2026-01-05T00:00:00.000Z', 90),
     ];
+    const afterFail = evaluateCanonicalLearningState(baseInput({ evidence: before, now: '2026-01-03T01:00:00.000Z' }));
+    expect(afterFail.stage).toBe('PROVE');
+    expect(afterFail.actionState).toBe('EXECUTABLE');
+    expect(afterFail.rollback).toBeNull();
+    expect(afterFail.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('SATISFIED');
+
+    const evidence = [...before, prove('2026-01-03T02:00:00.000Z', 90)];
     const d = evaluateCanonicalLearningState(baseInput({ evidence, now: '2026-01-06T00:00:00.000Z' }));
     expect(d.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('SATISFIED');
     expect(d.requirements.find((r) => r.stage === 'PROVE')!.nonQualifyingEvidenceIds).toContain(failedProve.id);

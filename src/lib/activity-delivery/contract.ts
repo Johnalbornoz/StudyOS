@@ -17,6 +17,8 @@
  */
 import { createHash } from 'crypto';
 import { PROMPT_REGISTRY } from '@/lib/ai/prompt-registry';
+import { practiceMixForItemCount } from '@/lib/pedagogical-engine/difficulty-policy';
+import type { PracticeMix } from '@/lib/pedagogical-engine/types';
 
 export type DeliveryActivityType = 'LEARN_CHECK' | 'PRACTICE' | 'PROVE' | 'RETAIN' | 'TRANSFER';
 export type DeliveryStage = 'LEARN' | 'PRACTICE' | 'PROVE' | 'RETAIN' | 'TRANSFER';
@@ -83,7 +85,44 @@ export interface ActivityContract {
   itemCount: number;
   independence: boolean;
   policyVersion: string;
+  /**
+   * D78 -- PRACTICE (and REINFORCE, delivered as PRACTICE) only: the exact per-level item counts
+   * (e.g. 2 at base + 1 at base+1). Part of the contract fingerprint: a set prepared for one mix
+   * is never served for another. Absent = no per-level contract (every other activity).
+   */
+  practiceMix?: DeliveryPracticeMix;
+  /**
+   * D79 -- PROVE only: exact per-level counts (10 x L3, or 7 x L3 + 3 x L4). Part of the contract
+   * fingerprint: a set prepared for one mix is never served for another. No fallback: a set that
+   * cannot meet every level count is never assembled.
+   */
+  proveMix?: DeliveryLevelMix;
 }
+
+export interface DeliveryLevelMix {
+  items: Array<{ level: number; count: number }>;
+}
+
+/** D79 -- the engine's PROVE mix as a delivery contract field (only the per-level counts govern delivery). */
+export function deliveryProveMix(mix: { items: Array<{ level: number; count: number }> } | null | undefined): DeliveryLevelMix | undefined {
+  return mix ? { items: [...mix.items].sort((a, b) => a.level - b.level).map((i) => ({ level: i.level, count: i.count })) } : undefined;
+}
+
+export interface DeliveryPracticeMix {
+  baseLevel: number;
+  items: Array<{ level: number; count: number }>;
+}
+
+/** D78 -- the engine's mix re-sized for the delivered item count (the +1 item exists only for a 3-item session). */
+export function deliveryPracticeMix(mix: PracticeMix | null | undefined, itemCount: number): DeliveryPracticeMix | undefined {
+  if (!mix) return undefined;
+  const sized = practiceMixForItemCount(mix.baseLevel, mix.plusOneEligible, itemCount, mix.exposureReasonCode);
+  return { baseLevel: sized.baseLevel, items: sized.items.map((i) => ({ level: i.level, count: i.count })) };
+}
+
+const levelMixKey = (items: Array<{ level: number; count: number }>): string =>
+  [...items].sort((a, b) => a.level - b.level).map((i) => `${i.level}x${i.count}`).join(',');
+const practiceMixKey = (m: DeliveryPracticeMix): string => `base${m.baseLevel}:` + levelMixKey(m.items);
 
 export function difficultyBand(d: { min: number; max: number }): string {
   return `${d.min}-${d.max}`;
@@ -103,6 +142,10 @@ export function activityContractFingerprint(c: ActivityContract): string {
     c.policyVersion,
     GENERATOR_VERSION,
     GRADER_VERSION,
+    // D78 -- appended only when present, so every contract without a mix keeps its fingerprint.
+    ...(c.practiceMix ? [`practiceMix:${practiceMixKey(c.practiceMix)}`] : []),
+    // D79 -- same rule for the PROVE level mix
+    ...(c.proveMix ? [`proveMix:${levelMixKey(c.proveMix.items)}`] : []),
   ]);
 }
 
@@ -143,6 +186,25 @@ export function inventoryTarget(activityType: DeliveryActivityType): number {
  * often near-duplicates of each other and would not form a valid set.
  */
 export const SPARE_ASSEMBLABLE_SETS = 2;
+
+/**
+ * D76 -- governed minimum bank depth in DISTINCT VALID candidates for one
+ * learner + concept + activity (the learner's own question_bank_candidates).
+ * PRACTICE = 9: 3 sessions x 3 questions see up to 9 distinct items before
+ * any controlled reuse. For an activity listed here this target is THE
+ * replenishment threshold (prepareInventoryHandler): below it the existing
+ * BANK_REPLENISH path generates toward it; at or above it nothing is
+ * requested unless an assembly actually came up short. Every other activity
+ * keeps the set-based SPARE_ASSEMBLABLE_SETS policy unchanged.
+ */
+export const BANK_DEPTH_TARGET: Readonly<Partial<Record<DeliveryActivityType, number>>> = { PRACTICE: 9 };
+
+export function bankDepthTarget(activityType: DeliveryActivityType): number | null {
+  return BANK_DEPTH_TARGET[activityType] ?? null;
+}
+
+/** D76 -- recorded on a session delivered while the bank is below its depth target (controlled reuse). */
+export const PRACTICE_BANK_DEPTH_INSUFFICIENT = 'PRACTICE_BANK_DEPTH_INSUFFICIENT' as const;
 
 /** Splits a candidate need into generator-sized chunks (one BANK_REPLENISH job each, run in parallel). */
 export function bankChunks(needed: number, batchCap: number): number[] {

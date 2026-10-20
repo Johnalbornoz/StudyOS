@@ -32,7 +32,7 @@ export interface InterventionStatusDistribution {
   total: number;
 }
 
-async function fetchInterventionRows(institutionId: string, filters?: { classId?: string; interventionType?: InterventionType; sinceDays?: number }) {
+async function fetchInterventionRows(institutionId: string, filters?: { classId?: string; interventionType?: InterventionType; sinceDays?: number; ownerScope?: 'INSTITUTION' | 'TEACHER' }) {
   const params: unknown[] = [institutionId];
   const clauses = ['institution_id = $1'];
   if (filters?.classId) {
@@ -42,6 +42,11 @@ async function fetchInterventionRows(institutionId: string, filters?: { classId?
   if (filters?.interventionType) {
     params.push(filters.interventionType);
     clauses.push(`intervention_type = $${params.length}`);
+  }
+  if (filters?.ownerScope) {
+    // Track A: Origin filter (institution tasks vs teacher tasks).
+    params.push(filters.ownerScope);
+    clauses.push(`owner_scope = $${params.length}`);
   }
   if (filters?.sinceDays) {
     params.push(filters.sinceDays);
@@ -69,7 +74,7 @@ export interface InstitutionInterventionSummary {
 export async function getInstitutionInterventionSummary(
   actorUserId: string,
   institutionId: string,
-  filters?: { classId?: string; interventionType?: InterventionType; sinceDays?: number }
+  filters?: { classId?: string; interventionType?: InterventionType; sinceDays?: number; ownerScope?: 'INSTITUTION' | 'TEACHER' }
 ): Promise<InstitutionInterventionSummary> {
   await requireInstitutionAccess(actorUserId, institutionId);
   if (filters?.classId) await requireClassInInstitution(actorUserId, institutionId, filters.classId);

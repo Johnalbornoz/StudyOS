@@ -1,0 +1,454 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r3.ing-read",
+    "component": "ingles",
+    "language": "en",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "An ORIGINAL English passage of 160 to 220 words (CEFR B1) about a student who learns to repair bicycles. Clear main idea, concrete details, one implied attitude or purpose, and one word whose meaning depends on context.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.literal",
+        "difficulty": 2,
+        "focus": "a detail stated in the passage"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.interpretive",
+        "difficulty": 3,
+        "focus": "something the passage implies, or the writer's purpose"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.ing.lectura",
+        "conceptStableId": "efl.reading.literal",
+        "difficulty": 3,
+        "focus": "the main idea of the passage"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Learning at the Cycle Workshop",
+      "text": "When Lina’s old bicycle began making a clicking sound, she took it to the small cycle workshop near her apartment. The owner, Mr Doran, fixed the problem quickly, but Lina stayed to watch. He explained that the chain had become dry and showed her how to clean it with a brush. Lina asked if she could help at the workshop on Saturdays. Mr Doran agreed, as long as she arrived on time and listened carefully.\n\nDuring her first week, Lina pumped tyres and organised tools. Later, she learned to tighten a loose brake cable. Her hands were often dirty, and she sometimes needed several tries to fit a wheel correctly. Still, Mr Doran told her that careful work mattered more than speed. Lina kept a small notebook where she drew simple pictures of each repair.\n\nAfter two months, Lina repaired her neighbour’s bicycle without help. The neighbour offered to pay her, but Lina asked for a packet of seeds instead. She planned to grow flowers beside the workshop door. For Lina, the workshop had become more than a place to solve a problem; it was a place where she could build useful skills and help others travel safely.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "What did Lina learn to do later in her first week at the workshop?",
+        "options": [
+          {
+            "text": "Tighten a loose brake cable",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The passage directly states that Lina learned this task later in her first week."
+          },
+          {
+            "text": "Clean a dry bicycle chain",
+            "isKey": false,
+            "misconception": "CONFUSES_OBSERVED_ACTION_WITH_LEARNED_TASK",
+            "rationale": "Lina watched Mr Doran clean the chain before she began working at the workshop."
+          },
+          {
+            "text": "Repair a neighbour’s bicycle",
+            "isKey": false,
+            "misconception": "CONFUSES_LATER_EVENT_WITH_EARLY_DETAIL",
+            "rationale": "She repaired her neighbour’s bicycle after two months, not during her first week."
+          },
+          {
+            "text": "Grow flowers by the door",
+            "isKey": false,
+            "misconception": "CONFUSES_FUTURE_PLAN_WITH_WORKSHOP_TASK",
+            "rationale": "Growing flowers was Lina’s plan for the seeds, not a repair skill she learned that week."
+          }
+        ],
+        "evidenceQuote": "Later, she learned to tighten a loose brake cable."
+      },
+      {
+        "slot": "s2",
+        "stem": "Why did Lina keep a small notebook at the workshop?",
+        "options": [
+          {
+            "text": "To remember the steps in each repair",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Her drawings of each repair suggest that she wanted to remember and use the repair steps later."
+          },
+          {
+            "text": "To record payments from workshop customers",
+            "isKey": false,
+            "misconception": "INVENTS_UNSTATED_BUSINESS_PURPOSE",
+            "rationale": "The passage does not say that Lina handled customer payments or kept financial records."
+          },
+          {
+            "text": "To list the tools that Mr Doran owned",
+            "isKey": false,
+            "misconception": "CONFUSES_TOOL_ORGANISATION_WITH_NOTEBOOK_USE",
+            "rationale": "Lina organised tools, but the notebook is specifically connected to pictures of repairs."
+          },
+          {
+            "text": "To plan the flowers beside the workshop",
+            "isKey": false,
+            "misconception": "CONFUSES_SEPARATE_FUTURE_PLAN_WITH_CURRENT_PURPOSE",
+            "rationale": "The flower plan came later and was connected to the seeds from her neighbour."
+          }
+        ],
+        "evidenceQuote": "Lina kept a small notebook where she drew simple pictures of each repair."
+      },
+      {
+        "slot": "s3",
+        "stem": "What is the main idea of the passage?",
+        "options": [
+          {
+            "text": "Lina develops repair skills through regular workshop practice",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "The passage follows Lina from watching a repair to learning tasks and independently repairing a bicycle."
+          },
+          {
+            "text": "Lina searches for a faster way to reach school",
+            "isKey": false,
+            "misconception": "MISIDENTIFIES_CHARACTER_GOAL",
+            "rationale": "The passage focuses on learning bicycle repair, not on Lina’s journey to school."
+          },
+          {
+            "text": "Mr Doran tries to expand his repair business",
+            "isKey": false,
+            "misconception": "SHIFTS_FOCUS_TO_MINOR_CHARACTER",
+            "rationale": "Mr Doran teaches Lina, but the passage does not describe plans to expand his business."
+          },
+          {
+            "text": "A neighbour needs help choosing garden seeds",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_MINOR_DETAIL",
+            "rationale": "The seeds are a small detail at the end, while the passage is mainly about Lina’s learning."
+          }
+        ],
+        "evidenceQuote": "it was a place where she could build useful skills and help others travel safely."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "5a4b3a80-5c72-4daf-9c1e-b17ea036c233",
+    "generatedAt": "2026-10-14T01:36:50.363Z",
+    "unitId": "paa-pilot.r3.ing-read"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "c9912d5b-8b38-4346-9973-782e9ac0fd28",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "108c0ef5-7c3d-4ed2-8b67-1a4e1e2bc003",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.ing-lectura.8b3d5b6d0273",
+        "slot": "s1",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.literal"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.22fd7b33fb9a@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lectura.bb908e5a25b6",
+        "slot": "s2",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.interpretive"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.22fd7b33fb9a@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.ing-lectura.b26d35e56386",
+        "slot": "s3",
+        "objectiveCode": "paa.ing.lectura",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.ing.lectura / efl.reading.literal"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected en, read en"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.ingles.22fd7b33fb9a@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

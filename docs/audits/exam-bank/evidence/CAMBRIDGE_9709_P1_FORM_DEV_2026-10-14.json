@@ -1,0 +1,214 @@
+{
+  "kind": "GOVERNED_FORM_DEV",
+  "run": "589ae0",
+  "database": "DEV",
+  "config": "v2.cambridge.9709-as",
+  "section": "p1",
+  "system": "CAMBRIDGE",
+  "positionsRequired": 8,
+  "supply": [
+    {
+      "objective": "cie.9709.p1.circular-measure",
+      "required": 1,
+      "certifiedEligible": 30
+    },
+    {
+      "objective": "cie.9709.p1.coordinate-geometry",
+      "required": 1,
+      "certifiedEligible": 30
+    },
+    {
+      "objective": "cie.9709.p1.differentiation",
+      "required": 1,
+      "certifiedEligible": 30
+    },
+    {
+      "objective": "cie.9709.p1.functions",
+      "required": 1,
+      "certifiedEligible": 30
+    },
+    {
+      "objective": "cie.9709.p1.integration",
+      "required": 1,
+      "certifiedEligible": 30
+    },
+    {
+      "objective": "cie.9709.p1.quadratics",
+      "required": 1,
+      "certifiedEligible": 30
+    },
+    {
+      "objective": "cie.9709.p1.series",
+      "required": 1,
+      "certifiedEligible": 30
+    },
+    {
+      "objective": "cie.9709.p1.trigonometry",
+      "required": 1,
+      "certifiedEligible": 27
+    }
+  ],
+  "attempts": [
+    {
+      "examAttemptId": "826e3413-ca72-4314-9399-2ce2fd0691cb",
+      "positions": [
+        "cie.9709.p1.series",
+        "cie.9709.p1.functions",
+        "cie.9709.p1.quadratics",
+        "cie.9709.p1.differentiation",
+        "cie.9709.p1.circular-measure",
+        "cie.9709.p1.integration",
+        "cie.9709.p1.coordinate-geometry",
+        "cie.9709.p1.trigonometry"
+      ],
+      "scores": [
+        [
+          2,
+          2
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          2,
+          2
+        ]
+      ]
+    },
+    {
+      "examAttemptId": "014f9da3-469f-455c-bc1f-df7b16c7e178",
+      "positions": [
+        "cie.9709.p1.series",
+        "cie.9709.p1.functions",
+        "cie.9709.p1.quadratics",
+        "cie.9709.p1.differentiation",
+        "cie.9709.p1.circular-measure",
+        "cie.9709.p1.integration",
+        "cie.9709.p1.coordinate-geometry",
+        "cie.9709.p1.trigonometry"
+      ],
+      "scores": [
+        [
+          0,
+          4
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          4
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          4
+        ]
+      ]
+    }
+  ],
+  "results": [
+    {
+      "id": "C1  the configuration is published in DEV",
+      "ok": true,
+      "detail": "v2.cambridge.9709-as"
+    },
+    {
+      "id": "C2  every blueprint objective of the section has certified, pilot-eligible supply of this system",
+      "ok": true,
+      "detail": "cie.9709.p1.circular-measure:30/1 cie.9709.p1.coordinate-geometry:30/1 cie.9709.p1.differentiation:30/1 cie.9709.p1.functions:30/1 cie.9709.p1.integration:30/1 cie.9709.p1.quadratics:30/1 cie.9709.p1.series:30/1 cie.9709.p1.trigonometry:27/1"
+    },
+    {
+      "id": "F1  the whole-section PRACTICE instance is frozen at start (assessment snapshot)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "F2  it serves exactly one position per blueprint objective (the complete governed form)",
+      "ok": true,
+      "detail": "8/8 positions; cie.9709.p1.series, cie.9709.p1.functions, cie.9709.p1.quadratics, cie.9709.p1.differentiation, cie.9709.p1.circular-measure, cie.9709.p1.integration, cie.9709.p1.coordinate-geometry, cie.9709.p1.trigonometry"
+    },
+    {
+      "id": "F3  no answer key on the wire for any position",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "S1  keyed answers score full marks on every position, by the canonical contract",
+      "ok": true,
+      "detail": "2/2 4/4 3/3 4/4 4/4 2/2 4/4 2/2"
+    },
+    {
+      "id": "S2  wrong values score 0 on every position (no partial credit invented)",
+      "ok": true,
+      "detail": "0/4 0/2 0/2 0/3 0/3 0/4 0/2 0/4"
+    },
+    {
+      "id": "X1  0 question-provider calls",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "X2  no Learning Plan entry was created by exam prep",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "X3  Knowledge State: no row written for the Student by exam prep",
+      "ok": true,
+      "detail": "0 -> 0"
+    },
+    {
+      "id": "E1  every response of both attempts is Exam Readiness evidence (off-plan: the Student owns no learner concept)",
+      "ok": true,
+      "detail": "16 rows; 8 independent correct; owned concepts 0"
+    },
+    {
+      "id": "E2  no Learning evidence row was written by exam prep (separation)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "Z1  the fixture Student and everything of theirs is removed",
+      "ok": true,
+      "detail": "0 rows left"
+    }
+  ]
+}

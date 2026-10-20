@@ -40,7 +40,7 @@ describe('QuizMode recognizes every canonical activity (Section 5/12 parity)', (
 
     const maxIdx = QUIZ_PAGE_SRC.indexOf('const MODE_DEFAULT_MAX');
     const maxSlice = QUIZ_PAGE_SRC.slice(maxIdx, maxIdx + 1400);
-    expect(maxSlice).toMatch(/canonical_retain: 10,/);
+    expect(maxSlice).toMatch(/canonical_retain: 5,/); // 2026-10-17 pilot policy: the Retention check is 5 items (was 10)
     expect(maxSlice).toMatch(/canonical_transfer: 3,/);
     expect(maxSlice).toMatch(/canonical_learn_check: 5,/);
   });

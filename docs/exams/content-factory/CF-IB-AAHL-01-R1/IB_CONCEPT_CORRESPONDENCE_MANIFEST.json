@@ -1,0 +1,722 @@
+{
+ "kind": "CONTENT_FACTORY_CONCEPT_CORRESPONDENCE_MANIFEST",
+ "batchId": "CF-IB-AAHL-01-R1",
+ "readFrom": "Track B a2055a0 (read-only checkout)",
+ "totals": {
+  "constructs": 10,
+  "sourceBacked": 1,
+  "existingReused": [
+   "math.alg.quadratics"
+  ],
+  "newProposedDefensible": 0,
+  "candidateIdsPrepared": [
+   "math.alg.geometric-series",
+   "math.alg.logarithms",
+   "math.fun.inverse-functions",
+   "math.calc.definite-integrals",
+   "math.calc.derivatives",
+   "math.prob.binomial-distribution",
+   "math.prob.normal-distribution"
+  ],
+  "blocked": [
+   "tf.math.series.geometric-sum-to-infinity",
+   "tf.math.logarithms.equation-one-admissible-root",
+   "tf.math.functions.inverse-function-value",
+   "tf.math.calculus.definite-integral-polynomial",
+   "tf.math.calculus.area-between-curve-and-axis",
+   "tf.math.calculus.tangent-gradient-at-a-point",
+   "tf.math.calculus.cubic-local-maximum",
+   "tf.math.probability.binomial-exact-probability",
+   "tf.math.probability.normal-symmetry"
+  ],
+  "ibTopicsInvented": 0
+ },
+ "manifest": [
+  {
+   "construct_id": "tf.math.series.geometric-sum-to-infinity",
+   "construct": "GEOMETRIC_SUM_TO_INFINITY",
+   "existing_studyus_concept_id": null,
+   "proposed_new_studyus_concept_id": "math.alg.geometric-series",
+   "proposed_new_studyus_concept_status": "BLOCKED: not proposed for creation until the governed IB source supports it with a locator",
+   "concept_label": "Geometric sequences and series (including the sum to infinity)",
+   "studyus_concept_note": "math.alg.patterns-sequences (PAA \"Patrones y sucesiones\") is NARROWER: no series, no convergence, no sum to infinity. Not reused.",
+   "knowledge_assessed": "sum to infinity of a convergent geometric series",
+   "ib_subject": "Mathematics: analysis and approaches",
+   "ib_level": "HL",
+   "ib_paper": "P1 (Paper 1 (no calculator); adapter IB.MATH_AA_HL.P1)",
+   "ib_governed_source_reference": {
+    "source": {
+     "key": "ibo-math-aa-guide-2021",
+     "framework": "IB",
+     "title": "Mathematics: analysis and approaches guide (first assessment 2021)",
+     "publisher": "IBO",
+     "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf",
+     "documentVersion": "first assessment 2021",
+     "publicationYear": 2019,
+     "effectiveSession": "May 2021 - November 2028",
+     "confidence": "HIGH",
+     "license": "PUBLIC"
+    },
+    "structuralRecord": {
+     "file": "docs/exams/v2/sources/ib-dp-groups-4-6.json",
+     "key": "math-aa",
+     "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+     "sourceKeys": [
+      "ib-math-aa-guide-2021",
+      "ib-math-aa-updates"
+     ],
+     "confidence": "HIGH",
+     "holds": "components, marks, timings, assessment objectives; NO syllabus content"
+    }
+   },
+   "source_text_or_reference_locator": {
+    "officialGuideLocator": "NOT_HELD_IN_REPOSITORY: the guide is registered (title, IBO, URL, version, licence) but no syllabus section, number or text of it is stored; none is quoted or recalled here",
+    "governedObjective": {
+     "config": "v2.ib.math-aa-hl",
+     "objectiveCode": "aahl.p1.algebra",
+     "descriptionVerbatim": "Number and algebra: logarithms, exponents, sequences and series.",
+     "authorship": "StudyUs blueprint text in the governed exam configuration, citing the guide (sourceKeys of the vertical); it is not IB text",
+     "namesTheKnowledge": true
+    },
+    "reviewedLink": {
+     "file": "src/lib/exam-core/catalog/objective-learning-links.ts",
+     "key": "aahl.p1.algebra",
+     "conceptName": "Sequences and series",
+     "present": true,
+     "catalogueLabel": "DEV_FIXTURE / NON_OFFICIAL -- curated StudyUS learning catalogue entry used by the Exam -> Learning bridge (Track B Exam V2). Not an official curriculum statement."
+    }
+   },
+   "correspondence_type": "PROPOSED_STUDYUS_CONCEPT -> GOVERNED_IB_OBJECTIVE (supported by StudyUs objective text and a reviewed link; not backed by IB source text)",
+   "assessment_applicability": {
+    "component": "IB.MATH_AA_HL.P1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.algebra#0",
+    "register": "NOT_ESTABLISHED",
+    "bucketCertified": false,
+    "conceptPlacedInBucket": false
+   },
+   "confidence": "LOW for governance (mathematically the construct plainly assesses what the objective text names; the governed IB source text is not available to back it)",
+   "governance_status": "BLOCKED",
+   "blocked_reason": "No governed IB syllabus/content record holds this knowledge: the official guide is registered but its syllabus text and section locators are not in the repository, the objective description is StudyUs text, and the catalogue row is DEV_FIXTURE / NON_OFFICIAL.",
+   "unblock": "A governed extract of the official guide (source ibo-math-aa-guide-2021, licence PUBLIC) at section granularity -- as PAA has in paa-hierarchy.ts -- then the StudyUs concept, then an applicability record for the component.",
+   "source_backed": false
+  },
+  {
+   "construct_id": "tf.math.logarithms.equation-one-admissible-root",
+   "construct": "LOG_EQUATION_ONE_ADMISSIBLE_ROOT",
+   "existing_studyus_concept_id": null,
+   "proposed_new_studyus_concept_id": "math.alg.logarithms",
+   "proposed_new_studyus_concept_status": "BLOCKED: not proposed for creation until the governed IB source supports it with a locator",
+   "concept_label": "Logarithms and logarithmic equations",
+   "studyus_concept_note": "No logarithm concept exists in the governed registry.",
+   "knowledge_assessed": "laws of logarithms, change of base, admissibility of roots",
+   "ib_subject": "Mathematics: analysis and approaches",
+   "ib_level": "HL",
+   "ib_paper": "P1 (Paper 1 (no calculator); adapter IB.MATH_AA_HL.P1)",
+   "ib_governed_source_reference": {
+    "source": {
+     "key": "ibo-math-aa-guide-2021",
+     "framework": "IB",
+     "title": "Mathematics: analysis and approaches guide (first assessment 2021)",
+     "publisher": "IBO",
+     "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf",
+     "documentVersion": "first assessment 2021",
+     "publicationYear": 2019,
+     "effectiveSession": "May 2021 - November 2028",
+     "confidence": "HIGH",
+     "license": "PUBLIC"
+    },
+    "structuralRecord": {
+     "file": "docs/exams/v2/sources/ib-dp-groups-4-6.json",
+     "key": "math-aa",
+     "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+     "sourceKeys": [
+      "ib-math-aa-guide-2021",
+      "ib-math-aa-updates"
+     ],
+     "confidence": "HIGH",
+     "holds": "components, marks, timings, assessment objectives; NO syllabus content"
+    }
+   },
+   "source_text_or_reference_locator": {
+    "officialGuideLocator": "NOT_HELD_IN_REPOSITORY: the guide is registered (title, IBO, URL, version, licence) but no syllabus section, number or text of it is stored; none is quoted or recalled here",
+    "governedObjective": {
+     "config": "v2.ib.math-aa-hl",
+     "objectiveCode": "aahl.p1.algebra",
+     "descriptionVerbatim": "Number and algebra: logarithms, exponents, sequences and series.",
+     "authorship": "StudyUs blueprint text in the governed exam configuration, citing the guide (sourceKeys of the vertical); it is not IB text",
+     "namesTheKnowledge": true
+    },
+    "reviewedLink": {
+     "file": "src/lib/exam-core/catalog/objective-learning-links.ts",
+     "key": "aahl.p1.algebra",
+     "conceptName": "Logarithms",
+     "present": true,
+     "catalogueLabel": "DEV_FIXTURE / NON_OFFICIAL -- curated StudyUS learning catalogue entry used by the Exam -> Learning bridge (Track B Exam V2). Not an official curriculum statement."
+    }
+   },
+   "correspondence_type": "PROPOSED_STUDYUS_CONCEPT -> GOVERNED_IB_OBJECTIVE (supported by StudyUs objective text and a reviewed link; not backed by IB source text)",
+   "assessment_applicability": {
+    "component": "IB.MATH_AA_HL.P1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.algebra#0",
+    "register": "NOT_ESTABLISHED",
+    "bucketCertified": false,
+    "conceptPlacedInBucket": false
+   },
+   "confidence": "LOW for governance (mathematically the construct plainly assesses what the objective text names; the governed IB source text is not available to back it)",
+   "governance_status": "BLOCKED",
+   "blocked_reason": "No governed IB syllabus/content record holds this knowledge: the official guide is registered but its syllabus text and section locators are not in the repository, the objective description is StudyUs text, and the catalogue row is DEV_FIXTURE / NON_OFFICIAL.",
+   "unblock": "A governed extract of the official guide (source ibo-math-aa-guide-2021, licence PUBLIC) at section granularity -- as PAA has in paa-hierarchy.ts -- then the StudyUs concept, then an applicability record for the component.",
+   "source_backed": false
+  },
+  {
+   "construct_id": "tf.math.functions.inverse-function-value",
+   "construct": "INVERSE_FUNCTION_VALUE",
+   "existing_studyus_concept_id": null,
+   "proposed_new_studyus_concept_id": "math.fun.inverse-functions",
+   "proposed_new_studyus_concept_status": "BLOCKED: not proposed for creation until the governed IB source supports it with a locator",
+   "concept_label": "Inverse functions (linear and rational)",
+   "studyus_concept_note": "math.fun.functions (PAA \"Funciones\") is BROADER and not IB-backed. Not reused.",
+   "knowledge_assessed": "value of the inverse of a linear or rational function",
+   "ib_subject": "Mathematics: analysis and approaches",
+   "ib_level": "HL",
+   "ib_paper": "P1 (Paper 1 (no calculator); adapter IB.MATH_AA_HL.P1)",
+   "ib_governed_source_reference": {
+    "source": {
+     "key": "ibo-math-aa-guide-2021",
+     "framework": "IB",
+     "title": "Mathematics: analysis and approaches guide (first assessment 2021)",
+     "publisher": "IBO",
+     "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf",
+     "documentVersion": "first assessment 2021",
+     "publicationYear": 2019,
+     "effectiveSession": "May 2021 - November 2028",
+     "confidence": "HIGH",
+     "license": "PUBLIC"
+    },
+    "structuralRecord": {
+     "file": "docs/exams/v2/sources/ib-dp-groups-4-6.json",
+     "key": "math-aa",
+     "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+     "sourceKeys": [
+      "ib-math-aa-guide-2021",
+      "ib-math-aa-updates"
+     ],
+     "confidence": "HIGH",
+     "holds": "components, marks, timings, assessment objectives; NO syllabus content"
+    }
+   },
+   "source_text_or_reference_locator": {
+    "officialGuideLocator": "NOT_HELD_IN_REPOSITORY: the guide is registered (title, IBO, URL, version, licence) but no syllabus section, number or text of it is stored; none is quoted or recalled here",
+    "governedObjective": {
+     "config": "v2.ib.math-aa-hl",
+     "objectiveCode": "aahl.p1.functions",
+     "descriptionVerbatim": "Functions: rational functions, inverses, quadratics and inequalities.",
+     "authorship": "StudyUs blueprint text in the governed exam configuration, citing the guide (sourceKeys of the vertical); it is not IB text",
+     "namesTheKnowledge": true
+    },
+    "reviewedLink": {
+     "file": "src/lib/exam-core/catalog/objective-learning-links.ts",
+     "key": "aahl.p1.functions",
+     "conceptName": "Rational functions and inverses",
+     "present": true,
+     "catalogueLabel": "DEV_FIXTURE / NON_OFFICIAL -- curated StudyUS learning catalogue entry used by the Exam -> Learning bridge (Track B Exam V2). Not an official curriculum statement."
+    }
+   },
+   "correspondence_type": "PROPOSED_STUDYUS_CONCEPT -> GOVERNED_IB_OBJECTIVE (supported by StudyUs objective text and a reviewed link; not backed by IB source text)",
+   "assessment_applicability": {
+    "component": "IB.MATH_AA_HL.P1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "register": "NOT_ESTABLISHED",
+    "bucketCertified": true,
+    "conceptPlacedInBucket": false
+   },
+   "confidence": "LOW for governance (mathematically the construct plainly assesses what the objective text names; the governed IB source text is not available to back it)",
+   "governance_status": "BLOCKED",
+   "blocked_reason": "No governed IB syllabus/content record holds this knowledge: the official guide is registered but its syllabus text and section locators are not in the repository, the objective description is StudyUs text, and the catalogue row is DEV_FIXTURE / NON_OFFICIAL.",
+   "unblock": "A governed extract of the official guide (source ibo-math-aa-guide-2021, licence PUBLIC) at section granularity -- as PAA has in paa-hierarchy.ts -- then the StudyUs concept, then an applicability record for the component.",
+   "source_backed": false
+  },
+  {
+   "construct_id": "tf.math.quadratic.minimum-value",
+   "construct": "QUADRATIC_MINIMUM_VALUE",
+   "existing_studyus_concept_id": "math.alg.quadratics",
+   "proposed_new_studyus_concept_id": null,
+   "proposed_new_studyus_concept_status": null,
+   "concept_label": "Quadratic functions and inequalities",
+   "studyus_concept_note": "Existing governed StudyUs concept (PAA certified catalogue); placed in this bucket by the certified IB blueprint classification.",
+   "knowledge_assessed": "minimum value of a quadratic function (vertex)",
+   "ib_subject": "Mathematics: analysis and approaches",
+   "ib_level": "HL",
+   "ib_paper": "P1 (Paper 1 (no calculator); adapter IB.MATH_AA_HL.P1)",
+   "ib_governed_source_reference": {
+    "source": {
+     "key": "ibo-math-aa-guide-2021",
+     "framework": "IB",
+     "title": "Mathematics: analysis and approaches guide (first assessment 2021)",
+     "publisher": "IBO",
+     "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf",
+     "documentVersion": "first assessment 2021",
+     "publicationYear": 2019,
+     "effectiveSession": "May 2021 - November 2028",
+     "confidence": "HIGH",
+     "license": "PUBLIC"
+    },
+    "structuralRecord": {
+     "file": "docs/exams/v2/sources/ib-dp-groups-4-6.json",
+     "key": "math-aa",
+     "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+     "sourceKeys": [
+      "ib-math-aa-guide-2021",
+      "ib-math-aa-updates"
+     ],
+     "confidence": "HIGH",
+     "holds": "components, marks, timings, assessment objectives; NO syllabus content"
+    }
+   },
+   "source_text_or_reference_locator": {
+    "officialGuideLocator": "NOT_HELD_IN_REPOSITORY: the guide is registered (title, IBO, URL, version, licence) but no syllabus section, number or text of it is stored; none is quoted or recalled here",
+    "governedObjective": {
+     "config": "v2.ib.math-aa-hl",
+     "objectiveCode": "aahl.p1.functions",
+     "descriptionVerbatim": "Functions: rational functions, inverses, quadratics and inequalities.",
+     "authorship": "StudyUs blueprint text in the governed exam configuration, citing the guide (sourceKeys of the vertical); it is not IB text",
+     "namesTheKnowledge": true
+    },
+    "reviewedLink": {
+     "file": "src/lib/exam-core/catalog/objective-learning-links.ts",
+     "key": "aahl.p1.functions",
+     "conceptName": "Quadratic functions and inequalities",
+     "present": true,
+     "catalogueLabel": "DEV_FIXTURE / NON_OFFICIAL -- curated StudyUS learning catalogue entry used by the Exam -> Learning bridge (Track B Exam V2). Not an official curriculum statement."
+    },
+    "certifiedPlacement": {
+     "blueprint": "v2.ib.math-aa-hl/p1@step4b-pilot-1",
+     "decisionState": "AUTOMATED_CERTIFIED_PILOT",
+     "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+     "conceptStableId": "math.alg.quadratics"
+    }
+   },
+   "correspondence_type": "EXISTING_STUDYUS_CONCEPT -> GOVERNED_IB_BUCKET (placed by a certified blueprint classification; concept established for the component)",
+   "assessment_applicability": {
+    "component": "IB.MATH_AA_HL.P1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.functions#0",
+    "register": "ESTABLISHED",
+    "bucketCertified": true,
+    "conceptPlacedInBucket": true
+   },
+   "confidence": "MEDIUM (governed by precedent: certified placement; guide locator not held)",
+   "governance_status": "GOVERNED_BY_PRECEDENT",
+   "blocked_reason": null,
+   "unblock": null,
+   "source_backed": true
+  },
+  {
+   "construct_id": "tf.math.calculus.definite-integral-polynomial",
+   "construct": "DEFINITE_INTEGRAL_POLYNOMIAL",
+   "existing_studyus_concept_id": null,
+   "proposed_new_studyus_concept_id": "math.calc.definite-integrals",
+   "proposed_new_studyus_concept_status": "BLOCKED: not proposed for creation until the governed IB source supports it with a locator",
+   "concept_label": "Definite integrals of polynomials and areas under curves",
+   "studyus_concept_note": "No calculus concept exists in the governed registry.",
+   "knowledge_assessed": "exact definite integral of a polynomial",
+   "ib_subject": "Mathematics: analysis and approaches",
+   "ib_level": "HL",
+   "ib_paper": "P1 (Paper 1 (no calculator); adapter IB.MATH_AA_HL.P1)",
+   "ib_governed_source_reference": {
+    "source": {
+     "key": "ibo-math-aa-guide-2021",
+     "framework": "IB",
+     "title": "Mathematics: analysis and approaches guide (first assessment 2021)",
+     "publisher": "IBO",
+     "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf",
+     "documentVersion": "first assessment 2021",
+     "publicationYear": 2019,
+     "effectiveSession": "May 2021 - November 2028",
+     "confidence": "HIGH",
+     "license": "PUBLIC"
+    },
+    "structuralRecord": {
+     "file": "docs/exams/v2/sources/ib-dp-groups-4-6.json",
+     "key": "math-aa",
+     "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+     "sourceKeys": [
+      "ib-math-aa-guide-2021",
+      "ib-math-aa-updates"
+     ],
+     "confidence": "HIGH",
+     "holds": "components, marks, timings, assessment objectives; NO syllabus content"
+    }
+   },
+   "source_text_or_reference_locator": {
+    "officialGuideLocator": "NOT_HELD_IN_REPOSITORY: the guide is registered (title, IBO, URL, version, licence) but no syllabus section, number or text of it is stored; none is quoted or recalled here",
+    "governedObjective": {
+     "config": "v2.ib.math-aa-hl",
+     "objectiveCode": "aahl.p1.calculus",
+     "descriptionVerbatim": "Calculus: differentiation and integration without technology.",
+     "authorship": "StudyUs blueprint text in the governed exam configuration, citing the guide (sourceKeys of the vertical); it is not IB text",
+     "namesTheKnowledge": true
+    },
+    "reviewedLink": {
+     "file": "src/lib/exam-core/catalog/objective-learning-links.ts",
+     "key": "aahl.p1.calculus",
+     "conceptName": "Integration",
+     "present": true,
+     "catalogueLabel": "DEV_FIXTURE / NON_OFFICIAL -- curated StudyUS learning catalogue entry used by the Exam -> Learning bridge (Track B Exam V2). Not an official curriculum statement."
+    }
+   },
+   "correspondence_type": "PROPOSED_STUDYUS_CONCEPT -> GOVERNED_IB_OBJECTIVE (supported by StudyUs objective text and a reviewed link; not backed by IB source text)",
+   "assessment_applicability": {
+    "component": "IB.MATH_AA_HL.P1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.calculus#0",
+    "register": "NOT_ESTABLISHED",
+    "bucketCertified": false,
+    "conceptPlacedInBucket": false
+   },
+   "confidence": "LOW for governance (mathematically the construct plainly assesses what the objective text names; the governed IB source text is not available to back it)",
+   "governance_status": "BLOCKED",
+   "blocked_reason": "No governed IB syllabus/content record holds this knowledge: the official guide is registered but its syllabus text and section locators are not in the repository, the objective description is StudyUs text, and the catalogue row is DEV_FIXTURE / NON_OFFICIAL.",
+   "unblock": "A governed extract of the official guide (source ibo-math-aa-guide-2021, licence PUBLIC) at section granularity -- as PAA has in paa-hierarchy.ts -- then the StudyUs concept, then an applicability record for the component.",
+   "source_backed": false
+  },
+  {
+   "construct_id": "tf.math.calculus.area-between-curve-and-axis",
+   "construct": "AREA_BETWEEN_CURVE_AND_AXIS",
+   "existing_studyus_concept_id": null,
+   "proposed_new_studyus_concept_id": "math.calc.definite-integrals",
+   "proposed_new_studyus_concept_status": "BLOCKED: not proposed for creation until the governed IB source supports it with a locator",
+   "concept_label": "Definite integrals of polynomials and areas under curves",
+   "studyus_concept_note": "No calculus concept exists in the governed registry.",
+   "knowledge_assessed": "area enclosed by a curve and the x-axis",
+   "ib_subject": "Mathematics: analysis and approaches",
+   "ib_level": "HL",
+   "ib_paper": "P1 (Paper 1 (no calculator); adapter IB.MATH_AA_HL.P1)",
+   "ib_governed_source_reference": {
+    "source": {
+     "key": "ibo-math-aa-guide-2021",
+     "framework": "IB",
+     "title": "Mathematics: analysis and approaches guide (first assessment 2021)",
+     "publisher": "IBO",
+     "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf",
+     "documentVersion": "first assessment 2021",
+     "publicationYear": 2019,
+     "effectiveSession": "May 2021 - November 2028",
+     "confidence": "HIGH",
+     "license": "PUBLIC"
+    },
+    "structuralRecord": {
+     "file": "docs/exams/v2/sources/ib-dp-groups-4-6.json",
+     "key": "math-aa",
+     "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+     "sourceKeys": [
+      "ib-math-aa-guide-2021",
+      "ib-math-aa-updates"
+     ],
+     "confidence": "HIGH",
+     "holds": "components, marks, timings, assessment objectives; NO syllabus content"
+    }
+   },
+   "source_text_or_reference_locator": {
+    "officialGuideLocator": "NOT_HELD_IN_REPOSITORY: the guide is registered (title, IBO, URL, version, licence) but no syllabus section, number or text of it is stored; none is quoted or recalled here",
+    "governedObjective": {
+     "config": "v2.ib.math-aa-hl",
+     "objectiveCode": "aahl.p1.calculus",
+     "descriptionVerbatim": "Calculus: differentiation and integration without technology.",
+     "authorship": "StudyUs blueprint text in the governed exam configuration, citing the guide (sourceKeys of the vertical); it is not IB text",
+     "namesTheKnowledge": true
+    },
+    "reviewedLink": {
+     "file": "src/lib/exam-core/catalog/objective-learning-links.ts",
+     "key": "aahl.p1.calculus",
+     "conceptName": "Integration",
+     "present": true,
+     "catalogueLabel": "DEV_FIXTURE / NON_OFFICIAL -- curated StudyUS learning catalogue entry used by the Exam -> Learning bridge (Track B Exam V2). Not an official curriculum statement."
+    }
+   },
+   "correspondence_type": "PROPOSED_STUDYUS_CONCEPT -> GOVERNED_IB_OBJECTIVE (supported by StudyUs objective text and a reviewed link; not backed by IB source text)",
+   "assessment_applicability": {
+    "component": "IB.MATH_AA_HL.P1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.calculus#0",
+    "register": "NOT_ESTABLISHED",
+    "bucketCertified": false,
+    "conceptPlacedInBucket": false
+   },
+   "confidence": "LOW for governance (mathematically the construct plainly assesses what the objective text names; the governed IB source text is not available to back it)",
+   "governance_status": "BLOCKED",
+   "blocked_reason": "No governed IB syllabus/content record holds this knowledge: the official guide is registered but its syllabus text and section locators are not in the repository, the objective description is StudyUs text, and the catalogue row is DEV_FIXTURE / NON_OFFICIAL.",
+   "unblock": "A governed extract of the official guide (source ibo-math-aa-guide-2021, licence PUBLIC) at section granularity -- as PAA has in paa-hierarchy.ts -- then the StudyUs concept, then an applicability record for the component.",
+   "source_backed": false
+  },
+  {
+   "construct_id": "tf.math.calculus.tangent-gradient-at-a-point",
+   "construct": "TANGENT_GRADIENT_AT_A_POINT",
+   "existing_studyus_concept_id": null,
+   "proposed_new_studyus_concept_id": "math.calc.derivatives",
+   "proposed_new_studyus_concept_status": "BLOCKED: not proposed for creation until the governed IB source supports it with a locator",
+   "concept_label": "Derivatives of polynomials: gradients, tangents and stationary points",
+   "studyus_concept_note": "No calculus concept exists in the governed registry.",
+   "knowledge_assessed": "gradient of the tangent at a point",
+   "ib_subject": "Mathematics: analysis and approaches",
+   "ib_level": "HL",
+   "ib_paper": "P1 (Paper 1 (no calculator); adapter IB.MATH_AA_HL.P1)",
+   "ib_governed_source_reference": {
+    "source": {
+     "key": "ibo-math-aa-guide-2021",
+     "framework": "IB",
+     "title": "Mathematics: analysis and approaches guide (first assessment 2021)",
+     "publisher": "IBO",
+     "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf",
+     "documentVersion": "first assessment 2021",
+     "publicationYear": 2019,
+     "effectiveSession": "May 2021 - November 2028",
+     "confidence": "HIGH",
+     "license": "PUBLIC"
+    },
+    "structuralRecord": {
+     "file": "docs/exams/v2/sources/ib-dp-groups-4-6.json",
+     "key": "math-aa",
+     "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+     "sourceKeys": [
+      "ib-math-aa-guide-2021",
+      "ib-math-aa-updates"
+     ],
+     "confidence": "HIGH",
+     "holds": "components, marks, timings, assessment objectives; NO syllabus content"
+    }
+   },
+   "source_text_or_reference_locator": {
+    "officialGuideLocator": "NOT_HELD_IN_REPOSITORY: the guide is registered (title, IBO, URL, version, licence) but no syllabus section, number or text of it is stored; none is quoted or recalled here",
+    "governedObjective": {
+     "config": "v2.ib.math-aa-hl",
+     "objectiveCode": "aahl.p1.calculus",
+     "descriptionVerbatim": "Calculus: differentiation and integration without technology.",
+     "authorship": "StudyUs blueprint text in the governed exam configuration, citing the guide (sourceKeys of the vertical); it is not IB text",
+     "namesTheKnowledge": true
+    },
+    "reviewedLink": {
+     "file": "src/lib/exam-core/catalog/objective-learning-links.ts",
+     "key": "aahl.p1.calculus",
+     "conceptName": "Differentiation",
+     "present": true,
+     "catalogueLabel": "DEV_FIXTURE / NON_OFFICIAL -- curated StudyUS learning catalogue entry used by the Exam -> Learning bridge (Track B Exam V2). Not an official curriculum statement."
+    }
+   },
+   "correspondence_type": "PROPOSED_STUDYUS_CONCEPT -> GOVERNED_IB_OBJECTIVE (supported by StudyUs objective text and a reviewed link; not backed by IB source text)",
+   "assessment_applicability": {
+    "component": "IB.MATH_AA_HL.P1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.calculus#0",
+    "register": "NOT_ESTABLISHED",
+    "bucketCertified": false,
+    "conceptPlacedInBucket": false
+   },
+   "confidence": "LOW for governance (mathematically the construct plainly assesses what the objective text names; the governed IB source text is not available to back it)",
+   "governance_status": "BLOCKED",
+   "blocked_reason": "No governed IB syllabus/content record holds this knowledge: the official guide is registered but its syllabus text and section locators are not in the repository, the objective description is StudyUs text, and the catalogue row is DEV_FIXTURE / NON_OFFICIAL.",
+   "unblock": "A governed extract of the official guide (source ibo-math-aa-guide-2021, licence PUBLIC) at section granularity -- as PAA has in paa-hierarchy.ts -- then the StudyUs concept, then an applicability record for the component.",
+   "source_backed": false
+  },
+  {
+   "construct_id": "tf.math.calculus.cubic-local-maximum",
+   "construct": "CUBIC_LOCAL_MAXIMUM",
+   "existing_studyus_concept_id": null,
+   "proposed_new_studyus_concept_id": "math.calc.derivatives",
+   "proposed_new_studyus_concept_status": "BLOCKED: not proposed for creation until the governed IB source supports it with a locator",
+   "concept_label": "Derivatives of polynomials: gradients, tangents and stationary points",
+   "studyus_concept_note": "No calculus concept exists in the governed registry.",
+   "knowledge_assessed": "local maximum of a cubic",
+   "ib_subject": "Mathematics: analysis and approaches",
+   "ib_level": "HL",
+   "ib_paper": "P1 (Paper 1 (no calculator); adapter IB.MATH_AA_HL.P1)",
+   "ib_governed_source_reference": {
+    "source": {
+     "key": "ibo-math-aa-guide-2021",
+     "framework": "IB",
+     "title": "Mathematics: analysis and approaches guide (first assessment 2021)",
+     "publisher": "IBO",
+     "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf",
+     "documentVersion": "first assessment 2021",
+     "publicationYear": 2019,
+     "effectiveSession": "May 2021 - November 2028",
+     "confidence": "HIGH",
+     "license": "PUBLIC"
+    },
+    "structuralRecord": {
+     "file": "docs/exams/v2/sources/ib-dp-groups-4-6.json",
+     "key": "math-aa",
+     "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+     "sourceKeys": [
+      "ib-math-aa-guide-2021",
+      "ib-math-aa-updates"
+     ],
+     "confidence": "HIGH",
+     "holds": "components, marks, timings, assessment objectives; NO syllabus content"
+    }
+   },
+   "source_text_or_reference_locator": {
+    "officialGuideLocator": "NOT_HELD_IN_REPOSITORY: the guide is registered (title, IBO, URL, version, licence) but no syllabus section, number or text of it is stored; none is quoted or recalled here",
+    "governedObjective": {
+     "config": "v2.ib.math-aa-hl",
+     "objectiveCode": "aahl.p1.calculus",
+     "descriptionVerbatim": "Calculus: differentiation and integration without technology.",
+     "authorship": "StudyUs blueprint text in the governed exam configuration, citing the guide (sourceKeys of the vertical); it is not IB text",
+     "namesTheKnowledge": true
+    },
+    "reviewedLink": {
+     "file": "src/lib/exam-core/catalog/objective-learning-links.ts",
+     "key": "aahl.p1.calculus",
+     "conceptName": "Differentiation",
+     "present": true,
+     "catalogueLabel": "DEV_FIXTURE / NON_OFFICIAL -- curated StudyUS learning catalogue entry used by the Exam -> Learning bridge (Track B Exam V2). Not an official curriculum statement."
+    }
+   },
+   "correspondence_type": "PROPOSED_STUDYUS_CONCEPT -> GOVERNED_IB_OBJECTIVE (supported by StudyUs objective text and a reviewed link; not backed by IB source text)",
+   "assessment_applicability": {
+    "component": "IB.MATH_AA_HL.P1",
+    "bucketId": "v2.ib.math-aa-hl/p1/aahl.p1.calculus#0",
+    "register": "NOT_ESTABLISHED",
+    "bucketCertified": false,
+    "conceptPlacedInBucket": false
+   },
+   "confidence": "LOW for governance (mathematically the construct plainly assesses what the objective text names; the governed IB source text is not available to back it)",
+   "governance_status": "BLOCKED",
+   "blocked_reason": "No governed IB syllabus/content record holds this knowledge: the official guide is registered but its syllabus text and section locators are not in the repository, the objective description is StudyUs text, and the catalogue row is DEV_FIXTURE / NON_OFFICIAL.",
+   "unblock": "A governed extract of the official guide (source ibo-math-aa-guide-2021, licence PUBLIC) at section granularity -- as PAA has in paa-hierarchy.ts -- then the StudyUs concept, then an applicability record for the component.",
+   "source_backed": false
+  },
+  {
+   "construct_id": "tf.math.probability.binomial-exact-probability",
+   "construct": "BINOMIAL_EXACT_PROBABILITY",
+   "existing_studyus_concept_id": null,
+   "proposed_new_studyus_concept_id": "math.prob.binomial-distribution",
+   "proposed_new_studyus_concept_status": "BLOCKED: not proposed for creation until the governed IB source supports it with a locator",
+   "concept_label": "The binomial distribution",
+   "studyus_concept_note": "math.prob.probability (PAA \"Probabilidad\") is BROADER. Not reused.",
+   "knowledge_assessed": "exact binomial probabilities",
+   "ib_subject": "Mathematics: analysis and approaches",
+   "ib_level": "HL",
+   "ib_paper": "P2 (Paper 2 (GDC); adapter IB.MATH_AA_HL.P2)",
+   "ib_governed_source_reference": {
+    "source": {
+     "key": "ibo-math-aa-guide-2021",
+     "framework": "IB",
+     "title": "Mathematics: analysis and approaches guide (first assessment 2021)",
+     "publisher": "IBO",
+     "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf",
+     "documentVersion": "first assessment 2021",
+     "publicationYear": 2019,
+     "effectiveSession": "May 2021 - November 2028",
+     "confidence": "HIGH",
+     "license": "PUBLIC"
+    },
+    "structuralRecord": {
+     "file": "docs/exams/v2/sources/ib-dp-groups-4-6.json",
+     "key": "math-aa",
+     "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+     "sourceKeys": [
+      "ib-math-aa-guide-2021",
+      "ib-math-aa-updates"
+     ],
+     "confidence": "HIGH",
+     "holds": "components, marks, timings, assessment objectives; NO syllabus content"
+    }
+   },
+   "source_text_or_reference_locator": {
+    "officialGuideLocator": "NOT_HELD_IN_REPOSITORY: the guide is registered (title, IBO, URL, version, licence) but no syllabus section, number or text of it is stored; none is quoted or recalled here",
+    "governedObjective": {
+     "config": "v2.ib.math-aa-hl",
+     "objectiveCode": "aahl.p2.statistics",
+     "descriptionVerbatim": "Statistics and probability with technology: distributions and descriptive statistics.",
+     "authorship": "StudyUs blueprint text in the governed exam configuration, citing the guide (sourceKeys of the vertical); it is not IB text",
+     "namesTheKnowledge": true
+    },
+    "reviewedLink": {
+     "file": "src/lib/exam-core/catalog/objective-learning-links.ts",
+     "key": "aahl.p2.statistics",
+     "conceptName": "Binomial distribution",
+     "present": true,
+     "catalogueLabel": "DEV_FIXTURE / NON_OFFICIAL -- curated StudyUS learning catalogue entry used by the Exam -> Learning bridge (Track B Exam V2). Not an official curriculum statement."
+    }
+   },
+   "correspondence_type": "PROPOSED_STUDYUS_CONCEPT -> GOVERNED_IB_OBJECTIVE (supported by StudyUs objective text and a reviewed link; not backed by IB source text)",
+   "assessment_applicability": {
+    "component": "IB.MATH_AA_HL.P2",
+    "bucketId": "v2.ib.math-aa-hl/p2/aahl.p2.statistics#0",
+    "register": "NOT_ESTABLISHED",
+    "bucketCertified": false,
+    "conceptPlacedInBucket": false
+   },
+   "confidence": "LOW for governance (mathematically the construct plainly assesses what the objective text names; the governed IB source text is not available to back it)",
+   "governance_status": "BLOCKED",
+   "blocked_reason": "No governed IB syllabus/content record holds this knowledge: the official guide is registered but its syllabus text and section locators are not in the repository, the objective description is StudyUs text, and the catalogue row is DEV_FIXTURE / NON_OFFICIAL.",
+   "unblock": "A governed extract of the official guide (source ibo-math-aa-guide-2021, licence PUBLIC) at section granularity -- as PAA has in paa-hierarchy.ts -- then the StudyUs concept, then an applicability record for the component.",
+   "source_backed": false
+  },
+  {
+   "construct_id": "tf.math.probability.normal-symmetry",
+   "construct": "NORMAL_SYMMETRY",
+   "existing_studyus_concept_id": null,
+   "proposed_new_studyus_concept_id": "math.prob.normal-distribution",
+   "proposed_new_studyus_concept_status": "BLOCKED: not proposed for creation until the governed IB source supports it with a locator",
+   "concept_label": "The normal distribution",
+   "studyus_concept_note": "No distribution concept exists in the governed registry.",
+   "knowledge_assessed": "symmetry of the normal distribution about its mean",
+   "ib_subject": "Mathematics: analysis and approaches",
+   "ib_level": "HL",
+   "ib_paper": "P2 (Paper 2 (GDC); adapter IB.MATH_AA_HL.P2)",
+   "ib_governed_source_reference": {
+    "source": {
+     "key": "ibo-math-aa-guide-2021",
+     "framework": "IB",
+     "title": "Mathematics: analysis and approaches guide (first assessment 2021)",
+     "publisher": "IBO",
+     "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf",
+     "documentVersion": "first assessment 2021",
+     "publicationYear": 2019,
+     "effectiveSession": "May 2021 - November 2028",
+     "confidence": "HIGH",
+     "license": "PUBLIC"
+    },
+    "structuralRecord": {
+     "file": "docs/exams/v2/sources/ib-dp-groups-4-6.json",
+     "key": "math-aa",
+     "curriculumVersion": "Maths AA guide, first assessment 2021 (published Feb 2019; updated to Nov 2020)",
+     "sourceKeys": [
+      "ib-math-aa-guide-2021",
+      "ib-math-aa-updates"
+     ],
+     "confidence": "HIGH",
+     "holds": "components, marks, timings, assessment objectives; NO syllabus content"
+    }
+   },
+   "source_text_or_reference_locator": {
+    "officialGuideLocator": "NOT_HELD_IN_REPOSITORY: the guide is registered (title, IBO, URL, version, licence) but no syllabus section, number or text of it is stored; none is quoted or recalled here",
+    "governedObjective": {
+     "config": "v2.ib.math-aa-hl",
+     "objectiveCode": "aahl.p2.statistics",
+     "descriptionVerbatim": "Statistics and probability with technology: distributions and descriptive statistics.",
+     "authorship": "StudyUs blueprint text in the governed exam configuration, citing the guide (sourceKeys of the vertical); it is not IB text",
+     "namesTheKnowledge": true
+    },
+    "reviewedLink": {
+     "file": "src/lib/exam-core/catalog/objective-learning-links.ts",
+     "key": "aahl.p2.statistics",
+     "conceptName": "Normal distribution",
+     "present": true,
+     "catalogueLabel": "DEV_FIXTURE / NON_OFFICIAL -- curated StudyUS learning catalogue entry used by the Exam -> Learning bridge (Track B Exam V2). Not an official curriculum statement."
+    }
+   },
+   "correspondence_type": "PROPOSED_STUDYUS_CONCEPT -> GOVERNED_IB_OBJECTIVE (supported by StudyUs objective text and a reviewed link; not backed by IB source text)",
+   "assessment_applicability": {
+    "component": "IB.MATH_AA_HL.P2",
+    "bucketId": "v2.ib.math-aa-hl/p2/aahl.p2.statistics#0",
+    "register": "NOT_ESTABLISHED",
+    "bucketCertified": false,
+    "conceptPlacedInBucket": false
+   },
+   "confidence": "LOW for governance (mathematically the construct plainly assesses what the objective text names; the governed IB source text is not available to back it)",
+   "governance_status": "BLOCKED",
+   "blocked_reason": "No governed IB syllabus/content record holds this knowledge: the official guide is registered but its syllabus text and section locators are not in the repository, the objective description is StudyUs text, and the catalogue row is DEV_FIXTURE / NON_OFFICIAL.",
+   "unblock": "A governed extract of the official guide (source ibo-math-aa-guide-2021, licence PUBLIC) at section granularity -- as PAA has in paa-hierarchy.ts -- then the StudyUs concept, then an applicability record for the component.",
+   "source_backed": false
+  }
+ ]
+}

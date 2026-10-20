@@ -1,0 +1,457 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r4.lect-lit",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Fragmento narrativo literario ORIGINAL de 280 a 360 palabras sobre un viajero que cruza un puente al amanecer con una carta sin abrir. Narrador definido (primera o tercera persona), al menos dos figuras retóricas claras (símil, metáfora, personificación o hipérbole) y un cambio en el estado de ánimo del personaje.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.narrative-elements",
+        "difficulty": 3,
+        "focus": "el tipo de narrador o la voz narrativa del fragmento"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.figurative-language",
+        "difficulty": 4,
+        "focus": "el efecto o sentido de una imagen figurada citada del fragmento"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 3,
+        "focus": "el sentido de una palabra o expresión tal como se usa en el fragmento (cítala entre comillas)"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "El puente de Arce",
+      "text": "Salí de Vardena cuando la noche todavía guardaba sus últimas brasas detrás de los cerros. Llevaba una carta en el bolsillo interior del abrigo, cerrada con un sello azul que no me atrevía a romper. Mi hermana la había puesto en mi mano la tarde anterior, sin despedirse y con los ojos fijos en la mesa. Desde entonces, el sobre pesaba más que mis provisiones; era una piedra pequeña que me golpeaba el pecho a cada paso.\n\nNo conocía el contenido, aunque reconocía la letra inclinada de mi hermana y el perfume leve de hojas de naranjo. Durante el viaje había inventado respuestas para frases que aún no existían. Cada respuesta terminaba por convertir el camino en un juicio, y a mí en un culpable sin defensa.\n\nEl puente de Arce cruzaba el río Lúmino entre dos laderas desnudas. Al llegar, me detuve. La niebla se enredaba en los cables como lana húmeda, y el agua murmuraba abajo, impaciente por contar secretos a las rocas. Pensé en volver. Imaginé que la carta traía una acusación, una despedida o una petición que no sabría cumplir. Mi miedo levantó una casa entera dentro de mí, con puertas cerradas y pasillos oscuros.\n\nEntonces una franja de luz apareció detrás de la montaña. El amanecer tocó las tablas del puente, y estas respondieron con un brillo amarillo. No había cambiado nada en el sobre, pero mi mano dejó de temblar. Comprendí que retrasar la lectura no cambiaba sus palabras. Crucé despacio. A mitad del puente, el viento me quitó el sombrero y, por primera vez desde la partida, reí. Al otro lado, guardé la carta junto al corazón y seguí hacia el pueblo, donde el sol ya encendía las ventanas.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué rasgo caracteriza la voz narrativa del fragmento?",
+        "options": [
+          {
+            "text": "Relata desde dentro sus pensamientos y sensaciones.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La narración emplea la primera persona y permite conocer directamente los temores y reflexiones del viajero."
+          },
+          {
+            "text": "Describe desde fuera las acciones de varios personajes.",
+            "isKey": false,
+            "misconception": "CONFUSES_FIRST_PERSON_WITH_EXTERNAL_NARRATOR",
+            "rationale": "Aunque se menciona a la hermana, la voz no observa externamente a varios personajes, sino que expresa la experiencia del viajero."
+          },
+          {
+            "text": "Conoce por igual los secretos de todos los habitantes.",
+            "isKey": false,
+            "misconception": "ATTRIBUTES_OMNISCIENCE",
+            "rationale": "El fragmento presenta lo que el viajero piensa e imagina, pero no revela los pensamientos de los demás habitantes."
+          },
+          {
+            "text": "Transcribe las palabras de una carta ya leída.",
+            "isKey": false,
+            "misconception": "CONFUSES_UNOPENED_OBJECT_WITH_DOCUMENT_NARRATION",
+            "rationale": "La carta permanece cerrada durante el fragmento, por lo que sus palabras no se transcriben."
+          }
+        ],
+        "evidenceQuote": "Pensé en volver. Imaginé que la carta traía una acusación"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué efecto produce la imagen “Mi miedo levantó una casa entera dentro de mí”?",
+        "options": [
+          {
+            "text": "Representa un temor que invade y encierra al viajero.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La casa interior, con espacios cerrados y oscuros, convierte el miedo en una sensación que ocupa y limita al personaje."
+          },
+          {
+            "text": "Describe un refugio que protege al viajero.",
+            "isKey": false,
+            "misconception": "REVERSES_FIGURATIVE_MEANING",
+            "rationale": "Las puertas cerradas y los pasillos oscuros sugieren inquietud y encierro, no protección."
+          },
+          {
+            "text": "Indica un recuerdo doméstico que lo tranquiliza.",
+            "isKey": false,
+            "misconception": "CONFUSES_IMAGE_WITH_MEMORY",
+            "rationale": "La imagen aparece mientras el viajero anticipa contenidos preocupantes de la carta, no durante un momento de calma."
+          },
+          {
+            "text": "Anuncia la llegada a una vivienda real.",
+            "isKey": false,
+            "misconception": "INTERPRETS_METAPHOR_LITERALLY",
+            "rationale": "La casa está situada “dentro” del personaje y funciona como metáfora de su estado emocional."
+          }
+        ],
+        "evidenceQuote": "Mi miedo levantó una casa entera dentro de mí, con puertas cerradas"
+      },
+      {
+        "slot": "s3",
+        "stem": "En el fragmento, la expresión “una franja de luz” alude a:",
+        "options": [
+          {
+            "text": "una banda estrecha de claridad",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "En este contexto, “franja” nombra una extensión alargada y limitada de luz que surge al amanecer."
+          },
+          {
+            "text": "un reflejo amplio sobre el río",
+            "isKey": false,
+            "misconception": "CONFUSES_LOCATION_OF_LIGHT",
+            "rationale": "La luz aparece detrás de la montaña, no como un reflejo extendido sobre el agua."
+          },
+          {
+            "text": "una lámpara junto al sendero",
+            "isKey": false,
+            "misconception": "CONFUSES_NATURAL_AND_ARTIFICIAL_LIGHT",
+            "rationale": "La expresión se relaciona con el amanecer y no con una fuente artificial de iluminación."
+          },
+          {
+            "text": "un rayo que entra en la carta",
+            "isKey": false,
+            "misconception": "INVENTS_UNSTATED_DETAIL",
+            "rationale": "El texto no dice que la luz alcance la carta; la sitúa detrás de la montaña."
+          }
+        ],
+        "evidenceQuote": "Entonces una franja de luz apareció detrás de la montaña."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "1b396e5e-e5b7-4afe-8b2c-0577731c9dbb",
+    "generatedAt": "2026-10-16T03:33:55.943Z",
+    "unitId": "paa-pilot.r4.lect-lit"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "3f6347e5-7c83-40d8-a4ca-6ef298b8899c",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "09ee3eca-4ec0-451e-ba53-376e18b63b20",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-literario.76c7c68d688a",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.literario",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "STRUCTURE",
+          "SCORING_COMPATIBILITY"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": false,
+            "detail": "ABSOLUTE_WORDING_SINGLES_OUT_AN_OPTION"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.narrative-elements"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.ce48308642f3@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": false,
+            "detail": "SELECTED_RESPONSE_NOT_CERTIFIABLE: ABSOLUTE_WORDING_SINGLES_OUT_AN_OPTION"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-literario.919f21c180e9",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.literario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.figurative-language"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.ce48308642f3@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.f517b893716b",
+        "slot": "s3",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.ce48308642f3@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -9,6 +9,10 @@
  * CONSECUTIVE failure rolls back to PROVE (Policy V2 Section 6). These
  * tests assert the CORRECTED behavior end-to-end against the real,
  * unmodified engine. Test-only.
+ *
+ * 2026-10-17 pilot pass policy: the two-strike rule is unchanged; the
+ * Retention check is now exactly 5 items (was 10), and PRACTICE needs the
+ * last 3 valid attempts each >=80% (fixtures carry PRACTICE_A/B/C).
  */
 import { describe, it, expect } from 'vitest';
 import { evaluateCanonicalLearningState, type RawEvidenceItem, type PedagogicalEngineInput } from '@/lib/pedagogical-engine';
@@ -35,12 +39,13 @@ function baseInput(overrides: Partial<PedagogicalEngineInput> = {}): Pedagogical
 const LEARNED = item({ activityType: 'LEARN_CHECK', timestamp: '2025-12-30T00:00:00.000Z', itemCount: 5, correctCount: 5, scorePercent: 90, difficulty: 1.5 });
 const PRACTICE_A = item({ activityType: 'PRACTICE', timestamp: '2025-12-31T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 });
 const PRACTICE_B = item({ activityType: 'PRACTICE', timestamp: '2025-12-31T01:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 });
+const PRACTICE_C = item({ activityType: 'PRACTICE', timestamp: '2025-12-31T02:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 });
 
 function proveItem(ts: string, score: number, opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
   return item({ activityType: 'PROVE', timestamp: ts, itemCount: 10, correctCount: Math.round((score / 100) * 10), scorePercent: score, difficulty: 3.5, independent: true, ...opts });
 }
 function retentionItem(ts: string, score: number, opts: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
-  return item({ activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 10, correctCount: Math.round((score / 100) * 10), scorePercent: score, difficulty: 3.5, independent: true, novel: true, ...opts });
+  return item({ activityType: 'RETENTION_CHECK', timestamp: ts, itemCount: 5, correctCount: Math.round((score / 100) * 5), scorePercent: score, difficulty: 3.5, independent: true, novel: true, ...opts });
 }
 
 const PROVE_QUALIFIED = proveItem('2026-01-01T00:00:00.000Z', 90);
@@ -51,7 +56,7 @@ const RETAIN_ELIGIBLE_DAY1_LATER = '2026-01-04T01:00:00.000Z';
 describe('AUDIT-002 CLOSED: RETAIN two-strike rule -- Policy V2 Section 6', () => {
   it('Retain Attempt 1 FAIL, Retain Attempt 2 PASS (new questions, same day, no wait) -> RETAIN must be SATISFIED and PROVE must remain valid (no rebuild required)', () => {
     const evidence = [
-      LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED,
+      LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED,
       retentionItem(RETAIN_ELIGIBLE_DAY1, 50), // attempt 1: fail
       retentionItem(RETAIN_ELIGIBLE_DAY1_LATER, 90), // attempt 2: pass, immediately, new items implied by a distinct id
     ];
@@ -63,7 +68,7 @@ describe('AUDIT-002 CLOSED: RETAIN two-strike rule -- Policy V2 Section 6', () =
   });
 
   it('strike 1 alone never rolls back -- PROVE stays SATISFIED, RETAIN stays immediately EXECUTABLE, no REINFORCE overlay', () => {
-    const evidence = [LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED, retentionItem(RETAIN_ELIGIBLE_DAY1, 50)];
+    const evidence = [LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED, retentionItem(RETAIN_ELIGIBLE_DAY1, 50)];
     const decision = evaluateCanonicalLearningState(baseInput({ evidence }));
     expect(decision.rollback).toBeNull();
     expect(decision.intervention).toBeNull();
@@ -71,27 +76,31 @@ describe('AUDIT-002 CLOSED: RETAIN two-strike rule -- Policy V2 Section 6', () =
     expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('UNSATISFIED');
     expect(decision.stage).toBe('RETAIN');
     expect(decision.actionState).toBe('EXECUTABLE');
-    // The real 10-item independent Retain contract -- never a 2-3 item
-    // Practice-shaped one.
+    // The real 5-item (2026-10-17 pilot policy) independent Retain
+    // contract -- never a 2-3 item Practice-shaped one.
     expect(decision.activityContract?.activityType).toBe('RETENTION_CHECK');
-    expect(decision.activityContract?.itemCount).toEqual({ min: 10, max: 10 });
+    expect(decision.activityContract?.itemCount).toEqual({ min: 5, max: 5 });
   });
 
   it('Retain Attempt 1 FAIL, Retain Attempt 2 FAIL (second CONSECUTIVE failure) -> rollback to PROVE', () => {
     const evidence = [
-      LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED,
+      LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED,
       retentionItem(RETAIN_ELIGIBLE_DAY1, 50),
       retentionItem(RETAIN_ELIGIBLE_DAY1_LATER, 40),
     ];
     const decision = evaluateCanonicalLearningState(baseInput({ evidence }));
     expect(decision.requirements.find((r) => r.stage === 'PROVE')!.status).toBe('UNSATISFIED');
+    expect(decision.rollback?.case).toBe('RETENTION_FAILURE_RETURN_TO_PROVE');
+    // the rollback lands on PROVE only -- PRACTICE stays satisfied
+    expect(decision.requirements.find((r) => r.stage === 'PRACTICE')!.status).toBe('SATISFIED');
     expect(decision.stage).toBe('PROVE');
+    expect(decision.actionState).toBe('EXECUTABLE');
   });
 
   it('Retain Attempt 1 FAIL, Retain Attempt 2 FAIL, new PROVE PASS -> a NEW 3-day retention window starts from zero (not the old due date)', () => {
     const NEW_PROVE = proveItem('2026-01-10T00:00:00.000Z', 95);
     const evidence = [
-      LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED,
+      LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED,
       retentionItem(RETAIN_ELIGIBLE_DAY1, 50),
       retentionItem(RETAIN_ELIGIBLE_DAY1_LATER, 40),
       NEW_PROVE,
@@ -109,7 +118,7 @@ describe('AUDIT-002 CLOSED: RETAIN two-strike rule -- Policy V2 Section 6', () =
   it('a stale, superseded FIRST-failure rollback does not linger in `rollback` once the (current, single-strike) engine has already moved past it', () => {
     // Documents current single-strike rollback-clearing semantics for
     // reference; not itself an AUDIT-002 assertion.
-    const evidence = [LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED, retentionItem(RETAIN_ELIGIBLE_DAY1, 90)];
+    const evidence = [LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED, retentionItem(RETAIN_ELIGIBLE_DAY1, 90)];
     const decision = evaluateCanonicalLearningState(baseInput({ evidence }));
     expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('SATISFIED');
     expect(decision.rollback).toBeNull();
@@ -118,7 +127,7 @@ describe('AUDIT-002 CLOSED: RETAIN two-strike rule -- Policy V2 Section 6', () =
   describe('Section 18 required RETAIN boundary matrix', () => {
     it('before 3 days -> WAITING with nextEligibleAt', () => {
       const decision = evaluateCanonicalLearningState(
-        baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED], now: '2026-01-03T23:59:59.000Z' }),
+        baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED], now: '2026-01-03T23:59:59.000Z' }),
       );
       expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('WAITING');
       expect(decision.actionState).toBe('WAITING');
@@ -128,7 +137,7 @@ describe('AUDIT-002 CLOSED: RETAIN two-strike rule -- Policy V2 Section 6', () =
 
     it('exactly 3 days -> eligible (UNSATISFIED, not WAITING)', () => {
       const decision = evaluateCanonicalLearningState(
-        baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED], now: '2026-01-04T00:00:00.000Z' }),
+        baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED], now: '2026-01-04T00:00:00.000Z' }),
       );
       expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('UNSATISFIED');
       expect(decision.actionState).toBe('EXECUTABLE');
@@ -136,14 +145,14 @@ describe('AUDIT-002 CLOSED: RETAIN two-strike rule -- Policy V2 Section 6', () =
 
     it('after 3 days -> eligible', () => {
       const decision = evaluateCanonicalLearningState(
-        baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED], now: '2026-01-10T00:00:00.000Z' }),
+        baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED], now: '2026-01-10T00:00:00.000Z' }),
       );
       expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('UNSATISFIED');
     });
 
     it('a Retain attempt submitted BEFORE the 3-day gate (temporally ineligible) does not qualify even with a passing score, though the window may have reopened by "now"', () => {
       const earlyAttempt = retentionItem('2026-01-02T00:00:00.000Z', 95);
-      const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED, earlyAttempt], now: '2026-02-01T00:00:00.000Z' }));
+      const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED, earlyAttempt], now: '2026-02-01T00:00:00.000Z' }));
       expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.nonQualifyingEvidenceIds).toContain(earlyAttempt.id);
       expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.reasonCodes).toContain('TEMPORALLY_INELIGIBLE');
       // "now" (Feb 1) is well past the 3-day gate (Jan 4), so the
@@ -154,23 +163,23 @@ describe('AUDIT-002 CLOSED: RETAIN two-strike rule -- Policy V2 Section 6', () =
 
     it('a non-novel Retain attempt (novel: false) never qualifies, regardless of score', () => {
       const decision = evaluateCanonicalLearningState(
-        baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED, retentionItem(RETAIN_ELIGIBLE_DAY1, 95, { novel: false })] }),
+        baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED, retentionItem(RETAIN_ELIGIBLE_DAY1, 95, { novel: false })] }),
       );
       expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('UNSATISFIED');
     });
 
     it('Retain1 pass (no need for a second attempt) -> SATISFIED directly', () => {
-      const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED, retentionItem(RETAIN_ELIGIBLE_DAY1, 85)] }));
+      const decision = evaluateCanonicalLearningState(baseInput({ evidence: [LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED, retentionItem(RETAIN_ELIGIBLE_DAY1, 85)] }));
       expect(decision.requirements.find((r) => r.stage === 'RETAIN')!.status).toBe('SATISFIED');
     });
 
     it('a stale earlier Retain failure from a PRIOR (already-rebuilt) Prove cycle must not affect the CURRENT cycle\'s two-strike count: 1 old strike + a NEW Prove + 1 new strike must NOT total "2 consecutive" and roll back', () => {
       const evidence = [
-        LEARNED, PRACTICE_A, PRACTICE_B, PROVE_QUALIFIED,
+        LEARNED, PRACTICE_A, PRACTICE_B, PRACTICE_C, PROVE_QUALIFIED,
         retentionItem(RETAIN_ELIGIBLE_DAY1, 50), // strike 1 of the OLD cycle
-        retentionItem(RETAIN_ELIGIBLE_DAY1_LATER, 40), // strike 2 -- rolls back to PROVE, cycle ends
+        retentionItem(RETAIN_ELIGIBLE_DAY1_LATER, 40), // strike 2 -- rolls back to PROVE, cycle ends (PRACTICE stays satisfied)
+        // extra Practice in between is allowed (never required) and must not disturb the new cycle
         item({ activityType: 'PRACTICE', timestamp: '2026-01-05T00:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 }),
-        item({ activityType: 'PRACTICE', timestamp: '2026-01-05T01:00:00.000Z', itemCount: 3, correctCount: 3, scorePercent: 90, difficulty: 3 }),
         proveItem('2026-01-08T00:00:00.000Z', 90), // NEW qualifying Prove -- opens a brand NEW Retain cycle, strike count back to 0
         retentionItem('2026-01-11T00:00:00.000Z', 50), // strike 1 of the NEW cycle only
       ];

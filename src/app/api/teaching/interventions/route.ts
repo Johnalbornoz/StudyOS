@@ -28,6 +28,7 @@ import { startInterventionSession } from '@/lib/teaching/session.service';
 import { resolveTeachingContentGenerationContext, generateTeachingContent } from '@/lib/teaching/ai-teaching-contract.service';
 import { DEFAULT_ASSISTANCE_LEVEL_BY_INTERVENTION, type InterventionType } from '@/lib/teaching/types';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { instructionalAssistanceLockedResponse } from '@/lib/ai/instructional-assistance-guard';
 
 const CreateSchema = z.object({
   studentId: z.string().uuid(),
@@ -60,6 +61,14 @@ async function handlePOST(request: NextRequest) {
   const isExplicitProveRequest = chosenType === 'PROVE';
   if (!isExplicitProveRequest && !recommendation.chain.includes(chosenType)) {
     return NextResponse.json({ error: 'INVALID_INTERVENTION_TYPE', message: `${chosenType} is not in the recommended chain for this diagnosis` }, { status: 400 });
+  }
+
+  // Human Agency P0-1: an explicit PROVE request generates no help; every
+  // other intervention generates instructional AI content for this learner
+  // and is locked student-wide while restricted evidence is being collected.
+  if (!isExplicitProveRequest) {
+    const assistanceLocked = await instructionalAssistanceLockedResponse(validated.studentId);
+    if (assistanceLocked) return assistanceLocked;
   }
 
   const framework = diagnosis.scope.learningObjectiveId

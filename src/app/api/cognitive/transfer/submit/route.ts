@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { verifyAuth, verifyStudentAccess, verifyRemediationStepAccess } from '@/lib/auth';
 import { evaluateTransferResponse, type TransferDistance } from '@/services/transfer.service';
 import { updateMastery } from '@/services/mastery.service';
 import { completeRemediationStep } from '@/services/remediation.service';
@@ -11,10 +11,12 @@ import {
   resolveTransferTaskId,
 } from '@/lib/transfer-task-identity';
 import { getRecentTransferFingerprints, isDuplicateTransferFingerprint } from '@/services/transfer-novelty.service';
-import { loadTransferTaskInstance } from '@/services/transfer-task-instance.service';
+import { loadTransferTaskInstance, runTransferSubmissionExclusively } from '@/services/transfer-task-instance.service';
 import { logOperationalWarning } from '@/lib/observability/operational-log';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { learningLicenceRequiredUnlessOpenAttempt } from '@/lib/entitlements/learning-gate';
+import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 
 const Schema = z.object({
   studentId: z.string().uuid(),
@@ -49,6 +51,18 @@ async function handlePOST(request: NextRequest) {
     const validated = Schema.parse(await request.json());
     const canAccess = await verifyStudentAccess(authContext.userId, validated.studentId, authContext.role);
     if (!canAccess) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+    // L4-R1: a remediation step named by the client must belong to THIS student's own
+    // remediation path -- checked before anything is graded or written, so another
+    // student's step can never be completed from here (same rule as explain/submit).
+    if (validated.remediationStepId && !(await verifyRemediationStepAccess(validated.studentId, validated.remediationStepId))) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
+
+    // Human Agency P0-4 (Layer B): deterministic safety gate FIRST -- before any
+    // other check and before any model call.
+    const safetyBlock = await studentTextSafetyResponse(validated.studentResponse, { studentId: validated.studentId, surface: 'TRANSFER', locale: validated.language || 'es' });
+    if (safetyBlock) return safetyBlock;
 
     // Phase 7 (7B1): resolve the ONE canonical task id. Both-but-different
     // is a client bug, not something to guess through.
@@ -99,6 +113,15 @@ async function handlePOST(request: NextRequest) {
       });
     }
 
+    // L11 / EN-2 (D-8a): AI grading, mastery and evidence are part of the licence -- refused
+    // before anything is graded or written. L11-R1 / D-8(c): the one exception is finishing an
+    // attempt that was started while the licence was valid -- here, the Student's own
+    // server-minted task (transfer/generate requires the licence), answering the exact prompt
+    // the server generated (both verified just above). A submission with no server task is not
+    // the continuation of anything and still needs the licence.
+    const licenceRequired = await learningLicenceRequiredUnlessOpenAttempt(authContext, validated.studentId, taskInstance !== null);
+    if (licenceRequired) return licenceRequired;
+
     // Trusted distance -- the server's generated value when we have the
     // instance, the client's claim only as a legacy fallback.
     const effectiveDistance: TransferDistance = taskInstance
@@ -128,92 +151,106 @@ async function handlePOST(request: NextRequest) {
       return NextResponse.json({ error: 'TRANSFER_TASK_DUPLICATE' }, { status: 409 });
     }
 
-    const language = validated.language || 'en';
-    const graded = await evaluateTransferResponse(validated.conceptLabel, validated.prompt, validated.studentResponse, language, {
-      studentId: validated.studentId,
-      subjectId: validated.subjectId,
-      conceptId: validated.conceptId,
+    // CR-L11-06 (L10): a Transfer task is answered and graded EXACTLY ONCE. D-8(c) lets an OPEN task be
+    // continued; it does not let an answered one be graded again -- neither by a later repeat nor by a
+    // second request racing the first. `runTransferSubmissionExclusively` takes an exclusive claim on the
+    // task BEFORE the grader is invoked and holds it until the evidence is written:
+    //   - a request that finds the task being graded is refused (409), without grading;
+    //   - a request that finds it already graded is refused (409), without grading;
+    //   - a crash or a grading failure releases the claim and leaves the task OPEN.
+    const exclusive = await runTransferSubmissionExclusively(canonicalTaskId, validated.conceptId, async () => {
+      const language = validated.language || 'en';
+      const graded = await evaluateTransferResponse(validated.conceptLabel, validated.prompt, validated.studentResponse, language, {
+        studentId: validated.studentId,
+        subjectId: validated.subjectId,
+        conceptId: validated.conceptId,
+      });
+      const scorePercent = graded.result === 'correct' ? 100 : graded.result === 'partial' ? 50 : 0;
+
+      // Phase 1D: normalized BEFORE updateMastery now -- the client clock
+      // stopped on submit, before evaluateTransferResponse's AI call ran,
+      // so this never measures grading latency (Step 13). Moved above the
+      // evidence write so it can be part of the SAME INSERT.
+      const timing = normalizeResponseTiming({
+        questionPresentedAt: validated.questionPresentedAt,
+        answerSubmittedAt: validated.answerSubmittedAt,
+      });
+      const responseTimingEntries = toResponseTimingEntries([{ timing }]);
+
+      // Phase 7 (7C1): canonical Transfer evidence metadata -- ALL
+      // server-derived (no browser-supplied value is spread in). Passed
+      // to updateMastery so it is written in the SAME learning_evidence
+      // INSERT / SAME transaction as the canonical evidence row (the
+      // future 7C2 projector must observe a complete evidence row before
+      // COMMIT). Replaces the previous post-commit `UPDATE learning_evidence
+      // SET metadata = ...` second statement. Additive: does not affect
+      // computeTransferScore / Mastery / Knowledge State / MemoryPolicy,
+      // and is not yet consumed by any qualification / novelty / depth
+      // logic (7B2 guard runs earlier; 7C2+ is the projector).
+      const evidenceMetadata: Record<string, unknown> = {
+        transferDistance: effectiveDistance,
+        assisted: false,
+        aiExecution: graded.aiExecution,
+        transferTaskId: canonicalTaskId,
+        promptFingerprint,
+        sourceConceptId: validated.conceptId,
+        ...(responseTimingEntries.length > 0 ? { behavior: { responseTimes: responseTimingEntries } } : {}),
+        // Phase 7 (7D3): server-trusted structured metadata from the task
+        // registry, written in this same learning_evidence INSERT. Present
+        // ONLY when the task instance was found -- this is exactly what
+        // makes the row phase7-certified for the transfer projector
+        // (toProjectionEvidence's gate: noveltyValidationPassed === true +
+        // non-empty noveltyDimensions + task id + !assisted + valid
+        // distance). No such value is ever taken from the browser.
+        ...(taskInstance
+          ? {
+              noveltyValidationPassed: taskInstance.noveltyValidationPassed,
+              noveltyDimensions: taskInstance.noveltyDimensions,
+              transferModality: taskInstance.transferModality,
+              taskFamilyId: taskInstance.taskFamilyId,
+              promptExactHash: taskInstance.promptExactHash,
+              targetConceptIds: taskInstance.targetConceptIds,
+              ...(taskInstance.contextDomain ? { contextDomain: taskInstance.contextDomain } : {}),
+              generatorPromptVersion: taskInstance.generatorPromptVersion,
+            }
+          : {}),
+      };
+
+      const masteryResult = await updateMastery({
+        studentId: validated.studentId,
+        conceptId: validated.conceptId,
+        subjectId: validated.subjectId,
+        evidence: {
+          result: graded.result,
+          difficulty: effectiveDistance === 'FAR' ? 5 : effectiveDistance === 'MID' ? 4 : 3,
+          sourceType: 'TRANSFER',
+          confidenceWeight: 0.85,
+          scorePercent,
+          sampleSize: 1,
+        },
+        identity: { operationType: 'TRANSFER', operationId: canonicalTaskId, conceptId: validated.conceptId },
+        telemetry: { activityType: 'transfer', learningMode: 'SOLO' },
+        // 7C1: written atomically inside updateMastery's own transaction.
+        // On the operation_key duplicate path the whole INSERT is rolled
+        // back, so a retry never mutates the original evidence row's
+        // metadata -- exactly the idempotency guarantee the old
+        // post-commit UPDATE had to replicate with a `!duplicate` guard.
+        metadata: evidenceMetadata,
+        // Phase 0E2: links the resulting MASTERY_UPDATED decision_events
+        // row to the AI evaluation that produced this evidence -- always
+        // unambiguous here (one grading call per submission).
+        aiExecutionId: graded.aiExecution.aiExecutionId,
+      });
+
+      // Phase 2B: still a side effect of THIS ONE logical Transfer
+      // attempt -- skipped on the duplicate (retry) path so a remediation
+      // step is never double-completed.
+      return { graded, scorePercent, masteryResult };
     });
-    const scorePercent = graded.result === 'correct' ? 100 : graded.result === 'partial' ? 50 : 0;
+    if (exclusive.outcome === 'IN_PROGRESS') return NextResponse.json({ error: 'TRANSFER_TASK_SUBMISSION_IN_PROGRESS' }, { status: 409 });
+    if (exclusive.outcome === 'ALREADY_ANSWERED') return NextResponse.json({ error: 'TRANSFER_TASK_ALREADY_ANSWERED' }, { status: 409 });
+    const { graded, scorePercent, masteryResult } = exclusive.value;
 
-    // Phase 1D: normalized BEFORE updateMastery now -- the client clock
-    // stopped on submit, before evaluateTransferResponse's AI call ran,
-    // so this never measures grading latency (Step 13). Moved above the
-    // evidence write so it can be part of the SAME INSERT.
-    const timing = normalizeResponseTiming({
-      questionPresentedAt: validated.questionPresentedAt,
-      answerSubmittedAt: validated.answerSubmittedAt,
-    });
-    const responseTimingEntries = toResponseTimingEntries([{ timing }]);
-
-    // Phase 7 (7C1): canonical Transfer evidence metadata -- ALL
-    // server-derived (no browser-supplied value is spread in). Passed
-    // to updateMastery so it is written in the SAME learning_evidence
-    // INSERT / SAME transaction as the canonical evidence row (the
-    // future 7C2 projector must observe a complete evidence row before
-    // COMMIT). Replaces the previous post-commit `UPDATE learning_evidence
-    // SET metadata = ...` second statement. Additive: does not affect
-    // computeTransferScore / Mastery / Knowledge State / MemoryPolicy,
-    // and is not yet consumed by any qualification / novelty / depth
-    // logic (7B2 guard runs earlier; 7C2+ is the projector).
-    const evidenceMetadata: Record<string, unknown> = {
-      transferDistance: effectiveDistance,
-      assisted: false,
-      aiExecution: graded.aiExecution,
-      transferTaskId: canonicalTaskId,
-      promptFingerprint,
-      sourceConceptId: validated.conceptId,
-      ...(responseTimingEntries.length > 0 ? { behavior: { responseTimes: responseTimingEntries } } : {}),
-      // Phase 7 (7D3): server-trusted structured metadata from the task
-      // registry, written in this same learning_evidence INSERT. Present
-      // ONLY when the task instance was found -- this is exactly what
-      // makes the row phase7-certified for the transfer projector
-      // (toProjectionEvidence's gate: noveltyValidationPassed === true +
-      // non-empty noveltyDimensions + task id + !assisted + valid
-      // distance). No such value is ever taken from the browser.
-      ...(taskInstance
-        ? {
-            noveltyValidationPassed: taskInstance.noveltyValidationPassed,
-            noveltyDimensions: taskInstance.noveltyDimensions,
-            transferModality: taskInstance.transferModality,
-            taskFamilyId: taskInstance.taskFamilyId,
-            promptExactHash: taskInstance.promptExactHash,
-            targetConceptIds: taskInstance.targetConceptIds,
-            ...(taskInstance.contextDomain ? { contextDomain: taskInstance.contextDomain } : {}),
-            generatorPromptVersion: taskInstance.generatorPromptVersion,
-          }
-        : {}),
-    };
-
-    const masteryResult = await updateMastery({
-      studentId: validated.studentId,
-      conceptId: validated.conceptId,
-      subjectId: validated.subjectId,
-      evidence: {
-        result: graded.result,
-        difficulty: effectiveDistance === 'FAR' ? 5 : effectiveDistance === 'MID' ? 4 : 3,
-        sourceType: 'TRANSFER',
-        confidenceWeight: 0.85,
-        scorePercent,
-        sampleSize: 1,
-      },
-      identity: { operationType: 'TRANSFER', operationId: canonicalTaskId, conceptId: validated.conceptId },
-      telemetry: { activityType: 'transfer', learningMode: 'SOLO' },
-      // 7C1: written atomically inside updateMastery's own transaction.
-      // On the operation_key duplicate path the whole INSERT is rolled
-      // back, so a retry never mutates the original evidence row's
-      // metadata -- exactly the idempotency guarantee the old
-      // post-commit UPDATE had to replicate with a `!duplicate` guard.
-      metadata: evidenceMetadata,
-      // Phase 0E2: links the resulting MASTERY_UPDATED decision_events
-      // row to the AI evaluation that produced this evidence -- always
-      // unambiguous here (one grading call per submission).
-      aiExecutionId: graded.aiExecution.aiExecutionId,
-    });
-
-    // Phase 2B: still a side effect of THIS ONE logical Transfer
-    // attempt -- skipped on the duplicate (retry) path so a remediation
-    // step is never double-completed.
     if (!masteryResult.duplicate && validated.remediationStepId) {
       await completeRemediationStep(validated.remediationStepId, { success: graded.result !== 'incorrect', score: scorePercent }).catch(
         (err) => console.error('Failed to complete remediation step:', err)

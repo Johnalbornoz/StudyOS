@@ -1,5 +1,7 @@
 'use client';
 
+import MathText from '@/components/MathText';
+
 /**
  * F15 -- shared answer-input rendering for any `toClientQuestion`-shaped
  * item, extracted from F14's PracticeRunner so the new Exam-Taking
@@ -25,10 +27,13 @@ export function QuestionAnswerFields({
   question,
   staged,
   onChange,
+  textLabel,
 }: {
   question: ClientQuestionForInput;
   staged: unknown;
   onChange: (value: unknown) => void;
+  /** Accessible name of the free-text field, when the surface has no visible label for it. */
+  textLabel?: string;
 }) {
   const q = question;
 
@@ -38,7 +43,7 @@ export function QuestionAnswerFields({
         {q.options.map((opt) => (
           <label key={opt.id} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14 }}>
             <input type="radio" name={`q-${q.index}`} checked={staged === opt.id} onChange={() => onChange(opt.id)} />
-            {opt.text}
+            <MathText text={opt.text} />
           </label>
         ))}
       </div>
@@ -56,7 +61,7 @@ export function QuestionAnswerFields({
               checked={selected.includes(opt.id)}
               onChange={(e) => onChange(e.target.checked ? [...selected, opt.id] : selected.filter((id) => id !== opt.id))}
             />
-            {opt.text}
+            <MathText text={opt.text} />
           </label>
         ))}
       </div>
@@ -64,7 +69,7 @@ export function QuestionAnswerFields({
   }
 
   if (q.answerFormat === 'text') {
-    return <textarea rows={4} value={(staged as string) || ''} onChange={(e) => onChange(e.target.value)} />;
+    return <textarea rows={4} aria-label={textLabel} value={(staged as string) || ''} onChange={(e) => onChange(e.target.value)} />;
   }
 
   if (q.answerFormat === 'matching' && q.matchingLeft && q.matchingRightShuffled) {

@@ -34,6 +34,11 @@ export interface CallModelParams {
    * also passes `jsonSchema` (schema always wins).
    */
   plainText?: boolean;
+  /**
+   * Exam V2: images attached to the user message (OpenAI vision content
+   * parts). Already validated, scanned and size-bounded by the caller.
+   */
+  images?: { mediaType: 'image/png' | 'image/jpeg' | 'image/webp'; base64: string }[];
 }
 
 export interface CallModelResult {
@@ -50,7 +55,15 @@ export async function callModel(p: CallModelParams, signal: AbortSignal): Promis
         model: p.model,
         messages: [
           ...(p.system ? [{ role: 'system' as const, content: p.system }] : []),
-          { role: 'user' as const, content: p.user },
+          p.images && p.images.length > 0
+            ? {
+                role: 'user' as const,
+                content: [
+                  { type: 'text' as const, text: p.user },
+                  ...p.images.map((img) => ({ type: 'image_url' as const, image_url: { url: `data:${img.mediaType};base64,${img.base64}`, detail: 'high' as const } })),
+                ],
+              }
+            : { role: 'user' as const, content: p.user },
         ],
         jsonSchema: p.jsonSchema,
         responseFormatJson: !p.jsonSchema && !p.plainText,

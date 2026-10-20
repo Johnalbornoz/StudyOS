@@ -1,0 +1,974 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r3.lect-exp",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Texto expositivo-argumentativo ORIGINAL de 300 a 380 palabras sobre el uso de sensores de bajo costo para medir la calidad del aire en una ciudad intermedia. Debe tener una tesis reconocible, datos concretos, al menos una relación causa-efecto y dos o tres palabras cuyo sentido dependa del contexto. Párrafos breves.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.explicit-information",
+        "difficulty": 2,
+        "focus": "un dato o detalle afirmado explícitamente en el texto"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.central-idea",
+        "difficulty": 3,
+        "focus": "la tesis o idea central del texto"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.lect.inferencia",
+        "conceptStableId": "read.inference",
+        "difficulty": 3,
+        "focus": "una conclusión que el texto implica sin afirmarla"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.lect.inferencia",
+        "conceptStableId": "read.inference",
+        "difficulty": 4,
+        "focus": "la relación causa-efecto o la intención del autor, deducida del texto"
+      },
+      {
+        "slot": "s5",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 2,
+        "focus": "el sentido de una palabra o expresión tal como se usa en el texto (cítala entre comillas)"
+      },
+      {
+        "slot": "s6",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 3,
+        "focus": "el sentido contextual de otra palabra o expresión del texto (cítala entre comillas)"
+      },
+      {
+        "slot": "s7",
+        "objectiveCode": "paa.lect.evidencia",
+        "conceptStableId": "read.textual-evidence",
+        "difficulty": 4,
+        "focus": "qué fragmento del texto respalda mejor una afirmación dada sobre él"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Sensores cercanos para un aire más visible",
+      "text": "En la ciudad intermedia de Valle Norte, la calidad del aire se medía durante años con una sola estación oficial, ubicada junto al edificio municipal. Su registro era confiable, pero no mostraba lo que ocurría cerca de escuelas, mercados o avenidas con tráfico intenso.\n\nEn 2025, la universidad local y la alcaldía instalaron 42 sensores de bajo costo en postes, bibliotecas y centros vecinales. Cada equipo costó 180 dólares, mientras que una estación de referencia supera los 25 000 dólares. Los aparatos enviaban, cada cinco minutos, estimaciones de partículas finas y dióxido de nitrógeno.\n\nEste caso sostiene que los sensores económicos, si se calibran y se interpretan con cuidado, complementan la medición profesional y permiten tomar decisiones locales más oportunas. No se propone reemplazar la estación existente: esta sigue siendo necesaria para comprobar la precisión de la malla.\n\nDurante seis meses, el equipo comparó semanalmente tres sensores cercanos a la estación de referencia. La comparación reveló que el calor del mediodía introducía ruido en algunas lecturas. Por esa causa, los investigadores ajustaron los datos con una fórmula basada en temperatura y humedad antes de publicar el mapa.\n\nEl mapa mostró un foco recurrente de partículas entre las 7 y las 9 de la mañana alrededor de dos escuelas situadas junto a la avenida Central. Al revisar el tránsito, el municipio observó que en ese horario coincidían autobuses escolares y camiones de reparto. Cuando coordinó las entregas para después de las 9, la concentración promedio de partículas en esa zona bajó 23 % durante las dos semanas siguientes.\n\nLa malla también detectó que un parque del barrio Oriente tenía niveles más bajos que calles ubicadas a pocas cuadras. Esa diferencia ayudó a descartar la idea de que toda la ciudad respiraba el mismo aire. Sin embargo, el informe advierte que un mapa de colores no basta por sí mismo: los vecinos necesitan conocer sus límites y las autoridades deben verificar los resultados antes de imponer medidas permanentes.\n\nAsí, el principal valor de estos sensores no es producir una cifra perfecta en cada esquina, sino señalar dónde conviene investigar, informar y actuar primero.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué dato se afirma explícitamente sobre los sensores instalados en Valle Norte?",
+        "options": [
+          {
+            "text": "La red reunió 42 sensores distribuidos en varios espacios urbanos.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El texto indica de manera directa que se instalaron 42 sensores en distintos lugares de la ciudad."
+          },
+          {
+            "text": "La red reunió 25 sensores ubicados junto a edificios municipales.",
+            "isKey": false,
+            "misconception": "CONFUSES_COST_WITH_QUANTITY",
+            "rationale": "La cifra 25 000 corresponde al costo aproximado de una estación de referencia, no a la cantidad de sensores."
+          },
+          {
+            "text": "La red reunió sensores que enviaban registros una vez por semana.",
+            "isKey": false,
+            "misconception": "MISREADS_FREQUENCY",
+            "rationale": "Los equipos enviaban estimaciones cada cinco minutos, aunque las comparaciones se realizaron semanalmente."
+          },
+          {
+            "text": "La red reunió sensores destinados a sustituir la estación existente.",
+            "isKey": false,
+            "misconception": "REVERSES_STATED_PURPOSE",
+            "rationale": "El texto aclara que la red complementa la estación de referencia y no la reemplaza."
+          }
+        ],
+        "evidenceQuote": "En 2025, la universidad local y la alcaldía instalaron 42 sensores de bajo costo"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Cuál expresa mejor la tesis central del texto?",
+        "options": [
+          {
+            "text": "Los sensores accesibles pueden complementar mediciones profesionales para orientar acciones locales.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Esta opción reúne la postura central: los sensores de bajo costo sirven como complemento cuando se usan con cuidado."
+          },
+          {
+            "text": "Las estaciones profesionales deben trasladarse a cada barrio de la ciudad.",
+            "isKey": false,
+            "misconception": "OVERGENERALIZES_SOLUTION",
+            "rationale": "El texto valora la estación existente, pero no propone instalar o trasladar una estación profesional en cada barrio."
+          },
+          {
+            "text": "Los mapas de colores permiten imponer medidas permanentes de inmediato.",
+            "isKey": false,
+            "misconception": "IGNORES_QUALIFICATION",
+            "rationale": "El informe advierte que los mapas requieren verificación antes de establecer medidas permanentes."
+          },
+          {
+            "text": "Los niveles de partículas dependen exclusivamente del tránsito escolar.",
+            "isKey": false,
+            "misconception": "SINGLE_CAUSE_FALLACY",
+            "rationale": "El tránsito escolar coincidió con los camiones de reparto en un foco específico, pero no explica toda la calidad del aire."
+          }
+        ],
+        "evidenceQuote": "los sensores económicos, si se calibran y se interpretan con cuidado, complementan la medición profesional"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué conclusión se puede inferir razonablemente a partir del texto?",
+        "options": [
+          {
+            "text": "Las condiciones del aire pueden variar notablemente dentro de una misma ciudad.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La diferencia entre el parque y calles cercanas permite inferir que una medición única no representa por igual a todos los sectores."
+          },
+          {
+            "text": "Las zonas verdes eliminan por completo las partículas del aire urbano.",
+            "isKey": false,
+            "misconception": "OVERGENERALIZES_FROM_EXAMPLE",
+            "rationale": "El texto informa niveles más bajos en un parque, pero no afirma que allí desaparezcan las partículas."
+          },
+          {
+            "text": "Las escuelas producen la mayor parte de la contaminación de la ciudad.",
+            "isKey": false,
+            "misconception": "CONFUSES_LOCATION_WITH_CAUSE",
+            "rationale": "El foco estaba cerca de escuelas, pero la investigación relacionó el aumento con vehículos en la avenida."
+          },
+          {
+            "text": "Las mediciones de la estación fija carecen de utilidad para el estudio.",
+            "isKey": false,
+            "misconception": "DISMISSES_REFERENCE_SOURCE",
+            "rationale": "La estación fija fue necesaria para calibrar y comprobar la precisión de la red de sensores."
+          }
+        ],
+        "evidenceQuote": "un parque del barrio Oriente tenía niveles más bajos que calles ubicadas a pocas cuadras"
+      },
+      {
+        "slot": "s4",
+        "stem": "¿Qué propósito explica mejor la coordinación de las entregas después de las 9?",
+        "options": [
+          {
+            "text": "Reducir la exposición a partículas durante la llegada de estudiantes.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El cambio separó los camiones de reparto del horario en que llegaban los autobuses escolares y disminuyó la concentración medida."
+          },
+          {
+            "text": "Aumentar la cantidad de datos enviados por los sensores.",
+            "isKey": false,
+            "misconception": "CONFUSES_OPERATION_WITH_INTERVENTION",
+            "rationale": "La frecuencia de envío de los sensores no depende del horario de las entregas."
+          },
+          {
+            "text": "Comprobar que la temperatura altera las lecturas de los equipos.",
+            "isKey": false,
+            "misconception": "CONFUSES_SEPARATE_FINDINGS",
+            "rationale": "El efecto del calor se estudió mediante comparaciones y ajustes de datos, no mediante la coordinación logística."
+          },
+          {
+            "text": "Trasladar el foco de contaminación hacia el parque Oriente.",
+            "isKey": false,
+            "misconception": "UNSUPPORTED_CAUSAL_GOAL",
+            "rationale": "El texto describe una reducción en la zona escolar, sin sugerir que se buscara desplazar la contaminación a otro lugar."
+          }
+        ],
+        "evidenceQuote": "Cuando coordinó las entregas para después de las 9, la concentración promedio de partículas en esa zona bajó 23 %"
+      },
+      {
+        "slot": "s5",
+        "stem": "En el texto, la palabra “malla” se refiere a",
+        "options": [
+          {
+            "text": "una red de sensores distribuidos en distintos puntos.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "En contexto, “malla” nombra el conjunto interconectado de sensores instalados en la ciudad."
+          },
+          {
+            "text": "una cubierta física colocada sobre los equipos.",
+            "isKey": false,
+            "misconception": "LITERAL_MEANING_ERROR",
+            "rationale": "Aunque una malla puede ser una cubierta, aquí la palabra se usa para designar una red de medición."
+          },
+          {
+            "text": "un plano gráfico usado para publicar los resultados.",
+            "isKey": false,
+            "misconception": "CONFUSES_NETWORK_WITH_MAP",
+            "rationale": "El mapa presenta datos, mientras que la malla es el conjunto de dispositivos que los recopila."
+          },
+          {
+            "text": "un filtro técnico que retiene partículas contaminantes.",
+            "isKey": false,
+            "misconception": "CONFUSES_SENSOR_WITH_FILTER",
+            "rationale": "Los sensores miden partículas; el texto no describe una malla que las filtre."
+          }
+        ],
+        "evidenceQuote": "No se propone reemplazar la estación existente: esta sigue siendo necesaria para comprobar la precisión de la malla"
+      },
+      {
+        "slot": "s6",
+        "stem": "En el texto, la expresión “ruido” alude a",
+        "options": [
+          {
+            "text": "variaciones que dificultan interpretar una medición con precisión.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El calor alteraba algunas lecturas, por lo que los investigadores ajustaron los datos antes de publicarlos."
+          },
+          {
+            "text": "sonidos del tránsito que afectan a los vecinos cercanos.",
+            "isKey": false,
+            "misconception": "LITERAL_MEANING_ERROR",
+            "rationale": "El pasaje trata de lecturas de sensores y de ajustes de datos, no de contaminación acústica."
+          },
+          {
+            "text": "mensajes repetidos enviados por los equipos cada cinco minutos.",
+            "isKey": false,
+            "misconception": "CONFUSES_DATA_FREQUENCY_WITH_ERROR",
+            "rationale": "La periodicidad de envío es una característica del sistema, mientras que el ruido es una alteración de las lecturas."
+          },
+          {
+            "text": "comentarios críticos sobre el mapa publicado por el municipio.",
+            "isKey": false,
+            "misconception": "CONFUSES_TECHNICAL_WITH_SOCIAL_MEANING",
+            "rationale": "“Ruido” se usa en un sentido técnico relacionado con la calidad de los datos, no con opiniones públicas."
+          }
+        ],
+        "evidenceQuote": "La comparación reveló que el calor del mediodía introducía ruido en algunas lecturas"
+      },
+      {
+        "slot": "s7",
+        "stem": "¿Qué fragmento respalda mejor la afirmación de que el menor costo permitió ampliar la cobertura de medición en la ciudad?",
+        "options": [
+          {
+            "text": "“Cada equipo costó 180 dólares, mientras que una estación de referencia supera los 25 000 dólares”.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La comparación de costos apoya directamente la idea de que fue viable instalar numerosos equipos en vez de depender de una sola estación costosa."
+          },
+          {
+            "text": "“Los aparatos enviaban, cada cinco minutos, estimaciones de partículas finas y dióxido de nitrógeno”.",
+            "isKey": false,
+            "misconception": "CONFUSES_FREQUENCY_WITH_AFFORDABILITY",
+            "rationale": "Este fragmento describe la frecuencia y el tipo de datos, pero no aporta evidencia sobre costos o cobertura."
+          },
+          {
+            "text": "“El mapa mostró un foco recurrente de partículas entre las 7 y las 9 de la mañana”.",
+            "isKey": false,
+            "misconception": "CONFUSES_RESULT_WITH_RESOURCE",
+            "rationale": "El fragmento presenta un hallazgo del mapa, no la razón económica que permitió extender la red."
+          },
+          {
+            "text": "“Los vecinos necesitan conocer sus límites y las autoridades deben verificar los resultados”.",
+            "isKey": false,
+            "misconception": "CONFUSES_CAUTION_WITH_SCALE",
+            "rationale": "Este fragmento trata sobre el uso responsable de la información, no sobre la capacidad de instalar más sensores."
+          }
+        ],
+        "evidenceQuote": "Cada equipo costó 180 dólares, mientras que una estación de referencia supera los 25 000 dólares"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "d38d64e4-b9bc-4932-bb4b-4f3fc7419088",
+    "generatedAt": "2026-10-14T01:34:27.937Z",
+    "unitId": "paa-pilot.r3.lect-exp"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "22bffd83-bc47-478d-91f2-8e41a6f55ecd",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "fbfd66d9-4fa9-4537-97c4-b2b65cf69dde",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-explicitas.b63a81d1def7",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.explicit-information"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.26c15c426c67@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-explicitas.511193c1fd31",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.central-idea"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.26c15c426c67@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-inferencia.6f3d0b0f15ca",
+        "slot": "s3",
+        "objectiveCode": "paa.lect.inferencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.inferencia / read.inference"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.26c15c426c67@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-inferencia.939517762568",
+        "slot": "s4",
+        "objectiveCode": "paa.lect.inferencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.inferencia / read.inference"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.26c15c426c67@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.1130cfc23b06",
+        "slot": "s5",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.26c15c426c67@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.0b023f48ebe4",
+        "slot": "s6",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.26c15c426c67@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-evidencia.efb5491ddbea",
+        "slot": "s7",
+        "objectiveCode": "paa.lect.evidencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.evidencia / read.textual-evidence"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.26c15c426c67@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

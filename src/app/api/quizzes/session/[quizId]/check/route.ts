@@ -23,12 +23,13 @@ import { z } from 'zod';
 import { verifyAuth, checkRateLimit } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { isOwner } from '@/lib/authorization';
-import { canUseCapability } from '@/lib/entitlements';
 import { getQuizSession } from '@/services/quiz-persistence.service';
 import { gradeQuizAnswer } from '@/lib/quiz/grade-question';
 import { stripAnswerReveals } from '@/lib/quiz/feedback-leak-guard';
 import { getSafeQuestionHints } from '@/services/safe-hint.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
+import { instructionalAssistanceLockedResponse } from '@/lib/ai/instructional-assistance-guard';
 
 const CheckSchema = z.object({
   studentId: z.string().uuid(),
@@ -50,21 +51,30 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
 
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
   if (!(await isOwner(actor.id, body.studentId))) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
-  if (!(await canUseCapability(actor.id, body.studentId, 'LEARNING_FULL_ACCESS'))) {
-    return NextResponse.json({ error: 'ENTITLEMENT_REQUIRED' }, { status: 403 });
-  }
+  // L11-R1 / D-8(c): answering inside an OPEN quiz is the continuation of an attempt that was
+  // started while the licence was valid (every route that creates a quiz session requires the
+  // licence), so no licence is asked for here. Nothing new can be started from this route: a
+  // session that is not active, or past its own expiry, is refused below (SESSION_NOT_ACTIVE).
   if (!checkRateLimit(actor.id, 'quiz-answer-check', 30, 60)) {
     return NextResponse.json({ error: 'RATE_LIMITED' }, { status: 429 });
   }
 
   const session = await getQuizSession(quizId);
   if (!session || session.studentId !== body.studentId) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+  // Human Agency P0-4 (Layer B): deterministic safety gate first, before any grading model.
+  const safetyBlock = await studentTextSafetyResponse(body.answer, { studentId: body.studentId, surface: 'QUIZ_ANSWER', locale: session.language });
+  if (safetyBlock) return safetyBlock;
   if (session.status !== 'active' || new Date(session.expiresAt).getTime() < Date.now()) {
     return NextResponse.json({ error: 'SESSION_NOT_ACTIVE' }, { status: 409 });
   }
   if (session.evidenceMode !== 'PRACTICE') {
     return NextResponse.json({ error: 'FEEDBACK_DEFERRED' }, { status: 409 });
   }
+  // Human Agency P0-1: a PRACTICE session opened in parallel must not become
+  // a source of AI feedback/hints while restricted evidence is being
+  // collected anywhere for this Student (same student-wide gate as the Tutor).
+  const assistanceLocked = await instructionalAssistanceLockedResponse(body.studentId);
+  if (assistanceLocked) return assistanceLocked;
   const question = session.questions[body.questionIndex];
   if (!question) return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 });
 

@@ -1,0 +1,35 @@
+{
+  "runId": "qf5-live-002",
+  "batchId": "PAA.LECTURA:C1:002",
+  "phase": "C1",
+  "profileId": "PAA.LECTURA",
+  "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.2.0",
+  "cumulativeSpendUsd": 5.47637,
+  "timestamp": "2026-10-12T12:38:46.802Z",
+  "candidateIds": [
+    "v2.paa/lectura/paa.lect.explicitas#0/001#0"
+  ],
+  "decisions": {
+    "v2.paa/lectura/paa.lect.explicitas#0/001#0": "AUTO_APPROVE"
+  },
+  "metrics": {
+    "rawGenerated": 1,
+    "structuralPass": 1,
+    "answerPass": 1,
+    "constructPass": 1,
+    "difficultyMatch": 1,
+    "autoApproved": 1,
+    "humanReview": 0,
+    "autoRejected": 0,
+    "specifications": 1,
+    "firstAttemptPass": 1,
+    "regenerated": 0,
+    "specificationIssues": 0,
+    "firstAttemptPassRate": 1,
+    "regenerationRate": 0,
+    "humanReviewRate": 0,
+    "rejectionRate": 0
+  },
+  "hash": "c4b16a507f97d47a8d36954828eacbadc5972d9875a42f9c31a7b67b7108b994"
+}

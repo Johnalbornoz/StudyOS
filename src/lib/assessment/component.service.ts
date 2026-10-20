@@ -22,6 +22,8 @@ function toComponent(r: any): AssessmentComponent {
     procedureRequired: r.procedure_required,
     simulationCapable: r.simulation_capable,
     supportStatus: r.support_status,
+    sequenceOrder: r.sequence_order ?? null,
+    sectionKey: r.section_key ?? null,
   };
 }
 
@@ -74,6 +76,7 @@ export async function getComponent(componentId: string): Promise<AssessmentCompo
 }
 
 export async function listComponentsForVersion(examVersionId: string): Promise<AssessmentComponent[]> {
-  const result = await db.query(`SELECT * FROM assessment_components WHERE exam_version_id = $1`, [examVersionId]);
+  // Track B: deterministic section order (sequence_order, then creation order).
+  const result = await db.query(`SELECT * FROM assessment_components WHERE exam_version_id = $1 ORDER BY sequence_order ASC NULLS LAST, created_at ASC, id ASC`, [examVersionId]);
   return result.rows.map(toComponent);
 }

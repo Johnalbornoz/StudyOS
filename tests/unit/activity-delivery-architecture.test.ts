@@ -45,7 +45,7 @@ vi.mock('@/services/activity-inventory.service', () => ({
   linkConsumedActivity: (...a: any[]) => h.link(...a),
   reservedCandidateIds: (...a: any[]) => h.reserved(...a),
 }));
-vi.mock('@/services/activity-assembly.service', () => ({ assembleActivityForLearner: (...a: any[]) => h.assemble(...a) }));
+vi.mock('@/services/activity-assembly.service', () => ({ assembleActivityForLearner: (...a: any[]) => h.assemble(...a), countValidBankDepth: async () => 9 }));
 vi.mock('@/services/question-bank.service', () => ({ recordBankDeliveries: (...a: any[]) => h.deliveries(...a), addValidatedCandidates: (...a: any[]) => h.addCandidates(...a) }));
 vi.mock('@/services/activity-delivery-worker.service', () => ({ scheduleDeliveryReplenishment: (...a: any[]) => h.schedule(...a) }));
 vi.mock('@/lib/ai', async (orig) => ({ ...(await orig<typeof import('@/lib/ai')>()), executeAI: (...a: any[]) => h.executeAI(...a) }));
@@ -209,12 +209,14 @@ describe('3. the hot path (0 AI calls)', () => {
     expect(ai).toEqual({ executions: 0, providerCalls: 0 });
     expect(h.executeAI).not.toHaveBeenCalled();
     expect(h.callModel).not.toHaveBeenCalled();
+    expect(h.schedule).not.toHaveBeenCalled();
   });
 
   it('bank short -> EMERGENCY_REQUIRED, explicit, with the lock still held until the caller completes it', async () => {
     h.assemble.mockResolvedValue({ status: 'SHORT', available: 4, needed: 10, poolSize: 4 });
     const r = await deliverCanonicalActivity(INPUT);
     expect(r).toMatchObject({ status: 'EMERGENCY_REQUIRED', bank: { available: 4, needed: 10 } });
+    expect(h.schedule).not.toHaveBeenCalled(); // OE-014: a short bank queues nothing
     expect(h.clientQuery.mock.calls.map((c) => c[0])).not.toContain('COMMIT');
     expect(h.storeQuiz).not.toHaveBeenCalled();
     await (r as any).lock.release();
@@ -236,10 +238,10 @@ describe('3. the hot path (0 AI calls)', () => {
     expect(h.deliveries).toHaveBeenCalledWith(['n1', 'n2'], 'quiz-e', 's1');
   });
 
-  it('the hot-path module never calls a generator or the AI gateway (replenishment only via after()/queue)', () => {
+  it('the hot-path module never calls a generator or the AI gateway, and queues no replenishment (OE-014)', async () => {
     const src = read('src/services/activity-delivery.service.ts');
     expect(src).not.toMatch(/generateActivityCandidates|generateCanonicalProveQuestions|generatePracticeQuestions|executeAI|callModel|gradeAnswer/);
-    expect(src).toMatch(/after\(\(\) => scheduleDeliveryReplenishment\(target, \{ language \}\)/);
+    expect(src).not.toMatch(/scheduleDeliveryReplenishment|scheduleReplenishment|activity-delivery-worker\.service|\bafter\(/);
     expect(src).toMatch(/const hotPathAiViolation = fields\.source !== 'EMERGENCY_AI' && aiCalls > 0;/);
     expect(src).toMatch(/console\.error\('\[activity-launch\] HOT_PATH_AI_VIOLATION'/);
     expect(src).toMatch(/console\.warn\('\[activity-launch\] EMERGENCY_GENERATION'/);
@@ -271,11 +273,11 @@ describe('4. route wiring', () => {
 });
 
 describe('5. replenishment triggers', () => {
-  it('activity finished, Concept Mission, Today and consumption all use the ONE trigger, after the response', () => {
-    expect(read('src/app/api/quizzes/generate-and-take/route.ts')).toMatch(/after\(\(\) => scheduleDeliveryReplenishment\(target, \{ language: replenishLanguage \}\)/);
-    expect(read('src/app/dashboard/subjects/[id]/concepts/[conceptId]/page.tsx')).toMatch(/after\(\(\) => scheduleDeliveryReplenishment\(\{ studentId, subjectId, conceptId \}\)/);
-    expect(read('src/app/dashboard/today/page.tsx')).toMatch(/after\(\(\) => scheduleDeliveryReplenishment\(replenishTarget\)/);
-    expect(read('src/services/activity-delivery.service.ts')).toMatch(/scheduleReplenishment\(input\);\s*return \{ status: 'DELIVERED', source: 'INVENTORY'/);
+  it('no Student path triggers replenishment: not a finished activity, not consumption, not a page render (OE-011, OE-014)', () => {
+    expect(read('src/app/api/quizzes/generate-and-take/route.ts')).not.toMatch(/scheduleDeliveryReplenishment\(/);
+    expect(read('src/app/dashboard/subjects/[id]/concepts/[conceptId]/page.tsx')).not.toMatch(/scheduleDeliveryReplenishment/);
+    expect(read('src/app/dashboard/today/page.tsx')).not.toMatch(/scheduleDeliveryReplenishment/);
+    expect(read('src/services/activity-delivery.service.ts')).not.toMatch(/scheduleReplenishment\(/);
   });
 
   it('the old PROVE-only AI pre-generation trigger is gone', () => {
@@ -304,8 +306,8 @@ describe('6. schema (migration 20261016_1000_activity_delivery)', () => {
 
 describe('7. bank pool selection (regression: an exhausted-oldest bank must not look empty)', () => {
   const BANK = read('src/services/question-bank.service.ts');
-  it('the bounded pool loads never-delivered, least-used, newest candidates first', () => {
-    expect(BANK).toMatch(/ORDER BY pool\.delivered, pool\.usage_count, pool\.created_at DESC\s*\n\s*LIMIT \$7/);
+  it('the bounded pool loads never-delivered, least-recently-delivered (D76), least-used, newest candidates first', () => {
+    expect(BANK).toMatch(/ORDER BY pool\.delivered, pool\.last_delivered_at NULLS FIRST, pool\.usage_count, pool\.created_at DESC\s*\n\s*LIMIT \$7/);
     expect(BANK).not.toMatch(/ORDER BY c\.created_at\s*\n\s*LIMIT/);
   });
   it('independent checks do not load delivered candidates at all', () => {
@@ -328,7 +330,7 @@ describe('8. background worker throughput', () => {
     expect(bankChunks(-4, 10)).toEqual([]);
     const W = read('src/services/activity-delivery-worker.service.ts');
     // generation already in flight is subtracted, so repeated triggers never over-generate
-    expect(W).toMatch(/const missing = \(SPARE_ASSEMBLABLE_SETS - spareSets\) \* contract\.itemCount - inFlight;/);
+    expect(W).toMatch(/\? \(SPARE_ASSEMBLABLE_SETS - spareSets\) \* contract\.itemCount - inFlight\s*\n\s*: depthTarget - validDepth - inFlight;/);
     expect(W).toMatch(/enqueueGenerationJob\('BANK_REPLENISH', `\$\{key\}:c\$\{i\}`/);
     expect(read('src/services/generation-queue.service.ts')).toMatch(/kind = 'BANK_REPLENISH' AND status IN \('PENDING', 'RUNNING'\) AND left\(dedup_key, length\(\$1\)\) = \$1/);
   });
@@ -411,7 +413,8 @@ describe('9. bank depth is measured in assemblable sets, never raw counts', () =
   });
 
   it('the worker and the benchmark warm-up use the same depth measure', () => {
-    expect(read('src/services/activity-delivery-worker.service.ts')).toMatch(/countSpareSets\(\{ studentId: p\.studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds\(p\.studentId, p\.conceptId\), maxSets: SPARE_ASSEMBLABLE_SETS \}\)/);
+    // D79: the worker measures spare sets on `supplyContract` (= the contract, or its all-level-3 form for a mixed PROVE)
+    expect(read('src/services/activity-delivery-worker.service.ts')).toMatch(/countSpareSets\(\{ studentId: p\.studentId, contract: supplyContract, academic, reservedCandidateIds: await reservedCandidateIds\(p\.studentId, p\.conceptId\), maxSets: SPARE_ASSEMBLABLE_SETS \}\)/);
     expect(read('scripts/bench-activity-delivery.ts')).toMatch(/countSpareSets\(/);
     expect(read('src/services/question-bank.service.ts')).not.toMatch(/countUndeliveredCandidates/);
   });
@@ -432,7 +435,7 @@ describe('10. a READY activity never holds a candidate a concurrent launch deliv
     const INV = read('src/services/activity-inventory.service.ts');
     expect(INV).toMatch(/WHEN \$6::boolean AND EXISTS \(\s*SELECT 1 FROM question_bank_deliveries d WHERE d\.student_id = \$1 AND d\.candidate_id = ANY\(candidate_ids\)\s*\) THEN 'CANDIDATE_DELIVERED'/);
     expect(INV).toMatch(/current\.independent && row\.has_delivered === true\s*\n\s*\? \{ compatible: false, reason: 'CANDIDATE_DELIVERED' \}/);
-    expect(read('src/services/activity-delivery.service.ts')).toMatch(/independent: isIndependentActivity\(input\.activityType\) \}/);
+    expect(read('src/services/activity-delivery.service.ts')).toMatch(/independent: isIndependentActivity\(input\.activityType\),/);
   });
 
   it('the hot path passes independence to consumption', async () => {

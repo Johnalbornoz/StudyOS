@@ -34,7 +34,7 @@
  * constants).
  */
 import { V1_POLICY_VERSION } from '@/lib/pedagogical-migration';
-import type { PedagogicalStage, PedagogicalActivityType } from '@/lib/pedagogical-engine';
+import type { PedagogicalStage, PedagogicalActivityType, PracticeMix, ProveMix } from '@/lib/pedagogical-engine';
 import { getCanonicalPedagogicalDecision, CanonicalDecisionUnavailableError } from './canonical-decision.service';
 import { resolveV1PracticeEligibility, resolveAuthorizedItemCount } from './canonical-session-launch';
 import { validateCanonicalActivityContract } from './canonical-contract-validator';
@@ -84,6 +84,10 @@ export interface V1PracticeLaunchMarker {
   supportLevel: 'ASSISTED' | 'NONE';
   /** CANON-R6 -- `activityContract.minimumScorePercent` verbatim (80 for both Practice and Prove today). */
   minimumScorePercent: number;
+  /** D78 -- PRACTICE / REINFORCE only: `activityContract.practiceMix` verbatim (absent for every other activity). */
+  practiceMix?: PracticeMix;
+  /** D79 -- PROVE only: `activityContract.proveMix` verbatim (absent for every other activity). */
+  proveMix?: ProveMix;
 }
 
 /**
@@ -145,13 +149,19 @@ export async function verifyV1PracticeLaunchMarker(params: {
     assistanceAllowed: !contract.independence,
     independence: contract.independence,
     supportLevel: contract.supportLevel,
-    // `ActivityContract.minimumScorePercent` is `number | null` only for
-    // CONSOLIDATED (never reaches here -- CONSOLIDATED's actionState is
-    // never 'EXECUTABLE', already filtered above) -- every other
-    // reachable canonical activity type, LEARN_CHECK included, always
-    // carries a real value. 80 is a defensive fallback only, never a
-    // value this code path can actually need in practice.
+    // `ActivityContract.minimumScorePercent` is `null` for CONSOLIDATED
+    // (never reaches here) and, since the 2026-10-16 contract 1.1, for
+    // LEARN_CHECK (a guided 4-7 interaction session with NO score gate).
+    // The 80 fallback is the shared pass bar persisted for the legacy
+    // marker shape only; no LEARN qualification ever reads it (the engine
+    // qualifies LEARN by interaction count / completion, never by score).
+    // LEARN's itemCount is {4,7}: `authorized` = 7 (the session cap) via
+    // resolveAuthorizedItemCount, so a legacy LEARN_CHECK quiz launched
+    // through this marker administers at most 7 items and qualifies once
+    // completed with >= 4.
     minimumScorePercent: contract.minimumScorePercent ?? 80,
+    ...(contract.practiceMix ? { practiceMix: contract.practiceMix } : {}),
+    ...(contract.proveMix ? { proveMix: contract.proveMix } : {}),
   };
 }
 

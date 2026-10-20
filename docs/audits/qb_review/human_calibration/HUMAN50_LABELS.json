@@ -1,0 +1,322 @@
+{
+  "kind": "HUMAN50_LABELS",
+  "workbookSha256": "07f9975b4c2281e08682284271f6a96f7d47f330d6330aa92257f17f1e2c5424",
+  "extraction": "the FINAL_HUMAN_DECISION line of the FEEDBACK column of each row; nothing else of the report is kept",
+  "note": "Human ground truth: every item was reviewed and judged by the human reviewer; the report layout is an AI-assisted template. APPROVED_WITH_CHANGES is counted DEFECT, everything else READY. All fifty decisions are recorded in the workbook (40 ready / 10 repair).",
+  "provenance": {
+    "HUMAN50_REVIEWER": "HUMAN",
+    "HUMAN50_TEMPLATE": "AI_ASSISTED",
+    "HUMAN50_FINAL_JUDGMENT": "HUMAN",
+    "HUMAN_VALIDATION_STATUS": "COMPLETE",
+    "TOTAL": 50,
+    "HUMAN_READY": 40,
+    "HUMAN_REPAIR_REQUIRED": 10
+  },
+  "sample": {
+    "label": "IN_SAMPLE_HUMAN_CALIBRATION",
+    "IN_SAMPLE": "YES",
+    "OUT_OF_SAMPLE_VALIDATION": "NOT_YET_RUN"
+  },
+  "labels": [
+    {
+      "reviewId": "HC-001",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-002",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-003",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-004",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-005",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-006",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-007",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-008",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-009",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-010",
+      "outcome": "APPROVED_WITH_CHANGES",
+      "countedAs": "DEFECT",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-011",
+      "outcome": "APPROVED_WITH_CHANGES",
+      "countedAs": "DEFECT",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-012",
+      "outcome": "APPROVED_WITH_CHANGES",
+      "countedAs": "DEFECT",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-013",
+      "outcome": "APPROVED_WITH_CHANGES",
+      "countedAs": "DEFECT",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-014",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-015",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-016",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-017",
+      "outcome": "APPROVED_WITH_CHANGES",
+      "countedAs": "DEFECT",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-018",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-019",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-020",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-021",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-022",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-023",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-024",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-025",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-026",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-027",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-028",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-029",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-030",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-031",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-032",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-033",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-034",
+      "outcome": "APPROVED_WITH_CHANGES",
+      "countedAs": "DEFECT",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-035",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-036",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-037",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-038",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-039",
+      "outcome": "APPROVED_WITH_CHANGES",
+      "countedAs": "DEFECT",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-040",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-041",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-042",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-043",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-044",
+      "outcome": "APPROVED_WITH_CHANGES",
+      "countedAs": "DEFECT",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-045",
+      "outcome": "APPROVED_WITH_CHANGES",
+      "countedAs": "DEFECT",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-046",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-047",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-048",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-049",
+      "outcome": "APPROVED",
+      "countedAs": "READY",
+      "decisionStatus": "RECORDED"
+    },
+    {
+      "reviewId": "HC-050",
+      "outcome": "APPROVED_WITH_CHANGES",
+      "countedAs": "DEFECT",
+      "decisionStatus": "RECORDED"
+    }
+  ]
+}

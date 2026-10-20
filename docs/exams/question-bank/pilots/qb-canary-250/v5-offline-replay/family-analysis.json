@@ -1,0 +1,774 @@
+{
+  "kind": "QB_POST_CANARY_FAMILY_ANALYSIS",
+  "label": "OFFLINE DIAGNOSTIC -- validators revision 5 over the Canary's candidates -- IN-SAMPLE -- NOT certification evidence, NOT a rescore of the Canary -- DEV_TEST_CONTENT, RIGHTS_NOT_ESTABLISHED, NOT RELEASE CONTENT. One primary cause per slot, by the first rule that applies.",
+  "rules": [
+    {
+      "cause": "OTHER",
+      "code": "PROVIDER_TIMEOUT",
+      "when": "no candidate: the generation call timed out"
+    },
+    {
+      "cause": "GENERATOR_PROMPT",
+      "code": "HARNESS_REFUSAL",
+      "when": "no candidate: the harness refused the answer (roots or symbols written into the item, malformed stimulus)"
+    },
+    {
+      "cause": "PARAMETER_POLICY",
+      "code": "WRONG_KEY_ON_A_NON_CLEAN_PINNED_CASE",
+      "when": "a wrong key (revision 5 KEY_CONTRADICTED, or the AI reviewer's own solution disagrees) where the pinned parameter left a vertex that is not a whole number or a half"
+    },
+    {
+      "cause": "GENERATOR_PROMPT",
+      "code": "WRONG_KEY",
+      "when": "a wrong key on a clean case: the provider's arithmetic or expansion is wrong"
+    },
+    {
+      "cause": "GENERATOR_PROMPT",
+      "code": "CONSTRUCT_GIVEN_AWAY",
+      "when": "the item hands over what it should ask for: the equation already factorised, both linear factors written out, the division named (validator construct FAIL, or AI CONSTRUCT_VALIDITY FAIL)"
+    },
+    {
+      "cause": "TASK_FAMILY_SPEC",
+      "code": "ASKS_A_QUANTITY_OUTSIDE_THE_CONSTRUCT",
+      "when": "a line item that asks for y at a stated x: the family's evidence target allows it, the construct's vocabulary has no such quantity, so the item cannot be keyed or checked in the family's terms"
+    },
+    {
+      "cause": "GENERATOR_PROMPT",
+      "code": "ITEM_QUALITY",
+      "when": "the AI reviewer failed or doubted response contract, learner quality, fairness, stimulus or construct (ambiguous stems, duplicated options, scaffolding that gives the method away)"
+    },
+    {
+      "cause": "DIFFICULTY_PROFILE",
+      "code": "BAND_NOT_REALISED",
+      "when": "the only doubt of the AI reviewer is DIFFICULTY or PROFILE_FIDELITY: a correct item below its band or its paper"
+    },
+    {
+      "cause": "VALIDATOR",
+      "code": "VALIDATOR_ONLY",
+      "when": "the AI reviewer passed every dimension and its solution agrees; the item was held back only by revision-4 findings (declaration quality, scenario similarity, a false key failure)"
+    },
+    {
+      "cause": "OTHER",
+      "code": "NOT_REVIEWED",
+      "when": "a candidate the budget closed before review, with no finding above"
+    }
+  ],
+  "families": [
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "slots": 26,
+      "candidates": 25,
+      "primaryCause": "GENERATOR_PROMPT",
+      "byCause": {
+        "GENERATOR_PROMPT": 21,
+        "OTHER": 3,
+        "DIFFICULTY_PROFILE": 2
+      },
+      "byCode": {
+        "ITEM_QUALITY": 21,
+        "BAND_NOT_REALISED": 2,
+        "NOT_REVIEWED": 2,
+        "PROVIDER_TIMEOUT": 1
+      },
+      "whatRevision5AloneChanges": {
+        "v4StrictPass": 2,
+        "v5StrictPass": 10,
+        "v5KeyIndependentlyVerified": 0,
+        "v5KeyContradicted": 0
+      },
+      "examples": {
+        "ITEM_QUALITY": [
+          "c250-007",
+          "c250-014",
+          "c250-025"
+        ],
+        "BAND_NOT_REALISED": [
+          "c250-092",
+          "c250-118"
+        ],
+        "NOT_REVIEWED": [
+          "c250-240",
+          "c250-246"
+        ],
+        "PROVIDER_TIMEOUT": [
+          "c250-179"
+        ]
+      },
+      "perSlot": [
+        {
+          "slotId": "c250-007",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-014",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-025",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-032",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-044",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-054",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-065",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-068",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-078",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-092",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-103",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-107",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-118",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-134",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-144",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-146",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-160",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-168",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-179",
+          "cause": "OTHER",
+          "code": "PROVIDER_TIMEOUT"
+        },
+        {
+          "slotId": "c250-186",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-201",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-207",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-221",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-228",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-240",
+          "cause": "OTHER",
+          "code": "NOT_REVIEWED"
+        },
+        {
+          "slotId": "c250-246",
+          "cause": "OTHER",
+          "code": "NOT_REVIEWED"
+        }
+      ]
+    },
+    {
+      "familyId": "tf.math.linear.line-through-two-points",
+      "slots": 25,
+      "candidates": 24,
+      "primaryCause": "VALIDATOR",
+      "byCause": {
+        "VALIDATOR": 9,
+        "DIFFICULTY_PROFILE": 8,
+        "TASK_FAMILY_SPEC": 4,
+        "GENERATOR_PROMPT": 2,
+        "OTHER": 2
+      },
+      "byCode": {
+        "VALIDATOR_ONLY": 9,
+        "BAND_NOT_REALISED": 8,
+        "ASKS_A_QUANTITY_OUTSIDE_THE_CONSTRUCT": 4,
+        "ITEM_QUALITY": 1,
+        "NOT_REVIEWED": 1,
+        "PROVIDER_TIMEOUT": 1,
+        "WRONG_KEY": 1
+      },
+      "whatRevision5AloneChanges": {
+        "v4StrictPass": 0,
+        "v5StrictPass": 7,
+        "v5KeyIndependentlyVerified": 20,
+        "v5KeyContradicted": 1
+      },
+      "examples": {
+        "VALIDATOR_ONLY": [
+          "c250-030",
+          "c250-051",
+          "c250-056"
+        ],
+        "BAND_NOT_REALISED": [
+          "c250-038",
+          "c250-101",
+          "c250-120"
+        ],
+        "ASKS_A_QUANTITY_OUTSIDE_THE_CONSTRUCT": [
+          "c250-004",
+          "c250-079",
+          "c250-090"
+        ],
+        "ITEM_QUALITY": [
+          "c250-019"
+        ],
+        "NOT_REVIEWED": [
+          "c250-249"
+        ],
+        "PROVIDER_TIMEOUT": [
+          "c250-180"
+        ],
+        "WRONG_KEY": [
+          "c250-135"
+        ]
+      },
+      "perSlot": [
+        {
+          "slotId": "c250-004",
+          "cause": "TASK_FAMILY_SPEC",
+          "code": "ASKS_A_QUANTITY_OUTSIDE_THE_CONSTRUCT"
+        },
+        {
+          "slotId": "c250-019",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-030",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-038",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-051",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-056",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-062",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-079",
+          "cause": "TASK_FAMILY_SPEC",
+          "code": "ASKS_A_QUANTITY_OUTSIDE_THE_CONSTRUCT"
+        },
+        {
+          "slotId": "c250-090",
+          "cause": "TASK_FAMILY_SPEC",
+          "code": "ASKS_A_QUANTITY_OUTSIDE_THE_CONSTRUCT"
+        },
+        {
+          "slotId": "c250-101",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-109",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-120",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-129",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-135",
+          "cause": "GENERATOR_PROMPT",
+          "code": "WRONG_KEY"
+        },
+        {
+          "slotId": "c250-151",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-161",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-172",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-180",
+          "cause": "OTHER",
+          "code": "PROVIDER_TIMEOUT"
+        },
+        {
+          "slotId": "c250-183",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-199",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-206",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-219",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-230",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-241",
+          "cause": "TASK_FAMILY_SPEC",
+          "code": "ASKS_A_QUANTITY_OUTSIDE_THE_CONSTRUCT"
+        },
+        {
+          "slotId": "c250-249",
+          "cause": "OTHER",
+          "code": "NOT_REVIEWED"
+        }
+      ]
+    },
+    {
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "slots": 24,
+      "candidates": 21,
+      "primaryCause": "GENERATOR_PROMPT",
+      "byCause": {
+        "GENERATOR_PROMPT": 10,
+        "DIFFICULTY_PROFILE": 6,
+        "VALIDATOR": 6,
+        "OTHER": 2
+      },
+      "byCode": {
+        "BAND_NOT_REALISED": 6,
+        "ITEM_QUALITY": 6,
+        "VALIDATOR_ONLY": 6,
+        "CONSTRUCT_GIVEN_AWAY": 2,
+        "HARNESS_REFUSAL": 2,
+        "NOT_REVIEWED": 1,
+        "PROVIDER_TIMEOUT": 1
+      },
+      "whatRevision5AloneChanges": {
+        "v4StrictPass": 1,
+        "v5StrictPass": 17,
+        "v5KeyIndependentlyVerified": 14,
+        "v5KeyContradicted": 0
+      },
+      "examples": {
+        "BAND_NOT_REALISED": [
+          "c250-018",
+          "c250-049",
+          "c250-058"
+        ],
+        "ITEM_QUALITY": [
+          "c250-012",
+          "c250-066",
+          "c250-112"
+        ],
+        "VALIDATOR_ONLY": [
+          "c250-036",
+          "c250-080",
+          "c250-091"
+        ],
+        "CONSTRUCT_GIVEN_AWAY": [
+          "c250-102",
+          "c250-141"
+        ],
+        "HARNESS_REFUSAL": [
+          "c250-028",
+          "c250-202"
+        ],
+        "NOT_REVIEWED": [
+          "c250-244"
+        ],
+        "PROVIDER_TIMEOUT": [
+          "c250-181"
+        ]
+      },
+      "perSlot": [
+        {
+          "slotId": "c250-012",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-018",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-028",
+          "cause": "GENERATOR_PROMPT",
+          "code": "HARNESS_REFUSAL"
+        },
+        {
+          "slotId": "c250-036",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-049",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-058",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-066",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-080",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-091",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-102",
+          "cause": "GENERATOR_PROMPT",
+          "code": "CONSTRUCT_GIVEN_AWAY"
+        },
+        {
+          "slotId": "c250-112",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-119",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-131",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-141",
+          "cause": "GENERATOR_PROMPT",
+          "code": "CONSTRUCT_GIVEN_AWAY"
+        },
+        {
+          "slotId": "c250-145",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-162",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-166",
+          "cause": "VALIDATOR",
+          "code": "VALIDATOR_ONLY"
+        },
+        {
+          "slotId": "c250-181",
+          "cause": "OTHER",
+          "code": "PROVIDER_TIMEOUT"
+        },
+        {
+          "slotId": "c250-191",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-202",
+          "cause": "GENERATOR_PROMPT",
+          "code": "HARNESS_REFUSAL"
+        },
+        {
+          "slotId": "c250-212",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-223",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-231",
+          "cause": "DIFFICULTY_PROFILE",
+          "code": "BAND_NOT_REALISED"
+        },
+        {
+          "slotId": "c250-244",
+          "cause": "OTHER",
+          "code": "NOT_REVIEWED"
+        }
+      ]
+    },
+    {
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "slots": 25,
+      "candidates": 23,
+      "primaryCause": "GENERATOR_PROMPT",
+      "byCause": {
+        "GENERATOR_PROMPT": 20,
+        "OTHER": 3,
+        "PARAMETER_POLICY": 2
+      },
+      "byCode": {
+        "ITEM_QUALITY": 10,
+        "CONSTRUCT_GIVEN_AWAY": 8,
+        "PROVIDER_TIMEOUT": 2,
+        "WRONG_KEY": 2,
+        "WRONG_KEY_ON_A_NON_CLEAN_PINNED_CASE": 2,
+        "NOT_REVIEWED": 1
+      },
+      "whatRevision5AloneChanges": {
+        "v4StrictPass": 1,
+        "v5StrictPass": 2,
+        "v5KeyIndependentlyVerified": 6,
+        "v5KeyContradicted": 4
+      },
+      "examples": {
+        "ITEM_QUALITY": [
+          "c250-009",
+          "c250-033",
+          "c250-048"
+        ],
+        "CONSTRUCT_GIVEN_AWAY": [
+          "c250-027",
+          "c250-060",
+          "c250-099"
+        ],
+        "PROVIDER_TIMEOUT": [
+          "c250-189",
+          "c250-195"
+        ],
+        "WRONG_KEY": [
+          "c250-085",
+          "c250-177"
+        ],
+        "WRONG_KEY_ON_A_NON_CLEAN_PINNED_CASE": [
+          "c250-016",
+          "c250-226"
+        ],
+        "NOT_REVIEWED": [
+          "c250-248"
+        ]
+      },
+      "perSlot": [
+        {
+          "slotId": "c250-009",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-016",
+          "cause": "PARAMETER_POLICY",
+          "code": "WRONG_KEY_ON_A_NON_CLEAN_PINNED_CASE"
+        },
+        {
+          "slotId": "c250-027",
+          "cause": "GENERATOR_PROMPT",
+          "code": "CONSTRUCT_GIVEN_AWAY"
+        },
+        {
+          "slotId": "c250-033",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-048",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-060",
+          "cause": "GENERATOR_PROMPT",
+          "code": "CONSTRUCT_GIVEN_AWAY"
+        },
+        {
+          "slotId": "c250-069",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-077",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-085",
+          "cause": "GENERATOR_PROMPT",
+          "code": "WRONG_KEY"
+        },
+        {
+          "slotId": "c250-099",
+          "cause": "GENERATOR_PROMPT",
+          "code": "CONSTRUCT_GIVEN_AWAY"
+        },
+        {
+          "slotId": "c250-108",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-115",
+          "cause": "GENERATOR_PROMPT",
+          "code": "CONSTRUCT_GIVEN_AWAY"
+        },
+        {
+          "slotId": "c250-126",
+          "cause": "GENERATOR_PROMPT",
+          "code": "CONSTRUCT_GIVEN_AWAY"
+        },
+        {
+          "slotId": "c250-137",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-149",
+          "cause": "GENERATOR_PROMPT",
+          "code": "CONSTRUCT_GIVEN_AWAY"
+        },
+        {
+          "slotId": "c250-155",
+          "cause": "GENERATOR_PROMPT",
+          "code": "CONSTRUCT_GIVEN_AWAY"
+        },
+        {
+          "slotId": "c250-165",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-177",
+          "cause": "GENERATOR_PROMPT",
+          "code": "WRONG_KEY"
+        },
+        {
+          "slotId": "c250-189",
+          "cause": "OTHER",
+          "code": "PROVIDER_TIMEOUT"
+        },
+        {
+          "slotId": "c250-195",
+          "cause": "OTHER",
+          "code": "PROVIDER_TIMEOUT"
+        },
+        {
+          "slotId": "c250-205",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-215",
+          "cause": "GENERATOR_PROMPT",
+          "code": "ITEM_QUALITY"
+        },
+        {
+          "slotId": "c250-226",
+          "cause": "PARAMETER_POLICY",
+          "code": "WRONG_KEY_ON_A_NON_CLEAN_PINNED_CASE"
+        },
+        {
+          "slotId": "c250-235",
+          "cause": "GENERATOR_PROMPT",
+          "code": "CONSTRUCT_GIVEN_AWAY"
+        },
+        {
+          "slotId": "c250-248",
+          "cause": "OTHER",
+          "code": "NOT_REVIEWED"
+        }
+      ]
+    }
+  ]
+}

@@ -187,6 +187,8 @@ function buildMockQuery() {
       }
       return { rows: [] };
     }
+    // OE-008: evidence coverage counts concepts with learning_evidence, never mastery_records rows.
+    if (s.includes('SELECT DISTINCT e.concept_id FROM learning_evidence e')) return { rows: [{ concept_id: CONCEPT_ID }] };
     // Anything unexpected fails loudly rather than silently returning empty rows.
     throw new Error(`Unmocked query in learner-twin test fixture: ${s}`);
   });

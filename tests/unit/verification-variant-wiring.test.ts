@@ -126,40 +126,38 @@ beforeEach(() => {
 });
 
 describe('Phase 3B production fix -- verification generation goes through the single generation+equivalence authority', () => {
-  it('1 & 6: verification generation uses the selected ambiguous original question (lowest grading confidence, not the first question in the bucket)', async () => {
-    generateQuestionVariantMock.mockResolvedValue(null); // fallback path -- irrelevant to this assertion
+  // OE-014: a Student submission never generates a question. The verification re-asks the selected original
+  // question (the documented fallback), whatever a generator would have returned.
+  it('1 & 6: no variant is generated; the verification targets the selected ambiguous original question (lowest grading confidence, not the first in the bucket)', async () => {
+    generateQuestionVariantMock.mockResolvedValue(null);
     await POST(makeRequest(submitBody()));
 
-    expect(generateQuestionVariantMock).toHaveBeenCalledTimes(1);
-    const [sourceArg] = generateQuestionVariantMock.mock.calls[0];
-    expect(sourceArg.id).toBe('q1'); // the text question (confidence 0.3), never q0 (confidence 1, asked first)
-  });
-
-  it('2: an accepted generated variant persists variantEquivalenceConfidence === contract.equivalenceConfidence', async () => {
-    generateQuestionVariantMock.mockResolvedValue({
-      variant: { id: 'variant-1', conceptId: CONCEPT_ID, type: 'short_answer', answerFormat: 'text', question: 'A different-angle question about momentum.', correctAnswer: 'x', explanation: '', difficulty: 3 },
-      contract: { sourceQuestionId: 'q1', variantQuestionId: 'variant-1', conceptId: CONCEPT_ID, difficultyBand: 'medium', equivalenceConfidence: 0.92, equivalent: true, checks: {} as any },
-    });
-
-    await POST(makeRequest(submitBody()));
-
+    expect(generateQuestionVariantMock).not.toHaveBeenCalled();
     expect(createPendingVerificationAttemptMock).toHaveBeenCalledTimes(1);
-    const params = createPendingVerificationAttemptMock.mock.calls[0][0];
-    expect(params.variantEquivalenceConfidence).toBe(0.92); // the exact production bug: this used to be NULL even when a real variant was used
+    expect(createPendingVerificationAttemptMock.mock.calls[0][0].verificationQuestion.id).toBe('q1'); // the text question (confidence 0.3), never q0
   });
 
-  it('3: the exact accepted variant is both persisted in verification_attempts AND returned to the client', async () => {
+  it('2: even when a generator would return an equivalent variant, it is never called and no equivalence confidence is recorded', async () => {
     generateQuestionVariantMock.mockResolvedValue({
-      variant: { id: 'variant-1', conceptId: CONCEPT_ID, type: 'short_answer', answerFormat: 'text', question: 'A different-angle question about momentum.', correctAnswer: 'x', explanation: '', difficulty: 3 },
+      variant: { id: 'variant-1', conceptId: CONCEPT_ID, type: 'short_answer', answerFormat: 'text', question: 'A different-angle question about momentum.', correctAnswer: 'x', explanation: '', difficulty: 3 } as any,
       contract: { sourceQuestionId: 'q1', variantQuestionId: 'variant-1', conceptId: CONCEPT_ID, difficultyBand: 'medium', equivalenceConfidence: 0.92, equivalent: true, checks: {} as any },
     });
 
+    await POST(makeRequest(submitBody()));
+
+    expect(generateQuestionVariantMock).not.toHaveBeenCalled();
+    const params = createPendingVerificationAttemptMock.mock.calls[0][0];
+    expect(params.variantEquivalenceConfidence).toBeNull();
+    expect(params.verificationQuestion.id).toBe('q1');
+  });
+
+  it('3: the question persisted in verification_attempts is the one returned to the client', async () => {
     const res: any = await POST(makeRequest(submitBody()));
     const body = await res.json();
 
     const persistedQuestion = createPendingVerificationAttemptMock.mock.calls[0][0].verificationQuestion;
     const returnedQuestion = body.data.verificationNeeded[0].question;
-    expect(persistedQuestion.id).toBe('variant-1');
+    expect(persistedQuestion.id).toBe('q1');
     expect(returnedQuestion.question).toBe(persistedQuestion.question);
   });
 

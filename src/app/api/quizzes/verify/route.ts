@@ -34,6 +34,7 @@ import { recordDecisionEvent } from '@/lib/audit';
 import { normalizeResponseTiming } from '@/lib/algorithms/response-timing';
 import { z } from 'zod';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
+import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 
 const VerifySchema = z.object({
   studentId: z.string().uuid(),
@@ -71,6 +72,9 @@ async function handlePOST(request: NextRequest) {
   if (!quizSession || quizSession.studentId !== validated.studentId) {
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   }
+  // Human Agency P0-4 (Layer B): deterministic safety gate before any grading model.
+  const safetyBlock = await studentTextSafetyResponse(validated.answer, { studentId: validated.studentId, surface: 'QUIZ_ANSWER', locale: validated.language || quizSession.language });
+  if (safetyBlock) return safetyBlock;
 
   // Verification only ever applies to Assessment-mode attempts -- a
   // client can't request/submit one for a Practice or Independent

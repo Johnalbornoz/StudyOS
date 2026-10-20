@@ -22,6 +22,7 @@ export default function UserRoleActions({ userId, currentRoles }: { userId: stri
     });
     setBusy(false);
     if (res.ok) router.refresh();
+    else if (res.status === 409) setError('Esta cuenta ya tiene un perfil principal. Revócalo antes de asignar otro.');
     else setError('No se pudo añadir el rol.');
   }
 
@@ -35,7 +36,11 @@ export default function UserRoleActions({ userId, currentRoles }: { userId: stri
     else setError('No se pudo revocar el rol.');
   }
 
-  const addable = ADDABLE_ROLES.filter((r) => !currentRoles.includes(r));
+  // Track A product amendment: one primary persona per account. A persona can
+  // be assigned only when the account has none active (changing it is
+  // deliberate: revoke the current one first).
+  const hasPersona = currentRoles.some((r) => ADDABLE_ROLES.includes(r as any));
+  const addable = hasPersona ? [] : ADDABLE_ROLES.filter((r) => !currentRoles.includes(r));
 
   return (
     <div style={{ marginTop: 'var(--space-3)' }}>
@@ -43,7 +48,7 @@ export default function UserRoleActions({ userId, currentRoles }: { userId: stri
         <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-2)' }}>
           {addable.map((r) => (
             <button key={r} disabled={busy} className="btn btn-ghost" onClick={() => addRole(r)}>
-              Añadir {LABELS[r]}
+              Asignar perfil: {LABELS[r]}
             </button>
           ))}
         </div>

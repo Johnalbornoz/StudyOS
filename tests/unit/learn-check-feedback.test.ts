@@ -19,6 +19,9 @@ const h = vi.hoisted(() => ({
   dbQuery: vi.fn(),
 }));
 
+// Human Agency P0-1: the student-wide assistance guard is certified separately
+// (human-agency-p0-1-assistance-guard.test.ts); here no restricted evidence is active.
+vi.mock('@/lib/ai/instructional-assistance-guard', () => ({ instructionalAssistanceLockedResponse: async () => null }));
 vi.mock('@/lib/auth', () => ({ verifyAuth: h.verifyAuth, checkRateLimit: h.rate }));
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: h.actor }));
 vi.mock('@/lib/authorization', () => ({ isOwner: h.isOwner }));
@@ -121,11 +124,14 @@ describe('per-question feedback for LEARN_CHECK', () => {
     expect((await res.json()).error).toBe('FEEDBACK_DEFERRED');
   });
 
-  it('authorization is unchanged: not owner -> 403, no licence -> 403, inactive session -> 409', async () => {
+  // L11-R1 / D-8(c): answering inside an OPEN quiz continues an attempt started while the
+  // licence was valid, so the licence is no longer asked for here (it was: "no licence -> 403").
+  // Ownership and the session's own validity are unchanged.
+  it('authorization: not owner -> 403, open session with no licence -> allowed, inactive session -> 409', async () => {
     h.isOwner.mockResolvedValueOnce(false);
     expect((await POST(req({ studentId: STUDENT, questionIndex: 0, answer: 'b' }), params)).status).toBe(403);
-    h.entitled.mockResolvedValueOnce(false);
-    expect((await POST(req({ studentId: STUDENT, questionIndex: 0, answer: 'b' }), params)).status).toBe(403);
+    h.entitled.mockResolvedValue(false);
+    expect((await POST(req({ studentId: STUDENT, questionIndex: 0, answer: 'b' }), params)).status).toBe(200);
     h.getQuizSession.mockResolvedValueOnce(session({ status: 'completed' }));
     expect((await POST(req({ studentId: STUDENT, questionIndex: 0, answer: 'b' }), params)).status).toBe(409);
     h.getQuizSession.mockResolvedValueOnce(session({ studentId: '22222222-2222-4222-8222-222222222222' }));
@@ -137,7 +143,7 @@ describe('quiz UI contract', () => {
   const quiz = read('src/app/dashboard/quiz/page.tsx');
 
   it('LEARN_CHECK asks to check before advancing; the answer is locked once checked (first attempt is recorded)', () => {
-    expect(quiz).toMatch(/const perQuestionFeedback = quizMode === 'canonical_learn_check';/);
+    expect(quiz).toMatch(/const perQuestionFeedback = quizMode === 'canonical_learn_check'( \|\| subjectTest)?;/);
     expect(quiz).toMatch(/perQuestionFeedback && !answerLocked \? \(\s*<button\s+onClick=\{checkAnswer\}/);
     // UX-3: the same lock (plus: inputs also freeze while a submission is in flight).
     expect(quiz).toMatch(/<fieldset className="ls-answer" disabled=\{answerLocked \|\| answerCheck\?\.status === 'checking' \|\| submitting\}/);

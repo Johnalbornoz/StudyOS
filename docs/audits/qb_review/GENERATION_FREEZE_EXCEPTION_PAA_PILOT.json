@@ -1,0 +1,14 @@
+{
+  "kind": "GENERATION_FREEZE_EXCEPTION",
+  "freeze": "docs/audits/qb_review/GENERATION_FREEZE.json (unchanged, still in force)",
+  "system": "PAA",
+  "purpose": "PILOT_PREVIEW_COVERAGE_GAP",
+  "generator": "EXISTING_STUDYUS_ASSESSMENT_AI_SERVICE",
+  "execution": "OFFLINE_PREPUBLICATION",
+  "components": ["lectura", "redaccion", "ingles"],
+  "maxCostUsd": 10,
+  "authorizedOn": "2026-10-13",
+  "authorizedBy": "operator instruction: TRACK B -- PAA FINAL CLOSURE",
+  "studentRuntimeGeneration": false,
+  "notCovered": ["Mathematics", "IB", "Cambridge", "PISA", "ICFES/Saber", "AICE", "Learning", "AD_HOC"]
+}

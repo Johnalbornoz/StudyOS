@@ -5,9 +5,29 @@
  */
 import { db, type DbExecutor } from '@/lib/db';
 import type { ExamDefinition, ExamVersion, ScoringModel, ScoringType } from './types';
+import { isExamFamily, EXAM_FAMILIES } from '@/lib/exam-core/taxonomy';
+
+/** Track B: a definition outside the exam-family taxonomy is refused (no arbitrary families). */
+export class UnknownExamFamilyError extends Error {
+  constructor(family: string) {
+    super(`UNKNOWN_EXAM_FAMILY: ${family} (allowed: ${EXAM_FAMILIES.join(', ')})`);
+    this.name = 'UnknownExamFamilyError';
+  }
+}
 
 function toDefinition(r: any): ExamDefinition {
-  return { id: r.id, academicProgrammeId: r.academic_programme_id, name: r.name, examFamily: r.exam_family, purpose: r.purpose, domains: r.domains, status: r.status };
+  return {
+    id: r.id,
+    academicProgrammeId: r.academic_programme_id,
+    name: r.name,
+    examFamily: r.exam_family,
+    purpose: r.purpose,
+    domains: r.domains,
+    status: r.status,
+    configKey: r.config_key ?? null,
+    academicSubjectId: r.academic_subject_id ?? null,
+    aggregationGroup: r.aggregation_group ?? null,
+  };
 }
 function toVersion(r: any): ExamVersion {
   return {
@@ -20,6 +40,8 @@ function toVersion(r: any): ExamVersion {
     scoringModelId: r.scoring_model_id,
     supportedModalities: r.supported_modalities,
     status: r.status,
+    examYear: r.exam_year ?? null,
+    examSession: r.exam_session ?? null,
   };
 }
 function toScoringModel(r: any): ScoringModel {
@@ -27,6 +49,7 @@ function toScoringModel(r: any): ScoringModel {
 }
 
 export async function createExamDefinition(params: { academicProgrammeId?: string; name: string; examFamily: string; purpose?: string; domains?: string[] }): Promise<ExamDefinition> {
+  if (!isExamFamily(params.examFamily)) throw new UnknownExamFamilyError(params.examFamily);
   const result = await db.query(
     `INSERT INTO exam_definitions (academic_programme_id, name, exam_family, purpose, domains, status)
      VALUES ($1, $2, $3, $4, $5, 'ACTIVE') RETURNING *`,
@@ -96,43 +119,4 @@ export async function getPublishedExamVersion(examDefinitionId: string): Promise
 export async function getExamDefinition(examDefinitionId: string, client: DbExecutor = db): Promise<ExamDefinition | null> {
   const result = await client.query(`SELECT * FROM exam_definitions WHERE id = $1`, [examDefinitionId]);
   return result.rows.length === 0 ? null : toDefinition(result.rows[0]);
-}
-
-export interface AvailableExamOption {
-  examDefinitionId: string;
-  examDefinitionName: string;
-  examFamily: string;
-  purpose: string | null;
-  examVersionId: string;
-  versionLabel: string;
-}
-
-/**
- * Student-safe catalog for creating an Exam Profile. Only ACTIVE
- * definitions with their currently PUBLISHED version are selectable;
- * internal/draft ids never reach the form.
- */
-export async function listAvailableExamOptions(client: DbExecutor = db): Promise<AvailableExamOption[]> {
-  const result = await client.query(
-    `SELECT d.id AS exam_definition_id,
-            d.name AS exam_definition_name,
-            d.exam_family,
-            d.purpose,
-            v.id AS exam_version_id,
-            v.version_label
-       FROM exam_definitions d
-       JOIN exam_versions v
-         ON v.exam_definition_id = d.id
-        AND v.status = 'PUBLISHED'
-      WHERE d.status = 'ACTIVE'
-      ORDER BY d.name ASC, v.version_label ASC`
-  );
-  return result.rows.map((r: any) => ({
-    examDefinitionId: r.exam_definition_id,
-    examDefinitionName: r.exam_definition_name,
-    examFamily: r.exam_family,
-    purpose: r.purpose,
-    examVersionId: r.exam_version_id,
-    versionLabel: r.version_label,
-  }));
 }

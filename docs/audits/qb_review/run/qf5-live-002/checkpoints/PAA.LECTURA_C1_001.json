@@ -1,0 +1,41 @@
+{
+  "runId": "qf5-live-002",
+  "batchId": "PAA.LECTURA:C1:001",
+  "phase": "C1",
+  "profileId": "PAA.LECTURA",
+  "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.2.0",
+  "cumulativeSpendUsd": 5.38548,
+  "timestamp": "2026-10-12T12:38:23.317Z",
+  "candidateIds": [
+    "v2.paa/lectura/paa.lect.evidencia#0/004#0",
+    "v2.paa/lectura/paa.lect.evidencia#0/004#1",
+    "v2.paa/lectura/paa.lect.explicitas#0/004#0",
+    "v2.paa/lectura/paa.lect.explicitas#0/004#1",
+    "v2.paa/lectura/paa.lect.evidencia#0/001#0"
+  ],
+  "decisions": {
+    "v2.paa/lectura/paa.lect.evidencia#0/004#1": "AUTO_REJECT",
+    "v2.paa/lectura/paa.lect.explicitas#0/004#1": "HUMAN_REVIEW",
+    "v2.paa/lectura/paa.lect.evidencia#0/001#0": "HUMAN_REVIEW"
+  },
+  "metrics": {
+    "rawGenerated": 5,
+    "structuralPass": 5,
+    "answerPass": 5,
+    "constructPass": 5,
+    "difficultyMatch": 1,
+    "autoApproved": 0,
+    "humanReview": 2,
+    "autoRejected": 1,
+    "specifications": 3,
+    "firstAttemptPass": 0,
+    "regenerated": 2,
+    "specificationIssues": 1,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 0.6667,
+    "humanReviewRate": 0.6667,
+    "rejectionRate": 0.3333
+  },
+  "hash": "ba2f03b2f2d37a4afee4e157ecf0896d830d13e6b99b29ea1a485e14538d1740"
+}

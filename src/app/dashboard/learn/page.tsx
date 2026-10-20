@@ -7,7 +7,8 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { loadMyPathContext, buildSubjectPathView, type ConceptPathView, type SubjectPathView } from '@/lib/lx/path-view';
 import { isRetentionWaiting } from '@/lib/lx/learner-journey-contract';
-import { loadConceptNextChallenge } from '@/lib/experience/next-challenge.server';
+import { loadConceptNextChallenge, presentCanonicalContinuation } from '@/lib/experience/next-challenge.server';
+import { subjectContinuation } from '@/lib/lx/canonical-continuation';
 import type { NextChallengeView } from '@/lib/experience/next-challenge';
 import { knowledgeStateKey, knowledgeStateOf, type KnowledgeState } from '@/lib/experience/knowledge';
 import type { FinderConcept } from '@/lib/experience/concept-finder';
@@ -18,6 +19,10 @@ import NextChallengeCard from '../NextChallengeCard';
 import SubjectSwitcher from '../SubjectSwitcher';
 import ConceptFinder from './ConceptFinder';
 import DocumentImport from './DocumentImport';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
+import { levelDisplayLabel, localizeCatalogSubjectName } from '@/lib/exam-core/catalog/subject-localization';
+import { catalogLabelsForLearnerConcepts, distinctExamCurriculum, loadSubjectCurriculumTopics, type SubjectCurriculumNotReady, type SubjectCurriculumTopics } from '@/lib/learning-plan/subject-curriculum-topics';
+import CurriculumTopics from './CurriculumTopics';
 
 /**
  * UX-5 closure -- APRENDER.
@@ -73,7 +78,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
 
   const switcher = (
     <SubjectSwitcher
-      subjects={subjects}
+      subjects={subjects.map((sub) => ({ ...sub, name: localizeSubjectName(sub.name, locale) }))}
       currentId={selected?.id ?? null}
       label={t['ss.label']}
       placeholder={t['ss.placeholder']}
@@ -105,6 +110,53 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
   }
 
   const concepts = view ? allConcepts(view) : [];
+  const tr = t as Record<string, string>;
+  const subjectLabel = localizeSubjectName(selected.name, locale);
+
+  // T1 final delta (E): the subject's KNOWN curriculum, read-only. Subject autonomy is untouched: this lists the
+  // curriculum's topics; it never activates a subject or a concept.
+  // C14-P1-03: Learning and Exam Prep coexist. `curriculum` is the Student's LEARNING curriculum (Academic Profile)
+  // -- "Temas de tu currículo", in its place. An active exam preparation's curriculum is a SEPARATE, additional
+  // Exam Prep section ("Lo que evalúa tu examen"), after the Student's own topics: it never takes the Learning
+  // curriculum's title or position, never re-buckets the Student's concepts and never explains the Learning hero.
+  // (G) Concepts linked to the catalogue are shown with the catalogue's label in the interface locale.
+  const [curriculum, examCurriculumAny, catalogLabels] = await Promise.all([
+    loadSubjectCurriculumTopics(studentId, selected, locale, 'LEARNING').catch(() => null),
+    loadSubjectCurriculumTopics(studentId, selected, locale, 'EXAM_PREP').catch(() => null),
+    catalogLabelsForLearnerConcepts(concepts.map((c) => c.conceptId), locale),
+  ]);
+  const examCurriculum = distinctExamCurriculum(curriculum, examCurriculumAny);
+  const titleOf = (c: ConceptPathView) => catalogLabels.get(c.conceptId) ?? c.title;
+  const curriculumLabels = Object.fromEntries(Object.entries(tr).filter(([k]) => k.startsWith('acp.learn.') || k === 'lp.explore.add' || k === 'lp.explore.adding' || k === 'lp.error'));
+  const curriculumName = (c: { programme: string; name: string; level: string | null }) => [c.programme, localizeCatalogSubjectName(c.name, locale), levelDisplayLabel(c.level, locale)].filter(Boolean).join(' · ');
+  const renderCurriculum = (cur: SubjectCurriculumTopics | SubjectCurriculumNotReady, kind: 'LEARNING' | 'EXAM_PREP') => {
+    const titleKey = kind === 'EXAM_PREP' ? 'acp.learn.exam.title' : 'acp.learn.curriculum.title';
+    const sectionId = kind === 'EXAM_PREP' ? 'ln-exam-curriculum-title' : 'ln-curriculum-title';
+    return cur.status === 'READY' ? (
+      <CurriculumTopics
+        subjectId={selected.id}
+        sectionId={sectionId}
+        kind={kind}
+        title={tr[titleKey].replace('{curriculum}', curriculumName(cur.context))}
+        reason={tr[`acp.learn.curriculum.reason.${cur.reason}`] ?? null}
+        topics={cur.topics}
+        provenance={{ academicSubjectId: cur.context.academicSubjectId, structureVersionId: cur.context.structureVersionId }}
+        labels={curriculumLabels}
+      />
+    ) : (
+      // Fail closed: this curriculum is not in the catalogue yet. No other curriculum is shown in its place.
+      <section className="ln-curriculum" aria-labelledby={sectionId} data-curriculum-not-ready={cur.status} data-curriculum-kind={kind}>
+        <div className="ui-section-head">
+          <h2 id={sectionId} className="ui-section-title">
+            {tr[titleKey].replace('{curriculum}', cur.curriculum ? curriculumName(cur.curriculum) : subjectLabel)}
+          </h2>
+        </div>
+        <p className="card ln-curriculum-empty" data-curriculum-empty>{tr[kind === 'EXAM_PREP' ? 'acp.learn.exam.notReady' : 'acp.learn.curriculum.notReady']}</p>
+      </section>
+    );
+  };
+  const curriculumSection = curriculum ? renderCurriculum(curriculum, 'LEARNING') : null;
+  const examSection = examCurriculum ? renderCurriculum(examCurriculum, 'EXAM_PREP') : null;
   const workedOn = (c: ConceptPathView) => c.journey.engineHasEvidence ?? c.hasEvidence;
   const hasNotStarted = concepts.some((c) => knowledgeStateOf(c.journey, workedOn(c)) === 'NOT_STARTED');
 
@@ -117,9 +169,15 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
     snapshot?.dailyPlan.items.find((i) => i.decision.subjectId === selected.id)?.decision ??
     snapshot?.decisions.find((d) => d.subjectId === selected.id) ??
     null;
-  const heroConcept = decision ? concepts.find((c) => c.conceptId === decision.actionConceptId) ?? null : null;
+  // C14-P1-03: no Phase 3C decision for this subject -> this subject's canonical continuation (a Learning concept
+  // with only LEARN evidence, no Knowledge State row yet, whose canonical launch is executable; canonical gate only).
+  const continuation = decision ? null : subjectContinuation(snapshot?.canonicalContinuations, selected.id);
+  const heroConceptId = decision?.actionConceptId ?? continuation?.conceptId ?? null;
+  const heroConcept = heroConceptId ? concepts.find((c) => c.conceptId === heroConceptId) ?? null : null;
   const hero: NextChallengeView | null =
-    decision && heroConcept
+    !decision && continuation && heroConcept
+      ? presentCanonicalContinuation(continuation)
+      : decision && heroConcept
       ? await loadConceptNextChallenge({
           studentId,
           subjectId: selected.id,
@@ -135,7 +193,9 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
           },
         }).catch(() => null)
       : null;
-  const heroMinutes = snapshot?.dailyPlan.items.find((i) => i.decision.actionConceptId === decision?.actionConceptId)?.estimatedMinutes ?? null;
+  // Why this challenge, when the catalogue says so: the curriculum topic the concept belongs to.
+  const heroTopic = heroConcept && curriculum?.status === 'READY' ? curriculum.topics.find((tp) => tp.concepts.some((c) => c.learnerConceptId === heroConcept.conceptId)) ?? null : null;
+  const heroMinutes = decision ? snapshot?.dailyPlan.items.find((i) => i.decision.actionConceptId === decision.actionConceptId)?.estimatedMinutes ?? null : null;
 
   // Every concept the Student already has, for "find a concept" (resolved
   // against existing concepts before anything new is proposed).
@@ -147,8 +207,8 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
   const finderConcepts: FinderConcept[] = [view, ...otherViews]
     .filter((v): v is SubjectPathView => !!v)
     .flatMap((v) => [
-      ...v.topics.flatMap((tp) => tp.concepts.map((c) => ({ id: c.conceptId, title: c.title, topic: tp.title, subjectId: v.subjectId, subjectName: v.title }))),
-      ...v.unassigned.map((c) => ({ id: c.conceptId, title: c.title, topic: null, subjectId: v.subjectId, subjectName: v.title })),
+      ...v.topics.flatMap((tp) => tp.concepts.map((c) => ({ id: c.conceptId, title: titleOf(c), topic: tp.title, subjectId: v.subjectId, subjectName: v.title }))),
+      ...v.unassigned.map((c) => ({ id: c.conceptId, title: titleOf(c), topic: null, subjectId: v.subjectId, subjectName: v.title })),
     ]);
 
   const groups = view
@@ -169,22 +229,27 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
           actions={<a href={`/dashboard/learn?subjectId=${selected.id}`} className="btn btn-secondary">{t['practice.prepareRetry']}</a>}
         />
       ) : concepts.length === 0 ? (
-        // First concept of this subject: the question IS the page.
+        // First concept of this subject: the question IS the page (after the curriculum's own topics, when known).
+        <>
+        {curriculumSection}
+        {examSection}
         <section className="card ln-start" aria-labelledby="ln-start-title">
-          <h2 id="ln-start-title" className="ln-start-title">{t['ln.startTitle'].replace('{subject}', selected.name)}</h2>
+          <h2 id="ln-start-title" className="ln-start-title">{t['ln.startTitle'].replace('{subject}', subjectLabel)}</h2>
           <p className="ln-start-body">{t['ln.startBody']}</p>
-          <ConceptFinder studentId={studentId} subjectId={selected.id} subjectName={selected.name} locale={locale} concepts={finderConcepts} autoFocus />
+          <ConceptFinder studentId={studentId} subjectId={selected.id} subjectName={subjectLabel} locale={locale} concepts={finderConcepts} autoFocus />
           <div className="ln-or">
-            <DocumentImport subjectId={selected.id} subjectName={selected.name} locale={locale} />
+            <DocumentImport subjectId={selected.id} subjectName={subjectLabel} locale={locale} />
           </div>
         </section>
+        </>
       ) : (
         <>
+          {/* 1. Tu siguiente reto -- personalised by evidence (the engine's own decision). */}
           {hero && heroConcept ? (
             <NextChallengeCard
               view={hero}
-              conceptLabel={heroConcept.title}
-              subjectName={selected.name}
+              conceptLabel={titleOf(heroConcept)}
+              subjectName={subjectLabel}
               studentId={studentId}
               t={t}
               locale={locale}
@@ -202,16 +267,22 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
             </section>
           )}
 
-          <Section id="ln-find" title={t['ln.findTitle']}>
-            <ConceptFinder studentId={studentId} subjectId={selected.id} subjectName={selected.name} locale={locale} concepts={finderConcepts} />
+          {heroTopic ? <p className="ui-hint ln-hero-why" data-hero-curriculum>{tr['acp.learn.curriculum.heroWhy'].replace('{topic}', heroTopic.title)}</p> : null}
+
+          {/* 2. Temas de tu currículo -- the curriculum's real topic structure. */}
+          {curriculumSection}
+
+          {/* 3. Buscar o añadir otro tema -- free search + document upload, always available. */}
+          <Section id="ln-find" title={curriculum ? tr['acp.learn.findOther'] : t['ln.findTitle']}>
+            <ConceptFinder studentId={studentId} subjectId={selected.id} subjectName={subjectLabel} locale={locale} concepts={finderConcepts} />
             <div className="ln-or">
-              <DocumentImport subjectId={selected.id} subjectName={selected.name} locale={locale} />
+              <DocumentImport subjectId={selected.id} subjectName={subjectLabel} locale={locale} />
             </div>
           </Section>
 
           <Section
             id="ln-topics"
-            title={t['ln.topicsTitle'].replace('{subject}', selected.name)}
+            title={t['ln.topicsTitle'].replace('{subject}', subjectLabel)}
             action={<Link href={`/dashboard/path/${selected.id}`} className="ui-link">{t['ln.pathLink']}</Link>}
           >
             <div className="ln-topics">
@@ -226,7 +297,7 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
                         <li key={c.conceptId}>
                           <Link href={`/dashboard/subjects/${selected.id}/concepts/${c.conceptId}`} className="ln-concept" data-state={state}>
                             <span className="kn-state-icon" aria-hidden>{STATE_ICON[state]}</span>
-                            <span className="ln-concept-name">{c.title}</span>
+                            <span className="ln-concept-name">{titleOf(c)}</span>
                             <span className="ln-concept-state">
                               {isNext && <span className="kn-focus-chip">{t['ln.next']}</span>}
                               <span className="kn-state-label">{t[knowledgeStateKey(state)]}</span>
@@ -244,6 +315,9 @@ export default async function LearnPage({ searchParams }: { searchParams: Promis
               <Link href="/dashboard/knowledge" className="ui-link">{t['kn.seeAll']}</Link>
             </p>
           </Section>
+
+          {/* 4. Exam Prep context (C14-P1-03): an additional section, after the Student's own Learning topics. */}
+          {examSection}
         </>
       )}
     </div>

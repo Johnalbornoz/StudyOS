@@ -30,7 +30,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
+import { verifyAuth, verifyStudentAccess, verifySubjectAccess } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
 import {
@@ -118,6 +118,11 @@ export async function GET(request: NextRequest) {
     const preferredLanguage = await getInterfaceLanguage(validated.studentId);
 
     if (subjectId) {
+      // L4-R1: same rule as /api/assessments/upcoming -- never hand a subject id the caller
+      // does not own to the assessment calendar (read + recurring roll-forward).
+      if (!(await verifySubjectAccess(validated.studentId, subjectId))) {
+        return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+      }
       // No explicit daysUntilExam -- derive it from the subject's real
       // exam calendar instead of requiring the caller to know/guess it.
       let occurrence = null;

@@ -16,15 +16,24 @@
  * launches of the same activity: a double click or a refresh waits for the
  * first launch and then RESUMES its session -- never a second one.
  * Launching writes no learning evidence.
+ *
+ * PRACTICE (requirement §22): the latest LEARN weaknesses of the concept are
+ * read once (learn-weakness.service) and reach the delivered set -- the bank
+ * assembly prioritises matching items (BANK_PRIORITY); a READY set was
+ * prioritised when prepared and its match is re-measured here
+ * (CACHE_PRIORITY). Either way the session records `learnWeaknessProvenance`.
  */
-import { after } from 'next/server';
 import { db } from '@/lib/db';
 import { currentAiCallCount } from '@/lib/ai/request-metrics';
 import { shuffleArray } from '@/lib/quiz/client-question';
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
 import {
   activityContractFingerprint,
+  bankDepthTarget,
+  deliveryPracticeMix,
+  deliveryProveMix,
   learnerStateFingerprint,
+  PRACTICE_BANK_DEPTH_INSUFFICIENT,
   STAGE_FOR_ACTIVITY,
   type AcademicContext,
   type ActivityContract,
@@ -35,11 +44,13 @@ import { buildExactDuplicateNoveltyMarker } from '@/lib/lx/novelty-marker';
 import { loadAcademicContext, loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { consumeCompatibleInventory, linkConsumedActivity, reservedCandidateIds } from '@/services/activity-inventory.service';
 import { assembleActivityForLearner } from '@/services/activity-assembly.service';
-import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
+import { isIndependentActivity, practiceMixFallback, type PracticeMixFallback } from '@/lib/activity-delivery/assembly';
 import { addValidatedCandidates, recordBankDeliveries } from '@/services/question-bank.service';
 import { computeAskConfidenceFlags } from '@/services/ask-confidence.service';
-import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import { acquireLaunchLock, launchLockKey, type LaunchLock } from '@/services/activity-launch-lock.service';
+import { getLearnWeaknessesForConcept, recordLearnWeaknessProvenance } from '@/services/learn-weakness.service';
+import { loadProveExactNoveltyExclusions } from '@/services/prove-exact-novelty.service';
+import { buildLearnWeaknessProvenance, matchLearnFocusItems, type LearnWeaknessProvenance } from '@/lib/learn-guided/weakness-focus';
 
 export { launchLockId, type LaunchLock } from '@/services/activity-launch-lock.service';
 
@@ -66,8 +77,56 @@ export interface DeliveryInput {
 }
 
 export type DeliveryResult =
-  | { status: 'DELIVERED'; source: Exclude<DeliverySource, 'EMERGENCY_AI'>; quizId: string; questions: GeneratedQuestion[]; timings: LaunchTimings }
+  | {
+      status: 'DELIVERED';
+      source: Exclude<DeliverySource, 'EMERGENCY_AI'>;
+      quizId: string;
+      questions: GeneratedQuestion[];
+      timings: LaunchTimings;
+      /** PRACTICE with a LEARN focus: what this delivery recorded (absent otherwise, and for RESUMED). */
+      learnWeaknessProvenance?: LearnWeaknessProvenance;
+    }
   | { status: 'EMERGENCY_REQUIRED'; lock: LaunchLock; timings: LaunchTimings; bank: { available: number; needed: number } };
+
+/** D76 -- what a session delivered below the governed bank depth records (controlled reuse; replenishment runs asynchronously). */
+export interface BankDepthShortfall {
+  reason: typeof PRACTICE_BANK_DEPTH_INSUFFICIENT;
+  validItems: number;
+  target: number;
+}
+
+async function recordBankDepthShortfall(quizId: string, shortfall: BankDepthShortfall): Promise<void> {
+  try {
+    await db.query(
+      `UPDATE quiz_sessions SET canonical_activity_contract = canonical_activity_contract || jsonb_build_object('bankDepth', $2::jsonb)
+        WHERE id = $1 AND canonical_activity_contract IS NOT NULL`,
+      [quizId, JSON.stringify(shortfall)],
+    );
+    console.warn('[activity-launch] PRACTICE_BANK_DEPTH_INSUFFICIENT', JSON.stringify({ quizId, validItems: shortfall.validItems, target: shortfall.target }));
+  } catch (err) {
+    console.error('[activity-launch] bank depth record failed', err);
+  }
+}
+
+/**
+ * D78 -- when the served Practice levels differ from the planned mix (no valid base+1 item, base
+ * slots filled below base, generator levels off), the session records why. Never blocks.
+ */
+export async function recordPracticeMixFallback(quizId: string, mix: ActivityContract['practiceMix'], servedDifficulties: number[]): Promise<PracticeMixFallback | null> {
+  const fallback = practiceMixFallback(mix, servedDifficulties);
+  if (!fallback) return null;
+  try {
+    await db.query(
+      `UPDATE quiz_sessions SET canonical_activity_contract = canonical_activity_contract || jsonb_build_object('practiceMixFallback', $2::jsonb)
+        WHERE id = $1 AND canonical_activity_contract IS NOT NULL`,
+      [quizId, JSON.stringify(fallback)],
+    );
+    console.warn('[activity-launch] PRACTICE_MIX_FALLBACK', JSON.stringify({ quizId, ...fallback }));
+  } catch (err) {
+    console.error('[activity-launch] practice mix fallback record failed', err);
+  }
+  return fallback;
+}
 
 /** Creates the session for a delivered set (same persistence as every session) and records its provenance. */
 async function openSession(
@@ -77,6 +136,8 @@ async function openSession(
   candidateIds: string[],
   askConfidence: boolean,
   consumedPreparedId: string | null,
+  learnWeaknessProvenance: LearnWeaknessProvenance | null = null,
+  bankDepthShortfall: BankDepthShortfall | null = null,
 ): Promise<{ quizId: string; questions: GeneratedQuestion[] }> {
   const ordered = shuffleArray(questions.map((q) => ({ ...q, conceptId: q.conceptId ?? input.conceptId })));
   if (ordered.length > 0 && askConfidence) ordered[0] = { ...ordered[0], askConfidence: true };
@@ -91,20 +152,12 @@ async function openSession(
     db.query(`UPDATE quiz_sessions SET delivery_source = $2 WHERE id = $1`, [quizId, source]),
     recordBankDeliveries(candidateIds, quizId, input.studentId),
     consumedPreparedId ? linkConsumedActivity(consumedPreparedId, quizId) : Promise.resolve(),
+    learnWeaknessProvenance ? recordLearnWeaknessProvenance(quizId, learnWeaknessProvenance) : Promise.resolve(),
   ]);
+  // after the provenance write (both merge into canonical_activity_contract)
+  if (bankDepthShortfall) await recordBankDepthShortfall(quizId, bankDepthShortfall);
+  if (input.contract.practiceMix) await recordPracticeMixFallback(quizId, input.contract.practiceMix, ordered.map((q) => q.difficulty));
   return { quizId, questions: ordered };
-}
-
-function scheduleReplenishment(input: Pick<DeliveryInput, 'studentId' | 'subjectId' | 'conceptId' | 'contract'>) {
-  const target = { studentId: input.studentId, subjectId: input.subjectId, conceptId: input.conceptId };
-  const language = input.contract.language;
-  try {
-    // after the response: the learner never waits for replenishment
-    after(() => scheduleDeliveryReplenishment(target, { language }).catch(() => {}));
-  } catch {
-    // outside a request scope (scripts / benchmark): queue only
-    void scheduleDeliveryReplenishment(target, { language, dispatch: false }).catch(() => {});
-  }
 }
 
 /**
@@ -141,6 +194,8 @@ export async function buildDeliveryInput(p: {
       itemCount: p.itemCount,
       independence: p.v1Marker.independence,
       policyVersion: p.v1Marker.pedagogicalPolicyVersion,
+      ...(p.v1Marker.practiceMix ? { practiceMix: deliveryPracticeMix(p.v1Marker.practiceMix, p.itemCount) } : {}),
+      ...(p.activityType === 'PROVE' && p.v1Marker.proveMix ? { proveMix: deliveryProveMix(p.v1Marker.proveMix) } : {}),
     },
   };
 }
@@ -155,7 +210,8 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
     // 1. an equivalent open session is THE session (double click, refresh, back to the concept).
     //    Independent reads run in the same round trip.
     t = Date.now();
-    const [resumed, snapshot, askFlags, reserved] = await Promise.all([
+    const depthTarget = bankDepthTarget(input.activityType);
+    const [resumed, snapshot, askFlags, reserved, learnFocus, proveExclusions] = await Promise.all([
       findResumableCanonicalSession({
         studentId: input.studentId,
         conceptId: input.conceptId,
@@ -173,6 +229,9 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
       loadLearnerStateSnapshot(input.studentId, input.conceptId),
       computeAskConfidenceFlags(input.studentId, [input.conceptId], input.quizMode),
       reservedCandidateIds(input.studentId, input.conceptId),
+      input.activityType === 'PRACTICE' ? getLearnWeaknessesForConcept(input.studentId, input.conceptId) : Promise.resolve(null),
+      // D75: a PROVE READY set is re-checked against the current exact Practice + Prove history
+      input.activityType === 'PROVE' ? loadProveExactNoveltyExclusions(input.studentId, input.conceptId) : Promise.resolve(null),
     ]);
     timings.resumeMs = Date.now() - t;
     if (resumed) return { status: 'DELIVERED', source: 'RESUMED', quizId: resumed.quizId, questions: resumed.questions, timings };
@@ -181,37 +240,57 @@ export async function deliverCanonicalActivity(input: DeliveryInput): Promise<De
     const learnerFp = learnerStateFingerprint(snapshot);
     const stage = STAGE_FOR_ACTIVITY[input.activityType];
     const askConfidence = askFlags.get(input.conceptId) === true;
+    // D76: below the governed depth the delivery still proceeds (controlled reuse) and says so on the session.
+    // The depth is the one measured where the bank was read: at READY preparation (INVENTORY) or by this assembly (BANK).
+    const depthShortfall = (validDepth: number | null | undefined): BankDepthShortfall | null =>
+      depthTarget !== null && typeof validDepth === 'number' && validDepth < depthTarget
+        ? { reason: PRACTICE_BANK_DEPTH_INSUFFICIENT, validItems: validDepth, target: depthTarget }
+        : null;
 
     // 2. a compatible READY prepared activity, consumed atomically (one statement)
     t = Date.now();
     const consumed = await consumeCompatibleInventory(
       { studentId: input.studentId, conceptId: input.conceptId, stage, policyVersion: input.v1Marker.pedagogicalPolicyVersion },
-      { contractFingerprint, learnerStateFingerprint: learnerFp, independent: isIndependentActivity(input.activityType) },
+      {
+        contractFingerprint, learnerStateFingerprint: learnerFp, independent: isIndependentActivity(input.activityType),
+        ...(proveExclusions ? { excludeFingerprints: proveExclusions.fingerprints } : {}),
+      },
     );
     timings.inventoryMs = Date.now() - t;
     if (consumed && consumed.questions.length === input.contract.itemCount) {
       t = Date.now();
-      const session = await openSession(input, consumed.questions, 'INVENTORY', consumed.candidateIds, askConfidence, consumed.id);
+      // the READY set was prioritised when it was assembled; its match is re-measured on what is delivered
+      const aligned = consumed.candidateIds.length === consumed.questions.length;
+      const provenance = learnFocus
+        ? buildLearnWeaknessProvenance(
+            learnFocus,
+            'CACHE_PRIORITY',
+            matchLearnFocusItems(consumed.questions.map((q, i) => ({ id: aligned ? consumed.candidateIds[i] : q.id, question: q })), learnFocus),
+          )
+        : null;
+      const session = await openSession(input, consumed.questions, 'INVENTORY', consumed.candidateIds, askConfidence, consumed.id, provenance, depthShortfall(consumed.bankDepth?.validItems));
       timings.sessionMs = Date.now() - t;
-      scheduleReplenishment(input);
-      return { status: 'DELIVERED', source: 'INVENTORY', ...session, timings };
+      return { status: 'DELIVERED', source: 'INVENTORY', ...session, timings, ...(provenance ? { learnWeaknessProvenance: provenance } : {}) };
     }
 
     // 3. cold miss: assemble from the VALIDATED bank
     t = Date.now();
-    const assembly = await assembleActivityForLearner({ studentId: input.studentId, contract: input.contract, academic: input.academic, reservedCandidateIds: reserved });
+    const assembly = await assembleActivityForLearner({
+      studentId: input.studentId, contract: input.contract, academic: input.academic, reservedCandidateIds: reserved,
+      ...(input.activityType === 'PRACTICE' ? { learnFocus } : {}),
+    });
     timings.bankMs = Date.now() - t;
     if (assembly.status === 'ASSEMBLED') {
       t = Date.now();
-      const session = await openSession(input, assembly.questions, 'BANK', assembly.candidateIds, askConfidence, null);
+      const provenance = assembly.learnFocus ? buildLearnWeaknessProvenance(assembly.learnFocus.focus, 'BANK_PRIORITY', assembly.learnFocus.matchedCandidateIds) : null;
+      const session = await openSession(input, assembly.questions, 'BANK', assembly.candidateIds, askConfidence, null, provenance, depthShortfall(assembly.validDepth));
       timings.sessionMs = Date.now() - t;
-      scheduleReplenishment(input);
-      return { status: 'DELIVERED', source: 'BANK', ...session, timings };
+      return { status: 'DELIVERED', source: 'BANK', ...session, timings, ...(provenance ? { learnWeaknessProvenance: provenance } : {}) };
     }
 
-    // 4. neither: explicit emergency -- the lock stays held until the caller completes it
+    // 4. neither: the certified content cannot supply this launch. The lock stays held until the caller
+    //    answers (OE-014: a Student caller answers NOT_READY; it never generates and nothing is queued here).
     keepLock = true;
-    scheduleReplenishment(input);
     return { status: 'EMERGENCY_REQUIRED', lock, timings, bank: { available: assembly.available, needed: assembly.needed } };
   } finally {
     if (!keepLock) await lock.release();

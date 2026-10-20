@@ -12,10 +12,12 @@
  * pattern), not this route's, since F7 does not yet gate any capability
  * behind a paid tier.
  */
+import { studentAudienceDefinitionSql, studentVisibleDefinitionSql } from '@/lib/exam-core/audience';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
+import { canReadLearnerRoute } from '@/lib/authorization/teacher-subject-scope';
 import { createStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import { db } from '@/lib/db';
 import { z } from 'zod';
@@ -29,10 +31,17 @@ export async function GET(request: NextRequest) {
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const actor = await getOrCreateCanonicalUser(authContext.userId, authContext.email || null);
 
-  const allowed = await canAccessLearner(actor.id, studentId, 'LEARNER_PROFILE_VIEW');
+  // L10-R2: the learner's exam goals are not attributable to one subject -- a reader who is only their Teacher is refused.
+  const allowed = await canReadLearnerRoute(actor.id, studentId, 'LEARNER_PROFILE_VIEW', 'DENY');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
-  const result = await db.query(`SELECT * FROM student_exam_profiles WHERE student_id = $1 ORDER BY created_at DESC`, [studentId]);
+  // Track B: a preparation the Student removed (ARCHIVED) is no longer part of it.
+  // QB-0: technical / internal exams (dev-cert.*, legacy pilot) are never listed as a learner's exams.
+  const result = await db.query(
+    `SELECT p.* FROM student_exam_profiles p LEFT JOIN exam_definitions d ON d.id = p.exam_definition_id
+      WHERE p.student_id = $1 AND p.status <> 'ARCHIVED' AND (p.exam_definition_id IS NULL OR ${studentAudienceDefinitionSql('d')}) ORDER BY p.created_at DESC`,
+    [studentId]
+  );
   return NextResponse.json({ success: true, data: { profiles: result.rows } });
 }
 
@@ -60,7 +69,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
   }
 
-  const allowed = await canAccessLearner(actor.id, validated.studentId, 'LEARNER_PROFILE_VIEW');
+  // Foundation (ADR-F06): creating an exam profile is a WRITE on the learner's
+  // own exam context -- owner-only. LEARNER_PROFILE_VIEW (held by an accepted
+  // Parent and an authorized Teacher) is a read permission and must not gate it.
+  const allowed = await canAccessLearner(actor.id, validated.studentId, 'LEARNER_INTERVENTION_CREATE');
   if (!allowed) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const catalogMatch = await db.query(
@@ -68,7 +80,7 @@ export async function POST(request: NextRequest) {
        FROM exam_definitions d
        LEFT JOIN exam_versions v ON v.id = $2
       WHERE d.id = $1
-        AND d.status = 'ACTIVE'
+        AND ${studentVisibleDefinitionSql('d')}
         AND ($2::uuid IS NULL OR (
           v.exam_definition_id = d.id
           AND v.status = 'PUBLISHED'

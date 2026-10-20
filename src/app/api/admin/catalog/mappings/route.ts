@@ -7,7 +7,7 @@
  */
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminEmail } from '@/services/admin.service';
+import { isAllowlistedAdminUser } from '@/lib/admin/admin-identity';
 import { getCandidatesForMapping, listMappingsByStatus } from '@/lib/catalog/mapping.service';
 
 const VALID_STATUSES = ['AMBIGUOUS', 'UNRESOLVED', 'PROPOSED'] as const;
@@ -16,8 +16,7 @@ export async function GET(request: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const user = await currentUser();
-  const email = user?.emailAddresses?.[0]?.emailAddress ?? null;
-  if (!isAdminEmail(email)) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  if (!isAllowlistedAdminUser(user)) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
 
   const status = new URL(request.url).searchParams.get('status');
   if (!status || !(VALID_STATUSES as readonly string[]).includes(status)) {

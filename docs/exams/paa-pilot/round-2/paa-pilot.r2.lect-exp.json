@@ -1,0 +1,979 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r2.lect-exp",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Texto expositivo-argumentativo ORIGINAL de 300 a 380 palabras sobre la historia del reloj mecánico y cómo cambió la organización del trabajo. Debe tener una tesis reconocible, datos concretos, al menos una relación causa-efecto y dos o tres palabras cuyo sentido dependa del contexto. Párrafos breves.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.explicit-information",
+        "difficulty": 2,
+        "focus": "un dato o detalle afirmado explícitamente en el texto"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.central-idea",
+        "difficulty": 3,
+        "focus": "la tesis o idea central del texto"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.lect.inferencia",
+        "conceptStableId": "read.inference",
+        "difficulty": 3,
+        "focus": "una conclusión que el texto implica sin afirmarla"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.lect.inferencia",
+        "conceptStableId": "read.inference",
+        "difficulty": 4,
+        "focus": "la relación causa-efecto o la intención del autor, deducida del texto"
+      },
+      {
+        "slot": "s5",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 2,
+        "focus": "el sentido de una palabra o expresión tal como se usa en el texto (cítala entre comillas)"
+      },
+      {
+        "slot": "s6",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 3,
+        "focus": "el sentido contextual de otra palabra o expresión del texto (cítala entre comillas)"
+      },
+      {
+        "slot": "s7",
+        "objectiveCode": "paa.lect.evidencia",
+        "conceptStableId": "read.textual-evidence",
+        "difficulty": 4,
+        "focus": "qué fragmento del texto respalda mejor una afirmación dada sobre él"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "El reloj mecánico y la jornada medida",
+      "text": "Durante gran parte de la Edad Media, muchas tareas se ordenaban por señales naturales: la luz, el frío o la necesidad de terminar una faena. La aparición del reloj mecánico en torres urbanas modificó esa costumbre. Su importancia no consistió solo en indicar la hora con mayor regularidad; convirtió el tiempo en una referencia común para coordinar actividades y evaluar el trabajo.\n\nEn la ciudad ficticia de Valdoria, un registro municipal de 1378 describe un reloj de pesas instalado junto al mercado. El mecanismo hacía sonar una campana cada hora y debía ajustarse dos veces por semana. Al principio, la señal servía para abrir las puertas de la muralla y anunciar reuniones del concejo. Pronto, los talleres cercanos comenzaron a usarla para iniciar y cerrar sus jornadas.\n\nEste cambio alteró el compás del trabajo. Antes, un carpintero podía prolongar una tarea hasta que la luz disminuyera o hasta terminar una pieza. Con la campana, los maestros fijaron momentos compartidos para comenzar, descansar y entregar encargos. Como consecuencia, disminuyeron los ratos de espera entre quienes dependían de una misma tarea, como el tintorero y el tejedor.\n\nLa nueva medida del tiempo también generó tensiones. Un cuaderno de cuentas de 1411, conservado en la misma ciudad, anota que un taller de paños descontaba parte del pago a quienes llegaban después de la segunda campanada. Para los dueños, esa norma hacía más previsible la producción; para algunos trabajadores, reducía el margen para atender asuntos familiares o resolver traslados difíciles.\n\nEl reloj no impuso por sí mismo una disciplina idéntica en todos los oficios. Los campesinos siguieron atendiendo los ciclos de siembra y lluvia, y los pescadores dependían de las mareas. Sin embargo, en espacios donde varias personas debían coincidir, la hora pública ofreció una regla visible. También el mercado ajustó sus ventas a las campanadas, pues compradores y vendedores podían anticipar cuándo encontrarían abiertos los puestos.\n\nPor ello, la historia del reloj mecánico muestra que una innovación técnica puede reorganizar relaciones sociales. Al hacer el tiempo más compartido y divisible, el mecanismo ayudó a transformar jornadas guiadas por la tarea en turnos guiados por una medida común.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Cuál dato se afirma explícitamente sobre el reloj instalado en Valdoria?",
+        "options": [
+          {
+            "text": "Emitía una señal sonora cada hora y requería ajustes semanales.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El texto indica que la campana sonaba cada hora y que el mecanismo se ajustaba dos veces por semana."
+          },
+          {
+            "text": "Funcionaba con mareas diarias y requería ajustes mensuales.",
+            "isKey": false,
+            "misconception": "CONFUSES_OTHER_ACTIVITY",
+            "rationale": "Las mareas se relacionan con los pescadores, no con el funcionamiento del reloj."
+          },
+          {
+            "text": "Marcaba cada media hora y requería ajustes nocturnos.",
+            "isKey": false,
+            "misconception": "ALTERS_NUMERICAL_DETAIL",
+            "rationale": "El texto menciona campanadas por hora y ajustes semanales, no esas frecuencias."
+          },
+          {
+            "text": "Anunciaba cosechas estacionales y requería ajustes anuales.",
+            "isKey": false,
+            "misconception": "CONFUSES_RURAL_CYCLES",
+            "rationale": "Las cosechas corresponden a ciclos campesinos, mientras que el reloj organizaba actividades urbanas."
+          }
+        ],
+        "evidenceQuote": "El mecanismo hacía sonar una campana cada hora y debía ajustarse dos veces por semana."
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Cuál enunciado expresa mejor la tesis central del texto?",
+        "options": [
+          {
+            "text": "El reloj mecánico convirtió el tiempo compartido en una herramienta para organizar el trabajo.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Esta opción recoge la idea de que el reloj reorganizó jornadas y relaciones laborales mediante una referencia temporal común."
+          },
+          {
+            "text": "El reloj mecánico reemplazó los ciclos naturales en las labores de todos los oficios.",
+            "isKey": false,
+            "misconception": "OVERGENERALIZES_SCOPE",
+            "rationale": "El texto aclara que campesinos y pescadores continuaron dependiendo de ciclos naturales."
+          },
+          {
+            "text": "El reloj mecánico fue creado principalmente para vigilar las puertas de las murallas.",
+            "isKey": false,
+            "misconception": "CONFUSES_INITIAL_USE_WITH_THESIS",
+            "rationale": "El uso inicial en las murallas es un detalle histórico, no la idea central del texto."
+          },
+          {
+            "text": "El reloj mecánico eliminó los desacuerdos entre dueños y trabajadores urbanos.",
+            "isKey": false,
+            "misconception": "CONTRADICTS_TEXTUAL_TENSION",
+            "rationale": "El texto señala que la nueva organización del tiempo también produjo tensiones."
+          }
+        ],
+        "evidenceQuote": "una innovación técnica puede reorganizar relaciones sociales"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué conclusión se puede inferir sobre los dueños de talleres que adoptaron las campanadas?",
+        "options": [
+          {
+            "text": "Obtuvieron mayores posibilidades de supervisar la puntualidad de sus trabajadores.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Al fijar inicios, descansos y entregas comunes, los dueños podían comparar con mayor facilidad la llegada de los trabajadores."
+          },
+          {
+            "text": "Abandonaron la necesidad de coordinar tareas entre distintos trabajadores.",
+            "isKey": false,
+            "misconception": "REVERSES_CAUSALITY",
+            "rationale": "Las campanadas se usaron precisamente para facilitar la coordinación entre tareas dependientes."
+          },
+          {
+            "text": "Trasladaron sus talleres hacia zonas dedicadas a la agricultura.",
+            "isKey": false,
+            "misconception": "UNSUPPORTED_LOCATION_CHANGE",
+            "rationale": "El texto no menciona traslados de talleres ni cambios de ubicación."
+          },
+          {
+            "text": "Redujeron la producción para evitar el uso frecuente del reloj.",
+            "isKey": false,
+            "misconception": "UNSUPPORTED_CONSEQUENCE",
+            "rationale": "El texto asocia el horario compartido con una producción más previsible, no con su reducción."
+          }
+        ],
+        "evidenceQuote": "los maestros fijaron momentos compartidos para comenzar, descansar y entregar encargos"
+      },
+      {
+        "slot": "s4",
+        "stem": "¿Qué efecto se produjo más directamente cuando los talleres adoptaron horarios compartidos?",
+        "options": [
+          {
+            "text": "Se redujeron las esperas entre trabajadores cuyas tareas estaban conectadas.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El texto presenta esta reducción de esperas como consecuencia de fijar momentos comunes de trabajo."
+          },
+          {
+            "text": "Se sustituyeron los ciclos de lluvia en las labores agrícolas.",
+            "isKey": false,
+            "misconception": "OVEREXTENDS_CAUSE",
+            "rationale": "Los campesinos siguieron atendiendo los ciclos de siembra y lluvia."
+          },
+          {
+            "text": "Se eliminaron los descuentos por llegar tarde a los talleres.",
+            "isKey": false,
+            "misconception": "REVERSES_TEXTUAL_EFFECT",
+            "rationale": "El texto señala que un taller aplicaba descuentos después de la segunda campanada."
+          },
+          {
+            "text": "Se cerraron los puestos del mercado durante las campanadas.",
+            "isKey": false,
+            "misconception": "MISREADS_MARKET_DETAIL",
+            "rationale": "El mercado ajustó sus ventas a las campanadas para anticipar cuándo estarían abiertos los puestos."
+          }
+        ],
+        "evidenceQuote": "disminuyeron los ratos de espera entre quienes dependían de una misma tarea"
+      },
+      {
+        "slot": "s5",
+        "stem": "En el texto, ¿qué significa la expresión “compás del trabajo”?",
+        "options": [
+          {
+            "text": "El ritmo con que se organizaban las tareas durante la jornada.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "En este contexto, “compás” se refiere al ritmo u orden temporal de las actividades."
+          },
+          {
+            "text": "El instrumento utilizado para calcular distancias en los talleres.",
+            "isKey": false,
+            "misconception": "LITERAL_TOOL_MEANING",
+            "rationale": "La expresión no alude a una herramienta de dibujo o medición espacial."
+          },
+          {
+            "text": "La melodía interpretada al comenzar las labores urbanas.",
+            "isKey": false,
+            "misconception": "MUSICAL_MEANING",
+            "rationale": "Aunque una campana produce sonido, el término describe la organización temporal del trabajo."
+          },
+          {
+            "text": "El acuerdo firmado para distribuir pagos entre artesanos.",
+            "isKey": false,
+            "misconception": "CONFUSES_TERM_WITH_CONTRACT",
+            "rationale": "El texto no usa “compás” para nombrar un pacto económico."
+          }
+        ],
+        "evidenceQuote": "El compás de la jornada dejó de depender exclusivamente del amanecer."
+      },
+      {
+        "slot": "s6",
+        "stem": "En el texto, ¿qué sentido tiene la palabra “margen” en la expresión “reducía el margen”?",
+        "options": [
+          {
+            "text": "La posibilidad de disponer de tiempo para resolver asuntos personales.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El contexto indica que los horarios rígidos dejaban menos flexibilidad para atender situaciones familiares o traslados."
+          },
+          {
+            "text": "El borde físico que separaba el taller de la calle.",
+            "isKey": false,
+            "misconception": "SPATIAL_MEANING",
+            "rationale": "No se describe un límite físico, sino una reducción de flexibilidad temporal."
+          },
+          {
+            "text": "La ganancia adicional obtenida por la venta de paños.",
+            "isKey": false,
+            "misconception": "ECONOMIC_MEANING",
+            "rationale": "Aunque se menciona un taller de paños, “margen” no se refiere a una ganancia comercial."
+          },
+          {
+            "text": "La distancia recorrida entre la vivienda y el mercado.",
+            "isKey": false,
+            "misconception": "DISTANCE_MEANING",
+            "rationale": "Los traslados son una dificultad mencionada, pero la palabra alude al tiempo disponible para afrontarlos."
+          }
+        ],
+        "evidenceQuote": "reducía el margen para atender asuntos familiares o resolver traslados difíciles"
+      },
+      {
+        "slot": "s7",
+        "stem": "¿Qué fragmento respalda mejor la afirmación de que el reloj influyó también en actividades urbanas fuera de los talleres?",
+        "options": [
+          {
+            "text": "“También el mercado ajustó sus ventas a las campanadas, pues compradores y vendedores podían anticipar”.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Este fragmento muestra de forma directa que el efecto del reloj alcanzó la actividad comercial del mercado."
+          },
+          {
+            "text": "“Los campesinos siguieron atendiendo los ciclos de siembra y lluvia, y los pescadores dependían”.",
+            "isKey": false,
+            "misconception": "USES_CONTRASTING_EVIDENCE",
+            "rationale": "Este fragmento trata sobre actividades que continuaron guiándose por ciclos naturales."
+          },
+          {
+            "text": "“Un taller de paños descontaba parte del pago a quienes llegaban después de la segunda campanada”.",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_WORKPLACE_DETAIL",
+            "rationale": "El fragmento evidencia una regla dentro de un taller, no una actividad urbana fuera de ellos."
+          },
+          {
+            "text": "“El mecanismo hacía sonar una campana cada hora y debía ajustarse dos veces por semana”.",
+            "isKey": false,
+            "misconception": "FOCUSES_ON_TECHNICAL_DETAIL",
+            "rationale": "El fragmento describe el funcionamiento del reloj, pero no su impacto en otra actividad urbana."
+          }
+        ],
+        "evidenceQuote": "También el mercado ajustó sus ventas a las campanadas, pues compradores y vendedores podían anticipar"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "d6e25a4b-bb9f-49c9-b1d2-0e394319c5cd",
+    "generatedAt": "2026-10-14T01:29:56.934Z",
+    "unitId": "paa-pilot.r2.lect-exp"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "f96f441a-df5b-4794-9870-270be6dcb275",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "db5cd565-268b-4408-a6d4-5d519ab98ee3",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-explicitas.a7eb19675fe2",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.explicit-information"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.a13c6b5e455b@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-explicitas.ae720fa648e9",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "STRUCTURE",
+          "SCORING_COMPATIBILITY"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": false,
+            "detail": "ABSOLUTE_WORDING_SINGLES_OUT_AN_OPTION"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.central-idea"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.a13c6b5e455b@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": false,
+            "detail": "SELECTED_RESPONSE_NOT_CERTIFIABLE: ABSOLUTE_WORDING_SINGLES_OUT_AN_OPTION"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-inferencia.0ecd013d4ce2",
+        "slot": "s3",
+        "objectiveCode": "paa.lect.inferencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.inferencia / read.inference"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.a13c6b5e455b@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-inferencia.b6057e67e78b",
+        "slot": "s4",
+        "objectiveCode": "paa.lect.inferencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.inferencia / read.inference"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.a13c6b5e455b@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.c3dd7153796c",
+        "slot": "s5",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "KEY_SUPPORTED_BY_STIMULUS"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.a13c6b5e455b@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": false,
+            "detail": "the cited support is not in the stimulus"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.4c84fece91fd",
+        "slot": "s6",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.a13c6b5e455b@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-evidencia.b2a0235725a5",
+        "slot": "s7",
+        "objectiveCode": "paa.lect.evidencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.evidencia / read.textual-evidence"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.a13c6b5e455b@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

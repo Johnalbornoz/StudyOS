@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { getOrCreateParentId } from '@/lib/auth';
+import { getOrCreateCanonicalUser, assignSelfServiceRole } from '@/lib/identity';
+import { resolveVerifiedPrimaryEmail } from '@/lib/identity/verified-email';
 import { acceptParentInvitation, declineParentInvitation } from '@/services/parent.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
@@ -21,8 +23,12 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
   if (!clerkUserId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
   const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress;
-  if (!email) return NextResponse.json({ error: 'NO_EMAIL' }, { status: 400 });
+  // L10 SF-6 (L4-21): an invitation is claimed only by the account whose
+  // VERIFIED PRIMARY email it was addressed to -- never an address the
+  // account merely added, never `emailAddresses[0]`. Refused before any
+  // role, profile or relationship row is written.
+  const email = resolveVerifiedPrimaryEmail(user);
+  if (!email) return NextResponse.json({ error: 'EMAIL_NOT_VERIFIED' }, { status: 403 });
 
   let validated;
   try {
@@ -36,6 +42,17 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<{ 
     if (!declined) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
     return NextResponse.json({ success: true, data: { status: 'declined' } });
   }
+
+  // Track A: accepting an invitation addressed to your own verified email is
+  // an explicit choice to act as a Parent, so it adds the PARENT role (the
+  // same audited self-service grant /role-select uses). A role an
+  // administrator revoked is never re-granted this way.
+  const canonicalUser = await getOrCreateCanonicalUser(clerkUserId, email);
+  const roleOutcome = await assignSelfServiceRole(clerkUserId, canonicalUser.id, 'PARENT');
+  if (roleOutcome === 'REVOKED') return NextResponse.json({ error: 'ROLE_REVOKED' }, { status: 409 });
+  // One persona per account: a Student or Teacher account cannot become a
+  // Parent by accepting an invitation (the invitation stays pending).
+  if (roleOutcome === 'PERSONA_EXISTS') return NextResponse.json({ error: 'PERSONA_CONFLICT' }, { status: 409 });
 
   const parentId = await getOrCreateParentId(clerkUserId);
   const accepted = await acceptParentInvitation(invitationId, parentId, email);

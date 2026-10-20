@@ -12,6 +12,9 @@
  */
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Locale } from '@/lib/i18n/messages';
+import { AccessRequiredNotice } from '@/components/ui/AccessRequiredNotice';
+import { isEntitlementRequired } from '@/lib/lx/access-required';
 
 export interface StartAssignmentLabels {
   start: string;
@@ -24,28 +27,42 @@ export function StartAssignmentButton({
   interventionId,
   targetType,
   labels,
+  locale,
 }: {
   interventionId: string;
   targetType: string;
   labels: StartAssignmentLabels;
+  locale: Locale;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // L6 / CR-L11-02: the server refused the start with the licence gate (403 ENTITLEMENT_REQUIRED).
+  // Nothing is checked up front: "Continue" on a task the server still allows goes through as before.
+  const [accessRequired, setAccessRequired] = useState(false);
 
   async function onStart() {
     setBusy(true);
     setError(null);
+    setAccessRequired(false);
     try {
-      const idempotencyKey = crypto.randomUUID();
+      // Track A: one stable key per assignment, so "Continue" (and a retry
+      // after a network error) RECOVERS the activity the server already
+      // created instead of generating a new one each click.
+      const idempotencyKey = `assignment:${interventionId}`;
       const res = await fetch(`/api/student/teacher-interventions/${interventionId}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idempotencyKey }),
       });
-      const body = await res.json();
-      if (!res.ok) {
-        setError(body?.message || body?.error || labels.error);
+      const body = await res.json().catch(() => null);
+      if (isEntitlementRequired(res.status, body)) {
+        setAccessRequired(true);
+        return;
+      }
+      if (!res.ok || !body?.data) {
+        // Never surface a raw server message (it can carry internal ids).
+        setError(labels.error);
         return;
       }
       const { outcome, executionReference } = body.data;
@@ -70,6 +87,7 @@ export function StartAssignmentButton({
       <button type="button" className="btn btn-primary" disabled={busy} onClick={onStart}>
         {busy ? labels.starting : labels.start}
       </button>
+      {accessRequired && <AccessRequiredNotice locale={locale} />}
       {error && (
         <p role="alert" style={{ fontSize: 12.5, color: 'var(--error)', margin: 0 }}>
           {error}

@@ -18,7 +18,13 @@ vi.mock('@/lib/auth', () => ({ verifyAuth: () => verifyAuthMock(), checkRateLimi
 const getOrCreateCanonicalUserMock = vi.fn();
 vi.mock('@/lib/identity', () => ({ getOrCreateCanonicalUser: (...a: any[]) => getOrCreateCanonicalUserMock(...a) }));
 const canAccessLearnerMock = vi.fn();
-vi.mock('@/lib/authorization', () => ({ canAccessLearner: (...a: any[]) => canAccessLearnerMock(...a) }));
+vi.mock('@/lib/authorization', () => ({
+  canAccessLearner: (...a: any[]) => canAccessLearnerMock(...a),
+  // L10 SF-4: routes that shape one payload for several viewers resolve the whole read scope. In this file the
+  // single allow/deny switch stands for "the owner" vs "no relationship at all".
+  resolveLearnerReadScope: async (actor: string, learner: string) =>
+    (await canAccessLearnerMock(actor, learner, 'LEARNER_PROGRESS_VIEW')) ? { relationships: ['OWNER'], permissions: ['LEARNER_PROGRESS_VIEW', 'LEARNER_PROFILE_VIEW', 'LEARNER_INTERVENTION_CREATE', 'LEARNER_GAPS_VIEW', 'LEARNER_ASSESSMENT_SUMMARY_VIEW', 'LEARNER_ASSESSMENT_DETAIL_VIEW'] } : { relationships: [], permissions: [] },
+}));
 const canUseCapabilityMock = vi.fn();
 vi.mock('@/lib/entitlements', () => ({ canUseCapability: (...a: any[]) => canUseCapabilityMock(...a) }));
 
@@ -57,12 +63,30 @@ const getSimulationAttemptMock = vi.fn();
 const pauseSimulationAttemptMock = vi.fn();
 const resumeSimulationAttemptMock = vi.fn();
 const completeSimulationAttemptMock = vi.fn();
+const findOpenSimulationAttemptForProfileMock = vi.fn();
 vi.mock('@/lib/simulation/attempt.service', () => ({
   startSimulationAttempt: (...a: any[]) => startSimulationAttemptMock(...a),
   getSimulationAttempt: (...a: any[]) => getSimulationAttemptMock(...a),
   pauseSimulationAttempt: (...a: any[]) => pauseSimulationAttemptMock(...a),
   resumeSimulationAttempt: (...a: any[]) => resumeSimulationAttemptMock(...a),
   completeSimulationAttempt: (...a: any[]) => completeSimulationAttemptMock(...a),
+  findOpenSimulationAttemptForProfile: (...a: any[]) => findOpenSimulationAttemptForProfileMock(...a),
+  expireSimulationAttemptIfInactive: async () => false,
+  DeliveryPolicyConfigurationError: class DeliveryPolicyConfigurationError extends Error {},
+  SimulationModeNotAllowedError: class SimulationModeNotAllowedError extends Error {},
+}));
+
+// Track B: submission finalizes open items and scores through exam-core.
+const finalizeOpenItemsMock = vi.fn();
+vi.mock('@/lib/simulation/item-resolution.service', () => ({
+  finalizeOpenItemsForSubmission: (...a: any[]) => finalizeOpenItemsMock(...a),
+  SimulationItemNotActiveError: class SimulationItemNotActiveError extends Error {},
+}));
+const scoreAndRecordAttemptResultMock = vi.fn();
+vi.mock('@/lib/exam-core/results.service', () => ({
+  scoreAndRecordAttemptResult: (...a: any[]) => scoreAndRecordAttemptResultMock(...a),
+  getAttemptResult: async () => null,
+  deriveExamLifecycle: () => 'IN_PROGRESS',
 }));
 
 vi.mock('@/lib/simulation/plan.service', () => ({ TimingConfigurationError: class TimingConfigurationError extends Error {} }));
@@ -88,7 +112,6 @@ import { POST as attemptsPOST } from '@/app/api/simulation/attempts/route';
 import { GET as attemptGET } from '@/app/api/simulation/attempts/[id]/route';
 import { POST as pausePOST } from '@/app/api/simulation/attempts/[id]/pause/route';
 import { POST as resumePOST } from '@/app/api/simulation/attempts/[id]/resume/route';
-import { POST as responsesPOST } from '@/app/api/simulation/attempts/[id]/responses/route';
 import { POST as completePOST } from '@/app/api/simulation/attempts/[id]/complete/route';
 import { GET as adminPolicyGET, POST as adminPolicyPOST } from '@/app/api/admin/readiness/policy/route';
 import { GET as adminScoreModelsGET, POST as adminScoreModelsPOST } from '@/app/api/admin/readiness/score-conversion-models/route';
@@ -132,6 +155,9 @@ beforeEach(() => {
   pauseSimulationAttemptMock.mockReset().mockResolvedValue({ id: 'sa-1', status: 'PAUSED' });
   resumeSimulationAttemptMock.mockReset().mockResolvedValue({ id: 'sa-1', status: 'ACTIVE' });
   completeSimulationAttemptMock.mockReset().mockResolvedValue({ id: 'sa-1', status: 'COMPLETED' });
+  findOpenSimulationAttemptForProfileMock.mockReset().mockResolvedValue(null);
+  finalizeOpenItemsMock.mockReset().mockResolvedValue({ committedDrafts: 0, missing: 0 });
+  scoreAndRecordAttemptResultMock.mockReset().mockResolvedValue({ id: 'res-1', rawScore: 1, maxScore: 1, scoringStatus: 'SCORED' });
 
   recordSimulationItemResponseMock.mockReset().mockResolvedValue({ responseId: 'resp-1', evaluation: {}, evidenceWritten: true });
   getSimulationScoreSummaryMock.mockReset().mockResolvedValue({ rawScore: 1, maxScore: 1, byComponent: {} });
@@ -154,10 +180,6 @@ const LEARNER_ROUTES: Array<{ name: string; call: () => Promise<any> }> = [
   { name: 'simulation/attempts/[id] GET', call: () => attemptGET(urlReq('https://studyus.test/api/simulation/attempts/sa-1'), withParams('sa-1')) },
   { name: 'simulation/attempts/[id]/pause POST', call: () => pausePOST(jsonReq({}), withParams('sa-1')) },
   { name: 'simulation/attempts/[id]/resume POST', call: () => resumePOST(jsonReq({}), withParams('sa-1')) },
-  {
-    name: 'simulation/attempts/[id]/responses POST',
-    call: () => responsesPOST(jsonReq({ assessmentComponentId: VALID_ID, question: { answerFormat: 'single_choice' }, studentAnswer: 'A' }), withParams('sa-1')),
-  },
   { name: 'simulation/attempts/[id]/complete POST', call: () => completePOST(jsonReq({}), withParams('sa-1')) },
 ];
 
@@ -284,20 +306,73 @@ describe('UX-2 security: starting a simulation requires owning the exam profile'
   });
   it('the learner\'s own profile proceeds exactly as before', async () => {
     dbQueryMock.mockImplementation(async (sql: string, params: unknown[]) =>
-      /FROM student_exam_profiles WHERE id = \$1 AND student_id = \$2/.test(sql) && params[0] === body.examProfileId && params[1] === VALID_ID ? { rows: [{ owned: 1 }] } : { rows: [] },
+      /FROM student_exam_profiles WHERE id = \$1 AND student_id = \$2/.test(sql) && params[0] === body.examProfileId && params[1] === VALID_ID
+        ? { rows: [{ owned: 1 }] }
+        : /JOIN exam_versions v ON v\.exam_definition_id = p\.exam_definition_id/.test(sql) && params[0] === body.examProfileId && params[1] === VALID_ID
+          ? { rows: [{ startable: 1 }] }
+          : { rows: [] },
     );
     const res: any = await attemptsPOST(jsonReq(body));
     expect(res.status).toBe(200);
     expect(startSimulationAttemptMock).toHaveBeenCalledWith(expect.objectContaining({ examProfileId: body.examProfileId, studentId: VALID_ID }));
   });
+  it('foundation: an owned profile with a non-PUBLISHED or other-exam version -> 409, nothing started', async () => {
+    dbQueryMock.mockImplementation(async (sql: string, params: unknown[]) =>
+      /FROM student_exam_profiles WHERE id = \$1 AND student_id = \$2/.test(sql) && params[0] === body.examProfileId ? { rows: [{ owned: 1 }] } : { rows: [] },
+    );
+    const res: any = await attemptsPOST(jsonReq(body));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe('EXAM_VERSION_NOT_STARTABLE');
+    expect(getSimulationEligibilityMock).not.toHaveBeenCalled();
+    expect(startSimulationAttemptMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('case M/54: finalization is idempotent-or-safely-rejected, never re-scored', () => {
+  it('Track B: a retried submission of a COMPLETED attempt returns the SAME stored result, never re-runs diagnosis/readiness', async () => {
+    getSimulationAttemptMock.mockResolvedValue({ id: 'sa-1', studentId: VALID_ID, status: 'COMPLETED', examAttemptId: 'ea-1', examVersionId: VALID_ID, examProfileId: 'p-1' });
+    const res: any = await completePOST(jsonReq({}), withParams('sa-1'));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.alreadySubmitted).toBe(true);
+    expect(body.data.result.id).toBe('res-1');
+    expect(finalizeOpenItemsMock).not.toHaveBeenCalled();
+    expect(completeSimulationAttemptMock).not.toHaveBeenCalled();
+    expect(runPostExamDiagnosisMock).not.toHaveBeenCalled();
+    expect(computeReadinessSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it('Track B: an open attempt for the same profile is returned (409 ATTEMPT_IN_PROGRESS), never a second attempt', async () => {
+    findOpenSimulationAttemptForProfileMock.mockResolvedValue({ id: 'sa-open' });
+    dbQueryMock.mockResolvedValue({ rows: [{ '?column?': 1 }] }); // owned profile, startable published version
+    const res: any = await attemptsPOST(jsonReq({ studentId: VALID_ID, examProfileId: VALID_ID, examVersionId: VALID_ID, simulationType: 'MINI_MOCK', timingMode: 'UNTIMED', language: 'es' }));
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body).toMatchObject({ error: 'ATTEMPT_IN_PROGRESS', data: { simulationAttemptId: 'sa-open' } });
+    expect(startSimulationAttemptMock).not.toHaveBeenCalled();
+  });
+
+  it('Track B: the start body is strict -- a client-supplied question / answer key is rejected (400)', async () => {
+    dbQueryMock.mockResolvedValue({ rows: [{ '?column?': 1 }] });
+    const res: any = await attemptsPOST(jsonReq({ studentId: VALID_ID, examProfileId: VALID_ID, examVersionId: VALID_ID, simulationType: 'MINI_MOCK', timingMode: 'UNTIMED', language: 'es', correctAnswer: 'A' }));
+    expect(res.status).toBe(400);
+    expect(startSimulationAttemptMock).not.toHaveBeenCalled();
+  });
+
   it('a second complete call on an already-completed attempt returns 409, never re-runs diagnosis/readiness', async () => {
     completeSimulationAttemptMock.mockRejectedValue(new Error('simulation attempt sa-1 could not be completed from its current status'));
     const res: any = await completePOST(jsonReq({}), withParams('sa-1'));
     expect(res.status).toBe(409);
     expect(runPostExamDiagnosisMock).not.toHaveBeenCalled();
     expect(determineNextActionMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('the retired client-graded responses route stays removed (technical cleanup)', () => {
+  it('POST /api/simulation/attempts/[id]/responses no longer exists: answers go only through .../next-item (server-held item)', async () => {
+    const { existsSync } = await import('fs');
+    const { join } = await import('path');
+    expect(existsSync(join(process.cwd(), 'src/app/api/simulation/attempts/[id]/responses'))).toBe(false);
+    expect(existsSync(join(process.cwd(), 'src/app/api/simulation/attempts/[id]/next-item/route.ts'))).toBe(true);
   });
 });

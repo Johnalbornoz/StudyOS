@@ -6,7 +6,7 @@
  * back to make an authorization decision -- audit is a record, not a
  * gate. Never accepts a secret/credential value in any field.
  */
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 
 export type AdminAuditAction =
   | 'INVITE_SENT'
@@ -33,12 +33,35 @@ export type AdminAuditAction =
   | 'MEMBERSHIP_CANCELLED'
   | 'REFUND_DISPUTE_RECORDED'
   | 'MEMBERSHIP_RECONCILED'
-  | 'PASSWORD_CHANGE_CONFIRMED';
+  | 'PASSWORD_CHANGE_CONFIRMED'
+  // Track A -- institutional role decisions (who may act for an institution).
+  | 'MEMBERSHIP_REJECTED'
+  | 'TEACHER_MEMBERSHIP_REVOKED'
+  | 'INSTITUTION_CREATED'
+  | 'INSTITUTION_ADMIN_GRANTED'
+  // Track A -- institution profile and coordinators.
+  | 'INSTITUTION_UPDATED'
+  | 'COORDINATOR_INVITED'
+  | 'COORDINATOR_INVITATION_ACCEPTED'
+  | 'COORDINATOR_INVITATION_REVOKED'
+  | 'COORDINATOR_REMOVED'
+  // Platform runtime configuration (platform_settings), e.g. Question Bank Factory controls.
+  | 'PLATFORM_SETTING_UPDATED'
+  // Question Bank -- a reviewer's concept attribution of an item version (reviewed content).
+  | 'QUESTION_BANK_ITEM_ATTRIBUTION_SET'
+  // L10 SF-7 -- a platform administrator ended a parent-learner relationship.
+  | 'PARENT_RELATIONSHIP_ENDED'
+  // P1-03 -- a governed operator script quarantined Learning content that fails item validation.
+  | 'LEARNING_ITEM_QUARANTINED'
+  // Pilot QA -- scripts/operations/pilot-qa-retain-time.ts moved a synthetic QA student's concept evidence back in time.
+  | 'PILOT_QA_RETAIN_TIME_SHIFT'
+  // Pilot QA (D76) -- scripts/operations/pilot-qa-practice-depth.ts ran the existing PRACTICE bank replenishment toward the depth target.
+  | 'PILOT_QA_PRACTICE_DEPTH_REPLENISH';
 
 export interface RecordAdminActionInput {
   actorUserId: string;
   action: AdminAuditAction;
-  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY';
+  targetType: 'USER' | 'ROLE' | 'INVITATION' | 'TEST_IDENTITY' | 'MEMBERSHIP' | 'INSTITUTION' | 'PLATFORM_SETTING' | 'QUESTION_BANK_ITEM_VERSION' | 'PARENT_RELATIONSHIP' | 'QUESTION_BANK_CANDIDATE' | 'PREPARED_ACTIVITY' | 'QUIZ_SESSION' | 'LEARNING_EVIDENCE';
   targetId?: string | null;
   previousState?: unknown;
   newState?: unknown;
@@ -52,8 +75,9 @@ function resolveEnvironment(): string {
   return process.env.VERCEL_ENV ?? 'development';
 }
 
-export async function recordAdminAction(input: RecordAdminActionInput): Promise<void> {
-  await db.query(
+/** `client` lets a caller write the audit row in the same transaction as the change it records. */
+export async function recordAdminAction(input: RecordAdminActionInput, client: DbExecutor = db): Promise<void> {
+  await client.query(
     `
     INSERT INTO admin_audit_log
       (actor_user_id, action, target_type, target_id, previous_state, new_state, reason, result, environment, correlation_id)

@@ -1,0 +1,42 @@
+{
+  "runId": "qf5-live-002",
+  "batchId": "CAMBRIDGE.0580.EXTENDED.P4:C1:001",
+  "phase": "C1",
+  "profileId": "CAMBRIDGE.0580.EXTENDED.P4",
+  "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.2.0",
+  "cumulativeSpendUsd": 4.302635,
+  "timestamp": "2026-10-12T12:33:28.606Z",
+  "candidateIds": [
+    "v2.cambridge.0580-extended/p4/cie.p4.functions#0/004#0",
+    "v2.cambridge.0580-extended/p4/cie.p4.functions#0/004#1",
+    "v2.cambridge.0580-extended/p4/cie.p4.mensuration#0/004#0",
+    "v2.cambridge.0580-extended/p4/cie.p4.mensuration#0/004#1",
+    "v2.cambridge.0580-extended/p4/cie.p4.statistics#0/004#0",
+    "v2.cambridge.0580-extended/p4/cie.p4.statistics#0/004#1"
+  ],
+  "decisions": {
+    "v2.cambridge.0580-extended/p4/cie.p4.functions#0/004#1": "AUTO_REJECT",
+    "v2.cambridge.0580-extended/p4/cie.p4.mensuration#0/004#1": "AUTO_REJECT",
+    "v2.cambridge.0580-extended/p4/cie.p4.statistics#0/004#1": "AUTO_REJECT"
+  },
+  "metrics": {
+    "rawGenerated": 6,
+    "structuralPass": 5,
+    "answerPass": 0,
+    "constructPass": 2,
+    "difficultyMatch": 0,
+    "autoApproved": 0,
+    "humanReview": 0,
+    "autoRejected": 3,
+    "specifications": 3,
+    "firstAttemptPass": 0,
+    "regenerated": 3,
+    "specificationIssues": 3,
+    "firstAttemptPassRate": 0,
+    "regenerationRate": 1,
+    "humanReviewRate": 0,
+    "rejectionRate": 1
+  },
+  "hash": "84d1409f7a53bfbe9efc32c3dd8a1c38c0049e7ddd5dd6d456ed6074c50dfcd0"
+}

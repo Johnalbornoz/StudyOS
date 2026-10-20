@@ -1,0 +1,598 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r4.red-a",
+    "component": "redaccion",
+    "language": "es",
+    "stimulusKind": "SHORT_SOURCE_TEXT",
+    "stimulusBrief": "Párrafo ORIGINAL de 130 a 190 palabras sobre un club de lectura juvenil, escrito como borrador de estudiante con las oraciones NUMERADAS así: (1) ... (2) ... hasta (7) u (8). Debe contener una redundancia, una unión de oraciones mejorable con un conector y un punto donde convenga añadir una precisión.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.red.elision",
+        "conceptStableId": "write.concision-elision",
+        "difficulty": 3,
+        "focus": "qué parte de una oración numerada es redundante y debe eliminarse, o cuál es la versión más concisa sin perder información"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.red.cohesion",
+        "conceptStableId": "write.cohesion-connectors",
+        "difficulty": 3,
+        "focus": "qué conector o transición une mejor dos oraciones numeradas según su relación lógica"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.red.adicion",
+        "conceptStableId": "write.stylistic-addition",
+        "difficulty": 3,
+        "focus": "qué oración conviene añadir en un punto indicado para ampliar o precisar la idea"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.red.cohesion",
+        "conceptStableId": "write.cohesion-connectors",
+        "difficulty": 4,
+        "focus": "qué reordenamiento de dos oraciones numeradas mejora la coherencia del párrafo"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Borrador sobre el club de lectura Brújula",
+      "text": "(1) En la Biblioteca del Parque, un grupo de estudiantes creó el club de lectura Brújula para conversar sobre novelas y crónicas. (2) Los integrantes se reúnen juntos cada jueves por la tarde, después de clases. (3) Al comienzo de cada mes, proponen títulos y votan por una obra que pueda conseguirse en papel o en formato digital. (4) La coordinadora, Inés, publica el calendario de capítulos en un mural y en el chat del grupo. (5) Al iniciar cada ciclo, reparte las funciones de moderación, registro de ideas y búsqueda de datos sobre el autor. (6) Por eso, al terminar la lectura, los participantes comparan sus notas y preparan una pregunta para la siguiente reunión. (7) La visita animó a varios integrantes a incluir novelas gráficas entre las próximas propuestas. (8) En agosto, el club invitó a una ilustradora local, quien explicó cómo transforma una escena escrita en imágenes.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué parte de la oración (2) debe eliminarse para hacerla más concisa sin perder información?",
+        "options": [
+          {
+            "text": "Eliminar la palabra «juntos».",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La idea de reunirse ya implica que los integrantes están juntos, por lo que esa palabra repite información."
+          },
+          {
+            "text": "Eliminar la frase «cada jueves».",
+            "isKey": false,
+            "misconception": "ELIMINATES_SCHEDULE_DETAIL",
+            "rationale": "Esta frase aporta la frecuencia de las reuniones, un dato específico que no está repetido."
+          },
+          {
+            "text": "Eliminar la expresión «por la tarde».",
+            "isKey": false,
+            "misconception": "ELIMINATES_TIME_DETAIL",
+            "rationale": "La expresión precisa el horario de la reunión y complementa la información sobre el día."
+          },
+          {
+            "text": "Eliminar la frase «después de clases».",
+            "isKey": false,
+            "misconception": "ELIMINATES_CONTEXTUAL_DETAIL",
+            "rationale": "Esta frase explica en qué momento de la tarde se reúnen los integrantes."
+          }
+        ],
+        "evidenceQuote": "Los integrantes se reúnen juntos cada jueves por la tarde, después de clases."
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué conector debe reemplazar «Por eso,» al inicio de la oración (6) para expresar mejor la relación con la oración (5)?",
+        "options": [
+          {
+            "text": "Después,",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La oración (5) describe una acción al inicio del ciclo y la oración (6) presenta una actividad que ocurre al terminar la lectura."
+          },
+          {
+            "text": "Sin embargo,",
+            "isKey": false,
+            "misconception": "CONFUSES_SEQUENCE_WITH_CONTRAST",
+            "rationale": "Este conector introduciría una oposición entre las acciones, pero las dos forman parte del mismo proceso."
+          },
+          {
+            "text": "Por ejemplo,",
+            "isKey": false,
+            "misconception": "CONFUSES_SEQUENCE_WITH_EXAMPLE",
+            "rationale": "La oración (6) no es un caso particular de repartir funciones, sino una acción posterior."
+          },
+          {
+            "text": "En cambio,",
+            "isKey": false,
+            "misconception": "CONFUSES_SEQUENCE_WITH_ALTERNATIVE",
+            "rationale": "Este conector plantea contraste o sustitución, relaciones que no aparecen entre las dos oraciones."
+          }
+        ],
+        "evidenceQuote": "Al iniciar cada ciclo, reparte las funciones de moderación, registro de ideas y búsqueda de datos sobre el autor."
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Cuál oración conviene añadir después de la oración (3) para precisar un criterio de selección de las lecturas?",
+        "options": [
+          {
+            "text": "Además, el grupo verifica que haya suficientes ejemplares para que todos puedan participar.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La oración amplía el criterio de disponibilidad de las obras y explica cómo el grupo facilita la participación."
+          },
+          {
+            "text": "A veces, algunos títulos tienen portadas de colores intensos y llamativos.",
+            "isKey": false,
+            "misconception": "ADDS_IRRELEVANT_DETAIL",
+            "rationale": "El aspecto de las portadas no precisa la disponibilidad ni el proceso de selección de los libros."
+          },
+          {
+            "text": "El mural de Inés se coloca junto a la puerta principal de la biblioteca.",
+            "isKey": false,
+            "misconception": "ADDS_PREMATURE_DETAIL",
+            "rationale": "La ubicación del mural se relaciona con la oración (4), no con los criterios para elegir una obra."
+          },
+          {
+            "text": "Los integrantes comentan el texto después de leer los capítulos asignados.",
+            "isKey": false,
+            "misconception": "REPEATS_LATER_INFORMATION",
+            "rationale": "La idea anticipa la actividad explicada después, pero no amplía la selección de las lecturas."
+          }
+        ],
+        "evidenceQuote": "votan por una obra que pueda conseguirse en papel o en formato digital."
+      },
+      {
+        "slot": "s4",
+        "stem": "¿Qué cambio de orden entre dos oraciones mejoraría la coherencia del párrafo?",
+        "options": [
+          {
+            "text": "Colocar la oración (8) antes de la oración (7).",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Primero debe presentarse la visita de la ilustradora y después su efecto en las propuestas de los integrantes."
+          },
+          {
+            "text": "Colocar la oración (4) antes de la oración (3).",
+            "isKey": false,
+            "misconception": "DISRUPTS_PROCESS_ORDER",
+            "rationale": "El calendario de capítulos debe aparecer después de que el grupo haya elegido una obra para leer."
+          },
+          {
+            "text": "Colocar la oración (6) antes de la oración (5).",
+            "isKey": false,
+            "misconception": "REVERSES_CHRONOLOGICAL_ORDER",
+            "rationale": "Comparar notas al final de la lectura ocurre después de repartir las funciones al inicio del ciclo."
+          },
+          {
+            "text": "Colocar la oración (2) antes de la oración (1).",
+            "isKey": false,
+            "misconception": "REMOVES_INTRODUCTORY_CONTEXT",
+            "rationale": "La oración (1) presenta el club antes de informar cuándo se reúnen sus integrantes."
+          }
+        ],
+        "evidenceQuote": "En agosto, el club invitó a una ilustradora local, quien explicó cómo transforma una escena escrita en imágenes."
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "82ab9d67-27f0-4d5b-b34d-e7ef0015dff9",
+    "generatedAt": "2026-10-16T03:34:34.109Z",
+    "unitId": "paa-pilot.r4.red-a"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "df83383e-01c4-4395-b9af-165c0f4d163d",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": "La oración (7) menciona «La visita» antes de que la oración (8) presente la visita de la ilustradora, lo que produce una referencia anticipada incoherente en el orden original.",
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "5fa04422-0ad1-41e9-a4fb-4ef36a9b8fb0",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": "La oración (7) menciona «La visita» antes de que la visita se introduzca explícitamente en la oración (8), lo que genera una incoherencia de cohesión y secuencia.",
+        "items": [
+          {
+            "n": 1,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "REVIEW_REQUIRED",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.red-elision.30b88af31456",
+        "slot": "s1",
+        "objectiveCode": "paa.red.elision",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "STIMULUS",
+          "ORIGINALITY"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.elision / write.concision-elision"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": false,
+            "detail": "its stimulus was not certified"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": false,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-cohesion.e9d0d9ce7388",
+        "slot": "s2",
+        "objectiveCode": "paa.red.cohesion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "STIMULUS",
+          "ORIGINALITY"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.cohesion / write.cohesion-connectors"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": false,
+            "detail": "its stimulus was not certified"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": false,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-adicion.524b984b211a",
+        "slot": "s3",
+        "objectiveCode": "paa.red.adicion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "STRUCTURE",
+          "STIMULUS",
+          "ORIGINALITY",
+          "SCORING_COMPATIBILITY"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": false,
+            "detail": "ABSOLUTE_WORDING_SINGLES_OUT_AN_OPTION"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.adicion / write.stylistic-addition"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": false,
+            "detail": "its stimulus was not certified"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": false,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": false,
+            "detail": "SELECTED_RESPONSE_NOT_CERTIFIABLE: ABSOLUTE_WORDING_SINGLES_OUT_AN_OPTION"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.red-cohesion.63e1895cd0c1",
+        "slot": "s4",
+        "objectiveCode": "paa.red.cohesion",
+        "state": "REVIEW_REQUIRED",
+        "failed": [
+          "STIMULUS",
+          "ORIGINALITY"
+        ],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.red.cohesion / write.cohesion-connectors"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": false,
+            "detail": "its stimulus was not certified"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": false,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

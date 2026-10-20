@@ -1,0 +1,12 @@
+{
+ "kind": "CONTENT_FACTORY_GOVERNED_SOURCE_EXTRACT",
+ "batchId": "CF-IB-AAHL-01-R1",
+ "status": "SOURCE_NOT_RETRIEVED",
+ "governedSource": { "key": "ibo-math-aa-guide-2021", "registry": "src/lib/exam-core/catalog/sources.ts", "title": "Mathematics: analysis and approaches guide (first assessment 2021)", "publisher": "IBO", "url": "https://www.ibo.org/globalassets/new-structure/university-admission/pdfs/dp-mathematics-analysis-and-approaches-guide-en.pdf", "documentVersion": "first assessment 2021", "license": "PUBLIC" },
+ "retrievalAttempts": [
+  { "at": "2026-10-14T19:36:57Z", "method": "HTTPS GET (curl, follow redirects)", "httpStatus": 403, "contentType": "text/html; charset=UTF-8", "bytes": 5831, "responseSha256": "f654a94e510259fffff81a76c1f4ccead8fb675e233e10666e968974788a49df", "finding": "Cloudflare bot-detection challenge page ('Just a moment...'), not the PDF", "action": "stopped: bot detection is not bypassed; no retry, no browser automation through the challenge, no mirror used" }
+ ],
+ "notUsed": [ { "key": "ib-math-aa-guide-2021", "url": "https://resources.finalsite.net/images/v1701373021/d11org/afkyrocwzw9kr5xjo2xu/Mathematics-AnalysisandApproaches.pdf", "reason": "third-party (school-hosted) mirror; not authorised while the official source is the instruction" } ],
+ "correspondences": "unchanged from IB_CONCEPT_CORRESPONDENCE_MANIFEST.json: 1/10 SOURCE_BACKED (math.alg.quadratics, by certified placement), 9/10 BLOCKED",
+ "pdfStoredInRepository": false
+}

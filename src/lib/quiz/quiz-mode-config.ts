@@ -106,7 +106,7 @@ export const QUIZ_MODE_CONFIG: Record<
   canonical_retain: {
     guidance:
       'This is an independent retention check -- verify the student still genuinely remembers this concept, unaided, using NEW questions they have never seen before (never a repeat of a prior practice/prove/retain question, even reworded). Prefer types that cannot be answered by pattern-matching or formula-plugging alone (short_answer, error_detection, justification, prediction) and are hard to guess. Keep each question tightly focused on the core idea of this concept.',
-    defaultMax: 10,
+    defaultMax: 5, // 2026-10-17 pilot policy: Retain is 5 independent novel questions (CANONICAL_POLICY.retention.itemCount)
     visualAidRate: 0,
     evidenceSource: 'SOLO_VERIFICATION',
   },

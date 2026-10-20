@@ -1,0 +1,974 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r1.lect-exp",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Texto expositivo-argumentativo ORIGINAL de 300 a 380 palabras sobre la restauración de un humedal costero y sus efectos sobre una comunidad de pescadores. Debe tener una tesis reconocible, datos concretos, al menos una relación causa-efecto y dos o tres palabras cuyo sentido dependa del contexto. Párrafos breves.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.explicit-information",
+        "difficulty": 2,
+        "focus": "un dato o detalle afirmado explícitamente en el texto"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.central-idea",
+        "difficulty": 3,
+        "focus": "la tesis o idea central del texto"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.lect.inferencia",
+        "conceptStableId": "read.inference",
+        "difficulty": 3,
+        "focus": "una conclusión que el texto implica sin afirmarla"
+      },
+      {
+        "slot": "s4",
+        "objectiveCode": "paa.lect.inferencia",
+        "conceptStableId": "read.inference",
+        "difficulty": 4,
+        "focus": "la relación causa-efecto o la intención del autor, deducida del texto"
+      },
+      {
+        "slot": "s5",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 2,
+        "focus": "el sentido de una palabra o expresión tal como se usa en el texto (cítala entre comillas)"
+      },
+      {
+        "slot": "s6",
+        "objectiveCode": "paa.lect.vocabulario",
+        "conceptStableId": "read.vocabulary-in-context",
+        "difficulty": 3,
+        "focus": "el sentido contextual de otra palabra o expresión del texto (cítala entre comillas)"
+      },
+      {
+        "slot": "s7",
+        "objectiveCode": "paa.lect.evidencia",
+        "conceptStableId": "read.textual-evidence",
+        "difficulty": 4,
+        "focus": "qué fragmento del texto respalda mejor una afirmación dada sobre él"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Restaurar para pescar mejor",
+      "text": "El humedal costero de Bahía Esmeralda perdió cerca de un tercio de sus manglares entre 1998 y 2018. La apertura de una carretera elevó un terraplén junto a la laguna y bloqueó varios flujos de marea. Como resultado, el agua salobre permanecía estancada por más tiempo, disminuían los refugios para peces jóvenes y aumentaba la erosión de las orillas. Para muchas familias pescadoras, la pérdida no era paisajística: las capturas de lisa y camarón se volvieron irregulares.\n\nEn 2019, el municipio, una cooperativa pesquera y una universidad local iniciaron un plan sobre 86 hectáreas. El plan reabrió tres canales que conectaban la laguna con el mar, retiró sedimentos acumulados y plantó 14 000 plántulas de mangle. La restauración no fue una obra aislada: buscó recomponer la trama de mareas, raíces, peces y decisiones humanas.\n\nLos pescadores eligieron dos representantes para un comité de seguimiento y acordaron dejar sin redes dos zonas de crianza durante seis semanas cada año. En 2023, los registros de la cooperativa indicaron que la captura promedio de lisa pasó de 18 a 27 kilogramos por viaje durante los mismos meses de comparación. Los ingresos promedio por viaje también aumentaron de 41 a 53 pesos locales. Además, las raíces nuevas afirmaron sectores blandos de la orilla y la franja vegetada amortiguó la fuerza de las olas durante dos tormentas de 2022.\n\nAlgunos pescadores cuestionaron al inicio las zonas temporales sin redes, pues temían perder jornadas de trabajo. Sin embargo, el comité informó que los peces pequeños eran más visibles allí antes de regresar a áreas abiertas. El monitoreo también advirtió que, sin limpieza periódica, el sedimento podría cerrar de nuevo los canales. Por ello, la experiencia de Bahía Esmeralda sostiene una tesis precisa: la restauración funciona mejor cuando combina obras ecológicas con acuerdos comunitarios, porque así protege el humedal y ofrece una base más estable para la pesca artesanal.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué acción formó parte del plan iniciado en 2019?",
+        "options": [
+          {
+            "text": "Reabrió tres canales entre la laguna y el mar.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El texto afirma explícitamente que el plan reabrió tres canales que conectaban ambos cuerpos de agua."
+          },
+          {
+            "text": "Dragó cinco canales entre la laguna y el mar.",
+            "isKey": false,
+            "misconception": "ALTERS_NUMERICAL_DETAIL",
+            "rationale": "Es atractiva porque conserva la idea de intervenir canales, pero el texto indica tres canales, no cinco."
+          },
+          {
+            "text": "Sembró canales nuevos entre la laguna y el mar.",
+            "isKey": false,
+            "misconception": "CONFUSES_ACTIONS",
+            "rationale": "El plan plantó plántulas de mangle, pero los canales fueron reabiertos, no sembrados."
+          },
+          {
+            "text": "Construyó muelles entre la laguna y el mar.",
+            "isKey": false,
+            "misconception": "INVENTS_UNSTATED_DETAIL",
+            "rationale": "Los muelles no se mencionan como parte de las acciones del plan."
+          }
+        ],
+        "evidenceQuote": "el plan reabrió tres canales que conectaban la laguna con el mar"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Cuál expresa mejor la tesis central del texto?",
+        "options": [
+          {
+            "text": "La restauración mejora al unir acciones ecológicas y acuerdos comunitarios.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Esta opción resume la tesis final y relaciona la protección ambiental con la estabilidad de la pesca."
+          },
+          {
+            "text": "La restauración depende principalmente de ampliar las carreteras costeras.",
+            "isKey": false,
+            "misconception": "REVERSES_CAUSAL_ROLE",
+            "rationale": "La carretera contribuyó al deterioro del humedal; no se presenta como una condición para restaurarlo."
+          },
+          {
+            "text": "La restauración busca reemplazar la pesca por actividades turísticas locales.",
+            "isKey": false,
+            "misconception": "INVENTS_MAIN_IDEA",
+            "rationale": "El texto trata sobre fortalecer la pesca artesanal, no sobre sustituirla por turismo."
+          },
+          {
+            "text": "La restauración requiere eliminar toda actividad pesquera en la laguna.",
+            "isKey": false,
+            "misconception": "OVERGENERALIZES_RESTRICTION",
+            "rationale": "Se establecieron cierres temporales en dos zonas, no la eliminación de la actividad pesquera."
+          }
+        ],
+        "evidenceQuote": "la restauración funciona mejor cuando combina obras ecológicas con acuerdos comunitarios"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué conclusión se puede inferir razonablemente sobre el futuro del proyecto?",
+        "options": [
+          {
+            "text": "El proyecto requerirá mantenimiento y vigilancia en los próximos años.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Si el sedimento puede volver a cerrar los canales, será necesario mantenerlos y supervisar su estado."
+          },
+          {
+            "text": "Las plántulas eliminarán la necesidad de limpiar los canales.",
+            "isKey": false,
+            "misconception": "IGNORES_CONDITION",
+            "rationale": "El texto advierte que los canales pueden cerrarse de nuevo sin limpieza periódica."
+          },
+          {
+            "text": "Los cambios de marea volverán innecesario el seguimiento local.",
+            "isKey": false,
+            "misconception": "CONTRADICTS_MONITORING_NEED",
+            "rationale": "El comité y el monitoreo son presentados como elementos importantes para sostener la restauración."
+          },
+          {
+            "text": "La pesca artesanal se trasladará hacia puertos fuera de la bahía.",
+            "isKey": false,
+            "misconception": "UNSUPPORTED_PREDICTION",
+            "rationale": "El texto no anticipa un traslado de la pesca a otros puertos."
+          }
+        ],
+        "evidenceQuote": "sin limpieza periódica, el sedimento podría cerrar de nuevo los canales"
+      },
+      {
+        "slot": "s4",
+        "stem": "¿Con qué propósito el autor incluye los datos sobre el aumento de ingresos por viaje?",
+        "options": [
+          {
+            "text": "Vincular la recuperación ambiental con la estabilidad económica local.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Los ingresos se presentan junto con la recuperación del humedal para mostrar un efecto relevante para las familias pescadoras."
+          },
+          {
+            "text": "Describir una competencia comercial entre cooperativas vecinas.",
+            "isKey": false,
+            "misconception": "MISREADS_AUTHOR_PURPOSE",
+            "rationale": "No se comparan cooperativas ni se describe una competencia comercial."
+          },
+          {
+            "text": "Calcular el costo de plantar manglares en la laguna.",
+            "isKey": false,
+            "misconception": "CONFUSES_REVENUE_WITH_COST",
+            "rationale": "La cifra corresponde a ingresos por viaje, no a gastos de restauración."
+          },
+          {
+            "text": "Justificar la construcción de muelles para embarcaciones mayores.",
+            "isKey": false,
+            "misconception": "INVENTS_AUTHOR_PURPOSE",
+            "rationale": "El texto no propone muelles ni embarcaciones mayores como objetivo del proyecto."
+          }
+        ],
+        "evidenceQuote": "Los ingresos promedio por viaje también aumentaron de 41 a 53 pesos locales"
+      },
+      {
+        "slot": "s5",
+        "stem": "En el texto, ¿qué significa “trama”?",
+        "options": [
+          {
+            "text": "Una red de relaciones ecológicas y sociales.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La palabra alude a la conexión entre procesos naturales y decisiones de las personas."
+          },
+          {
+            "text": "Un relato tradicional de familias pescadoras.",
+            "isKey": false,
+            "misconception": "SELECTS_ALTERNATE_MEANING",
+            "rationale": "Trama puede referirse a un relato, pero aquí enumera elementos ambientales y sociales conectados."
+          },
+          {
+            "text": "Una capa de lodo sobre las orillas.",
+            "isKey": false,
+            "misconception": "CONFUSES_WITH_NEARBY_DETAIL",
+            "rationale": "El sedimento se menciona en el texto, pero no define la palabra trama en este contexto."
+          },
+          {
+            "text": "Un plano técnico de los canales costeros.",
+            "isKey": false,
+            "misconception": "OVERLITERALIZES_CONTEXT",
+            "rationale": "No se habla de un dibujo o plano, sino de relaciones entre varios componentes."
+          }
+        ],
+        "evidenceQuote": "buscó recomponer la trama de mareas, raíces, peces y decisiones humanas"
+      },
+      {
+        "slot": "s6",
+        "stem": "En el texto, “amortiguó” la fuerza de las olas significa:",
+        "options": [
+          {
+            "text": "Disminuyó la intensidad del impacto de las olas.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La franja vegetada redujo la fuerza con que las olas afectaron la orilla."
+          },
+          {
+            "text": "Invirtió la dirección del movimiento de las olas.",
+            "isKey": false,
+            "misconception": "CONFUSES_REDUCTION_WITH_REVERSAL",
+            "rationale": "Amortiguar es reducir un efecto, no cambiar la dirección de las olas."
+          },
+          {
+            "text": "Midió la frecuencia de llegada de las olas.",
+            "isKey": false,
+            "misconception": "CONFUSES_EFFECT_WITH_MEASUREMENT",
+            "rationale": "El texto atribuye una función protectora a la vegetación, no una tarea de medición."
+          },
+          {
+            "text": "Anunció la llegada próxima de las olas.",
+            "isKey": false,
+            "misconception": "SELECTS_UNRELATED_MEANING",
+            "rationale": "La expresión no se refiere a comunicar o anticipar un acontecimiento."
+          }
+        ],
+        "evidenceQuote": "la franja vegetada amortiguó la fuerza de las olas durante dos tormentas"
+      },
+      {
+        "slot": "s7",
+        "stem": "¿Qué fragmento respalda mejor la afirmación de que la restauración incluyó participación directa de la comunidad pescadora?",
+        "options": [
+          {
+            "text": "“Los pescadores eligieron dos representantes para un comité de seguimiento”.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La elección de representantes muestra de manera directa que los pescadores participaron en el seguimiento del proyecto."
+          },
+          {
+            "text": "“El plan reabrió tres canales que conectaban la laguna con el mar”.",
+            "isKey": false,
+            "misconception": "EVIDENCE_ADDRESSES_DIFFERENT_CLAIM",
+            "rationale": "El fragmento prueba una obra física, pero no demuestra participación comunitaria."
+          },
+          {
+            "text": "“plantó 14 000 plántulas de mangle”.",
+            "isKey": false,
+            "misconception": "EVIDENCE_TOO_GENERAL",
+            "rationale": "La siembra describe una acción ecológica, sin identificar la intervención de los pescadores."
+          },
+          {
+            "text": "“la franja vegetada amortiguó la fuerza de las olas”.",
+            "isKey": false,
+            "misconception": "EVIDENCE_SUPPORTS_DIFFERENT_EFFECT",
+            "rationale": "El fragmento respalda un efecto de protección costera, no la participación de la comunidad."
+          }
+        ],
+        "evidenceQuote": "Los pescadores eligieron dos representantes para un comité de seguimiento"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "e6df565f-f9a0-4d7c-9591-edc12fff51eb",
+    "generatedAt": "2026-10-14T01:25:57.940Z",
+    "unitId": "paa-pilot.r1.lect-exp"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "fae03f70-059d-4e32-aedc-edefba29da5c",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "be253a0d-b9ab-4704-93ca-0fbff7b885c5",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 4,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 5,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 6,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 7,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-explicitas.b4d3669454a8",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.explicit-information"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.39f433704e5a@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-explicitas.2d65b3e522e9",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.central-idea"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.39f433704e5a@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-inferencia.37953856abe5",
+        "slot": "s3",
+        "objectiveCode": "paa.lect.inferencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.inferencia / read.inference"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.39f433704e5a@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-inferencia.0097813ea484",
+        "slot": "s4",
+        "objectiveCode": "paa.lect.inferencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.inferencia / read.inference"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.39f433704e5a@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.e3b02ec74526",
+        "slot": "s5",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.39f433704e5a@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-vocabulario.ef90b89f2c3e",
+        "slot": "s6",
+        "objectiveCode": "paa.lect.vocabulario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.vocabulario / read.vocabulary-in-context"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.39f433704e5a@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-evidencia.7d5fa07cb175",
+        "slot": "s7",
+        "objectiveCode": "paa.lect.evidencia",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.evidencia / read.textual-evidence"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.39f433704e5a@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

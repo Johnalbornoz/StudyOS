@@ -1,0 +1,41 @@
+priority,item_id,exam_family,subject,component,item_type,stimulus,question,options,proposed_canonical_answer,independent_solver_answer,solution,objective,intended_difficulty,actual_difficulty,tier_fit,direction,answer_match,answer_confidence,construct_fit,authenticity,distractor_quality,validator_flags,reason_for_escalation
+AUDIT,v2.saber11.math/math/saber.formulacion#0/010#1,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una biblioteca debe enviar cajas de libros y compara estas dos tarifas para un mismo trayecto:
+
+- Servicio A: cobra una tarifa fija de $18.000 y $450 por cada caja.
+- Servicio B: cobra $900 por cada una de las primeras 20 cajas. Por cada caja adicional a esas 20, cobra $500.
+
+La biblioteca solo puede enviar un número entero de cajas y desea escoger el servicio A únicamente cuando su costo sea estrictamente menor que el del servicio B.",¿Cuál es el primer número de cajas para el que la biblioteca debe escoger el servicio A?,A. 20 cajas | B. 21 cajas | C. 200 cajas | D. 201 cajas,D,D,"Sea n el número de cajas.
+
+Para el servicio A, el costo es 18.000 + 450n.
+
+Si n es mayor que 20, el costo del servicio B es 20·900 + (n − 20)·500, que equivale a 8.000 + 500n. Como se busca el primer valor para el que A sea estrictamente más barato, se plantea:
+
+18.000 + 450n < 8.000 + 500n
+10.000 < 50n
+200 < n.
+
+Por tanto, el menor número entero de cajas que cumple la desigualdad es 201. Además, para n ≤ 20, el servicio A no resulta más barato, pues en ese intervalo se compara 18.000 + 450n con 900n y la desigualdad a favor de A exigiría n > 40, algo imposible en ese intervalo. La respuesta es 201 cajas.",v2.saber11.math/math/saber.formulacion#0,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.saber11.math/math/saber.formulacion#2/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Un centro cultural debe instalar al menos 25 lámparas iguales. El proveedor ofrece estas opciones:
+
+| Opción de compra | Cantidad de lámparas | Precio |
+|---|---:|---:|
+| Una caja | 6 lámparas | $48.000 |
+| Una lámpara suelta | 1 lámpara | $9.000 |
+
+El centro dispone de un presupuesto máximo de $210.000. Todas las lámparas compradas se pueden utilizar.","¿Cuál estrategia permite instalar al menos 25 lámparas, respetar el presupuesto y gastar la menor cantidad posible?","A. Comprar 4 cajas y 1 lámpara suelta, para gastar $201.000. | B. Comprar 3 cajas y 7 lámparas sueltas, para gastar $207.000. | C. Comprar 4 cajas, para gastar $192.000. | D. Comprar 5 cajas, para gastar $240.000.",A,A,"Se compara cuántas cajas pueden comprarse y cuántas lámparas sueltas se necesitarían para llegar a 25. Con 4 cajas se obtienen 24 lámparas, por lo que se necesita 1 lámpara suelta. El costo es 4*48.000 + 9.000 = 201.000 pesos, y se usan 25 lámparas. Con 3 cajas se necesitan 7 lámparas sueltas y el costo es 207.000 pesos, mayor que 201.000. Con 5 cajas se supera el presupuesto, y con 4 cajas solamente no se alcanza la cantidad requerida. Por tanto, la estrategia de menor costo que cumple las dos condiciones es comprar 4 cajas y 1 lámpara suelta.",v2.saber11.math/math/saber.formulacion#2,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.paa/lectura/paa.lect.evidencia#0/003#0,PAA,Lectura,LECTURA,SELECTED_RESPONSE,"Texto 1
+
+El ayuntamiento plantó 120 árboles nativos en tres colonias que un mapa térmico había señalado como especialmente calurosas. Doce meses después, 103 árboles seguían vivos, lo que el informe municipal describió como una supervivencia aproximada del 86 %. Durante los primeros cuatro meses, las cuadrillas los regaron una vez por semana. El informe también recogió que varios vecinos percibían más sombra en algunas calles.
+
+Texto 2
+
+El Observatorio Ambiental revisó el informe y señaló que la supervivencia de los árboles muestra que la plantación y el mantenimiento iniciales funcionaron en buena medida, pero no demuestra que las colonias se hayan enfriado. Para sostener esa conclusión harían falta mediciones de temperatura antes y después, además de comparaciones con calles semejantes sin árboles nuevos. El Observatorio añadió que las entrevistas no permiten separar el efecto de los árboles del de toldos u otras formas de sombra.",¿Cuál conclusión está mejor respaldada por ambos textos?,"A. El programa redujo la temperatura de las colonias porque la mayoría de los árboles sobrevivió. | B. Los árboles se adaptaron al calor sin depender del mantenimiento, pues eran especies nativas. | C. La mayoría de los árboles sobrevivió el primer año, pero aún no se puede atribuir al programa un enfriamiento de las colonias. | D. Los testimonios vecinales confirman el enfriamiento, aunque no existan mediciones comparables.",C,C,"El Texto 1 informa que 103 de los 120 árboles seguían vivos después de doce meses y que recibieron riego durante los primeros cuatro meses; por tanto, sí respalda que la mayoría sobrevivió durante el primer año bajo esas condiciones de mantenimiento. El Texto 2 aclara que ese resultado no basta para demostrar una disminución de la temperatura y especifica que se necesitarían mediciones comparables. Por eso, la conclusión de C relaciona correctamente el resultado comprobado con el límite de la evidencia. A y D convierten indicios insuficientes en una prueba de enfriamiento, mientras que B ignora el riego y atribuye la supervivencia a una adaptación no demostrada.",v2.paa/lectura/paa.lect.evidencia#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.paa/matematicas/paa.mat.algebra#0/001#1,PAA,Matemáticas,MATEMATICAS,SELECTED_RESPONSE,"Una imprenta cobra por cada pedido un cargo fijo de preparación, igual para todos los pedidos, además de un cargo por cada página. Un pedido de 10 páginas cuesta 34 pesos y uno de 25 páginas cuesta 49 pesos.",¿Cuántos pesos se ahorrarían al imprimir 40 páginas en un solo pedido en lugar de imprimirlas en dos pedidos de 20 páginas cada uno?,A. 0 pesos | B. 15 pesos | C. 24 pesos | D. 48 pesos,C,C,"La diferencia entre un pedido de 25 páginas y uno de 10 páginas es de 15 páginas y de 15 pesos. Por tanto, cada página cuesta 1 peso. En el pedido de 10 páginas, las páginas cuestan 10 pesos, así que el cargo fijo de preparación es 34 - 10 = 24 pesos. Un pedido de 40 páginas cuesta 24 + 40 = 64 pesos. Cada pedido de 20 páginas cuesta 24 + 20 = 44 pesos, por lo que dos pedidos cuestan 88 pesos. El ahorro es 88 - 64 = 24 pesos.",v2.paa/matematicas/paa.mat.algebra#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,PASS,,ALL_GATES_PASS
+AUDIT,v2.pisa.2022/math/pisa.cantidad.formular#0/004#0,PISA,Matemáticas,MATHEMATICS,SHORT_RESPONSE,"En un huerto escolar se usa un depósito para recoger agua de lluvia. En el fondo hay 12 litros que la bomba no puede extraer. El indicador del depósito muestra el porcentaje de agua de la parte que sí puede extraerse, no el porcentaje de toda el agua del depósito.
+
+| Momento | Información |
+|---|---|
+| 08:00 | El indicador marca 35 % |
+| Entre 08:00 y 10:00 | Entran 18 litros de lluvia; no se extrae agua |
+| 10:00 | El indicador marca 50 % |
+| Entre 10:00 y 14:00 | La bomba extrae 27 litros; no entra más agua |","¿Cuántos litros de agua hay en total en el depósito a las 14:00, incluidos los 12 litros que la bomba no puede extraer? Escribe tu respuesta y muestra cómo la obtuviste.",,45 litros,45 litros,"Los 18 litros hacen que el indicador suba de 35 % a 50 %, es decir, 15 % de la parte extraíble. Por tanto, la capacidad de esa parte es 18 ÷ 0,15 = 120 litros. A las 10:00 hay 50 % de 120 = 60 litros extraíbles. Después de extraer 27 litros quedan 33 litros extraíbles. Sumando los 12 litros que no puede extraer la bomba, a las 14:00 hay 33 + 12 = 45 litros.",v2.pisa.2022/math/pisa.cantidad.formular#0,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,PASS,HIGH,NOT_APPLICABLE,,ALL_GATES_PASS

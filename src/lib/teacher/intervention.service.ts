@@ -15,9 +15,11 @@
  * the generic canAccessLearner.
  */
 import { db } from '@/lib/db';
-import { canAccessClass, canTeacherManageIntervention } from '@/lib/authorization';
+import { activeRoleSql } from '@/lib/identity/access-predicates';
+import { canAccessClass, canAccessInstitution, canTeacherManageIntervention } from '@/lib/authorization';
 import { getStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
 import type { SimulationType } from '@/lib/simulation/types';
+import { reconcileCompletionsForStudent, getEffectiveStatus } from '@/lib/student/teacher-intervention-execution.service';
 
 export class TeacherInterventionAccessDeniedError extends Error {
   constructor(message: string) {
@@ -51,7 +53,7 @@ export class TeacherInterventionExamProfileMismatchError extends Error {
 
 const PG_FOREIGN_KEY_VIOLATION = '23503';
 
-export type TeacherInterventionType = 'CONCEPT_REINFORCEMENT' | 'SKILL_PRACTICE' | 'COMPETENCY_PRACTICE' | 'EXAM_PRACTICE';
+export type TeacherInterventionType = 'CONCEPT_REINFORCEMENT' | 'SKILL_PRACTICE' | 'COMPETENCY_PRACTICE' | 'EXAM_PRACTICE' | 'SUBJECT_TEST' | 'SUBJECT_MOCK';
 export type TeacherInterventionStatus = 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
 
 export type TeacherInterventionTarget =
@@ -59,6 +61,8 @@ export type TeacherInterventionTarget =
   | { targetType: 'SKILL'; skillId: string }
   | { targetType: 'COMPETENCY'; competencyId: string }
   | { targetType: 'LEARNING_OBJECTIVE'; learningObjectiveId: string }
+  /** Overnight 2026-10-16: a teacher-assigned subject Test / Mock -- the subject and concepts live in `subjectAssessmentAssignment`. */
+  | { targetType: 'SUBJECT' }
   | (
       | { targetType: 'EXAM'; examProfileId: string; simulationType: 'TOPIC_EXAM'; learningObjectiveId: string }
       | { targetType: 'EXAM'; examProfileId: string; simulationType: 'DOMAIN_EXAM'; academicSubjectId: string }
@@ -73,6 +77,16 @@ export interface AssignTeacherInterventionParams {
   reason?: string;
   instructions?: string;
   dueAt?: string;
+  /** Track A: groups the per-learner rows of one class-level assignment. */
+  assignmentGroupId?: string;
+  /** Track A: the assignment's title (shown to learner and teacher). */
+  title?: string;
+  /** Track A: the learner can start it from this moment on (default: immediately). */
+  startsAt?: string;
+  /** Track A: publishing this assignment put the concept into the learner's plan. */
+  addedToPlan?: boolean;
+  /** SUBJECT_TEST / SUBJECT_MOCK only: the frozen assignment configuration (required for them, refused for every other type). */
+  subjectAssessmentAssignment?: Record<string, unknown>;
 }
 
 export interface TeacherIntervention {
@@ -94,6 +108,8 @@ export interface TeacherIntervention {
   instructions: string | null;
   assignedAt: string;
   dueAt: string | null;
+  title: string | null;
+  startsAt: string | null;
   status: TeacherInterventionStatus;
   cancelledAt: string | null;
   cancelledByUserId: string | null;
@@ -120,6 +136,8 @@ function toIntervention(row: any): TeacherIntervention {
     instructions: row.instructions,
     assignedAt: row.assigned_at instanceof Date ? row.assigned_at.toISOString() : row.assigned_at,
     dueAt: row.due_at instanceof Date ? row.due_at.toISOString() : row.due_at,
+    title: row.title ?? null,
+    startsAt: row.starts_at instanceof Date ? row.starts_at.toISOString() : (row.starts_at ?? null),
     status: row.status,
     cancelledAt: row.cancelled_at instanceof Date ? row.cancelled_at.toISOString() : row.cancelled_at,
     cancelledByUserId: row.cancelled_by_user_id,
@@ -160,8 +178,64 @@ async function requireAssignmentAuthorization(actorUserId: string, classId: stri
   return institutionId;
 }
 
+/**
+ * Track A: the intervention type must match its target -- a mismatched
+ * pair (or a LEARNING_OBJECTIVE target, which has no execution path) used
+ * to be accepted and then sat NOT_EXECUTABLE_YET forever on the Student's
+ * list. Refused up front as an invalid target.
+ */
+const TYPE_FOR_TARGET: Record<TeacherInterventionTarget['targetType'], readonly TeacherInterventionType[]> = {
+  CONCEPT: ['CONCEPT_REINFORCEMENT'],
+  SKILL: ['SKILL_PRACTICE'],
+  COMPETENCY: ['COMPETENCY_PRACTICE'],
+  EXAM: ['EXAM_PRACTICE'],
+  LEARNING_OBJECTIVE: [],
+  SUBJECT: ['SUBJECT_TEST', 'SUBJECT_MOCK'],
+};
+
 export async function assignTeacherIntervention(actorUserId: string, params: AssignTeacherInterventionParams): Promise<TeacherIntervention> {
   const institutionId = await requireAssignmentAuthorization(actorUserId, params.classId, params.studentId);
+  return insertIntervention(actorUserId, institutionId, params);
+}
+
+/**
+ * Track A governance -- an INSTITUTION task delivered directly to every
+ * learner of a target class (no teacher recipient selection). Authorized as
+ * the institution (INSTITUTION_ADMIN of the class's institution) and only for
+ * learners ACTIVE in that class; the row is owner_scope INSTITUTION. Same
+ * validation and insert as a teacher assignment otherwise.
+ */
+export async function assignInstitutionDirectIntervention(
+  actorUserId: string,
+  params: AssignTeacherInterventionParams & { institutionAssignmentId: string }
+): Promise<TeacherIntervention> {
+  const classRow = await db.query(`SELECT institution_id FROM classes WHERE id = $1`, [params.classId]);
+  if (classRow.rows.length === 0) throw new TeacherInterventionAccessDeniedError(`class ${params.classId} does not exist`);
+  const institutionId: string = classRow.rows[0].institution_id;
+  if (!(await canAccessInstitution(actorUserId, institutionId, 'TEACHER_ASSIGNMENT_MANAGE'))) throw new TeacherInterventionAccessDeniedError('actor is not an institution admin of this class');
+  const enrollment = await db.query(`SELECT 1 FROM class_enrollments WHERE class_id = $1 AND student_id = $2 AND status = 'ACTIVE'`, [params.classId, params.studentId]);
+  if (enrollment.rows.length === 0) throw new TeacherInterventionAccessDeniedError(`student ${params.studentId} has no ACTIVE enrollment in class ${params.classId}`);
+  const intervention = await insertIntervention(actorUserId, institutionId, params);
+  await db.query(`UPDATE teacher_interventions SET owner_scope = 'INSTITUTION', institution_assignment_id = $2 WHERE id = $1`, [intervention.id, params.institutionAssignmentId]);
+  return intervention;
+}
+
+async function insertIntervention(actorUserId: string, institutionId: string, params: AssignTeacherInterventionParams): Promise<TeacherIntervention> {
+  if (!TYPE_FOR_TARGET[params.target.targetType]?.includes(params.interventionType)) {
+    throw new TeacherInterventionInvalidTargetError(params.target.targetType);
+  }
+  // a subject Test / Mock carries its frozen configuration; no other type may
+  if ((params.target.targetType === 'SUBJECT') !== Boolean(params.subjectAssessmentAssignment)) {
+    throw new TeacherInterventionInvalidTargetError(params.target.targetType);
+  }
+  // A CONCEPT target is a per-learner concept: it must be THIS learner's own.
+  if (params.target.targetType === 'CONCEPT') {
+    const own = await db.query(
+      `SELECT 1 FROM concepts c JOIN subjects s ON s.id = c.subject_id WHERE c.id = $1 AND s.student_id = $2`,
+      [params.target.conceptId, params.studentId]
+    );
+    if (own.rows.length === 0) throw new TeacherInterventionInvalidTargetError('CONCEPT');
+  }
 
   const conceptId = params.target.targetType === 'CONCEPT' ? params.target.conceptId : null;
   const skillId = params.target.targetType === 'SKILL' ? params.target.skillId : null;
@@ -197,8 +271,8 @@ export async function assignTeacherIntervention(actorUserId: string, params: Ass
         assigned_by_user_id, institution_id, class_id, student_id,
         target_type, concept_id, skill_id, competency_id, learning_objective_id,
         exam_profile_id, simulation_type, academic_subject_id,
-        intervention_type, reason, instructions, due_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        intervention_type, reason, instructions, due_at, assignment_group_id, title, starts_at, concept_added_to_plan${params.subjectAssessmentAssignment ? ', subject_assessment_assignment' : ''}
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20${params.subjectAssessmentAssignment ? ', $21::jsonb' : ''})
       RETURNING *
       `,
       [
@@ -218,6 +292,11 @@ export async function assignTeacherIntervention(actorUserId: string, params: Ass
         params.reason ?? null,
         params.instructions ?? null,
         params.dueAt ?? null,
+        params.assignmentGroupId ?? null,
+        params.title ?? null,
+        params.startsAt ?? null,
+        params.addedToPlan ?? false,
+        ...(params.subjectAssessmentAssignment ? [JSON.stringify(params.subjectAssessmentAssignment)] : []),
       ]
     );
     return toIntervention(result.rows[0]);
@@ -232,8 +311,37 @@ export async function listTeacherInterventionsForStudent(actorUserId: string, st
   const allowed = await canTeacherManageIntervention(actorUserId, studentId, 'TEACHER_INTERVENTION_VIEW');
   if (!allowed) throw new TeacherInterventionAccessDeniedError(`actor cannot view interventions for student ${studentId}`);
 
-  const result = await db.query(`SELECT * FROM teacher_interventions WHERE student_id = $1 ORDER BY assigned_at DESC`, [studentId]);
-  return result.rows.map(toIntervention);
+  // Track A: only interventions in classes THIS actor currently teaches --
+  // never another institution's / another class's rows (and their
+  // reason / instructions text). Completion is reconciled first so the
+  // teacher never reads a stale IN_PROGRESS; the returned status is the
+  // effective one (EXPIRED once due_at has passed).
+  await reconcileCompletionsForStudent(studentId).catch(() => {});
+  const result = await db.query(
+    `SELECT * FROM teacher_interventions WHERE student_id = $1 AND class_id = ANY($2::uuid[]) ORDER BY assigned_at DESC`,
+    [studentId, await listTeacherClassIdsForActor(actorUserId)]
+  );
+  return result.rows.map((row: any) => {
+    const intervention = toIntervention(row);
+    return { ...intervention, status: getEffectiveStatus(intervention.status, intervention.dueAt) };
+  });
+}
+
+async function listTeacherClassIdsForActor(actorUserId: string): Promise<string[]> {
+  const r = await db.query(
+    `SELECT DISTINCT c.id FROM teacher_assignments ta
+     JOIN institution_memberships im ON im.id = ta.institution_membership_id
+     JOIN classes c ON (c.id = ta.class_id OR (ta.class_id IS NULL AND ta.grade_id IS NOT NULL AND c.grade_id = ta.grade_id))
+     JOIN institutions i ON i.id = im.institution_id AND i.status = 'ACTIVE'
+     WHERE im.user_id = $1 AND im.membership_role = 'TEACHER' AND im.status = 'APPROVED' AND ta.status = 'ACTIVE' AND c.institution_id = im.institution_id
+       AND c.status = 'ACTIVE'
+       AND ${activeRoleSql('$1', 'TEACHER')}`,
+    [actorUserId]
+  );
+  // L10-R2: the same conditions as every other "classes this actor teaches" query (SF-1, SF-3): an ACTIVE
+  // institution, a class that is not archived, an ACTIVE account and TEACHER role. This copy had none of them,
+  // so a teacher of two institutions kept reading rows of the suspended one.
+  return r.rows.map((row: any) => row.id);
 }
 
 /**
@@ -247,12 +355,17 @@ export async function listTeacherInterventionsForStudent(actorUserId: string, st
  * history.
  */
 export async function cancelTeacherIntervention(actorUserId: string, interventionId: string, cancellationReason?: string): Promise<TeacherIntervention> {
-  const existing = await db.query(`SELECT student_id, status FROM teacher_interventions WHERE id = $1`, [interventionId]);
+  const existing = await db.query(`SELECT student_id, status, class_id FROM teacher_interventions WHERE id = $1`, [interventionId]);
   if (existing.rows.length === 0) throw new TeacherInterventionNotFoundError(interventionId);
-  const { student_id: studentId, status } = existing.rows[0];
+  const { student_id: studentId, status, class_id: classId } = existing.rows[0];
 
   const allowed = await canTeacherManageIntervention(actorUserId, studentId, 'TEACHER_INTERVENTION_CANCEL');
   if (!allowed) throw new TeacherInterventionAccessDeniedError(`actor cannot cancel interventions for student ${studentId}`);
+  // Track A: and only an intervention of a class this actor teaches -- a
+  // teacher of the same learner in another class/institution cannot cancel it.
+  if (!(await listTeacherClassIdsForActor(actorUserId)).includes(classId)) {
+    throw new TeacherInterventionAccessDeniedError(`actor does not teach class ${classId}`);
+  }
 
   if (status !== 'ASSIGNED' && status !== 'IN_PROGRESS') {
     return toIntervention((await db.query(`SELECT * FROM teacher_interventions WHERE id = $1`, [interventionId])).rows[0]);

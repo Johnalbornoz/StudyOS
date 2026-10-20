@@ -8,7 +8,8 @@
  *   -> assemble READY activities from the bank up to the policy target
  *   (PRACTICE 2, everything else 1; a Prove READY is a complete 10) ->
  *   keep SPARE_ASSEMBLABLE_SETS complete sets assemblable from the bank
- *   beyond them (queue BANK_REPLENISH chunks for what is missing); if the
+ *   beyond them -- PRACTICE: BANK_DEPTH_TARGET (9) distinct valid items
+ *   instead, D76 -- (queue BANK_REPLENISH chunks for what is missing); if the
  *   bank is short, also a follow-up preparation.
  *
  * BANK_REPLENISH (learner, concept, activity type, language, academic)
@@ -27,6 +28,9 @@ import {
   academicContextFingerprint,
   activityContractFingerprint,
   bankChunks,
+  bankDepthTarget,
+  deliveryPracticeMix,
+  deliveryProveMix,
   SPARE_ASSEMBLABLE_SETS,
   DELIVERY_QUIZ_MODES,
   inventoryTarget,
@@ -41,13 +45,15 @@ import type { QuizMode } from '@/services/quiz-persistence.service';
 import { enqueueGenerationJob, openBankSupply, runGenerationWorker, type GenerationJob, type JobHandler } from '@/services/generation-queue.service';
 import { loadAcademicContext, loadLearnerStateSnapshot } from '@/services/activity-delivery-context.service';
 import { reconcileInventory, reservedCandidateIds, retireAllInventory, storeReadyActivity } from '@/services/activity-inventory.service';
-import { assembleActivityForLearner, countSpareSets } from '@/services/activity-assembly.service';
+import { assembleActivityForLearner, countSpareSets, countValidBankDepth, countValidBankDepthAtLevel } from '@/services/activity-assembly.service';
 import { isIndependentActivity } from '@/lib/activity-delivery/assembly';
 import { withLaunchLock } from '@/services/activity-launch-lock.service';
 import { dispatchDeliveryWorker } from '@/services/worker-dispatch.service';
 import { addValidatedCandidates } from '@/services/question-bank.service';
 import { generateActivityCandidates } from '@/services/activity-candidate-generation.service';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
+import { getLearnWeaknessesForConcept } from '@/services/learn-weakness.service';
+import { PROVE_BASE_LEVEL } from '@/lib/pedagogical-engine/difficulty-policy';
 
 /** Most candidates requested from a generator in one job round. */
 const BATCH_CAP: Record<DeliveryActivityType, number> = { LEARN_CHECK: 10, PRACTICE: 9, PROVE: 10, RETAIN: 10, TRANSFER: 3 };
@@ -85,6 +91,10 @@ export async function resolveNextActivityContract(target: ReplenishTarget, langu
     independence: c.independence,
     policyVersion: decision.policyVersion,
   };
+  // D78: the same per-level mix a launch builds (buildDeliveryInput), so READY sets match its fingerprint
+  if (c.practiceMix) contract.practiceMix = deliveryPracticeMix(c.practiceMix, contract.itemCount);
+  // D79: the PROVE level mix, exactly as a launch builds it
+  if (activityType === 'PROVE' && c.proveMix) contract.proveMix = deliveryProveMix(c.proveMix);
   return { launchable: true, activityType, quizMode: mode, contract, academic, canonicalRevision: decision.canonicalRevision };
 }
 
@@ -110,6 +120,10 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
   // read while a launch is delivering from it, so a READY activity can never
   // hold a candidate that a concurrent launch just delivered.
   const target = inventoryTarget(activityType);
+  // D76: the governed depth (PRACTICE = 9 distinct valid items) is measured once, before preparing
+  const depthTarget = bankDepthTarget(activityType);
+  const validDepth = depthTarget === null ? null : await countValidBankDepth({ studentId: p.studentId, contract, academic });
+  const bankDepth = depthTarget !== null && validDepth !== null ? { validItems: validDepth, target: depthTarget } : null;
   const { prepared, bankShort } = await withLaunchLock({ studentId: p.studentId, conceptId: p.conceptId, quizMode: next.quizMode }, async () => {
     let stored = 0;
     for (let slot = 0; slot < target && readyCompatible + stored < target; slot++) {
@@ -119,7 +133,7 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
       if (
         await storeReadyActivity({
           identity, canonicalRevision: next.canonicalRevision, contract, contractFingerprint, learnerStateFingerprint: learnerFp,
-          slot, questions: assembly.questions, candidateIds: assembly.candidateIds,
+          slot, questions: assembly.questions, candidateIds: assembly.candidateIds, bankDepth,
         })
       ) stored++;
     }
@@ -131,23 +145,75 @@ export const prepareInventoryHandler: JobHandler = async (job: GenerationJob) =>
   // inventory (real assembly: novelty + diversity); what is missing, after
   // the generation already in flight, is requested as parallel chunks of at
   // most one generator batch each.
+  //
+  // D76: an activity with a governed DEPTH target (PRACTICE = 9 distinct valid
+  // items, contract.ts BANK_DEPTH_TARGET) replenishes toward that target
+  // instead -- below it the missing candidates are requested through this
+  // same BANK_REPLENISH path; at or above it nothing is requested unless an
+  // assembly actually came up short.
   const key = bankKey(contract);
+  // D79: a PROVE level mix with level-4 items keeps two supplies: the level-3 supply is measured
+  // in complete all-L3 sets (the base contract), the level-4 supply by its own valid count and its
+  // own job key (so neither one's in-flight work hides the other's shortage).
+  const l4 = activityType === 'PROVE' ? contract.proveMix?.items.find((i) => i.level > PROVE_BASE_LEVEL) ?? null : null;
+  const supplyContract: ActivityContract = l4
+    ? { ...contract, proveMix: { items: [{ level: PROVE_BASE_LEVEL, count: contract.itemCount }] } }
+    : contract;
+  const validL4 = l4 ? await countValidBankDepthAtLevel({ studentId: p.studentId, contract, academic }, l4.level) : null;
   const [spareSets, inFlight] = await Promise.all([
-    countSpareSets({ studentId: p.studentId, contract, academic, reservedCandidateIds: await reservedCandidateIds(p.studentId, p.conceptId), maxSets: SPARE_ASSEMBLABLE_SETS }),
+    countSpareSets({ studentId: p.studentId, contract: supplyContract, academic, reservedCandidateIds: await reservedCandidateIds(p.studentId, p.conceptId), maxSets: SPARE_ASSEMBLABLE_SETS }),
     openBankSupply(key),
   ]);
-  const missing = (SPARE_ASSEMBLABLE_SETS - spareSets) * contract.itemCount - inFlight;
-  const needed = bankShort ? Math.max(missing, contract.itemCount - inFlight) : missing;
+  const missing =
+    depthTarget === null || validDepth === null
+      ? (SPARE_ASSEMBLABLE_SETS - spareSets) * contract.itemCount - inFlight
+      : depthTarget - validDepth - inFlight;
+  // a PROVE shortage caused by level 4 alone is answered by the level-4 job below, not by more level-3 items
+  const baseShort = bankShort && !(l4 && validL4 !== null && validL4 < l4.count);
+  const needed = baseShort ? Math.max(missing, contract.itemCount - inFlight) : missing;
   const chunks = bankChunks(needed, BATCH_CAP[activityType]);
   for (let i = 0; i < chunks.length; i++) {
     await enqueueGenerationJob('BANK_REPLENISH', `${key}:c${i}`, {
       ...p, activityType, language: contract.language, academic, difficulty: contract.difficulty.target, needed: chunks[i], round: 1,
     });
   }
+  // D78: a strong learner's Practice needs base+1 items, which base-level replenishment never
+  // produces. When the bank holds fewer valid base+1 items than one session plans, one
+  // BANK_REPLENISH batch (one session's item count) is requested AT base+1 through the same path.
+  let plusOneJob: { level: number; validPlusOne: number } | null = null;
+  const mix = contract.practiceMix;
+  if (activityType === 'PRACTICE' && mix) {
+    const plus = mix.items.find((i) => i.level === mix.baseLevel + 1);
+    if (plus) {
+      const validPlusOne = await countValidBankDepthAtLevel({ studentId: p.studentId, contract, academic }, plus.level);
+      if (validPlusOne < plus.count) {
+        await enqueueGenerationJob('BANK_REPLENISH', `${key}:plus${plus.level}`, {
+          ...p, activityType, language: contract.language, academic, difficulty: plus.level, needed: Math.min(contract.itemCount, BATCH_CAP[activityType]), round: 1,
+        });
+      }
+      plusOneJob = { level: plus.level, validPlusOne };
+    }
+  }
+  let levelFourJob: { level: number; validLevelFour: number; needed: number } | null = null;
+  if (l4 && validL4 !== null) {
+    const l4Key = `bank-l${l4.level}:${key.slice('bank:'.length)}`;
+    const l4InFlight = await openBankSupply(l4Key);
+    // enough level-4 items for SPARE_ASSEMBLABLE_SETS mixed sets
+    const l4Needed = l4.count * SPARE_ASSEMBLABLE_SETS - validL4 - l4InFlight;
+    if (l4Needed > 0) {
+      await enqueueGenerationJob('BANK_REPLENISH', `${l4Key}:c0`, {
+        ...p, activityType, language: contract.language, academic, difficulty: l4.level, needed: Math.min(l4Needed, BATCH_CAP[activityType]), round: 1,
+      });
+    }
+    levelFourJob = { level: l4.level, validLevelFour: validL4, needed: Math.max(0, l4Needed) };
+  }
   if (bankShort) {
     await enqueueGenerationJob('PREPARE_INVENTORY', `prepare:${p.studentId}:${p.conceptId}:followup`, { ...p }, { delayMs: FOLLOW_UP_DELAY_MS });
   }
-  return { ok: true, result: { activityType, prepared, readyCompatible, bankShort, spareSets, inFlight, bankJobs: chunks.length } };
+  return {
+    ok: true,
+    result: { activityType, prepared, readyCompatible, bankShort, spareSets, inFlight, bankJobs: chunks.length, ...(depthTarget !== null ? { validDepth, depthTarget } : {}), ...(plusOneJob ? { plusOne: plusOneJob } : {}), ...(levelFourJob ? { proveLevelFour: levelFourJob } : {}) },
+  };
 };
 
 export const bankReplenishHandler: JobHandler = async (job: GenerationJob) => {
@@ -155,9 +221,12 @@ export const bankReplenishHandler: JobHandler = async (job: GenerationJob) => {
     activityType: DeliveryActivityType; language: string; academic: AcademicContext; difficulty: number; needed: number; round: number;
   };
   const count = Math.min(p.needed, BATCH_CAP[p.activityType]);
+  // requirement §22: PRACTICE candidates for this Student's concept are generated with the latest LEARN weaknesses
+  const learnFocus = p.activityType === 'PRACTICE' ? await getLearnWeaknessesForConcept(p.studentId, p.conceptId) : null;
   const generated = await generateActivityCandidates({
     activityType: p.activityType, conceptId: p.conceptId, studentId: p.studentId, subjectId: p.subjectId, count,
     difficulty: p.difficulty, language: p.language, ibContext: await getSubjectIBContext(p.subjectId), parentOperationId: randomUUID(),
+    ...(learnFocus && learnFocus.weaknesses.length > 0 ? { learnWeaknesses: learnFocus.weaknesses } : {}),
   });
   const banked = await addValidatedCandidates(generated.questions, {
     studentId: p.studentId, conceptId: p.conceptId, activityType: p.activityType, language: p.language, academic: p.academic, generator: generated.generator,

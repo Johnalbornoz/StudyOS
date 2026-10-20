@@ -12,8 +12,9 @@ import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canAccessLearner } from '@/lib/authorization';
 import { getSimulationAttempt, abandonSimulationAttempt } from '@/lib/simulation/attempt.service';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const authContext = await verifyAuth();
@@ -28,8 +29,13 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
   try {
     const abandoned = await abandonSimulationAttempt(id);
-    return NextResponse.json({ success: true, data: { attempt: abandoned } });
+    const { navigationState: _hidden, ...publicAttempt } = abandoned;
+    void _hidden;
+    return NextResponse.json({ success: true, data: { attempt: publicAttempt } });
   } catch (err) {
     return NextResponse.json({ error: 'ABANDON_NOT_ALLOWED', message: err instanceof Error ? err.message : undefined }, { status: 409 });
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/simulation/attempts/[id]/abandon', handlePOST);

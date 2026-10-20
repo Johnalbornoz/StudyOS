@@ -1,0 +1,363 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r1.lect-graf",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "DATA_TABLE",
+    "stimulusBrief": "Tabla ORIGINAL con datos inventados y verosímiles sobre la producción mensual de una cooperativa de café durante un semestre: 4 a 6 filas y 3 a 4 columnas, con título descriptivo. Los números deben permitir comparar, ordenar y calcular diferencias simples sin ambigüedad.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.graficos",
+        "conceptStableId": "read.tables-and-graphics",
+        "difficulty": 2,
+        "focus": "la lectura directa o comparación de valores de la tabla"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.graficos",
+        "conceptStableId": "read.tables-and-graphics",
+        "difficulty": 3,
+        "focus": "una conclusión que se obtiene relacionando dos filas o columnas de la tabla"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Producción mensual de la Cooperativa Cafetalera Sierra Clara",
+      "text": null,
+      "table": {
+        "caption": "Registro de café pergamino procesado y lotes entregados durante el primer semestre.",
+        "headers": [
+          "Mes",
+          "Producción de café pergamino (kg)",
+          "Lotes entregados"
+        ],
+        "rows": [
+          [
+            "Enero",
+            "1 180",
+            "29"
+          ],
+          [
+            "Febrero",
+            "1 250",
+            "31"
+          ],
+          [
+            "Marzo",
+            "1 210",
+            "30"
+          ],
+          [
+            "Abril",
+            "1 350",
+            "34"
+          ],
+          [
+            "Mayo",
+            "1 460",
+            "36"
+          ],
+          [
+            "Junio",
+            "1 520",
+            "38"
+          ]
+        ]
+      }
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿En qué mes se registró la mayor producción de café pergamino?",
+        "options": [
+          {
+            "text": "En enero se registró la mayor producción mensual.",
+            "isKey": false,
+            "misconception": "SELECTS_FIRST_ROW",
+            "rationale": "Enero aparece primero en la tabla, pero sus 1 180 kg son menores que varios valores posteriores."
+          },
+          {
+            "text": "En abril se registró la mayor producción mensual.",
+            "isKey": false,
+            "misconception": "MISREADS_INTERMEDIATE_VALUE",
+            "rationale": "Abril tiene 1 350 kg, una cifra alta, pero no supera los 1 520 kg de junio."
+          },
+          {
+            "text": "En mayo se registró la mayor producción mensual.",
+            "isKey": false,
+            "misconception": "SELECTS_SECOND_HIGHEST_VALUE",
+            "rationale": "Mayo tiene 1 460 kg, que es la segunda cifra más alta de la tabla."
+          },
+          {
+            "text": "En junio se registró la mayor producción mensual.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Junio registra 1 520 kg, la cifra más alta de producción mostrada."
+          }
+        ],
+        "evidenceQuote": "1 520"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué conclusión se obtiene al comparar la producción de abril con la de junio?",
+        "options": [
+          {
+            "text": "La producción aumentó 110 kg entre abril y junio.",
+            "isKey": false,
+            "misconception": "USES_WRONG_MONTH_PAIR",
+            "rationale": "110 kg corresponde a la diferencia entre abril y mayo, no entre abril y junio."
+          },
+          {
+            "text": "La producción aumentó 170 kg entre abril y junio.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La producción pasó de 1 350 kg en abril a 1 520 kg en junio, una diferencia de 170 kg."
+          },
+          {
+            "text": "La producción disminuyó 170 kg entre abril y junio.",
+            "isKey": false,
+            "misconception": "REVERSES_DIRECTION_OF_CHANGE",
+            "rationale": "La cifra de junio es mayor que la de abril, por lo que el cambio fue un aumento."
+          },
+          {
+            "text": "La producción aumentó 340 kg entre abril y junio.",
+            "isKey": false,
+            "misconception": "DOUBLES_DIFFERENCE",
+            "rationale": "La diferencia correcta entre 1 350 kg y 1 520 kg es 170 kg, no 340 kg."
+          }
+        ],
+        "evidenceQuote": "1 520"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "8dfc8389-c2d8-4acc-ac46-0f361c8483a6",
+    "generatedAt": "2026-10-14T01:26:47.746Z",
+    "unitId": "paa-pilot.r1.lect-graf"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "53c97ef3-043e-4688-b1aa-8f9e3f048c60",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "97d719c8-d539-42f9-a873-9ef49444d5bb",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-graficos.036711d403f8",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.graficos",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.graficos / read.tables-and-graphics"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.60bf2ee3ae8e@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-graficos.b9cc1ff5e0ad",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.graficos",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.graficos / read.tables-and-graphics"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.60bf2ee3ae8e@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

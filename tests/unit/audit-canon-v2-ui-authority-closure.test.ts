@@ -49,13 +49,16 @@ describe('AUDIT-006 CLOSED: every real caller of buildCanonicalLearningProgress 
     expect(PROGRESS_OVERVIEW_SRC).toMatch(/getCanonicalPedagogicalDecision\(/);
     // The override replaces journeyStage/journeyProgressPercent/journeyProgressLabelKey
     // specifically -- never a different, competing field set.
-    expect(PROGRESS_OVERVIEW_SRC).toMatch(/journeyStage = decision\.stage/);
-    expect(PROGRESS_OVERVIEW_SRC).toMatch(/journeyProgressPercent = decision\.journeyProgressPercent/);
+    // 2026-10-17 pilot journey: the stage is the deterministic projection of the SAME canonical decision, and the
+    // percent / label derive from that same projected stage (never mixed)
+    expect(PROGRESS_OVERVIEW_SRC).toMatch(/const projected = projectCanonicalJourneyStage\(decision, canonicalEngineHasEvidence\(decision\)\)/);
+    expect(PROGRESS_OVERVIEW_SRC).toMatch(/journeyStage = projected;/);
+    expect(PROGRESS_OVERVIEW_SRC).toMatch(/journeyProgressPercent = shown\.progressPercent;/);
   });
 
   it('a read failure in the override degrades to the legacy view -- never throws and breaks the Progress page', () => {
     const idx = PROGRESS_OVERVIEW_SRC.indexOf('if (isCanonicalEngineV1Enabled())');
-    const block = PROGRESS_OVERVIEW_SRC.slice(idx, idx + 600);
+    const block = PROGRESS_OVERVIEW_SRC.slice(idx, idx + 900);
     expect(block).toMatch(/catch \(error\)/);
     expect(block).toMatch(/CanonicalDecisionUnavailableError/);
   });

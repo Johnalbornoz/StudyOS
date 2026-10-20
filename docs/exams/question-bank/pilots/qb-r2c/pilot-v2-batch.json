@@ -1,0 +1,3132 @@
+{
+ "v": 2,
+ "batchKey": "qb-r2c-pilot-v2",
+ "generatedAt": "2026-10-11T12:00:00Z",
+ "stimuli": [
+  {
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "kind": "PASSAGE",
+   "language": "es",
+   "parts": [
+    {
+     "label": "1",
+     "partKind": "TEXT",
+     "text": "Cuando el reloj de la estación marcó las cinco, Inés ya llevaba una hora en el banco de madera, con la caja de herramientas de su abuelo sobre las rodillas. El último tren de la tarde no traía pasajeros desde hacía años; traía, cada jueves, las piezas que ella necesitaba para el taller."
+    },
+    {
+     "label": "2",
+     "partKind": "TEXT",
+     "text": "El taller había sido una relojería. Su abuelo reparaba allí los relojes de todo el pueblo y repetía que un reloj detenido no estaba roto, sino esperando. Inés no había heredado su paciencia, pero sí sus manos: en dos años había devuelto la marcha a cuarenta y tres relojes, y guardaba en un cuaderno la fecha de cada uno."
+    },
+    {
+     "label": "3",
+     "partKind": "TEXT",
+     "text": "Aquel jueves el tren llegó con retraso y sin el paquete. El maquinista se encogió de hombros: la fábrica de la capital había cerrado y ya no habría más piezas. Inés miró el reloj de la estación, el único del pueblo que nunca había necesitado arreglo, y sintió que la tarde se le quedaba sin cuerda."
+    },
+    {
+     "label": "4",
+     "partKind": "TEXT",
+     "text": "No volvió al taller de inmediato. Caminó hasta la plaza, donde el reloj del ayuntamiento llevaba un mes parado a las tres y diez, y se sentó a mirarlo. Entonces abrió la caja, sacó la lima más fina y empezó a dibujar en el cuaderno, por primera vez, una pieza que no pensaba pedir a nadie."
+    }
+   ],
+   "provenance": "STUDYUS_GENERATED",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02",
+   "generationUnitKey": "SP|PRACTICE|lectura|PASSAGE|02"
+  },
+  {
+   "stimulusKey": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "kind": "COMPOSITE",
+   "language": "es",
+   "parts": [
+    {
+     "label": "1",
+     "partKind": "TEXT",
+     "text": "La biblioteca del colegio San Rafael llevó durante cuatro meses un registro de los libros que prestó a los estudiantes y de cuántos de esos préstamos fueron de novelas. En agosto empezó a funcionar un club de lectura que se reúne los viernes. La bibliotecaria sostiene que el club impulsó los préstamos; la tabla presenta el registro completo."
+    },
+    {
+     "label": null,
+     "partKind": "SOURCE_NOTE",
+     "text": "Datos ficticios elaborados por StudyUs para este ejercicio."
+    },
+    {
+     "label": "prestamos",
+     "partKind": "TABLE",
+     "text": "Préstamos de la biblioteca por mes\nMes | Préstamos totales | Préstamos de novelas\nJunio | 120 | 45\nJulio | 95 | 40\nAgosto | 150 | 72\nSeptiembre | 180 | 99"
+    },
+    {
+     "label": "prestamos-barras",
+     "partKind": "GRAPH",
+     "text": "Gráfico de barras: Préstamos de la biblioteca por mes. Préstamos totales — Junio: 120, Julio: 95, Agosto: 150, Septiembre: 180. Préstamos de novelas — Junio: 45, Julio: 40, Agosto: 72, Septiembre: 99."
+    }
+   ],
+   "provenance": "STUDYUS_GENERATED",
+   "stimulusPlanId": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "generationUnitKey": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "structured": {
+    "v": 1,
+    "tables": [
+     {
+      "tableKey": "prestamos",
+      "title": "Préstamos de la biblioteca por mes",
+      "columns": [
+       {
+        "key": "mes",
+        "label": "Mes",
+        "type": "TEXT",
+        "unit": null
+       },
+       {
+        "key": "totales",
+        "label": "Préstamos totales",
+        "type": "NUMBER",
+        "unit": null
+       },
+       {
+        "key": "novelas",
+        "label": "Préstamos de novelas",
+        "type": "NUMBER",
+        "unit": null
+       }
+      ],
+      "rows": [
+       [
+        "Junio",
+        120,
+        45
+       ],
+       [
+        "Julio",
+        95,
+        40
+       ],
+       [
+        "Agosto",
+        150,
+        72
+       ],
+       [
+        "Septiembre",
+        180,
+        99
+       ]
+      ]
+     }
+    ],
+    "dataSets": [],
+    "charts": [
+     {
+      "chartKey": "prestamos-barras",
+      "chartType": "BAR",
+      "title": "Préstamos de la biblioteca por mes",
+      "xLabel": "Mes",
+      "yLabel": "Préstamos",
+      "source": {
+       "kind": "TABLE",
+       "tableKey": "prestamos",
+       "xColumn": "mes",
+       "valueColumns": [
+        "totales",
+        "novelas"
+       ]
+      }
+     }
+    ],
+    "figures": []
+   },
+   "renderedAssets": [
+    {
+     "assetKey": "chart:prestamos-barras",
+     "assetKind": "CHART",
+     "renderer": {
+      "id": "studyus-svg-renderer",
+      "version": "1"
+     },
+     "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 480 320\" width=\"480\" height=\"320\" role=\"img\"><title>Préstamos de la biblioteca por mes</title><rect width=\"480\" height=\"320\" fill=\"#fff\"/><text x=\"240\" y=\"20\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\" font-weight=\"bold\">Préstamos de la biblioteca por mes</text><line x1=\"56\" y1=\"264\" x2=\"464\" y2=\"264\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"268\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">0</text><line x1=\"56\" y1=\"207\" x2=\"464\" y2=\"207\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"211\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">50</text><line x1=\"56\" y1=\"150\" x2=\"464\" y2=\"150\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"154\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">100</text><line x1=\"56\" y1=\"93\" x2=\"464\" y2=\"93\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"97\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">150</text><line x1=\"56\" y1=\"36\" x2=\"464\" y2=\"36\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"40\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">200</text><line x1=\"56\" y1=\"264\" x2=\"464\" y2=\"264\" stroke=\"#111\" stroke-width=\"1.5\"/><line x1=\"56\" y1=\"36\" x2=\"56\" y2=\"264\" stroke=\"#111\" stroke-width=\"1.5\"/><text x=\"107\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Junio</text><text x=\"209\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Julio</text><text x=\"311\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Agosto</text><text x=\"413\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Septiembre</text><rect x=\"71.3\" y=\"127.2\" width=\"35.7\" height=\"136.8\" fill=\"#2b6cb0\"/><text x=\"89.15\" y=\"123.2\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">120</text><rect x=\"173.3\" y=\"155.7\" width=\"35.7\" height=\"108.3\" fill=\"#2b6cb0\"/><text x=\"191.15\" y=\"151.7\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">95</text><rect x=\"275.3\" y=\"93\" width=\"35.7\" height=\"171\" fill=\"#2b6cb0\"/><text x=\"293.15\" y=\"89\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">150</text><rect x=\"377.3\" y=\"58.8\" width=\"35.7\" height=\"205.2\" fill=\"#2b6cb0\"/><text x=\"395.15\" y=\"54.8\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">180</text><rect x=\"107\" y=\"212.7\" width=\"35.7\" height=\"51.3\" fill=\"#c05621\"/><text x=\"124.85\" y=\"208.7\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">45</text><rect x=\"209\" y=\"218.4\" width=\"35.7\" height=\"45.6\" fill=\"#c05621\"/><text x=\"226.85\" y=\"214.4\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">40</text><rect x=\"311\" y=\"181.92\" width=\"35.7\" height=\"82.08\" fill=\"#c05621\"/><text x=\"328.85\" y=\"177.92\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">72</text><rect x=\"413\" y=\"151.14\" width=\"35.7\" height=\"112.86\" fill=\"#c05621\"/><text x=\"430.85\" y=\"147.14\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">99</text><rect x=\"64\" y=\"26\" width=\"10\" height=\"10\" fill=\"#2b6cb0\"/><text x=\"78\" y=\"35\" text-anchor=\"start\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Préstamos totales</text><rect x=\"194\" y=\"26\" width=\"10\" height=\"10\" fill=\"#c05621\"/><text x=\"208\" y=\"35\" text-anchor=\"start\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Préstamos de novelas</text><text x=\"260\" y=\"306\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Mes</text><text x=\"14\" y=\"150\" text-anchor=\"middle\" transform=\"rotate(-90 14 150)\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Préstamos</text></svg>",
+     "altText": "Gráfico de barras: Préstamos de la biblioteca por mes. Préstamos totales — Junio: 120, Julio: 95, Agosto: 150, Septiembre: 180. Préstamos de novelas — Junio: 45, Julio: 40, Agosto: 72, Septiembre: 99."
+    }
+   ]
+  },
+  {
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "kind": "NUMBERED_TEXT",
+   "language": "es",
+   "parts": [
+    {
+     "label": "1",
+     "partKind": "NUMBERED_TEXT",
+     "text": "El año pasado, los estudiantes de noveno grado convirtieron el patio trasero del colegio en un huerto."
+    },
+    {
+     "label": "2",
+     "partKind": "NUMBERED_TEXT",
+     "text": "Cada mañana, antes de entrar a clase, un grupo distinto riega las plantas y revisa cada día, todas las mañanas, que no tengan plagas."
+    },
+    {
+     "label": "3",
+     "partKind": "NUMBERED_TEXT",
+     "text": "Los sábados, algunos padres ayudan a desmalezar, a reparar los cajones de madera y a preparar el abono."
+    },
+    {
+     "label": "4",
+     "partKind": "NUMBERED_TEXT",
+     "text": "El huerto enseñó al curso a trabajar con paciencia."
+    },
+    {
+     "label": "5",
+     "partKind": "NUMBERED_TEXT",
+     "text": "En marzo, la cosecha alcanzó para abastecer el comedor escolar durante una semana."
+    },
+    {
+     "label": "6",
+     "partKind": "NUMBERED_TEXT",
+     "text": "El patio ya no está vacío."
+    }
+   ],
+   "provenance": "STUDYUS_GENERATED",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "generationUnitKey": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01"
+  },
+  {
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "kind": "NUMBERED_TEXT",
+   "language": "es",
+   "parts": [
+    {
+     "label": "1",
+     "partKind": "NUMBERED_TEXT",
+     "text": "Desde hace tres años, un autobús adaptado como biblioteca recorre los barrios altos de la ciudad."
+    },
+    {
+     "label": "2",
+     "partKind": "NUMBERED_TEXT",
+     "text": "El vehículo lleva novelas, cuentos, historietas, poemarios y enciclopedias para todas las edades."
+    },
+    {
+     "label": "3",
+     "partKind": "NUMBERED_TEXT",
+     "text": "Los lectores pueden llevarse prestados hasta tres libros en préstamo y devolverlos en la siguiente visita, cuando el autobús regrese de nuevo otra vez."
+    },
+    {
+     "label": "4",
+     "partKind": "NUMBERED_TEXT",
+     "text": "El bibliobús llega a lugares donde nunca hubo una biblioteca."
+    },
+    {
+     "label": "5",
+     "partKind": "NUMBERED_TEXT",
+     "text": "Los vecinos han respondido con entusiasmo."
+    },
+    {
+     "label": "6",
+     "partKind": "NUMBERED_TEXT",
+     "text": "La alcaldía estudia ahora sumar un segundo vehículo."
+    }
+   ],
+   "provenance": "STUDYUS_GENERATED",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "generationUnitKey": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02"
+  },
+  {
+   "stimulusKey": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "kind": "DATA_SET",
+   "language": "es",
+   "parts": [
+    {
+     "label": "libros",
+     "partKind": "DATA_SET",
+     "text": "Libros leídos por siete estudiantes en un semestre\nLibros leídos: 3, 5, 5, 6, 8, 9, 13"
+    }
+   ],
+   "provenance": "STUDYUS_GENERATED",
+   "stimulusPlanId": null,
+   "generationUnitKey": "SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "structured": {
+    "v": 1,
+    "tables": [],
+    "dataSets": [
+     {
+      "dataSetKey": "libros",
+      "title": "Libros leídos por siete estudiantes en un semestre",
+      "categories": null,
+      "series": [
+       {
+        "seriesKey": "libros",
+        "label": "Libros leídos",
+        "unit": null,
+        "values": [
+         3,
+         5,
+         5,
+         6,
+         8,
+         9,
+         13
+        ]
+       }
+      ]
+     }
+    ],
+    "charts": [],
+    "figures": []
+   },
+   "renderedAssets": []
+  },
+  {
+   "stimulusKey": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "kind": "TABLE",
+   "language": "es",
+   "parts": [
+    {
+     "label": "reciclaje",
+     "partKind": "TABLE",
+     "text": "Material reciclado por curso en un mes\nCurso | Papel (kg) | Plástico (kg) | Vidrio (kg)\nSéptimo | 24 | 15 | 9\nOctavo | 30 | 12 | 18\nNoveno | 18 | 21 | 6\nDécimo | 36 | 9 | 15"
+    },
+    {
+     "label": "reciclaje-barras",
+     "partKind": "GRAPH",
+     "text": "Gráfico de barras: Material reciclado por curso en un mes. Papel — Séptimo: 24, Octavo: 30, Noveno: 18, Décimo: 36. Plástico — Séptimo: 15, Octavo: 12, Noveno: 21, Décimo: 9. Vidrio — Séptimo: 9, Octavo: 18, Noveno: 6, Décimo: 15."
+    }
+   ],
+   "provenance": "STUDYUS_GENERATED",
+   "stimulusPlanId": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "generationUnitKey": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "structured": {
+    "v": 1,
+    "tables": [
+     {
+      "tableKey": "reciclaje",
+      "title": "Material reciclado por curso en un mes",
+      "columns": [
+       {
+        "key": "curso",
+        "label": "Curso",
+        "type": "TEXT",
+        "unit": null
+       },
+       {
+        "key": "papel",
+        "label": "Papel",
+        "type": "NUMBER",
+        "unit": "kg"
+       },
+       {
+        "key": "plastico",
+        "label": "Plástico",
+        "type": "NUMBER",
+        "unit": "kg"
+       },
+       {
+        "key": "vidrio",
+        "label": "Vidrio",
+        "type": "NUMBER",
+        "unit": "kg"
+       }
+      ],
+      "rows": [
+       [
+        "Séptimo",
+        24,
+        15,
+        9
+       ],
+       [
+        "Octavo",
+        30,
+        12,
+        18
+       ],
+       [
+        "Noveno",
+        18,
+        21,
+        6
+       ],
+       [
+        "Décimo",
+        36,
+        9,
+        15
+       ]
+      ]
+     }
+    ],
+    "dataSets": [],
+    "charts": [
+     {
+      "chartKey": "reciclaje-barras",
+      "chartType": "BAR",
+      "title": "Material reciclado por curso en un mes",
+      "xLabel": "Curso",
+      "yLabel": "Kilogramos",
+      "source": {
+       "kind": "TABLE",
+       "tableKey": "reciclaje",
+       "xColumn": "curso",
+       "valueColumns": [
+        "papel",
+        "plastico",
+        "vidrio"
+       ]
+      }
+     }
+    ],
+    "figures": []
+   },
+   "renderedAssets": [
+    {
+     "assetKey": "chart:reciclaje-barras",
+     "assetKind": "CHART",
+     "renderer": {
+      "id": "studyus-svg-renderer",
+      "version": "1"
+     },
+     "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 480 320\" width=\"480\" height=\"320\" role=\"img\"><title>Material reciclado por curso en un mes</title><rect width=\"480\" height=\"320\" fill=\"#fff\"/><text x=\"240\" y=\"20\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\" font-weight=\"bold\">Material reciclado por curso en un mes</text><line x1=\"56\" y1=\"264\" x2=\"464\" y2=\"264\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"268\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">0</text><line x1=\"56\" y1=\"207\" x2=\"464\" y2=\"207\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"211\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">10</text><line x1=\"56\" y1=\"150\" x2=\"464\" y2=\"150\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"154\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">20</text><line x1=\"56\" y1=\"93\" x2=\"464\" y2=\"93\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"97\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">30</text><line x1=\"56\" y1=\"36\" x2=\"464\" y2=\"36\" stroke=\"#ddd\" stroke-width=\"1\"/><text x=\"50\" y=\"40\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">40</text><line x1=\"56\" y1=\"264\" x2=\"464\" y2=\"264\" stroke=\"#111\" stroke-width=\"1.5\"/><line x1=\"56\" y1=\"36\" x2=\"56\" y2=\"264\" stroke=\"#111\" stroke-width=\"1.5\"/><text x=\"107\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Séptimo</text><text x=\"209\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Octavo</text><text x=\"311\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Noveno</text><text x=\"413\" y=\"280\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Décimo</text><rect x=\"71.3\" y=\"127.2\" width=\"23.8\" height=\"136.8\" fill=\"#2b6cb0\"/><text x=\"83.2\" y=\"123.2\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">24</text><rect x=\"173.3\" y=\"93\" width=\"23.8\" height=\"171\" fill=\"#2b6cb0\"/><text x=\"185.2\" y=\"89\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">30</text><rect x=\"275.3\" y=\"161.4\" width=\"23.8\" height=\"102.6\" fill=\"#2b6cb0\"/><text x=\"287.2\" y=\"157.4\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">18</text><rect x=\"377.3\" y=\"58.8\" width=\"23.8\" height=\"205.2\" fill=\"#2b6cb0\"/><text x=\"389.2\" y=\"54.8\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">36</text><rect x=\"95.1\" y=\"178.5\" width=\"23.8\" height=\"85.5\" fill=\"#c05621\"/><text x=\"107\" y=\"174.5\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">15</text><rect x=\"197.1\" y=\"195.6\" width=\"23.8\" height=\"68.4\" fill=\"#c05621\"/><text x=\"209\" y=\"191.6\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">12</text><rect x=\"299.1\" y=\"144.3\" width=\"23.8\" height=\"119.7\" fill=\"#c05621\"/><text x=\"311\" y=\"140.3\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">21</text><rect x=\"401.1\" y=\"212.7\" width=\"23.8\" height=\"51.3\" fill=\"#c05621\"/><text x=\"413\" y=\"208.7\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">9</text><rect x=\"118.9\" y=\"212.7\" width=\"23.8\" height=\"51.3\" fill=\"#2f855a\"/><text x=\"130.8\" y=\"208.7\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">9</text><rect x=\"220.9\" y=\"161.4\" width=\"23.8\" height=\"102.6\" fill=\"#2f855a\"/><text x=\"232.8\" y=\"157.4\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">18</text><rect x=\"322.9\" y=\"229.8\" width=\"23.8\" height=\"34.2\" fill=\"#2f855a\"/><text x=\"334.8\" y=\"225.8\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">6</text><rect x=\"424.9\" y=\"178.5\" width=\"23.8\" height=\"85.5\" fill=\"#2f855a\"/><text x=\"436.8\" y=\"174.5\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">15</text><rect x=\"64\" y=\"26\" width=\"10\" height=\"10\" fill=\"#2b6cb0\"/><text x=\"78\" y=\"35\" text-anchor=\"start\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Papel</text><rect x=\"194\" y=\"26\" width=\"10\" height=\"10\" fill=\"#c05621\"/><text x=\"208\" y=\"35\" text-anchor=\"start\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Plástico</text><rect x=\"324\" y=\"26\" width=\"10\" height=\"10\" fill=\"#2f855a\"/><text x=\"338\" y=\"35\" text-anchor=\"start\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Vidrio</text><text x=\"260\" y=\"306\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Curso</text><text x=\"14\" y=\"150\" text-anchor=\"middle\" transform=\"rotate(-90 14 150)\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">Kilogramos</text></svg>",
+     "altText": "Gráfico de barras: Material reciclado por curso en un mes. Papel — Séptimo: 24, Octavo: 30, Noveno: 18, Décimo: 36. Plástico — Séptimo: 15, Octavo: 12, Noveno: 21, Décimo: 9. Vidrio — Séptimo: 9, Octavo: 18, Noveno: 6, Décimo: 15."
+    }
+   ]
+  },
+  {
+   "stimulusKey": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "kind": "FIGURE",
+   "language": "es",
+   "parts": [
+    {
+     "label": "triangulo",
+     "partKind": "FIGURE",
+     "text": "Triángulo rectángulo. Cateto: desconocido, marcado x. Cateto: 24 cm. Hipotenusa: 25 cm."
+    }
+   ],
+   "provenance": "STUDYUS_GENERATED",
+   "stimulusPlanId": "SP|PRACTICE|matematicas|FIGURE|07",
+   "generationUnitKey": "SP|PRACTICE|matematicas|FIGURE|07",
+   "structured": {
+    "v": 1,
+    "tables": [],
+    "dataSets": [],
+    "charts": [],
+    "figures": [
+     {
+      "figureKey": "triangulo",
+      "shape": "RIGHT_TRIANGLE",
+      "unit": "cm",
+      "legA": {
+       "label": "x",
+       "value": null
+      },
+      "legB": {
+       "label": "b",
+       "value": 24
+      },
+      "hypotenuse": {
+       "label": "c",
+       "value": 25
+      }
+     }
+    ]
+   },
+   "renderedAssets": [
+    {
+     "assetKey": "figure:triangulo",
+     "assetKind": "FIGURE",
+     "renderer": {
+      "id": "studyus-svg-renderer",
+      "version": "1"
+     },
+     "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 360 260\" width=\"360\" height=\"260\" role=\"img\"><title>Triángulo rectángulo. Cateto: desconocido, marcado x. Cateto: 24 cm. Hipotenusa: 25 cm.</title><rect width=\"360\" height=\"260\" fill=\"#fff\"/><polygon points=\"60,210 300,210 60,140\" fill=\"none\" stroke=\"#111\" stroke-width=\"2\"/><polyline points=\"72,210 72,198 60,198\" fill=\"none\" stroke=\"#111\" stroke-width=\"1\"/><text x=\"180\" y=\"228\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">24 cm</text><text x=\"52\" y=\"175\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">x</text><text x=\"192\" y=\"167\" text-anchor=\"start\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">25 cm</text></svg>",
+     "altText": "Triángulo rectángulo. Cateto: desconocido, marcado x. Cateto: 24 cm. Hipotenusa: 25 cm."
+    }
+   ]
+  },
+  {
+   "stimulusKey": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "kind": "FIGURE",
+   "language": "es",
+   "parts": [
+    {
+     "label": "terreno",
+     "partKind": "FIGURE",
+     "text": "Rectángulo. Base: 12 m. Altura: 7 m."
+    }
+   ],
+   "provenance": "STUDYUS_GENERATED",
+   "stimulusPlanId": "SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "generationUnitKey": "SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "structured": {
+    "v": 1,
+    "tables": [],
+    "dataSets": [],
+    "charts": [],
+    "figures": [
+     {
+      "figureKey": "terreno",
+      "shape": "RECTANGLE",
+      "unit": "m",
+      "width": {
+       "label": "base",
+       "value": 12
+      },
+      "height": {
+       "label": "altura",
+       "value": 7
+      }
+     }
+    ]
+   },
+   "renderedAssets": [
+    {
+     "assetKey": "figure:terreno",
+     "assetKind": "FIGURE",
+     "renderer": {
+      "id": "studyus-svg-renderer",
+      "version": "1"
+     },
+     "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 360 260\" width=\"360\" height=\"260\" role=\"img\"><title>Rectángulo. Base: 12 m. Altura: 7 m.</title><rect width=\"360\" height=\"260\" fill=\"#fff\"/><rect x=\"60\" y=\"60\" width=\"240\" height=\"140\" fill=\"none\" stroke=\"#111\" stroke-width=\"2\"/><text x=\"180\" y=\"218\" text-anchor=\"middle\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">12 m</text><text x=\"52\" y=\"134\" text-anchor=\"end\" font-family=\"sans-serif\" font-size=\"12\" fill=\"#111\">7 m</text></svg>",
+     "altText": "Rectángulo. Base: 12 m. Altura: 7 m."
+    }
+   ]
+  },
+  {
+   "stimulusKey": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "kind": "PASSAGE",
+   "language": "en",
+   "parts": [
+    {
+     "label": "1",
+     "partKind": "TEXT",
+     "text": "Last spring, the town of Redmoor closed its only cinema. The building was old, the roof leaked, and on most nights fewer than twenty people bought a ticket. The owner said she could not pay for the repairs, so the doors stayed shut."
+    },
+    {
+     "label": "2",
+     "partKind": "TEXT",
+     "text": "A group of teenagers from the local high school decided to do something about it. Every Saturday for three months they cleaned the seats, painted the lobby and sold homemade food in the square to raise money. A retired electrician, Mr. Adler, fixed the old projector for free. Because the students could not afford new films, they asked the public library to lend them classic ones."
+    },
+    {
+     "label": "3",
+     "partKind": "TEXT",
+     "text": "The cinema reopened in September with a different plan: one film a week, tickets at half the old price, and a discussion after each showing. On the first night, every one of the 180 seats was taken. Some neighbours say it is the best thing that has happened in Redmoor for years. The owner is more careful. \"One full night does not pay for a new roof,\" she says, \"but it is a start.\""
+    }
+   ],
+   "provenance": "STUDYUS_GENERATED",
+   "stimulusPlanId": "SP|PRACTICE|ingles|PASSAGE|01",
+   "generationUnitKey": "SP|PRACTICE|ingles|PASSAGE|01"
+  },
+  {
+   "stimulusKey": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "kind": "DRAFT_PARAGRAPH",
+   "language": "en",
+   "parts": [
+    {
+     "label": "1",
+     "partKind": "NUMBERED_TEXT",
+     "text": "Our school should start classes one hour later."
+    },
+    {
+     "label": "2",
+     "partKind": "NUMBERED_TEXT",
+     "text": "Teenagers need about nine hours of sleep, but most of us get fewer than seven."
+    },
+    {
+     "label": "3",
+     "partKind": "NUMBERED_TEXT",
+     "text": "Tired students find it hard to pay attention in the first lessons of the day."
+    },
+    {
+     "label": "4",
+     "partKind": "NUMBERED_TEXT",
+     "text": "The school cafeteria sells very good sandwiches."
+    },
+    {
+     "label": "5",
+     "partKind": "NUMBERED_TEXT",
+     "text": "Some schools that changed their timetable reported better marks and fewer absences."
+    },
+    {
+     "label": "6",
+     "partKind": "NUMBERED_TEXT",
+     "text": "_____, a later start would mean finishing later, and some families worry about that."
+    },
+    {
+     "label": "7",
+     "partKind": "NUMBERED_TEXT",
+     "text": "Even so, the benefits for learning seem greater than the problems."
+    }
+   ],
+   "provenance": "STUDYUS_GENERATED",
+   "stimulusPlanId": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "generationUnitKey": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01"
+  }
+ ],
+ "candidates": [
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|004|read.explicit-information|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "PRACTICE|004|read.explicit-information|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Según el texto, ¿qué anotaba Inés en su cuaderno antes de aquel jueves?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "El día en que cada reloj reparado volvió a funcionar."
+    },
+    {
+     "id": "B",
+     "text": "La cantidad de piezas que llegaban en cada tren."
+    },
+    {
+     "id": "C",
+     "text": "Los dibujos de las piezas que ella misma fabricaba."
+    },
+    {
+     "id": "D",
+     "text": "Las frases que su abuelo repetía en la relojería."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "El texto dice de manera directa, en el segundo párrafo, que Inés había puesto de nuevo en funcionamiento cuarenta y tres relojes y que guardaba en un cuaderno la fecha de cada uno. La opción A parafrasea ese dato sin copiarlo.",
+   "distractorRationales": {
+    "B": "Usa dos elementos del texto, las piezas y el tren, para afirmar algo que el texto no dice: en el cuaderno no se registran las piezas recibidas.",
+    "C": "Confunde un detalle cercano: Inés dibuja una pieza en el cuaderno solo al final, y el texto aclara que lo hace por primera vez.",
+    "D": "El texto menciona una frase del abuelo, pero no dice que Inés la anotara."
+   },
+   "primaryConceptStableId": "read.explicit-information",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "text-passage-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+    "generationUnitKey": "SP|PRACTICE|lectura|PASSAGE|02",
+    "requirementCellKey": "PRACTICE|004|read.explicit-information|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto y selecciona la única opción correcta.",
+   "slotKey": "PRACTICE|004|read.explicit-information|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|009|read.textual-evidence|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "PRACTICE|009|read.textual-evidence|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Qué fragmento del texto respalda mejor la afirmación de que la noticia del maquinista desanimó a Inés?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "«El maquinista se encogió de hombros»"
+    },
+    {
+     "id": "B",
+     "text": "«el tren llegó con retraso y sin el paquete»"
+    },
+    {
+     "id": "C",
+     "text": "«sintió que la tarde se le quedaba sin cuerda»"
+    },
+    {
+     "id": "D",
+     "text": "«el único del pueblo que nunca había necesitado arreglo»"
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "La afirmación trata de cómo recibió Inés la noticia. El único fragmento que la respalda es el que muestra su estado de ánimo: sentir que la tarde se queda sin cuerda es sentir que se detiene, como un reloj sin energía. Es una evidencia indirecta, porque el desánimo no se nombra: se sigue de la imagen.",
+   "distractorRationales": {
+    "A": "Describe la reacción del maquinista, no la de Inés: trata del mismo momento pero no prueba la afirmación.",
+    "B": "Es el hecho que origina la noticia, no una prueba de cómo la recibió Inés.",
+    "D": "Es un dato sobre el reloj de la estación; comparte el asunto de los relojes pero no dice nada del ánimo de Inés."
+   },
+   "primaryConceptStableId": "read.textual-evidence",
+   "proposedSupportingConceptStableIds": [
+    "lit.figurative-language"
+   ],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "text-passage-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+    "generationUnitKey": "SP|PRACTICE|lectura|PASSAGE|02",
+    "requirementCellKey": "PRACTICE|009|read.textual-evidence|MULTIPLE_CHOICE|CHALLENGE",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto y selecciona la única opción correcta.",
+   "slotKey": "PRACTICE|009|read.textual-evidence|MULTIPLE_CHOICE|CHALLENGE#1",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|018|lit.narrative-elements|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "PRACTICE|018|lit.narrative-elements|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Qué tipo de narrador cuenta este relato?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Un narrador en primera persona que es la protagonista de los hechos."
+    },
+    {
+     "id": "B",
+     "text": "Un narrador en tercera persona que conoce los pensamientos de todos los personajes."
+    },
+    {
+     "id": "C",
+     "text": "Un narrador en tercera persona que solo da a conocer el mundo interior de Inés."
+    },
+    {
+     "id": "D",
+     "text": "Un narrador en segunda persona que le habla directamente a Inés."
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "El narrador usa la tercera persona (llevaba, miró, caminó) y solo entra en el mundo interior de un personaje: dice lo que Inés sintió, mientras que del maquinista solo muestra un gesto visto desde fuera. Es un narrador en tercera persona limitado a la protagonista, no uno que lo sabe todo.",
+   "distractorRationales": {
+    "A": "Confunde a la protagonista con quien narra: ningún verbo está en primera persona.",
+    "B": "Supone que todo narrador en tercera persona lo sabe todo; aquí no se conoce lo que piensa el maquinista.",
+    "D": "El relato nunca se dirige a Inés con formas de segunda persona."
+   },
+   "primaryConceptStableId": "lit.narrative-elements",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "text-passage-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+    "generationUnitKey": "SP|PRACTICE|lectura|PASSAGE|02",
+    "requirementCellKey": "PRACTICE|018|lit.narrative-elements|MULTIPLE_CHOICE|CHALLENGE",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto y selecciona la única opción correcta.",
+   "slotKey": "PRACTICE|018|lit.narrative-elements|MULTIPLE_CHOICE|CHALLENGE#1",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|001|read.vocabulary-in-context|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|001|read.vocabulary-in-context|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "En el segundo párrafo se lee que Inés «había devuelto la marcha» a muchos relojes. ¿Qué significa la palabra «marcha» en ese contexto?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Funcionamiento de un mecanismo."
+    },
+    {
+     "id": "B",
+     "text": "Caminata de un grupo de personas."
+    },
+    {
+     "id": "C",
+     "text": "Partida de un lugar."
+    },
+    {
+     "id": "D",
+     "text": "Pieza musical de ritmo marcado."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "La palabra aparece referida a relojes que Inés repara: devolverles la marcha es hacer que vuelvan a funcionar. La pista está en la misma oración, y al sustituir la palabra por «funcionamiento» el sentido se conserva.",
+   "distractorRationales": {
+    "B": "Es la acepción más habitual de la palabra, pero un reloj no camina: no cabe en la oración.",
+    "C": "Es otra acepción real de la palabra, ajena al contexto de la reparación.",
+    "D": "Es una acepción real de la palabra en el campo de la música, sin relación con el texto."
+   },
+   "primaryConceptStableId": "read.vocabulary-in-context",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "text-passage-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+    "generationUnitKey": "SP|PRACTICE|lectura|PASSAGE|02",
+    "requirementCellKey": "PRACTICE|001|read.vocabulary-in-context|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto y selecciona la única opción correcta.",
+   "slotKey": "PRACTICE|001|read.vocabulary-in-context|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|005|read.central-idea|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|005|read.central-idea|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Cuál es la idea central del relato?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Una relojera se queda sin las piezas que recibía y resuelve empezar a hacerlas ella misma."
+    },
+    {
+     "id": "B",
+     "text": "El último tren de la tarde llega con retraso a una estación sin pasajeros."
+    },
+    {
+     "id": "C",
+     "text": "Los oficios antiguos desaparecen siempre que cierra una fábrica."
+    },
+    {
+     "id": "D",
+     "text": "El abuelo de Inés reparaba los relojes de todo el pueblo."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "La idea central debe abarcar todo el texto: el oficio de Inés, la pérdida de las piezas y lo que decide al final. Solo la opción A reúne los cuatro párrafos en conjunto.",
+   "distractorRationales": {
+    "B": "Es un detalle verdadero del tercer párrafo, pero parcial.",
+    "C": "Es una generalización que el relato no hace: cuenta un caso y, además, Inés no abandona el oficio.",
+    "D": "Es un detalle del segundo párrafo que sirve de antecedente, no la idea de todo el texto."
+   },
+   "primaryConceptStableId": "read.central-idea",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|PASSAGE|02",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "text-passage-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+    "generationUnitKey": "SP|PRACTICE|lectura|PASSAGE|02",
+    "requirementCellKey": "PRACTICE|005|read.central-idea|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto y selecciona la única opción correcta.",
+   "slotKey": "PRACTICE|005|read.central-idea|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": "SP|PRACTICE|lectura|PASSAGE|02"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Cuál de las siguientes afirmaciones está respaldada por los datos de la tabla?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "El mes con más préstamos totales fue también el mes en que más aumentaron respecto del mes anterior."
+    },
+    {
+     "id": "B",
+     "text": "En septiembre, más de la mitad de los préstamos fueron de novelas."
+    },
+    {
+     "id": "C",
+     "text": "Los préstamos de novelas aumentaron todos los meses."
+    },
+    {
+     "id": "D",
+     "text": "El club de lectura fue la causa de que aumentaran los préstamos."
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "Según la tabla, en septiembre hubo 180 préstamos totales y 99 de novelas; la mitad de 180 es 90, y 99 es mayor. Las demás afirmaciones no se sostienen con los datos: hay que contrastar cada una con los valores de su fila y su columna.",
+   "distractorRationales": {
+    "A": "Confunde el valor más alto con el mayor aumento: septiembre tiene el total más alto, pero el mayor aumento ocurrió de julio a agosto.",
+    "C": "Lee mal la columna de novelas: de junio a julio los préstamos de novelas bajaron.",
+    "D": "Atribuye a los datos una causa que la tabla no muestra: es la opinión de la bibliotecaria, y la tabla solo registra cantidades."
+   },
+   "primaryConceptStableId": "read.tables-and-graphics",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "data-interpretation-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "data-interpretation-set",
+     "version": "1"
+    },
+    "promptHash": "ff8f2b576081a7c3bfc5baf8a9625b72390c7a6dab8af815c3746d36e503cacc",
+    "generationUnitKey": "SP|PRACTICE|lectura|COMPOSITE|01",
+    "requirementCellKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|CHALLENGE",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Analiza la información presentada y selecciona la única opción correcta.",
+   "slotKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|CHALLENGE#1",
+   "stimulusPlanId": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "usesStimulusValues": [
+    180,
+    99
+   ]
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Según la tabla, ¿cuántos préstamos de novelas se registraron en agosto?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "40"
+    },
+    {
+     "id": "B",
+     "text": "72"
+    },
+    {
+     "id": "C",
+     "text": "99"
+    },
+    {
+     "id": "D",
+     "text": "150"
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "En la tabla, el cruce de la fila de agosto con la columna de préstamos de novelas da el valor 72.",
+   "distractorRationales": {
+    "A": "Es el valor de la fila vecina, julio, en la misma columna.",
+    "C": "Es el valor de la fila vecina, septiembre, en la misma columna.",
+    "D": "Es el valor de agosto, pero en la columna de préstamos totales."
+   },
+   "primaryConceptStableId": "read.tables-and-graphics",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "data-interpretation-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "data-interpretation-set",
+     "version": "1"
+    },
+    "promptHash": "ff8f2b576081a7c3bfc5baf8a9625b72390c7a6dab8af815c3746d36e503cacc",
+    "generationUnitKey": "SP|PRACTICE|lectura|COMPOSITE|01",
+    "requirementCellKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Analiza la información presentada y selecciona la única opción correcta.",
+   "slotKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "usesStimulusValues": [
+    72
+   ]
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Según la tabla, ¿cuántos préstamos totales más hubo en septiembre que en junio?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "30"
+    },
+    {
+     "id": "B",
+     "text": "54"
+    },
+    {
+     "id": "C",
+     "text": "60"
+    },
+    {
+     "id": "D",
+     "text": "85"
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "Hay que leer dos datos de la columna de préstamos totales: 180 en la fila de septiembre y 120 en la fila de junio. La diferencia entre los dos valores es 60.",
+   "distractorRationales": {
+    "A": "Compara septiembre con agosto, la fila vecina, y no con junio.",
+    "B": "Resta los valores de la columna de novelas en lugar de los préstamos totales.",
+    "D": "Compara septiembre con julio: lee la fila equivocada."
+   },
+   "primaryConceptStableId": "read.tables-and-graphics",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|PRACTICE|lectura|COMPOSITE|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "data-interpretation-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "data-interpretation-set",
+     "version": "1"
+    },
+    "promptHash": "ff8f2b576081a7c3bfc5baf8a9625b72390c7a6dab8af815c3746d36e503cacc",
+    "generationUnitKey": "SP|PRACTICE|lectura|COMPOSITE|01",
+    "requirementCellKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Analiza la información presentada y selecciona la única opción correcta.",
+   "slotKey": "PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|PRACTICE|lectura|COMPOSITE|01",
+   "answerCheck": {
+    "kind": "ARITHMETIC_EXPRESSION",
+    "expression": "180 - 120"
+   },
+   "usesStimulusValues": [
+    180,
+    120
+   ]
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|REDUCED_MOCK|021|write.concision-elision|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "REDUCED_MOCK|021|write.concision-elision|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Cuál es la mejor versión de la oración 2, sin información repetida y sin perder ningún dato?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Cada mañana, antes de entrar a clase, un grupo distinto riega las plantas y revisa que no tengan plagas."
+    },
+    {
+     "id": "B",
+     "text": "Cada mañana un grupo riega las plantas."
+    },
+    {
+     "id": "C",
+     "text": "Cada mañana, antes de entrar a clase, un grupo distinto riega las plantas y revisa a diario, día tras día, que no tengan plagas."
+    },
+    {
+     "id": "D",
+     "text": "Antes de entrar a clase, un grupo distinto riega las plantas y revisa todas las mañanas, cada día, que no tengan plagas."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "La oración original repite tres veces la misma idea de frecuencia: cada mañana, cada día y todas las mañanas. La opción A elimina la repetición innecesaria y conserva todos los datos: cuándo se hace, quién lo hace y las dos tareas. Es la versión más breve que no pierde información.",
+   "distractorRationales": {
+    "B": "Es la más corta, pero suprime datos necesarios: el momento, que el grupo cambia y la revisión de plagas.",
+    "C": "Conserva la redundancia con otras palabras: a diario y día tras día repiten cada mañana.",
+    "D": "Sigue diciendo dos veces lo mismo: todas las mañanas y cada día."
+   },
+   "primaryConceptStableId": "write.concision-elision",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+    "generationUnitKey": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+    "requirementCellKey": "REDUCED_MOCK|021|write.concision-elision|MULTIPLE_CHOICE|CHALLENGE",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto numerado y selecciona la opción que mejor responde.",
+   "slotKey": "REDUCED_MOCK|021|write.concision-elision|MULTIPLE_CHOICE|CHALLENGE#1",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|REDUCED_MOCK|022|write.stylistic-addition|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "REDUCED_MOCK|022|write.stylistic-addition|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Qué expresión, añadida al final de la oración 6, amplía mejor su idea con un recurso de lenguaje figurado?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": ", porque el patio dejó de estar vacío"
+    },
+    {
+     "id": "B",
+     "text": ": ahora es una alfombra verde que crece un poco cada semana"
+    },
+    {
+     "id": "C",
+     "text": ", aunque la cafetería del colegio abre a las siete"
+    },
+    {
+     "id": "D",
+     "text": ", pues sigue tan desierto como siempre"
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "La oración 6 es correcta pero escueta. La opción B le añade una imagen, el patio como alfombra verde, que amplía la misma idea con lenguaje figurado y concuerda con el resto del texto, que habla de plantas que crecen. Enriquece la oración sin cambiar lo que dice.",
+   "distractorRationales": {
+    "A": "No amplía la idea: vuelve a decir lo mismo con otras palabras.",
+    "C": "Agrega un dato verdadero o no, pero ajeno al asunto del texto.",
+    "D": "Contradice la oración que debía ampliar."
+   },
+   "primaryConceptStableId": "write.stylistic-addition",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+    "generationUnitKey": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+    "requirementCellKey": "REDUCED_MOCK|022|write.stylistic-addition|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto numerado y selecciona la opción que mejor responde.",
+   "slotKey": "REDUCED_MOCK|022|write.stylistic-addition|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|REDUCED_MOCK|023|write.generalization|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "REDUCED_MOCK|023|write.generalization|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "La oración 3 enumera tres tareas. ¿Qué expresión general puede sustituir esa enumeración abarcando las tres tareas y solo esas?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Los sábados, algunos padres colaboran en el mantenimiento del huerto."
+    },
+    {
+     "id": "B",
+     "text": "Los sábados, algunos padres participan en la vida del colegio."
+    },
+    {
+     "id": "C",
+     "text": "Los sábados, algunos padres arrancan las malas hierbas."
+    },
+    {
+     "id": "D",
+     "text": "Los sábados, algunos padres recogen la cosecha."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "Desmalezar, reparar los cajones y preparar el abono son casos particulares de una misma categoría: mantener el huerto. La opción A es la expresión general que abarca las tres tareas y no incluye otras que el texto no menciona.",
+   "distractorRationales": {
+    "B": "Es una categoría demasiado amplia: incluiría actividades que la oración no menciona.",
+    "C": "Solo cubre una de las tres tareas: es parcial.",
+    "D": "Nombra una tarea que no está en la enumeración."
+   },
+   "primaryConceptStableId": "write.generalization",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+    "generationUnitKey": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+    "requirementCellKey": "REDUCED_MOCK|023|write.generalization|MULTIPLE_CHOICE|CHALLENGE",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto numerado y selecciona la opción que mejor responde.",
+   "slotKey": "REDUCED_MOCK|023|write.generalization|MULTIPLE_CHOICE|CHALLENGE#1",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|REDUCED_MOCK|024|write.global-synthesis|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "REDUCED_MOCK|024|write.global-synthesis|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Cuál es el mejor título para el texto completo?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Un huerto escolar hecho entre todos"
+    },
+    {
+     "id": "B",
+     "text": "La cosecha de marzo"
+    },
+    {
+     "id": "C",
+     "text": "Cómo combatir las plagas"
+    },
+    {
+     "id": "D",
+     "text": "La agricultura en el mundo"
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "El título debe recoger todo el texto en conjunto: quiénes crearon el huerto, quiénes lo cuidan y qué resultado dio. La opción A integra a estudiantes y padres y sirve para las seis oraciones.",
+   "distractorRationales": {
+    "B": "Corresponde solo a la oración 5.",
+    "C": "Toma un detalle de la oración 2 y promete un contenido que el texto no desarrolla.",
+    "D": "Es mucho más amplio que el texto, que trata de un solo huerto."
+   },
+   "primaryConceptStableId": "write.global-synthesis",
+   "proposedSupportingConceptStableIds": [
+    "read.central-idea"
+   ],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+    "generationUnitKey": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+    "requirementCellKey": "REDUCED_MOCK|024|write.global-synthesis|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto numerado y selecciona la opción que mejor responde.",
+   "slotKey": "REDUCED_MOCK|024|write.global-synthesis|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|REDUCED_MOCK|025|write.indirect-expression|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "REDUCED_MOCK|025|write.indirect-expression|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "La oración 4 afirma algo general. ¿Cuál de las siguientes oraciones lo muestra con un caso concreto?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "El trabajo en equipo siempre deja enseñanzas valiosas."
+    },
+    {
+     "id": "B",
+     "text": "Los estudiantes esperaron seis semanas, sin apurar el riego, hasta ver brotar las primeras hojas."
+    },
+    {
+     "id": "C",
+     "text": "La paciencia es una virtud necesaria en cualquier oficio."
+    },
+    {
+     "id": "D",
+     "text": "El huerto hizo que los estudiantes fueran más pacientes."
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "La oración 4 dice, en general, que el curso aprendió a trabajar con paciencia. La opción B lo muestra con un caso particular y concreto: esperar seis semanas sin apurar el riego. Quien lee ese ejemplo llega por sí mismo a la idea de paciencia.",
+   "distractorRationales": {
+    "A": "Es otra afirmación general, y sobre una idea distinta.",
+    "C": "Es una afirmación general sobre la paciencia, no un caso que la ilustre.",
+    "D": "Repite la oración 4 con otras palabras."
+   },
+   "primaryConceptStableId": "write.indirect-expression",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+    "generationUnitKey": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+    "requirementCellKey": "REDUCED_MOCK|025|write.indirect-expression|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto numerado y selecciona la opción que mejor responde.",
+   "slotKey": "REDUCED_MOCK|025|write.indirect-expression|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Cuál es la mejor versión de la oración 3, sin información repetida y sin perder ningún dato?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Los lectores pueden llevarse en préstamo hasta tres libros y devolverlos en la siguiente visita del autobús."
+    },
+    {
+     "id": "B",
+     "text": "Los lectores pueden llevarse libros."
+    },
+    {
+     "id": "C",
+     "text": "Los lectores pueden llevarse prestados hasta tres libros en préstamo y devolverlos cuando el autobús vuelva a regresar."
+    },
+    {
+     "id": "D",
+     "text": "Los lectores pueden llevarse hasta tres libros y devolverlos en la siguiente visita, de nuevo otra vez."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "La oración original dice dos veces dos cosas con expresiones distintas: prestados y en préstamo; la siguiente visita y cuando el autobús regrese de nuevo otra vez. La opción A suprime esas redundancias y conserva los tres datos: cuántos libros, que son prestados y cuándo se devuelven.",
+   "distractorRationales": {
+    "B": "Es la más breve, pero elimina datos necesarios: el límite de tres libros y la devolución.",
+    "C": "Mantiene la primera redundancia y cambia la segunda por otra: vuelva a regresar.",
+    "D": "Conserva una repetición innecesaria al final y pierde el dato de que los libros son prestados."
+   },
+   "primaryConceptStableId": "write.concision-elision",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+    "generationUnitKey": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+    "requirementCellKey": "DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto numerado y selecciona la opción que mejor responde.",
+   "slotKey": "DIAGNOSTIC|021|write.concision-elision|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|DIAGNOSTIC|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Qué expresión, añadida al final de la oración 4, amplía su idea con una comparación acorde con el tono del texto?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": ", como un río que lleva agua a tierras que siempre estuvieron secas"
+    },
+    {
+     "id": "B",
+     "text": ", es decir, a sitios en los que antes no existía ninguna biblioteca"
+    },
+    {
+     "id": "C",
+     "text": ", como un ladrón que entra de noche sin ser visto"
+    },
+    {
+     "id": "D",
+     "text": ", y su motor consume doce litros de combustible cada cien kilómetros"
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "La opción A añade una comparación que amplía la idea de la oración 4: llevar libros adonde no los había es como llevar agua a tierras secas. El recurso expresivo enriquece la oración y concuerda con el tono favorable del texto.",
+   "distractorRationales": {
+    "B": "No amplía la idea: la repite con otras palabras.",
+    "C": "Es una comparación, pero su tono no corresponde al del texto: presenta la llegada del autobús como algo furtivo.",
+    "D": "Agrega un dato ajeno a lo que la oración está diciendo."
+   },
+   "primaryConceptStableId": "write.stylistic-addition",
+   "proposedSupportingConceptStableIds": [
+    "lit.figurative-language"
+   ],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+    "generationUnitKey": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+    "requirementCellKey": "DIAGNOSTIC|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto numerado y selecciona la opción que mejor responde.",
+   "slotKey": "DIAGNOSTIC|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Qué expresión general puede reemplazar la enumeración de la oración 2 abarcando todos sus elementos y solo esos?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "obras de ficción"
+    },
+    {
+     "id": "B",
+     "text": "libros de distintos tipos"
+    },
+    {
+     "id": "C",
+     "text": "objetos de todo tipo"
+    },
+    {
+     "id": "D",
+     "text": "textos escolares"
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "La oración enumera cinco elementos particulares: novelas, cuentos, historietas, poemarios y enciclopedias. La expresión general que los incluye a todos, sin añadir otros, es la categoría de libros de distintos tipos.",
+   "distractorRationales": {
+    "A": "Es una categoría parcial: deja fuera las enciclopedias y los poemarios.",
+    "C": "Es demasiado amplia: abarcaría cosas que no son libros y que la oración no menciona.",
+    "D": "Es una categoría de otro campo: ninguno de los elementos se presenta como texto escolar."
+   },
+   "primaryConceptStableId": "write.generalization",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+    "generationUnitKey": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+    "requirementCellKey": "DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto numerado y selecciona la opción que mejor responde.",
+   "slotKey": "DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|DIAGNOSTIC|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "¿Cuál es el mejor resumen del texto completo?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Un autobús convertido en biblioteca lleva libros en préstamo a barrios que no tenían biblioteca, con tan buena acogida que se estudia ampliar el servicio."
+    },
+    {
+     "id": "B",
+     "text": "Los lectores de los barrios altos pueden llevarse hasta tres libros en cada visita del autobús."
+    },
+    {
+     "id": "C",
+     "text": "La alcaldía comprará un segundo autobús para toda la ciudad."
+    },
+    {
+     "id": "D",
+     "text": "Las bibliotecas públicas son importantes para la educación de un país."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "El resumen debe integrar todo el texto: qué es el bibliobús, a quiénes sirve, cómo fue recibido y qué se planea. La opción A reúne en conjunto esos aspectos, que el texto desarrolla en oraciones separadas, sin añadir nada.",
+   "distractorRationales": {
+    "B": "Recoge solo la oración 3.",
+    "C": "Recoge solo la oración 6 y la exagera: la alcaldía estudia la idea, no la ha decidido.",
+    "D": "Es más amplio que el texto y afirma algo que el texto no dice."
+   },
+   "primaryConceptStableId": "write.global-synthesis",
+   "proposedSupportingConceptStableIds": [
+    "read.central-idea"
+   ],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+    "generationUnitKey": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+    "requirementCellKey": "DIAGNOSTIC|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto numerado y selecciona la opción que mejor responde.",
+   "slotKey": "DIAGNOSTIC|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|DIAGNOSTIC|025|write.indirect-expression|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|025|write.indirect-expression|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "La oración 5 afirma algo general. ¿Cuál de las siguientes oraciones lo muestra con un caso concreto?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "En el barrio El Mirador, la fila para subir al autobús empieza a formarse una hora antes de que llegue."
+    },
+    {
+     "id": "B",
+     "text": "El autobús mide once metros de largo y tiene dos puertas."
+    },
+    {
+     "id": "C",
+     "text": "El conductor del autobús trabajó antes en una empresa de transporte."
+    },
+    {
+     "id": "D",
+     "text": "La comunidad ha recibido la iniciativa de manera muy positiva."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "La oración 5 dice, en general, que los vecinos respondieron con entusiasmo. La opción A lo ilustra con un caso particular: una fila que se forma una hora antes muestra ese entusiasmo sin nombrarlo.",
+   "distractorRationales": {
+    "B": "Es un detalle concreto, pero ilustra otra cosa: cómo es el autobús.",
+    "C": "Es un caso concreto que pertenece al tema, pero no muestra la respuesta de los vecinos.",
+    "D": "Repite la idea general con otras palabras, sin ningún ejemplo."
+   },
+   "primaryConceptStableId": "write.indirect-expression",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+    "generationUnitKey": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+    "requirementCellKey": "DIAGNOSTIC|025|write.indirect-expression|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Lee el texto numerado y selecciona la opción que mejor responde.",
+   "slotKey": "DIAGNOSTIC|025|write.indirect-expression|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|DIAGNOSTIC|029|math.num.percent|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|029|math.num.percent|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Una chaqueta cuesta $ 80 y se vende con un descuento del 15 %. ¿Cuánto se paga por la chaqueta con el descuento?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "$ 12"
+    },
+    {
+     "id": "B",
+     "text": "$ 65"
+    },
+    {
+     "id": "C",
+     "text": "$ 68"
+    },
+    {
+     "id": "D",
+     "text": "$ 92"
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "El descuento es el 15 por ciento de 80, es decir, 12. Al precio se le resta el descuento: 80 menos 12 da 68. También se puede calcular el 85 por ciento de 80, porque el porcentaje que se paga es lo que queda del total.",
+   "distractorRationales": {
+    "A": "Calcula el descuento pero no lo resta del precio: responde cuánto se rebaja, no cuánto se paga.",
+    "B": "Trata los 15 puntos porcentuales como si fueran una cantidad de dinero y los resta de 80.",
+    "D": "Suma el descuento al precio en lugar de restarlo."
+   },
+   "primaryConceptStableId": "math.num.percent",
+   "proposedSupportingConceptStableIds": [
+    "math.num.fractions-decimals"
+   ],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "mcq-standalone@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "mcq-standalone",
+     "version": "1"
+    },
+    "promptHash": "5cb3bb6a3aeb9c06dfd0443b1514d13337ff85b02c69dbfce233d783c0256eeb",
+    "generationUnitKey": "SU|DIAGNOSTIC|029|math.num.percent|MULTIPLE_CHOICE|STANDARD#1",
+    "requirementCellKey": "DIAGNOSTIC|029|math.num.percent|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Selecciona la única opción correcta.",
+   "slotKey": "DIAGNOSTIC|029|math.num.percent|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": null,
+   "answerCheck": {
+    "kind": "ARITHMETIC_EXPRESSION",
+    "expression": "80 * (1 - 15 / 100)"
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Los datos muestran cuántos libros leyó cada uno de siete estudiantes en un semestre. ¿Cuál es la media de libros leídos?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "5"
+    },
+    {
+     "id": "B",
+     "text": "6"
+    },
+    {
+     "id": "C",
+     "text": "7"
+    },
+    {
+     "id": "D",
+     "text": "49"
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "La media se obtiene sumando todos los datos y dividiendo entre cuántos son: 3 + 5 + 5 + 6 + 8 + 9 + 13 = 49, y 49 entre 7 datos da 7.",
+   "distractorRationales": {
+    "A": "Es la moda: el valor que más se repite, no la media.",
+    "B": "Es la mediana: el valor del centro de los datos ordenados.",
+    "D": "Es la suma de los datos sin dividirla entre el número de datos."
+   },
+   "primaryConceptStableId": "math.stat.central-tendency",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "mcq-own-stimulus@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "mcq-own-stimulus",
+     "version": "1"
+    },
+    "promptHash": "44c5f72912af68cc29ac428f8bab9e480aba93552419e6d91bbac79749aca323",
+    "generationUnitKey": "SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+    "requirementCellKey": "PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Observa la información y selecciona la única opción correcta.",
+   "slotKey": "PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": null,
+   "answerCheck": {
+    "kind": "ARITHMETIC_EXPRESSION",
+    "expression": "(3 + 5 + 5 + 6 + 8 + 9 + 13) / 7"
+   },
+   "usesStimulusValues": [
+    3,
+    5,
+    6,
+    8,
+    9,
+    13
+   ]
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD#1",
+   "cellKey": "FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Para obtener un tono celeste se mezclan pintura azul y pintura blanca en la razón 3 : 5. Si se quieren preparar 40 litros de mezcla, ¿cuántos litros de pintura azul se necesitan?",
+   "responseFormat": "STUDENT_PRODUCED",
+   "options": [],
+   "answerKey": "15",
+   "rationale": "La razón 3 : 5 indica que, de cada 8 partes iguales de mezcla, 3 son de pintura azul. Como la proporción se mantiene constante, cada parte de los 40 litros mide 40 entre 8, es decir, 5 litros, y la pintura azul ocupa 3 partes: 15 litros.",
+   "distractorRationales": {},
+   "primaryConceptStableId": "math.num.ratio-proportion",
+   "proposedSupportingConceptStableIds": [
+    "math.num.fractions-decimals"
+   ],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "spr-math@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "spr-math",
+     "version": "1"
+    },
+    "promptHash": "fe0a004261eeb0b55d9fdd734621eb5b8813a5fb92c17d4b0ab264025742be93",
+    "generationUnitKey": "SU|FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD#1",
+    "requirementCellKey": "FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Escribe tu respuesta como un número.",
+   "slotKey": "FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD#1",
+   "stimulusPlanId": null,
+   "answerCheck": {
+    "kind": "ARITHMETIC_EXPRESSION",
+    "expression": "40 * 3 / (3 + 5)"
+   },
+   "numericKey": {
+    "kind": "NUMERIC",
+    "value": "15",
+    "equivalentFormsAllowed": true
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL#1",
+   "cellKey": "FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "En una bolsa hay 4 canicas rojas, 6 azules y 2 verdes, todas del mismo tamaño. Se saca una canica al azar. ¿Cuál es la probabilidad de que sea azul? Puedes responder con una fracción o con un decimal.",
+   "responseFormat": "STUDENT_PRODUCED",
+   "options": [],
+   "answerKey": "1/2",
+   "rationale": "Todos los resultados son igualmente posibles. Hay 12 canicas en total, que son los resultados posibles, y 6 son azules, que son los casos favorables. La probabilidad es 6 de 12, que equivale a un medio.",
+   "distractorRationales": {},
+   "primaryConceptStableId": "math.prob.probability",
+   "proposedSupportingConceptStableIds": [
+    "math.num.fractions-decimals"
+   ],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "spr-math@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "spr-math",
+     "version": "1"
+    },
+    "promptHash": "04e57cd3f4b49a18b2946a4a1ae4704c963cc08106d276bccff0ab3c3eda06ea",
+    "generationUnitKey": "SU|FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL#1",
+    "requirementCellKey": "FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Escribe tu respuesta como un número.",
+   "slotKey": "FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL#1",
+   "stimulusPlanId": null,
+   "answerCheck": {
+    "kind": "ARITHMETIC_EXPRESSION",
+    "expression": "6 / (4 + 6 + 2)"
+   },
+   "numericKey": {
+    "kind": "NUMERIC",
+    "value": "1/2",
+    "equivalentFormsAllowed": true
+   }
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|FULL_MOCK_1|065|math.stat.data-representation|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "FULL_MOCK_1|065|math.stat.data-representation|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Según la tabla, ¿cuántos kilogramos de material reciclaron en total los estudiantes de octavo?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "48 kg"
+    },
+    {
+     "id": "B",
+     "text": "57 kg"
+    },
+    {
+     "id": "C",
+     "text": "60 kg"
+    },
+    {
+     "id": "D",
+     "text": "108 kg"
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "Hay que leer los tres datos de la fila de octavo en la tabla y sumarlos: 30 de papel, 12 de plástico y 18 de vidrio dan 60 kilogramos.",
+   "distractorRationales": {
+    "A": "Suma los valores de la fila vecina, la de séptimo.",
+    "B": "Suma una columna en lugar de una fila: el plástico de los cuatro cursos.",
+    "D": "Suma la columna de papel de los cuatro cursos."
+   },
+   "primaryConceptStableId": "math.stat.data-representation",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "data-interpretation-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "data-interpretation-set",
+     "version": "1"
+    },
+    "promptHash": "68c6666be0b345c86e6d4ab1c968ac8a9164206d4ba787d27cc837885455fbbc",
+    "generationUnitKey": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+    "requirementCellKey": "FULL_MOCK_1|065|math.stat.data-representation|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Analiza la información presentada y selecciona la única opción correcta.",
+   "slotKey": "FULL_MOCK_1|065|math.stat.data-representation|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "answerCheck": {
+    "kind": "ARITHMETIC_EXPRESSION",
+    "expression": "30 + 12 + 18"
+   },
+   "usesStimulusValues": [
+    30,
+    12,
+    18
+   ]
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|FULL_MOCK_1|065|math.stat.data-representation|STUDENT_PRODUCED|STANDARD#1",
+   "cellKey": "FULL_MOCK_1|065|math.stat.data-representation|STUDENT_PRODUCED|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Según la tabla, ¿cuál fue el promedio de kilogramos de papel reciclados por curso?",
+   "responseFormat": "STUDENT_PRODUCED",
+   "options": [],
+   "answerKey": "27",
+   "rationale": "Se leen los cuatro datos de la columna de papel en la tabla: 24, 30, 18 y 36. Su suma es 108 y, repartida entre los cuatro cursos, da 27 kilogramos.",
+   "distractorRationales": {},
+   "primaryConceptStableId": "math.stat.data-representation",
+   "proposedSupportingConceptStableIds": [
+    "math.stat.central-tendency"
+   ],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "data-interpretation-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "data-interpretation-set",
+     "version": "1"
+    },
+    "promptHash": "68c6666be0b345c86e6d4ab1c968ac8a9164206d4ba787d27cc837885455fbbc",
+    "generationUnitKey": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+    "requirementCellKey": "FULL_MOCK_1|065|math.stat.data-representation|STUDENT_PRODUCED|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Escribe tu respuesta como un número.",
+   "slotKey": "FULL_MOCK_1|065|math.stat.data-representation|STUDENT_PRODUCED|STANDARD#1",
+   "stimulusPlanId": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+   "answerCheck": {
+    "kind": "ARITHMETIC_EXPRESSION",
+    "expression": "(24 + 30 + 18 + 36) / 4"
+   },
+   "numericKey": {
+    "kind": "NUMERIC",
+    "value": "27",
+    "equivalentFormsAllowed": true
+   },
+   "usesStimulusValues": [
+    24,
+    30,
+    18,
+    36
+   ]
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|058|math.geo.pythagorean-theorem|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "PRACTICE|058|math.geo.pythagorean-theorem|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "En el triángulo rectángulo de la figura, la hipotenusa mide 25 cm y uno de los catetos mide 24 cm. ¿Cuál es el perímetro del triángulo?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "50 cm"
+    },
+    {
+     "id": "B",
+     "text": "56 cm"
+    },
+    {
+     "id": "C",
+     "text": "84 cm"
+    },
+    {
+     "id": "D",
+     "text": "98 cm"
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "Primero se halla el cateto desconocido con el teorema de Pitágoras: como se busca un cateto, al cuadrado de la hipotenusa se le resta el cuadrado del otro cateto, 625 menos 576, que da 49, y su raíz cuadrada es 7. Después se suman los tres lados: 7 más 24 más 25 da 56.",
+   "distractorRationales": {
+    "A": "Resta los lados en lugar de sus cuadrados y toma 1 como cateto; luego suma los tres lados.",
+    "C": "Halla bien el cateto, pero calcula el área del triángulo en lugar del perímetro.",
+    "D": "Olvida extraer la raíz cuadrada y toma 49 como medida del cateto."
+   },
+   "primaryConceptStableId": "math.geo.pythagorean-theorem",
+   "proposedSupportingConceptStableIds": [
+    "math.geo.plane-figures-area-perimeter"
+   ],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|PRACTICE|matematicas|FIGURE|07",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "figure-geometry@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "figure-geometry",
+     "version": "1"
+    },
+    "promptHash": "bd6bd5218c67549475a7ceba0a16c1403f294397d27ca8e03c532cc58f798bdc",
+    "generationUnitKey": "SP|PRACTICE|matematicas|FIGURE|07",
+    "requirementCellKey": "PRACTICE|058|math.geo.pythagorean-theorem|MULTIPLE_CHOICE|CHALLENGE",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Observa la figura y selecciona la única opción correcta.",
+   "slotKey": "PRACTICE|058|math.geo.pythagorean-theorem|MULTIPLE_CHOICE|CHALLENGE#1",
+   "stimulusPlanId": "SP|PRACTICE|matematicas|FIGURE|07",
+   "answerCheck": {
+    "kind": "ARITHMETIC_EXPRESSION",
+    "expression": "sqrt(25^2 - 24^2) + 24 + 25"
+   },
+   "usesStimulusValues": [
+    24,
+    25
+   ]
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|DIAGNOSTIC|059|math.geo.plane-figures-area-perimeter|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "DIAGNOSTIC|059|math.geo.plane-figures-area-perimeter|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "La figura representa un terreno rectangular de 12 m de base y 7 m de altura. ¿Cuántos metros de cerca se necesitan para rodear todo su contorno?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "19 m"
+    },
+    {
+     "id": "B",
+     "text": "26 m"
+    },
+    {
+     "id": "C",
+     "text": "38 m"
+    },
+    {
+     "id": "D",
+     "text": "84 m"
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "Rodear el contorno es hallar el perímetro del rectángulo: la suma de sus cuatro lados, o el doble de la suma de la base y la altura. 12 más 7 es 19, y el doble es 38.",
+   "distractorRationales": {
+    "A": "Suma solo dos lados del rectángulo.",
+    "B": "Suma tres lados: olvida uno de los lados mayores.",
+    "D": "Multiplica la base por la altura: calcula el área, no el perímetro."
+   },
+   "primaryConceptStableId": "math.geo.plane-figures-area-perimeter",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "es",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "figure-geometry@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "figure-geometry",
+     "version": "1"
+    },
+    "promptHash": "3e662595834cfe2759a38bcf31fdbdc5aadfb81cbae2c2c2bcba09f3299c1c32",
+    "generationUnitKey": "SP|DIAGNOSTIC|matematicas|FIGURE|07",
+    "requirementCellKey": "DIAGNOSTIC|059|math.geo.plane-figures-area-perimeter|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Observa la figura y selecciona la única opción correcta.",
+   "slotKey": "DIAGNOSTIC|059|math.geo.plane-figures-area-perimeter|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": "SP|DIAGNOSTIC|matematicas|FIGURE|07",
+   "answerCheck": {
+    "kind": "ARITHMETIC_EXPRESSION",
+    "expression": "2 * (12 + 7)"
+   },
+   "usesStimulusValues": [
+    12,
+    7
+   ]
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|075|efl.reading.literal|MULTIPLE_CHOICE|CHALLENGE#1",
+   "cellKey": "PRACTICE|075|efl.reading.literal|MULTIPLE_CHOICE|CHALLENGE",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "According to the passage, which of these jobs did the students do themselves?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "They repaired the projector."
+    },
+    {
+     "id": "B",
+     "text": "They painted the lobby."
+    },
+    {
+     "id": "C",
+     "text": "They paid for a new roof."
+    },
+    {
+     "id": "D",
+     "text": "They lent films to the library."
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "The passage states several details about the work, and they must be told apart. The second paragraph says the teenagers cleaned the seats, painted the lobby and sold food. Painting the lobby is the only option that is stated as their own work.",
+   "distractorRationales": {
+    "A": "The projector is a detail from the same paragraph, but the passage says Mr. Adler fixed it.",
+    "C": "The roof is mentioned, but nobody has paid for a new one: the owner says one night is not enough for that.",
+    "D": "It reverses what the passage says: the library lent films to the students."
+   },
+   "primaryConceptStableId": "efl.reading.literal",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "CHALLENGE",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "text-passage-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "70c4fa6ac2a4bb78026e58526094fa6e04b2afbe072906a8cc4056836745520d",
+    "generationUnitKey": "SP|PRACTICE|ingles|PASSAGE|01",
+    "requirementCellKey": "PRACTICE|075|efl.reading.literal|MULTIPLE_CHOICE|CHALLENGE",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Read the text and choose the one correct option.",
+   "slotKey": "PRACTICE|075|efl.reading.literal|MULTIPLE_CHOICE|CHALLENGE#1",
+   "stimulusPlanId": "SP|PRACTICE|ingles|PASSAGE|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|076|efl.reading.literal|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "PRACTICE|076|efl.reading.literal|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "According to the passage, why did the students ask the public library for films?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "They did not have enough money to buy recent ones."
+    },
+    {
+     "id": "B",
+     "text": "The library had a cinema of its own."
+    },
+    {
+     "id": "C",
+     "text": "Mr. Adler told them to do so."
+    },
+    {
+     "id": "D",
+     "text": "Classic films are shorter than new ones."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "The passage states the cause directly: the students could not afford new films, so they asked the library to lend them classic ones. Option A restates that stated relationship of cause and effect in other words.",
+   "distractorRationales": {
+    "B": "The passage says nothing about a cinema in the library.",
+    "C": "Mr. Adler appears in the sentence before, but only as the person who fixed the projector.",
+    "D": "It may sound reasonable, but the passage does not say anything about the length of films."
+   },
+   "primaryConceptStableId": "efl.reading.literal",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "text-passage-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "70c4fa6ac2a4bb78026e58526094fa6e04b2afbe072906a8cc4056836745520d",
+    "generationUnitKey": "SP|PRACTICE|ingles|PASSAGE|01",
+    "requirementCellKey": "PRACTICE|076|efl.reading.literal|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Read the text and choose the one correct option.",
+   "slotKey": "PRACTICE|076|efl.reading.literal|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|PRACTICE|ingles|PASSAGE|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|078|efl.reading.interpretive|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|078|efl.reading.interpretive|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "What can the reader conclude from the fact that every seat was taken on the first night?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "People in Redmoor were interested in the reopened cinema."
+    },
+    {
+     "id": "B",
+     "text": "The cinema will never have money problems again."
+    },
+    {
+     "id": "C",
+     "text": "Fewer than twenty people came to the first showing."
+    },
+    {
+     "id": "D",
+     "text": "The roof had already been replaced."
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "The conclusion is not stated in the passage, but one stated fact supports it: a full house of 180 seats suggests that the town wanted the cinema back. The reader can infer interest, and nothing more.",
+   "distractorRationales": {
+    "B": "It goes too far: the owner herself says one full night does not pay for a new roof.",
+    "C": "It contradicts the passage: that number describes the nights before the cinema closed.",
+    "D": "The passage does not support it: the owner still speaks of a new roof as something to be paid for."
+   },
+   "primaryConceptStableId": "efl.reading.interpretive",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "text-passage-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "70c4fa6ac2a4bb78026e58526094fa6e04b2afbe072906a8cc4056836745520d",
+    "generationUnitKey": "SP|PRACTICE|ingles|PASSAGE|01",
+    "requirementCellKey": "PRACTICE|078|efl.reading.interpretive|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Read the text and choose the one correct option.",
+   "slotKey": "PRACTICE|078|efl.reading.interpretive|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": "SP|PRACTICE|ingles|PASSAGE|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|079|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "PRACTICE|079|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Which of these statements from the passage is an opinion rather than a fact?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Every one of the 180 seats was taken on the first night."
+    },
+    {
+     "id": "B",
+     "text": "A retired electrician fixed the old projector for free."
+    },
+    {
+     "id": "C",
+     "text": "The reopening is the best thing that has happened in Redmoor for years."
+    },
+    {
+     "id": "D",
+     "text": "The town of Redmoor closed its only cinema last spring."
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "An opinion is a judgement that cannot be checked. Calling the reopening the best thing in years is what some neighbours think: the passage reports it as their view, and the owner does not fully share it. The other three statements are facts that could be verified.",
+   "distractorRationales": {
+    "A": "The number of seats taken can be counted: it is a fact.",
+    "B": "Who fixed the projector, and that he was not paid, can be checked: it is a fact.",
+    "D": "The closing of the cinema is an event that happened: it is a fact."
+   },
+   "primaryConceptStableId": "efl.reading.interpretive",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": "stim|SP|PRACTICE|ingles|PASSAGE|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "text-passage-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "70c4fa6ac2a4bb78026e58526094fa6e04b2afbe072906a8cc4056836745520d",
+    "generationUnitKey": "SP|PRACTICE|ingles|PASSAGE|01",
+    "requirementCellKey": "PRACTICE|079|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Read the text and choose the one correct option.",
+   "slotKey": "PRACTICE|079|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|PRACTICE|ingles|PASSAGE|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Which sentence does not belong in this paragraph?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "Sentence 2"
+    },
+    {
+     "id": "B",
+     "text": "Sentence 3"
+    },
+    {
+     "id": "C",
+     "text": "Sentence 4"
+    },
+    {
+     "id": "D",
+     "text": "Sentence 5"
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "The topic sentence says that school should start later, and every other sentence of the draft develops that idea. The sentence about sandwiches is true of the school but off topic: it does not belong in the paragraph.",
+   "distractorRationales": {
+    "A": "It gives the reason behind the proposal: teenagers sleep too little.",
+    "B": "It develops the idea by showing the effect of little sleep on lessons.",
+    "D": "It supports the proposal with what happened in other schools."
+   },
+   "primaryConceptStableId": "efl.writing.paragraph-organization",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "29cced080e844ca4853233b481818b505343078ae3244bc4bcd2c45552881bae",
+    "generationUnitKey": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+    "requirementCellKey": "DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Read the numbered draft and choose the best option.",
+   "slotKey": "DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Which linking phrase best fills the gap at the beginning of sentence 6?",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "For example"
+    },
+    {
+     "id": "B",
+     "text": "As a result"
+    },
+    {
+     "id": "C",
+     "text": "On the other hand"
+    },
+    {
+     "id": "D",
+     "text": "In the same way"
+    }
+   ],
+   "answerKey": "C",
+   "rationale": "Sentence 5 gives an advantage of the change and sentence 6 gives a disadvantage, so the relationship between the two is a contrast. The transition that marks a contrast is the one that fits the draft at that point.",
+   "distractorRationales": {
+    "A": "It introduces an example, but sentence 6 is not an example of better marks.",
+    "B": "It marks a consequence, but finishing later is not a result of better marks and fewer absences.",
+    "D": "It marks a similarity, and sentence 6 says something opposed to sentence 5."
+   },
+   "primaryConceptStableId": "efl.writing.paragraph-organization",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": "stim|SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "editing-writing-set@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "29cced080e844ca4853233b481818b505343078ae3244bc4bcd2c45552881bae",
+    "generationUnitKey": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+    "requirementCellKey": "DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Read the numbered draft and choose the best option.",
+   "slotKey": "DIAGNOSTIC|084|efl.writing.paragraph-organization|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01"
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "cellKey": "PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "Maria forgot her umbrella, so she got completely _____ on her way to school.",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "wet"
+    },
+    {
+     "id": "B",
+     "text": "dry"
+    },
+    {
+     "id": "C",
+     "text": "late"
+    },
+    {
+     "id": "D",
+     "text": "full"
+    }
+   ],
+   "answerKey": "A",
+   "rationale": "The clue is in the same sentence: an umbrella protects a person from rain, so without it she was covered in water. The word whose meaning fits the gap is the one that describes that.",
+   "distractorRationales": {
+    "B": "It is the opposite of what happens to someone in the rain without an umbrella.",
+    "C": "It belongs to the situation of going to school, but an umbrella has nothing to do with being on time.",
+    "D": "It is a common adjective that fits the grammar of the gap but not the situation described."
+   },
+   "primaryConceptStableId": "efl.vocabulary",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "FOUNDATIONAL",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "mcq-standalone@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "mcq-standalone",
+     "version": "1"
+    },
+    "promptHash": "3fb960539fb38db9635388de198e51df4d9e9a4811202806f09d80e65fc2a0de",
+    "generationUnitKey": "SU|PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+    "requirementCellKey": "PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Choose the one correct option.",
+   "slotKey": "PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+   "stimulusPlanId": null
+  },
+  {
+   "v": 2,
+   "candidateKey": "cand|VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD#1",
+   "cellKey": "VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD",
+   "batchKey": "qb-r2c-pilot-v2",
+   "stem": "My cousin _____ in Lima since 2019, and she still loves the city.",
+   "responseFormat": "MULTIPLE_CHOICE",
+   "options": [
+    {
+     "id": "A",
+     "text": "lives"
+    },
+    {
+     "id": "B",
+     "text": "has lived"
+    },
+    {
+     "id": "C",
+     "text": "lived"
+    },
+    {
+     "id": "D",
+     "text": "is living"
+    }
+   ],
+   "answerKey": "B",
+   "rationale": "The time expression decides the tense. Since 2019 marks a period that began in the past and continues now, which the second clause confirms. English uses the present perfect for that, so the verb needs the auxiliary has and the past participle.",
+   "distractorRationales": {
+    "A": "The simple present cannot be used with since for a period that started in the past.",
+    "C": "The simple past would mean she no longer lives there, which the second clause contradicts.",
+    "D": "The present continuous is not used with since to say how long a situation has lasted."
+   },
+   "primaryConceptStableId": "efl.grammar.verb-forms",
+   "proposedSupportingConceptStableIds": [],
+   "difficultyBand": "STANDARD",
+   "marks": 1,
+   "language": "en",
+   "stimulusKey": null,
+   "assets": [],
+   "provenance": "STUDYUS_GENERATED",
+   "lineage": {
+    "kind": "MODEL",
+    "model": "claude-opus-5-5",
+    "promptVersion": "mcq-standalone@1",
+    "runId": "qb-r2c-pilot-v2-run-1",
+    "requestedBy": "qb-r2c-coordinating-session",
+    "generatedAt": "2026-10-11T12:00:00Z",
+    "humanEdits": [],
+    "provider": "recorded:in-session-authoring",
+    "generationPolicy": {
+     "id": "qb-r2c-pilot-generation",
+     "version": "1"
+    },
+    "template": {
+     "id": "mcq-standalone",
+     "version": "1"
+    },
+    "promptHash": "8ee2aa34c9cfdb2e2af50dbee0beab4f1d9150716d6bd7542998f30cec67ac1e",
+    "generationUnitKey": "SU|VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD#1",
+    "requirementCellKey": "VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD",
+    "referencePack": {
+     "version": 2,
+     "conceptProfileVersion": 1,
+     "conceptProfilePackVersion": "q1-paa-concept-profiles/1"
+    }
+   },
+   "instruction": "Choose the one correct option.",
+   "slotKey": "VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD#1",
+   "stimulusPlanId": null
+  }
+ ],
+ "lineage": {
+  "runId": "qb-r2c-pilot-v2-run-1",
+  "provider": "recorded:in-session-authoring",
+  "model": "claude-opus-5-5",
+  "generationPolicy": {
+   "id": "qb-r2c-pilot-generation",
+   "version": "1"
+  },
+  "generatedAt": "2026-10-11T12:00:00Z",
+  "units": [
+   {
+    "generationUnitKey": "SP|PRACTICE|lectura|PASSAGE|02",
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "9bd6718c0e62d894d7b8123e81136bff2e5bdafd489862845c938870de988f43",
+    "candidates": 5
+   },
+   {
+    "generationUnitKey": "SP|PRACTICE|lectura|COMPOSITE|01",
+    "template": {
+     "id": "data-interpretation-set",
+     "version": "1"
+    },
+    "promptHash": "ff8f2b576081a7c3bfc5baf8a9625b72390c7a6dab8af815c3746d36e503cacc",
+    "candidates": 3
+   },
+   {
+    "generationUnitKey": "SP|REDUCED_MOCK|redaccion|NUMBERED_TEXT|01",
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "f6fa959f96032f3444b59a608f39781d3a5670d03b5eb570378a6eab9441d3b8",
+    "candidates": 5
+   },
+   {
+    "generationUnitKey": "SP|DIAGNOSTIC|redaccion|NUMBERED_TEXT|02",
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "91fed97e362364543bffbd7f7b143e52df466b9c01246307d2d6e9fdddca8557",
+    "candidates": 5
+   },
+   {
+    "generationUnitKey": "SU|DIAGNOSTIC|029|math.num.percent|MULTIPLE_CHOICE|STANDARD#1",
+    "template": {
+     "id": "mcq-standalone",
+     "version": "1"
+    },
+    "promptHash": "5cb3bb6a3aeb9c06dfd0443b1514d13337ff85b02c69dbfce233d783c0256eeb",
+    "candidates": 1
+   },
+   {
+    "generationUnitKey": "SU|PRACTICE|063|math.stat.central-tendency|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+    "template": {
+     "id": "mcq-own-stimulus",
+     "version": "1"
+    },
+    "promptHash": "44c5f72912af68cc29ac428f8bab9e480aba93552419e6d91bbac79749aca323",
+    "candidates": 1
+   },
+   {
+    "generationUnitKey": "SU|FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD#1",
+    "template": {
+     "id": "spr-math",
+     "version": "1"
+    },
+    "promptHash": "fe0a004261eeb0b55d9fdd734621eb5b8813a5fb92c17d4b0ab264025742be93",
+    "candidates": 1
+   },
+   {
+    "generationUnitKey": "SU|FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL#1",
+    "template": {
+     "id": "spr-math",
+     "version": "1"
+    },
+    "promptHash": "04e57cd3f4b49a18b2946a4a1ae4704c963cc08106d276bccff0ab3c3eda06ea",
+    "candidates": 1
+   },
+   {
+    "generationUnitKey": "SP|FULL_MOCK_1|matematicas|TABLE|01",
+    "template": {
+     "id": "data-interpretation-set",
+     "version": "1"
+    },
+    "promptHash": "68c6666be0b345c86e6d4ab1c968ac8a9164206d4ba787d27cc837885455fbbc",
+    "candidates": 2
+   },
+   {
+    "generationUnitKey": "SP|PRACTICE|matematicas|FIGURE|07",
+    "template": {
+     "id": "figure-geometry",
+     "version": "1"
+    },
+    "promptHash": "bd6bd5218c67549475a7ceba0a16c1403f294397d27ca8e03c532cc58f798bdc",
+    "candidates": 1
+   },
+   {
+    "generationUnitKey": "SP|DIAGNOSTIC|matematicas|FIGURE|07",
+    "template": {
+     "id": "figure-geometry",
+     "version": "1"
+    },
+    "promptHash": "3e662595834cfe2759a38bcf31fdbdc5aadfb81cbae2c2c2bcba09f3299c1c32",
+    "candidates": 1
+   },
+   {
+    "generationUnitKey": "SP|PRACTICE|ingles|PASSAGE|01",
+    "template": {
+     "id": "text-passage-set",
+     "version": "1"
+    },
+    "promptHash": "70c4fa6ac2a4bb78026e58526094fa6e04b2afbe072906a8cc4056836745520d",
+    "candidates": 4
+   },
+   {
+    "generationUnitKey": "SP|DIAGNOSTIC|ingles|DRAFT_PARAGRAPH|01",
+    "template": {
+     "id": "editing-writing-set",
+     "version": "1"
+    },
+    "promptHash": "29cced080e844ca4853233b481818b505343078ae3244bc4bcd2c45552881bae",
+    "candidates": 2
+   },
+   {
+    "generationUnitKey": "SU|PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|FOUNDATIONAL#1",
+    "template": {
+     "id": "mcq-standalone",
+     "version": "1"
+    },
+    "promptHash": "3fb960539fb38db9635388de198e51df4d9e9a4811202806f09d80e65fc2a0de",
+    "candidates": 1
+   },
+   {
+    "generationUnitKey": "SU|VERIFICATION|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|STANDARD#1",
+    "template": {
+     "id": "mcq-standalone",
+     "version": "1"
+    },
+    "promptHash": "8ee2aa34c9cfdb2e2af50dbee0beab4f1d9150716d6bd7542998f30cec67ac1e",
+    "candidates": 1
+   }
+  ]
+ }
+}

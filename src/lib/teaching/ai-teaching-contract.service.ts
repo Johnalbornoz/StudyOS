@@ -12,6 +12,7 @@
  * content -- a failure is always a visible, structured `blocked`
  * result, never guessed/malformed content silently served (task §23/24).
  */
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
 import { db } from '@/lib/db';
 import { executeAI, getPrompt, AIExecutionFailure, isAIExecutionError } from '@/lib/ai';
 import type { AIErrorCode } from '@/lib/ai';
@@ -308,7 +309,7 @@ function buildGenerationPrompt(context: TeachingContentGenerationContext): { sys
     language: context.language,
   });
 
-  return { system, user };
+  return { system: withStudentFacingPolicy(system), user };
 }
 
 export async function generateTeachingContent(context: TeachingContentGenerationContext): Promise<TeachingGenerationOutcome> {

@@ -15,6 +15,7 @@ import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
 import { PROMPT_REGISTRY } from '@/lib/ai/prompt-registry';
 import { resolveModels } from '@/lib/ai/model-routing';
 import { QUIZ_MODE_FOR_ACTIVITY, type DeliveryActivityType } from '@/lib/activity-delivery/contract';
+import { practiceGuidanceWithLearnWeaknesses } from '@/lib/learn-guided/policy';
 
 export interface CandidateGenerationParams {
   activityType: DeliveryActivityType;
@@ -26,6 +27,11 @@ export interface CandidateGenerationParams {
   language: string;
   ibContext: IBContext | null;
   parentOperationId: string;
+  /**
+   * PRACTICE bank replenishment ONLY (requirement §22): the latest LEARN weaknesses of this Student's concept,
+   * appended to the practice guidance exactly like the live path. Ignored for every other activity type.
+   */
+  learnWeaknesses?: ReadonlyArray<string>;
 }
 
 export interface CandidateGenerationResult {
@@ -69,7 +75,7 @@ export async function generateActivityCandidates(p: CandidateGenerationParams): 
       questions = await generatePracticeQuestions(p.conceptId, p.studentId, p.subjectId, {
         count: p.count,
         difficulty: p.difficulty,
-        guidance: config.guidance,
+        guidance: p.activityType === 'PRACTICE' ? practiceGuidanceWithLearnWeaknesses(config.guidance, p.learnWeaknesses ?? []) : config.guidance,
         language: p.language,
         visualAidRate: config.visualAidRate,
         ibContext: p.ibContext,

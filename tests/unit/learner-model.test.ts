@@ -11,6 +11,7 @@ import {
   getIndependentMastery,
   getEvidenceStrength,
   getEvidenceCoverage,
+  countEvidencedConcepts,
   getConceptIntelligenceBatch,
   getSubjectLearnerModel,
 } from '@/services/learner-model.service';
@@ -194,32 +195,61 @@ describe('getEvidenceStrength', () => {
 });
 
 describe('getEvidenceCoverage', () => {
+  const evidence = (...conceptIds: string[]) => rows(conceptIds.map((concept_id) => ({ concept_id })));
+
   it('is null when the scope has 0 concepts', async () => {
     queryMock.mockResolvedValueOnce(rows([{ count: 0 }]));
     expect(await getEvidenceCoverage('s1', 'subj1')).toBeNull();
   });
 
-  it('is 100% for 1/1', async () => {
+  it('OE-008 A: a concept with only its placeholder mastery row has no verified evidence', async () => {
     queryMock.mockResolvedValueOnce(rows([{ count: 1 }]));
-    queryMock.mockResolvedValueOnce(rows([{ count: 1 }]));
-    expect(await getEvidenceCoverage('s1', 'subj1')).toEqual({ totalConcepts: 1, evidencedConcepts: 1, percent: 100 });
+    queryMock.mockResolvedValueOnce(evidence()); // learning_evidence is empty; the mastery_records row is never read
+    expect(await getEvidenceCoverage('s1', 'subj1')).toEqual({ totalConcepts: 1, evidencedConcepts: 0, percent: 0 });
   });
 
-  it('is 20% for 1/5 (a concept without a mastery record stays uncovered, not 0%)', async () => {
+  it('OE-008 B: real learning evidence increments coverage', async () => {
     queryMock.mockResolvedValueOnce(rows([{ count: 5 }]));
-    queryMock.mockResolvedValueOnce(rows([{ count: 1 }]));
+    queryMock.mockResolvedValueOnce(evidence('c1'));
     expect(await getEvidenceCoverage('s1', 'subj1')).toEqual({ totalConcepts: 5, evidencedConcepts: 1, percent: 20 });
+    queryMock.mockResolvedValueOnce(rows([{ count: 5 }]));
+    queryMock.mockResolvedValueOnce(evidence('c1', 'c2'));
+    expect(await getEvidenceCoverage('s1', 'subj1')).toEqual({ totalConcepts: 5, evidencedConcepts: 2, percent: 40 });
   });
 
-  it('is 100% for 5/5', async () => {
+  it('OE-008 C: mastery_records is never the source -- evidence is read from learning_evidence, for this Student, in both scopes', async () => {
+    for (const subjectId of ['subj1', undefined]) {
+      queryMock.mockReset();
+      queryMock.mockResolvedValueOnce(rows([{ count: 3 }]));
+      queryMock.mockResolvedValueOnce(evidence());
+      await getEvidenceCoverage('s1', subjectId);
+      const evidencedSql = queryMock.mock.calls[1][0] as string;
+      expect(evidencedSql).not.toMatch(/mastery_records/);
+      expect(evidencedSql).toMatch(/FROM learning_evidence e/);
+      expect(evidencedSql).toMatch(/e\.student_id = \$1/);
+      expect(evidencedSql).toMatch(/SELECT DISTINCT e\.concept_id/);
+    }
+  });
+
+  it('OE-008 D: repeated evidence for one concept counts that concept once', async () => {
+    expect(countEvidencedConcepts([{ concept_id: 'c1' }, { concept_id: 'c1' }, { concept_id: 'c1' }, { concept_id: 'c2' }, { concept_id: null }])).toBe(2);
+    queryMock.mockResolvedValueOnce(rows([{ count: 2 }]));
+    queryMock.mockResolvedValueOnce(evidence('c1', 'c1', 'c1'));
+    expect(await getEvidenceCoverage('s1', 'subj1')).toEqual({ totalConcepts: 2, evidencedConcepts: 1, percent: 50 });
+  });
+
+  it('is 100% for 5/5 and never exceeds the concepts in scope', async () => {
     queryMock.mockResolvedValueOnce(rows([{ count: 5 }]));
-    queryMock.mockResolvedValueOnce(rows([{ count: 5 }]));
+    queryMock.mockResolvedValueOnce(evidence('c1', 'c2', 'c3', 'c4', 'c5'));
     expect(await getEvidenceCoverage('s1', 'subj1')).toEqual({ totalConcepts: 5, evidencedConcepts: 5, percent: 100 });
+    queryMock.mockResolvedValueOnce(rows([{ count: 1 }]));
+    queryMock.mockResolvedValueOnce(evidence('c1', 'c2'));
+    expect(await getEvidenceCoverage('s1', 'subj1')).toEqual({ totalConcepts: 1, evidencedConcepts: 1, percent: 100 });
   });
 
   it('scopes the overall (no subjectId) query to active subjects only', async () => {
     queryMock.mockResolvedValueOnce(rows([{ count: 3 }]));
-    queryMock.mockResolvedValueOnce(rows([{ count: 2 }]));
+    queryMock.mockResolvedValueOnce(evidence('c1', 'c2'));
     await getEvidenceCoverage('s1');
     const totalSql = queryMock.mock.calls[0][0] as string;
     const evidencedSql = queryMock.mock.calls[1][0] as string;

@@ -47,7 +47,7 @@ import OnboardingPage from '@/app/dashboard/onboarding/page';
 
 /** Simulates F1 state: roles held (after the allowlist grant) and the stored workspace. */
 function actor(opts: { email: string; roles: Array<'STUDENT' | 'PARENT' | 'ADMIN'>; stored?: 'STUDENT' | 'ADMIN' | null; allowlisted?: boolean }) {
-  h.currentUserMock.mockResolvedValue({ primaryEmailAddress: { emailAddress: opts.email }, emailAddresses: [] });
+  h.currentUserMock.mockResolvedValue({ primaryEmailAddressId: 'e1', primaryEmailAddress: { emailAddress: opts.email }, emailAddresses: [{ id: 'e1', emailAddress: opts.email, verification: { status: 'verified' } }] });
   h.getOrCreateCanonicalUserMock.mockResolvedValue({ id: 'user-1', status: 'ACTIVE' });
   const roles = [...opts.roles];
   h.bootstrapMock.mockImplementation(async () => {
@@ -113,7 +113,10 @@ describe('A01-LOGIC-03 -- routing', () => {
     expect(page).toBeTruthy();
   });
 
-  it('5. multi-role Admin+Student: Student context gets the Student experience, Admin context goes to the console', async () => {
+  // Track A product amendment: STUDYUS_ADMIN is a capability next to the ONE
+  // persona. Student entry pages always serve the persona (a stored ADMIN
+  // context never displaces it); the console is reached by its own route.
+  it('5. Student persona + admin capability: Student entry pages serve the Student, whatever context was stored', async () => {
     actor({ email: 'john@jalbornoz.com', roles: ['STUDENT', 'ADMIN'], stored: 'STUDENT' });
     const page: any = await OnboardingPage();
     expect(page).toBeTruthy();
@@ -123,9 +126,9 @@ describe('A01-LOGIC-03 -- routing', () => {
     h.authMock.mockResolvedValue({ userId: 'clerk-user-1' });
     h.queryMock.mockResolvedValue({ rows: [] });
     actor({ email: 'john@jalbornoz.com', roles: ['STUDENT', 'ADMIN'], stored: 'ADMIN' });
-    await expect(OnboardingPage()).rejects.toThrow(h.RedirectSignal);
-    expect(h.redirectMock).toHaveBeenCalledWith('/dashboard/admin/overview');
-    expect(h.getOrCreateStudentIdMock).not.toHaveBeenCalled();
+    const again: any = await OnboardingPage();
+    expect(again).toBeTruthy();
+    expect(h.redirectMock).not.toHaveBeenCalledWith('/dashboard/admin/overview');
   });
 
   it('an unauthenticated visitor to "/" is still sent to the localized landing page', async () => {

@@ -29,6 +29,7 @@
  * never mixed with mastery percentages.
  */
 
+import { projectCanonicalJourneyStage, canonicalEngineHasEvidence } from '@/lib/lx/learner-journey-contract';
 import { db } from '@/lib/db';
 import { getStudentMastery } from './mastery.service';
 import {
@@ -260,9 +261,12 @@ export async function getStudentProgressOverview(studentId: string, locale: stri
         if (isCanonicalEngineV1Enabled()) {
           try {
             const { decision } = await getCanonicalPedagogicalDecision({ studentId, conceptId: row.concept_id });
-            journeyStage = decision.stage;
-            journeyProgressPercent = decision.journeyProgressPercent;
-            journeyProgressLabelKey = deriveJourneyProgress(decision.stage).progressLabelKey;
+            // 2026-10-17 pilot journey: the projected stage; percent and label from the SAME stage (never mixed)
+            const projected = projectCanonicalJourneyStage(decision, canonicalEngineHasEvidence(decision));
+            const shown = deriveJourneyProgress(projected);
+            journeyStage = projected;
+            journeyProgressPercent = shown.progressPercent;
+            journeyProgressLabelKey = shown.progressLabelKey;
           } catch (error) {
             if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;
           }

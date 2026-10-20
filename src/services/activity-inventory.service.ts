@@ -16,6 +16,8 @@
  */
 import { db } from '@/lib/db';
 import type { GeneratedQuestion } from '@/services/quiz-generation.service';
+import { isDeliverableChoiceItem } from '@/lib/lx/choice-item-validator';
+import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
 import {
   inventoryTarget,
   preparedActivityCompatibility,
@@ -44,6 +46,8 @@ export interface ConsumedActivity {
   id: string;
   questions: GeneratedQuestion[];
   candidateIds: string[];
+  /** D76: the bank depth measured when this set was prepared (absent for sets prepared before D76 / without a depth target). */
+  bankDepth?: { validItems: number; target: number } | null;
 }
 
 /**
@@ -52,7 +56,13 @@ export interface ConsumedActivity {
  */
 export async function consumeCompatibleInventory(
   identity: InventoryIdentity,
-  current: { contractFingerprint: string; learnerStateFingerprint: string; independent: boolean },
+  current: {
+    contractFingerprint: string;
+    learnerStateFingerprint: string;
+    independent: boolean;
+    /** D75 (PROVE): exact items the learner has already been given; a prepared set holding one is never served. */
+    excludeFingerprints?: ReadonlySet<string>;
+  },
 ): Promise<ConsumedActivity | null> {
   // ONE statement, atomic: lock this identity's READY rows (SKIP LOCKED), retire
   // the incompatible / expired ones (same rules as preparedActivityCompatibility),
@@ -68,6 +78,9 @@ export async function consumeCompatibleInventory(
                 WHEN $6::boolean AND EXISTS (
                   SELECT 1 FROM question_bank_deliveries d WHERE d.student_id = $1 AND d.candidate_id = ANY(candidate_ids)
                 ) THEN 'CANDIDATE_DELIVERED'
+                WHEN EXISTS (
+                  SELECT 1 FROM question_bank_candidates qc WHERE qc.id = ANY(candidate_ids) AND qc.validation_status <> 'VALIDATED'
+                ) THEN 'CANDIDATE_QUARANTINED'
                 ELSE NULL
               END AS verdict
          FROM canonical_prepared_activity
@@ -85,16 +98,32 @@ export async function consumeCompatibleInventory(
      consumed AS (
        UPDATE canonical_prepared_activity p SET status = 'CONSUMED', consumed_at = now()
          FROM chosen c WHERE p.id = c.id
-        RETURNING p.id, p.questions, p.candidate_ids
+        RETURNING p.id, p.questions, p.candidate_ids, p.activity_contract -> 'bankDepth' AS bank_depth
      )
-     SELECT (SELECT json_agg(verdict) FROM retired) AS retired, c.id, c.questions, c.candidate_ids
+     SELECT (SELECT json_agg(verdict) FROM retired) AS retired, c.id, c.questions, c.candidate_ids, c.bank_depth
        FROM (SELECT 1) one LEFT JOIN consumed c ON true`,
     [identity.studentId, identity.conceptId, identity.stage, current.contractFingerprint, current.learnerStateFingerprint, current.independent],
   );
   const row = r.rows[0];
   for (const reason of (row?.retired as string[] | null) ?? []) log('retired', { stage: identity.stage, reason });
   if (!row?.id) return null;
-  return { id: row.id, questions: row.questions ?? [], candidateIds: row.candidate_ids ?? [] };
+  const questions: GeneratedQuestion[] = row.questions ?? [];
+  // P1-03: a prepared set holding an item whose key is not the right option is never served -- the
+  // whole set is invalidated (never partially patched) and the caller assembles a fresh one.
+  if (!questions.every((q) => isDeliverableChoiceItem(q))) {
+    await db.query(`UPDATE canonical_prepared_activity SET status = 'INVALIDATED', failure_reason = 'ITEM_INVALID' WHERE id = $1`, [row.id]);
+    log('retired', { stage: identity.stage, reason: 'ITEM_INVALID' });
+    return null;
+  }
+  // D75: a set prepared before a later attempt is re-checked against the CURRENT exact history at
+  // consumption -- any exact prior item invalidates the whole set (never patched); the caller assembles anew.
+  const exclude = current.excludeFingerprints;
+  if (exclude && exclude.size > 0 && questions.some((q) => typeof q?.question === 'string' && exclude.has(fingerprintQuestion(q)))) {
+    await db.query(`UPDATE canonical_prepared_activity SET status = 'INVALIDATED', failure_reason = 'NOVELTY_STALE' WHERE id = $1`, [row.id]);
+    log('retired', { stage: identity.stage, reason: 'NOVELTY_STALE' });
+    return null;
+  }
+  return { id: row.id, questions, candidateIds: row.candidate_ids ?? [], bankDepth: row.bank_depth ?? null };
 }
 
 export async function linkConsumedActivity(preparedId: string, quizId: string): Promise<void> {
@@ -179,6 +208,8 @@ export async function storeReadyActivity(params: {
   slot: number;
   questions: GeneratedQuestion[];
   candidateIds: string[];
+  /** D76: the bank depth measured for this preparation, kept beside the contract snapshot (never part of its fingerprint). */
+  bankDepth?: { validItems: number; target: number } | null;
 }): Promise<boolean> {
   const { identity } = params;
   const r = await db.query(
@@ -189,7 +220,8 @@ export async function storeReadyActivity(params: {
      ON CONFLICT (student_id, concept_id, stage, pedagogical_policy_version, slot) WHERE status IN ('PREPARING', 'READY') DO NOTHING
      RETURNING id`,
     [
-      identity.studentId, identity.conceptId, identity.stage, identity.policyVersion, params.canonicalRevision, JSON.stringify(params.contract),
+      identity.studentId, identity.conceptId, identity.stage, identity.policyVersion, params.canonicalRevision,
+      JSON.stringify(params.bankDepth ? { ...params.contract, bankDepth: params.bankDepth } : params.contract),
       JSON.stringify(params.questions), String(PREPARED_BANK_ACTIVITY_TTL_MS), params.contractFingerprint, params.learnerStateFingerprint,
       params.slot, params.candidateIds,
     ],

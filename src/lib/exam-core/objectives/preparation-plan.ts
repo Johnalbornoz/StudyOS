@@ -1,0 +1,344 @@
+/**
+ * Exam preparation, objective first -- the PERSONALIZED PREPARATION PLAN (pure).
+ *
+ *   Exam Goal + Exam Blueprint + Learner Model + Prior Evidence (+ Diagnostics)
+ *     = Personalized Exam Preparation Plan
+ *
+ * Preparing for an exam is NOT replaying the curriculum from its first
+ * concept: every requirement of the exam is classified against what the
+ * Student already has (the canonical learner state and StudyUs results).
+ * Absence of evidence is never a weakness.
+ *
+ * Exams can share CONTENT but not their form of assessment or their purpose
+ * (PAA closed items vs PISA open reasoning in context vs a Cambridge paper):
+ *   - shared across exams: only the knowledge of the canonical concept (ONE
+ *     learner state per Student and concept);
+ *   - exam-specific: results decide a requirement's status only for the SAME
+ *     exam TARGET. Another exam's result is context ("en PAA se detectó una
+ *     brecha"): it is shown as a reason, never "covered", "a gap" or
+ *     "worth confirming" (G6: it never moves a requirement out of NO_EVIDENCE,
+ *     so it never skips this target's diagnostic);
+ *   - knowledge demonstrated in learning without evidence in this exam's
+ *     format is flagged "confírmalo en el formato de este examen".
+ *
+ * G6 -- KNOWLEDGE_MASTERY vs EXAM_REQUIREMENT_SATISFACTION: the learner state
+ * (one per concept) is longitudinal and may include another exam's attempt
+ * evidence. For THIS target's requirement status only the evidence in its exam
+ * scope counts (`LearnerConceptState.examScope`, see exam-core/evidence-scope.ts):
+ *   - a concept known ONLY through another target's (or unscoped legacy) exam
+ *     evidence is NO_EVIDENCE for this exam;
+ *   - knowledge partly built from another exam's attempts can ask to be
+ *     confirmed here, never be ALREADY_STRONG here.
+ * `knowledgeLabel` keeps the longitudinal label for display; `label` is the
+ * exam-requirement label that drives status, coverage and the next step.
+ *
+ *
+ *   ALREADY_STRONG       demonstrated (validated mastery, or a strength in an exam result)
+ *   NEEDS_CONFIRMATION   in progress, or demonstrated but retention is due
+ *   NEEDS_REINFORCEMENT  a real, evidenced difficulty (exam gap, at-risk state, critical misconception)
+ *   NO_EVIDENCE          mapped to concepts, but nothing is known yet -- "Sin evidencia suficiente"
+ *   NOT_YET_MAPPED       no reviewed requirement -> concept link yet
+ *
+ * Nothing here writes: the plan never enrols concepts (no mass auto-enrolment).
+ * A concept enters the Personal Learning Plan only when the Student chooses
+ * "Añadir a mi plan", through the same learner state (one per canonical concept).
+ * Priorities are transparent rules, never an opaque prediction.
+ */
+import type { MasteryState, ValidationReadiness } from '@/services/knowledge-state.service';
+import type { MemoryStatus } from '@/lib/memory-policy';
+
+export type RequirementStatus = 'ALREADY_STRONG' | 'NEEDS_CONFIRMATION' | 'NEEDS_REINFORCEMENT' | 'NO_EVIDENCE' | 'NOT_YET_MAPPED';
+/** What the Student sees for one concept they may already know. Never "No sabes". */
+export type ConceptKnowledgeLabel = 'DEMONSTRATED' | 'MAINTENANCE' | 'IN_PROGRESS' | 'NEEDS_REINFORCEMENT' | 'NO_EVIDENCE';
+export type ExamClassification = 'STRENGTH' | 'DEVELOPING' | 'GAP';
+
+export interface LearnerConceptState {
+  studentConceptId: string;
+  subjectId: string;
+  masteryState: MasteryState | null;
+  validationReadiness: ValidationReadiness | null;
+  memoryStatus: MemoryStatus | null;
+  retentionDue: boolean;
+  criticalMisconceptions: number;
+  evidenceCount: number;
+  /**
+   * G6: the concept's evidence split by THIS target's exam scope. Absent = not computed (pure callers):
+   * the knowledge state is then read as before.
+   */
+  examScope?: { inScopeEvidence: number; outOfScopeExamEvidence: number };
+}
+
+/** `sameExam` = the result belongs to THIS exam target (G6: target-scoped, not "same exam definition"). */
+export interface ExamEvidence { classification: ExamClassification; at: string; examName: string; sameExam: boolean }
+
+/**
+ * E-1: THIS exam's own signal on a requirement, read from Exam Readiness (exam_readiness_evidence of this exam target,
+ * on the requirement's canonical concepts) -- never from the Knowledge State, which exam attempts no longer update.
+ * Only independent scored responses count; nothing is concluded from fewer than MIN_INDEPENDENT of them.
+ *   mean fraction >= 0.8 -> STRENGTH; < 0.5 -> GAP; otherwise DEVELOPING.
+ */
+export interface ExamReadinessCellSummary { canonicalConceptId: string; independentAttempts: number; meanFraction: number | null; lastAt: string | null }
+export const EXAM_READINESS_MIN_INDEPENDENT = 2;
+export function examReadinessEvidenceOf(cells: readonly ExamReadinessCellSummary[], examName: string): ExamEvidence | null {
+  const n = cells.reduce((a, c) => a + c.independentAttempts, 0);
+  if (n < EXAM_READINESS_MIN_INDEPENDENT) return null;
+  const weighted = cells.reduce((a, c) => a + (c.meanFraction ?? 0) * c.independentAttempts, 0) / n;
+  const at = cells.map((c) => c.lastAt).filter((x): x is string => !!x).sort().pop() ?? new Date(0).toISOString();
+  return { classification: weighted >= 0.8 ? 'STRENGTH' : weighted < 0.5 ? 'GAP' : 'DEVELOPING', at, examName, sameExam: true };
+}
+
+export interface RequirementInput {
+  learningObjectiveId: string;
+  code: string;
+  description: string;
+  area: string;
+  /** Share of the blueprint's item targets (0..1). */
+  weight: number;
+  /** Latest StudyUs result for this requirement in THIS exam (practice, diagnostic or mock). */
+  ownEvidence: ExamEvidence | null;
+  concepts: Array<{
+    canonicalConceptId: string;
+    name: string;
+    learner: LearnerConceptState | null;
+    /** Latest exam evidence for the same canonical concept from ANY exam (cross-exam reuse). */
+    examEvidence: ExamEvidence | null;
+    /** Other active preparations of the Student whose requirements map to this same concept. */
+    alsoRelevantFor: string[];
+  }>;
+}
+
+export type RecommendationAction = 'CONTINUE_CONCEPT' | 'ADD_TO_PLAN' | 'PRACTICE_AREA' | 'DIAGNOSTIC' | 'NONE';
+export type RecommendationReason =
+  | 'EXAM_GAP' // a gap in THIS exam (practice, diagnostic or mock)
+  | 'OTHER_EXAM_GAP' // a gap on the same concept in ANOTHER exam: context, to confirm in this exam's format
+  | 'OTHER_EXAM_STRENGTH' // a strength in ANOTHER exam: never counted as covered here
+  | 'CONFIRM_IN_EXAM_FORMAT' // knowledge demonstrated, no evidence yet in this exam's format
+  | 'LEARNER_AT_RISK'
+  | 'RETENTION_DUE'
+  | 'IN_PROGRESS'
+  | 'NO_EVIDENCE'
+  | 'EXAM_REQUIREMENT'
+  | 'NOT_MAPPED';
+export type PriorityFactor = 'GAP_SEVERITY' | 'HIGH_BLUEPRINT_WEIGHT' | 'EXAM_SOON' | 'RETENTION_DUE';
+
+export interface PlannedRequirement extends RequirementInput {
+  status: RequirementStatus;
+  /** `label`: the exam-requirement label (drives status); `knowledgeLabel`: the longitudinal Knowledge State label. */
+  concepts: Array<RequirementInput['concepts'][number] & { label: ConceptKnowledgeLabel; knowledgeLabel: ConceptKnowledgeLabel }>;
+  recommendation: {
+    action: RecommendationAction;
+    /** The concept the action is about (CONTINUE_CONCEPT / ADD_TO_PLAN). */
+    canonicalConceptId: string | null;
+    reasons: RecommendationReason[];
+    /** The exam that showed the gap, when the reason is EXAM_GAP. */
+    gapExam: string | null;
+    /** Another exam's evidence on the same concept (context only), when there is one. */
+    otherExam: string | null;
+  };
+  /** Evidence exists in THIS exam's own format (practice / diagnostic / mock of this exam). */
+  formatConfirmed: boolean;
+  /**
+   * C13-P1-02: the requirement has evidence for THIS target -- a status other than NO_EVIDENCE, or a SUPPORTED_AND_EVIDENCED
+   * blueprint target in the stored readiness snapshot. Drives coverage; never inferred from an unanswered item.
+   */
+  hasEvidence: boolean;
+  priority: { score: number; band: 'HIGH' | 'MEDIUM' | 'LOW'; factors: PriorityFactor[] };
+}
+
+/**
+ * C13-P1-02: the STORED readiness snapshot (readiness_snapshots, computeReadinessSnapshot) projected onto requirements
+ * (learning objectives). The plan never recomputes readiness; it only reads which requirements the snapshot evidenced
+ * and which it diagnosed.
+ */
+export interface StoredReadinessProjection {
+  overallStatus: string;
+  /** Requirements with >= 1 SUPPORTED_AND_EVIDENCED blueprint target in the snapshot. */
+  evidencedObjectiveIds: ReadonlySet<string>;
+  /** Requirements with >= 1 diagnosed blueprint target (diagnosisId) in the snapshot. */
+  diagnosedObjectiveIds: ReadonlySet<string>;
+}
+
+export interface PreparationPlan {
+  requirements: PlannedRequirement[];
+  counts: Record<RequirementStatus, number>;
+  /** "18 of 26 mapped requirements have evidence" -- orientation, never official readiness. */
+  coverage: { total: number; mapped: number; mappedWithEvidence: number };
+  /** Ordered recommendations (highest priority first), strong / unmapped-without-action excluded. */
+  recommendations: PlannedRequirement[];
+}
+
+const STRONG_MASTERY = new Set<MasteryState>(['VALIDATED_MASTERY']);
+const WEAK_MASTERY = new Set<MasteryState>(['AT_RISK', 'INTERVENTION_REQUIRED']);
+const PROGRESS_MASTERY = new Set<MasteryState>(['LEARNING', 'DEVELOPING', 'PROVISIONAL_MASTERY']);
+
+export function conceptKnowledgeLabel(l: LearnerConceptState | null): ConceptKnowledgeLabel {
+  if (!l || !l.masteryState || l.masteryState === 'UNKNOWN' || l.evidenceCount === 0) return 'NO_EVIDENCE';
+  if (WEAK_MASTERY.has(l.masteryState) || l.criticalMisconceptions > 0 || l.memoryStatus === 'AT_RISK') return 'NEEDS_REINFORCEMENT';
+  if (STRONG_MASTERY.has(l.masteryState)) {
+    const maintaining = l.retentionDue || l.memoryStatus === 'WAITING_FOR_RETENTION' || l.memoryStatus === 'DEVELOPING' || l.validationReadiness === 'WAITING_FOR_RETENTION' || l.validationReadiness === 'TRANSFER_REQUIRED';
+    return maintaining ? 'MAINTENANCE' : 'DEMONSTRATED';
+  }
+  return 'IN_PROGRESS';
+}
+
+/**
+ * G6: the label a concept contributes to THIS target's requirement status. Longitudinal knowledge counts;
+ * knowledge resting only on another exam's (or unscoped legacy) attempt evidence does not; knowledge
+ * partly built from another exam's attempts can never be "already strong" for this exam.
+ */
+export function examRequirementLabel(l: LearnerConceptState | null): ConceptKnowledgeLabel {
+  const knowledge = conceptKnowledgeLabel(l);
+  if (!l?.examScope) return knowledge;
+  if (l.examScope.inScopeEvidence === 0) return 'NO_EVIDENCE';
+  if (l.examScope.outOfScopeExamEvidence > 0 && (knowledge === 'DEMONSTRATED' || knowledge === 'MAINTENANCE')) return 'IN_PROGRESS';
+  return knowledge;
+}
+
+/** Most recent of two evidences. */
+const latest = (a: ExamEvidence | null, b: ExamEvidence | null) => (!a ? b : !b ? a : a.at >= b.at ? a : b);
+
+export function classifyRequirement(r: RequirementInput): { status: RequirementStatus; labels: ConceptKnowledgeLabel[]; gapExam: string | null; otherExam: ExamEvidence | null } {
+  const labels = r.concepts.map((c) => examRequirementLabel(c.learner));
+  // Only THIS exam's own results decide an exam-format status; another exam's are context.
+  const own = r.ownEvidence;
+  const other = r.concepts.reduce<ExamEvidence | null>((acc, c) => (c.examEvidence && !c.examEvidence.sameExam ? latest(acc, c.examEvidence) : acc), null);
+  const out = (status: RequirementStatus, gapExam: string | null = null) => ({ status, labels, gapExam, otherExam: other });
+  if (r.concepts.length === 0 && !own) return out('NOT_YET_MAPPED');
+  // A real, evidenced difficulty wins: in this exam, or in the Student's own learner state (format-independent knowledge).
+  if (own?.classification === 'GAP') return out('NEEDS_REINFORCEMENT', own.examName);
+  if (labels.includes('NEEDS_REINFORCEMENT')) return out('NEEDS_REINFORCEMENT');
+  if (own?.classification === 'STRENGTH' && !labels.includes('IN_PROGRESS') && !labels.includes('MAINTENANCE')) return out('ALREADY_STRONG');
+  if (labels.length > 0 && labels.every((l) => l === 'DEMONSTRATED')) return out('ALREADY_STRONG');
+  // Partial knowledge or this exam's own partial result: worth confirming here.
+  // G6: ANOTHER exam's result alone is context (a reason), never evidence for this target.
+  if (labels.some((l) => l !== 'NO_EVIDENCE') || own) return out('NEEDS_CONFIRMATION');
+  return out('NO_EVIDENCE');
+}
+
+const SEVERITY: Record<RequirementStatus, number> = { NEEDS_REINFORCEMENT: 3, NO_EVIDENCE: 2, NEEDS_CONFIRMATION: 1, NOT_YET_MAPPED: 1, ALREADY_STRONG: 0 };
+
+export function buildPreparationPlan(
+  inputs: RequirementInput[],
+  opts: { examDaysLeft: number | null; canPractice: boolean; canRunDiagnostic: boolean; readiness?: StoredReadinessProjection | null }
+): PreparationPlan {
+  const avgWeight = inputs.length ? inputs.reduce((a, r) => a + r.weight, 0) / inputs.length : 0;
+  const requirements: PlannedRequirement[] = inputs.map((r) => {
+    const { status, labels, gapExam, otherExam } = classifyRequirement(r);
+    const formatConfirmed = !!r.ownEvidence;
+    const concepts = r.concepts.map((c, i) => ({ ...c, label: labels[i], knowledgeLabel: conceptKnowledgeLabel(c.learner) }));
+    const retentionDue = concepts.some((c) => c.learner?.retentionDue);
+    // Recommendation: the smallest useful step, on the SAME learner state.
+    const reasons: RecommendationReason[] = [];
+    let action: RecommendationAction = 'NONE';
+    let conceptId: string | null = null;
+    // C13-P1-02: a CONCEPT is recommended only from a diagnosed target -- diagnosed in the stored readiness snapshot,
+    // or carrying the learner's own in-scope evidence (the snapshot's diagnosis precondition). Exam Readiness evidence
+    // alone (SEPARATED: it never reaches the Knowledge State) is never a diagnosis, so it never names a concept.
+    const diagnosed = opts.readiness?.diagnosedObjectiveIds.has(r.learningObjectiveId) ?? false;
+    const evidenced = (c: (typeof concepts)[number]) => diagnosed || c.label !== 'NO_EVIDENCE';
+    const studied = concepts.find((c) => c.learner && evidenced(c));
+    const weakStudied = concepts.find((c) => c.label === 'NEEDS_REINFORCEMENT' && c.learner);
+    if (status === 'NEEDS_REINFORCEMENT') {
+      if (gapExam) reasons.push('EXAM_GAP');
+      if (concepts.some((c) => c.label === 'NEEDS_REINFORCEMENT')) reasons.push('LEARNER_AT_RISK');
+      const target = weakStudied ?? studied ?? (diagnosed ? concepts[0] : undefined);
+      if (target) {
+        action = target.learner ? 'CONTINUE_CONCEPT' : 'ADD_TO_PLAN';
+        conceptId = target.canonicalConceptId;
+      } else if (opts.canPractice) action = 'PRACTICE_AREA';
+    } else if (status === 'NEEDS_CONFIRMATION') {
+      if (retentionDue) reasons.push('RETENTION_DUE');
+      if (concepts.some((c) => c.label === 'IN_PROGRESS')) reasons.push('IN_PROGRESS');
+      if (otherExam) reasons.push(otherExam.classification === 'STRENGTH' ? 'OTHER_EXAM_STRENGTH' : 'OTHER_EXAM_GAP');
+      const target =
+        concepts.find((c) => c.learner?.retentionDue && evidenced(c)) ?? concepts.find((c) => c.label === 'IN_PROGRESS') ?? (otherExam && otherExam.classification !== 'STRENGTH' ? studied : undefined);
+      if (target) {
+        action = 'CONTINUE_CONCEPT';
+        conceptId = target.canonicalConceptId;
+      } else if (opts.canPractice) action = 'PRACTICE_AREA'; // confirm it in THIS exam's format
+      else if (diagnosed && otherExam && otherExam.classification !== 'STRENGTH' && concepts[0]) {
+        action = 'ADD_TO_PLAN';
+        conceptId = concepts[0].canonicalConceptId;
+      }
+      reasons.push('EXAM_REQUIREMENT');
+    } else if (status === 'NO_EVIDENCE') {
+      // G6: another exam's result on the same concept is shown as context only.
+      if (otherExam) reasons.push(otherExam.classification === 'STRENGTH' ? 'OTHER_EXAM_STRENGTH' : 'OTHER_EXAM_GAP');
+      reasons.push('NO_EVIDENCE', 'EXAM_REQUIREMENT');
+      // Without evidence, first find out (diagnostic) -- never assume a weakness, and never recommend a concept
+      // (C13-P1-02): nothing is known about it yet.
+      if (opts.canRunDiagnostic) action = 'DIAGNOSTIC';
+    } else if (status === 'NOT_YET_MAPPED') {
+      reasons.push('NOT_MAPPED');
+      if (opts.canPractice) action = 'PRACTICE_AREA';
+    }
+    const factors: PriorityFactor[] = [];
+    let score = SEVERITY[status];
+    if (status === 'NEEDS_REINFORCEMENT') factors.push('GAP_SEVERITY');
+    if (avgWeight > 0 && r.weight >= 1.5 * avgWeight) {
+      score += 2;
+      factors.push('HIGH_BLUEPRINT_WEIGHT');
+    } else if (avgWeight > 0 && r.weight >= avgWeight) score += 1;
+    if (opts.examDaysLeft !== null && opts.examDaysLeft >= 0 && opts.examDaysLeft <= 30 && SEVERITY[status] >= 2) {
+      score += 1;
+      factors.push('EXAM_SOON');
+    }
+    if (retentionDue) {
+      score += 1;
+      factors.push('RETENTION_DUE');
+    }
+    if (status === 'ALREADY_STRONG') {
+      score = 0;
+      if (!formatConfirmed) reasons.push('CONFIRM_IN_EXAM_FORMAT');
+    }
+    return {
+      ...r,
+      status,
+      concepts,
+      formatConfirmed,
+      hasEvidence: status !== 'NO_EVIDENCE' && status !== 'NOT_YET_MAPPED' ? true : (opts.readiness?.evidencedObjectiveIds.has(r.learningObjectiveId) ?? false),
+      recommendation: { action, canonicalConceptId: conceptId, reasons, gapExam, otherExam: otherExam?.examName ?? null },
+      priority: { score, band: score >= 5 ? 'HIGH' : score >= 3 ? 'MEDIUM' : 'LOW', factors },
+    };
+  });
+  const counts = { ALREADY_STRONG: 0, NEEDS_CONFIRMATION: 0, NEEDS_REINFORCEMENT: 0, NO_EVIDENCE: 0, NOT_YET_MAPPED: 0 } as Record<RequirementStatus, number>;
+  for (const r of requirements) counts[r.status]++;
+  const mapped = requirements.filter((r) => r.concepts.length > 0);
+  return {
+    requirements,
+    counts,
+    coverage: { total: requirements.length, mapped: mapped.length, mappedWithEvidence: mapped.filter((r) => r.hasEvidence).length },
+    recommendations: requirements
+      .filter((r) => r.recommendation.action !== 'NONE')
+      .sort((a, b) => b.priority.score - a.priority.score || b.weight - a.weight || a.code.localeCompare(b.code)),
+  };
+}
+
+export type NextStepKind = 'RESUME' | 'CONTINUE_CONCEPT' | 'ADD_TO_PLAN' | 'DIAGNOSTIC' | 'PRACTICE' | 'REVIEW_STRUCTURE' | 'PLAN_DIPLOMA' | 'SET_GOAL_DETAILS' | 'EXPLORE_LEARNING';
+
+/** ONE clear next step for the preparation home. */
+export function nextStep(p: {
+  openAttemptId: string | null;
+  plan: PreparationPlan | null;
+  canPractice: boolean;
+  canRunDiagnostic: boolean;
+  diagnosticDone: boolean;
+  canViewStructure: boolean;
+  canPlanDiploma: boolean;
+  hasExamDate: boolean;
+}): { kind: NextStepKind; requirement: PlannedRequirement | null } {
+  if (p.openAttemptId) return { kind: 'RESUME', requirement: null };
+  if (p.canPlanDiploma) return { kind: 'PLAN_DIPLOMA', requirement: null };
+  const recs = p.plan?.recommendations ?? [];
+  const top = recs[0] ?? null;
+  if (top && top.priority.band === 'HIGH' && (top.recommendation.action === 'CONTINUE_CONCEPT' || top.recommendation.action === 'ADD_TO_PLAN')) return { kind: top.recommendation.action, requirement: top };
+  const mapped = p.plan?.coverage.mapped ?? 0;
+  const unknown = p.plan?.counts.NO_EVIDENCE ?? 0;
+  // Mostly unknown: find out where the Student stands before recommending study.
+  if (p.canRunDiagnostic && !p.diagnosticDone && (mapped === 0 || unknown / Math.max(mapped, 1) >= 0.5)) return { kind: 'DIAGNOSTIC', requirement: null };
+  if (top && (top.recommendation.action === 'CONTINUE_CONCEPT' || top.recommendation.action === 'ADD_TO_PLAN')) return { kind: top.recommendation.action, requirement: top };
+  if (p.canPractice) return { kind: 'PRACTICE', requirement: top };
+  if (p.canViewStructure) return { kind: 'REVIEW_STRUCTURE', requirement: null };
+  if (!p.hasExamDate) return { kind: 'SET_GOAL_DETAILS', requirement: null };
+  return { kind: 'EXPLORE_LEARNING', requirement: null };
+}

@@ -7,6 +7,7 @@
  * client-supplied studentId).
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 import { z } from 'zod';
 import { verifyAuth } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
@@ -14,7 +15,7 @@ import { cancelTeacherIntervention, TeacherInterventionAccessDeniedError, Teache
 
 const CancelSchema = z.object({ reason: z.string().optional() });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const authContext = await verifyAuth();
   if (!authContext) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -36,3 +37,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     throw error;
   }
 }
+
+// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
+export const POST = withAiRequestMetrics('POST /api/teacher/interventions/[id]/cancel', handlePOST);

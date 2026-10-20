@@ -1,0 +1,12 @@
+DECISION_ID,SECTION,OBJECT_TYPE,OBJECT_ID,OBJECT_VERSION,CANONICAL_SUBJECT,SYSTEM,EVIDENCE_HASH,WITHIN_STATED_SCOPES,DECISION,REVIEWER,DECIDED_AT,NOTES
+D01,Blueprint PAA.MATEMATICAS,BLUEPRINT_CLASSIFICATION,v2.paa/matematicas,step4b-pilot-1,Mathematics,PAA,221172b4d6456345fa485b4f355ea58fb7b47d787f48e48d5a81cbbaacba7c71,YES,,,,
+D02,Blueprint IB.MATH_AA_HL.P1,BLUEPRINT_CLASSIFICATION,v2.ib.math-aa-hl/p1,step4b-pilot-1,Mathematics,IB,417200c0761b691942d8ebe3b2491e97e87220e5e1d59a885be96e35ecc6b82d,YES,,,,
+D03,Core tf.math.quadratic.solve-rational-roots,CONSTRUCT_CORE,tf.math.quadratic.solve-rational-roots,1.0.0-rc.1,Mathematics,PAA,272f90a78b1ef155fa11251f952becde93b3ea7e53b14f82b5de9e56bfdaf3f8,YES,,,,
+D04,Core tf.math.quadratic.solve-rational-roots,CONSTRUCT_CORE,tf.math.quadratic.solve-rational-roots,1.0.0-rc.1,Mathematics,IB,272f90a78b1ef155fa11251f952becde93b3ea7e53b14f82b5de9e56bfdaf3f8,YES,,,,
+D05,Core tf.math.quadratic.solve-rational-roots,CORE_APPLICABILITY,tf.math.quadratic.solve-rational-roots x PAA.MATEMATICAS,1.0.0-rc.1,Mathematics,PAA,bfc2cfa79fdf6f2624573d6381140dedb3eae328bc5b58c3647b802e35b94eef,YES,,,,
+D06,Core tf.math.proportion.missing-value,CONSTRUCT_CORE,tf.math.proportion.missing-value,1.0.0-rc.2,Matemáticas,PAA,12c5621fc69540728789251e1a8c02aa9ac8b24429efde6d42f387a29a2d307b,YES,,,,
+D07,Adapter PAA.MATEMATICAS,ASSESSMENT_ADAPTER,PAA.MATEMATICAS,0.2.0-illustrative+0.4.0-illustrative,Mathematics,PAA,ff003ca66fdbbf94ad39696649cb7d7b811312336165a0c05d2ac4ace9d1b30d,YES,,,,
+D08,Adapter IB.MATH_AA_HL.P1,ASSESSMENT_ADAPTER,IB.MATH_AA_HL.P1,0.2.0-illustrative+0.4.0-illustrative,Mathematics,IB,177c6035be157c5d1e5b9704da666dfe70b08492927e0e76c80c1a1c31c31200,YES,,,,
+D09,Renderer parametric.quadratic-solve@1.0.0,RENDERER_ENVELOPE,parametric.quadratic-solve@1.0.0,1.0.0-rc.1,Mathematics,PAA,ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd,YES,,,,
+D10,Renderer parametric.quadratic-solve@1.0.0,RENDERER_ENVELOPE,parametric.quadratic-solve@1.0.0,1.0.0-rc.1,Mathematics,IB,ba7065ef1fde77a4feca61b65d56f24b007c60efcd1cb095cfb74448fac76cfd,YES,,,,
+D11,Renderer parametric.proportion-missing-value@1.0.0,RENDERER_ENVELOPE,parametric.proportion-missing-value@1.0.0,1.0.0-rc.2,Matemáticas,PAA,48b9dc92a7a023376bcd1aa98f4b89d1aa51b33ddec379c276359b4bad682c82,YES,,,,

@@ -10,6 +10,9 @@ import { InlineAlert } from '@/components/ui/InlineAlert';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SessionHeader } from '@/components/learning/SessionHeader';
 import { classifySubmitFailure, submitFailureKey, type SubmitFailure } from '@/lib/experience/learning-session';
+import { SafetyNotice, safetyFromBody, type SafetyNoticeData } from '@/components/safety/SafetyNotice';
+import { AccessRequiredNotice } from '@/components/ui/AccessRequiredNotice';
+import { isEntitlementRequired } from '@/lib/lx/access-required';
 
 type TransferDistance = 'NEAR' | 'MID' | 'FAR';
 
@@ -23,7 +26,9 @@ export default function TransferPage() {
 
   const [locale, setLocale] = useState<Locale>('es');
   const [studentId, setStudentId] = useState<string | null>(null);
-  const [phase, setPhase] = useState<'loading' | 'answering' | 'submitting' | 'done' | 'error'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'answering' | 'submitting' | 'done' | 'error' | 'access'>('loading');
+  // L6 / CR-L11-02: the server refused this submit with the licence gate (403 ENTITLEMENT_REQUIRED).
+  const [submitAccessRequired, setSubmitAccessRequired] = useState(false);
   const [context, setContext] = useState('');
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
@@ -40,6 +45,8 @@ export default function TransferPage() {
   // learner's text and re-sends with the SAME activityId (the server's
   // evidence idempotency key), so a retry can never double-count.
   const [submitFailure, setSubmitFailure] = useState<SubmitFailure | null>(null);
+  // Human Agency P0-4: fixed safety response from the server (no AI involved).
+  const [safety, setSafety] = useState<SafetyNoticeData | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const t = getMessages(locale);
 
@@ -61,6 +68,11 @@ export default function TransferPage() {
         body: JSON.stringify({ studentId: me.studentId, conceptId, conceptLabel, distance, language: lang.locale || 'en' }),
       });
       const body = await res.json();
+      // L6 / CR-L11-02: a new activity refused by the licence gate is an access state, not a failure to retry.
+      if (isEntitlementRequired(res.status, body)) {
+        setPhase('access');
+        return;
+      }
       if (!res.ok) {
         setPhase('error');
         return;
@@ -82,6 +94,8 @@ export default function TransferPage() {
     const answerSubmittedAt = new Date().toISOString();
     setPhase('submitting');
     setSubmitFailure(null);
+    setSubmitAccessRequired(false);
+    setSafety(null);
     let res: Response;
     try {
     res = await fetch('/api/cognitive/transfer/submit', {
@@ -108,6 +122,17 @@ export default function TransferPage() {
       return;
     }
     const body = await res.json().catch(() => null);
+    const safetyResponse = safetyFromBody(body);
+    if (safetyResponse) {
+      setSafety(safetyResponse);
+      setPhase('answering');
+      return;
+    }
+    if (isEntitlementRequired(res.status, body)) {
+      setSubmitAccessRequired(true);
+      setPhase('answering');
+      return;
+    }
     if (!res.ok || !body?.data) {
       setSubmitFailure(classifySubmitFailure({ status: res.status, errorCode: body?.error ?? null }));
       setPhase('answering');
@@ -127,6 +152,20 @@ export default function TransferPage() {
           <Skeleton height={24} width="85%" />
           <Skeleton height={120} radius="var(--radius-md)" />
         </div>
+      </div>
+    );
+  }
+  if (phase === 'access') {
+    return (
+      <div className="ls" data-kind={lsKind}>
+        <AccessRequiredNotice
+          locale={locale}
+          actions={
+            <Link href={subjectId && conceptId ? `/dashboard/subjects/${subjectId}/concepts/${conceptId}` : '/dashboard/today'} className="btn btn-ghost">
+              {t['continuation.backToConcept']}
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -194,6 +233,8 @@ export default function TransferPage() {
               rows={6}
               className="ui-input ls-textarea"
             />
+            {safety && <SafetyNotice safety={safety} />}
+            {submitAccessRequired && <AccessRequiredNotice locale={locale} />}
             {submitFailure && (
               <InlineAlert tone="error" title={t['xs.submitFailedTitle']} body={t[submitFailureKey(submitFailure)]} />
             )}

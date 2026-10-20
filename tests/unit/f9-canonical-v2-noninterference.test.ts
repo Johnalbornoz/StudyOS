@@ -35,7 +35,6 @@ const F9_ROUTE_FILES = [
   'src/app/api/simulation/attempts/[id]/route.ts',
   'src/app/api/simulation/attempts/[id]/pause/route.ts',
   'src/app/api/simulation/attempts/[id]/resume/route.ts',
-  'src/app/api/simulation/attempts/[id]/responses/route.ts',
   'src/app/api/simulation/attempts/[id]/complete/route.ts',
   'src/app/api/admin/readiness/policy/route.ts',
   'src/app/api/admin/readiness/score-conversion-models/route.ts',

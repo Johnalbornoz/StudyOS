@@ -107,10 +107,12 @@ describe('gate decisions', () => {
     expect(decideStudentOnboardingGate('/dashboard', student({ roles: ['PARENT'], storedWorkspace: 'PARENT' }))).toBeNull();
   });
 
-  it('7. multi-role Admin+Student: gated only when Student is the active context', () => {
+  // Track A product amendment: admin is a capability; Student pages always
+  // render in the Student persona, so the gate applies whatever was stored.
+  it('7. Student persona + admin capability: Student pages are gated; admin routes are not', () => {
     const multi = { roles: ['STUDENT', 'STUDYUS_ADMIN'] as any, profile: null, subjectCount: 0 };
     expect(decideStudentOnboardingGate('/dashboard', student({ ...multi, storedWorkspace: 'STUDENT' }))).toBe('/dashboard/profile');
-    expect(decideStudentOnboardingGate('/dashboard', student({ ...multi, storedWorkspace: 'ADMIN' }))).toBeNull();
+    expect(decideStudentOnboardingGate('/dashboard', student({ ...multi, storedWorkspace: 'ADMIN' }))).toBe('/dashboard/profile');
     expect(decideStudentOnboardingGate('/dashboard/admin/users', student({ ...multi, storedWorkspace: 'STUDENT' }))).toBeNull();
   });
 
@@ -143,7 +145,7 @@ describe('proxy -- enforced before any page renders', () => {
 
   it('redirects an unfinished Student before the page runs, and forwards the path header otherwise', async () => {
     h.authMock.mockResolvedValue({ userId: 'clerk_1' });
-    h.dbQueryMock.mockResolvedValue({ rows: [{ status: 'ACTIVE', active_workspace: 'STUDENT', roles: ['STUDENT'], profile_completed: null, subject_count: 0 }] });
+    h.dbQueryMock.mockResolvedValue({ rows: [{ status: 'ACTIVE', active_workspace: 'STUDENT', student_context_type: 'ACADEMIC', roles: ['STUDENT'], profile_completed: null, subject_count: 0 }] });
     const res: any = await (proxy as any)(req('/dashboard'));
     expect(res.status).toBe(307);
     expect(res.headers.get('location')).toBe('https://dev.example.test/dashboard/profile');
@@ -153,9 +155,29 @@ describe('proxy -- enforced before any page renders', () => {
     expect(ok.headers.get('x-middleware-request-x-studyos-pathname')).toBe('/dashboard/profile');
   });
 
-  it('does not query the database for non-Student routes', async () => {
+  // L10 SF-1 / SF-5: the proxy is now also the account-status gate (API) and the workspace page guard
+  // (every dashboard page), so those requests cost exactly ONE read-only query each -- never a write, and
+  // never the Student onboarding redirect for a non-Student page.
+  it('non-Student routes: one read-only query each (workspace guard / account gate), and no onboarding redirect', async () => {
     h.authMock.mockResolvedValue({ userId: 'clerk_1' });
-    await (proxy as any)(req('/dashboard/admin/overview'));
+    h.dbQueryMock.mockResolvedValue({ rows: [{ status: 'ACTIVE', active_workspace: 'STUDENT', roles: ['STUDENT'], profile_completed: null, subject_count: 0 }] });
+    const admin: any = await (proxy as any)(req('/dashboard/admin/overview'));
+    expect(admin.headers.get('location')).toBeNull();
+    const api: any = await (proxy as any)(req('/api/academic-profile'));
+    expect(api.status).toBe(200);
+    expect(h.dbQueryMock).toHaveBeenCalledTimes(2);
+    for (const [sql] of h.dbQueryMock.mock.calls) {
+      expect(String(sql).trim().toUpperCase().startsWith('SELECT')).toBe(true);
+      expect(String(sql)).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/i);
+    }
+  });
+
+  it('webhooks, internal routes and unauthenticated API requests are never queried', async () => {
+    h.authMock.mockResolvedValue({ userId: 'clerk_1' });
+    await (proxy as any)(req('/api/webhooks/clerk'));
+    await (proxy as any)(req('/api/internal/generation-worker'));
+    await (proxy as any)(req('/api/health'));
+    h.authMock.mockResolvedValue({ userId: null });
     await (proxy as any)(req('/api/academic-profile'));
     expect(h.dbQueryMock).not.toHaveBeenCalled();
   });

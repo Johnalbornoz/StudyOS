@@ -9,16 +9,18 @@
  */
 import { db, type DbExecutor } from '@/lib/db';
 import type { EvidenceRow } from './types';
+import { inExamScopeSql } from '@/lib/exam-core/evidence-scope';
 
-export async function fetchEvidenceForDiagnosis(studentId: string, conceptId: string, client: DbExecutor = db): Promise<EvidenceRow[]> {
+export async function fetchEvidenceForDiagnosis(studentId: string, conceptId: string, client: DbExecutor = db, scope?: { examTargetId: string }): Promise<EvidenceRow[]> {
+  // G6: an exam-target diagnosis never reads another target's (or unscoped legacy) exam-attempt evidence.
   const result = await client.query(
     `
-    SELECT id, result, ai_assistance_type, hints_used, difficulty, score_percent, "timestamp", activity_type, metadata
-    FROM learning_evidence
-    WHERE student_id = $1 AND concept_id = $2
-    ORDER BY "timestamp" ASC, id ASC
+    SELECT le.id, le.result, le.ai_assistance_type, le.hints_used, le.difficulty, le.score_percent, le."timestamp", le.activity_type, le.metadata
+    FROM learning_evidence le
+    WHERE le.student_id = $1 AND le.concept_id = $2${scope ? ` AND ${inExamScopeSql('le', '$3')}` : ''}
+    ORDER BY le."timestamp" ASC, le.id ASC
     `,
-    [studentId, conceptId]
+    scope ? [studentId, conceptId, scope.examTargetId] : [studentId, conceptId]
   );
   return result.rows.map((row) => ({
     id: row.id,

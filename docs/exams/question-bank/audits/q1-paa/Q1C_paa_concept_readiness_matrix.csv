@@ -1,0 +1,67 @@
+section,official_domain,topics,concept,concept_status_in_dev,practice_required,diagnostic_required,verification_required,mock_allocation_planning,required_total,available_any,candidate,eligible,gap,confidence
+Lectura,Vocabulario en contexto,Palabras polisémicas en contexto | Expresiones y frases en contexto,Vocabulario en contexto,EXISTS,3,2,2,38,45,3,0,0,45,HIGH
+Lectura,Ideas explícitas e implícitas,"Sentido literal | Datos, detalles y ejemplos | Propósito o tesis de la lectura",Ideas explícitas y tesis,EXISTS,3,2,2,13,20,4,0,0,20,HIGH
+Lectura,Ideas explícitas e implícitas,Resumen de la lectura | Tema de la lectura,Tema y resumen,MISSING,3,2,2,12,19,1,0,0,19,DRAFT_NEW_CONCEPT
+Lectura,"Análisis, interpretación e inferencias","Inferencia (inducción, deducción, implicación)",Inferencia textual,EXISTS,3,2,2,10,17,4,0,0,17,HIGH
+Lectura,"Análisis, interpretación e inferencias",Identificación de evidencias | Comparación y contraste de información y argumentos,Evidencias y relación entre textos,EXISTS,3,2,2,8,15,7,1,0,15,HIGH
+Lectura,"Análisis, interpretación e inferencias",Relación entre lo general y lo específico | Causa y efecto,Relaciones lógicas en el texto,MISSING,3,2,2,8,15,0,0,0,15,DRAFT_NEW_CONCEPT
+Lectura,"Análisis, interpretación e inferencias",Diferenciación de los tipos de discurso | Estructura del texto,Tipos de discurso y estructura textual,MISSING,3,2,2,7,14,0,0,0,14,DRAFT_NEW_CONCEPT
+Lectura,Información cuantitativa o gráficos,"Interpretación de tablas, gráficas e ilustraciones",Lectura de tablas y gráficos,EXISTS,3,2,2,5,12,2,0,0,12,HIGH
+Lectura,Análisis literario,Géneros literarios | Estructura del texto literario y tipos de discurso,Géneros y estructura literaria,EXISTS_AS:Análisis literario,3,2,2,5,12,0,0,0,12,MEDIUM
+Lectura,Análisis literario,"Texto narrativo: ambiente, espacio, tiempo, personajes, voz narrativa",Elementos narrativos,MISSING,3,2,2,3,10,1,0,0,10,DRAFT_NEW_CONCEPT
+Lectura,Análisis literario,"Texto poético: voz poética, estrofas, versos, rima",Elementos poéticos,MISSING,3,2,2,2,9,0,0,0,9,DRAFT_NEW_CONCEPT
+Lectura,Análisis literario,Figuras retóricas,Figuras retóricas,MISSING,3,2,2,2,9,1,0,0,9,DRAFT_NEW_CONCEPT
+Redacción,Elisión,Elisión de información redundante,Elisión,EXISTS_AS:Economía del lenguaje,3,2,2,17,24,2,0,0,24,MEDIUM
+Redacción,Adición,Adición y lenguaje figurado,Adición,MISSING,3,2,2,10,17,1,0,0,17,DRAFT_NEW_CONCEPT
+Redacción,Generalización,Generalización de lo particular,Generalización,EXISTS_AS:Síntesis y generalización,3,2,2,13,20,1,0,0,20,MEDIUM
+Redacción,Integración,Integración: resumen global y título,Integración,MISSING,3,2,2,12,19,1,0,0,19,DRAFT_NEW_CONCEPT
+Redacción,Particularización,Particularización: expresión indirecta,Particularización,MISSING,3,2,2,10,17,1,0,0,17,DRAFT_NEW_CONCEPT
+Matemáticas,Aritmética,Propiedades y operaciones de los números reales,Operaciones con números reales,MISSING,3,2,2,5,12,0,0,0,12,DRAFT_NEW_CONCEPT
+Matemáticas,Aritmética,Operaciones con fracciones,Fracciones,EXISTS,3,2,2,5,12,2,0,0,12,HIGH
+Matemáticas,Aritmética,Razón y proporción,Proporcionalidad,EXISTS,3,2,2,5,12,2,0,0,12,HIGH
+Matemáticas,Aritmética,Porcentaje,Porcentajes,EXISTS,3,2,2,5,12,3,0,0,12,HIGH
+Matemáticas,Aritmética,Patrones numéricos,Patrones numéricos,MISSING,3,2,2,5,12,0,0,0,12,DRAFT_NEW_CONCEPT
+Matemáticas,Aritmética,"Teoría de números: divisibilidad, factorización prima, múltiplos, MCD, MCM","Divisibilidad, MCD y MCM",EXISTS,3,2,2,3,10,2,0,0,10,HIGH
+Matemáticas,Aritmética,"Notación científica, valor posicional y estimación",Notación científica y valor posicional,MISSING,3,2,2,3,10,0,0,0,10,DRAFT_NEW_CONCEPT
+Matemáticas,Aritmética,Exponentes enteros,Exponentes enteros,MISSING,3,2,2,2,9,0,0,0,9,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,"Expresiones algebraicas: simplificación, evaluación, factorización",Expresiones algebraicas,MISSING,3,2,2,5,12,1,0,0,12,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,Ecuaciones lineales en una variable,Ecuaciones lineales,EXISTS,3,2,2,3,10,3,0,0,10,HIGH
+Matemáticas,Álgebra,Inecuaciones lineales en una variable,Inecuaciones lineales,MISSING,3,2,2,3,10,0,0,0,10,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,Exponentes racionales y radicales,Exponentes racionales y radicales,MISSING,3,2,2,3,10,0,0,0,10,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,Polinomios,Polinomios,MISSING,3,2,2,3,10,0,0,0,10,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,"Ecuaciones cuadráticas, racionales, con radicales y valor absoluto","Ecuaciones cuadráticas, racionales y con radicales",MISSING,3,2,2,3,10,0,0,0,10,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,Variación,Variación directa e inversa,MISSING,3,2,2,3,10,1,1,0,10,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,Patrones algebraicos y sucesiones,Patrones algebraicos y sucesiones,MISSING,3,2,2,3,10,0,0,0,10,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,Rectas y sus propiedades,Rectas y pendiente,MISSING,3,2,2,2,9,0,0,0,9,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,"Funciones: dominio, campo de valores, evaluación, gráficas",Funciones,EXISTS,3,2,2,2,9,2,0,0,9,HIGH
+Matemáticas,Álgebra,"Funciones lineales, cuadráticas y exponenciales","Funciones lineales, cuadráticas y exponenciales",MISSING,3,2,2,2,9,1,0,0,9,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,Operaciones con funciones,Operaciones con funciones,MISSING,3,2,2,2,9,0,0,0,9,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,Relaciones de cambio,Relaciones de cambio,MISSING,3,2,2,2,9,0,0,0,9,DRAFT_NEW_CONCEPT
+Matemáticas,Álgebra,Sistemas de ecuaciones,Sistemas de ecuaciones,EXISTS,3,2,2,2,9,3,1,0,9,HIGH
+Matemáticas,Álgebra,Razones trigonométricas,Razones trigonométricas,MISSING,3,2,2,2,9,0,0,0,9,DRAFT_NEW_CONCEPT
+Matemáticas,Geometría,Coordenadas cartesianas,Coordenadas cartesianas,MISSING,3,2,2,5,12,0,0,0,12,DRAFT_NEW_CONCEPT
+Matemáticas,Geometría,Transformaciones: traslaciones y reflexiones,Transformaciones geométricas,MISSING,3,2,2,5,12,0,0,0,12,DRAFT_NEW_CONCEPT
+Matemáticas,Geometría,Distancia y punto medio,Distancia y punto medio,MISSING,3,2,2,5,12,0,0,0,12,DRAFT_NEW_CONCEPT
+Matemáticas,Geometría,Rectas y ángulos,Rectas y ángulos,MISSING,3,2,2,5,12,2,0,0,12,DRAFT_NEW_CONCEPT
+Matemáticas,Geometría,Semejanza y congruencia,Semejanza y congruencia,EXISTS_AS:Semejanza de triángulos,3,2,2,5,12,2,0,0,12,MEDIUM
+Matemáticas,Geometría,Teorema de Pitágoras,Teorema de Pitágoras,EXISTS,3,2,2,5,12,1,0,0,12,HIGH
+Matemáticas,Geometría,Triángulos y cuadriláteros: perímetro y área,Área y perímetro,EXISTS,3,2,2,3,10,2,0,0,10,HIGH
+Matemáticas,Geometría,Círculos y polígonos,Círculos y polígonos,MISSING,3,2,2,3,10,2,0,0,10,DRAFT_NEW_CONCEPT
+Matemáticas,Geometría,Volumen y área de superficie de sólidos,Volumen y área de superficie,MISSING,3,2,2,2,9,0,0,0,9,DRAFT_NEW_CONCEPT
+Matemáticas,Análisis de datos y Probabilidad,"Medidas de tendencia central: media, mediana y moda",Medidas de tendencia central,EXISTS,3,2,2,5,12,5,0,0,12,HIGH
+Matemáticas,Análisis de datos y Probabilidad,Medidas de dispersión,Medidas de dispersión,EXISTS,3,2,2,5,12,1,0,0,12,HIGH
+Matemáticas,Análisis de datos y Probabilidad,"Interpretación de tablas, gráficas y figuras",Interpretación de tablas y gráficas estadísticas,MISSING,3,2,2,5,12,0,0,0,12,DRAFT_NEW_CONCEPT
+Matemáticas,Análisis de datos y Probabilidad,Técnicas de conteo: combinaciones y permutaciones,Técnicas de conteo,EXISTS,3,2,2,5,12,2,0,0,12,HIGH
+Matemáticas,Análisis de datos y Probabilidad,Probabilidad de un evento,Probabilidad,EXISTS,3,2,2,3,10,2,0,0,10,HIGH
+Matemáticas,Análisis de datos y Probabilidad,Población y muestra; variables discretas y continuas,Población y muestra,MISSING,3,2,2,2,9,0,0,0,9,DRAFT_NEW_CONCEPT
+Matemáticas,Análisis de datos y Probabilidad,Probabilidad condicional,Probabilidad condicional,MISSING,3,2,2,2,9,0,0,0,9,DRAFT_NEW_CONCEPT
+Inglés,Uso del lenguaje y vocabulario,"Vocabulary (practical, everyday, personal, academic contexts)",English vocabulary in context,EXISTS,3,2,2,13,20,2,0,0,20,HIGH
+Inglés,Uso del lenguaje y vocabulario,Word order and sentence structure,English sentence structure,EXISTS,3,2,2,13,20,0,0,0,20,HIGH
+Inglés,Uso del lenguaje y vocabulario,"Function words (prepositions, pronouns, connectors, determiners)",English function words,MISSING,3,2,2,12,19,1,0,0,19,DRAFT_NEW_CONCEPT
+Inglés,Uso del lenguaje y vocabulario,"Inflection (verbs, noun forms, comparatives, parallel structure)",English inflection and verb forms,EXISTS_AS:English verb tenses,3,2,2,12,19,2,0,0,19,MEDIUM
+Inglés,Comprensión de lectura,"Identify information, topic and main idea | Establish relationships",Reading comprehension in English,EXISTS,3,2,2,13,20,1,0,0,20,HIGH
+Inglés,Comprensión de lectura,Conclusions and inferences,Inference in English texts,MISSING,3,2,2,13,20,1,0,0,20,DRAFT_NEW_CONCEPT
+Inglés,Comprensión de lectura,Fact versus opinion | Author's purpose and tone,"Author purpose, tone and fact vs opinion",MISSING,3,2,2,12,19,1,0,0,19,DRAFT_NEW_CONCEPT
+Inglés,Redacción indirecta,Sentence correction | Error identification,English sentence correction and error identification,MISSING,3,2,2,13,20,1,0,0,20,DRAFT_NEW_CONCEPT
+Inglés,Redacción indirecta,Sentence combining,English sentence combining,MISSING,3,2,2,12,19,1,0,0,19,DRAFT_NEW_CONCEPT
+Inglés,Redacción indirecta,"Paragraph revision (opening/closing, sequence, off-topic, transitions, title)",English paragraph revision,MISSING,3,2,2,12,19,0,0,0,19,DRAFT_NEW_CONCEPT

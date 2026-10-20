@@ -121,7 +121,7 @@ async function main() {
   console.log('  seeded Cambridge IGCSE (F9) Mathematics mapped to the SAME canonical concept as PAA');
 
   // --- F7: PAA exam version -- Mathematics fully configured/SUPPORTED, Reading deliberately UNSUPPORTED ---
-  const paaExamDef = await createExamDefinition({ academicProgrammeId: paaProgramme.id, name: 'PAA (F9)', examFamily: 'ADMISSION_EXAM', purpose: 'university admission', domains: ['Reading', 'Writing', 'Mathematics', 'English'] });
+  const paaExamDef = await createExamDefinition({ academicProgrammeId: paaProgramme.id, name: 'PAA (F9)', examFamily: 'PAA', purpose: 'university admission', domains: ['Reading', 'Writing', 'Mathematics', 'English'] });
   const paaScoringModel = await createScoringModel({ name: 'PAA (F9) Partial Credit v1', scoringType: 'PARTIAL_CREDIT' });
   const paaExamVersion = await createExamVersion({ examDefinitionId: paaExamDef.id, versionLabel: '2024', scoringModelId: paaScoringModel.id, supportedModalities: ['ONLINE'] });
 
@@ -158,7 +158,7 @@ async function main() {
   }
 
   // --- Cambridge exam version: a SEPARATE, fully-configured single-domain structure, used ONLY for case L ---
-  const cambridgeExamDef = await createExamDefinition({ academicProgrammeId: cambridgeProgramme.id, name: 'Cambridge IGCSE Mathematics (F9)', examFamily: 'SUBJECT_ASSESSMENT', domains: ['Mathematics'] });
+  const cambridgeExamDef = await createExamDefinition({ academicProgrammeId: cambridgeProgramme.id, name: 'Cambridge IGCSE Mathematics (F9)', examFamily: 'CAMBRIDGE', domains: ['Mathematics'] });
   const cambridgeScoringModel = await createScoringModel({ name: 'Cambridge (F9) Mark Scheme v1', scoringType: 'MARK_SCHEME' });
   const cambridgeExamVersion = await createExamVersion({ examDefinitionId: cambridgeExamDef.id, versionLabel: '2023-2025', scoringModelId: cambridgeScoringModel.id, supportedModalities: ['PAPER'] });
   const cambridgeComponent = await createComponent({ examVersionId: cambridgeExamVersion.id, name: 'Mathematics Paper', componentType: 'PAPER', academicSubjectId: cambridgeMath.id });

@@ -40,22 +40,30 @@
  * }
  */
 
+import { executionAuthorityOfQuizSession } from '@/lib/assessment-execution/assessment-start.service';
+import { LEARN_GUIDED_QUIZ_MODE, practiceGuidanceWithLearnWeaknesses } from '@/lib/learn-guided/policy';
+import { getLearnWeaknessesForConcept, recordLearnWeaknessProvenance } from '@/services/learn-weakness.service';
+import { buildLearnWeaknessProvenance, matchLearnFocusItems } from '@/lib/learn-guided/weakness-focus';
 import { randomUUID } from 'crypto';
-import { NextRequest, NextResponse, after } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { QUIZ_MODE_CONFIG } from '@/lib/quiz/quiz-mode-config';
 import { computeAskConfidenceFlags } from '@/services/ask-confidence.service';
 import { isRecordableError, type PedagogicalGrade } from '@/lib/grading/pedagogical-grade';
 import { pedagogicalFeedbackText } from '@/lib/grading/pedagogical-feedback';
 import { recordQuizResponses } from '@/services/quiz-response-audit.service';
-import { DELIVERY_QUIZ_MODES } from '@/lib/activity-delivery/contract';
-import { buildDeliveryInput, deliverCanonicalActivity, completeEmergencyDelivery, logActivityLaunch, type DeliveryInput, type LaunchLock } from '@/services/activity-delivery.service';
+import { DELIVERY_QUIZ_MODES, deliveryPracticeMix } from '@/lib/activity-delivery/contract';
+import { combinePracticeMix, generatePracticePlusOneItems } from '@/services/practice-mix-generation.service';
+import { buildDeliveryInput, deliverCanonicalActivity, completeEmergencyDelivery, logActivityLaunch, recordPracticeMixFallback, type DeliveryInput, type LaunchLock } from '@/services/activity-delivery.service';
 import { questionGeneratorIdentity } from '@/services/activity-candidate-generation.service';
-import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
+import { INSUFFICIENT_CERTIFIED_CONTENT, INSUFFICIENT_CERTIFIED_CONTENT_STATUS, studentRuntimeMayGenerateQuestions } from '@/lib/student-runtime/question-supply-policy';
 import { resolveLanguageForSubject, getSubjectIBContext } from '@/services/subject-generation-context.service';
 import { verifyAuth, verifyStudentAccess, verifySubjectAccess, verifyConceptsAccess, verifyDiagnosisAccess, verifyRemediationStepAccess, checkRateLimit, type UserRole } from '@/lib/auth';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { canUseCapability } from '@/lib/entitlements';
 import { db } from '@/lib/db';
+import { canonicalAttemptGate, isCorrectnessGatedActivity, resolveQuizConceptEvidenceScore, toCorrectnessGatedStage } from '@/lib/quiz/canonical-gate-score';
+import { getMessages } from '@/lib/i18n/messages';
+import { studentTextSafetyResponse } from '@/lib/safety/safety-route';
 import {
   generateQuickCheckQuestions,
   generatePracticeQuestions,
@@ -75,6 +83,8 @@ import {
   type GatedBatchInvocationDiagnostics,
 } from '@/services/gated-question-generation.service';
 import { generateCanonicalProveQuestions, type CanonicalProveGenerationResult } from '@/services/canonical-prove-generation.service';
+import { PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE } from '@/services/prove-exact-novelty.service';
+import { PROVE_LEVEL_MIX_SUPPLY_SHORTAGE } from '@/services/canonical-prove-generation.service';
 import { generateCanonicalRetainQuestions, type CanonicalRetainGenerationResult } from '@/services/canonical-retain-generation.service';
 import { generateCanonicalTransferChallenges, type CanonicalTransferGenerationResult } from '@/services/canonical-transfer-generation.service';
 import { gradeCanonicalTransferAttempt } from '@/lib/lx/canonical-transfer-grading';
@@ -91,6 +101,7 @@ import { deriveResponseEvidenceContract } from '@/lib/lx/response-evidence-contr
 import { gradeQuizAnswer } from '@/lib/quiz/grade-question';
 import { applyResponseContractGuard } from '@/lib/lx/response-contract-grading';
 import { aggregateEvidenceDifficulty, resolveTargetDifficulty } from '@/lib/lx/difficulty-contract';
+import { computePracticeExposure, servedLevelCounts } from '@/lib/pedagogical-engine/difficulty-policy';
 import { deriveEvidenceRequirement, resolveQuestionCount } from '@/lib/lx/evidence-sufficiency-contract';
 import { getActiveMasteryPolicy, getConceptKnowledgeState } from '@/services/knowledge-state.service';
 import { activityTypeForQuizMode, evidenceModeForQuizMode } from '@/services/quiz-persistence.service';
@@ -115,6 +126,7 @@ import type { LearningEvidence } from '@/lib/algorithms/mastery';
 import { normalizeResponseTiming, toResponseTimingEntries, withBehaviorMetadata, type ResponseTiming } from '@/lib/algorithms/response-timing';
 import type { AIProvenance } from '@/lib/ai';
 import { recordDecisionEvent } from '@/lib/audit';
+import { createSubjectAssessmentSession, isSubjectAssessmentSession, submitSubjectAssessmentSession } from '@/services/subject-assessment.service';
 import { estimateDPGrade, estimateMYPBand } from '@/lib/ib';
 import { resolveDiagnosticCheck } from '@/services/cognitive-diagnosis.service';
 import { completeRemediationStep } from '@/services/remediation.service';
@@ -215,6 +227,18 @@ const GenerateQuizSchema = z.object({
     'canonical_learn_check',
   ]).default('topic_practice'),
   maxQuestions: z.number().int().min(1).max(20).optional(),
+  /**
+   * Overnight 2026-10-16 subject test / mock (cumulative_assessment / exam_simulation): the Student picks DO NOW or
+   * SCHEDULE (a local date). StudyUs plans count, distribution, difficulty and timing (services/subject-assessment.service);
+   * `maxQuestions` is never read for these modes. The timezone is never taken from the client (APPROVED 2026-10-17): a
+   * SCHEDULED assessment uses the Student's or institution's timezone authority, else TIMEZONE_AUTHORITY_BLOCKER. A
+   * `timezone` key sent by an older client is accepted and ignored.
+   */
+  subjectAssessment: z.object({
+    mode: z.enum(['NOW', 'SCHEDULED']).default('NOW'),
+    scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    timezone: z.string().max(64).optional(),
+  }).optional(),
   difficulty: z.number().int().min(1).max(5).optional(),
   language: z.string().optional(),
   /**
@@ -325,6 +349,55 @@ async function selectConceptsForQuizMode(
     .slice(0, maxConcepts);
 }
 
+/**
+ * Overnight 2026-10-16 -- subject Test ("Prueba por materia") / Mock ("Simulacro por materia"), STUDENT origin. The
+ * Student chose the concepts (all by default) and DO NOW or SCHEDULE; StudyUs plans everything else
+ * (createSubjectAssessmentSession). No concept list = every concept of the subject (the setup's default).
+ */
+async function handleSubjectAssessmentCreate(validated: z.infer<typeof GenerateQuizSchema>) {
+  let conceptIds = validated.conceptIds ?? [];
+  if (conceptIds.length === 0) {
+    const all = await db.query(`SELECT id FROM concepts WHERE subject_id = $1 ORDER BY created_at ASC NULLS LAST, id ASC`, [validated.subjectId]);
+    conceptIds = all.rows.map((r: { id: string }) => r.id);
+  }
+  const sa = validated.subjectAssessment ?? { mode: 'NOW' as const };
+  if (sa.mode === 'SCHEDULED' && !sa.scheduledDate) {
+    return NextResponse.json({ error: 'SCHEDULE_DATE_REQUIRED', message: 'Choose the date of the scheduled assessment.' }, { status: 400 });
+  }
+  const created = await createSubjectAssessmentSession({
+    studentId: validated.studentId,
+    subjectId: validated.subjectId,
+    kind: validated.quizMode === 'exam_simulation' ? 'MOCK' : 'TEST',
+    origin: 'STUDENT',
+    conceptIds,
+    schedule: sa.mode === 'SCHEDULED' ? { mode: 'SCHEDULED', date: sa.scheduledDate! } : { mode: 'NOW' },
+    timing: { timed: validated.quizMode === 'exam_simulation', durationMinutes: null },
+    language: isLocale(validated.language) ? validated.language : undefined,
+  });
+  if (!created.ok) {
+    return NextResponse.json({ error: created.error, message: created.message, ...(created.detail ? { detail: created.detail } : {}) }, { status: created.status });
+  }
+  const { view } = created;
+  const sessionLanguage = (await db.query(`SELECT language FROM quiz_sessions WHERE id = $1`, [created.quizId])).rows[0]?.language ?? 'es';
+  return NextResponse.json({
+    success: true,
+    data: {
+      quizId: created.quizId,
+      language: sessionLanguage,
+      quizMode: validated.quizMode,
+      maxQuestions: created.setup.questionCount,
+      countAuthority: { status: 'SUBJECT_ASSESSMENT_PLAN', rule: created.setup.rule },
+      subjectAssessment: { ...view, questions: undefined },
+      ...(view.questions
+        ? { quiz: { questions: view.questions, count: view.questions.length }, message: 'Assessment started. Submit answers with this quizId to complete.' }
+        : { scheduled: true, message: 'Assessment created and frozen. Start it from your subject page.' }),
+    },
+  });
+}
+
+/** A submission re-asks the original question for verification; it does not ask a provider for a variant. */
+const SUBMISSION_GENERATES_VARIANTS: boolean = false;
+
 async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
   // CANON-R6-PERF-I1 -- instrumentation-only state. `validated` itself
   // is NOT hoisted/retyped (it stays a plain `const` inside the try
@@ -401,6 +474,13 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     );
     if (!subjectOwned || !conceptsOwned) {
       return NextResponse.json({ error: 'FORBIDDEN', message: 'Cannot access this subject or concept' }, { status: 403 });
+    }
+
+    // Overnight 2026-10-16: a subject Test / Mock is created ONLY through the subject assessment service (StudyUs plans
+    // count, distribution, difficulty and timing; the setup is frozen; NOW starts it, SCHEDULED waits for the Student).
+    // The same service is the TEACHER workstream's entry point. `maxQuestions` is never read for these modes.
+    if (validated.quizMode === 'cumulative_assessment' || validated.quizMode === 'exam_simulation') {
+      return await handleSubjectAssessmentCreate(validated);
     }
 
     if (isSingleConceptMode(validated.quizMode) && !validated.conceptId) {
@@ -544,7 +624,16 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
         });
       }
       emergencyLaunch = { lock: delivery.lock, input: deliveryInput, authorizationMs };
-      console.warn('[activity-launch] EMERGENCY_GENERATION_STARTED', JSON.stringify({ activityType: deliveryActivityType, conceptId: validated.conceptId, bank: delivery.bank }));
+      if (studentRuntimeMayGenerateQuestions(validated.quizMode)) console.warn('[activity-launch] EMERGENCY_GENERATION_STARTED', JSON.stringify({ activityType: deliveryActivityType, conceptId: validated.conceptId, bank: delivery.bank }));
+    }
+
+    // Revised OE-014 (lib/assessment-supply/supply-boundary): a STANDARDIZED EXAM launch is supplied by certified
+    // content or it is NOT_READY -- no generator below this line runs for it, and the launch lock taken for an
+    // "emergency" is released. A LEARNING or INTERNAL ASSESSMENT launch may generate: this is an explicit POST.
+    if (!studentRuntimeMayGenerateQuestions(validated.quizMode)) {
+      if (emergencyLaunch) await emergencyLaunch.lock.release().catch(() => {});
+      console.warn('[activity-launch] NOT_READY', JSON.stringify({ quizMode: validated.quizMode, conceptId: validated.conceptId ?? null, reason: INSUFFICIENT_CERTIFIED_CONTENT.reason }));
+      return NextResponse.json(INSUFFICIENT_CERTIFIED_CONTENT, { status: INSUFFICIENT_CERTIFIED_CONTENT_STATUS });
     }
 
     // Only the generation path below needs the IB context -- a delivered launch never pays this read.
@@ -745,8 +834,9 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       primaryConceptId = validated.conceptId!;
     } else if (validated.conceptIds && validated.conceptIds.length > 0) {
       // Student picked specific topics instead of the automatic
-      // weakest-first/scheduled-exam selection below.
-      conceptIds = validated.conceptIds.slice(0, maxQuestions);
+      // weakest-first/scheduled-exam selection below. (Subject Test / Mock never reach this point: they are created by
+      // handleSubjectAssessmentCreate, which covers every selected concept with its planned distribution.)
+      conceptIds = [...validated.conceptIds];
       primaryConceptId = null;
     } else {
       conceptIds = await selectConceptsForQuizMode(
@@ -793,6 +883,40 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // keeping questionArrays' shape (one array per concept) identical
     // for the flatten/askConfidence logic below regardless of which
     // path ran.
+    // LEARN -> PRACTICE (operator rule 2026-10-16): the weaknesses the latest guided LEARN session of this
+    // concept detected are carried into a CANONICAL Practice generation as extra guidance. Read directly from
+    // that LEARN_GUIDED evidence row's metadata (contract 1.1) -- independent of the engine. Only for a
+    // verified v1 topic_practice request; every other mode/request keeps its guidance byte-identical.
+    // Requirement §22: read through the ONE shared accessor (the bank / READY paths use the same one) and
+    // recorded on the session as `learnWeaknessProvenance` (appliedVia LIVE_PROMPT) once it exists.
+    const learnFocus =
+      validated.quizMode === 'topic_practice' && v1Marker && validated.conceptId
+        ? await getLearnWeaknessesForConcept(validated.studentId, validated.conceptId)
+        : null;
+    const learnWeaknesses = learnFocus?.weaknesses ?? [];
+    // D78: a verified v1 Practice whose mix plans a base+1 item asks the SAME certified generator,
+    // in parallel with the base set below (which is exactly the call a normal session makes), for
+    // that item AT base+1. It replaces one base item only when the generator really produced an
+    // item at base+1 (practice-mix-generation.service); otherwise the session stays all at base.
+    const practiceMixPlan =
+      validated.quizMode === 'topic_practice' && v1Marker?.practiceMix ? deliveryPracticeMix(v1Marker.practiceMix, perConceptCap) : undefined;
+    const practicePlusOne = practiceMixPlan ? practiceMixPlan.items.find((i) => i.level === practiceMixPlan.baseLevel + 1) : undefined;
+    const practicePlusOnePromise: Promise<GeneratedQuestion[]> = practicePlusOne
+      ? generatePracticePlusOneItems(
+          conceptIds[0], validated.studentId, validated.subjectId,
+          {
+            guidance: config.guidance,
+            language,
+            visualAidRate: config.visualAidRate,
+            ibContext,
+            activityType: activityTypeForQuizMode(validated.quizMode),
+            quizMode: validated.quizMode,
+            parentOperationId,
+          },
+          practicePlusOne,
+          learnWeaknesses,
+        )
+      : Promise.resolve([]);
     const [questionArrays, askConfidenceFlags] = await Promise.all([
       validated.quizMode === 'quick_check'
         ? generateQuickCheckQuestions(conceptIds[0], validated.studentId, validated.subjectId, {
@@ -814,7 +938,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
             // comment above. `undefined` for every other mode/request,
             // so this is byte-identical to before this phase there.
             difficulty: v1EffectiveDifficulty ?? validated.difficulty ?? resolvedDifficulty?.level ?? 3,
-            guidance: config.guidance,
+            guidance: practiceGuidanceWithLearnWeaknesses(config.guidance, learnWeaknesses),
             language,
             visualAidRate: config.visualAidRate,
             ibContext,
@@ -886,6 +1010,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
               independence: v1Marker!.independence,
               supportLevel: v1Marker!.supportLevel,
               minimumScorePercent: v1Marker!.minimumScorePercent,
+              // D79: a prepared batch for another level mix is incompatible
+              ...(v1Marker!.proveMix ? { proveMix: { items: v1Marker!.proveMix.items } } : {}),
             };
 
             const preparedLookupStartedAt = Date.now();
@@ -950,6 +1076,8 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
               activityType: activityTypeForQuizMode(validated.quizMode),
               quizMode: validated.quizMode,
               parentOperationId,
+              // D79: the PROVE level mix (10 x L3 / 7 x L3 + 3 x L4), by the generator's own reported levels
+              ...(v1Marker!.proveMix ? { levelMix: v1Marker!.proveMix.items } : {}),
             });
             proveGenerationResult = proveGen;
             return [proveGen.questions];
@@ -1047,6 +1175,12 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           ),
       computeAskConfidenceFlags(validated.studentId, conceptIds, validated.quizMode),
     ]);
+    if (practicePlusOne) {
+      const plusSet = await practicePlusOnePromise;
+      if (questionArrays[0] && questionArrays[0].length === perConceptCap) {
+        questionArrays[0] = combinePracticeMix(questionArrays[0], plusSet, practicePlusOne.level, practicePlusOne.count, perConceptCap);
+      }
+    }
 
     // Ask confidence at most once per concept per quiz (its first
     // question), never on every question -- avoids fatigue while still
@@ -1207,6 +1341,24 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
     // generic gated-batch/legacy path), which keeps its own existing
     // generic error shape untouched.
     let canonicalGenerationErrorCode: CanonicalErrorCode | null = null;
+    // D75: a canonical_prove shortfall caused by exact prior-item (Practice / Prove) rejections is
+    // reported explicitly -- an exact prior Prove item is never reused to fill the set.
+    // D79: a level mix whose level counts could not be met is reported as PROVE_LEVEL_MIX_SUPPLY_SHORTAGE --
+    // never silently served at another level (no relabelling, no all-L3 substitute for a qualifying learner).
+    let proveReasonCode: 'V1_PROVE_GENERATION_INCOMPLETE' | typeof PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE | typeof PROVE_LEVEL_MIX_SUPPLY_SHORTAGE = 'V1_PROVE_GENERATION_INCOMPLETE';
+    if (validated.quizMode === 'canonical_prove' && proveGenerationResult !== null && questions.length < maxQuestions) {
+      const proveShortageCheck: CanonicalProveGenerationResult = proveGenerationResult;
+      if (proveShortageCheck.exactNoveltySupplyShortage) proveReasonCode = PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE;
+      else if (proveShortageCheck.levelMixSupplyShortage) proveReasonCode = PROVE_LEVEL_MIX_SUPPLY_SHORTAGE;
+    }
+    // Candidate #12 follow-up A (OE-014): an explicit Prove supply shortage is AUDITED (analytics_events) and that is
+    // all -- this learner route never enqueues replenishment and never generates beyond the attempt's own bounded
+    // rounds. Replenishment stays an Operator / Admin workflow.
+    if (validated.quizMode === 'canonical_prove' && (proveReasonCode === PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE || proveReasonCode === PROVE_LEVEL_MIX_SUPPLY_SHORTAGE)) {
+      await track(validated.studentId, 'CANONICAL_PROVE_SUPPLY_SHORTAGE', {
+        conceptId: primaryConceptId, shortageReason: proveReasonCode, served: questions.length, required: maxQuestions, replenishmentQueued: false,
+      });
+    }
     if (questions.length < maxQuestions) {
       try {
         // CANON-V2-PREVIEW-CERT -- `!== null` (never a truthy `&&`
@@ -1260,7 +1412,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           errorCode: 'QUESTION_COUNT_INSUFFICIENT',
         }));
       } catch { /* logging must never break the response */ }
-      emitCanonicalProveSummary('INCOMPLETE', questions.length, 'V1_PROVE_GENERATION_INCOMPLETE');
+      emitCanonicalProveSummary('INCOMPLETE', questions.length, proveReasonCode);
       emitCanonicalProveCacheSummary();
       // CANON-R6/CANON-V2-ARCH-CLEANUP Part 5/29 -- a v1 Prove/Retain
       // request may NEVER silently administer fewer than its own
@@ -1271,7 +1423,7 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       // every other mode already gets.
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_PROVE_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, independent 10-question Prove check.' }
+          ? { error: 'GENERATION_FAILED', reason: proveReasonCode, canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode(proveReasonCode).code, message: proveReasonCode === PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE ? 'Not enough new questions are available yet for another Prove check.' : 'Could not generate a complete, independent 10-question Prove check.' }
           : validated.quizMode === 'canonical_retain'
           ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_RETAIN_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, novel 10-question Retain check.' }
           : validated.quizMode === 'canonical_transfer'
@@ -1298,11 +1450,11 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
           errorCode: 'GENERATION_FAILED',
         }));
       } catch { /* logging must never break the response */ }
-      emitCanonicalProveSummary('INCOMPLETE', questions.length, 'V1_PROVE_GENERATION_INCOMPLETE');
+      emitCanonicalProveSummary('INCOMPLETE', questions.length, proveReasonCode);
       emitCanonicalProveCacheSummary();
       return NextResponse.json(
         validated.quizMode === 'canonical_prove'
-          ? { error: 'GENERATION_FAILED', reason: 'V1_PROVE_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_PROVE_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, independent 10-question Prove check.' }
+          ? { error: 'GENERATION_FAILED', reason: proveReasonCode, canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode(proveReasonCode).code, message: proveReasonCode === PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE ? 'Not enough new questions are available yet for another Prove check.' : 'Could not generate a complete, independent 10-question Prove check.' }
           : validated.quizMode === 'canonical_retain'
           ? { error: 'GENERATION_FAILED', reason: 'V1_RETAIN_GENERATION_INCOMPLETE', canonicalErrorCode: canonicalGenerationErrorCode ?? toCanonicalErrorCode('V1_RETAIN_GENERATION_INCOMPLETE').code, message: 'Could not generate a complete, novel 10-question Retain check.' }
           : validated.quizMode === 'canonical_transfer'
@@ -1333,7 +1485,16 @@ async function handleGenerateQuiz(body: any, userId: string, role: UserRole) {
       v1MarkerToPersist
     );
     persistenceMs = Date.now() - persistenceStartedAt;
-
+    if (learnFocus) {
+      await recordLearnWeaknessProvenance(
+        quizId,
+        buildLearnWeaknessProvenance(learnFocus, 'LIVE_PROMPT', matchLearnFocusItems(questions.map((q) => ({ id: q.id, question: q })), learnFocus)),
+      );
+    }
+    // D78: a live / emergency Practice whose served levels differ from its planned mix says why
+    if (validated.quizMode === 'topic_practice' && v1Marker?.practiceMix) {
+      await recordPracticeMixFallback(quizId, deliveryPracticeMix(v1Marker.practiceMix, questions.length), questions.map((q) => q.difficulty));
+    }
     if (emergencyLaunch) {
       await completeEmergencyDelivery({ input: emergencyLaunch.input, quizId, questions, generator: questionGeneratorIdentity(parentOperationId) }).catch((err) => console.error('[activity-launch] emergency banking failed', err));
       logActivityLaunch({
@@ -1533,6 +1694,22 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         { status: 400 }
       );
     }
+    // B5: one engine per attempt. A session started from a frozen assessment snapshot is completed by the
+    // canonical evidence loop; this legacy submission path never grades or writes evidence for it.
+    if ((await executionAuthorityOfQuizSession(validated.quizId)) === 'CANONICAL') {
+      return NextResponse.json({ error: 'ASSESSMENT_EXECUTION_AUTHORITY_CANONICAL', message: 'This assessment is completed through the canonical path.' }, { status: 409 });
+    }
+    // LEARN (2026-10-16): a guided LEARN session lives in quiz_sessions but is completed ONLY through
+    // /api/learning/guided-understanding/turn (one evidence row on close). This legacy path would otherwise
+    // grade it with the topic_practice fallback config and write Practice evidence -- never.
+    if ((quizSession.quizMode as string) === LEARN_GUIDED_QUIZ_MODE) {
+      return NextResponse.json({ error: 'LEARN_GUIDED_SESSION', message: 'This guided LEARN session is completed through its own path.' }, { status: 409 });
+    }
+    // APPLY (2026-10-16): an adaptive transfer attempt is completed ONLY through /api/learning/apply/answer (one
+    // transferLadder evidence row on close); this path would mark it completed with nothing graded -- never.
+    if ((quizSession.quizMode as string) === 'transfer_ladder') {
+      return NextResponse.json({ error: 'TRANSFER_LADDER_SESSION', message: 'This APPLY attempt is completed through its own path.' }, { status: 409 });
+    }
     // STUDENT E2E security: a diagnosis / remediation step named by the
     // client must be the authenticated Student's own -- otherwise this
     // submit could resolve or advance another Student's record.
@@ -1555,12 +1732,41 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
     // the common sequential-retry case, where a genuinely-completed
     // quiz is resubmitted after its first response was lost in
     // transit.
+    // Human Agency P0-4 (Layer B): deterministic safety gate first -- no grading
+    // model sees a signalled answer and nothing is recorded for it.
+    const safetyBlock = await studentTextSafetyResponse(validated.answers.map((a) => a.answer), { studentId: validated.studentId, surface: 'QUIZ_ANSWER', locale: quizSession.language });
+    if (safetyBlock) return safetyBlock;
+
+    // Overnight 2026-10-16: a v2 subject Test / Mock is graded and closed by the subject assessment service (answered +
+    // UNANSWERED in the denominator, per-concept CUMULATIVE_ASSESSMENT / MOCK_EXAM evidence with its scorePercent, a
+    // timed attempt past its deadline counts only answers saved before it, one attempt). Legacy subject sessions (no v2
+    // setup) keep the path below.
+    if ((quizSession.quizMode === 'cumulative_assessment' || quizSession.quizMode === 'exam_simulation') && (await isSubjectAssessmentSession(validated.quizId))) {
+      const submitted = await submitSubjectAssessmentSession({ studentId: validated.studentId, quizId: validated.quizId, answers: validated.answers });
+      if (!submitted.ok) {
+        return NextResponse.json({ error: submitted.error, message: submitted.message }, { status: submitted.status });
+      }
+      return NextResponse.json({ success: true, ...(submitted.alreadySubmitted ? { alreadySubmitted: true } : {}), data: submitted.data });
+    }
+
     if (quizSession.status === 'completed') {
       return NextResponse.json({
         success: true,
         alreadySubmitted: true,
         message: 'This quiz was already submitted. Its results were not changed.',
       });
+    }
+    // Human Agency P0-2: an INDEPENDENT / ASSESSMENT attempt past its
+    // certified expiry produces NO evidence. From that instant the
+    // cross-surface guard no longer restricts the Tutor (same DB-clock
+    // predicate), so the system can no longer vouch that the Student
+    // remained unaided -- reject; never accept-and-downgrade, never extend.
+    // PRACTICE is unchanged.
+    if (quizSession.isExpired && quizSession.evidenceMode !== 'PRACTICE') {
+      return NextResponse.json(
+        { error: 'SESSION_EXPIRED', message: getMessages(quizSession.language)['quiz.sessionExpired'] },
+        { status: 410 }
+      );
     }
     const cachedQuestions = quizSession.questions;
     const language = quizSession.language;
@@ -1632,6 +1838,9 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // bucket -- the evidence row's difficulty is the mean of these
         // (aggregateEvidenceDifficulty), never a hardcoded constant.
         questionDifficulties: number[];
+        // D78: the BINARY correctness of each question (same order as questionDifficulties) --
+        // what metadata.practiceExposure.plusOneCorrect counts; never rubric partial credit.
+        questionCorrect: boolean[];
         // Phase 0E1: AI provenance for every free-text-graded question in
         // this concept's bucket -- which execution/provider/model/prompt
         // produced the grade. Empty for concepts graded only by the
@@ -1688,6 +1897,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         gradingConfidences: [],
         questionTypes: [],
         questionDifficulties: [],
+        questionCorrect: [],
         aiGrading: [],
         pedagogicalGrades: [],
         responseTimings: [],
@@ -1699,6 +1909,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       bucket.gradingConfidences.push(gradeResult.confidence);
       bucket.questionTypes.push(question.type);
       bucket.questionDifficulties.push(question.difficulty);
+      bucket.questionCorrect.push(gradeResult.correct === true);
       bucket.responseTimings.push({ questionIndex, timing });
       if ('aiExecution' in gradeResult && gradeResult.aiExecution) {
         bucket.aiGrading.push({ questionIndex, ...gradeResult.aiExecution });
@@ -1814,7 +2025,15 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       }
     }
 
-    const totalQuestions = validated.answers.length;
+    // BR-SCORE P1-01: for a correctness-gated canonical activity (PRACTICE / PROVE / RETAIN) the learner-visible
+    // score is correct / ADMINISTERED (an unanswered item stays in the denominator) -- the exact same value persisted
+    // below as the evidence's canonical scorePercent (resolveQuizConceptEvidenceScore). Other modes are unchanged.
+    const correctnessGated = isCorrectnessGatedActivity(quizSession.activityType, quizSession.quizMode);
+    const administeredByConcept = new Map<string, number>();
+    for (const q of cachedQuestions) {
+      if (q?.conceptId) administeredByConcept.set(q.conceptId, (administeredByConcept.get(q.conceptId) ?? 0) + 1);
+    }
+    const totalQuestions = correctnessGated ? Math.max(validated.answers.length, cachedQuestions.length) : validated.answers.length;
     const score = totalQuestions ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
     const conceptLabels = await getConceptLabels(Array.from(byConcept.keys()), language);
@@ -1894,7 +2113,19 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         // previous `bucket.correct`-based ratio silently defeated by
         // collapsing every question to a binary hit/miss before
         // averaging.
-        const conceptScore = transferGrading ? transferGrading.overallScore : Math.round((bucket.scoreSum / bucket.total) * 100);
+        // BR-SCORE P1-01 (supersedes CV2-07 for correctness-gated canonical stages ONLY): PRACTICE / PROVE / RETAIN
+        // evidence persists the binary correctness score the learner sees (correct / administered); the partial-credit
+        // rubric mean is preserved separately as metadata.rubricScorePercent and never gates. Every other quiz mode
+        // keeps the CV2-07 rubric mean unchanged.
+        const evidenceScore = resolveQuizConceptEvidenceScore({
+          activityType: quizSession.activityType,
+          quizMode: quizSession.quizMode,
+          correct: bucket.correct,
+          gradedTotal: bucket.total,
+          scoreSum: bucket.scoreSum,
+          administeredCount: administeredByConcept.get(conceptId),
+        });
+        const conceptScore = transferGrading ? transferGrading.overallScore : evidenceScore.scorePercent;
         // LX-4J / LX-1R evidence-consistency contract: the actual mean
         // generated difficulty of this concept's questions, never a
         // hardcoded constant. CANON-R5R1A: this SAME real value is also
@@ -2002,6 +2233,10 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
                 ? { competencyIds: quizSession.targetCompetencyIds }
                 : {}),
               ...(bucket.questionSemantics.length > 0 ? { questionSemantics: bucket.questionSemantics } : {}),
+              // BR-SCORE P1-01: the partial-credit rubric mean, preserved for analysis -- NEVER the gate score.
+              ...(!transferGrading && evidenceScore.scoreBasis === 'CORRECTNESS'
+                ? { scoreBasis: 'CORRECTNESS', rubricScorePercent: evidenceScore.rubricScorePercent }
+                : {}),
               // Phase 0E1: AI provenance for any free-text-graded question
               // in this concept's evidence -- additive, doesn't change the
               // meaning of any existing metadata field.
@@ -2031,6 +2266,29 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
                     // novelty marker) covering every administered item --
                     // the source of the engine's RawEvidenceItem.novel.
                     ...(isExactDuplicateNoveltyCertified(quizSession.v1Marker!.novelty, bucket.total) ? { novel: true } : {}),
+                  }
+                : {}),
+              // D78 -- a Practice / Reinforce session built for a per-level mix records the exposure it
+              // ACTUALLY carried (served levels + binary correctness of the base+1 items), which is what
+              // the engine's base rise reads. Absent for every pre-D78 session (legacy: no exposure).
+              ...(isAuthorizedConcept && quizSession.v1Marker!.practiceMix
+                ? {
+                    practiceExposure: computePracticeExposure(
+                      quizSession.v1Marker!.practiceMix.baseLevel,
+                      bucket.questionDifficulties.map((difficulty, i) => ({ difficulty, correct: bucket.questionCorrect[i] === true })),
+                      // D79/D80: the session's own practiceMixFallback record (a fallback is never advanced evidence)
+                      !!quizSession.v1Marker!.practiceMixFallback,
+                    ),
+                  }
+                : {}),
+              // D79 -- a PROVE built for a level mix records the level counts it ACTUALLY served, next to the planned mix.
+              ...(isAuthorizedConcept && quizSession.v1Marker!.proveMix
+                ? {
+                    proveLevelMix: {
+                      planned: quizSession.v1Marker!.proveMix.items,
+                      served: servedLevelCounts(bucket.questionDifficulties),
+                      reasonCode: quizSession.v1Marker!.proveMix.reasonCode,
+                    },
                   }
                 : {}),
               // CANON-V2-ARCH-CLEANUP Section 9/10/11 -- the REAL,
@@ -2214,7 +2472,10 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
             // call generateQuestionsForConcept directly for a verification
             // question, which would bypass the equivalence contract
             // entirely (the bug this fixes).
-            const variantResult = await generateQuestionVariant(originalQuestion, validated.studentId, quizSession.subjectId, language);
+            // A submission never generates a question (unchanged by the revised OE-014: generation belongs to the
+            // explicit start of a Learning activity, not to grading). The documented fallback below (re-ask the
+            // original question) is the only path here.
+            const variantResult = SUBMISSION_GENERATES_VARIANTS ? await generateQuestionVariant(originalQuestion, validated.studentId, quizSession.subjectId, language) : null;
 
             let verificationQuestion: GeneratedQuestion;
             let variantEquivalenceConfidence: number | null;
@@ -2463,30 +2724,7 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
         };
         canonicalResultsStatus = 'OK';
 
-        // CANON-R6-PERF-R2 Part 2 -- selective Prove pre-generation
-        // trigger. Fires AFTER this v1-qualifying submission's evidence
-        // was already written AND the fresh canonical decision (just
-        // computed above, the SOLE authority) confirms PROVE/EXECUTABLE.
-        // `after()` (Next.js's own supported mechanism for post-response
-        // background work, backed by Vercel's `waitUntil` in production
-        // -- no queue/job platform exists in this codebase, confirmed by
-        // audit) schedules the ENTIRE preparation pipeline to run once
-        // this response has already been sent -- the learner's own
-        // Practice Results response is never delayed by so much as one
-        // extra await. A background failure is caught entirely inside
-        // `prepareCanonicalProveActivity` itself (Part 14) and can never
-        // surface here or affect this response, which has already
-        // returned by the time it could.
-        // LEARNING_ACTIVITY_DELIVERY: an activity just finished and the
-        // canonical next action may have changed -- re-plan this learner's
-        // inventory (retire what no longer fits, assemble the next READY
-        // activity, top up the bank) after the response, in the language of
-        // the session just completed. Never on the learner's critical path.
-        {
-          const target = { studentId: validated.studentId, subjectId: quizSession.subjectId, conceptId: quizSession.conceptId! };
-          const replenishLanguage = quizSession.language;
-          after(() => scheduleDeliveryReplenishment(target, { language: replenishLanguage }).catch((err) => console.error('[activity-delivery] replenishment failed', err)));
-        }
+        // OE-014: a finished activity never asks for inventory replenishment. Supply is a Factory / Admin workflow.
       } catch (error) {
         if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;
         canonicalResultsStatus = 'CANONICAL_RESULTS_UNAVAILABLE';
@@ -2494,11 +2732,26 @@ async function handleSubmitQuiz(body: any, userId: string, role: UserRole) {
       }
     }
 
+    // BR-SCORE P1-01 / P2: the per-attempt canonical gate for the ONE authorized concept of a correctness-gated v1
+    // attempt -- the SAME correctness score persisted as that concept's evidence scorePercent, with the stage's own
+    // pass bar. The results headline and score read this; it never decides the next step (canonicalResults does).
+    const gateStage = toCorrectnessGatedStage(quizSession.v1Marker?.canonicalStage);
+    const gateBucket = quizSession.conceptId ? byConcept.get(quizSession.conceptId) : undefined;
+    const canonicalGate =
+      gateStage && gateBucket && authorizedResult?.v1Qualifies && correctnessGated
+        ? canonicalAttemptGate(gateStage, gateBucket.correct, Math.max(gateBucket.total, administeredByConcept.get(quizSession.conceptId!) ?? 0))
+        : null;
+    if (canonicalGate && authorizedResult && canonicalGate.scorePercent !== authorizedResult.score) {
+      // Structurally unreachable (both come from correctnessScorePercent over the same counts) -- logged, never hidden.
+      console.error('[br-score] CANONICAL_GATE_SCORE_MISMATCH', JSON.stringify({ quizId: validated.quizId, gate: canonicalGate.scorePercent, evidence: authorizedResult.score }));
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         quizId: validated.quizId,
         results: { score, correctCount, incorrectCount, totalQuestions },
+        canonicalGate,
         proveSufficiency,
         canonicalResults,
         canonicalResultsStatus,

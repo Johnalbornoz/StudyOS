@@ -6,7 +6,7 @@
  * persisted (score=100, correctCount=3, v1Qualifies=true) but the
  * canonicalResults returned by THAT SAME REQUEST does not reflect the
  * newly-written evidence (e.g. still reports stage=PRACTICE instead of
- * PROVE/EXECUTABLE once the 2-of-3 requirement is met).
+ * PROVE/EXECUTABLE once the Practice window requirement -- 3 of the last 3 since 2026-10-17 -- is met).
  *
  * FINDING: this specific defect could NOT be reproduced by static
  * analysis of the current code. Every relevant boundary was traced:

@@ -17,7 +17,20 @@ export async function resolveAvailableWorkspaces(userId: string): Promise<Worksp
   for (const grant of roles) {
     workspaces.add(workspaceForRole(grant.role));
   }
+  // Track A: the coordinator capability is live only while the account
+  // coordinates at least one ACTIVE institution (a removed coordinator, or
+  // one of a suspended institution, keeps the role row but no workspace).
+  if (workspaces.has('INSTITUTION') && !(await coordinatesAnActiveInstitution(userId))) workspaces.delete('INSTITUTION');
   return WORKSPACE_PRIORITY.filter((w) => workspaces.has(w));
+}
+
+async function coordinatesAnActiveInstitution(userId: string): Promise<boolean> {
+  const r = await db.query(
+    `SELECT 1 FROM institution_memberships im JOIN institutions i ON i.id = im.institution_id
+     WHERE im.user_id = $1 AND im.membership_role = 'INSTITUTION_ADMIN' AND im.status = 'APPROVED' AND i.status = 'ACTIVE' LIMIT 1`,
+    [userId]
+  );
+  return (r?.rows?.length ?? 0) > 0;
 }
 
 /** First available workspace by fixed priority (STUDENT > PARENT > TEACHER > INSTITUTION > ADMIN), or null if the user has no active role at all. */

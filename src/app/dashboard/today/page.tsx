@@ -1,6 +1,6 @@
+import { objectiveDisplayLabel } from '@/lib/exam-core/objectives/objective-display';
+import { examSessionLabel, storedExamSession } from '@/lib/exam-core/objectives/objective-session';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { after } from 'next/server';
-import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import Link from 'next/link';
 import { query } from '@/lib/db';
 import { getOrCreateStudentId } from '@/lib/auth';
@@ -15,9 +15,9 @@ import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
 import { deriveTodayState } from '@/lib/lx/today-view';
 import type { NextChallengeView } from '@/lib/experience/next-challenge';
-import { presentSnapshotNextChallenge, loadConceptNextChallenge } from '@/lib/experience/next-challenge.server';
+import { presentSnapshotNextChallenge, presentCanonicalContinuation, loadConceptNextChallenge } from '@/lib/experience/next-challenge.server';
 import { challengeVerb } from '@/lib/experience/vocabulary';
-import { selectGoalProfile, calendarDaysUntil } from '@/lib/experience/goal';
+import { activePreparationSummary, calendarDaysUntil } from '@/lib/experience/goal';
 import { InlineAlert } from '@/components/ui/InlineAlert';
 import { Section } from '@/components/ui/Section';
 import { StatTile } from '@/components/ui/StatTile';
@@ -26,6 +26,7 @@ import { activityCta } from '../activityCta';
 import StartSessionButton from '../StartSessionButton';
 import NextChallengeCard from '../NextChallengeCard';
 import SubjectSwitcher from '../SubjectSwitcher';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 
 /**
  * UX-2 Home ("Hoy") -- an action-first entry point over the SAME
@@ -81,7 +82,7 @@ function PlanRow({
             <span className="xp-row-verb">{view.activityType === 'RETENTION_CHECK' ? t['today.retentionEyebrow'] : challengeVerb(view.challenge, t)}</span>
           )}
           {view.status === 'READY' && <span>{activityLabel(view.activityType, t)}</span>}
-          {info?.subjectName && <span>{info.subjectName}</span>}
+          {info?.subjectName && <span>{localizeSubjectName(info.subjectName, locale)}</span>}
         </div>
       </div>
       <div className="xp-row-action">
@@ -161,8 +162,10 @@ export default async function TodayPage() {
       .catch(() => null),
   ]);
   const noConceptYet = !!mySubjects && mySubjects.length > 0 && mySubjects.every((sub) => !sub.has_concepts);
-  const goalProfile = selectGoalProfile(examProfiles, todayIso);
-  const goalDefinition = goalProfile ? await getExamDefinition(goalProfile.examDefinitionId).catch(() => null) : null;
+  // T1 final delta (F): the exam-preparation context (never "the" objective when there are several preparations).
+  const preparations = activePreparationSummary(examProfiles, todayIso);
+  const goalProfile = preparations.primary;
+  const goalDefinition = goalProfile?.examDefinitionId ? await getExamDefinition(goalProfile.examDefinitionId).catch(() => null) : null;
 
   const caminoItems = (horizon?.items ?? []).slice(0, 4);
   const caminoLabels = caminoItems.length
@@ -175,17 +178,22 @@ export default async function TodayPage() {
   const todayFormatted = new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
 
   const best = snapshot?.nextExecutableItem ?? null;
-  const bestLabel = best ? snapshot!.conceptLabels.get(best.decision.actionConceptId) : null;
+  // C14-P1-03: when Phase 3C has nothing executable, a Learning concept it cannot see yet (only LEARN evidence,
+  // no Knowledge State row) whose canonical launch is executable is still the Student's next step -- never
+  // "Estás al día". Under the canonical gate only (lib/lx/canonical-continuation.ts).
+  const continuation = !best ? snapshot?.canonicalContinuations?.[0] ?? null : null;
+  const primaryConceptId = best?.decision.actionConceptId ?? continuation?.conceptId ?? null;
+  const bestLabel = primaryConceptId ? snapshot!.conceptLabels.get(primaryConceptId) : null;
   // UX-2: the hero is presented from the canonical launch for this
   // concept (the snapshot's own `canonicalOverride`, computed with the
   // same function /api/learning/session/start runs) whenever the
   // canonical gate is on -- never from the legacy `activityType`, which
   // could name a different activity than the one the button launches.
-  const hero = snapshot ? presentSnapshotNextChallenge(snapshot) : null;
+  const hero = snapshot ? presentSnapshotNextChallenge(snapshot) ?? (continuation ? presentCanonicalContinuation(continuation) : null) : null;
   const heroHasAction = !!hero && (hero.status === 'READY' || hero.status === 'WAITING');
 
   // LX-6: a failed read is never "empty" -- it's unresolved (see below).
-  const isEmpty = !snapshotReadFailed && (!snapshot || snapshot.decisions.length === 0);
+  const isEmpty = !snapshotReadFailed && (!snapshot || (snapshot.decisions.length === 0 && !continuation));
 
   // Step 6L-A: a brand-new/cold profile with no evidence yet is a
   // different, calmer state than "caught up". A plain existence check
@@ -199,9 +207,7 @@ export default async function TodayPage() {
 
   const todayState = deriveTodayState({ snapshotReadFailed, hasPrimaryAction: heroHasAction, isColdProfile: isCold });
   if (todayState === 'NEXT_ACTION_AVAILABLE' && best) {
-    // LEARNING_ACTIVITY_DELIVERY -- the primary action is one tap away: keep it READY.
-    const replenishTarget = { studentId, subjectId: best.decision.subjectId, conceptId: best.decision.actionConceptId };
-    after(() => scheduleDeliveryReplenishment(replenishTarget).catch((err) => console.error('[activity-delivery] replenishment failed', err)));
+    // OE-011: rendering Today is read-only. It never queues inventory replenishment or generation.
     logToday('TODAY_PRIMARY_ACTION_RENDERED', {
       activityType: hero?.status === 'READY' ? hero.activityType : null,
       authority: hero?.authority ?? null,
@@ -209,6 +215,12 @@ export default async function TodayPage() {
       conceptId: best.decision.actionConceptId,
       subjectId: best.decision.subjectId,
       reasonCode: best.decision.reasonCode,
+    });
+  } else if (todayState === 'NEXT_ACTION_AVAILABLE' && continuation) {
+    logToday('TODAY_CANONICAL_CONTINUATION_RENDERED', {
+      activityType: hero?.status === 'READY' ? hero.activityType : null,
+      conceptId: continuation.conceptId,
+      subjectId: continuation.subjectId,
     });
   } else if (todayState === 'UNRESOLVED') {
     logToday('TODAY_UNRESOLVED');
@@ -239,10 +251,17 @@ export default async function TodayPage() {
   const deferred = snapshot?.dailyPlan.deferred ?? [];
 
   const firstName = user?.firstName?.trim();
-  const goalName = goalDefinition?.name ?? null;
+  // Objective first: a catalogue-only objective has no exam definition, only its governed objective label.
+  // (G) catalogue label in the interface locale; official programme / test names stay as published.
+  const goalName = objectiveDisplayLabel(goalProfile?.objectiveKey, locale) ?? goalDefinition?.name ?? null;
   const goalDays = goalProfile?.examDate ? calendarDaysUntil(goalProfile.examDate, todayIso) : null;
+  const goalSession = goalProfile ? storedExamSession(goalProfile) : null;
   const goalWhen =
-    goalDays === null ? null : goalDays === 0 ? t['xp.goalToday'] : goalDays === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(goalDays));
+    goalDays !== null && goalDays >= 0
+      ? goalDays === 0 ? t['xp.goalToday'] : goalDays === 1 ? t['xp.goalTomorrow'] : t['xp.goalDaysLeft'].replace('{days}', String(goalDays))
+      : goalSession ? examSessionLabel(goalSession, locale) : null;
+  const tx = t as Record<string, string>;
+  const learningSubjectId = best?.decision.subjectId ?? continuation?.subjectId ?? (mySubjects?.length === 1 ? mySubjects[0].id : null);
 
   // A hero concept with nothing executable right now (canonical
   // CONSOLIDATED / BLOCKED / zero-gap) shows the calm card only when
@@ -257,10 +276,12 @@ export default async function TodayPage() {
         <h1>{firstName ? t['xp.greeting'].replace('{name}', firstName) : t['xp.greetingNoName']}</h1>
         <p className="xp-tagline">{t['xp.tagline']}</p>
         {mySubjects && mySubjects.length > 0 && (
-          <div className="xp-subjects">
+          <div className="xp-subjects" data-home-learning>
+            {/* F: the LEARNING context, named apart from any exam preparation. */}
+            {learningSubjectId ? <span className="xp-context-label">{tx['acp.home.learningNow']}</span> : null}
             <SubjectSwitcher
-              subjects={mySubjects.map(({ id, name }) => ({ id, name }))}
-              currentId={best?.decision.subjectId ?? (mySubjects.length === 1 ? mySubjects[0].id : null)}
+              subjects={mySubjects.map(({ id, name }) => ({ id, name: localizeSubjectName(name, locale) }))}
+              currentId={learningSubjectId}
               label={t['ss.label']}
               placeholder={t['ss.placeholder']}
               addLabel={t['ss.add']}
@@ -268,9 +289,11 @@ export default async function TodayPage() {
           </div>
         )}
         {goalProfile && goalName && (
-          <Link href={`/dashboard/exam-prep/${goalProfile.id}`} className="xp-goal">
-            <span>{t['xp.goalLabel']}</span>
+          <Link href={preparations.activeCount > 1 ? '/dashboard/exam-prep' : `/dashboard/exam-prep/${goalProfile.id}`} className="xp-goal" data-home-preparation>
+            {/* F: the EXAM-PREPARATION context. Several preparations are never shown as one single objective. */}
+            <span>{preparations.activeCount > 1 ? tx['acp.home.activePreps'] : tx['acp.home.activePrep']}</span>
             <strong>{goalName}</strong>
+            {preparations.activeCount > 1 ? <span>{tx['acp.home.morePreps'].replace('{n}', String(preparations.activeCount - 1))}</span> : null}
             {goalWhen && <span className="xp-goal-when">{goalWhen}</span>}
           </Link>
         )}
@@ -293,15 +316,15 @@ export default async function TodayPage() {
         />
       ) : (
         <>
-          {best && hero && showHero && (
+          {primaryConceptId && hero && showHero && (
             <NextChallengeCard
               view={hero}
-              conceptLabel={bestLabel?.label ?? best.decision.actionConceptId}
-              subjectName={bestLabel?.subjectName ?? ''}
+              conceptLabel={bestLabel?.label ?? primaryConceptId}
+              subjectName={bestLabel?.subjectName ? localizeSubjectName(bestLabel.subjectName, locale) : ''}
               studentId={studentId}
               t={t}
               locale={locale}
-              legacyMinutes={best.estimatedMinutes}
+              legacyMinutes={best?.estimatedMinutes ?? null}
               launchMark="TODAY_PRIMARY_ACTION_LAUNCHED"
             />
           )}
@@ -332,7 +355,7 @@ export default async function TodayPage() {
             </section>
           )}
 
-          {!isEmpty && !best && (
+          {!isEmpty && !best && !continuation && (
             // Decisions exist but none is executable right now (Phase 3D's
             // own answer) -- a calm, explicit state, never a blank page.
             <section className="xp-hero xp-hero--calm" aria-labelledby="xp-caught-up-title">
@@ -396,7 +419,7 @@ export default async function TodayPage() {
                         <Link href={`/dashboard/subjects/${d.decision.subjectId}/concepts/${d.decision.actionConceptId}`} className="xp-row-title">
                           {info?.label ?? d.decision.actionConceptId}
                         </Link>
-                        {info?.subjectName && <div className="xp-row-meta"><span>{info.subjectName}</span></div>}
+                        {info?.subjectName && <div className="xp-row-meta"><span>{localizeSubjectName(info.subjectName, locale)}</span></div>}
                       </div>
                     </li>
                   );
@@ -411,7 +434,7 @@ export default async function TodayPage() {
           competes with the primary action, never its own decision
           authority (read-only over the existing 8B plan horizon). */}
       {caminoItems.length > 0 && (
-        <Section id="xp-camino" title={t['plan8.pathTitle']} action={<Link href="/dashboard/study-plan" className="ui-link">{t['plan8.viewFull']}</Link>}>
+        <Section id="xp-camino" title={t['plan8.pathTitle']} action={<Link href="/dashboard/plan?tab=schedule" className="ui-link">{t['plan8.viewFull']}</Link>}>
           <ul className="xp-list">
             {caminoItems.map((it) => {
               const info = it.conceptId ? caminoLabels.get(it.conceptId) : null;
@@ -428,7 +451,7 @@ export default async function TodayPage() {
                     <span className="xp-row-title">{info?.label ?? it.conceptId ?? ''}</span>
                     <div className="xp-row-meta">
                       <span style={bucket === 'OVERDUE' ? { color: 'var(--warning)', fontWeight: 600 } : undefined}>{dayLabel}</span>
-                      {info?.subjectName && <span>{info.subjectName}</span>}
+                      {info?.subjectName && <span>{localizeSubjectName(info.subjectName, locale)}</span>}
                       <span>{t[planItemWhyKey(it.reasonCode) as keyof typeof t]}</span>
                     </div>
                   </div>

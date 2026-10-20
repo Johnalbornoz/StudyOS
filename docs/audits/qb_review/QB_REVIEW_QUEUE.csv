@@ -1,0 +1,261 @@
+priority,item_id,exam_family,subject,component,item_type,stimulus,question,options,proposed_canonical_answer,independent_solver_answer,solution,objective,intended_difficulty,actual_difficulty,tier_fit,direction,answer_match,answer_confidence,construct_fit,authenticity,distractor_quality,validator_flags,reason_for_escalation
+P1,v2.cambridge.0580-extended/p4/cie.p4.structured#0/004#1,CAMBRIDGE,Mathematics (0580),Paper 4 (calculator),SHORT_RESPONSE,"A triangular garden has side lengths 18 m, 23 m and 27 m. The angle between the 18 m side and the 23 m side is angle BAC, so that the side opposite angle BAC is 27 m. A circular pond is built inside the garden and touches all three sides of the garden. Give non-integer answers correct to 3 significant figures.","(a) Calculate angle BAC.
+
+(b) Calculate the area of the triangular garden.
+
+(c) Calculate the percentage of the garden's area that is not covered by the pond.",,(a) 81.4°; (b) 205 m²; (c) 44.4%,(a) 81.4°; (b) 205 m²; (c) 44.4%,"(a) Using the cosine rule,
+cos BAC = (18² + 23² − 27²)/(2 × 18 × 23)
+= 124/828.
+Therefore BAC = cos⁻¹(124/828) = 81.4°.
+
+(b) Area of the garden = 1/2 × 18 × 23 × sin 81.387...
+= 204.666... m²
+= 205 m² to 3 significant figures.
+
+(c) Let r be the radius of the pond. Since the pond touches all three sides, the garden can be split into three triangles with height r. Therefore
+204.666... = 1/2 × r × (18 + 23 + 27).
+So r = 2 × 204.666.../68 = 6.01958... m.
+
+Area of pond = πr² = π × 6.01958...² = 113.837... m².
+
+Percentage not covered by the pond
+= (204.666... − 113.837...)/204.666... × 100
+= 44.379...%
+= 44.4%.",v2.cambridge.0580-extended/p4/cie.p4.structured#0,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,WEAK,MEDIUM,NOT_APPLICABLE,,"CONSTRUCT_WEAK: The item is a sound three-part chain (cosine rule, then area, then incircle ratio) with a plausible garden setting. However, the pond is only said to touch all three sides, so part (c) needs the incircle radius r = Area/s, a step that is not signposted and not strictly IGCSE-standard. The context can be reduced to a bare triangle without changing the working, so it is decorative. Part (a) also gives the angle a name that does not match the usual vertex labelling, and 5 marks across three parts is thin for the reasoning demanded."
+P1,v2.ib.math-aa-hl/p1/aahl.p1.functions#0/004#0,IB,Mathematics: analysis and approaches,P1,SHORT_RESPONSE,"The function f is defined by f(x) = (x + 1)/(x − 2), with domain x > 2. Let f⁻¹ denote its inverse function.","Find, in exact form, the solution set of f(x) + f⁻¹(x) ≤ 5. Show sufficient working to justify the domain used.",,"x ∈ [3 + √10/2, ∞)","x ≥ 3 + √10/2, i.e. the solution set is [3 + √10/2, ∞) = [(6+√10)/2, ∞)","Let y = (x + 1)/(x − 2). Then yx − 2y = x + 1, so x(y − 1) = 2y + 1 and therefore f⁻¹(x) = (2x + 1)/(x − 1).
+
+Since f(x) = 1 + 3/(x − 2) and x > 2, the range of f is x > 1. Thus f⁻¹ has domain x > 1. For f(x) + f⁻¹(x) to be defined, x must satisfy both x > 2 and x > 1, so x > 2.
+
+For x > 2, both x − 2 and x − 1 are positive. Hence
+f(x) + f⁻¹(x) = (x + 1)/(x − 2) + (2x + 1)/(x − 1)
+= ((x + 1)(x − 1) + (2x + 1)(x − 2))/((x − 2)(x − 1))
+= (3x² − 3x − 3)/((x − 2)(x − 1)).
+
+Therefore,
+(3x² − 3x − 3)/((x − 2)(x − 1)) ≤ 5.
+
+Because the denominator is positive for x > 2,
+3x² − 3x − 3 ≤ 5(x − 2)(x − 1),
+so
+2x² − 12x + 13 ≥ 0.
+
+The roots are
+x = (12 ± √40)/4 = 3 ± √10/2.
+Since the quadratic has positive leading coefficient,
+ x ≤ 3 − √10/2 or x ≥ 3 + √10/2.
+
+Intersecting this with x > 2 gives
+x ∈ [3 + √10/2, ∞).",v2.ib.math-aa-hl/p1/aahl.p1.functions#0,CHALLENGE,STANDARD,BORDERLINE,TOO_EASY,JUDGED_EQUIVALENT,HIGH,PASS,MEDIUM,NOT_APPLICABLE,,"AUTHENTICITY_MEDIUM: Working it through: f(x)=(x+1)/(x-2) is self-inverse, since y=(x+1)/(x-2) gives x=(2y+1)/(y-1), which is the same form. The domain x>2 gives range y>1, so f⁻¹ has domain x>1 and range x>2, and f⁻¹(x)=(2x+1)/(x-1) is not the same function as f. The inequality must therefore be solved on x>2, where both functions are defined. It reduces to a rational inequality with quadratic factors and yields an exact solution set with surds, which requires choosing a method, reasoning about domain and range, and combining inverses with inequalities. That is a fair HL P1 task, and the 'show working to justify the domain' prompt rewards communicable reasoning. The weakness is a possible slip: the domain restriction makes f map (2,∞) to (1,∞), so f⁻¹ is f with a different domain, which is subtle but legitimate. The 'find' command term is slightly light for 9 marks, but acceptable."
+P1,v2.paa/matematicas/paa.mat.algebra#0/010#0,PAA,Matemáticas,MATEMATICAS,NUMERIC_ENTRY,"Una empresa de mensajería cobra una cuota de preparación y el mismo importe por cada kilómetro recorrido. En dos envíos se registraron estos cobros:
+
+| Distancia recorrida | Cobro total |
+|---|---:|
+| 3 km | 89 pesos |
+| 7 km | 141 pesos |
+
+Otra empresa no cobra cuota de preparación y cobra 17 pesos por cada kilómetro recorrido.","¿A qué distancia, en kilómetros, los cobros totales de ambas empresas son iguales?",,12.5,12.5 km,"Entre los dos registros de la primera empresa, el cobro aumenta 141 − 89 = 52 pesos cuando la distancia aumenta 7 − 3 = 4 km. Por tanto, el importe por kilómetro es 52/4 = 13 pesos.
+
+En un envío de 3 km, esos kilómetros representan 3 × 13 = 39 pesos, así que la cuota de preparación es 89 − 39 = 50 pesos. El cobro de la primera empresa para una distancia d es, entonces, 50 + 13d, mientras que el de la segunda es 17d.
+
+Al igualarlos: 50 + 13d = 17d, de donde 50 = 4d y d = 12.5. La distancia es 12.5 km.",v2.paa/matematicas/paa.mat.algebra#0,CHALLENGE,STANDARD,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,PASS,MEDIUM,NOT_APPLICABLE,,"AUTHENTICITY_MEDIUM: The learner must derive the linear model from two data points (slope 13 pesos/km, fixed fee 50 pesos), then equate it with 17x, giving 50 + 13x = 17x and x = 12.5 km. The relationship is never stated as a formula, and the setup requires structural reasoning, which fits the algebra/variation construct. It is open response, so there are no options to audit. The context carries the reasoning, though the arithmetic is light and the item is fairly standard; the non-integer result (12.5 km) is plausible for a distance."
+P1,v2.paa/matematicas/paa.mat.aritmetica#0/001#0,PAA,Matemáticas,MATEMATICAS,SELECTED_RESPONSE,"En una jornada de orientación universitaria, 2/7 de las personas asistentes llegaron en transporte público. De las demás personas, 2/5 llegaron caminando y el resto llegó en vehículo particular. Hubo 22 personas más en vehículo particular que en transporte público.",¿Cuántas personas asistieron en total a la jornada?,A. 70 personas | B. 110 personas | C. 154 personas | D. 770 personas,C,C,"Si el total de asistentes es n, la fracción que llegó en transporte público es 2/7. Por tanto, queda 5/7 del total. De ese grupo, 2/5 caminó, así que la fracción que llegó en vehículo particular es (5/7)*(1-2/5) = (5/7)*(3/5) = 3/7. La diferencia entre quienes llegaron en vehículo particular y quienes llegaron en transporte público es 3/7 - 2/7 = 1/7 del total. Como esa diferencia es de 22 personas, n/7 = 22 y n = 154. La respuesta correcta es C.",v2.paa/matematicas/paa.mat.aritmetica#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: Let T be the total. Public transport = 2/7 T; the rest = 5/7 T; walking = 2/5 of that = 2/7 T; private vehicle = 3/5 of 5/7 T = 3/7 T. The difference is 1/7 T = 22, so T = 154, which is option C. The solver must build the equation from nested fractions and compare parts, which fits the construct of setting up an unstated relationship and reasoning about structure. Distractors are plausible: 70 and 110 come from misreading the fractions, and 770 from 22 × 35 (multiplying by the product of the denominators). The context is thin but it carries the reasoning, and the item is not a plain formula substitution. Quality is good, though the arithmetic is light."
+P1,v2.paa/matematicas/paa.mat.aritmetica#0/010#0,PAA,Matemáticas,MATEMATICAS,NUMERIC_ENTRY,"Al inicio de una campaña de recaudación, las aportaciones en efectivo y las aportaciones electrónicas estaban en razón 2:3. Antes del cierre, se devolvió el 20% de lo recaudado en efectivo y se recibieron 24 pesos adicionales mediante aportaciones electrónicas. Al cierre, la razón entre lo recaudado en efectivo y lo recaudado electrónicamente era 1:2.",¿Cuál era el total recaudado al inicio de la campaña? Escribe solo el número.,,600,600,"Representa las aportaciones iniciales como 2k en efectivo y 3k electrónicamente; por tanto, el total inicial era 5k. Después de devolver el 20% del efectivo, queda el 80%, es decir, (4/5)(2k)=8k/5. Las aportaciones electrónicas finales son 3k+24. Como la razón final efectivo:electrónico es 1:2, la cantidad electrónica final debe ser el doble de la efectiva: 3k+24=2(8k/5). Entonces 24=16k/5−3k=k/5, de donde k=120. El total inicial era 5k=600 pesos.",v2.paa/matematicas/paa.mat.aritmetica#0,CHALLENGE,STANDARD,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,PASS,MEDIUM,NOT_APPLICABLE,,"AUTHENTICITY_MEDIUM: Solving: cash 2k, electronic 3k; after the changes cash is 1.6k and electronic is 3k+24, with 1.6k:(3k+24)=1:2, so 3.2k=3k+24, k=120, total 600. The learner must build the equation from ratios and percentage changes and no formula is given, so the item fits the 'set up a relationship' move; it is open response, so there are no options to audit. The context (cash vs electronic contributions) is thin but the quantities are reasoned about; the arithmetic is light and the difficulty comes from the setup, which is acceptable for PAA."
+P1,v2.paa/matematicas/paa.mat.datos#0/001#0,PAA,Matemáticas,MATEMATICAS,SELECTED_RESPONSE,"Una clínica registró, en ocho turnos comparables, el tiempo de espera de pacientes antes y después de cambiar su sistema de asignación de citas.
+
+| Turno | Antes (minutos) | Después (minutos) |
+|---|---:|---:|
+| 1 | 20 | 17 |
+| 2 | 25 | 22 |
+| 3 | 30 | 27 |
+| 4 | 35 | 32 |
+| 5 | 25 | 22 |
+| 6 | 30 | 27 |
+| 7 | 35 | 32 |
+| 8 | 20 | 17 |",¿Cuál afirmación es necesariamente verdadera al comparar los tiempos de espera antes y después del cambio?,"A. La media y la mediana disminuyeron 3 minutos, y el rango permaneció igual. | B. La media disminuyó 3 minutos, la mediana permaneció igual y el rango permaneció igual. | C. La media permaneció igual, la mediana disminuyó 3 minutos y el rango permaneció igual. | D. La media y la mediana disminuyeron 3 minutos, y el rango disminuyó 3 minutos.",A,A,"En cada turno, el tiempo después del cambio es 3 minutos menor que el tiempo antes. Por tanto, al ordenar los datos, todos los valores disminuyen en 3 minutos.
+
+Antes, los datos ordenados son 20, 20, 25, 25, 30, 30, 35, 35. Su media es 220/8 = 27.5 y su mediana es (25 + 30)/2 = 27.5. Después, los datos ordenados son 17, 17, 22, 22, 27, 27, 32, 32. Su media es 196/8 = 24.5 y su mediana es (22 + 27)/2 = 24.5. Ambas disminuyen 3 minutos.
+
+El rango antes es 35 - 20 = 15 minutos y después es 32 - 17 = 15 minutos. Al restar la misma cantidad a todos los datos, el rango no cambia. Por lo tanto, la afirmación correcta es la A.",v2.paa/matematicas/paa.mat.datos#0,STANDARD,FOUNDATIONAL,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,WEAK,MEDIUM,PASS,,"CONSTRUCT_WEAK: Each 'después' value is exactly 3 less than 'antes', so a shift-invariance argument settles it: mean and median fall by 3 and range is unchanged (15 in both). The item rewards structural reasoning rather than computing, and the distractors correspond to plausible errors (shift affects range, mean/median differ). However, the tabulated values make direct computation of all three statistics easy, so the structural insight is optional, and the context could be swapped for any paired data without changing the reasoning, which weakens the fit."
+P1,v2.paa/matematicas/paa.mat.geometria#0/004#1,PAA,Matemáticas,MATEMATICAS,NUMERIC_ENTRY,"Para diseñar un refuerzo triangular, se utiliza el triángulo rectángulo ABC, cuyo ángulo recto está en A. Desde A se traza la perpendicular AD al lado BC, con D sobre BC. Se sabe que BD = 9 cm y DC = 16 cm. En el lado AB se ubica el punto E de modo que AE = AD. El segmento ED divide el triángulo ABC en el cuadrilátero AECD y el triángulo BED.",¿Qué fracción del área del triángulo ABC representa el área del cuadrilátero AECD? Escribe la fracción simplificada.,,116/125,116/125,"Como AD es la altura relativa a la hipotenusa, los triángulos ABD, ADC y ABC son semejantes. De esa semejanza se obtiene AD² = BD·DC, por lo que AD² = 9·16 = 144 y AD = 12 cm. También AB² = BD·BC. Como BC = 9 + 16 = 25 cm, AB² = 9·25 = 225 y AB = 15 cm.
+
+Puesto que AE = AD, AE = 12 cm; entonces BE = AB − AE = 15 − 12 = 3 cm. Los triángulos BED y BAD tienen la misma altura desde D hasta AB, así que sus áreas están en la razón BE:BA = 3:15 = 1:5. Además, los triángulos ABD y ABC tienen la misma altura desde A hasta BC, por lo que sus áreas están en la razón BD:BC = 9:25. Por tanto, el área de BED representa (1/5)(9/25) = 9/125 del área de ABC.
+
+El cuadrilátero AECD es la parte restante del triángulo ABC, así que su fracción del área es 1 − 9/125 = 116/125.",v2.paa/matematicas/paa.mat.geometria#0,CHALLENGE,CHALLENGE,YES,MATCH,CONFIRMED,HIGH,PASS,MEDIUM,NOT_APPLICABLE,,"AUTHENTICITY_MEDIUM: Solving requires deriving AD=12 from the altitude relation, AB=15, AC=20, then relating areas of BED to ABC via BE=3 and sharing the angle at B; the stem gives no formula, so the item demands setting up relationships and structural reasoning. A problem: the quadrilateral is named AECD, but E is on AB and D on BC, so the region cut off by ED is AEDC (vertices A, E, D, C), a labeling slip that is minor. Answer: BED/ABC = (BE·BD)/(BA·BC) = (3·9)/(15·25) = 9/125, so AECD = 116/125. Open response, so no distractors to audit."
+P1,v2.pisa.2022/math/pisa.cambio.formular#0/001#0,PISA,Matemáticas,MATHEMATICS,SELECTED_RESPONSE,"Un huerto comunitario recoge agua de lluvia en un depósito. A las 8:00, el depósito contiene 360 L. Durante cada intervalo, los cambios son los siguientes:
+
+| Intervalo | Agua que entra por lluvia | Agua usada por las plantas | Agua que extrae la bomba |
+|---|---:|---:|---:|
+| 8:00–8:30 | 12 L/min | 5 L/min | 0 L/min |
+| 8:30–8:50 | 0 L/min | 5 L/min | 9 L/min |
+
+El depósito no rebosa y la bomba empieza a funcionar exactamente a las 8:30.",¿Cuál de los siguientes cálculos representa el volumen de agua que hay en el depósito a las 8:50?,A. 360 + (12 − 5) × 30 − (5 + 9) × 20 = 290 L | B. 360 + (12 − 5) × 30 − 9 × 20 = 390 L | C. 360 + 12 × 30 − (5 + 9) × 20 = 440 L | D. 360 + (12 − 5) × 30 − (9 − 5) × 20 = 490 L,A,A,"Entre las 8:00 y las 8:30, entran 12 L/min y se usan 5 L/min, así que el aumento neto es de 7 L/min durante 30 minutos: 7 × 30 = 210 L. Por tanto, a las 8:30 hay 360 + 210 = 570 L.
+
+Entre las 8:30 y las 8:50 no entra agua de lluvia. Se usan 5 L/min y la bomba extrae 9 L/min, por lo que salen 14 L/min durante 20 minutos: 14 × 20 = 280 L. Quedan 570 − 280 = 290 L. Por eso la opción correcta es A.",v2.pisa.2022/math/pisa.cambio.formular#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: The item requires the candidate to build a model of net flow per interval from a table (inflow minus plant use, then pump plus plant use as outflow) and pick the correct expression, which is genuine formulation and the situation drives the reasoning. Weaknesses are that it is a multiple-choice item that essentially asks for a single expression and the arithmetic is light, and option A is correct (360+210-280=290) while the distractors map to plausible misreadings, so it fits. It does not require interpreting the result back in the situation, but formulation is the claimed move and it is met."
+P1,v2.pisa.2022/math/pisa.cambio.razonar#0/001#0,PISA,Matemáticas,MATHEMATICS,SELECTED_RESPONSE,"Un centro juvenil quiere informar sobre unas becas a estudiantes de la zona. Necesita que, al terminar el cuarto día, el aviso haya llegado a por lo menos 500 estudiantes diferentes. No se cuenta dos veces a un estudiante alcanzado en días distintos.
+
+El equipo puede elegir uno de estos planes. En ambos, el número indicado para el primer día es el de estudiantes nuevos alcanzados ese día.
+
+| Plan | Primer día | Cómo cambia el número de estudiantes nuevos cada día |
+|---|---:|---|
+| A | 64 | Aumenta en 20 respecto del día anterior |
+| B | 64 | Es 3/2 del número del día anterior |
+
+",¿Qué plan debe elegir el centro para alcanzar su objetivo al terminar el cuarto día?,A. El plan A: 144 estudiantes; no alcanza el objetivo. | B. El plan A: 376 estudiantes; no alcanza el objetivo. | C. El plan B: 520 estudiantes; sí alcanza el objetivo. | D. El plan B: 384 estudiantes; no alcanza el objetivo.,C,C,"Hay que sumar los estudiantes nuevos de los cuatro días, porque no se cuenta solo el número del cuarto día.
+
+En el plan A se alcanzan 64, 84, 104 y 124 estudiantes por día. El total es 64 + 84 + 104 + 124 = 376, que es menor que 500.
+
+En el plan B se alcanzan 64, 96, 144 y 216 estudiantes por día, ya que cada número es 3/2 del anterior. El total es 64 + 96 + 144 + 216 = 520, que es al menos 500. Por tanto, debe elegir el plan B.",v2.pisa.2022/math/pisa.cambio.razonar#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: Plan A: 64, 84, 104, 124 sum to 376. Plan B: 64, 96, 144, 216 sum to 520, so B reaches 500 and the key C is correct and unique. The task needs the student to model arithmetic vs geometric growth and then interpret cumulative totals against a threshold. The 'no double counting' condition is what makes summing valid. The weakness is that it is a fairly standard sequence-sum exercise with modest context dependence; the distractors (144 is the day-3 value of B, 384 is a plausible slip) are reasonable but the computation is short."
+P1,v2.pisa.2022/math/pisa.espacio.emplear#0/004#0,PISA,Matemáticas,MATHEMATICS,SHORT_RESPONSE,"En un plano a escala 1:250 aparece un recinto para plantas medicinales. Su contorno está formado por un rectángulo de 6 cm de largo y 4 cm de ancho, con un semicírculo exterior cuyo diámetro coincide con uno de los lados de 6 cm. El lado recto de 6 cm que queda frente al semicírculo coincide completamente con un muro del patio. En uno de los lados de 4 cm hay una entrada de 1 cm de ancho. Se colocará un borde alrededor de todos los límites del recinto, excepto junto al muro y en la entrada. Usa π = 3,14.",¿Cuántos metros de borde se necesitan? Escribe tu respuesta.,,"41,05 m","41,05 m","El lado de 6 cm que coincide con el muro no necesita borde, y la entrada de 1 cm tampoco. De los lados rectos solo se cuentan 4 + 4 - 1 = 7 cm. El semicírculo sustituye al otro lado de 6 cm; su arco mide 3,14*6/2 = 9,42 cm. En el plano se necesitan 7 + 9,42 = 16,42 cm de borde. Como la escala es 1:250, cada centímetro representa 2,5 m: 16,42*2,5 = 41,05 m.",v2.pisa.2022/math/pisa.espacio.emplear#0,CHALLENGE,STANDARD,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,WEAK,MEDIUM,NOT_APPLICABLE,,"CONSTRUCT_WEAK: The item asks for the border length around a rectangle-plus-semicircle plan, leaving out the wall side and a 1 cm entrance, with a 1:250 scale. The solver does have to read the geometry (semicircle arc, excluded wall side, entrance on a 4 cm side) and convert the scale, so some formulation is needed. But it reduces to a single linear chain of perimeter arithmetic: arc 3π plus 4 + 3 = 10.14 cm, times 250 = 25.35 m. There is no interpretation or evaluation of the result back in the situation, and the 'garden' context is largely decorative, so it reads as a curriculum perimeter exercise with a story attached."
+P1,v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0/003#1,PISA,Ciencias,SCIENCE,NUMERIC_ENTRY,"Una investigadora quiere comprobar si una pintura reflectante reduce la temperatura interior de un aula. Durante cinco días, a la misma hora, comparó un aula con la pintura (A) con otra aula semejante sin pintura (B). Antes de comenzar, estableció que solo usaría una comparación diaria si la diferencia entre las temperaturas exteriores junto a las dos aulas era de 1,0 °C o menos; así se evita atribuir a la pintura una diferencia causada por el ambiente exterior.
+
+| Día | Exterior junto a A (°C) | Exterior junto a B (°C) | Interior A con pintura (°C) | Interior B sin pintura (°C) |
+|---|---:|---:|---:|---:|
+| 1 | 31,0 | 30,2 | 25,4 | 27,6 |
+| 2 | 29,5 | 28,9 | 24,8 | 26,4 |
+| 3 | 30,1 | 31,4 | 25,3 | 27,2 |
+| 4 | 27,8 | 27,0 | 23,9 | 25,5 |
+| 5 | 26,2 | 27,4 | 23,6 | 25,6 |
+
+La reducción de temperatura de un día se calcula como la temperatura del aula B menos la del aula A.","Según la regla establecida antes de recoger los datos, ¿cuál es la reducción media de temperatura, en °C, que puede atribuirse a la pintura? Escribe solo el valor numérico.",,1.8,"1,8","Primero se incluyen solo los días en que la diferencia de temperatura exterior es como máximo 1,0 °C. Son válidos los días 1, 2 y 4; los días 3 y 5 se excluyen porque sus diferencias son 1,3 °C y 1,2 °C.
+
+Las reducciones válidas son: día 1, 27,6 − 25,4 = 2,2 °C; día 2, 26,4 − 24,8 = 1,6 °C; día 4, 25,5 − 23,9 = 1,6 °C. La media es (2,2 + 1,6 + 1,6) / 3 = 1,8 °C.",v2.pisa.2022/science/pisa.sci.evaluate.epistemic#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,WEAK,MEDIUM,NOT_APPLICABLE,,"CONSTRUCT_WEAK: Compute exterior differences: day1 0,8 (valid), day2 0,6 (valid), day3 1,3 (excluded), day4 0,8 (valid), day5 1,2 (excluded). Reductions on valid days: 2,2; 1,6; 1,6 → mean 1,8 °C. The item requires applying a pre-specified exclusion criterion to data, which reflects experimental control reasoning, but the final step is mostly filtering plus simple arithmetic and asks for no justification, so the epistemic reasoning is modest and the claim 'attributable to the pintura' rests on only three days."
+P1,v2.saber11.math/math/saber.argumentacion#0/002#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"En una huerta escolar, un rectángulo de 5 m de largo y 4 m de ancho se ampliará. El largo aumentará 20 % y el ancho aumentará 10 %. Un estudiante afirma: «El área aumentará 30 %, porque se suman los porcentajes de aumento de las dos dimensiones».",¿Cuál opción evalúa correctamente la afirmación del estudiante sobre el porcentaje de aumento del área?,"A. Es válida: el área aumenta 30 %, porque se suman los porcentajes de las dimensiones. | B. No es válida: el área aumenta 32 %, porque se multiplican los factores 1,20 y 1,10. | C. No es válida: el área aumenta 20 %, porque solo el cambio del largo determina el área. | D. No es válida: el área aumenta 10 %, porque solo el cambio del ancho determina el área.",B,B,"El área inicial es 5 × 4 = 20 m². Después de los aumentos, el largo es 5 × 1,20 = 6 m y el ancho es 4 × 1,10 = 4,4 m. Por tanto, el área nueva es 6 × 4,4 = 26,4 m². El aumento es 26,4 − 20 = 6,4 m², que corresponde a 6,4/20 = 0,32, es decir, 32 %. También puede verse directamente que el área se multiplica por 1,20 × 1,10 = 1,32. La afirmación del estudiante no es válida porque sumar los porcentajes ignora que el segundo aumento se aplica a una dimensión que ya cambió.",v2.saber11.math/math/saber.argumentacion#0,FOUNDATIONAL,STANDARD,BORDERLINE,TOO_HARD,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: The item asks the examinee to validate or refute a claim (additive percentages for area) and to run the check by computing 1,2×1,1=1,32; this is an argumentación move typical of Saber 11, and the proportional-change misconception is a real one. The situation (rectangle dimensions) supports the reasoning, although the garden story is light. The distractors come from plausible faulty procedures (adding percentages, using only one dimension). Weakness: the claim is largely checked by one computation, so the argumentative demand is modest, and the item's label says 'formulation and execution' while it mainly tests validation."
+P1,v2.saber11.math/math/saber.argumentacion#1/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"En una campaña escolar de reciclaje se registró la cantidad de botellas recolectadas en dos semanas.
+
+| Semana | Botellas recolectadas |
+|---|---:|
+| 1 | 240 |
+| 2 | 300 |
+
+Un estudiante afirma: «La cantidad recolectada aumentó 20%, porque el aumento fue de 60 botellas y 60/300 = 0,20».",¿Cuál opción evalúa correctamente el procedimiento del estudiante?,"A. El procedimiento es correcto, porque 60 botellas corresponden al 20% de las recolectadas en la semana 2. | B. El procedimiento es incorrecto, porque el aumento debe compararse con las 240 botellas de la semana 1; por tanto, fue de 25%. | C. El procedimiento es incorrecto, porque el aumento porcentual fue de 60%, que es la diferencia entre las cantidades registradas. | D. El procedimiento es correcto, porque 300/240 = 1,25 y ese resultado representa un aumento de 1,25%.",B,B,"La cantidad aumentó en 300 - 240 = 60 botellas. Para calcular el porcentaje de aumento, la diferencia se compara con la cantidad inicial, que es 240, no con la cantidad final. Entonces, el aumento porcentual es 60/240 = 0,25 = 25%. Por tanto, el procedimiento del estudiante es incorrecto y la opción B es la única que lo evalúa correctamente.",v2.saber11.math/math/saber.argumentacion#1,FOUNDATIONAL,STANDARD,BORDERLINE,TOO_HARD,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: The item asks the learner to validate a student's percentage-change procedure, which is argumentación, and the error (wrong base) is a real, recognizable misconception. The distractors map to plausible faulty procedures (60 as a percent, 1.25 read as 1.25%). The stated claim is 'interpret and represent', but the item mainly evidences argumentación, which is the Saber 11 competency named in the first line, so the fit is acceptable though slightly mismatched to the label. The context is light but the data and the claim drive the reasoning."
+P1,v2.saber11.math/math/saber.formulacion#0/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una institución educativa compara dos planes mensuales de internet para el próximo mes.
+
+| Plan | Cargo fijo mensual | Cargo por cada GB utilizado |
+|---|---:|---:|
+| A | $20.000 | $500 |
+| B | $8.000 | $800 |
+
+Durante el mes actual, la institución utilizó internet para las actividades registradas en la tabla.
+
+| Actividad | Consumo actual |
+|---|---:|
+| Videos educativos | 12 GB |
+| Plataforma de tareas | 8 GB |
+
+Para el próximo mes, se estima que el consumo de videos educativos disminuirá en 1/4 y el de la plataforma de tareas aumentará en 1/2.","¿Qué plan debe escoger la institución para que el costo total del próximo mes sea menor, y cuál será ese costo?","A. Plan A, $30.500 | B. Plan B, $24.800 | C. Plan B, $23.200 | D. Plan B, $28.000",B,B,"El consumo de videos educativos será 12 × (1 - 1/4) = 9 GB. El consumo de la plataforma será 8 × (1 + 1/2) = 12 GB. Por tanto, el consumo total previsto es 9 + 12 = 21 GB.
+
+Con el plan A, el costo sería 20.000 + 500 × 21 = $30.500.
+Con el plan B, el costo sería 8.000 + 800 × 21 = $24.800.
+
+Como $24.800 es menor que $30.500, la institución debe escoger el plan B. La respuesta correcta es B.",v2.saber11.math/math/saber.formulacion#0,STANDARD,STANDARD,YES,MATCH,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: Compute: videos 12 - 3 = 9 GB; tareas 8 + 4 = 12 GB; total 21 GB. Plan A: 20.000 + 10.500 = 30.500. Plan B: 8.000 + 16.800 = 24.800. So Plan B at $24.800 is correct (option B). Option A is the cost of the wrong plan, and C and D are plausible error outcomes (C: 8.000+19.000? not clearly; D: 28.000 = 8.000+25.000 is hard to derive), so some distractors are weakly justified. The item requires multi-step strategy: fractional changes, totals, cost function per plan, comparison, which fits formulación y ejecución, and the context drives the reasoning. The mismatch is mild: the claimed competency is formulation/execution, and the item is mostly execution without much representation or argumentation."
+P1,v2.saber11.math/math/saber.formulacion#0/002#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una organización juvenil necesita contratar un servicio de internet móvil para compartirlo durante un mes. La empresa ofrece estos planes:
+
+| Plan | Cargo fijo mensual | Costo por cada GB consumido |
+|---|---:|---:|
+| A | $12.000 | $1.000 |
+| B | $4.000 | $1.400 |
+
+El costo mensual de cada plan se obtiene sumando el cargo fijo y el costo de los gigabytes consumidos.",¿Cuántos gigabytes se deben consumir en un mes para que el costo total sea igual con los dos planes?,A. 10 GB | B. 20 GB | C. 30 GB | D. 40 GB,B,B,"Si x representa la cantidad de gigabytes consumidos, los costos son:
+
+Plan A: 12.000 + 1.000x
+Plan B: 4.000 + 1.400x
+
+Para que sean iguales:
+12.000 + 1.000x = 4.000 + 1.400x
+
+La diferencia entre los cargos fijos es $8.000 y la diferencia entre los costos por GB es $400. Por tanto:
+
+x = 8.000 / 400 = 20
+
+Se deben consumir 20 GB.",v2.saber11.math/math/saber.formulacion#0,FOUNDATIONAL,FOUNDATIONAL,YES,MATCH,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: Equating 12000+1000x = 4000+1400x gives x=20 GB (option B), so the item requires modeling two linear cost functions and solving, which is real formulación y ejecución in a plausible mobile-data setting. Distractors (10, 30, 40) are reachable by slips such as dividing 8000 by 400 wrongly or using the sum of the rates, but the item is a standard break-even linear problem with little interpretive or argumentative demand, so fit is only moderate in depth."
+P1,v2.saber11.math/math/saber.formulacion#1/001#1,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una empresa ofrece dos planes mensuales de internet para hogares. En ambos planes, x representa la cantidad de gigabytes (GB) adicionales consumidos durante el mes.
+
+| Plan | Cargo fijo mensual | Costo por cada GB adicional |
+|---|---:|---:|
+| Básico | $18.000 | $1.500 |
+| Flexible | $10.000 | $2.000 |",¿Cuál ecuación permite determinar el consumo x para el cual el costo mensual es igual en los dos planes?,A. 18.000 + 1.500x = 10.000 + 2.000x | B. 18.000x + 1.500 = 10.000x + 2.000 | C. 18.000 + 2.000x = 10.000 + 1.500x | D. 18.000 + 1.500 + x = 10.000 + 2.000 + x,A,A,"El costo de cada plan se obtiene sumando el cargo fijo y el costo de cada GB adicional multiplicado por x. Por tanto, el costo del plan Básico es 18.000 + 1.500x y el del plan Flexible es 10.000 + 2.000x. Para hallar cuándo son iguales, se igualan estas expresiones: 18.000 + 1.500x = 10.000 + 2.000x. La opción correcta es A.",v2.saber11.math/math/saber.formulacion#1,FOUNDATIONAL,FOUNDATIONAL,YES,MATCH,CONFIRMED,HIGH,WEAK,MEDIUM,PASS,,"CONSTRUCT_WEAK: The item sits in Saber 11's algebra and linear-modeling territory, and the context (two internet plans) is needed to build the equation. However, it only asks the student to translate a table into an equation without solving it, which is largely interpretation and representation, with little formulation and execution of a strategy. The distractors map to plausible errors (coefficient swap, misplaced variable, additive treatment), but the item is a routine, low-demand translation that only weakly matches the claimed formulation and execution competency."
+P1,v2.saber11.math/math/saber.interpretacion#1/002#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una biblioteca organizó dos talleres de lectura. La tabla muestra cuántas personas se inscribieron, qué porcentaje asistió y qué fracción de quienes asistieron completó el taller.
+
+| Taller | Personas inscritas | Porcentaje que asistió | Fracción de asistentes que completó |
+|---|---:|---:|---:|
+| A | 72 | 75% | 2/3 |
+| B | 80 | 75% | 3/4 |","¿Cuántas personas completaron el taller A y cuántas completaron el taller B, respectivamente?",A. 36 personas y 45 personas. | B. 54 personas y 60 personas. | C. 48 personas y 60 personas. | D. 36 personas y 60 personas.,A,A,"En el taller A asistió el 75% de 72 personas: 72 × 75/100 = 54. De esas 54 personas, completaron el taller 2/3: 54 × 2/3 = 36.
+
+En el taller B asistió el 75% de 80 personas: 80 × 75/100 = 60. De esas 60 personas, completaron el taller 3/4: 60 × 3/4 = 45.
+
+Por lo tanto, la opción correcta es A.",v2.saber11.math/math/saber.interpretacion#1,STANDARD,FOUNDATIONAL,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,WEAK,MEDIUM,PASS,,"CONSTRUCT_WEAK: Compute: A: 72*0.75=54, 54*2/3=36; B: 80*0.75=60, 60*3/4=45. Correct answer is 36 and 45 (option A). The item requires reading a table and chaining percentage and fraction, which fits interpretation and strategy, but it is a fairly routine two-step computation with no argumentation and the table is essentially a wrapper for the calculation. Distractors are plausible: B gives attendees only, D mixes A's result with B's attendees, C gives 48 (2/3 of 72) and 60 (attendees of B). All are produced by faulty procedures, so the item is sound but modest in construct depth."
+P1,v2.saber11.math/math/saber.interpretacion#2/001#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"La biblioteca de un colegio compara los préstamos de libros de ficción y de no ficción realizados durante dos semanas.
+
+| Tipo de libro | Semana 1 | Semana 2 |
+|---|---:|---:|
+| Ficción | 120 | 150 |
+| No ficción | 80 | 50 |
+| Total de préstamos | 200 | 200 |",¿Cuál afirmación representa correctamente el cambio en los préstamos de libros de ficción entre las dos semanas?,A. Los préstamos de ficción aumentaron en 30 y su participación pasó de 60 % a 75 %. | B. Los préstamos de ficción aumentaron en 30 y su participación pasó de 60 % a 70 %. | C. Los préstamos de ficción disminuyeron en 30 y su participación pasó de 75 % a 60 %. | D. Los préstamos de ficción aumentaron en 15 y su participación pasó de 60 % a 75 %.,A,A,"En la semana 1 hubo 120 préstamos de ficción de un total de 200. Su participación fue 120/200 = 60 %.
+
+En la semana 2 hubo 150 préstamos de ficción de un total de 200. Su participación fue 150/200 = 75 %.
+
+La cantidad de préstamos aumentó en 150 - 120 = 30, y la participación aumentó de 60 % a 75 %. Por tanto, la afirmación correcta es la opción A.",v2.saber11.math/math/saber.interpretacion#2,STANDARD,FOUNDATIONAL,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,PASS,MEDIUM,PASS,,"AUTHENTICITY_MEDIUM: The item asks the learner to read a table and turn the counts into an absolute change (+30) and a share of the total (60 % to 75 %), which is genuine interpretation and representation of quantitative information. The distractors map to plausible faulty procedures (miscomputed share 70 %, halved or wrong difference 15, reversed direction). The weakness is that the reasoning is light, since it takes only two quick computations and there is little transformation between representations, so fit is moderate rather than strong."
+P2,v2.aice.9709-a/p1/aice.9709.p1.quadratics#0/004#1,AICE,Mathematics (9709),"Pure Mathematics (Papers 1, 2, 3)",SHORT_RESPONSE,,Show that the equation x² − (a + 6)x + 3a + 10 = 0 has two distinct roots both lying strictly between 1 and 5 if and only if −5/2 < a < −2 or 2 < a < 5/2.,,−5/2 < a < −2 or 2 < a < 5/2,"Proved: the roots are distinct and in (1,5) iff discriminant a²−4>0, f(1)=2a+5>0, f(5)=5−2a>0 and axis (a+6)/2 in (1,5), which gives −5/2<a<−2 or 2<a<5/2.","Let f(x) = x² − (a + 6)x + 3a + 10.
+
+If both roots lie strictly between 1 and 5, then f(1) > 0 and f(5) > 0. These give
+f(1) = 2a + 5 > 0, so a > −5/2,
+and
+f(5) = 5 − 2a > 0, so a < 5/2.
+
+The roots must also be distinct and real, so the discriminant is positive:
+(a + 6)² − 4(3a + 10) = a² − 4 > 0.
+Hence a < −2 or a > 2.
+Combining these conditions gives
+−5/2 < a < −2 or 2 < a < 5/2.
+
+Conversely, suppose −5/2 < a < −2 or 2 < a < 5/2. Then f(1) > 0, f(5) > 0 and a² − 4 > 0. Also, the axis of symmetry is x = (a + 6)/2, which lies between 1 and 5 for both of these intervals of values of a.
+
+Completing the square,
+f(x) = (x − (a + 6)/2)² − (a² − 4)/4.
+Thus the two roots are
+x = (a + 6)/2 ± √(a² − 4)/2.
+Since f(1) > 0 and the axis lies to the right of 1, the smaller root is greater than 1. Since f(5) > 0 and the axis lies to the left of 5, the larger root is less than 5. Also, a² − 4 > 0 makes the roots distinct. Therefore both roots lie strictly between 1 and 5.",v2.aice.9709-a/p1/aice.9709.p1.quadratics#0,CHALLENGE,STANDARD,BORDERLINE,TOO_EASY,JUDGED_EQUIVALENT,HIGH,PASS,HIGH,NOT_APPLICABLE,,"TIER_BORDERLINE: intended CHALLENGE, read as STANDARD (TOO_EASY)"
+P2,v2.pisa.2022/science/pisa.sci.explain.earth#0/004#0,PISA,Ciencias,SCIENCE,SHORT_RESPONSE,"Una isla volcánica tiene una cordillera que cruza de norte a sur. Los vientos dominantes llegan desde el oeste y atraviesan la cordillera hacia el este.
+
+Durante un año se registraron estos datos:
+
+| Zona de la isla | Precipitación anual | Observaciones frecuentes |
+|---|---:|---|
+| Ladera occidental, cerca del mar | 2.400 mm | Nubes bajas y vegetación muy abundante |
+| Cumbre | 8 °C de temperatura media | Nubes que llegan desde el oeste |
+| Ladera oriental, cerca del mar | 320 mm | Cielo despejado y vegetación escasa |
+
+En ambas laderas, la distancia al mar y la latitud son prácticamente iguales.",Explica por qué la ladera oriental recibe mucha menos precipitación que la ladera occidental. Relaciona tu explicación con el movimiento del aire y con los datos de la tabla. Responde en una o dos frases.,,"El aire húmedo del oeste asciende por la cordillera, se enfría y forma nubes que producen lluvia en la ladera occidental. Después, el aire desciende por la ladera oriental más seco y se calienta, por lo que allí se forman menos nubes y cae mucha menos lluvia.","La ladera occidental es de barlovento: el aire húmedo del oeste asciende por la cordillera, se enfría, condensa y descarga lluvia (2.400 mm). Al pasar la cumbre (8 °C) el aire ya está seco y desciende por la ladera oriental, calentándose y alejándose de la saturación, por lo que allí llueve poco (320 mm): es una sombra de lluvia (efecto Foehn).","Los vientos llevan aire húmedo desde el mar hacia la ladera occidental. Al verse obligado a ascender por la cordillera, el aire se enfría; el vapor de agua se condensa, forma nubes y produce gran parte de la lluvia observada en esa ladera. Cuando el aire desciende por la ladera oriental ya ha perdido mucha humedad y se calienta, de modo que se forman menos nubes y la precipitación es mucho menor. Esto explica conjuntamente la diferencia de 2.400 mm frente a 320 mm, las nubes de la cumbre y la vegetación más escasa del este.",v2.pisa.2022/science/pisa.sci.explain.earth#0,CHALLENGE,STANDARD,BORDERLINE,TOO_EASY,JUDGED_EQUIVALENT,HIGH,PASS,HIGH,NOT_APPLICABLE,,"TIER_BORDERLINE: intended CHALLENGE, read as STANDARD (TOO_EASY)"
+P2,v2.saber11.math/math/saber.argumentacion#1/009#1,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una biblioteca registró, antes y después de una campaña de lectura, el número de personas inscritas y el número de préstamos realizados en cada sede.
+
+| Sede | Antes: personas inscritas | Antes: personas que pidieron préstamo | Después: personas inscritas | Después: personas que pidieron préstamo |
+|---|---:|---:|---:|---:|
+| Norte | 120 | 30 | 180 | 54 |
+| Sur | 80 | 24 | 70 | 21 |
+
+Un estudiante afirma: «La proporción total de personas que pidieron préstamo aumentó 5 puntos porcentuales, porque en la sede Norte pasó de 25% a 30% y en la sede Sur se mantuvo en 30%; por tanto, basta considerar el cambio de la sede Norte».",¿Cuál de las siguientes opciones evalúa correctamente el procedimiento del estudiante?,"A. La afirmación es válida, porque el aumento de 5 puntos porcentuales en la sede Norte representa el cambio de toda la biblioteca. | B. La afirmación no es válida, porque la proporción total pasó de 54/200 = 27% a 75/250 = 30%, es decir, aumentó 3 puntos porcentuales. | C. La afirmación no es válida, porque los préstamos aumentaron en 21 y las inscripciones en 50; por tanto, la proporción total aumentó 21/50 = 42%. | D. La afirmación no es válida, porque el promedio de las proporciones de las sedes pasó de (25% + 30%)/2 = 27,5% a (30% + 30%)/2 = 30%, un aumento de 2,5 puntos porcentuales.",B,B,"Para hallar la proporción total no se deben promediar directamente las proporciones de las sedes ni usar solo el cambio de una sede. Primero se suman los préstamos y las personas inscritas en cada momento. Antes de la campaña hubo 30 + 24 = 54 préstamos entre 120 + 80 = 200 personas, de modo que la proporción total fue 54/200 = 27%. Después hubo 54 + 21 = 75 préstamos entre 180 + 70 = 250 personas, de modo que la proporción total fue 75/250 = 30%. La diferencia es 30% - 27% = 3 puntos porcentuales, no 5. Por eso, la opción B refuta correctamente el procedimiento: considera los tamaños de las dos sedes y compara las proporciones totales.",v2.saber11.math/math/saber.argumentacion#1,CHALLENGE,STANDARD,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,PASS,HIGH,PASS,,"TIER_BORDERLINE: intended CHALLENGE, read as STANDARD (TOO_EASY)"
+P2,v2.saber11.math/math/saber.argumentacion#2/004#0,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"En dos ediciones de una campaña escolar de donación de libros se registraron estos datos:
+
+| Edición | Estudiantes invitados | Estudiantes participantes |
+|---|---:|---:|
+| 2024 | 80 | 32 |
+| 2025 | 120 | 42 |
+
+Una estudiante afirma: «El porcentaje de participación aumentó 10 puntos porcentuales en 2025, porque participaron 10 estudiantes más que en 2024».",¿Cuál opción evalúa correctamente el procedimiento de la estudiante?,"A. Es válida, porque hubo 10 participantes más y eso equivale a 10 puntos porcentuales. | B. No es válida, porque 32/80 = 40% y 42/120 = 35%; por tanto, bajó 5 puntos porcentuales. | C. Es válida, porque el número de participantes creció 10/32 = 31,25%, que supera el 10%. | D. No es válida, porque 42/80 = 52,5%; por tanto, bajó 12,5 puntos porcentuales.",B,B,"Para hallar el porcentaje de participación se debe dividir el número de participantes entre el número de estudiantes invitados en la misma edición. En 2024, 32/80 = 0,40 = 40%. En 2025, 42/120 = 0,35 = 35%. Por tanto, el porcentaje no aumentó: disminuyó 40% - 35% = 5 puntos porcentuales. La opción B evalúa correctamente la afirmación.",v2.saber11.math/math/saber.argumentacion#2,FOUNDATIONAL,STANDARD,BORDERLINE,TOO_HARD,CONFIRMED,HIGH,PASS,HIGH,PASS,,"TIER_BORDERLINE: intended FOUNDATIONAL, read as STANDARD (TOO_HARD)"
+P2,v2.saber11.math/math/saber.argumentacion#2/008#1,ICFES,Matemáticas,Matemáticas,SELECTED_RESPONSE,"Una institución aplicó una prueba de participación en una campaña ambiental. Se consideró correcta la respuesta de cada estudiante que entregó el material solicitado. El director comparó los resultados antes y después de cambiar la distribución de estudiantes entre las dos jornadas.
+
+| Momento | Jornada | Estudiantes | Respuestas correctas |
+|---|---|---:|---:|
+| Antes | Mañana | 100 | 50 |
+| Antes | Tarde | 300 | 270 |
+| Después | Mañana | 300 | 180 |
+| Después | Tarde | 200 | 190 |
+
+El director afirma: «La participación total mejoró, porque la proporción de respuestas correctas aumentó en cada jornada»",¿Cuál evaluación de la afirmación del director es correcta?,"A. Se valida, porque el promedio de las proporciones pasó de (50% + 90%)/2 = 70% a (60% + 95%)/2 = 77,5%. | B. Se refuta, porque la proporción total pasó de 320/400 = 80% a 370/500 = 74%, aunque aumentó en cada jornada. | C. Se valida, porque el número total de respuestas correctas pasó de 320 a 370, lo que demuestra mayor participación. | D. Se valida, porque los aumentos de 10 puntos y 5 puntos en las jornadas producen un aumento total de 15 puntos.",B,B,"En la jornada de la mañana, la proporción aumentó de 50/100 = 50% a 180/300 = 60%. En la jornada de la tarde, aumentó de 270/300 = 90% a 190/200 = 95%.
+
+Sin embargo, para obtener la proporción total no se deben promediar las proporciones de las jornadas, porque las jornadas tienen cantidades diferentes de estudiantes. Se deben sumar los estudiantes con respuestas correctas y dividir entre el total de estudiantes.
+
+Antes, la proporción total era (50 + 270)/(100 + 300) = 320/400 = 80%.
+Después, era (180 + 190)/(300 + 200) = 370/500 = 74%.
+
+Por tanto, aunque cada jornada mejoró por separado, la proporción total disminuyó. La afirmación del director se refuta mediante el procedimiento descrito en la opción B.",v2.saber11.math/math/saber.argumentacion#2,CHALLENGE,STANDARD,BORDERLINE,TOO_EASY,CONFIRMED,HIGH,PASS,HIGH,PASS,,"TIER_BORDERLINE: intended CHALLENGE, read as STANDARD (TOO_EASY)"

@@ -1,110 +1,108 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getOrCreateCanonicalUser } from '@/lib/identity';
-import { getInterfaceLanguage } from '@/lib/i18n/language';
-import { getMessages } from '@/lib/i18n/messages';
-import { getInstitutionOverview, getInstitutionTeachers, InstitutionIntelligenceAccessDeniedError } from '@/lib/institution-intelligence';
-import { DEFAULT_PAGE_SIZE } from '@/lib/institution-intelligence/types';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { institutionSubNavLabels } from '@/lib/institution/admin-labels';
+import { institutionPageContext, opsLabels } from '@/lib/institution/page-context';
+import { listTeachers } from '@/lib/institution/institution-operations.service';
+import { listInstitutionClassesWithStaff } from '@/services/institution.service';
 import { InstitutionSubNav } from '../InstitutionSubNav';
-import { TeacherRowActions } from './TeacherRowActions';
+import { InviteTeacherForm, AssignClassForm, RowMenu, type MenuItem } from '../OpsActions';
+import { BulkInviteTeachersForm } from '../BulkAddForms';
+import { rosterMessages } from '@/lib/i18n/institution-roster-messages';
+
+const TONE: Record<string, string> = { APPROVED: 'chip chip-good', INVITED: 'chip chip-warn', PENDING: 'chip chip-warn', SUSPENDED: 'chip chip-critical', REJECTED: 'chip', REVOKED: 'chip' };
 
 /**
- * F14 Workstream D -- Institution Teachers (task section 7). Consumes
- * F12's `getInstitutionTeachers` (roster.service.ts) -- deliberately a
- * plain roster with operational counts only, no score/ranking (task
- * section 23's own explicit prohibition, structurally documented in the
- * service itself).
+ * Track A -- Teachers: invite an existing teacher account, approve / reject requests, assign to
+ * classes, remove a class assignment, suspend / reactivate the institutional relation, see every
+ * state (Invitado / Pendiente / Aprobado / Suspendido / Rechazado / Retirado). ⋯ menu per row.
  */
-export default async function InstitutionTeachersPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ institutionId: string }>;
-  searchParams: Promise<{ offset?: string }>;
-}) {
+export default async function InstitutionTeachersPage({ params }: { params: Promise<{ institutionId: string }> }) {
   const { institutionId } = await params;
-  const { offset: offsetParam } = await searchParams;
-  const { userId: clerkUserId } = await auth();
-  if (!clerkUserId) redirect('/sign-in');
-
-  const actor = await getOrCreateCanonicalUser(clerkUserId, null);
-  const locale = await getInterfaceLanguage(actor.id).catch(() => 'es' as const);
-  const t = getMessages(locale);
-  const offset = Math.max(Number(offsetParam) || 0, 0);
-
-  let overview;
-  let teachers;
-  try {
-    overview = await getInstitutionOverview(actor.id, institutionId);
-    teachers = await getInstitutionTeachers(actor.id, institutionId, { limit: DEFAULT_PAGE_SIZE, offset });
-  } catch (error) {
-    if (error instanceof InstitutionIntelligenceAccessDeniedError) notFound();
-    throw error;
-  }
-
-  const subNavLabels = {
-    overview: t['institution.overview.title'],
-    grades: t['institution.grades.title'],
-    classes: t['institution.classes.title'],
-    teachers: t['institution.teachers.title'],
-    requests: t['institution.requests.title'],
-    learners: t['institution.learners.title'],
-    coverage: t['institution.coverage.title'],
-    readiness: t['institution.readiness.title'],
-    interventions: t['institution.interventions.title'],
-    attention: t['institution.attention.title'],
-  };
-
-  const hasPrev = offset > 0;
-  const hasNext = offset + teachers.items.length < teachers.totalCount;
+  const { t, tr, overview, locale } = await institutionPageContext(institutionId);
+  const [teachers, classes] = await Promise.all([listTeachers(institutionId), listInstitutionClassesWithStaff(institutionId)]);
+  const l = opsLabels(tr);
+  const base = `/dashboard/institution/${institutionId}`;
+  const api = `/api/institutions/${institutionId}`;
+  const activeClasses = classes.filter((c) => c.status === 'ACTIVE');
 
   return (
-    <div>
-      <PageHeader title={overview.institutionName} subtitle={t['institution.teachers.title']} />
-      <InstitutionSubNav institutionId={institutionId} active="teachers" labels={subNavLabels} />
+    <div className="ta-stack">
+      <div>
+        <PageHeader title={overview.institutionName} subtitle={t['institution.teachers.title']} />
+        <InstitutionSubNav institutionId={institutionId} active="teachers" labels={institutionSubNavLabels(t)} />
+      </div>
 
-      {teachers.items.length === 0 ? (
-        <EmptyState title={t['empty.noData']} />
+      <section className="card ta-card">
+        <InviteTeacherForm institutionId={institutionId} l={l} />
+      </section>
+      <section className="card ta-card">
+        <BulkInviteTeachersForm institutionId={institutionId} l={rosterMessages(locale)} />
+      </section>
+
+      {teachers.length === 0 ? (
+        <section className="card ta-card" data-empty="teachers">
+          <p>{l['iops.teachers.empty']}</p>
+          <a className="btn btn-primary" href="#invite-teacher-title">
+            {l['iops.teachers.invite']}
+          </a>
+        </section>
       ) : (
-        <ul className="list-card card">
-          {teachers.items.map((teacher) => (
-            <li key={teacher.membershipId} className="list-row">
-              <div className="row-main">
-                <div className="row-title">{teacher.userId}</div>
-              </div>
-              <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
-                <span className="tabular">{teacher.activeAssignmentCount}</span>
-                <span className="tabular">{teacher.activeLearnerCount}</span>
-                <TeacherRowActions
-                  institutionId={institutionId}
-                  membershipId={teacher.membershipId}
-                  labels={{
-                    revoke: t['institution.teachers.revoke'],
-                    assign: t['institution.teachers.assign'],
-                    subjectPlaceholder: t['institution.teachers.assignmentSubjectPlaceholder'],
-                  }}
-                />
-              </div>
-            </li>
-          ))}
+        <ul className="list-card card" aria-label={t['institution.teachers.title']}>
+          {teachers.map((teacher) => {
+            const who = teacher.name && teacher.email ? `${teacher.name} · ${teacher.email}` : teacher.name ?? teacher.email ?? teacher.userId;
+            const assigned = new Set(teacher.classes.map((c) => c.classId));
+            const items: MenuItem[] = [
+              { label: l['iops.common.view'], href: `${base}/teachers/${teacher.membershipId}` },
+              ...(teacher.status === 'PENDING'
+                ? [
+                    { label: l['iops.teachers.approve'], action: { url: `${api}/memberships/${teacher.membershipId}/decide`, body: { decision: 'APPROVED' } } },
+                    { label: l['iops.teachers.reject'], danger: true, action: { url: `${api}/memberships/${teacher.membershipId}/decide`, body: { decision: 'REJECTED' }, confirm: l['iops.common.confirm'] } },
+                  ]
+                : []),
+              ...(teacher.status === 'APPROVED'
+                ? [
+                    { label: l['iops.teachers.suspend'], action: { url: `${api}/teachers/${teacher.membershipId}/suspend`, confirm: l['iops.teachers.suspendHint'] } },
+                    { label: tr['institution.teachers.revoke'], danger: true, action: { url: `${api}/memberships/${teacher.membershipId}/revoke`, confirm: `${tr['institution.teachers.revoke']}: ${who}?` } },
+                  ]
+                : []),
+              ...(teacher.status === 'SUSPENDED' ? [{ label: l['iops.teachers.reactivate'], action: { url: `${api}/teachers/${teacher.membershipId}/reactivate` } }] : []),
+              ...(['REJECTED', 'REVOKED'].includes(teacher.status) && teacher.email ? [{ label: l['iops.teachers.invite'], action: { url: `${api}/teachers`, body: { email: teacher.email } } }] : []),
+            ];
+            return (
+              <li key={teacher.membershipId} className="list-row ta-entity-row" data-teacher={teacher.membershipId} data-status={teacher.status}>
+                <div className="ta-entity-main">
+                  <Link href={`${base}/teachers/${teacher.membershipId}`} className="row-title" style={{ color: 'inherit', overflowWrap: 'anywhere' }}>
+                    {who}
+                  </Link>
+                  <span className="row-sub">
+                    {l['iops.teachers.classes']}:{' '}
+                    {teacher.classes.length ? teacher.classes.map((c) => c.className ?? c.gradeName).join(', ') : l['iops.teachers.noClasses']}
+                  </span>
+                  {teacher.status === 'APPROVED' && teacher.classes.length > 0 && (
+                    <span className="ta-row">
+                      {teacher.classes.map((c) => (
+                        <RowMenu
+                          key={c.assignmentId}
+                          label={`${l['iops.teachers.unassign']}: ${c.className ?? c.gradeName ?? ''}`}
+                          l={l}
+                          items={[{ label: `${l['iops.teachers.unassign']}: ${c.className ?? c.gradeName ?? ''}`, action: { url: `/api/institutions/assignments/${c.assignmentId}/end` } }]}
+                        />
+                      ))}
+                    </span>
+                  )}
+                  {teacher.status === 'APPROVED' && (
+                    <AssignClassForm institutionId={institutionId} membershipId={teacher.membershipId} classes={activeClasses.filter((c) => !assigned.has(c.id)).map((c) => ({ id: c.id, label: [c.name, c.gradeName].filter(Boolean).join(' · ') }))} l={l} />
+                  )}
+                </div>
+                <div className="ta-entity-actions">
+                  <span className={TONE[teacher.status] ?? 'chip'}>{l[`iops.teachers.status.${teacher.status}`]}</span>
+                  <RowMenu items={items} label={who} l={l} />
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
-
-      <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
-        {hasPrev && (
-          <Link href={`/dashboard/institution/${institutionId}/teachers?offset=${Math.max(offset - DEFAULT_PAGE_SIZE, 0)}`} className="btn">
-            ←
-          </Link>
-        )}
-        {hasNext && (
-          <Link href={`/dashboard/institution/${institutionId}/teachers?offset=${offset + DEFAULT_PAGE_SIZE}`} className="btn">
-            →
-          </Link>
-        )}
-      </div>
     </div>
   );
 }

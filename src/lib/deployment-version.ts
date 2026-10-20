@@ -33,6 +33,16 @@ export interface DeploymentVersion {
   deploymentTarget: string | null;
   /** Vercel deployment id -- the unique build identifier of this runtime. */
   deploymentId: string | null;
+  /**
+   * Non-secret flag state, for release verification only: whether CANONICAL_ENGINE_V1_ENABLED is on in this
+   * runtime (same rule as `isCanonicalEngineV1Enabled`: exactly the string 'true').
+   */
+  canonicalEngineV1Enabled: boolean;
+  /**
+   * Non-secret flag state: the EFFECTIVE Student catalogue exposure (`STUDENT_CATALOG_EXPOSURE`, same rule as
+   * `studentCatalogExposure`): 'PILOT' only for the value PILOT, otherwise 'FULL'. The raw value is never echoed.
+   */
+  studentCatalogExposure: 'PILOT' | 'FULL';
 }
 
 function normalizeEnvironment(value: string | undefined): DeploymentEnvironment {
@@ -79,6 +89,8 @@ export function isDevelopmentDeployment(env: Record<string, string | undefined>)
  *   - STUDYUS_ENV / VERCEL_TARGET_ENV / VERCEL_ENV (non-sensitive environment identity)
  *   - VERCEL_DEPLOYMENT_ID   (documented, non-sensitive)
  *   - VERCEL_GIT_COMMIT_AUTHOR_DATE (documented, non-sensitive) -- optional buildTime source
+ *   - CANONICAL_ENGINE_V1_ENABLED (non-secret feature flag) -- reported as a boolean only
+ *   - STUDENT_CATALOG_EXPOSURE    (non-secret feature flag) -- reported as the normalized 'PILOT' | 'FULL' only
  * No other key is ever read, so no other value can ever be exposed.
  */
 export function buildDeploymentVersion(env: Record<string, string | undefined>): DeploymentVersion {
@@ -89,5 +101,8 @@ export function buildDeploymentVersion(env: Record<string, string | undefined>):
     commitRef: nonEmpty(env.VERCEL_GIT_COMMIT_REF),
     deploymentTarget: nonEmpty(env.VERCEL_TARGET_ENV),
     deploymentId: nonEmpty(env.VERCEL_DEPLOYMENT_ID),
+    // Kept inline (not imported) so this module stays dependency-free; parity with the flag readers is tested.
+    canonicalEngineV1Enabled: env.CANONICAL_ENGINE_V1_ENABLED === 'true',
+    studentCatalogExposure: typeof env.STUDENT_CATALOG_EXPOSURE === 'string' && env.STUDENT_CATALOG_EXPOSURE.trim().toUpperCase() === 'PILOT' ? 'PILOT' : 'FULL',
   };
 }

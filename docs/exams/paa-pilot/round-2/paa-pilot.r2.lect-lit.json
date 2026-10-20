@@ -1,0 +1,454 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r2.lect-lit",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Fragmento narrativo literario ORIGINAL de 260 a 340 palabras sobre un pescador que espera el cambio de la marea junto a su hijo. Narrador definido (primera o tercera persona), al menos dos figuras retóricas claras (símil, metáfora, personificación o hipérbole) y un ambiente bien construido. No imites a ningún autor conocido.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.narrative-elements",
+        "difficulty": 3,
+        "focus": "el tipo de narrador o la voz narrativa del fragmento"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.figurative-language",
+        "difficulty": 3,
+        "focus": "la figura retórica presente en una expresión citada del fragmento"
+      },
+      {
+        "slot": "s3",
+        "objectiveCode": "paa.lect.literario",
+        "conceptStableId": "lit.figurative-language",
+        "difficulty": 4,
+        "focus": "el efecto o sentido de una imagen figurada citada del fragmento"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "La marea pendiente",
+      "text": "Llegamos al muelle antes de que amaneciera. Yo llevaba el termo de café y mi padre, una caja de anzuelos que sonaba a monedas pequeñas cada vez que caminaba. El puerto de Bahía Mansa estaba cubierto por una neblina baja; las lanchas parecían casas dormidas, atadas a postes negros.\n\nMi padre eligió una piedra plana junto al faro apagado y dejó allí nuestras cosas. No lanzó la red. Miró el agua con la paciencia de quien escucha una puerta detrás de una pared.\n\n—Todavía falta —dijo.\n\nYo quería preguntar cuánto, pero conocía esa respuesta: la marea no obedecía relojes. Sobre nosotros, la noche extendía una red azul entre las nubes, y el viento traía olor a algas, madera mojada y gasolina vieja. A lo lejos, una campana de boya golpeaba con un sonido lento, como si alguien removiera una taza gigante bajo el mar.\n\nMi padre me señaló una franja clara cerca de las rocas. El mar respiraba como un animal enorme: avanzaba, se detenía y volvía a retirarse dejando espuma entre los huecos. Cada vez que el agua bajaba, aparecían caracoles adheridos a la piedra y pequeños cangrejos que corrían de lado, apurados por esconderse.\n\nEsperamos sin hablar. El frío me mordía las manos, pero mi padre no se movía. Tenía la vista fija en la línea donde el agua oscura empezaba a cambiar de color. Entonces la corriente giró alrededor de un pilote y la neblina se abrió en silencio. Él tomó la red, me hizo una seña y sonrió apenas.\n\nComprendí que no habíamos venido a vencer al mar. Habíamos venido a reconocer el instante en que el mar nos permitía entrar.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué tipo de voz narrativa presenta el fragmento?",
+        "options": [
+          {
+            "text": "Un narrador protagonista en primera persona que acompaña a su padre.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El narrador usa la primera persona y participa directamente en los hechos junto a su padre."
+          },
+          {
+            "text": "Un narrador omnisciente en tercera persona que conoce a ambos personajes.",
+            "isKey": false,
+            "misconception": "CONFUSES_FIRST_PERSON_WITH_OMNISCIENT_NARRATION",
+            "rationale": "Resulta tentador porque se describen pensamientos y acciones, pero el relato está contado desde el yo participante."
+          },
+          {
+            "text": "Un narrador testigo en tercera persona que observa desde el muelle.",
+            "isKey": false,
+            "misconception": "IGNORES_GRAMMATICAL_PERSON",
+            "rationale": "Un testigo podría observar la escena, pero aquí la voz dice “yo” y forma parte de ella."
+          },
+          {
+            "text": "Un narrador colectivo en primera persona que representa a los pescadores.",
+            "isKey": false,
+            "misconception": "CONFUSES_PLURAL_REFERENCE_WITH_COLLECTIVE_VOICE",
+            "rationale": "Aunque aparece “llegamos”, la perspectiva individual se confirma cuando el narrador dice que llevaba el termo."
+          }
+        ],
+        "evidenceQuote": "Yo llevaba el termo de café y mi padre"
+      },
+      {
+        "slot": "s2",
+        "stem": "En la expresión “El mar respiraba como un animal enorme”, ¿qué figura retórica se emplea?",
+        "options": [
+          {
+            "text": "Un símil que compara el movimiento del mar con un ser vivo.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La palabra “como” establece de manera explícita la comparación entre el mar y un animal."
+          },
+          {
+            "text": "Una metáfora que identifica el mar con un ser vivo.",
+            "isKey": false,
+            "misconception": "CONFUSES_SIMILE_WITH_METAPHOR",
+            "rationale": "La idea de un mar vivo puede sugerir metáfora, pero la comparación se formula explícitamente con “como”."
+          },
+          {
+            "text": "Una hipérbole que exagera la fuerza del mar.",
+            "isKey": false,
+            "misconception": "CONFUSES_COMPARISON_WITH_EXAGGERATION",
+            "rationale": "La expresión presenta una comparación de movimientos, no una exageración cuantitativa de su fuerza."
+          },
+          {
+            "text": "Una ironía que contradice la calma del puerto.",
+            "isKey": false,
+            "misconception": "CONFUSES_FIGURATIVE_LANGUAGE_WITH_IRONY",
+            "rationale": "No hay un contraste burlón entre lo dicho y lo querido; la imagen describe el vaivén del agua."
+          }
+        ],
+        "evidenceQuote": "El mar respiraba como un animal enorme: avanzaba, se detenía"
+      },
+      {
+        "slot": "s3",
+        "stem": "¿Qué efecto produce la imagen “la noche extendía una red azul entre las nubes” en la escena?",
+        "options": [
+          {
+            "text": "Sugiere que la oscuridad cubre gradualmente el cielo y el puerto.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "La red funciona como una imagen de algo que se despliega sobre el espacio, reforzando la atmósfera nocturna."
+          },
+          {
+            "text": "Indica que los pescadores preparan sus herramientas para capturar peces.",
+            "isKey": false,
+            "misconception": "LITERALIZES_FIGURATIVE_IMAGE",
+            "rationale": "La red mencionada pertenece a la acción atribuida a la noche, no al equipo de los pescadores."
+          },
+          {
+            "text": "Anticipa que una tormenta destruirá las lanchas del muelle.",
+            "isKey": false,
+            "misconception": "OVERINTERPRETS_ATMOSPHERIC_DETAIL",
+            "rationale": "La imagen crea ambiente y no aporta señales de una tormenta ni de daños futuros."
+          },
+          {
+            "text": "Explica que las nubes reflejan la luz intensa del amanecer.",
+            "isKey": false,
+            "misconception": "REVERSES_TEMPORAL_CONTEXT",
+            "rationale": "El pasaje sitúa la escena antes del amanecer y presenta una noche que aún cubre el cielo."
+          }
+        ],
+        "evidenceQuote": "Sobre nosotros, la noche extendía una red azul entre las nubes"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "b9867c94-2933-4712-9bb3-a007a0c792f6",
+    "generatedAt": "2026-10-14T01:30:26.379Z",
+    "unitId": "paa-pilot.r2.lect-lit"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "540fc7c3-f917-4473-a04c-18293c7276b4",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "617128a1-d9cd-430b-b9d7-45f0a6012ba2",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 3,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-literario.d7dbed0ab1d0",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.literario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.narrative-elements"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.d9b2b9daee98@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-literario.71ae6c88d071",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.literario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.figurative-language"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.d9b2b9daee98@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-literario.bf77a49ca0d7",
+        "slot": "s3",
+        "objectiveCode": "paa.lect.literario",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.literario / lit.figurative-language"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.d9b2b9daee98@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

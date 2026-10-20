@@ -1,0 +1,173 @@
+/**
+ * Exam Platform V2 integration (QB + Blueprint V2 shadow + Student Journey V2) -- feature-flag matrix and
+ * track-ownership boundaries on the unified line. Pure / static: the DB-backed half (real loaders, E1-E12)
+ * is scripts/operations/exam-platform-v2-journey-cert.ts on an ephemeral Postgres.
+ *
+ *   A  Blueprint OFF    + Journey OFF    -> Student v1
+ *   B  Blueprint SHADOW + Journey OFF    -> Student v1 + Blueprint diagnostics
+ *   C  Blueprint OFF    + Journey SHADOW -> Student v1 + Journey diagnostics
+ *   D  Blueprint SHADOW + Journey SHADOW -> Student v1 + both diagnostics
+ *   E  Blueprint SHADOW + Journey UX     -> Journey UX, Blueprint observation-only (first DEV E2E configuration)
+ */
+import { describe, it, expect } from 'vitest';
+import { readFileSync, readdirSync, existsSync } from 'fs';
+import path from 'path';
+import { blueprintV2Mode } from '@/lib/exam-core/blueprint-v2/flag';
+import { studentJourneyV2Mode, isStudentJourneyShadowEnabled, isStudentJourneyUxEnabled } from '@/lib/exam-journey/feature-flag';
+import { decideStudentOnboardingGate, type GateState } from '@/lib/student/onboarding-gate';
+
+const ROOT = path.resolve(__dirname, '../..');
+const SRC = path.join(ROOT, 'src');
+const read = (rel: string) => readFileSync(path.join(ROOT, rel), 'utf8');
+const walk = (dir: string): string[] =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : /\.(ts|tsx)$/.test(e.name) ? [path.join(dir, e.name)] : []));
+const importsOf = (file: string) => [...readFileSync(file, 'utf8').matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
+
+const MATRIX = [
+  { id: 'A', env: { EXAM_BLUEPRINT_V2: 'OFF', STUDENT_JOURNEY_V2: 'OFF' }, bp: 'OFF', journey: 'OFF', shadowLog: false, ux: false },
+  { id: 'B', env: { EXAM_BLUEPRINT_V2: 'SHADOW', STUDENT_JOURNEY_V2: 'OFF' }, bp: 'SHADOW', journey: 'OFF', shadowLog: false, ux: false },
+  { id: 'C', env: { EXAM_BLUEPRINT_V2: 'OFF', STUDENT_JOURNEY_V2: 'SHADOW' }, bp: 'OFF', journey: 'SHADOW', shadowLog: true, ux: false },
+  { id: 'D', env: { EXAM_BLUEPRINT_V2: 'SHADOW', STUDENT_JOURNEY_V2: 'SHADOW' }, bp: 'SHADOW', journey: 'SHADOW', shadowLog: true, ux: false },
+  { id: 'E', env: { EXAM_BLUEPRINT_V2: 'SHADOW', STUDENT_JOURNEY_V2: 'UX' }, bp: 'SHADOW', journey: 'UX', shadowLog: true, ux: true },
+] as const;
+
+describe('feature-flag matrix A-E: two independent flags', () => {
+  for (const row of MATRIX) {
+    it(`${row.id}: Blueprint ${row.bp} / Journey ${row.journey}`, () => {
+      expect(blueprintV2Mode(row.env)).toBe(row.bp);
+      expect(studentJourneyV2Mode(row.env)).toBe(row.journey);
+      expect(isStudentJourneyShadowEnabled(row.env)).toBe(row.shadowLog);
+      expect(isStudentJourneyUxEnabled(row.env)).toBe(row.ux);
+    });
+  }
+
+  it('the Blueprint flag never turns the Journey on, and the Journey flag never turns Blueprint on', () => {
+    for (const v of ['SHADOW', 'UX', 'ON', 'V2', 'CUTOVER']) {
+      expect(studentJourneyV2Mode({ EXAM_BLUEPRINT_V2: v })).toBe('OFF');
+      expect(blueprintV2Mode({ STUDENT_JOURNEY_V2: v })).toBe('OFF');
+    }
+    // Blueprint has no cutover value at all: UX / ON mean OFF.
+    expect(blueprintV2Mode({ EXAM_BLUEPRINT_V2: 'UX' })).toBe('OFF');
+    expect(blueprintV2Mode({ EXAM_BLUEPRINT_V2: 'ON' })).toBe('OFF');
+  });
+
+  it('each flag module reads only its own variable', () => {
+    const bpFlag = read('src/lib/exam-core/blueprint-v2/flag.ts');
+    const jFlag = read('src/lib/exam-journey/feature-flag.ts');
+    expect(bpFlag).not.toMatch(/STUDENT_JOURNEY_V2/);
+    expect(jFlag).not.toMatch(/EXAM_BLUEPRINT_V2/);
+  });
+
+  it('the Blueprint shadow hooks are gated by EXAM_BLUEPRINT_V2 only (never by the Journey flag)', () => {
+    for (const f of ['src/lib/exam-core/exam-instance.service.ts', 'src/lib/simulation/plan.service.ts']) {
+      const src = read(f);
+      expect(src).toMatch(/blueprintV2Mode\(\) === 'SHADOW'/);
+      expect(src).not.toMatch(/STUDENT_JOURNEY_V2|exam-journey/);
+    }
+  });
+});
+
+describe('A-D: the onboarding gate is v1 whenever the Journey UX is off, whatever Blueprint says', () => {
+  const base: GateState = {
+    accountStatus: 'ACTIVE',
+    roles: ['STUDENT'],
+    storedWorkspace: 'STUDENT',
+    profile: null,
+    subjectCount: 0,
+    examTargetCount: 0,
+    institutionalPathCount: 0,
+    journeyUx: false,
+  };
+  const paths = ['/dashboard', '/dashboard/exam-prep', '/dashboard/subjects', '/dashboard/profile'];
+  it('the gate state carries no Blueprint input, so B/D equal A/C', () => {
+    expect(read('src/lib/student/onboarding-gate.ts')).not.toMatch(/blueprint/i);
+    expect(read('src/lib/student/onboarding-gate.server.ts')).not.toMatch(/blueprint/i);
+  });
+  it('Journey OFF / SHADOW: Exam Prep without an academic profile still goes to the profile (v1)', () => {
+    for (const p of paths) expect(decideStudentOnboardingGate(p, base)).toBe(p === '/dashboard/profile' ? null : '/dashboard/profile');
+  });
+  it('E (Journey UX): Exam Prep is reachable before the profile (J0 / J1.3)', () => {
+    expect(decideStudentOnboardingGate('/dashboard/exam-prep', { ...base, journeyUx: true })).toBeNull();
+  });
+});
+
+describe('ownership: no track recomputes another track', () => {
+  const journeyFiles = walk(path.join(SRC, 'lib/exam-journey'));
+  const blueprintFiles = walk(path.join(SRC, 'lib/exam-core/blueprint-v2'));
+  const qbFiles = walk(path.join(SRC, 'lib/exam-core/question-bank'));
+
+  it('Journey never imports Blueprint V2 (structural truth is not re-derived by the Journey)', () => {
+    for (const f of journeyFiles) expect(importsOf(f).filter((i) => /blueprint-v2/.test(i)), path.relative(ROOT, f)).toEqual([]);
+  });
+
+  it('Journey never imports Question Bank internals: content readiness reaches it only through the capabilities of preparation.service', () => {
+    for (const f of journeyFiles) expect(importsOf(f).filter((i) => /question-bank|readiness-overlay|mock-certification|catalog\/readiness-view/.test(i)), path.relative(ROOT, f)).toEqual([]);
+    expect(read('src/lib/exam-core/objectives/preparation.service.ts')).toMatch(/applyBankReadinessOverlay/);
+  });
+
+  it('Blueprint V2 and Question Bank never import the Journey', () => {
+    for (const f of [...blueprintFiles, ...qbFiles]) expect(importsOf(f).filter((i) => /exam-journey/.test(i)), path.relative(ROOT, f)).toEqual([]);
+  });
+
+  it('Journey mock availability comes from content capabilities, never from a structural FULL_MOCK', () => {
+    const facts = read('src/lib/exam-journey/facts.server.ts');
+    expect(facts).toMatch(/fullMock: caps\.canRunFullMock/);
+    expect(facts).toMatch(/reducedMock: caps\.canRunReducedMock/);
+    for (const f of journeyFiles) expect(readFileSync(f, 'utf8'), path.relative(ROOT, f)).not.toMatch(/FULL_MOCK_READY|'FULL_MOCK'/);
+  });
+
+  it('Journey UX pages never import Blueprint V2', () => {
+    for (const rel of ['src/app/dashboard/exam-prep/page.tsx', 'src/app/dashboard/exam-prep/[examProfileId]/page.tsx', 'src/app/dashboard/exam-prep/discover/page.tsx', 'src/app/dashboard/profile/page.tsx', 'src/app/dashboard/layout.tsx']) {
+      expect(importsOf(path.join(ROOT, rel)).filter((i) => /blueprint-v2/.test(i)), rel).toEqual([]);
+    }
+  });
+
+  it('exam detail page: the QB audience gate (notFound) precedes the Journey UX branch', () => {
+    const page = read('src/app/dashboard/exam-prep/[examProfileId]/page.tsx');
+    const gate = page.indexOf("examAudienceOf(definition.configKey) !== 'STUDENT') notFound()");
+    const ux = page.indexOf('isStudentJourneyUxEnabled()');
+    expect(gate).toBeGreaterThan(0);
+    expect(ux).toBeGreaterThan(gate);
+  });
+});
+
+describe('E12: one deterministic migration chain', () => {
+  const dir = path.join(ROOT, 'database/migrations');
+  const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  it('no two files share a canonical version (YYYYMMDD_NNNN)', () => {
+    const versions = files.map((f) => f.match(/^(\d{8}_\d{4})_/)?.[1] ?? f);
+    expect(versions.length).toBe(new Set(versions).size);
+  });
+  it('QB 20261101_1000 / QB 20261102_1000 / Journey 20261103_1000 / QB human review 20261104_1000, in that order', () => {
+    const tail = files.filter((f) => f.startsWith('202611'));
+    // + Human Agency P0-3 (20261105_1000) and P0-4 (20261105_1100), additive, after the certified 20261104 chain end.
+    // + T1 final delta: exam target session + aspiration area (20261107_1000), additive.
+    // + B1-D: simulation type EXAM_PRACTICE (20261108_1000), additive CHECK widening only.
+    // + B1-E: simulation types EXAM_CHALLENGE / REDUCED_MOCK (20261109_1000), additive CHECK widening only.
+    // + B3: assessment snapshot column on quiz_sessions / exam_instances (20261110_1000), additive nullable JSONB.
+    // + REM-T1-02/03 student context + structured time context (20261106_1000), additive.
+    expect(tail).toEqual(['20261101_1000_question_bank_review_checklist.sql', '20261102_1000_blueprint_slot_constraints.sql', '20261103_1000_student_exam_target_schedule.sql', '20261104_1000_question_bank_review_assessment.sql', '20261105_1000_explain_defend_task_instances.sql', '20261105_1100_safety_signal_routing.sql', '20261106_1000_student_context_and_time_context.sql', '20261106_1100_exam_series_canonical.sql', '20261107_1000_exam_target_session_and_aspiration.sql', '20261108_1000_simulation_type_exam_practice.sql', '20261109_1000_simulation_type_challenge_reduced_mock.sql',
+      // + B2-B1: Question Bank content carriers and B2 persistence (20261110_1000..1700), additive.
+      ...['20261110_1000_qb_provenance_rights_content_sources.sql', '20261110_1100_qb_asset_registry.sql', '20261110_1200_qb_stimuli.sql', '20261110_1300_qb_item_concept_attribution.sql', '20261110_1400_qb_pool_memberships.sql', '20261110_1500_qb_review_authority_originality.sql', '20261110_1600_assessment_blueprint_variants.sql', '20261110_1700_assessment_frozen_forms.sql'],
+      // + B5 line: assessment snapshot column (20261110_1800), additive; adopted byte-for-byte, already on DEV.
+      '20261110_1800_assessment_snapshot.sql',
+      // + CURR-PAA: item version -> curriculum node (20261111_1000), additive.
+      '20261111_1000_qb_item_curriculum_nodes.sql',
+      // + QB-R1C: the approval trigger requires an explicit PRIMARY attribution (20261112_1000); one function replaced.
+      '20261112_1000_qb_review_requires_primary_attribution.sql',
+      // + L10 shared-foundation schema batch (20261120_1000..1200): parent lifecycle, enrolment history, one-persona index.
+      //   Additive except one constraint replaced by a partial index (1100).
+      ...['20261120_1000_sf7_parent_relationship_lifecycle.sql', '20261120_1100_cr_l9_02_enrollment_history.sql', '20261120_1200_sf10_single_persona_constraint.sql'],
+      // + the Student's own scheduled assessments (20261121_1000): two new tables; additive.
+      '20261121_1000_student_scheduled_assessments.sql',
+      // + QF V5.1 (20261121_1100): construct cores, applicability, adapters, renderers, item-instance lineage. Additive; existing items become LEGACY by column default.
+      '20261121_1100_qf51_construct_core_lineage.sql',
+      // + Curriculum convergence: Learn curriculum provenance and reviewed concept aliases (20261122_1000 / _1100), additive.
+      '20261122_1000_learner_concept_curriculum_provenance.sql', '20261122_1100_canonical_concept_reviewed_aliases.sql',
+      // + QF V5.2 (20261122_1200): Exam Bank certification, coverage, supply authority. Additive.
+      '20261122_1200_qf52_exam_bank_certification_coverage.sql',
+      // + Exam Bank publication (20261123_1000): the author of a core-derived version. One function replaced.
+      '20261123_1000_exam_bank_core_derived_authorship.sql', '20261124_1000_exam_bank_pilot_generated_certification.sql', '20261124_1100_exam_bank_pilot_certified_activation.sql', '20261124_1200_exam_bank_pilot_certification_scope.sql', '20261125_1000_exam_readiness_evidence.sql', '20261126_1000_simulation_type_preparation_mock.sql', '20261127_1000_mastery_policy_v2_pilot_pass_80.sql', '20261127_1100_quiz_session_subject_assessment_setup.sql', '20261128_1300_teacher_subject_assessments.sql']); // + TEACHER subject Test / Mock assignments (20261128_1300)
+    expect(existsSync(path.join(dir, '20261101_1000_student_exam_target_schedule.sql'))).toBe(false);
+  });
+});

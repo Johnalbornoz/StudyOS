@@ -36,6 +36,7 @@ export interface PracticeRunnerLabels {
   score: string;
   alreadyCompleted: string;
   backToAssignments: string;
+  nextChallenge: string;
 }
 
 export function PracticeRunner({
@@ -113,7 +114,11 @@ export function PracticeRunner({
     return (
       <div className="card" style={{ padding: 'var(--space-4)' }}>
         <p>{labels.alreadyCompleted}</p>
-        <Link href="/dashboard/assignments">{labels.backToAssignments}</Link>
+        {/* B4: no dead end -- the next step is the one the learning engine shows on Today. */}
+        <div className="xr-next-actions">
+          <Link href="/dashboard/today" className="btn btn-primary">{labels.nextChallenge}</Link>
+          <Link href="/dashboard/assignments" className="btn btn-ghost">{labels.backToAssignments}</Link>
+        </div>
       </div>
     );
   }
@@ -123,9 +128,13 @@ export function PracticeRunner({
       <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{labels.resultsTitle}</h2>
         <p>
-          {labels.score}: {Math.round(results.score * 100)}% ({results.correctCount}/{results.totalQuestions})
+          {/* Track A: the grading route already returns 0-100. */}
+          {labels.score}: {Math.round(results.score)}% ({results.correctCount}/{results.totalQuestions})
         </p>
-        <Link href="/dashboard/assignments">{labels.backToAssignments}</Link>
+        <div className="xr-next-actions" data-testid="assessment-continuation">
+          <Link href="/dashboard/today" className="btn btn-primary">{labels.nextChallenge}</Link>
+          <Link href="/dashboard/assignments" className="btn btn-ghost">{labels.backToAssignments}</Link>
+        </div>
       </div>
     );
   }

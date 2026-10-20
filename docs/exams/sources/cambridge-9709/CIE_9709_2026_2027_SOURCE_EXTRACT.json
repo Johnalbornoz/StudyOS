@@ -1,0 +1,45 @@
+{
+  "kind": "GOVERNED_SOURCE_EXTRACT",
+  "sourceKey": "cie-9709-syllabus-2026-2027",
+  "title": "Cambridge International AS & A Level Mathematics 9709 syllabus for 2026 and 2027 (Version 4, published December 2025)",
+  "publisher": "Cambridge International Education",
+  "url": "https://www.cambridgeinternational.org/Images/697427-2026-2027-syllabus.pdf",
+  "syllabusYears": "2026-2027",
+  "retrievedAt": "2026-10-14",
+  "retrievedBy": "Track B session (automated HTTP GET, HTTP 200, application/pdf, 1201379 bytes; no access control bypassed)",
+  "directedBy": "John Albornoz (operator instruction naming this URL, 2026-10-14)",
+  "documentSha256": "dd0131f3cd8d4e3c270e7936cbb909c15f4cb8053f8337b67c16e8ec0b8bc5e5",
+  "documentHeldInRepository": false,
+  "documentNote": "The PDF itself is not committed (third-party copyright). The extract below records identifiers and locators only, so the facts can be re-verified against the digest.",
+  "extract": {
+    "commandWords": {
+      "locator": "Section 4 'Details of the assessment' > 'Command words' (printed page 42; PDF page 42)",
+      "words": ["Calculate", "Describe", "Determine", "Evaluate", "Explain", "Identify", "Justify", "Show (that)", "Sketch", "State", "Verify"],
+      "governedAs": "cambridge.command-terms (OFFICIAL rule of the CAMBRIDGE.9709.P1 pair bound to the governed syllabus: src/lib/assessment-instance/active-configuration-binding.ts, cambridge9709P1BoundToGovernedSyllabus)"
+    },
+    "paper1Assessment": {
+      "locator": "Section 2 'Syllabus overview' > 'Assessment overview' (printed page 14)",
+      "component": "Paper 1 Pure Mathematics 1",
+      "durationMinutes": 110,
+      "marks": 75,
+      "questions": "10 to 12 structured questions based on the Pure Mathematics 1 subject content",
+      "mode": "Written examination, externally assessed"
+    },
+    "calculator": { "locator": "Section 4 'Details of the assessment' > 'Examination information' > 'Calculators' (printed pages 40-41)", "policy": "a calculator with standard scientific functions is expected in all examinations; graphic and symbolic-algebra calculators are not permitted" },
+    "paper1Sections": {
+      "locator": "Section 3 'Subject content' > '1 Pure Mathematics 1 (for Paper 1)' (printed pages 19-22)",
+      "sections": [
+        { "code": "1.1", "title": "Quadratics", "page": 19 },
+        { "code": "1.2", "title": "Functions", "page": 19 },
+        { "code": "1.3", "title": "Coordinate geometry", "page": 20 },
+        { "code": "1.4", "title": "Circular measure", "page": 20 },
+        { "code": "1.5", "title": "Trigonometry", "page": 21 },
+        { "code": "1.6", "title": "Series", "page": 21 },
+        { "code": "1.7", "title": "Differentiation", "page": 22 },
+        { "code": "1.8", "title": "Integration", "page": 22 }
+      ]
+    }
+  },
+  "humanReview": null,
+  "governanceProvenance": "OFFICIAL source record (src/lib/exam-core/catalog/sources.ts) + operator-directed retrieval; no human certification is claimed"
+}

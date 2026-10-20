@@ -1,0 +1,58 @@
+{
+  "researchedAt": "2026-10-01",
+  "method": "ibo.org returns HTTP 403 to non-browser clients; figures were read from ibo.org subject briefs / guides in a browser. Source keys refer to src/lib/exam-core/catalog/sources.ts.",
+  "mathematics": {
+    "currentCourses": { "firstAssessment": "May 2021", "lastAssessment": "November 2028", "sources": ["ibo-math-aa-guide-2021", "ibo-math-aa-brief-2021", "ibo-math-ai-guide-2021", "ibo-math-dp-page"], "confidence": "HIGH" },
+    "AA_SL": {
+      "P1": { "minutes": 90, "marks": 80, "weightPercent": 40, "calculator": "NONE", "structure": "Section A short response (~half the marks), Section B extended response" },
+      "P2": { "minutes": 90, "marks": 80, "weightPercent": 40, "calculator": "GDC_REQUIRED", "structure": "Section A short response, Section B extended response" },
+      "IA": { "marks": 20, "weightPercent": 20, "kind": "Mathematical exploration" }
+    },
+    "AA_HL": {
+      "P1": { "minutes": 120, "marks": 110, "weightPercent": 30, "calculator": "NONE", "structure": "Section A short response, Section B extended response" },
+      "P2": { "minutes": 120, "marks": 110, "weightPercent": 30, "calculator": "GDC_REQUIRED", "structure": "Section A short response, Section B extended response" },
+      "P3": { "minutes": 60, "marks": 55, "weightPercent": 20, "calculator": "GDC_REQUIRED", "structure": "Two compulsory extended-response problem-solving questions" },
+      "IA": { "marks": 20, "weightPercent": 20, "criteria": { "A Presentation": 4, "B Mathematical communication": 4, "C Personal engagement": 3, "D Reflection": 3, "E Use of mathematics": 6 } }
+    },
+    "AI_SL": { "P1": { "minutes": 90, "marks": 80, "weightPercent": 40, "calculator": "GDC_REQUIRED" }, "P2": { "minutes": 90, "marks": 80, "weightPercent": 40, "calculator": "GDC_REQUIRED" }, "IA": { "marks": 20, "weightPercent": 20 } },
+    "AI_HL": { "P1": { "minutes": 120, "marks": 110, "weightPercent": 30 }, "P2": { "minutes": 120, "marks": 110, "weightPercent": 30 }, "P3": { "minutes": 60, "marks": 55, "weightPercent": 20 }, "IA": { "marks": 20, "weightPercent": 20 }, "calculator": "GDC_REQUIRED (all papers)" },
+    "newCourses2029": { "firstAssessment": "2029", "papers": "same paper model", "IA_criteria": { "A Problem specification": 4, "B Abstraction": 6, "C Computation": 4, "D Interpretation": 6 }, "confidence": "MEDIUM" }
+  },
+  "visualArts": {
+    "outgoing": {
+      "years": "first 2016, last 2026", "source": "ibo-visual-arts-page-2016",
+      "SL": { "Comparative study": { "marks": 30, "weightPercent": 20, "assessment": "EXTERNAL", "criteria": "A-E, 6 each" }, "Process portfolio": { "marks": 34, "weightPercent": 40, "assessment": "EXTERNAL", "criteria": "A 12, B-D 6, E 4" }, "Exhibition": { "marks": 30, "weightPercent": 40, "assessment": "INTERNAL", "criteria": "A-C 9, D 3" } },
+      "HL": { "Comparative study": { "marks": 42, "weightPercent": 20, "criteria": "A-E 6 each + F 12" }, "Process portfolio": { "weightPercent": 40 }, "Exhibition": { "weightPercent": 40 } }
+    },
+    "new2027": {
+      "firstAssessment": "May 2027", "sources": ["ibo-visual-arts-brief-2027", "ibo-visual-arts-updates"], "confidence": "HIGH",
+      "SL": {
+        "Art-making inquiries portfolio": { "marks": 32, "weightPercent": 40, "assessment": "EXTERNAL", "limits": "max 15 screens, max 3000 words" },
+        "Connections study": { "marks": 24, "weightPercent": 20, "assessment": "EXTERNAL", "limits": "max 10 screens, max 2500 words", "note": "SL only" },
+        "Resolved artworks": { "marks": 32, "weightPercent": 40, "assessment": "INTERNAL", "limits": "5 artworks, rationale max 700 words" }
+      },
+      "HL": {
+        "Art-making inquiries portfolio": { "marks": 32, "weightPercent": 30, "assessment": "EXTERNAL" },
+        "Artist project": { "marks": 40, "weightPercent": 30, "assessment": "EXTERNAL", "limits": "max 12 screens, max 2500 words, video max 3 min, intentions max 100 words" },
+        "Selected resolved artworks": { "marks": 40, "weightPercent": 40, "assessment": "INTERNAL", "limits": "5 of at least 8 works, max 8 screens, rationale max 700 words, artwork texts max 1000 words" }
+      },
+      "criterionBreakdown": { "confidence": "LOW", "note": "Criterion-level descriptors are not public; StudyUS rubrics for these components are original practice rubrics and are labelled as such." }
+    }
+  },
+  "otherArts": {
+    "Theatre (first 2024)": { "SL": { "Production proposal": "30% internal", "Research presentation": "30% external (15 min)", "Collaborative project": "40% external" }, "HL": { "Production proposal": "20%", "Research presentation": "20%", "Collaborative project": "25%", "Solo theatre piece": "35%" } },
+    "Music (first 2022)": { "SL": { "Exploring music in context": "30% external", "Experimenting with music": "30% internal", "Presenting music": "40% external" }, "HL": { "Exploring": "20%", "Experimenting": "20%", "Presenting": "30%", "Contemporary music-maker": "30% internal" }, "confidence": "MEDIUM" },
+    "Film (first 2019)": { "SL": { "Textual analysis": "30%", "Comparative study": "30%", "Film portfolio": "40%" }, "HL": { "Textual analysis": "20%", "Comparative study": "20%", "Film portfolio": "25%", "Collaborative film project": "35%" }, "note": "internal/external designation conflicts between sources" }
+  },
+  "groups1to4": {
+    "Language A Literature / Language and Literature (first 2021)": { "P1": "SL 75 min / HL 135 min, 35%, SL 20 / HL 40 marks", "P2": "105 min, SL 35% / HL 25%, 30 marks", "HL essay": "20%, 20 marks", "Individual oral": "15 min, SL 30% / HL 20%, 40 marks" },
+    "Language B (first 2020)": { "P1": "SL 75 / HL 90 min, 25%, 30 marks", "P2": "listening 25 marks + reading 40 marks = 50%", "Oral": "25%, 30 marks" },
+    "Language ab initio (first 2020)": { "P1": "60 min, 25%", "P2": "105 min, 50%", "Oral": "25%" },
+    "History": { "current": "last assessment 2027", "new": "first assessment 2028" },
+    "Economics (first 2022)": { "P1": "75 min", "P2": "105 min", "P3 (HL)": "105 min, 60 marks", "IA": "45 marks" },
+    "Psychology (first 2027)": { "P1/P2": "90 min, 35 marks", "P3 (HL)": "105 min, 30 marks", "IA": "24 marks" },
+    "Business Management": "first 2024", "Geography": "first 2019", "Philosophy": "first 2025",
+    "Biology / Chemistry / Physics (first 2025)": { "Paper 1": "1A MCQ + 1B data-based, 36%, SL 90 / HL 120 min", "Paper 2": "44%, SL 90 / HL 150 min", "IA": "20%, 24 marks" },
+    "ESS": "first 2026", "SEHS": "first 2026"
+  }
+}

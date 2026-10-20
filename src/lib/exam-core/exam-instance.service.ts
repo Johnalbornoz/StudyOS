@@ -1,0 +1,743 @@
+/**
+ * Exam V2 -- exam instances (sections 28-34, 42-45).
+ *
+ * An exam instance is what the Student chose: which papers (components), in
+ * which MODE and rigor. It wraps exactly one simulation attempt -- the attempt
+ * engine (sections, clocks, autosave, grading, results) is unchanged.
+ *
+ *   PRACTICE  -- adaptive level (FOUNDATION..CHALLENGE, moves between
+ *                sessions with the last result), per-item feedback allowed,
+ *                form built when it starts; unfilled positions may be
+ *                generated (validated) at delivery.
+ *   MOCK      -- the official format: form ASSEMBLED AND FROZEN when the
+ *                instance becomes READY (before start): no hints, no Tutor,
+ *                no per-item feedback, no regeneration, no swap. Target
+ *                difficulty 1.0. Official timing.
+ *   CHALLENGE -- a frozen Mock form at difficulty ~1.10 (1.05-1.15), labelled
+ *                "harder than the standard format". Never presented as the
+ *                official exam.
+ *
+ * Lifecycle: DRAFT -> READY -> IN_PROGRESS -> COMPLETED | ARCHIVED, and
+ * DELETED from any state (rules in `deleteExamInstance`). A "new attempt"
+ * is always a NEW instance from zero; an instance is never reset.
+ */
+import { isExamConfigExposed, isModeExposed } from './student-exposure';
+import { attachExamInstanceProvenance } from '@/lib/assessment-execution/assessment-exam.service';
+import { itemDimensionValues } from './slot-constraints';
+import { db } from '@/lib/db';
+import { getBlueprintForVersion, listObjectiveTargets } from '@/lib/assessment/blueprint.service';
+import { listComponentsForVersion } from '@/lib/assessment/component.service';
+import { orderTargetsBySection } from '@/lib/simulation/plan.service';
+import { startSimulationAttempt, abandonSimulationAttempt, getSimulationAttempt } from '@/lib/simulation/attempt.service';
+import { createStudentExamProfile } from '@/lib/assessment/student-exam-profile.service';
+import { examItemFromApproved, examItemMarks } from './items';
+import { certifiedItemsNoLongerEligible, certifiedSupplySql } from '@/lib/exam-bank/delivery-scope';
+import { lifecycleSqlFor } from './question-bank/lifecycle';
+import { contentAudienceFor, examAudienceOf, studentAudienceDefinitionSql, type ContentAudience } from './audience';
+import { assessmentSemanticsOf, componentCapabilities } from './fidelity';
+import { blueprintSpecificationOf, parseDefinition } from './question-bank/certification-input';
+import { classifyExamFormFidelity, deriveInstanceAttemptType, type FormFidelity, type FormFidelityFacts, type InstanceAttemptDecision } from './form-fidelity';
+import { DEFAULT_REUSE_POLICY } from './question-bank/policy';
+import { DEFAULT_DEMAND_POLICY } from './question-bank/demand';
+import { assembleForm, nextPracticeLevel, type AssembledForm, type FormPosition, type InstanceMode, type PoolItem, type PracticeLevel, type StudentUsage } from './form-assembly';
+import type { ExamItemState } from './navigation-state';
+import type { TimingMode } from '@/lib/simulation/types';
+import { blueprintV2Mode } from './blueprint-v2/flag';
+
+export type InstanceStatus = 'DRAFT' | 'READY' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED' | 'DELETED';
+export type Rigor = 'OFFICIAL_FIDELITY' | 'STRICT_READINESS';
+
+export interface ExamInstance {
+  id: string;
+  studentId: string;
+  examProfileId: string;
+  examVersionId: string;
+  structureNodeId: string | null;
+  componentIds: string[];
+  /** Skill-level practice: only these objectives (empty = all). */
+  focusObjectiveIds: string[];
+  mode: InstanceMode;
+  rigor: Rigor;
+  practiceLevel: PracticeLevel | null;
+  timingMode: TimingMode;
+  status: InstanceStatus;
+  form: AssembledForm | null;
+  formFrozenAt: string | null;
+  difficultyIndex: number | null;
+  simulationAttemptId: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  /** STUDENT: real content only. TECHNICAL_DEMO: engine demo on fixtures (in-process only; never from a Student route). */
+  contentAudience: ContentAudience;
+}
+
+export class ExamInstanceError extends Error {
+  constructor(
+    public readonly code:
+      | 'NOT_FOUND'
+      | 'COMPONENT_NOT_IN_VERSION'
+      | 'COMPONENT_NOT_SIMULATION_CAPABLE'
+      | 'INVALID_STATE'
+      | 'TIMING_NOT_ALLOWED_FOR_MODE'
+      | 'NO_ITEMS_FOR_FORM'
+      | 'CONFIRMATION_REQUIRED'
+      | 'PROFILE_ARCHIVED'
+      | 'ATTEMPT_IN_PROGRESS'
+      | 'EXAM_NOT_AVAILABLE'
+      | 'FORM_INCOMPLETE'
+      | 'MODE_NOT_AVAILABLE'
+      | 'COMPONENT_NOT_MOCKABLE'
+      // B1-E: a MOCK whose form cannot be verified as a complete (or known-reduced) official form does not start.
+      | 'FIDELITY_NOT_VERIFIABLE'
+      // Track B: a Certified Exam Bank item of the frozen form is no longer eligible (revoked, quarantined, retired): the form does not start.
+      | 'EXAM_CONTENT_NO_LONGER_ELIGIBLE',
+    detail?: string
+  ) {
+    super(detail ? `${code}: ${detail}` : code);
+    this.name = 'ExamInstanceError';
+  }
+}
+
+const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : (v as string | null) ?? null);
+
+function toInstance(r: any): ExamInstance {
+  return {
+    id: r.id,
+    studentId: r.student_id,
+    examProfileId: r.exam_profile_id,
+    examVersionId: r.exam_version_id,
+    structureNodeId: r.structure_node_id,
+    componentIds: r.component_ids,
+    focusObjectiveIds: r.focus_objective_ids ?? [],
+    mode: r.mode,
+    rigor: r.rigor,
+    practiceLevel: r.practice_level,
+    timingMode: r.timing_mode,
+    status: r.status,
+    form: r.form,
+    formFrozenAt: iso(r.form_frozen_at),
+    difficultyIndex: r.difficulty_index === null ? null : Number(r.difficulty_index),
+    simulationAttemptId: r.simulation_attempt_id,
+    createdAt: iso(r.created_at)!,
+    startedAt: iso(r.started_at),
+    completedAt: iso(r.completed_at),
+    // Column added by 20261031_1000; a row from before it (or a DB without it) is a Student instance.
+    contentAudience: r.content_audience === 'TECHNICAL_DEMO' ? 'TECHNICAL_DEMO' : 'STUDENT',
+  };
+}
+
+/** Mock and Challenge always run on official timing; Practice never does. */
+export function timingFor(mode: InstanceMode, requested: TimingMode | undefined): TimingMode {
+  if (mode !== 'PRACTICE') return 'OFFICIAL_SIMULATION_TIMED';
+  if (requested === 'OFFICIAL_SIMULATION_TIMED') throw new ExamInstanceError('TIMING_NOT_ALLOWED_FOR_MODE', 'practice is untimed or training-timed');
+  return requested ?? 'UNTIMED';
+}
+
+/* ------------------------------------------------------------------ */
+/* Form assembly (DB reads -> pure assembleForm)                        */
+/* ------------------------------------------------------------------ */
+
+/** Exported for the Blueprint V2 shadow regression (OFF vs SHADOW must return identical inputs). */
+export async function formInputs(examVersionId: string, componentIds: string[], studentId: string, focusObjectiveIds: string[] = [], mode: InstanceMode = 'MOCK', audience: ContentAudience = 'STUDENT', shadow: { instanceId: string | null } = { instanceId: null }) {
+  const blueprint = await getBlueprintForVersion(examVersionId);
+  if (!blueprint) throw new ExamInstanceError('NO_ITEMS_FOR_FORM', 'version has no blueprint');
+  const components = await listComponentsForVersion(examVersionId);
+  const only = new Set(componentIds);
+  const focus = focusObjectiveIds.length ? new Set(focusObjectiveIds) : null;
+  const allTargets = await listObjectiveTargets(blueprint.id);
+  const targets = orderTargetsBySection(allTargets.filter((t) => only.has(t.assessmentComponentId) && (!focus || focus.has(t.learningObjectiveId))), components);
+  const positions: FormPosition[] = targets.map((t, index) => ({
+    index,
+    blueprintObjectiveTargetId: t.id,
+    assessmentComponentId: t.assessmentComponentId,
+    learningObjectiveId: t.learningObjectiveId,
+    questionType: t.questionType,
+    difficultyRange: t.difficultyMin !== null && t.difficultyMax !== null ? { min: t.difficultyMin, max: t.difficultyMax } : null,
+    ...(t.constraints?.length ? { constraints: t.constraints } : {}),
+  }));
+  const objectiveIds = [...new Set(positions.map((p) => p.learningObjectiveId).filter((x): x is string => !!x))];
+  // A mock whose positions reach every selected component's published item count is a FULL-length form:
+  // it draws only items certified for FULL_MOCK; otherwise a Mock / Challenge draws REDUCED_MOCK items.
+  const officialCounts = await db.query(`SELECT id, definition->>'officialItemCount' AS n FROM assessment_components WHERE id = ANY($1::uuid[])`, [[...only]]);
+  const fullLength = officialCounts.rows.length > 0 && officialCounts.rows.every((r: any) => r.n !== null && positions.filter((p) => p.assessmentComponentId === r.id).length >= Number(r.n));
+  const use = mode === 'PRACTICE' ? 'PRACTICE' : fullLength ? 'FULL_MOCK' : 'REDUCED_MOCK';
+  // Blueprint V2 SHADOW (BP-4A): observe only. The legacy blueprint above stays authoritative; the hook gets copies
+  // of ids, returns nothing, never throws. With the flag OFF nothing is imported or computed.
+  if (blueprintV2Mode() === 'SHADOW') {
+    const { shadowObserveFormInputs } = await import('./blueprint-v2/runtime-hook');
+    await shadowObserveFormInputs({
+      examVersionId,
+      legacyBlueprintId: blueprint.id,
+      mode,
+      runtimeUse: use,
+      selectedComponentIds: [...componentIds],
+      focusObjectiveIds: [...focusObjectiveIds],
+      instanceId: shadow.instanceId,
+      components: components.map((c) => ({ id: c.id, sectionKey: c.sectionKey ?? null })),
+      allTargets: allTargets.map((t) => ({ id: t.id, learningObjectiveId: t.learningObjectiveId, assessmentComponentId: t.assessmentComponentId, questionType: t.questionType, difficultyMin: t.difficultyMin, difficultyMax: t.difficultyMax, commandTermId: t.commandTermId, ...(t.constraints?.length ? { constraints: t.constraints.map((c) => ({ ...c })) } : {}) })),
+    });
+  }
+  // Question Bank content-use policy (server-authoritative, `DEFAULT_ELIGIBILITY`): every Student use -- practice,
+  // diagnostic, Mock / Challenge -- draws only human-approved ACTIVE / CALIBRATED items (never PILOT); a mock is
+  // never filled with weaker content to reach its length.
+  // A Student instance never draws a DEV fixture; only an in-process TECHNICAL_DEMO instance may.
+  // A full-length StudyUs PREPARATION mock is authorised for CERTIFIED supply only (full-mock-authorization.ts): an
+  // uncertified LEGACY version never fills one of its positions.
+  const certifiedOnly = use === 'FULL_MOCK' && audience === 'STUDENT' && (await preparationMockAuthorizedFor(examVersionId));
+  const poolRows = await db.query(
+    `SELECT ai.id, ai.learning_objective_id, ai.question_type, ai.content, ai.difficulty_index, ai.template_fingerprint, ai.semantic_fingerprint, ai.content_origin
+       FROM approved_items ai WHERE ai.status = 'PUBLISHED' AND ai.learning_objective_id = ANY($1::uuid[]) AND ${lifecycleSqlFor(use, undefined, audience)} AND ${certifiedSupplySql('ai')}${certifiedOnly ? ` AND EXISTS (SELECT 1 FROM public.question_bank_items co_qi WHERE co_qi.id = ai.bank_item_id AND co_qi.lineage_class IN ('CORE_DERIVED', 'PILOT_CERTIFIED'))` : ''}`,
+    [objectiveIds]
+  );
+  const pool: PoolItem[] = [];
+  for (const r of poolRows.rows) {
+    const item = examItemFromApproved(r);
+    if (!item) continue;
+    pool.push({
+      id: r.id,
+      learningObjectiveId: r.learning_objective_id,
+      questionType: r.question_type,
+      difficulty: item.difficulty,
+      difficultyIndex: r.difficulty_index === null ? item.exam.difficultyIndex ?? null : Number(r.difficulty_index),
+      marks: examItemMarks(item),
+      templateFingerprint: r.template_fingerprint,
+      semanticFingerprint: r.semantic_fingerprint,
+      stimulusKey: item.exam.stimulus?.key ?? null,
+      contentOrigin: r.content_origin ?? item.exam.contentOrigin ?? null,
+      dimensions: itemDimensionValues(r.content, examItemMarks(item)),
+    });
+  }
+  // Exposure memory (Question Bank V2): what THIS Student has seen (recently = within the reuse cooldown),
+  // how many Students have seen each candidate, and how many OTHER Students met it in the planning horizon.
+  const usageRows = await db.query(`SELECT approved_item_id, template_fingerprint, used_at > now() - ($2::int * interval '1 day') AS recent FROM exam_item_usage WHERE student_id = $1`, [studentId, DEFAULT_REUSE_POLICY.studentExposureCooldownDays]);
+  const usage: StudentUsage = { approvedItemIds: new Set<string>(), templateFingerprints: new Set<string>(), recentApprovedItemIds: new Set<string>(), globalExposure: new Map(), peerExposure: new Map(), exposureCeiling: DEFAULT_DEMAND_POLICY.targetMaxStudentsPerQuestion };
+  for (const u of usageRows.rows) {
+    if (u.approved_item_id) usage.approvedItemIds.add(u.approved_item_id);
+    if (u.approved_item_id && u.recent) usage.recentApprovedItemIds!.add(u.approved_item_id);
+    if (u.template_fingerprint) usage.templateFingerprints.add(u.template_fingerprint);
+  }
+  const poolIds = pool.map((p) => p.id);
+  if (poolIds.length) {
+    const exposure = await db.query(
+      `SELECT approved_item_id, count(DISTINCT student_id)::int AS students,
+              count(DISTINCT student_id) FILTER (WHERE student_id <> $2 AND used_at > now() - ($3::int * interval '1 day'))::int AS peers
+         FROM exam_item_usage WHERE approved_item_id = ANY($1::uuid[]) GROUP BY 1`,
+      [poolIds, studentId, DEFAULT_DEMAND_POLICY.horizonDays]
+    );
+    for (const e of exposure.rows) {
+      usage.globalExposure!.set(e.approved_item_id, e.students);
+      usage.peerExposure!.set(e.approved_item_id, e.peers);
+    }
+  }
+  const officialMarksByComponent: Record<string, number | null> = {};
+  const officialItemsByComponent: Record<string, number | null> = {};
+  const sizes = await db.query(`SELECT id, max_marks, definition->>'officialItemCount' AS item_count FROM assessment_components WHERE id = ANY($1::uuid[])`, [[...only]]);
+  for (const row of sizes.rows) {
+    officialMarksByComponent[row.id] = row.max_marks === null ? null : Number(row.max_marks);
+    officialItemsByComponent[row.id] = row.item_count === null ? null : Number(row.item_count);
+  }
+  return { positions, pool, usage, officialMarksByComponent, officialItemsByComponent, use };
+}
+
+async function freezeForm(instance: ExamInstance): Promise<AssembledForm> {
+  const { use, ...inputs } = await formInputs(instance.examVersionId, instance.componentIds, instance.studentId, instance.focusObjectiveIds, instance.mode, instance.contentAudience, { instanceId: instance.id });
+  const assembled = assembleForm({ seed: instance.id, mode: instance.mode, practiceLevel: instance.practiceLevel, ...inputs });
+  const form: AssembledForm = { ...assembled, contentAudience: instance.contentAudience };
+  if (instance.mode !== 'PRACTICE') {
+    if (!form.slots.some((s) => s.approvedItemId)) throw new ExamInstanceError('NO_ITEMS_FOR_FORM');
+    // A frozen Mock / Challenge never shrinks: every required position is filled, or there is no form.
+    const empty = form.slots.filter((s) => !s.approvedItemId).length;
+    if (empty > 0) throw new ExamInstanceError('FORM_INCOMPLETE', `${empty}/${form.slots.length} required positions have no eligible item`);
+  }
+  await db.query(`UPDATE exam_instances SET form = $2, form_frozen_at = now(), difficulty_index = $3 WHERE id = $1`, [instance.id, JSON.stringify(form), form.difficultyIndex]);
+  const used = form.slots.filter((s) => s.approvedItemId).map((s) => s.approvedItemId!);
+  if (used.length > 0) {
+    await db.query(
+      `INSERT INTO exam_item_usage (student_id, approved_item_id, semantic_fingerprint, template_fingerprint, exam_instance_id, delivery_use)
+       SELECT $1, ai.id, ai.semantic_fingerprint, ai.template_fingerprint, $2, $4 FROM approved_items ai WHERE ai.id = ANY($3::uuid[])`,
+      [instance.studentId, instance.id, used, use]
+    );
+  }
+  return form;
+}
+
+/* ------------------------------------------------------------------ */
+/* Form fidelity (B1-E)                                                 */
+/* ------------------------------------------------------------------ */
+
+/** The machine-readable facts the fidelity classifier needs, for this instance's frozen form. Read-only. */
+export async function loadFormFidelityFacts(instance: ExamInstance, form: AssembledForm | null): Promise<FormFidelityFacts> {
+  const [components, version, blueprint] = await Promise.all([
+    db.query(
+      `SELECT c.id, c.section_key, c.definition, c.max_marks, c.duration_minutes, c.timing_status, c.simulation_capable, d.exam_family
+         FROM assessment_components c JOIN exam_versions v ON v.id = c.exam_version_id JOIN exam_definitions d ON d.id = v.exam_definition_id
+        WHERE c.exam_version_id = $1`,
+      [instance.examVersionId]
+    ),
+    db.query(`SELECT navigation_rules FROM exam_versions WHERE id = $1`, [instance.examVersionId]),
+    getBlueprintForVersion(instance.examVersionId),
+  ]);
+  const targets = blueprint ? await listObjectiveTargets(blueprint.id) : [];
+  const selected = new Set(instance.componentIds);
+  const formByComponent = new Map((form?.components ?? []).map((c) => [c.componentId, c]));
+  const rules = (version.rows[0]?.navigation_rules ?? {}) as { assessmentRoutes?: Array<{ componentSets?: string[][]; stages?: string[][][] }> };
+  const officialComponentSets: string[][] = [];
+  for (const route of rules.assessmentRoutes ?? []) {
+    for (const set of route.componentSets ?? []) officialComponentSets.push([...set]);
+    for (const stages of route.stages ?? []) for (const set of stages) officialComponentSets.push([...set]);
+  }
+  return {
+    formFrozen: !!form,
+    components: components.rows
+      .filter((c: any) => selected.has(c.id))
+      .map((c: any) => {
+        const definition = parseDefinition(c.definition);
+        const inForm = formByComponent.get(c.id);
+        return {
+          componentId: c.id,
+          sectionKey: c.section_key ?? null,
+          definitionPresent: !!definition,
+          officialMarks: c.max_marks !== null && c.max_marks !== undefined ? Number(c.max_marks) : definition?.maxMarks ?? null,
+          officialItemCount: definition?.officialItemCount ?? null,
+          officialDurationMinutes: definition?.officialDurationMinutes ?? null,
+          configuredDurationMinutes: c.timing_status === 'CONFIGURED' && c.duration_minutes !== null ? Number(c.duration_minutes) : null,
+          distribution: blueprintSpecificationOf(definition),
+          blueprintPositions: targets.filter((t) => t.assessmentComponentId === c.id).length,
+          formPositions: inForm?.positions ?? 0,
+          filledPositions: inForm?.filled ?? 0,
+          plannedMarks: inForm?.plannedMarks ?? 0,
+        };
+      }),
+    versionMockableSectionKeys: components.rows
+      .filter((c: any) => componentCapabilities({ definition: parseDefinition(c.definition), simulationCapable: c.simulation_capable === true, family: c.exam_family }).mockable)
+      .map((c: any) => c.section_key)
+      .filter((k: unknown): k is string => typeof k === 'string' && k.length > 0),
+    officialComponentSets,
+  };
+}
+
+/** Fidelity of this instance's frozen form (meaningful for a MOCK; a PRACTICE / CHALLENGE instance is not classified). */
+export async function examFormFidelityOf(instance: ExamInstance, form: AssembledForm | null): Promise<FormFidelity> {
+  return classifyExamFormFidelity(await loadFormFidelityFacts(instance, form));
+}
+
+/** The stored attempt type this instance would start with, or why a MOCK may not start. */
+async function instanceAttemptDecision(instance: ExamInstance, form: AssembledForm | null): Promise<InstanceAttemptDecision> {
+  // Only a Student MOCK needs its fidelity read; every other case is decided by the mode alone.
+  const needsFidelity = instance.mode === 'MOCK' && instance.contentAudience !== 'TECHNICAL_DEMO';
+  const fidelity = needsFidelity ? await examFormFidelityOf(instance, form) : null;
+  // a full-length StudyUs preparation mock is startable only under a recorded authorisation of the version's system in this delivery scope
+  const preparationMockAuthorized = fidelity?.fidelity === 'UNKNOWN' ? await preparationMockAuthorizedFor(instance.examVersionId) : false;
+  return deriveInstanceAttemptType({ mode: instance.mode, fidelity, difficultyBandMet: form?.difficultyBandMet ?? null, contentAudience: instance.contentAudience, preparationMockAuthorized });
+}
+async function preparationMockAuthorizedFor(examVersionId: string): Promise<boolean> {
+  const r = await db.query(`SELECT d.exam_family FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE v.id = $1`, [examVersionId]);
+  const system = r.rows[0]?.exam_family as string | undefined;
+  if (!system) return false;
+  const [{ fullMockAuthorizationFor }, { examBankDeliveryScope }] = await Promise.all([import('@/lib/exam-bank/full-mock-authorization'), import('@/lib/exam-bank/delivery-scope')]);
+  return fullMockAuthorizationFor(system, examBankDeliveryScope()) !== null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Lifecycle                                                            */
+/* ------------------------------------------------------------------ */
+
+export async function getExamInstance(id: string): Promise<ExamInstance | null> {
+  const r = await db.query(`SELECT * FROM exam_instances WHERE id = $1`, [id]);
+  if (r.rows.length === 0) return null;
+  return syncFromAttempt(toInstance(r.rows[0]));
+}
+
+/** Instance status follows its attempt: a submitted attempt completes it, an abandoned one archives it. */
+async function syncFromAttempt(instance: ExamInstance): Promise<ExamInstance> {
+  if (instance.status !== 'IN_PROGRESS' || !instance.simulationAttemptId) return instance;
+  const attempt = await getSimulationAttempt(instance.simulationAttemptId);
+  const next = attempt?.status === 'COMPLETED' ? 'COMPLETED' : attempt?.status === 'ABANDONED' ? 'ARCHIVED' : null;
+  if (!next) return instance;
+  const r = await db.query(`UPDATE exam_instances SET status = $2, completed_at = COALESCE(completed_at, now()) WHERE id = $1 AND status = 'IN_PROGRESS' RETURNING *`, [instance.id, next]);
+  return r.rows[0] ? toInstance(r.rows[0]) : instance;
+}
+
+/** `internal.includeTechnicalDemo`: in-process scenarios only (a Student route never passes it). */
+export async function listExamInstances(studentId: string, examProfileId?: string, internal: { includeTechnicalDemo?: boolean } = {}): Promise<ExamInstance[]> {
+  const r = await db.query(
+    // QB-0: the Student's history never lists a technical demo or a technical / internal exam.
+    `SELECT i.* FROM exam_instances i JOIN exam_versions v ON v.id = i.exam_version_id JOIN exam_definitions d ON d.id = v.exam_definition_id
+      WHERE i.student_id = $1 AND i.status <> 'DELETED' AND ($2::uuid IS NULL OR i.exam_profile_id = $2)
+        AND ($3::boolean OR (${studentAudienceDefinitionSql('d')} AND to_jsonb(i)->>'content_audience' IS DISTINCT FROM 'TECHNICAL_DEMO'))
+      ORDER BY i.created_at DESC LIMIT 100`,
+    [studentId, examProfileId ?? null, !!internal.includeTechnicalDemo]
+  );
+  const out: ExamInstance[] = [];
+  for (const row of r.rows) out.push(await syncFromAttempt(toInstance(row)));
+  return out;
+}
+
+async function lastPracticeOutcome(studentId: string, examProfileId: string): Promise<{ level: PracticeLevel; fraction: number | null } | null> {
+  const r = await db.query(
+    `SELECT i.practice_level, res.raw_score, res.max_score
+       FROM exam_instances i
+       LEFT JOIN simulation_attempts sa ON sa.id = i.simulation_attempt_id
+       LEFT JOIN exam_attempt_results res ON res.exam_attempt_id = sa.exam_attempt_id AND res.status = 'SCORED'
+      WHERE i.student_id = $1 AND i.exam_profile_id = $2 AND i.mode = 'PRACTICE' AND i.status <> 'DELETED' AND sa.status = 'COMPLETED'
+      ORDER BY res.scored_at DESC NULLS LAST, i.created_at DESC LIMIT 1`,
+    [studentId, examProfileId]
+  );
+  const row = r.rows[0];
+  if (!row) return null;
+  const max = Number(row.max_score);
+  return { level: row.practice_level ?? 'STANDARD', fraction: row.raw_score !== null && max > 0 ? Number(row.raw_score) / max : null };
+}
+
+export async function createExamInstance(params: {
+  studentId: string;
+  examProfileId: string;
+  examVersionId: string;
+  componentIds: string[];
+  mode: InstanceMode;
+  rigor?: Rigor;
+  practiceLevel?: PracticeLevel;
+  timingMode?: TimingMode;
+  structureNodeId?: string;
+  /** Skill-level practice (PRACTICE only). */
+  focusObjectiveIds?: string[];
+  /**
+   * In-process only (certification scenarios, engine demos): TECHNICAL_DEMO lets the engine run on DEV
+   * fixtures. No Student route passes it; a technical / internal exam is always TECHNICAL_DEMO.
+   */
+  contentAudience?: ContentAudience;
+}): Promise<ExamInstance> {
+  if (params.focusObjectiveIds?.length && params.mode !== 'PRACTICE') throw new ExamInstanceError('INVALID_STATE', 'skill focus is practice-only');
+  const def = (await db.query(`SELECT d.config_key, d.exam_family FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE v.id = $1`, [params.examVersionId])).rows[0];
+  if (!def) throw new ExamInstanceError('NOT_FOUND', 'exam version');
+  const examAudience = examAudienceOf(def.config_key);
+  // A technical / internal exam is never started as a Student exam (e.g. a retake of an old certification instance).
+  if (examAudience !== 'STUDENT' && params.contentAudience !== 'TECHNICAL_DEMO') throw new ExamInstanceError('EXAM_NOT_AVAILABLE', 'technical or internal exam');
+  const contentAudience = contentAudienceFor(examAudience, params.contentAudience);
+  // Pilot exposure, defence in depth (STUDENT_CATALOG_EXPOSURE=PILOT): an exam or mode hidden from Students is never
+  // started for one, whatever route asked. In-process engine scenarios (TECHNICAL_DEMO) keep the whole catalogue.
+  if (params.contentAudience !== 'TECHNICAL_DEMO' && (!isExamConfigExposed(def.exam_family, def.config_key) || !isModeExposed(def.exam_family, params.mode))) {
+    throw new ExamInstanceError('EXAM_NOT_AVAILABLE', 'not offered in this deployment (pilot exposure)');
+  }
+  // A preparation the Student removed (ARCHIVED) never gets new exams.
+  const prof = await db.query(`SELECT status FROM student_exam_profiles WHERE id = $1 AND student_id = $2`, [params.examProfileId, params.studentId]);
+  if (!prof.rows[0]) throw new ExamInstanceError('NOT_FOUND', 'exam profile');
+  if (prof.rows[0].status === 'ARCHIVED') throw new ExamInstanceError('PROFILE_ARCHIVED');
+  const components = await listComponentsForVersion(params.examVersionId);
+  const ids = [...new Set(params.componentIds)];
+  if (ids.length === 0) throw new ExamInstanceError('COMPONENT_NOT_IN_VERSION', 'select at least one paper');
+  for (const id of ids) {
+    const c = components.find((x) => x.id === id);
+    if (!c) throw new ExamInstanceError('COMPONENT_NOT_IN_VERSION', id);
+    if (!c.simulationCapable) throw new ExamInstanceError('COMPONENT_NOT_SIMULATION_CAPABLE', id);
+  }
+  const selected = components.filter((c) => ids.includes(c.id));
+  const ordered = selected.map((c) => c.id);
+  if (params.mode !== 'PRACTICE') {
+    // D3: a competency benchmark (PISA) is practised and benchmarked, never reproduced as a fixed-form mock.
+    if (assessmentSemanticsOf(def.exam_family) === 'COMPETENCY_BENCHMARK') throw new ExamInstanceError('MODE_NOT_AVAILABLE', 'competency benchmark: practice only');
+    // D4: coursework / portfolio / IA / project / oral / practical components count for the exam, but have no mock.
+    const defs = (await db.query(`SELECT id, definition FROM assessment_components WHERE id = ANY($1::uuid[])`, [ordered])).rows;
+    for (const c of defs) {
+      const definition = parseDefinition(c.definition);
+      // An engine demo of a technical vertical without a verified definition (dev-cert) is not a mock claim.
+      if (!definition && contentAudience === 'TECHNICAL_DEMO') continue;
+      if (!componentCapabilities({ definition, simulationCapable: true, family: def.exam_family }).mockable) throw new ExamInstanceError('COMPONENT_NOT_MOCKABLE', c.id);
+    }
+  }
+  // Coursework (portfolio / project) has no official time: such a selection is untimed in every mode.
+  const untimedComponents = selected.some((c) => c.timingStatus !== 'CONFIGURED' || c.durationMinutes === null);
+  const timingMode = untimedComponents ? 'UNTIMED' : timingFor(params.mode, params.timingMode);
+  let practiceLevel: PracticeLevel | null = null;
+  if (params.mode === 'PRACTICE') {
+    if (params.practiceLevel) practiceLevel = params.practiceLevel;
+    else {
+      const last = await lastPracticeOutcome(params.studentId, params.examProfileId);
+      practiceLevel = last ? nextPracticeLevel(last.level, last.fraction) : 'STANDARD';
+    }
+  }
+  const values = [params.studentId, params.examProfileId, params.examVersionId, params.structureNodeId ?? null, ordered, params.mode, params.rigor ?? 'OFFICIAL_FIDELITY', practiceLevel, timingMode, params.focusObjectiveIds ?? []];
+  // Only a technical demo writes the audience column (20261031_1000); a Student instance relies on its default.
+  const r = contentAudience === 'TECHNICAL_DEMO'
+    ? await db.query(
+        `INSERT INTO exam_instances (student_id, exam_profile_id, exam_version_id, structure_node_id, component_ids, mode, rigor, practice_level, timing_mode, status, focus_objective_ids, content_audience)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'DRAFT', $10, 'TECHNICAL_DEMO') RETURNING *`,
+        values
+      )
+    : await db.query(
+        `INSERT INTO exam_instances (student_id, exam_profile_id, exam_version_id, structure_node_id, component_ids, mode, rigor, practice_level, timing_mode, status, focus_objective_ids)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'DRAFT', $10) RETURNING *`,
+        values
+      );
+  const instance = toInstance(r.rows[0]);
+  if (instance.mode !== 'PRACTICE') {
+    try {
+      const form = await freezeForm(instance);
+      // B1-E: a MOCK exists only when its frozen form is a verified FULL or a known REDUCED official form.
+      // Unknown fidelity is not a mock and is never downgraded to preparation: there is no instance.
+      const decision = await instanceAttemptDecision(instance, form);
+      if (!decision.startable) throw new ExamInstanceError('FIDELITY_NOT_VERIFIABLE', [decision.reason, ...decision.fidelityReasons].join(','));
+    } catch (err) {
+      await db.query(`UPDATE exam_instances SET status = 'DELETED', deleted_at = now(), delete_reason = $2 WHERE id = $1`, [instance.id, err instanceof ExamInstanceError && err.code === 'FIDELITY_NOT_VERIFIABLE' ? 'FIDELITY_NOT_VERIFIABLE' : 'FORM_ASSEMBLY_FAILED']);
+      throw err;
+    }
+  }
+  const ready = await db.query(`UPDATE exam_instances SET status = 'READY' WHERE id = $1 AND status = 'DRAFT' RETURNING *`, [instance.id]);
+  return toInstance(ready.rows[0]);
+}
+
+/** Server-held items for every filled form slot, keyed by plan position. */
+async function presetFromForm(instance: ExamInstance, form: AssembledForm, plan: { selectedTargets: Array<{ blueprintObjectiveTargetId: string; assessmentComponentId: string; commandTermId: string | null }> }): Promise<Record<number, ExamItemState>> {
+  const ids = form.slots.map((s) => s.approvedItemId).filter((x): x is string => !!x);
+  const rows = ids.length ? (await db.query(`SELECT id, learning_objective_id, content FROM approved_items WHERE id = ANY($1::uuid[])`, [ids])).rows : [];
+  const byId = new Map(rows.map((r: any) => [r.id, r]));
+  const bySlot = new Map(form.slots.map((s) => [s.blueprintObjectiveTargetId, s]));
+  const now = new Date().toISOString();
+  const preset: Record<number, ExamItemState> = {};
+  plan.selectedTargets.forEach((t, index) => {
+    const slot = bySlot.get(t.blueprintObjectiveTargetId);
+    const row = slot?.approvedItemId ? byId.get(slot.approvedItemId) : null;
+    const item = row ? examItemFromApproved(row) : null;
+    const ctx = { assessmentComponentId: t.assessmentComponentId, learningObjectiveId: row?.learning_objective_id ?? null, commandTermId: t.commandTermId };
+    if (item) preset[index] = { status: 'DELIVERED', item, ctx, deliveredAt: now };
+    // A frozen form never generates; freezeForm refuses a Mock / Challenge with an unfilled position.
+    else if (instance.mode !== 'PRACTICE') preset[index] = { status: 'EXCLUDED', unavailableReason: 'NO_ITEM_GENERATED', ctx };
+  });
+  return preset;
+}
+
+export async function startExamInstance(instanceId: string, params: { language: string; timezone?: string }): Promise<ExamInstance> {
+  const instance = await getExamInstance(instanceId);
+  if (!instance) throw new ExamInstanceError('NOT_FOUND');
+  if (instance.status === 'IN_PROGRESS') return instance;
+  if (instance.status !== 'READY') throw new ExamInstanceError('INVALID_STATE', instance.status);
+  const open = await db.query(`SELECT id FROM simulation_attempts WHERE exam_profile_id = $1 AND status IN ('ACTIVE','PAUSED') LIMIT 1`, [instance.examProfileId]);
+  if (open.rows[0]) throw new ExamInstanceError('ATTEMPT_IN_PROGRESS', open.rows[0].id);
+
+  const form = instance.form ?? (await freezeForm(instance));
+  // Track B: an item is never trusted from the moment its form was frozen. Each certified item is checked again, now.
+  const stale = await certifiedItemsNoLongerEligible(form.slots.map((s) => s.approvedItemId).filter((id): id is string => !!id));
+  if (stale.length > 0) throw new ExamInstanceError('EXAM_CONTENT_NO_LONGER_ELIGIBLE', `${stale.length}/${form.slots.length} items of the frozen form`);
+  // B1-E: the stored attempt type is derived here, and only here, from the instance mode and -- for a MOCK --
+  // the verified fidelity of its frozen form. Nothing is started for a MOCK of unknown fidelity.
+  const decision = await instanceAttemptDecision(instance, form);
+  if (!decision.startable) throw new ExamInstanceError('FIDELITY_NOT_VERIFIABLE', [decision.reason, ...decision.fidelityReasons].join(','));
+  const { simulationAttempt } = await startSimulationAttempt({
+    studentId: instance.studentId,
+    examProfileId: instance.examProfileId,
+    examVersionId: instance.examVersionId,
+    // B1-D / B1-E: PRACTICE -> EXAM_PRACTICE, CHALLENGE -> EXAM_CHALLENGE, MOCK -> FULL_MOCK or REDUCED_MOCK by fidelity.
+    simulationType: decision.type,
+    timingMode: instance.timingMode,
+    language: params.language,
+    timezone: params.timezone,
+    assessmentComponentIds: instance.componentIds,
+    learningObjectiveIds: instance.focusObjectiveIds.length ? instance.focusObjectiveIds : undefined,
+    itemFeedback: instance.mode === 'PRACTICE' ? 'AFTER_EACH_ITEM' : 'NEVER',
+    presetItems: (plan) => presetFromForm(instance, form, plan),
+    // B1-C: the frozen instance behind this attempt (FULL_MOCK => exam instance).
+    examInstanceId: instance.id,
+    examInstanceMode: instance.mode,
+    verifiedFullFidelity: decision.type === 'FULL_MOCK',
+  });
+  const r = await db.query(
+    `UPDATE exam_instances SET status = 'IN_PROGRESS', simulation_attempt_id = $2, started_at = now() WHERE id = $1 AND status = 'READY' RETURNING *`,
+    [instance.id, simulationAttempt.id]
+  );
+  // B5-R: under canonical execution the started instance gets its FrozenAssessment provenance, which
+  // references the form frozen above. It changes nothing of the instance; if it cannot be attached the
+  // attempt stays on the legacy evidence path, and the start never fails because of it.
+  if (r.rows[0]) {
+    await attachExamInstanceProvenance(instance.id, new Date().toISOString())
+      .then((o) => { if (!o.attached && o.reason !== 'DISABLED') console.warn('[b5r-exam-provenance]', JSON.stringify({ instanceId: instance.id, reason: o.reason, detail: o.detail ?? null })); })
+      .catch((e) => console.warn('[b5r-exam-provenance]', JSON.stringify({ instanceId: instance.id, reason: 'ERROR', detail: e instanceof Error ? e.message.slice(0, 160) : null })));
+  }
+  return toInstance(r.rows[0]);
+}
+
+/**
+ * Deletion rules (section 43):
+ *   DRAFT / READY  -> DELETED; the unseen form is discarded and its item usage released.
+ *   IN_PROGRESS    -> only with `confirm`; the attempt is abandoned (no result), then DELETED.
+ *   COMPLETED      -> only with `confirm`; SOFT delete: the instance is DELETED (hidden from the
+ *                     Student's visible history). The attempt, its responses, its SCORED result
+ *                     and every piece of consolidated learning evidence are preserved untouched.
+ *   ARCHIVED       -> DELETED.
+ *   DELETED        -> no-op (idempotent).
+ */
+export async function deleteExamInstance(instanceId: string, params: { confirm: boolean; reason?: string; ownerStudentId: string }): Promise<{ instance: ExamInstance; resultPreserved: boolean; attemptAbandoned: boolean }> {
+  const instance = await getExamInstance(instanceId);
+  // Owner-scoped in the service too (defense in depth): another Student's instance does not exist for this caller.
+  if (!instance || instance.studentId !== params.ownerStudentId) throw new ExamInstanceError('NOT_FOUND');
+  if (instance.status === 'DELETED') return { instance, resultPreserved: instance.completedAt !== null, attemptAbandoned: false };
+  let attemptAbandoned = false;
+  if ((instance.status === 'IN_PROGRESS' || instance.status === 'COMPLETED') && !params.confirm) throw new ExamInstanceError('CONFIRMATION_REQUIRED', instance.status);
+
+  if (instance.status === 'DRAFT' || instance.status === 'READY') {
+    await db.query(`DELETE FROM exam_item_usage WHERE exam_instance_id = $1`, [instance.id]);
+  }
+  if (instance.status === 'IN_PROGRESS' && instance.simulationAttemptId) {
+    const attempt = await getSimulationAttempt(instance.simulationAttemptId);
+    if (attempt && (attempt.status === 'ACTIVE' || attempt.status === 'PAUSED')) {
+      await abandonSimulationAttempt(attempt.id);
+      attemptAbandoned = true;
+    }
+  }
+  // COMPLETED: nothing below the instance is touched -- result and evidence stay as consolidated history.
+  const resultPreserved = instance.status === 'COMPLETED';
+  const r = await db.query(`UPDATE exam_instances SET status = 'DELETED', deleted_at = now(), delete_reason = $2 WHERE id = $1 AND status <> 'DELETED' RETURNING *`, [instance.id, (params.reason ?? 'STUDENT_REQUEST').slice(0, 200)]);
+  console.log('[exam-core]', JSON.stringify({ at: 'exam_instance_deleted', instanceId: instance.id, from: instance.status, resultPreserved, attemptAbandoned }));
+  return { instance: r.rows[0] ? toInstance(r.rows[0]) : instance, resultPreserved, attemptAbandoned };
+}
+
+/** A new attempt is always a NEW instance from zero (same papers, mode and rigor; a Mock gets a fresh form). */
+export async function newInstanceFromExisting(instanceId: string, internal: { contentAudience?: ContentAudience } = {}): Promise<ExamInstance> {
+  const prev = await getExamInstance(instanceId);
+  if (!prev) throw new ExamInstanceError('NOT_FOUND');
+  // The old preparation may have been removed or restarted since: the new attempt goes to the ACTIVE one.
+  const prevProfile = (await db.query(`SELECT exam_definition_id, status FROM student_exam_profiles WHERE id = $1`, [prev.examProfileId])).rows[0];
+  const examProfileId = prevProfile?.status === 'ARCHIVED' ? await ensureExamProfile(prev.studentId, prevProfile.exam_definition_id, prev.examVersionId) : prev.examProfileId;
+  return createExamInstance({
+    studentId: prev.studentId,
+    examProfileId,
+    examVersionId: prev.examVersionId,
+    componentIds: prev.componentIds,
+    mode: prev.mode,
+    rigor: prev.rigor,
+    timingMode: prev.mode === 'PRACTICE' ? prev.timingMode : undefined,
+    structureNodeId: prev.structureNodeId ?? undefined,
+    focusObjectiveIds: prev.focusObjectiveIds.length ? prev.focusObjectiveIds : undefined,
+    // A Student retake is always a Student instance: the audience of a technical demo is never inherited
+    // (an in-process scenario may ask for TECHNICAL_DEMO again explicitly).
+    contentAudience: internal.contentAudience,
+  });
+}
+
+export async function findInstanceByAttempt(simulationAttemptId: string): Promise<ExamInstance | null> {
+  const r = await db.query(`SELECT * FROM exam_instances WHERE simulation_attempt_id = $1`, [simulationAttemptId]);
+  return r.rows[0] ? syncFromAttempt(toInstance(r.rows[0])) : null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Client-safe view (no item ids, no keys)                              */
+/* ------------------------------------------------------------------ */
+
+export interface ExamInstanceView {
+  id: string;
+  mode: InstanceMode;
+  rigor: Rigor;
+  practiceLevel: PracticeLevel | null;
+  timingMode: TimingMode;
+  status: InstanceStatus;
+  exam: { definitionName: string; family: string; versionLabel: string };
+  /** Every deliverable item of the instance's components is a certified StudyUs Exam Bank item. Presentation only. */
+  contentCertified: boolean;
+  components: Array<{ id: string; name: string }>;
+  form: null | {
+    fidelity: 'FULL' | 'REDUCED';
+    coveragePercent: number;
+    difficultyIndex: number | null;
+    targetDifficulty: number;
+    difficultyBandMet: boolean;
+    notes: string[];
+    positions: number;
+    filled: number;
+    components: Array<{ componentId: string; officialMarks: number | null; officialItems: number | null; plannedMarks: number; positions: number; filled: number }>;
+  };
+  frozen: boolean;
+  simulationAttemptId: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  /** The scored result of a completed instance (raw / max), for the history card. */
+  result: { rawScore: number; maxScore: number } | null;
+}
+
+export async function toInstanceView(instance: ExamInstance): Promise<ExamInstanceView> {
+  const meta = (
+    await db.query(
+      `SELECT d.name AS definition_name, d.exam_family, v.version_label FROM exam_versions v JOIN exam_definitions d ON d.id = v.exam_definition_id WHERE v.id = $1`,
+      [instance.examVersionId]
+    )
+  ).rows[0];
+  const comps = (await db.query(`SELECT id, name, definition->>'officialName' AS official FROM assessment_components WHERE id = ANY($1::uuid[])`, [instance.componentIds])).rows;
+  const byId = new Map(comps.map((c: any) => [c.id, c.official ?? c.name]));
+  const scored = instance.status === 'COMPLETED' && instance.simulationAttemptId
+    ? (await db.query(`SELECT r.raw_score, r.max_score FROM simulation_attempts sa JOIN exam_attempt_results r ON r.exam_attempt_id = sa.exam_attempt_id WHERE sa.id = $1 AND r.status = 'SCORED'`, [instance.simulationAttemptId])).rows[0]
+    : null;
+  // presentation only: is the bank of these components made of certified Exam Bank items (and of nothing else a Student can be delivered)?
+  const bank = (await db.query(
+    `SELECT count(*) FILTER (WHERE qi.lineage_class IN ('CORE_DERIVED', 'PILOT_CERTIFIED'))::int AS certified, count(*) FILTER (WHERE qi.lineage_class NOT IN ('CORE_DERIVED', 'PILOT_CERTIFIED') AND qi.provenance <> 'FIXTURE')::int AS other
+       FROM question_bank_items qi JOIN approved_items ai ON ai.id = qi.current_version_id AND ai.status = 'PUBLISHED'
+      WHERE qi.assessment_component_id = ANY($1::uuid[]) AND qi.retired_at IS NULL`, [instance.componentIds]).catch(() => ({ rows: [] as any[] }))).rows[0];
+  const contentCertified = !!bank && Number(bank.certified) > 0 && Number(bank.other) === 0;
+  const f = instance.form;
+  return {
+    contentCertified,
+    id: instance.id,
+    mode: instance.mode,
+    rigor: instance.rigor,
+    practiceLevel: instance.practiceLevel,
+    timingMode: instance.timingMode,
+    status: instance.status,
+    exam: { definitionName: meta?.definition_name ?? '', family: meta?.exam_family ?? '', versionLabel: meta?.version_label ?? '' },
+    components: instance.componentIds.map((id) => ({ id, name: byId.get(id) ?? '' })),
+    form: f
+      ? {
+          fidelity: f.fidelity,
+          coveragePercent: f.coveragePercent,
+          difficultyIndex: f.difficultyIndex,
+          targetDifficulty: f.targetDifficulty,
+          difficultyBandMet: f.difficultyBandMet,
+          notes: f.notes,
+          positions: f.slots.length,
+          filled: f.slots.filter((s) => s.approvedItemId).length,
+          components: f.components.map((c) => ({ componentId: c.componentId, officialMarks: c.officialMarks, officialItems: c.officialItems ?? null, plannedMarks: c.plannedMarks, positions: c.positions, filled: c.filled })),
+        }
+      : null,
+    frozen: !!instance.formFrozenAt && instance.mode !== 'PRACTICE',
+    simulationAttemptId: instance.simulationAttemptId,
+    createdAt: instance.createdAt,
+    startedAt: instance.startedAt,
+    completedAt: instance.completedAt,
+    result: scored ? { rawScore: Number(scored.raw_score), maxScore: Number(scored.max_score) } : null,
+  };
+}
+
+/**
+ * Ensures the Student has an exam profile for the version's definition (reused when one exists).
+ * Objective first: a preparation chosen for the objective of this exam (e.g. PISA 2022, possibly
+ * chosen while it was catalogue only) is the SAME preparation -- it is reused and now names its exam.
+ */
+export async function ensureExamProfile(studentId: string, examDefinitionId: string, examVersionId: string): Promise<string> {
+  // The Student's ACTIVE preparation for this exam (one at most); an archived one is never reused --
+  // choosing the exam again after "Quitar de mi preparación" starts a new, clean preparation.
+  const existing = await db.query(
+    `SELECT id FROM student_exam_profiles WHERE student_id = $1 AND exam_definition_id = $2 AND status <> 'ARCHIVED' ORDER BY created_at DESC LIMIT 1`,
+    [studentId, examDefinitionId]
+  );
+  if (existing.rows[0]) {
+    await db.query(`UPDATE student_exam_profiles SET exam_version_id = $2 WHERE id = $1 AND exam_version_id IS NULL`, [existing.rows[0].id, examVersionId]);
+    return existing.rows[0].id;
+  }
+  const configKey = (await db.query(`SELECT config_key FROM exam_definitions WHERE id = $1`, [examDefinitionId])).rows[0]?.config_key as string | undefined;
+  const { objectiveForConfig } = await import('./objectives/objective-catalog');
+  const objective = configKey ? objectiveForConfig(configKey) : null;
+  if (objective) {
+    const byObjective = await db.query(
+      `UPDATE student_exam_profiles SET exam_definition_id = $3, exam_version_id = COALESCE(exam_version_id, $4), updated_at = now()
+        WHERE id = (SELECT id FROM student_exam_profiles WHERE student_id = $1 AND objective_key = $2 AND status <> 'ARCHIVED' AND exam_definition_id IS NULL LIMIT 1)
+        RETURNING id`,
+      [studentId, objective.key, examDefinitionId, examVersionId]
+    );
+    if (byObjective.rows[0]) return byObjective.rows[0].id;
+  }
+  const p = await createStudentExamProfile({
+    studentId,
+    examDefinitionId,
+    examVersionId,
+    ...(objective ? { objectiveKey: objective.key, objectiveFramework: objective.framework, objectiveContext: { label: objective.label, ...objective.context }, source: 'EXAM_INSTANCE' as const } : {}),
+  });
+  return p.id;
+}

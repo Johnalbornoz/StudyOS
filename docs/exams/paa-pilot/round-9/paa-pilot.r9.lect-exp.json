@@ -1,0 +1,324 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r9.lect-exp",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "READING_PASSAGE",
+    "stimulusBrief": "Texto expositivo ORIGINAL de 300 a 380 palabras sobre la instalación de paneles solares en las escuelas rurales de una provincia andina, con nombres propios inventados de lugares e instituciones, al menos tres cifras concretas y una propuesta final del autor.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.explicit-information",
+        "difficulty": 2,
+        "focus": "un dato concreto afirmado en el texto; la pregunta debe NOMBRAR el lugar, la institución o el hecho específico del texto al que se refiere (no uses una pregunta genérica)"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "conceptStableId": "read.explicit-information",
+        "difficulty": 3,
+        "focus": "qué afirma el texto sobre un elemento concreto que la pregunta NOMBRA (una cifra, un lugar o una institución del texto); nunca una pregunta genérica sobre la tesis o el párrafo"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Energía solar para aulas de altura",
+      "text": "En la provincia andina de Lurama, varias escuelas rurales dependían de generadores diésel que funcionaban pocas horas al día. Cuando el combustible tardaba en llegar por caminos de montaña, las clases de informática se suspendían y los alimentos del comedor debían consumirse con rapidez. Para enfrentar esta situación, la Dirección Provincial de Educación inició en 2025 el programa Sol en la Escuela.\n\nLa primera etapa alcanzó a seis establecimientos situados a más de 2 800 metros de altura. En la Escuela Quebrada Clara, de la comunidad de Pucará del Viento, se instalaron 24 paneles solares sobre el techo del aula múltiple. El sistema alimenta ocho computadoras, una bomba de agua y luminarias para tres salones. Según la directora, Maura Ledesma, las actividades escolares ya no dependen de la llegada semanal del camión de combustible.\n\nEl proyecto también incluyó capacitación local. El Instituto Técnico Serranías del Sur formó a 18 jóvenes de las comunidades cercanas para revisar conexiones, limpiar los paneles y registrar la producción de energía. Esta medida busca evitar que las escuelas tengan que esperar la visita de especialistas de la ciudad de Valdora ante fallas menores. Durante los primeros cuatro meses, los registros de Quebrada Clara mostraron una reducción de 63% en el uso de diésel respecto del mismo período del año anterior.\n\nNo obstante, la instalación presenta desafíos. En invierno, el polvo arrastrado por el viento puede cubrir las superficies solares, y algunas baterías requieren resguardo frente a las bajas temperaturas nocturnas. Por esa razón, cada escuela elaboró un calendario de limpieza y designó a dos responsables entre el personal y las familias.\n\nLa experiencia de Lurama no resuelve por sí sola todas las necesidades educativas rurales, pero demuestra que una fuente local de energía puede sostener servicios básicos. La autora propone que la provincia destine una parte fija de su presupuesto de mantenimiento a capacitar equipos comunitarios y reemplazar baterías antes de que fallen, en vez de concentrar los recursos únicamente en nuevas instalaciones.",
+      "table": null
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "Según el texto, ¿qué equipos alimenta el sistema solar de la Escuela Quebrada Clara?",
+        "options": [
+          {
+            "text": "Ocho computadoras, una bomba de agua y luminarias para tres salones.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El texto enumera esos tres usos del sistema instalado en la Escuela Quebrada Clara."
+          },
+          {
+            "text": "Seis computadoras, una cocina eléctrica y luminarias para dos salones.",
+            "isKey": false,
+            "misconception": "ALTERA_CIFRAS_Y_EQUIPOS",
+            "rationale": "Es atractiva porque conserva equipos escolares, pero modifica tanto la cantidad como los aparatos mencionados."
+          },
+          {
+            "text": "Ocho computadoras, un generador diésel y luminarias para tres salones.",
+            "isKey": false,
+            "misconception": "CONFUNDE_FUENTE_PREVIA_CON_EQUIPO_ALIMENTADO",
+            "rationale": "El diésel era una fuente usada antes del proyecto, no un equipo alimentado por los paneles."
+          },
+          {
+            "text": "Dieciocho computadoras, una bomba de agua y luminarias para tres salones.",
+            "isKey": false,
+            "misconception": "CONFUNDE_CIFRAS_DE_DISTINTOS_DATOS",
+            "rationale": "El número 18 corresponde a los jóvenes capacitados, no a las computadoras del sistema."
+          }
+        ],
+        "evidenceQuote": "El sistema alimenta ocho computadoras, una bomba de agua y luminarias para tres salones."
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Qué afirma el texto sobre la capacitación impartida por el Instituto Técnico Serranías del Sur?",
+        "options": [
+          {
+            "text": "Formó a 18 jóvenes para revisar conexiones, limpiar paneles y registrar energía.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "El texto indica que el instituto capacitó a 18 jóvenes en esas tareas de mantenimiento y registro."
+          },
+          {
+            "text": "Formó a 24 jóvenes para instalar paneles, reparar baterías y transportar combustible.",
+            "isKey": false,
+            "misconception": "CONFUNDE_CIFRAS_Y_FUNCIONES",
+            "rationale": "El número 24 corresponde a los paneles de otra escuela, y las tareas no son las señaladas para la capacitación."
+          },
+          {
+            "text": "Formó a 18 docentes para dirigir salones, usar computadoras y preparar alimentos.",
+            "isKey": false,
+            "misconception": "CONFUNDE_BENEFICIARIOS_DEL_PROYECTO",
+            "rationale": "La capacitación fue para jóvenes de comunidades cercanas y trató sobre el sistema energético, no sobre esas funciones escolares."
+          },
+          {
+            "text": "Formó a 63 jóvenes para medir diésel, cuidar baterías y visitar Valdora.",
+            "isKey": false,
+            "misconception": "CONFUNDE_PORCENTAJE_CON_CANTIDAD",
+            "rationale": "El 63% expresa la reducción en el uso de diésel, no la cantidad de personas formadas."
+          }
+        ],
+        "evidenceQuote": "formó a 18 jóvenes de las comunidades cercanas para revisar conexiones, limpiar los paneles y registrar la producción de energía"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "4f876e93-d483-4b59-8fea-b89a44303db8",
+    "generatedAt": "2026-10-16T14:15:50.631Z",
+    "unitId": "paa-pilot.r9.lect-exp"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "b48e490e-a756-4ff5-8e5c-2ae9bf8e3113",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "0fdd8ccb-e248-4591-9351-65176787f531",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-explicitas.cce492489423",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.explicit-information"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.7e02e1d8f6b5@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-explicitas.47f4aa1d3c58",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.explicitas",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.explicitas / read.explicit-information"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.7e02e1d8f6b5@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

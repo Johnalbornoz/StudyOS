@@ -1,0 +1,3269 @@
+{
+  "kind": "EA1A_LEARNING_APPROACH_POC",
+  "v": 2,
+  "about": "EA-1A proofs of concept (Mexico: MCCEMS; Colombia: MEN). Curriculum x learning approach x assessment profile, composed for the same canonical concepts and the same DRAFT task families. DEV_TEST_CONTENT specifications only; no question generated. Curriculum entitlement is NOT ESTABLISHED anywhere: the repository holds no MCCEMS or MEN structure or concept mapping, and none was invented. Profiles and the STEM+ approach are provisional StudyUs policy. Nothing is reviewed, certified or approved.",
+  "request": {
+    "purpose": "PRACTICE",
+    "difficultyBand": "STANDARD",
+    "contentUseClass": "DEV_TEST_CONTENT",
+    "language": "es"
+  },
+  "curricula": [
+    {
+      "curriculumId": "MX.SEP.MCCEMS",
+      "country": "MX",
+      "authorityName": "Secretaría de Educación Pública (SEP)",
+      "programmeName": "Educación Media Superior — Marco Curricular Común (MCCEMS)",
+      "programmeVersion": "MCCEMS 2023",
+      "structureStatus": "STRUCTURE_NOT_IMPORTED",
+      "recordedIn": "scripts/operations/seed-education-authorities.ts (AUTHORITIES; DEV reference metadata, source_locator STRUCTURE_NOT_IMPORTED)"
+    },
+    {
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "country": "CO",
+      "authorityName": "Ministerio de Educación Nacional (MEN)",
+      "programmeName": "Estándares Básicos de Competencias y DBA",
+      "programmeVersion": "EBC 2006 · DBA v2 2016",
+      "structureStatus": "STRUCTURE_NOT_IMPORTED",
+      "recordedIn": "scripts/operations/seed-education-authorities.ts (AUTHORITIES; DEV reference metadata, source_locator STRUCTURE_NOT_IMPORTED)"
+    }
+  ],
+  "approaches": [
+    {
+      "approachId": "STANDARD",
+      "version": "1",
+      "status": "PROVISIONAL",
+      "transversalCompetencies": [],
+      "preferences": [],
+      "participationModes": [
+        "INDIVIDUAL"
+      ]
+    },
+    {
+      "approachId": "STEM_PLUS",
+      "version": "0.1.0-provisional",
+      "status": "PROVISIONAL",
+      "transversalCompetencies": [
+        {
+          "key": "SCIENTIFIC_INQUIRY",
+          "code": "dev.comp.scientific-inquiry",
+          "catalogueStatus": "IN_CATALOGUE"
+        },
+        {
+          "key": "MATHEMATICAL_MODELLING",
+          "code": "studyus.transversal.mathematical-modelling",
+          "catalogueStatus": "NOT_YET_IN_CATALOGUE"
+        },
+        {
+          "key": "ENGINEERING_DESIGN",
+          "code": "studyus.transversal.engineering-design",
+          "catalogueStatus": "NOT_YET_IN_CATALOGUE"
+        },
+        {
+          "key": "DATA_AND_COMPUTATIONAL_REASONING",
+          "code": "studyus.transversal.data-computational-reasoning",
+          "catalogueStatus": "NOT_YET_IN_CATALOGUE"
+        },
+        {
+          "key": "PROBLEM_SOLVING_AND_TRANSFER",
+          "code": "studyus.transversal.problem-solving-transfer",
+          "catalogueStatus": "NOT_YET_IN_CATALOGUE"
+        },
+        {
+          "key": "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION",
+          "code": "studyus.transversal.scientific-communication-argumentation",
+          "catalogueStatus": "NOT_YET_IN_CATALOGUE"
+        }
+      ],
+      "preferences": [
+        {
+          "preferenceId": "stem-plus.context.situated",
+          "dimension": "context",
+          "strength": "REQUIRED_OUTSIDE_EXAMS"
+        },
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "dimension": "responseFormat",
+          "strength": "PREFERRED"
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "dimension": "reasoningDepth",
+          "strength": "PREFERRED"
+        },
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "dimension": "stimulus",
+          "strength": "PREFERRED"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "dimension": "toolPolicy",
+          "strength": "PREFERRED"
+        }
+      ],
+      "participationModes": [
+        "INDIVIDUAL",
+        "COLLABORATIVE"
+      ]
+    }
+  ],
+  "assessmentTargets": [
+    {
+      "targetId": "PAA.MATEMATICAS",
+      "systemProfileId": "PAA",
+      "componentId": "PAA.MATEMATICAS",
+      "basis": "MIXED_AUTHORITY",
+      "examFamilyCode": "PAA",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "versionBinding": {
+        "targetType": "EXAM_VERSION",
+        "targetIdentity": "v2.paa",
+        "version": "V2.1 PAA revisada (guía 2021)",
+        "componentKey": "matematicas",
+        "provenance": {
+          "kind": "AUTHORITATIVE_SOURCE",
+          "sourceKeys": [
+            "cb-paa-guia-2021",
+            "cb-paa-preguntas-respuestas-2017",
+            "cb-paa-practice-test-2018"
+          ],
+          "recordedIn": "PAA_V2.key / version.label / sections[matematicas]"
+        }
+      }
+    },
+    {
+      "targetId": "PISA.MATHEMATICS",
+      "systemProfileId": "PISA",
+      "componentId": "PISA.MATHEMATICS",
+      "basis": "MIXED_AUTHORITY",
+      "examFamilyCode": "PISA",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "versionBinding": {
+        "targetType": "FRAMEWORK_VERSION",
+        "targetIdentity": "pisa-math",
+        "version": "2022",
+        "componentKey": "math",
+        "provenance": {
+          "kind": "AUTHORITATIVE_SOURCE",
+          "sourceKeys": [
+            "oecd-pisa-2022-framework",
+            "oecd-pisa-2022-math-site",
+            "nces-pisa-2022-technical-notes"
+          ],
+          "recordedIn": "PISA_MATH_V2.framework.frameworkKey / frameworkVersion / sections[math]"
+        }
+      }
+    },
+    {
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "systemProfileId": "SCHOOL_STEM_PERFORMANCE",
+      "componentId": null,
+      "basis": "INSTITUTION_POLICY",
+      "examFamilyCode": null,
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "versionBinding": null
+    },
+    {
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "systemProfileId": "ICFES",
+      "componentId": "ICFES.SABER11_MATEMATICAS",
+      "basis": "MIXED_AUTHORITY",
+      "examFamilyCode": "ICFES",
+      "status": "PROVISIONAL_ILLUSTRATIVE",
+      "versionBinding": {
+        "targetType": "EXAM_VERSION",
+        "targetIdentity": "v2.saber11.math",
+        "version": "V2.1 Saber 11 2026 · 50 posiciones",
+        "componentKey": "math",
+        "provenance": {
+          "kind": "AUTHORITATIVE_SOURCE",
+          "sourceKeys": [
+            "icfes-marco-matematicas-saber11",
+            "icfes-guia-saber11-2026",
+            "icfes-resolucion-268-2020"
+          ],
+          "recordedIn": "SABER11_MATH_V2.key / version.label / sections[math]"
+        }
+      }
+    }
+  ],
+  "families": [
+    {
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "version": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "invariantHashOfTheEa1Version": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "approachSupport": {
+        "transversalCompetencies": [
+          "studyus.transversal.mathematical-modelling",
+          "studyus.transversal.problem-solving-transfer"
+        ],
+        "participationModes": [
+          "INDIVIDUAL",
+          "COLLABORATIVE"
+        ]
+      }
+    },
+    {
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "version": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "invariantHashOfTheEa1Version": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "approachSupport": {
+        "transversalCompetencies": [
+          "studyus.transversal.data-computational-reasoning",
+          "studyus.transversal.scientific-communication-argumentation"
+        ],
+        "participationModes": [
+          "INDIVIDUAL"
+        ]
+      }
+    }
+  ],
+  "cells": [
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "PAA.MATEMATICAS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "f89efcdfa8f18b413aca75d5a4298831c20ae8a79c64d2155f048c1bf841fbde",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "NONE",
+          "transfer": "NOT_REQUIRED",
+          "situation": "A choice an individual makes between two offers."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": 65.45,
+          "unit": "ITEM"
+        },
+        "markStructure": "ONE_MARK_PER_ITEM",
+        "rubricStyle": "KEY_ONLY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "one-quantity",
+            "inverted-rate",
+            "difference"
+          ]
+        }
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "PAA.MATEMATICAS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "eb990ab75ab90d964b65b3514518833547855c624e653fe1b260558a1eacca32",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "MATHEMATICAL_MODELLING",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "ENGINEERING_DESIGN",
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SOCIETAL"
+          }
+        ],
+        "unmet": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "wanted": [
+              "EXTENDED_RESPONSE",
+              "SHORT_RESPONSE"
+            ],
+            "decided": "SELECTED_RESPONSE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "paa.matematicas.response-formats",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "wanted": [
+              "ALLOWED",
+              "SCIENTIFIC_REQUIRED",
+              "GDC_REQUIRED"
+            ],
+            "decided": "NONE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "paa.matematicas.calculator",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "wanted": [
+              "OWN_STIMULUS",
+              "SHARED_STIMULUS"
+            ],
+            "decided": "NONE",
+            "overriddenBy": {
+              "origin": "FAMILY",
+              "ref": "responseConstraints.stimulusNeed",
+              "authority": null
+            },
+            "overridingRuleCertification": null
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "wanted": [
+              "JUSTIFIED_ARGUMENT",
+              "METHOD_SHOWN"
+            ],
+            "decided": "ANSWER_ONLY",
+            "overriddenBy": {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "paa.reasoning",
+              "authority": "STUDYUS_POLICY"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          }
+        ]
+      },
+      "variable": {
+        "context": {
+          "kind": "SOCIETAL",
+          "authenticity": "NONE",
+          "transfer": "NOT_REQUIRED",
+          "situation": "A comparison of two public services, places or groups by a rate."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": 65.45,
+          "unit": "ITEM"
+        },
+        "markStructure": "ONE_MARK_PER_ITEM",
+        "rubricStyle": "KEY_ONLY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "one-quantity",
+            "inverted-rate",
+            "difference"
+          ]
+        }
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "PAA.MATEMATICAS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "d4521441ac6983d8e477cc69564516238191bbecec7e956e2340887f89505441",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "NONE",
+          "transfer": "NOT_REQUIRED",
+          "situation": "A statement about a class, a team or a household."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": 65.45,
+          "unit": "ITEM"
+        },
+        "markStructure": "ONE_MARK_PER_ITEM",
+        "rubricStyle": "KEY_ONLY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "association-as-cause",
+            "scale-ignored",
+            "plurality-as-majority"
+          ]
+        }
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "PAA.MATEMATICAS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "d58c44a05ece534dc519d45136667b06f2120702b2835daea45a4e1b83695e66",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "OFFICIAL_EXAM_STRUCTURE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "MATHEMATICAL_MODELLING",
+          "ENGINEERING_DESIGN",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SCIENTIFIC"
+          },
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "decided": "OWN_STIMULUS"
+          }
+        ],
+        "unmet": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "wanted": [
+              "EXTENDED_RESPONSE",
+              "SHORT_RESPONSE"
+            ],
+            "decided": "SELECTED_RESPONSE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "paa.matematicas.response-formats",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "wanted": [
+              "ALLOWED",
+              "SCIENTIFIC_REQUIRED",
+              "GDC_REQUIRED"
+            ],
+            "decided": "NONE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "paa.matematicas.calculator",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "wanted": [
+              "JUSTIFIED_ARGUMENT",
+              "METHOD_SHOWN"
+            ],
+            "decided": "ANSWER_ONLY",
+            "overriddenBy": {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "paa.reasoning",
+              "authority": "STUDYUS_POLICY"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          }
+        ]
+      },
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "NONE",
+          "transfer": "NOT_REQUIRED",
+          "situation": "A conclusion drawn from a small set of measurements."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": 65.45,
+          "unit": "ITEM"
+        },
+        "markStructure": "ONE_MARK_PER_ITEM",
+        "rubricStyle": "KEY_ONLY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "association-as-cause",
+            "scale-ignored",
+            "plurality-as-majority"
+          ]
+        }
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "9dcc79fe367a649fc9a666c2f536b8255147b04563391023a09eb57cc864a304",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+          "transfer": "REQUIRED",
+          "situation": "A choice an individual makes between two offers."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [
+          "FORMULATE",
+          "EMPLOY",
+          "INTERPRET_EVALUATE"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "CODED_CREDIT",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "one-quantity",
+            "inverted-rate",
+            "difference"
+          ]
+        }
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "33ffa462c23283b9b167d296284efc51dad272ff71b89b1a5a197601ca71c102",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "MATHEMATICAL_MODELLING",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "ENGINEERING_DESIGN",
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SOCIETAL"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "decided": "ALLOWED"
+          }
+        ],
+        "unmet": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "wanted": [
+              "EXTENDED_RESPONSE",
+              "SHORT_RESPONSE"
+            ],
+            "decided": "SELECTED_RESPONSE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "pisa.mathematics.response-formats",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "wanted": [
+              "OWN_STIMULUS",
+              "SHARED_STIMULUS"
+            ],
+            "decided": "NONE",
+            "overriddenBy": {
+              "origin": "FAMILY",
+              "ref": "responseConstraints.stimulusNeed",
+              "authority": null
+            },
+            "overridingRuleCertification": null
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "wanted": [
+              "JUSTIFIED_ARGUMENT",
+              "METHOD_SHOWN"
+            ],
+            "decided": "ANSWER_ONLY",
+            "overriddenBy": {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "pisa.reasoning",
+              "authority": "STUDYUS_POLICY"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          }
+        ]
+      },
+      "variable": {
+        "context": {
+          "kind": "SOCIETAL",
+          "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+          "transfer": "REQUIRED",
+          "situation": "A comparison of two public services, places or groups by a rate."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [
+          "FORMULATE",
+          "EMPLOY",
+          "INTERPRET_EVALUATE"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "CODED_CREDIT",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "one-quantity",
+            "inverted-rate",
+            "difference"
+          ]
+        }
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "41d5fd9b19dc981fdab203763bebb2c2e21c0dd5dc2a8986d63bf68beb9b1604",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+          "transfer": "REQUIRED",
+          "situation": "A statement about a class, a team or a household."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [
+          "INTERPRET_EVALUATE",
+          "REASON"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "CODED_CREDIT",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "association-as-cause",
+            "scale-ignored",
+            "plurality-as-majority"
+          ]
+        }
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "c7785e6a43326e33ab41208bca7f1fe47700e862f9fba8c69b3e77cffd72dab7",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "MATHEMATICAL_MODELLING",
+          "ENGINEERING_DESIGN",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SCIENTIFIC"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "decided": "ALLOWED"
+          },
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "decided": "OWN_STIMULUS"
+          }
+        ],
+        "unmet": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "wanted": [
+              "EXTENDED_RESPONSE",
+              "SHORT_RESPONSE"
+            ],
+            "decided": "SELECTED_RESPONSE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "pisa.mathematics.response-formats",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "wanted": [
+              "JUSTIFIED_ARGUMENT",
+              "METHOD_SHOWN"
+            ],
+            "decided": "ANSWER_ONLY",
+            "overriddenBy": {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "pisa.reasoning",
+              "authority": "STUDYUS_POLICY"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          }
+        ]
+      },
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+          "transfer": "REQUIRED",
+          "situation": "A conclusion drawn from a small set of measurements."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [
+          "INTERPRET_EVALUATE",
+          "REASON"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "CODED_CREDIT",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "association-as-cause",
+            "scale-ignored",
+            "plurality-as-majority"
+          ]
+        }
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "d826ac893f153adcb0507c152d49e3f5de761fd86609d5d946a7ffb45a610a68",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "SOCIETAL",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A comparison of two public services, places or groups by a rate."
+        },
+        "responseFormat": {
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": null
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "421a993058fc37dfcc90abe9a52a570733624624d8657df649acc7176f109e5a",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "MATHEMATICAL_MODELLING",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "ENGINEERING_DESIGN",
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "decided": "EXTENDED_RESPONSE"
+          },
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SOCIETAL"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "decided": "ALLOWED"
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "decided": "JUSTIFIED_ARGUMENT"
+          }
+        ],
+        "unmet": [
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "wanted": [
+              "OWN_STIMULUS",
+              "SHARED_STIMULUS"
+            ],
+            "decided": "NONE",
+            "overriddenBy": {
+              "origin": "FAMILY",
+              "ref": "responseConstraints.stimulusNeed",
+              "authority": null
+            },
+            "overridingRuleCertification": null
+          }
+        ]
+      },
+      "variable": {
+        "context": {
+          "kind": "SOCIETAL",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A comparison of two public services, places or groups by a rate."
+        },
+        "responseFormat": {
+          "format": "EXTENDED_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": null
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "fe3ae80b5d0a54efd7aeb604d7115eb81d085d98409e22c523e876be5c2bd2d7",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A conclusion drawn from a small set of measurements."
+        },
+        "responseFormat": {
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": null
+      }
+    },
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "institutionConfiguration": "example.mx.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "448be151fd8b58088efc858434b082f2ca41c6be4f85c3829342bdd84e0e4313",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "MATHEMATICAL_MODELLING",
+          "ENGINEERING_DESIGN",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "decided": "EXTENDED_RESPONSE"
+          },
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SCIENTIFIC"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "decided": "ALLOWED"
+          },
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "decided": "OWN_STIMULUS"
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "decided": "JUSTIFIED_ARGUMENT"
+          }
+        ],
+        "unmet": []
+      },
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A conclusion drawn from a small set of measurements."
+        },
+        "responseFormat": {
+          "format": "EXTENDED_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": null
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "200caad61414a3c3866fc8d88c5b4a78853d3c577cc32b038a56855887a172ee",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A choice an individual makes between two offers."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [
+          "INTERPRETACION_REPRESENTACION",
+          "FORMULACION_EJECUCION"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "ONE_MARK_PER_ITEM",
+        "rubricStyle": "KEY_ONLY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "one-quantity",
+            "inverted-rate",
+            "difference"
+          ]
+        }
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "20a853799686e0b82fedb6651d499f7ef479c69f9b0059426d1948bedfd7b8ad",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "MATHEMATICAL_MODELLING",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "ENGINEERING_DESIGN",
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SOCIETAL"
+          }
+        ],
+        "unmet": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "wanted": [
+              "EXTENDED_RESPONSE",
+              "SHORT_RESPONSE"
+            ],
+            "decided": "SELECTED_RESPONSE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "icfes.saber11-matematicas.response-formats",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "wanted": [
+              "ALLOWED",
+              "SCIENTIFIC_REQUIRED",
+              "GDC_REQUIRED"
+            ],
+            "decided": "NONE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "icfes.saber11-matematicas.calculator",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "wanted": [
+              "OWN_STIMULUS",
+              "SHARED_STIMULUS"
+            ],
+            "decided": "NONE",
+            "overriddenBy": {
+              "origin": "FAMILY",
+              "ref": "responseConstraints.stimulusNeed",
+              "authority": null
+            },
+            "overridingRuleCertification": null
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "wanted": [
+              "JUSTIFIED_ARGUMENT",
+              "METHOD_SHOWN"
+            ],
+            "decided": "ANSWER_ONLY",
+            "overriddenBy": {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "icfes.reasoning",
+              "authority": "STUDYUS_POLICY"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          }
+        ]
+      },
+      "variable": {
+        "context": {
+          "kind": "SOCIETAL",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A comparison of two public services, places or groups by a rate."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [
+          "INTERPRETACION_REPRESENTACION",
+          "FORMULACION_EJECUCION"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "ONE_MARK_PER_ITEM",
+        "rubricStyle": "KEY_ONLY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "one-quantity",
+            "inverted-rate",
+            "difference"
+          ]
+        }
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "b466cafc587ff428e15368e0879a5f7ddbbcab18624af3621625c93289dd7797",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A statement about a class, a team or a household."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [
+          "INTERPRETACION_REPRESENTACION",
+          "ARGUMENTACION"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "ONE_MARK_PER_ITEM",
+        "rubricStyle": "KEY_ONLY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "association-as-cause",
+            "scale-ignored",
+            "plurality-as-majority"
+          ]
+        }
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "a0b2e2fa5cec04ae1afcb58dc23d96166758eb559924b00a53ee167b0f971ea5",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "MATHEMATICAL_MODELLING",
+          "ENGINEERING_DESIGN",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SCIENTIFIC"
+          },
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "decided": "OWN_STIMULUS"
+          }
+        ],
+        "unmet": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "wanted": [
+              "EXTENDED_RESPONSE",
+              "SHORT_RESPONSE"
+            ],
+            "decided": "SELECTED_RESPONSE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "icfes.saber11-matematicas.response-formats",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "wanted": [
+              "ALLOWED",
+              "SCIENTIFIC_REQUIRED",
+              "GDC_REQUIRED"
+            ],
+            "decided": "NONE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "icfes.saber11-matematicas.calculator",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "wanted": [
+              "JUSTIFIED_ARGUMENT",
+              "METHOD_SHOWN"
+            ],
+            "decided": "ANSWER_ONLY",
+            "overriddenBy": {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "icfes.reasoning",
+              "authority": "STUDYUS_POLICY"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          }
+        ]
+      },
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A conclusion drawn from a small set of measurements."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [
+          "INTERPRETACION_REPRESENTACION",
+          "ARGUMENTACION"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "ONE_MARK_PER_ITEM",
+        "rubricStyle": "KEY_ONLY",
+        "toolPolicy": {
+          "calculator": "NONE"
+        },
+        "numericProfile": "EXACT_WITHOUT_TOOL",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "association-as-cause",
+            "scale-ignored",
+            "plurality-as-majority"
+          ]
+        }
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "172bfcccb0b58e5c578435b9b05320480ebfb376bac6833e5bfcab09c185ece2",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+          "transfer": "REQUIRED",
+          "situation": "A choice an individual makes between two offers."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [
+          "FORMULATE",
+          "EMPLOY",
+          "INTERPRET_EVALUATE"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "CODED_CREDIT",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "one-quantity",
+            "inverted-rate",
+            "difference"
+          ]
+        }
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "b97296f0cbf9db0f672801a537071afef77a15825d958359c7c2cd569cc50802",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "ESTABLISHED",
+        "basis": "REVIEWED_CATALOGUE_LINK"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "MATHEMATICAL_MODELLING",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "ENGINEERING_DESIGN",
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SOCIETAL"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "decided": "ALLOWED"
+          }
+        ],
+        "unmet": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "wanted": [
+              "EXTENDED_RESPONSE",
+              "SHORT_RESPONSE"
+            ],
+            "decided": "SELECTED_RESPONSE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "pisa.mathematics.response-formats",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "wanted": [
+              "OWN_STIMULUS",
+              "SHARED_STIMULUS"
+            ],
+            "decided": "NONE",
+            "overriddenBy": {
+              "origin": "FAMILY",
+              "ref": "responseConstraints.stimulusNeed",
+              "authority": null
+            },
+            "overridingRuleCertification": null
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "wanted": [
+              "JUSTIFIED_ARGUMENT",
+              "METHOD_SHOWN"
+            ],
+            "decided": "ANSWER_ONLY",
+            "overriddenBy": {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "pisa.reasoning",
+              "authority": "STUDYUS_POLICY"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          }
+        ]
+      },
+      "variable": {
+        "context": {
+          "kind": "SOCIETAL",
+          "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+          "transfer": "REQUIRED",
+          "situation": "A comparison of two public services, places or groups by a rate."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [
+          "FORMULATE",
+          "EMPLOY",
+          "INTERPRET_EVALUATE"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "CODED_CREDIT",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "one-quantity",
+            "inverted-rate",
+            "difference"
+          ]
+        }
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "7ccf408f0a4e19d75889e3ea943abbeb0dfb83daf992ff2489920e344d96c9fa",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "PERSONAL",
+          "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+          "transfer": "REQUIRED",
+          "situation": "A statement about a class, a team or a household."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [
+          "INTERPRET_EVALUATE",
+          "REASON"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "CODED_CREDIT",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "association-as-cause",
+            "scale-ignored",
+            "plurality-as-majority"
+          ]
+        }
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "57f55028e83c5d4dccb0cfaa1c0c2902e4da3e5bcc5e2ed2c1db98d7eaa0dbdc",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "MATHEMATICAL_MODELLING",
+          "ENGINEERING_DESIGN",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SCIENTIFIC"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "decided": "ALLOWED"
+          },
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "decided": "OWN_STIMULUS"
+          }
+        ],
+        "unmet": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "wanted": [
+              "EXTENDED_RESPONSE",
+              "SHORT_RESPONSE"
+            ],
+            "decided": "SELECTED_RESPONSE",
+            "overriddenBy": {
+              "origin": "COMPONENT_PROFILE_RULE",
+              "ref": "pisa.mathematics.response-formats",
+              "authority": "OFFICIAL"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "wanted": [
+              "JUSTIFIED_ARGUMENT",
+              "METHOD_SHOWN"
+            ],
+            "decided": "ANSWER_ONLY",
+            "overriddenBy": {
+              "origin": "SYSTEM_PROFILE_RULE",
+              "ref": "pisa.reasoning",
+              "authority": "STUDYUS_POLICY"
+            },
+            "overridingRuleCertification": "PROVISIONAL_ILLUSTRATIVE"
+          }
+        ]
+      },
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "AUTHENTIC_CONTEXT_REQUIRED",
+          "transfer": "REQUIRED",
+          "situation": "A conclusion drawn from a small set of measurements."
+        },
+        "responseFormat": {
+          "format": "SELECTED_RESPONSE",
+          "productionFormat": "MULTIPLE_CHOICE"
+        },
+        "reasoningDepth": {
+          "depth": "ANSWER_ONLY",
+          "workingShown": false,
+          "justificationRequired": false
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [
+          "INTERPRET_EVALUATE",
+          "REASON"
+        ],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "CODED_CREDIT",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": {
+          "source": "FAMILY_MISCONCEPTION_MODELS",
+          "misconceptionModelIds": [
+            "association-as-cause",
+            "scale-ignored",
+            "plurality-as-majority"
+          ]
+        }
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "8102511207ae067f21f4b4019155505713e4719a0b3c77cd458774d3e1c8e863",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "SOCIETAL",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A comparison of two public services, places or groups by a rate."
+        },
+        "responseFormat": {
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": null
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.num.ratio-proportion",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "6443eefce7dfd33e576440b7360cf9bca9e78cc8527784885c0faf47f67e0a78",
+      "invariantHash": "135690f5dbfc849bdf6129c148464f2d9e473e0f7dd9aafebacc2fa9d53c149e",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "MATHEMATICAL_MODELLING",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "ENGINEERING_DESIGN",
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "decided": "EXTENDED_RESPONSE"
+          },
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SOCIETAL"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "decided": "ALLOWED"
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "decided": "JUSTIFIED_ARGUMENT"
+          }
+        ],
+        "unmet": [
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "wanted": [
+              "OWN_STIMULUS",
+              "SHARED_STIMULUS"
+            ],
+            "decided": "NONE",
+            "overriddenBy": {
+              "origin": "FAMILY",
+              "ref": "responseConstraints.stimulusNeed",
+              "authority": null
+            },
+            "overridingRuleCertification": null
+          }
+        ]
+      },
+      "variable": {
+        "context": {
+          "kind": "SOCIETAL",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A comparison of two public services, places or groups by a rate."
+        },
+        "responseFormat": {
+          "format": "EXTENDED_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "NONE",
+          "kinds": []
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": null
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.standard",
+      "approachId": "STANDARD",
+      "approachSource": "DEFAULT_NO_APPROACH_CONFIGURED",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "b4dbdee7a97a69e05b65b8a3e87906ff24d43ddd96d6f6119f69c96bf627f551",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": null,
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A conclusion drawn from a small set of measurements."
+        },
+        "responseFormat": {
+          "format": "SHORT_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": null
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "institutionConfiguration": "example.co.stem-plus",
+      "approachId": "STEM_PLUS",
+      "approachSource": "INSTITUTION_CONFIGURATION",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "familyVersion": "0.2.0-draft",
+      "conceptStableId": "math.stat.data-representation",
+      "canonicalSubject": "Matemáticas",
+      "outcome": "SPECIFICATION",
+      "specificationId": "0a576921589c6beb7d00a8b0c28aa33554053ee54b3d7a271abe10304712d9da",
+      "invariantHash": "2ae84cb3333f6cf6e6d10e7a19c20dadf9ec0d7058e185d0c048b0ece2ae8b2f",
+      "refusal": null,
+      "contentUseClass": "DEV_TEST_CONTENT",
+      "applicability": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE"
+      },
+      "curriculumEntitlement": {
+        "status": "NOT_ESTABLISHED",
+        "basis": "NONE",
+        "structureStatus": "STRUCTURE_NOT_IMPORTED"
+      },
+      "learningApproach": {
+        "approachId": "STEM_PLUS",
+        "version": "0.1.0-provisional",
+        "participation": {
+          "mode": "INDIVIDUAL",
+          "evidenceYield": "INDIVIDUAL_EVIDENCE"
+        },
+        "competenciesServedByFamily": [
+          "DATA_AND_COMPUTATIONAL_REASONING",
+          "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION"
+        ],
+        "competenciesNotServedByFamily": [
+          "SCIENTIFIC_INQUIRY",
+          "MATHEMATICAL_MODELLING",
+          "ENGINEERING_DESIGN",
+          "PROBLEM_SOLVING_AND_TRANSFER"
+        ],
+        "honoured": [
+          {
+            "preferenceId": "stem-plus.response.constructed",
+            "decided": "EXTENDED_RESPONSE"
+          },
+          {
+            "preferenceId": "stem-plus.context.situated",
+            "decided": "SCIENTIFIC"
+          },
+          {
+            "preferenceId": "stem-plus.tools.available",
+            "decided": "ALLOWED"
+          },
+          {
+            "preferenceId": "stem-plus.stimulus.data",
+            "decided": "OWN_STIMULUS"
+          },
+          {
+            "preferenceId": "stem-plus.reasoning.justified",
+            "decided": "JUSTIFIED_ARGUMENT"
+          }
+        ],
+        "unmet": []
+      },
+      "variable": {
+        "context": {
+          "kind": "SCIENTIFIC",
+          "authenticity": "PLAUSIBLE_CONTEXT_PREFERRED",
+          "transfer": "EXPECTED",
+          "situation": "A conclusion drawn from a small set of measurements."
+        },
+        "responseFormat": {
+          "format": "EXTENDED_RESPONSE",
+          "productionFormat": null
+        },
+        "reasoningDepth": {
+          "depth": "JUSTIFIED_ARGUMENT",
+          "workingShown": true,
+          "justificationRequired": true
+        },
+        "commandTerm": null,
+        "stimulus": {
+          "mode": "OWN_STIMULUS",
+          "kinds": [
+            "TABLE",
+            "GRAPH"
+          ]
+        },
+        "competencies": [],
+        "timeBudget": {
+          "secondsPerUnit": null,
+          "unit": null
+        },
+        "markStructure": "MULTI_MARK_PARTS",
+        "rubricStyle": "CODED_CREDIT_LEVELS",
+        "toolPolicy": {
+          "calculator": "ALLOWED"
+        },
+        "numericProfile": "REALISTIC_VALUES",
+        "distractors": null
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "country": "MX",
+      "targetId": "PAA.MATEMATICAS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "context"
+      ],
+      "honoured": [
+        "stem-plus.context.situated"
+      ],
+      "unmet": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:paa.matematicas.response-formats",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:paa.matematicas.calculator",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
+          "authority": null,
+          "certification": null
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "overriddenBy": "SYSTEM_PROFILE_RULE:paa.reasoning",
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ]
+    },
+    {
+      "country": "MX",
+      "targetId": "PAA.MATEMATICAS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "context"
+      ],
+      "honoured": [
+        "stem-plus.context.situated",
+        "stem-plus.stimulus.data"
+      ],
+      "unmet": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:paa.matematicas.response-formats",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:paa.matematicas.calculator",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "overriddenBy": "SYSTEM_PROFILE_RULE:paa.reasoning",
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ]
+    },
+    {
+      "country": "MX",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "context"
+      ],
+      "honoured": [
+        "stem-plus.context.situated",
+        "stem-plus.tools.available"
+      ],
+      "unmet": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
+          "authority": null,
+          "certification": null
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "overriddenBy": "SYSTEM_PROFILE_RULE:pisa.reasoning",
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ]
+    },
+    {
+      "country": "MX",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "context"
+      ],
+      "honoured": [
+        "stem-plus.context.situated",
+        "stem-plus.tools.available",
+        "stem-plus.stimulus.data"
+      ],
+      "unmet": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "overriddenBy": "SYSTEM_PROFILE_RULE:pisa.reasoning",
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ]
+    },
+    {
+      "country": "MX",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "responseFormat"
+      ],
+      "honoured": [
+        "stem-plus.response.constructed",
+        "stem-plus.context.situated",
+        "stem-plus.tools.available",
+        "stem-plus.reasoning.justified"
+      ],
+      "unmet": [
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
+          "authority": null,
+          "certification": null
+        }
+      ]
+    },
+    {
+      "country": "MX",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "responseFormat"
+      ],
+      "honoured": [
+        "stem-plus.response.constructed",
+        "stem-plus.context.situated",
+        "stem-plus.tools.available",
+        "stem-plus.stimulus.data",
+        "stem-plus.reasoning.justified"
+      ],
+      "unmet": []
+    },
+    {
+      "country": "CO",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "context"
+      ],
+      "honoured": [
+        "stem-plus.context.situated"
+      ],
+      "unmet": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.response-formats",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.calculator",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
+          "authority": null,
+          "certification": null
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "overriddenBy": "SYSTEM_PROFILE_RULE:icfes.reasoning",
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ]
+    },
+    {
+      "country": "CO",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "context"
+      ],
+      "honoured": [
+        "stem-plus.context.situated",
+        "stem-plus.stimulus.data"
+      ],
+      "unmet": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.response-formats",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.tools.available",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.calculator",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "overriddenBy": "SYSTEM_PROFILE_RULE:icfes.reasoning",
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ]
+    },
+    {
+      "country": "CO",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "context"
+      ],
+      "honoured": [
+        "stem-plus.context.situated",
+        "stem-plus.tools.available"
+      ],
+      "unmet": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
+          "authority": null,
+          "certification": null
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "overriddenBy": "SYSTEM_PROFILE_RULE:pisa.reasoning",
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ]
+    },
+    {
+      "country": "CO",
+      "targetId": "PISA.MATHEMATICS",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "context"
+      ],
+      "honoured": [
+        "stem-plus.context.situated",
+        "stem-plus.tools.available",
+        "stem-plus.stimulus.data"
+      ],
+      "unmet": [
+        {
+          "preferenceId": "stem-plus.response.constructed",
+          "overriddenBy": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats",
+          "authority": "OFFICIAL",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        },
+        {
+          "preferenceId": "stem-plus.reasoning.justified",
+          "overriddenBy": "SYSTEM_PROFILE_RULE:pisa.reasoning",
+          "authority": "STUDYUS_POLICY",
+          "certification": "PROVISIONAL_ILLUSTRATIVE"
+        }
+      ]
+    },
+    {
+      "country": "CO",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "responseFormat"
+      ],
+      "honoured": [
+        "stem-plus.response.constructed",
+        "stem-plus.context.situated",
+        "stem-plus.tools.available",
+        "stem-plus.reasoning.justified"
+      ],
+      "unmet": [
+        {
+          "preferenceId": "stem-plus.stimulus.data",
+          "overriddenBy": "FAMILY:responseConstraints.stimulusNeed",
+          "authority": null,
+          "certification": null
+        }
+      ]
+    },
+    {
+      "country": "CO",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "invariantHashEqual": true,
+      "conceptEqual": true,
+      "changedByApproach": [
+        "responseFormat"
+      ],
+      "honoured": [
+        "stem-plus.response.constructed",
+        "stem-plus.context.situated",
+        "stem-plus.tools.available",
+        "stem-plus.stimulus.data",
+        "stem-plus.reasoning.justified"
+      ],
+      "unmet": []
+    }
+  ],
+  "specialCases": [
+    {
+      "case": "COLLABORATIVE activity, STEM_PLUS, school STEM performance, a family that declares collaborative participation",
+      "outcome": "SPECIFICATION",
+      "detail": {
+        "mode": "COLLABORATIVE",
+        "evidenceYield": "GROUP_ARTEFACT_ONLY"
+      }
+    },
+    {
+      "case": "COLLABORATIVE activity under STANDARD (no approach)",
+      "outcome": "REFUSED PARTICIPATION_MODE_NOT_ALLOWED",
+      "detail": "STANDARD uses individual work only"
+    },
+    {
+      "case": "COLLABORATIVE activity against an exam system (PISA)",
+      "outcome": "REFUSED PARTICIPATION_MODE_NOT_ALLOWED",
+      "detail": "an exam system is sat individually"
+    },
+    {
+      "case": "COLLABORATIVE activity with a family that declares individual participation only",
+      "outcome": "REFUSED PARTICIPATION_MODE_NOT_ALLOWED",
+      "detail": "the family does not declare collaborative participation"
+    },
+    {
+      "case": "STEM_PLUS requires a situated context outside exams; a family with no situation, school STEM performance",
+      "outcome": "REFUSED LEARNING_APPROACH_REQUIREMENT_UNMET",
+      "detail": "REQUIRED_OUTSIDE_EXAMS preference unmet against a non-exam target: refused"
+    },
+    {
+      "case": "the same family and approach against an exam system (PAA Matemáticas): the required preference yields and is recorded",
+      "outcome": "SPECIFICATION",
+      "detail": [
+        "stem-plus.response.constructed <- COMPONENT_PROFILE_RULE:paa.matematicas.response-formats",
+        "stem-plus.context.situated <- FAMILY:supportedContexts",
+        "stem-plus.tools.available <- COMPONENT_PROFILE_RULE:paa.matematicas.calculator",
+        "stem-plus.stimulus.data <- FAMILY:responseConstraints.stimulusNeed",
+        "stem-plus.reasoning.justified <- SYSTEM_PROFILE_RULE:paa.reasoning"
+      ]
+    },
+    {
+      "case": "EVIDENCE_BEARING content from these draft families",
+      "outcome": "REFUSED FAMILY_NOT_REVIEWED_FOR_EVIDENCE_BEARING_CONTENT",
+      "detail": "a DRAFT / UNREVIEWED family generates DEV_TEST_CONTENT only"
+    },
+    {
+      "case": "DEV_TEST_CONTENT for a protected mock pool (FULL_MOCK_1), PAA Matemáticas",
+      "outcome": "REFUSED DEV_TEST_CONTENT_NOT_ALLOWED_FOR_PURPOSE",
+      "detail": "a protected mock pool takes frozen certified content only"
+    }
+  ],
+  "readiness": [
+    {
+      "country": "MX",
+      "curriculumId": "MX.SEP.MCCEMS",
+      "architectureCompositionPoc": {
+        "status": "PASS",
+        "checks": {
+          "everyCellProducedASpecification": true,
+          "oneConceptIdPerFamily": true,
+          "oneInvariantHashPerFamily": true,
+          "approachChangesNeitherConceptNorInvariants": true,
+          "approachMovesOnlyApproachControlledDimensions": true,
+          "everyPreferenceHonouredOrRecordedUnmet": true,
+          "anOfficialConstraintOverrodeAPreferenceAndWasRecorded": true,
+          "standardIsRecordedByAbsence": true
+        }
+      },
+      "evidenceBearingCurriculumReadiness": {
+        "status": "NO",
+        "blockers": [
+          "CURRICULUM_STRUCTURE_NOT_IMPORTED: MX.SEP.MCCEMS",
+          "CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED: 12 of 12 specifications",
+          "ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED: 6 of 12 specifications",
+          "TASK_FAMILIES_NOT_REVIEWED",
+          "ASSESSMENT_PROFILES_NOT_CERTIFIED",
+          "LEARNING_APPROACH_NOT_CERTIFIED: STEM_PLUS",
+          "STEM_PLUS_CATALOGUE_READINESS_PARTIAL: 5 competencies not in the catalogue"
+        ]
+      }
+    },
+    {
+      "country": "CO",
+      "curriculumId": "CO.MEN.EBC_DBA",
+      "architectureCompositionPoc": {
+        "status": "PASS",
+        "checks": {
+          "everyCellProducedASpecification": true,
+          "oneConceptIdPerFamily": true,
+          "oneInvariantHashPerFamily": true,
+          "approachChangesNeitherConceptNorInvariants": true,
+          "approachMovesOnlyApproachControlledDimensions": true,
+          "everyPreferenceHonouredOrRecordedUnmet": true,
+          "anOfficialConstraintOverrodeAPreferenceAndWasRecorded": true,
+          "standardIsRecordedByAbsence": true
+        }
+      },
+      "evidenceBearingCurriculumReadiness": {
+        "status": "NO",
+        "blockers": [
+          "CURRICULUM_STRUCTURE_NOT_IMPORTED: CO.MEN.EBC_DBA",
+          "CURRICULUM_ENTITLEMENT_NOT_ESTABLISHED: 12 of 12 specifications",
+          "ASSESSMENT_APPLICABILITY_NOT_ESTABLISHED: 10 of 12 specifications",
+          "TASK_FAMILIES_NOT_REVIEWED",
+          "ASSESSMENT_PROFILES_NOT_CERTIFIED",
+          "LEARNING_APPROACH_NOT_CERTIFIED: STEM_PLUS",
+          "STEM_PLUS_CATALOGUE_READINESS_PARTIAL: 5 competencies not in the catalogue"
+        ]
+      }
+    }
+  ],
+  "stemPlusCatalogueReadiness": {
+    "approachId": "STEM_PLUS",
+    "version": "0.1.0-provisional",
+    "status": "PARTIAL",
+    "inCatalogue": [
+      {
+        "key": "SCIENTIFIC_INQUIRY",
+        "code": "dev.comp.scientific-inquiry"
+      }
+    ],
+    "missing": [
+      {
+        "key": "MATHEMATICAL_MODELLING",
+        "proposedCode": "studyus.transversal.mathematical-modelling",
+        "owner": "CURRICULUM"
+      },
+      {
+        "key": "ENGINEERING_DESIGN",
+        "proposedCode": "studyus.transversal.engineering-design",
+        "owner": "CURRICULUM"
+      },
+      {
+        "key": "DATA_AND_COMPUTATIONAL_REASONING",
+        "proposedCode": "studyus.transversal.data-computational-reasoning",
+        "owner": "CURRICULUM"
+      },
+      {
+        "key": "PROBLEM_SOLVING_AND_TRANSFER",
+        "proposedCode": "studyus.transversal.problem-solving-transfer",
+        "owner": "CURRICULUM"
+      },
+      {
+        "key": "SCIENTIFIC_COMMUNICATION_AND_ARGUMENTATION",
+        "proposedCode": "studyus.transversal.scientific-communication-argumentation",
+        "owner": "CURRICULUM"
+      }
+    ],
+    "inconsistencies": []
+  },
+  "summary": {
+    "cells": 24,
+    "specifications": 24,
+    "refusals": 0,
+    "conceptIdsPerFamily": {
+      "tf.math.proportion.rate-comparison-model": [
+        "math.num.ratio-proportion (Matemáticas)"
+      ],
+      "tf.math.data.judge-claim-against-display": [
+        "math.stat.data-representation (Matemáticas)"
+      ]
+    },
+    "invariantHashesPerFamily": {
+      "tf.math.proportion.rate-comparison-model": 1,
+      "tf.math.data.judge-claim-against-display": 1
+    },
+    "standardEqualsNoApproach": true,
+    "curriculumEntitlement": {
+      "NOT_ESTABLISHED": 24
+    },
+    "applicability": {
+      "ESTABLISHED:OFFICIAL_EXAM_STRUCTURE": 4,
+      "ESTABLISHED:REVIEWED_CATALOGUE_LINK": 4,
+      "NOT_ESTABLISHED:NONE": 16
+    },
+    "contentUseClasses": {
+      "DEV_TEST_CONTENT": 24
+    },
+    "officialOverrides": [
+      {
+        "country": "MX",
+        "targetId": "PAA.MATEMATICAS",
+        "familyId": "tf.math.proportion.rate-comparison-model",
+        "preferenceId": "stem-plus.response.constructed",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:paa.matematicas.response-formats"
+      },
+      {
+        "country": "MX",
+        "targetId": "PAA.MATEMATICAS",
+        "familyId": "tf.math.proportion.rate-comparison-model",
+        "preferenceId": "stem-plus.tools.available",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:paa.matematicas.calculator"
+      },
+      {
+        "country": "MX",
+        "targetId": "PAA.MATEMATICAS",
+        "familyId": "tf.math.data.judge-claim-against-display",
+        "preferenceId": "stem-plus.response.constructed",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:paa.matematicas.response-formats"
+      },
+      {
+        "country": "MX",
+        "targetId": "PAA.MATEMATICAS",
+        "familyId": "tf.math.data.judge-claim-against-display",
+        "preferenceId": "stem-plus.tools.available",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:paa.matematicas.calculator"
+      },
+      {
+        "country": "MX",
+        "targetId": "PISA.MATHEMATICS",
+        "familyId": "tf.math.proportion.rate-comparison-model",
+        "preferenceId": "stem-plus.response.constructed",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats"
+      },
+      {
+        "country": "MX",
+        "targetId": "PISA.MATHEMATICS",
+        "familyId": "tf.math.data.judge-claim-against-display",
+        "preferenceId": "stem-plus.response.constructed",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats"
+      },
+      {
+        "country": "CO",
+        "targetId": "ICFES.SABER11_MATEMATICAS",
+        "familyId": "tf.math.proportion.rate-comparison-model",
+        "preferenceId": "stem-plus.response.constructed",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.response-formats"
+      },
+      {
+        "country": "CO",
+        "targetId": "ICFES.SABER11_MATEMATICAS",
+        "familyId": "tf.math.proportion.rate-comparison-model",
+        "preferenceId": "stem-plus.tools.available",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.calculator"
+      },
+      {
+        "country": "CO",
+        "targetId": "ICFES.SABER11_MATEMATICAS",
+        "familyId": "tf.math.data.judge-claim-against-display",
+        "preferenceId": "stem-plus.response.constructed",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.response-formats"
+      },
+      {
+        "country": "CO",
+        "targetId": "ICFES.SABER11_MATEMATICAS",
+        "familyId": "tf.math.data.judge-claim-against-display",
+        "preferenceId": "stem-plus.tools.available",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:icfes.saber11-matematicas.calculator"
+      },
+      {
+        "country": "CO",
+        "targetId": "PISA.MATHEMATICS",
+        "familyId": "tf.math.proportion.rate-comparison-model",
+        "preferenceId": "stem-plus.response.constructed",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats"
+      },
+      {
+        "country": "CO",
+        "targetId": "PISA.MATHEMATICS",
+        "familyId": "tf.math.data.judge-claim-against-display",
+        "preferenceId": "stem-plus.response.constructed",
+        "overriddenByRule": "COMPONENT_PROFILE_RULE:pisa.mathematics.response-formats"
+      }
+    ],
+    "unmetByAuthority": {
+      "FAMILY_OR_REQUEST": 6,
+      "OFFICIAL": 12,
+      "STUDYUS_POLICY": 8
+    },
+    "unmetByRuleCertification": {
+      "NOT_A_PROFILE_RULE": 6,
+      "PROVISIONAL_ILLUSTRATIVE": 20
+    },
+    "approachChangedSomethingIn": 12
+  }
+}

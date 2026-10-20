@@ -1,0 +1,340 @@
+{
+  "kind": "QF_V5_GENERATION_PLAN",
+  "profileVersion": "qf-v5-profiles-1.0.0-provisional",
+  "validatorVersion": "qf-v5-validators-1.0.0",
+  "planningYield": 0.8,
+  "bankInventory": "EMPTY (no Student-eligible item supplied)",
+  "profiles": 54,
+  "blueprintSections": 263,
+  "blueprintBuckets": 432,
+  "governedSlotsOneForm": 503,
+  "targetEligibleAtRepeatableDepth": 957,
+  "rawCandidatesPlanned": 1266,
+  "worstCaseCallsPerSpecification": {
+    "AUTHOR": 2,
+    "SOLVER": 4,
+    "JUDGE": 6
+  },
+  "authoringPromptCharactersSample": 3512,
+  "byCluster": {
+    "AICE.9093": {
+      "profiles": [
+        "AICE.9093.WRITTEN"
+      ],
+      "buckets": 12,
+      "rawCandidates": 48,
+      "targetEligible": 36
+    },
+    "AICE.9239": {
+      "profiles": [
+        "AICE.9239.WRITTEN"
+      ],
+      "buckets": 6,
+      "rawCandidates": 24,
+      "targetEligible": 18
+    },
+    "AICE.9700": {
+      "profiles": [
+        "AICE.9700.MCQ",
+        "AICE.9700.STRUCTURED",
+        "AICE.9700.PLANNING"
+      ],
+      "buckets": 15,
+      "rawCandidates": 60,
+      "targetEligible": 45
+    },
+    "AICE.9701": {
+      "profiles": [
+        "AICE.9701.MCQ",
+        "AICE.9701.STRUCTURED",
+        "AICE.9701.PLANNING"
+      ],
+      "buckets": 15,
+      "rawCandidates": 60,
+      "targetEligible": 45
+    },
+    "AICE.9702": {
+      "profiles": [
+        "AICE.9702.MCQ",
+        "AICE.9702.STRUCTURED",
+        "AICE.9702.PLANNING"
+      ],
+      "buckets": 15,
+      "rawCandidates": 60,
+      "targetEligible": 45
+    },
+    "AICE.9708": {
+      "profiles": [
+        "AICE.9708.MCQ",
+        "AICE.9708.WRITTEN"
+      ],
+      "buckets": 18,
+      "rawCandidates": 72,
+      "targetEligible": 54
+    },
+    "AICE.9709": {
+      "profiles": [
+        "AICE.9709.PURE",
+        "AICE.9709.MECHANICS",
+        "AICE.9709.STATISTICS"
+      ],
+      "buckets": 31,
+      "rawCandidates": 124,
+      "targetEligible": 93
+    },
+    "CAMBRIDGE.0580": {
+      "profiles": [
+        "CAMBRIDGE.0580.EXTENDED.P2",
+        "CAMBRIDGE.0580.EXTENDED.P4"
+      ],
+      "buckets": 8,
+      "rawCandidates": 32,
+      "targetEligible": 24
+    },
+    "IB.BIOLOGY": {
+      "profiles": [
+        "IB.BIOLOGY.HL.P1A",
+        "IB.BIOLOGY.HL.P1B",
+        "IB.BIOLOGY.HL.P2",
+        "IB.BIOLOGY.SL.P1A",
+        "IB.BIOLOGY.SL.P1B",
+        "IB.BIOLOGY.SL.P2"
+      ],
+      "buckets": 14,
+      "rawCandidates": 64,
+      "targetEligible": 48
+    },
+    "IB.CHEMISTRY": {
+      "profiles": [
+        "IB.CHEMISTRY.HL.P1A",
+        "IB.CHEMISTRY.HL.P1B",
+        "IB.CHEMISTRY.HL.P2",
+        "IB.CHEMISTRY.SL.P1A",
+        "IB.CHEMISTRY.SL.P1B",
+        "IB.CHEMISTRY.SL.P2"
+      ],
+      "buckets": 20,
+      "rawCandidates": 96,
+      "targetEligible": 72
+    },
+    "IB.MATH_AA": {
+      "profiles": [
+        "IB.MATH_AA.HL.P1",
+        "IB.MATH_AA.HL.P2",
+        "IB.MATH_AA.HL.P3",
+        "IB.MATH_AA.SL.P1",
+        "IB.MATH_AA.SL.P2"
+      ],
+      "buckets": 15,
+      "rawCandidates": 76,
+      "targetEligible": 57
+    },
+    "IB.MATH_AI": {
+      "profiles": [
+        "IB.MATH_AI.HL.P1",
+        "IB.MATH_AI.HL.P2",
+        "IB.MATH_AI.HL.P3",
+        "IB.MATH_AI.SL.P1",
+        "IB.MATH_AI.SL.P2"
+      ],
+      "buckets": 11,
+      "rawCandidates": 44,
+      "targetEligible": 33
+    },
+    "IB.PHYSICS": {
+      "profiles": [
+        "IB.PHYSICS.HL.P1A",
+        "IB.PHYSICS.HL.P1B",
+        "IB.PHYSICS.HL.P2",
+        "IB.PHYSICS.SL.P1A",
+        "IB.PHYSICS.SL.P1B",
+        "IB.PHYSICS.SL.P2"
+      ],
+      "buckets": 18,
+      "rawCandidates": 88,
+      "targetEligible": 66
+    },
+    "PAA.INGLES": {
+      "profiles": [
+        "PAA.INGLES"
+      ],
+      "buckets": 3,
+      "rawCandidates": 32,
+      "targetEligible": 24
+    },
+    "PAA.LECTURA": {
+      "profiles": [
+        "PAA.LECTURA"
+      ],
+      "buckets": 6,
+      "rawCandidates": 40,
+      "targetEligible": 30
+    },
+    "PAA.MATEMATICAS": {
+      "profiles": [
+        "PAA.MATEMATICAS"
+      ],
+      "buckets": 5,
+      "rawCandidates": 48,
+      "targetEligible": 36
+    },
+    "PAA.REDACCION": {
+      "profiles": [
+        "PAA.REDACCION"
+      ],
+      "buckets": 6,
+      "rawCandidates": 24,
+      "targetEligible": 18
+    },
+    "PISA.MATHEMATICS": {
+      "profiles": [
+        "PISA.MATHEMATICS"
+      ],
+      "buckets": 8,
+      "rawCandidates": 32,
+      "targetEligible": 24
+    },
+    "PISA.READING": {
+      "profiles": [
+        "PISA.READING"
+      ],
+      "buckets": 7,
+      "rawCandidates": 28,
+      "targetEligible": 21
+    },
+    "PISA.SCIENCE": {
+      "profiles": [
+        "PISA.SCIENCE"
+      ],
+      "buckets": 6,
+      "rawCandidates": 24,
+      "targetEligible": 18
+    },
+    "ICFES.SABER11": {
+      "profiles": [
+        "ICFES.SABER11.MATEMATICAS"
+      ],
+      "buckets": 9,
+      "rawCandidates": 190,
+      "targetEligible": 150
+    }
+  },
+  "readiness": [
+    {
+      "family": "PAA",
+      "eligibleItems": 0,
+      "practice": "NOT_READY",
+      "reducedMock": "NOT_READY",
+      "fullMock": "NOT_READY",
+      "repeatableFullMock": "NOT_READY",
+      "challenge": "NOT_READY",
+      "coveragePercent": 0,
+      "blockers": {
+        "practice": 20,
+        "reducedMock": 20,
+        "fullMock": 24,
+        "challenge": 5
+      },
+      "fullMockBlockerCodes": [
+        "FULL_FORM_BLUEPRINT_NOT_GOVERNED",
+        "BUCKET_BELOW_BLUEPRINT"
+      ]
+    },
+    {
+      "family": "PISA",
+      "eligibleItems": 0,
+      "practice": "NOT_READY",
+      "reducedMock": "NOT_APPLICABLE",
+      "fullMock": "NOT_APPLICABLE",
+      "repeatableFullMock": "NOT_APPLICABLE",
+      "challenge": "NOT_READY",
+      "coveragePercent": 0,
+      "blockers": {
+        "practice": 21,
+        "reducedMock": 0,
+        "fullMock": 0,
+        "challenge": 4
+      },
+      "fullMockBlockerCodes": []
+    },
+    {
+      "family": "IB",
+      "eligibleItems": 0,
+      "practice": "NOT_READY",
+      "reducedMock": "NOT_READY",
+      "fullMock": "NOT_READY",
+      "repeatableFullMock": "NOT_READY",
+      "challenge": "NOT_READY",
+      "coveragePercent": 0,
+      "blockers": {
+        "practice": 78,
+        "reducedMock": 78,
+        "fullMock": 106,
+        "challenge": 29
+      },
+      "fullMockBlockerCodes": [
+        "FULL_FORM_BLUEPRINT_NOT_GOVERNED",
+        "BUCKET_BELOW_BLUEPRINT"
+      ]
+    },
+    {
+      "family": "CAMBRIDGE",
+      "eligibleItems": 0,
+      "practice": "NOT_READY",
+      "reducedMock": "NOT_READY",
+      "fullMock": "NOT_READY",
+      "repeatableFullMock": "NOT_READY",
+      "challenge": "NOT_READY",
+      "coveragePercent": 0,
+      "blockers": {
+        "practice": 8,
+        "reducedMock": 8,
+        "fullMock": 10,
+        "challenge": 3
+      },
+      "fullMockBlockerCodes": [
+        "FULL_FORM_BLUEPRINT_NOT_GOVERNED",
+        "BUCKET_BELOW_BLUEPRINT"
+      ]
+    },
+    {
+      "family": "AICE",
+      "eligibleItems": 0,
+      "practice": "NOT_READY",
+      "reducedMock": "NOT_READY",
+      "fullMock": "NOT_READY",
+      "repeatableFullMock": "NOT_READY",
+      "challenge": "NOT_READY",
+      "coveragePercent": 0,
+      "blockers": {
+        "practice": 112,
+        "reducedMock": 112,
+        "fullMock": 153,
+        "challenge": 42
+      },
+      "fullMockBlockerCodes": [
+        "FULL_FORM_BLUEPRINT_NOT_GOVERNED",
+        "BUCKET_BELOW_BLUEPRINT"
+      ]
+    },
+    {
+      "family": "ICFES",
+      "eligibleItems": 0,
+      "practice": "NOT_READY",
+      "reducedMock": "NOT_READY",
+      "fullMock": "NOT_READY",
+      "repeatableFullMock": "NOT_READY",
+      "challenge": "NOT_READY",
+      "coveragePercent": 0,
+      "blockers": {
+        "practice": 9,
+        "reducedMock": 9,
+        "fullMock": 9,
+        "challenge": 2
+      },
+      "fullMockBlockerCodes": [
+        "BUCKET_BELOW_BLUEPRINT"
+      ]
+    }
+  ]
+}

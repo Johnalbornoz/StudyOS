@@ -8,6 +8,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const verifyAuthMock = vi.fn();
 const verifyStudentAccessMock = vi.fn();
+// Human Agency P0-1: the student-wide assistance guard is certified separately
+// (human-agency-p0-1-assistance-guard.test.ts); here no restricted evidence is active.
+vi.mock('@/lib/ai/instructional-assistance-guard', () => ({ instructionalAssistanceLockedResponse: async () => null }));
 vi.mock('@/lib/auth', () => ({
   verifyAuth: () => verifyAuthMock(),
   verifyStudentAccess: (...a: any[]) => verifyStudentAccessMock(...a),
@@ -25,6 +28,11 @@ const getTeachingIntentForConceptMock = vi.fn();
 vi.mock('@/services/adaptive-teaching.service', () => ({ getTeachingIntentForConcept: (...a: any[]) => getTeachingIntentForConceptMock(...a) }));
 
 vi.mock('@/lib/analytics', () => ({ track: vi.fn() }));
+// Human Agency P0-3: the route now resolves the concept (ownership + server label)
+// and persists the rubric server-side; both are certified in human-agency-p0-3.
+vi.mock('@/lib/db', () => ({ query: async () => ({ rowCount: 1, rows: [{ label: 'X' }] }) }));
+const createExplainTaskMock = vi.fn();
+vi.mock('@/services/explain-defend-task.service', () => ({ createExplainTask: (...a: any[]) => createExplainTaskMock(...a) }));
 
 import { POST } from '@/app/api/cognitive/explain/generate/route';
 
@@ -43,6 +51,7 @@ beforeEach(() => {
   canUseCapabilityMock.mockReset().mockResolvedValue(true);
   generateExplainPromptMock.mockReset().mockResolvedValue({ activityType: 'EXPLAIN', prompt: 'q', expectedElements: ['a'] });
   getTeachingIntentForConceptMock.mockReset().mockResolvedValue(null);
+  createExplainTaskMock.mockReset().mockResolvedValue(undefined);
 });
 
 describe('explain/generate route -- TeachingIntent lookup scoped to the request\'s own concept', () => {

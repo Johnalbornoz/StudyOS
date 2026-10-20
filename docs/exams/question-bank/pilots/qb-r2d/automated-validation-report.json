@@ -1,0 +1,3877 @@
+{
+  "kind": "QB_R2D_AUTOMATED_VALIDATION_REPORT",
+  "label": "EPHEMERAL -- NOT INGESTED -- DEV_TEST_CONTENT -- AUTOMATED VALIDATION ONLY, NO HUMAN REVIEW",
+  "about": "Every result is an AUTOMATED_VALIDATION. None is a review. HUMAN_REVIEW_REQUIRED is never counted as verified. Review status of every item: BLOCKED_NO_QUALIFIED_REVIEWER.",
+  "run": {
+    "runId": "qb-r2d-20261011180507",
+    "startedAt": "2026-10-11T18:05:07.868Z",
+    "provider": "live:openai:chat-completions",
+    "requestedModel": "gpt-5.6-luna",
+    "requestedBy": "qb-r2d-lane",
+    "reasoningEffort": "low",
+    "maxOutputTokens": 6000,
+    "gateway": "BYPASSED_NO_GOVERNANCE_ROW_WRITTEN"
+  },
+  "batchKey": "qb-r2d-live-multi-profile",
+  "totals": {
+    "selectedAdaptations": 20,
+    "unitsPlanned": 31,
+    "unitsRun": 31,
+    "regenerations": 11,
+    "GENERATED_ITEMS": 26,
+    "generationRefusedByHarness": [
+      {
+        "unitKey": "10.quadratic-factorising.ib-p1#a1",
+        "code": "RESPONSE_REPEATS_FIXED_INSTRUCTION"
+      },
+      {
+        "unitKey": "11.quadratic-optimum.ib-p2#a1",
+        "code": "RESPONSE_REPEATS_FIXED_INSTRUCTION"
+      },
+      {
+        "unitKey": "13.probability-compare.cambridge-p1#a1",
+        "code": "RESPONSE_REPEATS_FIXED_INSTRUCTION"
+      },
+      {
+        "unitKey": "14.data-judge-claim.paa#a1",
+        "code": "PROVIDER_RESPONSE_SCHEMA_INVALID"
+      },
+      {
+        "unitKey": "04.linear-model.cambridge-p1#a2",
+        "code": "RESPONSE_REPEATS_FIXED_INSTRUCTION"
+      }
+    ],
+    "notRun": [],
+    "STRUCTURAL_VALIDATION": "17/26",
+    "PROFILE_COMPLIANCE": "25/26",
+    "profileComplianceItemLevelOnly": "26/26",
+    "specificationLevelFindings": [
+      {
+        "unitKey": "16.approach.school.standard#a1",
+        "issues": [
+          "MARK_STRUCTURE_MULTI_MARK_PARTS_NOT_REALISABLE_BY_A_CLOSED_FORMAT"
+        ]
+      }
+    ],
+    "CONSTRUCT_PRESERVATION": "25/26",
+    "constructPreservationByOutcome": {
+      "FAIL": 1,
+      "PASS": 19,
+      "WEAK": 6
+    },
+    "ANSWER_VALIDATION": "26/26",
+    "answerValidationByItemClass": {
+      "MACHINE_VERIFIED": 6,
+      "DETERMINISTIC_RULE_VERIFIED": 13,
+      "HUMAN_REVIEW_REQUIRED": 7,
+      "FAILED": 0
+    },
+    "answerValidationByKeyedAnswerClass": {
+      "MACHINE_VERIFIED": 13,
+      "DETERMINISTIC_RULE_VERIFIED": 22,
+      "HUMAN_REVIEW_REQUIRED": 7,
+      "FAILED": 0
+    },
+    "MACHINE_RECOMPUTATION": "14/14",
+    "STIMULUS_INTEGRITY": "4/4",
+    "ORIGINALITY": "24/26",
+    "originalityMaxSimilarity": 0.174,
+    "LINEAGE_COMPLETENESS": "26/26",
+    "automatedStatus": {
+      "AUTOMATED_CHECKS_FAILED": 11,
+      "AUTOMATED_CHECKS_PASSED": 8,
+      "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED": 7
+    },
+    "latestAttemptPerAdaptation": {
+      "AUTOMATED_CHECKS_FAILED": 5,
+      "AUTOMATED_CHECKS_PASSED": 8,
+      "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED": 7
+    },
+    "answerFailuresByKind": {},
+    "providerBehaviour": {
+      "firstAttemptUnits": 20,
+      "firstTryWellFormed": 16,
+      "unitsThatNeededTheOneRetry": 4,
+      "firstAttemptGenerated": 16,
+      "firstAttemptPassedEveryAutomatedCheck": 8
+    }
+  },
+  "proofs": {
+    "MULTI_PROFILE_SAME_FAMILY_PROOF": "FAIL",
+    "STANDARD_VS_STEM_PLUS_PROOF": "PASS"
+  },
+  "fixedGates": {
+    "GENERATOR_READY_FOR_PILOT_CONTENT": "NO",
+    "READY_FOR_BANK_INGESTION": "NO",
+    "QUESTION_BANK_READY": "FAIL",
+    "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+    "rights": "RIGHTS_NOT_ESTABLISHED"
+  },
+  "rows": [
+    {
+      "unitKey": "01.linear-model.paa#a1",
+      "selectionKey": "01.linear-model.paa",
+      "attempt": 1,
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "specificationId": "584fd68f232c0de0fb6558b7e73375e36789a3cb658df612bcbbff11cfe9770e",
+      "promptHash": "4235d9f3c4472ed735acd7f149fde46bf9c6806150ac67debaad4bcd484cd087",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|01.linear-model.paa#a1",
+        "specificationId": "584fd68f232c0de0fb6558b7e73375e36789a3cb658df612bcbbff11cfe9770e",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 23): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "item: the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "KEYED_TEXT_STRUCTURE",
+              "recomputed": "y = 8 x + 120",
+              "keyed": "y = 8x + 120; 8 representa el costo adicional por cada kilómetro y 120 representa el costo inicial.",
+              "issues": [],
+              "notes": [
+                "the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.05,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|05.linear-model.pisa#a1",
+            "similarity": 0.050314465408805034,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED"
+      }
+    },
+    {
+      "unitKey": "02.linear-model.ib-p1#a1",
+      "selectionKey": "02.linear-model.ib-p1",
+      "attempt": 1,
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "approach": null,
+      "specificationId": "8cf89a34d9ba9826fac636ee8784c60e943b66858b4c3d7c7f96a0de12146c49",
+      "promptHash": "e2fd91f1e1e5f4cf3f811fc9433f271bb469ab7533a5296ae731b1203111d1f6",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|02.linear-model.ib-p1#a1",
+        "specificationId": "8cf89a34d9ba9826fac636ee8784c60e943b66858b4c3d7c7f96a0de12146c49",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 37): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: en",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "HUMAN_REVIEW_REQUIRED",
+          "issues": [],
+          "notes": [
+            "a: the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked",
+            "b: not machine-checkable: The answer interprets the rate and starting value in words."
+          ],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "KEYED_TEXT_STRUCTURE",
+              "recomputed": "y = 12 x + 240",
+              "keyed": "y = 12x + 240",
+              "issues": [],
+              "notes": [
+                "the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked"
+              ]
+            },
+            {
+              "label": "b",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "HUMAN_REVIEW_REQUIRED",
+              "failureKind": null,
+              "basis": "NONE",
+              "recomputed": null,
+              "keyed": "The slope is 12 cells per hour, so the culture gains 12 cells each hour. The intercept is 240 cells, so the culture starts with 240 cells.",
+              "issues": [],
+              "notes": [
+                "not machine-checkable: The answer interprets the rate and starting value in words."
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.174,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|03.linear-model.ib-p2#a1",
+            "similarity": 0.1743119266055046,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED"
+      }
+    },
+    {
+      "unitKey": "03.linear-model.ib-p2#a1",
+      "selectionKey": "03.linear-model.ib-p2",
+      "attempt": 1,
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "specificationId": "a94bb59af42b08d59019969bd71067829d1b444e50d8dd498e295eb604325258",
+      "promptHash": "c43e79f02b8592cf9833cd9e77dcb36bce2e8bec4491f3391b575e617f70a3c6",
+      "providerTries": 2,
+      "firstTryWellFormed": false,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|03.linear-model.ib-p2#a1",
+        "specificationId": "a94bb59af42b08d59019969bd71067829d1b444e50d8dd498e295eb604325258",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "PART_WITH_A_QUANTITY_TARGET_HAS_NO_NUMERIC_KEY:b"
+          ],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 36): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: en",
+            "calculator policy GDC_REQUIRED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "a: the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked",
+            "b: no numeric key: the recomputed value (its magnitude) is stated in the keyed answer text; that it is THE answer of that text is not machine-linked"
+          ],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "KEYED_TEXT_STRUCTURE",
+              "recomputed": "y = -3.5 x + 240",
+              "keyed": "y = -3.5x + 240",
+              "issues": [],
+              "notes": [
+                "the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked"
+              ]
+            },
+            {
+              "label": "b",
+              "targetKind": "QUANTITY",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 177,
+              "keyed": "At x = 18, y = 177 millilitres. The slope means the volume decreases by 3.5 millilitres per minute, and the intercept means the starting volume is 240 millilitres.",
+              "issues": [],
+              "notes": [
+                "no numeric key: the recomputed value (its magnitude) is stated in the keyed answer text; that it is THE answer of that text is not machine-linked"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "b: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.174,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|02.linear-model.ib-p1#a1",
+            "similarity": 0.1743119266055046,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "04.linear-model.cambridge-p1#a1",
+      "selectionKey": "04.linear-model.cambridge-p1",
+      "attempt": 1,
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "approach": null,
+      "specificationId": "7058bec48ee09ed94f9a38eb75241c4866415038499b973b4628d23cf5a709e5",
+      "promptHash": "d1c48d9cf01d0a3379b415aebf081887d585d541013065c472a4a9f6568e03ff",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|04.linear-model.cambridge-p1#a1",
+        "specificationId": "7058bec48ee09ed94f9a38eb75241c4866415038499b973b4628d23cf5a709e5",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "PART_WITH_A_QUANTITY_TARGET_HAS_NO_NUMERIC_KEY:b",
+            "PART_WITH_A_QUANTITY_TARGET_HAS_NO_NUMERIC_KEY:c"
+          ],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 39): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: en",
+            "calculator policy SCIENTIFIC_REQUIRED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "a: the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked",
+            "b: no numeric key: the recomputed value (its magnitude) is stated in the keyed answer text; that it is THE answer of that text is not machine-linked",
+            "c: no numeric key: the recomputed value (its magnitude) is stated in the keyed answer text; that it is THE answer of that text is not machine-linked"
+          ],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "KEYED_TEXT_STRUCTURE",
+              "recomputed": "y = -3.5 x + 120",
+              "keyed": "y = -3.5x + 120",
+              "issues": [],
+              "notes": [
+                "the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked"
+              ]
+            },
+            {
+              "label": "b",
+              "targetKind": "QUANTITY",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": -3.5,
+              "keyed": "The mass decreases by 3.5 mg per hour.",
+              "issues": [],
+              "notes": [
+                "no numeric key: the recomputed value (its magnitude) is stated in the keyed answer text; that it is THE answer of that text is not machine-linked"
+              ]
+            },
+            {
+              "label": "c",
+              "targetKind": "QUANTITY",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 120,
+              "keyed": "The starting mass is 120 mg.",
+              "issues": [],
+              "notes": [
+                "no numeric key: the recomputed value (its magnitude) is stated in the keyed answer text; that it is THE answer of that text is not machine-linked"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "b: DECLARED_PARAMETERS_READABLE_IN_ITEM",
+            "c: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 2,
+          "applicableUnits": 2
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.078,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|03.linear-model.ib-p2#a1",
+            "similarity": 0.078125,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "05.linear-model.pisa#a1",
+      "selectionKey": "05.linear-model.pisa",
+      "attempt": 1,
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": null,
+      "specificationId": "271c14ec7ce2b9c8f1e7b41176288ac69d3c657f0174ad44bb517363a27238f2",
+      "promptHash": "572d0c3a71f00dc7f6c65866b00ef37eceecb3dd4cac059547776b5fefedb084",
+      "providerTries": 2,
+      "firstTryWellFormed": false,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|05.linear-model.pisa#a1",
+        "specificationId": "271c14ec7ce2b9c8f1e7b41176288ac69d3c657f0174ad44bb517363a27238f2",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 18): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "calculator policy ALLOWED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification",
+            "table tabla_tarifa: every row checked against y = m x + b"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "item: the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "KEYED_TEXT_STRUCTURE",
+              "recomputed": "y = 1.8 x + 4.5",
+              "keyed": "y = 1.8x + 4.5; 1.8 es el precio por cada kilómetro y 4.5 es la tarifa inicial.",
+              "issues": [],
+              "notes": [
+                "the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.05,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|01.linear-model.paa#a1",
+            "similarity": 0.050314465408805034,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED"
+      }
+    },
+    {
+      "unitKey": "06.linear-model.icfes#a1",
+      "selectionKey": "06.linear-model.icfes",
+      "attempt": 1,
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "approach": null,
+      "specificationId": "8da1b8dfdf9108aa41b737bfa904a55c62e8317acfe4a629520a2114745e9e79",
+      "promptHash": "388ab778ea74232e770adaa5151777912fc5091a5e3467f58e1032c159c97658",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|06.linear-model.icfes#a1",
+        "specificationId": "8da1b8dfdf9108aa41b737bfa904a55c62e8317acfe4a629520a2114745e9e79",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 17): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "item: the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "KEYED_TEXT_STRUCTURE",
+              "recomputed": "y = 15 x + 120",
+              "keyed": "La relación es y = 15x + 120; 15 representa la cantidad de pesos que se agregan cada semana y 120 representa el ahorro inicial.",
+              "issues": [],
+              "notes": [
+                "the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.018,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|01.linear-model.paa#a1",
+            "similarity": 0.018292682926829267,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED"
+      }
+    },
+    {
+      "unitKey": "07.proportion-missing-value.paa#a1",
+      "selectionKey": "07.proportion-missing-value.paa",
+      "attempt": 1,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.proportion.missing-value",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "specificationId": "fe72768dc737b03a58f64c195377cfd49674cdc99c87e122cfdd37f2f7cfe04a",
+      "promptHash": "a5201a473ed0b6b85494ac5edda97b836602810690e06bed1e687f1140619190",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|07.proportion-missing-value.paa#a1",
+        "specificationId": "fe72768dc737b03a58f64c195377cfd49674cdc99c87e122cfdd37f2f7cfe04a",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 4): CONSISTENT_WITH_ABSTRACT",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "MACHINE_VERIFIED",
+          "issues": [],
+          "notes": [],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 126,
+              "keyed": 126,
+              "issues": [],
+              "notes": []
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "item: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.148,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "qb-r2b:r2b-M2",
+            "similarity": 0.14814814814814814,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED"
+      }
+    },
+    {
+      "unitKey": "08.proportion-rate-comparison.pisa#a1",
+      "selectionKey": "08.proportion-rate-comparison.pisa",
+      "attempt": 1,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": null,
+      "specificationId": "2cf557ee41b1ac100abbcb6b25778fd6dd55d62d6be156e2bfca1658d04a3c9f",
+      "promptHash": "73975325eb27b85b0e72a5d570d4afb225d3b44c7f711c4a5051a6e24025d50a",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|08.proportion-rate-comparison.pisa#a1",
+        "specificationId": "2cf557ee41b1ac100abbcb6b25778fd6dd55d62d6be156e2bfca1658d04a3c9f",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 21): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "calculator policy ALLOWED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "WEAK",
+          "issues": [],
+          "notes": [
+            "HEURISTIC SOLVE: no keyed quantity or vocabulary verdict, so that the item was solved is not machine-evidenced"
+          ],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "item: the comparison was evaluated on numbers of the item; that it is the right formalisation of what is asked is a reviewer's reading"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "COMPARISON",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "ITEM_NUMBERS",
+              "recomputed": "2.5 > 2 = true",
+              "keyed": "La opción 1: 50/20 = 2.5 unidades por euro; supera a la opción 2, cuya tasa es 60/30 = 2, por 0.5 unidades por euro.",
+              "issues": [],
+              "notes": [
+                "the comparison was evaluated on numbers of the item; that it is the right formalisation of what is asked is a reviewer's reading"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.063,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|16.approach.school.standard#a1",
+            "similarity": 0.0625,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED"
+      }
+    },
+    {
+      "unitKey": "09.quadratic-factorising.paa#a1",
+      "selectionKey": "09.quadratic-factorising.paa",
+      "attempt": 1,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "specificationId": "f918a5113ddb1836345b7c63e614df81dc8aa0251d806a19287663a617bb2aa3",
+      "promptHash": "4677d8951c6a75ecd88ae62d88e5aadf3bf0c0b75fc605d73f04b8299cbc7a79",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|09.quadratic-factorising.paa#a1",
+        "specificationId": "f918a5113ddb1836345b7c63e614df81dc8aa0251d806a19287663a617bb2aa3",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 5): CONSISTENT_WITH_ABSTRACT",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "EQUATION_IS_GIVEN_ALREADY_FACTORISED"
+          ],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification",
+            "the stem states a product of linear factors set to zero"
+          ],
+          "heuristic": [
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "MACHINE_VERIFIED",
+          "issues": [],
+          "notes": [],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 4,
+              "keyed": 4,
+              "issues": [],
+              "notes": []
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "item: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|01.linear-model.paa#a1",
+            "similarity": 0,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "10.quadratic-factorising.ib-p1#a1",
+      "selectionKey": "10.quadratic-factorising.ib-p1",
+      "attempt": 1,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "approach": null,
+      "specificationId": "39292031d19e5844386003250916b14f7c6139037e5260716239ff01a7ef9159",
+      "promptHash": "1593423bd733509f7d97727222946d03932f9e2a0e6104c74d0d53faa48dabb4",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATION_REFUSED_BY_HARNESS",
+      "refusal": {
+        "code": "RESPONSE_REPEATS_FIXED_INSTRUCTION",
+        "detail": ""
+      },
+      "validation": null
+    },
+    {
+      "unitKey": "11.quadratic-optimum.ib-p2#a1",
+      "selectionKey": "11.quadratic-optimum.ib-p2",
+      "attempt": 1,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "specificationId": "287e6d2e21f8747923c538198880a1749f2b26e23009546d8a8eff4151dd4b76",
+      "promptHash": "84f29d77f26ec3def8fcae15bbf2c15355adac63f17469ba3a13db2e9735caae",
+      "providerTries": 2,
+      "firstTryWellFormed": false,
+      "status": "GENERATION_REFUSED_BY_HARNESS",
+      "refusal": {
+        "code": "RESPONSE_REPEATS_FIXED_INSTRUCTION",
+        "detail": ""
+      },
+      "validation": null
+    },
+    {
+      "unitKey": "12.probability-single-event.icfes#a1",
+      "selectionKey": "12.probability-single-event.icfes",
+      "attempt": 1,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "approach": null,
+      "specificationId": "c8633d32d2c64f424240c7ae154f615a4f32460b9a4a690444acec48bf897f7b",
+      "promptHash": "92e53ce770201a514dc2dd73e8d03f9344259109cf013c8d7719517683f74706",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|12.probability-single-event.icfes#a1",
+        "specificationId": "c8633d32d2c64f424240c7ae154f615a4f32460b9a4a690444acec48bf897f7b",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "OPTIONS_STATE_THE_SAME_NUMBER:A,D"
+          ],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 18): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "MACHINE_VERIFIED",
+          "issues": [],
+          "notes": [],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 0.25,
+              "keyed": 0.25,
+              "issues": [],
+              "notes": []
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "item: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.038,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "qb-r2c:cand|FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL#1",
+            "similarity": 0.038461538461538464,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "13.probability-compare.cambridge-p1#a1",
+      "selectionKey": "13.probability-compare.cambridge-p1",
+      "attempt": 1,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "approach": null,
+      "specificationId": "fea7f3bdb9aac5be1194fc9bc928523cc3e89ecb525ee4ab6a855407a73ccf1f",
+      "promptHash": "f36b138fa3c366fcca3fff273baac634981521a50d25a40ffafff8f1a7595271",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATION_REFUSED_BY_HARNESS",
+      "refusal": {
+        "code": "RESPONSE_REPEATS_FIXED_INSTRUCTION",
+        "detail": ""
+      },
+      "validation": null
+    },
+    {
+      "unitKey": "14.data-judge-claim.paa#a1",
+      "selectionKey": "14.data-judge-claim.paa",
+      "attempt": 1,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "specificationId": "83380108b12edb3f3ed3ea534cf41f3ee2cf62613865a08d0563d09c368923bd",
+      "promptHash": "2d7b9b92adbd885d6c9d22e2588f24ef63f97dbb787ea65a388e8cbed81c7994",
+      "providerTries": 2,
+      "firstTryWellFormed": false,
+      "status": "GENERATION_REFUSED_BY_HARNESS",
+      "refusal": {
+        "code": "PROVIDER_RESPONSE_SCHEMA_INVALID",
+        "detail": "item.rationale: Invalid input: expected string, received undefined"
+      },
+      "validation": null
+    },
+    {
+      "unitKey": "15.data-relative-change.ib-p2#a1",
+      "selectionKey": "15.data-relative-change.ib-p2",
+      "attempt": 1,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "specificationId": "ff017a9a1c09d4abd0dea2a9522949d58cf1f5b1d430a9277353bd1101f07b8d",
+      "promptHash": "6aff589624d03331dbf7a9c4e6ae058ff179e27f4bab5de78cdff6560eed2d9e",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|15.data-relative-change.ib-p2#a1",
+        "specificationId": "ff017a9a1c09d4abd0dea2a9522949d58cf1f5b1d430a9277353bd1101f07b8d",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "SPECIFICATION_VOCABULARY_IN_ITEM_TEXT:vi,vj"
+          ],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 34): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: en",
+            "calculator policy GDC_REQUIRED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "WEAK",
+          "issues": [],
+          "notes": [
+            "HEURISTIC INTERPRET: no cue in the prompts and no keyed verdict"
+          ],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification",
+            "declared values looked up in the structured stimulus"
+          ],
+          "heuristic": [
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "MACHINE_VERIFIED",
+          "issues": [],
+          "notes": [],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "STIMULUS_NUMBERS",
+              "recomputed": 27.822580645161292,
+              "keyed": 27.8,
+              "issues": [],
+              "notes": []
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "a: STIMULUS_NUMBERS"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.01,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|02.linear-model.ib-p1#a1",
+            "similarity": 0.009900990099009901,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "16.approach.school.standard#a1",
+      "selectionKey": "16.approach.school.standard",
+      "attempt": 1,
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "approach": "STANDARD",
+      "specificationId": "26e01f25bf8eeb55deb4ec97fc8b18d2c5106eb05fb2dad2f0f171c88e3a6d4a",
+      "promptHash": "ee7e8866fdf89fd6633c8c61c709533ee1ad7e7c5ecda2208bd90db8f5108e51",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|16.approach.school.standard#a1",
+        "specificationId": "26e01f25bf8eeb55deb4ec97fc8b18d2c5106eb05fb2dad2f0f171c88e3a6d4a",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_STANDS_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "SPECIFICATION_LEVEL:MARK_STRUCTURE_MULTI_MARK_PARTS_NOT_REALISABLE_BY_A_CLOSED_FORMAT"
+          ],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 28): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "calculator policy ALLOWED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": [
+            "MARK_STRUCTURE_MULTI_MARK_PARTS_NOT_REALISABLE_BY_A_CLOSED_FORMAT"
+          ]
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "WEAK",
+          "issues": [],
+          "notes": [
+            "HEURISTIC SOLVE: no keyed quantity or vocabulary verdict, so that the item was solved is not machine-evidenced"
+          ],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "item: the comparison was evaluated on numbers of the item; that it is the right formalisation of what is asked is a reviewer's reading"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "COMPARISON",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "ITEM_NUMBERS",
+              "recomputed": "2.5 > 2.2 = true",
+              "keyed": "La opción 1: 20/8 = 2.5 cajas por hora y 33/15 = 2.2 cajas por hora; la opción 1 supera a la opción 2 por 0.3 cajas por hora.",
+              "issues": [],
+              "notes": [
+                "the comparison was evaluated on numbers of the item; that it is the right formalisation of what is asked is a reviewer's reading"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "REVIEW_STRUCTURAL_SIMILARITY",
+          "issues": [
+            "SAME_PARAMETER_VALUES_AS_A_SIBLING:cand|19.approach.paa.stem-plus#a1"
+          ],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.133,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|19.approach.paa.stem-plus#a1",
+            "similarity": 0.1330049261083744,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": [
+            "cand|19.approach.paa.stem-plus#a1"
+          ]
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "17.approach.school.stem-plus#a1",
+      "selectionKey": "17.approach.school.stem-plus",
+      "attempt": 1,
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "approach": "STEM_PLUS",
+      "specificationId": "995b4c29713381c5be0ca629c4e0df15b66da82b152a1b8491c22a8d0fde46c7",
+      "promptHash": "ba49ecf4152ffaf7d0acfe372ed4ac6dd7613d7e7e327eea13d81e9f7bf0edbc",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|17.approach.school.stem-plus#a1",
+        "specificationId": "995b4c29713381c5be0ca629c4e0df15b66da82b152a1b8491c22a8d0fde46c7",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "ITEM_REPEATS_FIXED_INSTRUCTION",
+            "PART_WITH_A_QUANTITY_TARGET_HAS_NO_NUMERIC_KEY:b",
+            "SPECIFICATION_VOCABULARY_IN_ITEM_TEXT:SOLVE,INTERPRET"
+          ],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC justification cue in the prompts: FOUND",
+            "HEURISTIC context situation (words of four letters or more: 64): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "calculator policy ALLOWED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "HUMAN_REVIEW_REQUIRED",
+          "issues": [],
+          "notes": [
+            "a: not machine-checkable: La respuesta exige formular las dos tasas y explicar el significado de la cantidad comparada.",
+            "b: no numeric key: the recomputed value (its magnitude) is stated in the keyed answer text; that it is THE answer of that text is not machine-linked",
+            "c: the comparison was evaluated on numbers of the item; that it is the right formalisation of what is asked is a reviewer's reading"
+          ],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "HUMAN_REVIEW_REQUIRED",
+              "failureKind": null,
+              "basis": "NONE",
+              "recomputed": null,
+              "keyed": "r1 = 30/12 y r2 = 44/20; ambas expresan entregas por euro.",
+              "issues": [],
+              "notes": [
+                "not machine-checkable: La respuesta exige formular las dos tasas y explicar el significado de la cantidad comparada."
+              ]
+            },
+            {
+              "label": "b",
+              "targetKind": "QUANTITY",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 0.2999999999999998,
+              "keyed": "r1 = 2.5 entregas por euro, r2 = 2.2 entregas por euro y d = 0.3 entregas por euro.",
+              "issues": [],
+              "notes": [
+                "no numeric key: the recomputed value (its magnitude) is stated in the keyed answer text; that it is THE answer of that text is not machine-linked"
+              ]
+            },
+            {
+              "label": "c",
+              "targetKind": "COMPARISON",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "ITEM_NUMBERS",
+              "recomputed": "2.5 > 2.2 = true",
+              "keyed": "Favorece al plan 1, porque 2.5 > 2.2; su tasa supera a la del plan 2 en 0.3 entregas por euro.",
+              "issues": [],
+              "notes": [
+                "the comparison was evaluated on numbers of the item; that it is the right formalisation of what is asked is a reviewer's reading"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "b: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.035,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|08.proportion-rate-comparison.pisa#a1",
+            "similarity": 0.035175879396984924,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "18.approach.paa.standard#a1",
+      "selectionKey": "18.approach.paa.standard",
+      "attempt": 1,
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": "STANDARD",
+      "specificationId": "435568f81541f9321230e8c23f4b92eeefdbd33d1a163edeec754cc7a97071b6",
+      "promptHash": "2ba8cd7ca11ad2e2f1387521b91fec302423957798a373acc763fa25410cd9b3",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|18.approach.paa.standard#a1",
+        "specificationId": "435568f81541f9321230e8c23f4b92eeefdbd33d1a163edeec754cc7a97071b6",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 16): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "item: the verdict was recomputed from the parameters; that the keyed wording says that verdict is not machine-linked"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "VERDICT",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": "OPTION_1",
+              "keyed": "El plan 1 es mejor porque entrega 1,5 unidades por euro, mientras que el plan 2 entrega 1,4; por tanto, favorece al plan 1 por 0,1 unidades por euro.",
+              "issues": [],
+              "notes": [
+                "the verdict was recomputed from the parameters; that the keyed wording says that verdict is not machine-linked"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.083,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|20.approach.pisa.stem-plus#a1",
+            "similarity": 0.08333333333333333,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED"
+      }
+    },
+    {
+      "unitKey": "19.approach.paa.stem-plus#a1",
+      "selectionKey": "19.approach.paa.stem-plus",
+      "attempt": 1,
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": "STEM_PLUS",
+      "specificationId": "eec87ecc86fa9aaac5cfec600407ce51a13c6570ab31c14c7a193e91840a3202",
+      "promptHash": "ce3d173e7c7d5b21dd7f78da5b973a17be9d81fc05138835bd9732f5461d01b0",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|19.approach.paa.stem-plus#a1",
+        "specificationId": "eec87ecc86fa9aaac5cfec600407ce51a13c6570ab31c14c7a193e91840a3202",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_STANDS_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 28): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "item: the verdict was recomputed from the parameters; that the keyed wording says that verdict is not machine-linked"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "VERDICT",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": "OPTION_1",
+              "keyed": "La opción 1, porque 20/8 = 2.5 y 33/15 = 2.2; la supera por 0.3 unidades de beneficio por unidad monetaria.",
+              "issues": [],
+              "notes": [
+                "the verdict was recomputed from the parameters; that the keyed wording says that verdict is not machine-linked"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "REVIEW_STRUCTURAL_SIMILARITY",
+          "issues": [
+            "SAME_PARAMETER_VALUES_AS_A_SIBLING:cand|16.approach.school.standard#a1"
+          ],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.133,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|16.approach.school.standard#a1",
+            "similarity": 0.1330049261083744,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": [
+            "cand|16.approach.school.standard#a1"
+          ]
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED"
+      }
+    },
+    {
+      "unitKey": "20.approach.pisa.stem-plus#a1",
+      "selectionKey": "20.approach.pisa.stem-plus",
+      "attempt": 1,
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": "STEM_PLUS",
+      "specificationId": "8e3bc937689743768828e3c5ea4eb45171dd737e86a3847313d006d345895a09",
+      "promptHash": "c6e5149288b991ba6796669c332340f25c42008517323af66c19b34b1076b432",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|20.approach.pisa.stem-plus#a1",
+        "specificationId": "8e3bc937689743768828e3c5ea4eb45171dd737e86a3847313d006d345895a09",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "ANSWER_CHECK_EXPRESSION_DOES_NOT_EVALUATE:item"
+          ],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 38): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "calculator policy ALLOWED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "item: the verdict was recomputed from the parameters; that the keyed wording says that verdict is not machine-linked"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "VERDICT",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": "OPTION_2",
+              "keyed": "El plan 2 es mejor: entrega 0.18 litros por litro transportado, frente a 0.15 del plan 1; la diferencia es 0.03 litros por litro transportado.",
+              "issues": [],
+              "notes": [
+                "the verdict was recomputed from the parameters; that the keyed wording says that verdict is not machine-linked"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.083,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|18.approach.paa.standard#a1",
+            "similarity": 0.08333333333333333,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "03.linear-model.ib-p2#a2",
+      "selectionKey": "03.linear-model.ib-p2",
+      "attempt": 2,
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "specificationId": "a94bb59af42b08d59019969bd71067829d1b444e50d8dd498e295eb604325258",
+      "promptHash": "5399d09111aecf764acb1877442689250d5a8acbea2447f5cf50cd9fb73cc8ea",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|03.linear-model.ib-p2#a2",
+        "specificationId": "a94bb59af42b08d59019969bd71067829d1b444e50d8dd498e295eb604325258",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 46): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: en",
+            "calculator policy GDC_REQUIRED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "HUMAN_REVIEW_REQUIRED",
+          "issues": [],
+          "notes": [
+            "a: the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked",
+            "c: not machine-checkable: The response interprets the rate and starting value in words."
+          ],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "KEYED_TEXT_STRUCTURE",
+              "recomputed": "y = -3.5 x + 240",
+              "keyed": "V = -3.5t + 240",
+              "issues": [],
+              "notes": [
+                "the equation of the keyed answer was read and has the declared rate and starting value; any interpretation in words beside it is not checked"
+              ]
+            },
+            {
+              "label": "b",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 170,
+              "keyed": 170,
+              "issues": [],
+              "notes": []
+            },
+            {
+              "label": "c",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "HUMAN_REVIEW_REQUIRED",
+              "failureKind": null,
+              "basis": "NONE",
+              "recomputed": null,
+              "keyed": "The rate is -3.5 litres per minute, meaning that the volume decreases by 3.5 litres each minute. The starting value is 240 litres, meaning that the tank contains 240 litres at time 0.",
+              "issues": [],
+              "notes": [
+                "not machine-checkable: The response interprets the rate and starting value in words."
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "b: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.061,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|04.linear-model.cambridge-p1#a1",
+            "similarity": 0.061068702290076333,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED"
+      }
+    },
+    {
+      "unitKey": "04.linear-model.cambridge-p1#a2",
+      "selectionKey": "04.linear-model.cambridge-p1",
+      "attempt": 2,
+      "group": "SAME_FAMILY_ALL_SYSTEMS",
+      "familyId": "tf.math.linear.constant-rate-model",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "approach": null,
+      "specificationId": "7058bec48ee09ed94f9a38eb75241c4866415038499b973b4628d23cf5a709e5",
+      "promptHash": "49de6545ddf1a68efd145895b69ad0e603d3e469058e332a787357cf5c771734",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATION_REFUSED_BY_HARNESS",
+      "refusal": {
+        "code": "RESPONSE_REPEATS_FIXED_INSTRUCTION",
+        "detail": ""
+      },
+      "validation": null
+    },
+    {
+      "unitKey": "09.quadratic-factorising.paa#a2",
+      "selectionKey": "09.quadratic-factorising.paa",
+      "attempt": 2,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "specificationId": "f918a5113ddb1836345b7c63e614df81dc8aa0251d806a19287663a617bb2aa3",
+      "promptHash": "85675a01426d618b2dba5fe96c380db649ca86346eceafb6923a4ca78d5804a4",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|09.quadratic-factorising.paa#a2",
+        "specificationId": "f918a5113ddb1836345b7c63e614df81dc8aa0251d806a19287663a617bb2aa3",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 10): CONSISTENT_WITH_ABSTRACT",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification",
+            "equation read from the stem (4, 4, -15); declared roots substituted"
+          ],
+          "heuristic": [
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "MACHINE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "item: the equation was read from the stem and solved independently of the declared parameters"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "ITEM_TEXT_EQUATION",
+              "recomputed": 1.5,
+              "keyed": 1.5,
+              "issues": [],
+              "notes": [
+                "the equation was read from the stem and solved independently of the declared parameters"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "item: ITEM_TEXT_EQUATION"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|01.linear-model.paa#a1",
+            "similarity": 0,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED"
+      }
+    },
+    {
+      "unitKey": "10.quadratic-factorising.ib-p1#a2",
+      "selectionKey": "10.quadratic-factorising.ib-p1",
+      "attempt": 2,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.solve-by-factorising",
+      "targetId": "IB.MATH_AA_HL.P1",
+      "approach": null,
+      "specificationId": "39292031d19e5844386003250916b14f7c6139037e5260716239ff01a7ef9159",
+      "promptHash": "e27a98dde2f8b02616bdfe903c3c44921619bfcbe7ed04cce7c0b2d0ae58c750",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|10.quadratic-factorising.ib-p1#a2",
+        "specificationId": "39292031d19e5844386003250916b14f7c6139037e5260716239ff01a7ef9159",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "SPECIFICATION_VOCABULARY_IN_ITEM_TEXT:r1,r2"
+          ],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 22): CONSISTENT_WITH_ABSTRACT",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: en",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "WEAK",
+          "issues": [],
+          "notes": [
+            "HEURISTIC SOLVE: no keyed quantity or vocabulary verdict, so that the item was solved is not machine-evidenced"
+          ],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification",
+            "equation read from the stem (2, -4, -6); declared roots substituted"
+          ],
+          "heuristic": [
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "a: the roots of the keyed answer were read (3, -1) and substituted into the equation of the stem",
+            "b: the roots of the keyed answer were read (3, -1) and substituted into the equation of the stem"
+          ],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "ITEM_TEXT_EQUATION",
+              "recomputed": "3, -1",
+              "keyed": "2(x - 3)(x + 1) = 0",
+              "issues": [],
+              "notes": [
+                "the roots of the keyed answer were read (3, -1) and substituted into the equation of the stem"
+              ]
+            },
+            {
+              "label": "b",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "ITEM_TEXT_EQUATION",
+              "recomputed": "3, -1",
+              "keyed": "x = 3 or x = -1",
+              "issues": [],
+              "notes": [
+                "the roots of the keyed answer were read (3, -1) and substituted into the equation of the stem"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|01.linear-model.paa#a1",
+            "similarity": 0,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "11.quadratic-optimum.ib-p2#a2",
+      "selectionKey": "11.quadratic-optimum.ib-p2",
+      "attempt": 2,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.quadratic.optimum-of-a-model",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "specificationId": "287e6d2e21f8747923c538198880a1749f2b26e23009546d8a8eff4151dd4b76",
+      "promptHash": "65167cb7ba045fa4c40b77ba65ffff0d07deecb8a436fa0cd67ee172ca59737f",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|11.quadratic-optimum.ib-p2#a2",
+        "specificationId": "287e6d2e21f8747923c538198880a1749f2b26e23009546d8a8eff4151dd4b76",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 50): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: en",
+            "calculator policy GDC_REQUIRED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "HUMAN_REVIEW_REQUIRED",
+          "issues": [],
+          "notes": [
+            "a: not machine-checkable: The target is the correctly formulated quadratic model rather than a single construct-vocabulary quantity."
+          ],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "HUMAN_REVIEW_REQUIRED",
+              "failureKind": null,
+              "basis": "NONE",
+              "recomputed": null,
+              "keyed": "Q = -8x^2 + 360x + 2000",
+              "issues": [],
+              "notes": [
+                "not machine-checkable: The target is the correctly formulated quadratic model rather than a single construct-vocabulary quantity."
+              ]
+            },
+            {
+              "label": "b",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 22.5,
+              "keyed": 22.5,
+              "issues": [],
+              "notes": []
+            },
+            {
+              "label": "c",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 6050,
+              "keyed": 6050,
+              "issues": [],
+              "notes": []
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "b: DECLARED_PARAMETERS_READABLE_IN_ITEM",
+            "c: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 2,
+          "applicableUnits": 2
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|01.linear-model.paa#a1",
+            "similarity": 0,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED"
+      }
+    },
+    {
+      "unitKey": "12.probability-single-event.icfes#a2",
+      "selectionKey": "12.probability-single-event.icfes",
+      "attempt": 2,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.probability.single-event-equally-likely",
+      "targetId": "ICFES.SABER11_MATEMATICAS",
+      "approach": null,
+      "specificationId": "c8633d32d2c64f424240c7ae154f615a4f32460b9a4a690444acec48bf897f7b",
+      "promptHash": "485ebe27fda8ab988ee3e45533e03df69c52d9a31fb7fd1dce3c5e66bf7dd0cb",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|12.probability-single-event.icfes#a2",
+        "specificationId": "c8633d32d2c64f424240c7ae154f615a4f32460b9a4a690444acec48bf897f7b",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 19): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "MACHINE_VERIFIED",
+          "issues": [],
+          "notes": [],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 0.25,
+              "keyed": 0.25,
+              "issues": [],
+              "notes": []
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "item: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.038,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "qb-r2c:cand|FULL_MOCK_2|067|math.prob.probability|STUDENT_PRODUCED|FOUNDATIONAL#1",
+            "similarity": 0.038461538461538464,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED"
+      }
+    },
+    {
+      "unitKey": "13.probability-compare.cambridge-p1#a2",
+      "selectionKey": "13.probability-compare.cambridge-p1",
+      "attempt": 2,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.probability.compare-chances-to-decide",
+      "targetId": "CAMBRIDGE.9709.P1",
+      "approach": null,
+      "specificationId": "fea7f3bdb9aac5be1194fc9bc928523cc3e89ecb525ee4ab6a855407a73ccf1f",
+      "promptHash": "168b870132ecfb87e2a5b4aedb2a930c12277fc47fcc3b7508ebafec067f2cc6",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|13.probability-compare.cambridge-p1#a2",
+        "specificationId": "fea7f3bdb9aac5be1194fc9bc928523cc3e89ecb525ee4ab6a855407a73ccf1f",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "ANSWER_CHECK_EXPRESSION_DOES_NOT_EVALUATE:c"
+          ],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 61): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: en",
+            "calculator policy SCIENTIFIC_REQUIRED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "HUMAN_REVIEW_REQUIRED",
+          "issues": [],
+          "notes": [
+            "a: not machine-checkable: The response must identify the event and both sample spaces in words.",
+            "c: the comparison was evaluated on numbers of the item; that it is the right formalisation of what is asked is a reviewer's reading"
+          ],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "HUMAN_REVIEW_REQUIRED",
+              "failureKind": null,
+              "basis": "NONE",
+              "recomputed": null,
+              "keyed": "The event is obtaining the stated test result. The sample space is the 40 tests for option 1 and the 60 tests for option 2.",
+              "issues": [],
+              "notes": [
+                "not machine-checkable: The response must identify the event and both sample spaces in words."
+              ]
+            },
+            {
+              "label": "b",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 0.45,
+              "keyed": 0.45,
+              "issues": [],
+              "notes": []
+            },
+            {
+              "label": "c",
+              "targetKind": "COMPARISON",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "ITEM_NUMBERS",
+              "recomputed": "0.45 > 0.38333333333333336 = true",
+              "keyed": "P2 = 23/60 = 0.3833... . Since 0.45 > 0.3833..., option 1 gives the better chance, so the claim is false.",
+              "issues": [],
+              "notes": [
+                "the comparison was evaluated on numbers of the item; that it is the right formalisation of what is asked is a reviewer's reading"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "b: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|01.linear-model.paa#a1",
+            "similarity": 0,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "14.data-judge-claim.paa#a2",
+      "selectionKey": "14.data-judge-claim.paa",
+      "attempt": 2,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.data.judge-claim-against-display",
+      "targetId": "PAA.MATEMATICAS",
+      "approach": null,
+      "specificationId": "83380108b12edb3f3ed3ea534cf41f3ee2cf62613865a08d0563d09c368923bd",
+      "promptHash": "eb7322c6a3a5ace83203c40d25a77ab0280ea19a410f28bda823edd9777ac979",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|14.data-judge-claim.paa#a2",
+        "specificationId": "83380108b12edb3f3ed3ea534cf41f3ee2cf62613865a08d0563d09c368923bd",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 11): SHORT_FOR_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "RULE studyus-no-calculator-number-rule@2 applied"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification",
+            "category count read from the structured stimulus"
+          ],
+          "heuristic": [
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "HUMAN_REVIEW_REQUIRED",
+          "issues": [],
+          "notes": [
+            "item: verdict CLAIM_VERDICT is not decided by a rule here"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "VERDICT",
+              "class": "HUMAN_REVIEW_REQUIRED",
+              "failureKind": null,
+              "basis": "NONE",
+              "recomputed": null,
+              "keyed": "No se puede determinar a partir de la tabla.",
+              "issues": [],
+              "notes": [
+                "verdict CLAIM_VERDICT is not decided by a rule here"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.02,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "qb-r2c:cand|PRACTICE|015|read.tables-and-graphics|MULTIPLE_CHOICE|CHALLENGE#1",
+            "similarity": 0.019801980198019802,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 83,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED"
+      }
+    },
+    {
+      "unitKey": "15.data-relative-change.ib-p2#a2",
+      "selectionKey": "15.data-relative-change.ib-p2",
+      "attempt": 2,
+      "group": "CONSTRAINT_COVERAGE",
+      "familyId": "tf.math.data.rate-of-change-from-realistic-dataset",
+      "targetId": "IB.MATH_AA_HL.P2",
+      "approach": null,
+      "specificationId": "ff017a9a1c09d4abd0dea2a9522949d58cf1f5b1d430a9277353bd1101f07b8d",
+      "promptHash": "c70529ac820e06142214fe72a7719ba5b4a56c283d30c5d3b7a61cda234bc884",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|15.data-relative-change.ib-p2#a2",
+        "specificationId": "ff017a9a1c09d4abd0dea2a9522949d58cf1f5b1d430a9277353bd1101f07b8d",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "FAIL",
+          "issues": [
+            "SPECIFICATION_VOCABULARY_IN_ITEM_TEXT:vi,vj"
+          ],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 46): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: en",
+            "calculator policy GDC_REQUIRED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "WEAK",
+          "issues": [],
+          "notes": [
+            "HEURISTIC INTERPRET: no cue in the prompts and no keyed verdict"
+          ],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification",
+            "declared values looked up in the structured stimulus"
+          ],
+          "heuristic": [
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "HUMAN_REVIEW_REQUIRED",
+          "issues": [],
+          "notes": [
+            "a: not machine-checkable: The response contains two identified table values rather than one construct quantity."
+          ],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "NOT_MACHINE_CHECKABLE",
+              "class": "HUMAN_REVIEW_REQUIRED",
+              "failureKind": null,
+              "basis": "NONE",
+              "recomputed": null,
+              "keyed": "vi = 18450, vj = 23760",
+              "issues": [],
+              "notes": [
+                "not machine-checkable: The response contains two identified table values rather than one construct quantity."
+              ]
+            },
+            {
+              "label": "b",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "STIMULUS_NUMBERS",
+              "recomputed": 28.78048780487805,
+              "keyed": 28.8,
+              "issues": [],
+              "notes": []
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "b: STIMULUS_NUMBERS"
+          ],
+          "recomputedUnits": 1,
+          "applicableUnits": 1
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|01.linear-model.paa#a1",
+            "similarity": 0,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_FAILED"
+      }
+    },
+    {
+      "unitKey": "17.approach.school.stem-plus#a2",
+      "selectionKey": "17.approach.school.stem-plus",
+      "attempt": 2,
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "SCHOOL_STEM_PERFORMANCE",
+      "approach": "STEM_PLUS",
+      "specificationId": "995b4c29713381c5be0ca629c4e0df15b66da82b152a1b8491c22a8d0fde46c7",
+      "promptHash": "c94d021d54ceb2ad4d6c55fd3b089f3a2fb16a9723517fffcd2413130ca3a180",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|17.approach.school.stem-plus#a2",
+        "specificationId": "995b4c29713381c5be0ca629c4e0df15b66da82b152a1b8491c22a8d0fde46c7",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC justification cue in the prompts: FOUND",
+            "HEURISTIC context situation (words of four letters or more: 61): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "calculator policy ALLOWED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "c: the verdict was recomputed from the parameters; that the keyed wording says that verdict is not machine-linked"
+          ],
+          "units": [
+            {
+              "label": "a",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 0.075,
+              "keyed": 0.075,
+              "issues": [],
+              "notes": []
+            },
+            {
+              "label": "b",
+              "targetKind": "QUANTITY",
+              "class": "MACHINE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": 0.015,
+              "keyed": 0.015,
+              "issues": [],
+              "notes": []
+            },
+            {
+              "label": "c",
+              "targetKind": "VERDICT",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "DECLARED_PARAMETERS_READABLE_IN_ITEM",
+              "recomputed": "OPTION_2",
+              "keyed": "Conviene el programa 2, porque recoge 0.09 toneladas por euro frente a 0.075 toneladas por euro del programa 1; supera al programa 1 en 0.015 toneladas por euro.",
+              "issues": [],
+              "notes": [
+                "the verdict was recomputed from the parameters; that the keyed wording says that verdict is not machine-linked"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "a: DECLARED_PARAMETERS_READABLE_IN_ITEM",
+            "b: DECLARED_PARAMETERS_READABLE_IN_ITEM"
+          ],
+          "recomputedUnits": 2,
+          "applicableUnits": 2
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.037,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|20.approach.pisa.stem-plus#a2",
+            "similarity": 0.037037037037037035,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED"
+      }
+    },
+    {
+      "unitKey": "20.approach.pisa.stem-plus#a2",
+      "selectionKey": "20.approach.pisa.stem-plus",
+      "attempt": 2,
+      "group": "LEARNING_APPROACH",
+      "familyId": "tf.math.proportion.rate-comparison-model",
+      "targetId": "PISA.MATHEMATICS",
+      "approach": "STEM_PLUS",
+      "specificationId": "8e3bc937689743768828e3c5ea4eb45171dd737e86a3847313d006d345895a09",
+      "promptHash": "4cd51859f6a281b88f4fe2a5ec623ebea54cea428022d012282ac645c947beef",
+      "providerTries": 1,
+      "firstTryWellFormed": true,
+      "status": "GENERATED",
+      "refusal": null,
+      "validation": {
+        "candidateKey": "cand|20.approach.pisa.stem-plus#a2",
+        "specificationId": "8e3bc937689743768828e3c5ea4eb45171dd737e86a3847313d006d345895a09",
+        "kind": "AUTOMATED_VALIDATION",
+        "isHumanReview": false,
+        "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+        "structural": {
+          "validator": "STRUCTURAL",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC studyus-key-stands-out-heuristic@1: KEY_DOES_NOT_STAND_OUT"
+          ]
+        },
+        "profileCompliance": {
+          "validator": "PROFILE_COMPLIANCE",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": [
+            "HEURISTIC context situation (words of four letters or more: 27): CONSISTENT_WITH_A_SITUATION",
+            "NOT_CHECKED_AUTOMATICALLY: authenticity of the context, transfer expectation, the system competency codes, the time budget, the difficulty band",
+            "HEURISTIC studyus-stopword-language-heuristic@1: es",
+            "calculator policy ALLOWED: the no-calculator rule does not apply; whether the item NEEDS the tool is not checked"
+          ],
+          "specificationLevelIssues": []
+        },
+        "constructPreservation": {
+          "validator": "CONSTRUCT_PRESERVATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "WEAK",
+          "issues": [],
+          "notes": [
+            "HEURISTIC SOLVE: no keyed quantity or vocabulary verdict, so that the item was solved is not machine-evidenced"
+          ],
+          "deterministic": [
+            "concept id, construct id and invariant hash compared with the specification"
+          ],
+          "heuristic": [
+            "parameters-stated: every declared parameter value (except 1, and except a point of evaluation no keyed quantity uses) is looked for among the numbers of the stem, prompts and stimulus",
+            "studyus-evidence-action-cue-heuristic@2"
+          ]
+        },
+        "answerKey": {
+          "validator": "ANSWER_KEY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "DETERMINISTIC_RULE_VERIFIED",
+          "issues": [],
+          "notes": [
+            "item: the comparison was evaluated on numbers of the item; that it is the right formalisation of what is asked is a reviewer's reading"
+          ],
+          "units": [
+            {
+              "label": "item",
+              "targetKind": "COMPARISON",
+              "class": "DETERMINISTIC_RULE_VERIFIED",
+              "failureKind": null,
+              "basis": "ITEM_NUMBERS",
+              "recomputed": "0.25 > 0.24 = true",
+              "keyed": "El programa 2 es mejor: devuelve 0.25 paquetes por euro, frente a 0.24 paquetes por euro del programa 1, una diferencia de 0.01 paquetes por euro.",
+              "issues": [],
+              "notes": [
+                "the comparison was evaluated on numbers of the item; that it is the right formalisation of what is asked is a reviewer's reading"
+              ]
+            }
+          ]
+        },
+        "machineRecomputation": {
+          "validator": "MACHINE_RECOMPUTATION",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": [],
+          "recomputedUnits": 0,
+          "applicableUnits": 0
+        },
+        "stimulusIntegrity": {
+          "validator": "STIMULUS_INTEGRITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "NOT_APPLICABLE",
+          "issues": [],
+          "notes": []
+        },
+        "originality": {
+          "validator": "ORIGINALITY",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS_LOW_SIMILARITY",
+          "issues": [],
+          "notes": [
+            "textual shingle similarity and identical parameter sets only: it does not detect a paraphrase of published material it was not given"
+          ],
+          "maxSimilarity": 0.037,
+          "closest": {
+            "source": "GENERATION_BATCH_SIBLING",
+            "key": "cand|17.approach.school.stem-plus#a2",
+            "similarity": 0.037037037037037035,
+            "sameTemplate": false
+          },
+          "comparedAgainst": 82,
+          "sameParametersAs": []
+        },
+        "lineage": {
+          "validator": "LINEAGE_COMPLETENESS",
+          "kind": "AUTOMATED_VALIDATION",
+          "isHumanReview": false,
+          "outcome": "PASS",
+          "issues": [],
+          "notes": []
+        },
+        "automatedStatus": "AUTOMATED_CHECKS_PASSED_HUMAN_REVIEW_REQUIRED"
+      }
+    }
+  ]
+}

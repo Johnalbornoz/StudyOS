@@ -1,0 +1,139 @@
+/**
+ * QF V5.1 -- the systems StudyUs has registered so far (data, pure).
+ *
+ * This file is the ONLY place that names today's systems, and it names them the way any later system is added:
+ * `registerSystem`, `registerVersion`, `registerNode`, `registerAdapter`. Nothing else in this directory refers to
+ * one of them. A new system is a new block of registrations -- here for a system StudyUs ships, in a database for
+ * one an operator adds, in a test for a test system -- and no other file changes.
+ *
+ * What is honest about these records:
+ *   - every version is "the rules as the repository records them": no official version binding is claimed here
+ *     beyond what the EA-1 profile itself records, and effective dates are left open (null) rather than invented;
+ *   - AICE is registered as a QUALIFICATION that belongs to the Cambridge system (EA-1A, D5): it has no rule
+ *     profile of its own, only provisional adapters derived from generation profiles;
+ *   - every adapter is PROVISIONAL, because no profile is certified.
+ */
+import { CAMBRIDGE_9709_P1_COMPONENT, IB_MATH_AA_HL_P2_COMPONENT } from '@/lib/assessment-adaptation/system-profiles';
+import { AICE_SYLLABI } from '@/lib/exam-core/aice/aice-syllabi.generated';
+import type { AssessmentComponentProfile } from '@/lib/assessment-adaptation/assessment-system-profile';
+import type { ApplicabilityThresholdPolicy } from '@/lib/assessment-adaptation/assessment-applicability';
+import { SABER_PILOT_APPLICABILITY_THRESHOLD } from '@/lib/curriculum/icfes/saber11-content-correspondence';
+import { EA1_COMPONENT_PROFILES, EA1_SYSTEM_PROFILES } from '@/lib/assessment-adaptation/system-profiles';
+import { adapterConflictsWith, uncoveredGenerationProfileAdapters, type AdapterConflict, type AssessmentAdapter } from './assessment-adapter';
+import { ACTIVE_CONFIGURATION_REBINDINGS, cambridge9709P1BoundToGovernedSyllabus, retiredConfigurationsReferencedBy } from './active-configuration-binding';
+import { createAssessmentSystemRegistry, type AssessmentSystemRegistry, type AssessmentSystemType } from './assessment-system-registry';
+
+const RECORDED_BY = 'studyus:registered-systems';
+const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+interface SystemSeed { systemId: string; displayName: string; organization: string; region: string | null; systemType: AssessmentSystemType; metadata: Record<string, string | string[]> }
+/** The registrations. Order is irrelevant; each row is independent of the others. */
+const SYSTEMS: readonly SystemSeed[] = [
+  { systemId: 'PAA', displayName: 'Prueba de Aptitud Académica', organization: 'College Board (Puerto Rico y América Latina)', region: 'LATAM', systemType: 'EXAM', metadata: { legacyExamFamilyCodes: ['PAA'] } },
+  { systemId: 'PISA', displayName: 'Programme for International Student Assessment', organization: 'OECD', region: null, systemType: 'EXAM', metadata: { legacyExamFamilyCodes: ['PISA'], assessmentSemantics: 'COMPETENCY_BENCHMARK' } },
+  { systemId: 'IB', displayName: 'International Baccalaureate Diploma Programme', organization: 'International Baccalaureate Organization', region: null, systemType: 'HYBRID', metadata: { legacyExamFamilyCodes: ['IB'] } },
+  { systemId: 'CAMBRIDGE', displayName: 'Cambridge International', organization: 'Cambridge University Press & Assessment', region: null, systemType: 'HYBRID', metadata: { legacyExamFamilyCodes: ['CAMBRIDGE'] } },
+  { systemId: 'AICE', displayName: 'Cambridge AICE Diploma', organization: 'Cambridge University Press & Assessment', region: null, systemType: 'QUALIFICATION', metadata: { legacyExamFamilyCodes: ['AICE'], qualificationOfSystem: 'CAMBRIDGE' } },
+  { systemId: 'ICFES', displayName: 'Saber 11', organization: 'Instituto Colombiano para la Evaluación de la Educación (ICFES)', region: 'CO', systemType: 'EXAM', metadata: { legacyExamFamilyCodes: ['ICFES'] } },
+];
+/**
+ * A system whose applicability records are read under a threshold of its own (by a recorded decision). Absent = EA-1.
+ * ICFES: the Saber PILOT threshold (SABER-CONTENT-CORRESPONDENCE-2026-10-15; PILOT_PREVIEW; review PENDING).
+ */
+export const SYSTEM_APPLICABILITY_THRESHOLDS: Readonly<Record<string, ApplicabilityThresholdPolicy>> = { ICFES: SABER_PILOT_APPLICABILITY_THRESHOLD };
+/**
+ * IB Mathematics: analysis and approaches HL -- PAPER 3, registered by Track B (2026-10-15) without editing the frozen
+ * EA-1 profile file: the Paper 2 profile (same system, same calculator rule) with exactly what the vertical's own
+ * sections[p3].definition records -- key p3, its response formats (MATH_EXPRESSION, EXTENDED_RESPONSE) and its official
+ * time and marks (60 min, 55 marks). Same sources, same authority kind; nothing else is assumed.
+ */
+const IB_P3_FROM_P2 = (): AssessmentComponentProfile => {
+  const json = JSON.stringify(IB_MATH_AA_HL_P2_COMPONENT).split('sections[p2]').join('sections[p3]').split('ib.math-aa-hl.p2').join('ib.math-aa-hl.p3').split('IB.MATH_AA_HL.P2').join('IB.MATH_AA_HL.P3').split('Paper 2').join('Paper 3').split('"componentKey":"p2"').join('"componentKey":"p3"');
+  const p = JSON.parse(json) as AssessmentComponentProfile & { overrides: Record<string, { value: unknown }> };
+  p.overrides.responseFormats!.value = ['MATH_EXPRESSION', 'EXTENDED_RESPONSE'];
+  p.overrides.timePressure!.value = { officialMinutes: 60, officialItems: null, officialMarks: 55 };
+  return p;
+};
+/**
+ * Cambridge 9709 Papers 2, 4 and 5 -- registered by Track B (2026-10-15, AICE-9709-P2P4P5-EQUIVALENCE-2026-10-15)
+ * exactly as CAMBRIDGE.9709.P1 is: the P1 profile restated for the SAME sourced syllabus record of the other component
+ * (AICE_SYLLABI[code 9709].components[pN]: its name, minutes, marks; the calculator rule is the one the record states
+ * for every 9709 paper). Paired with the Cambridge system bound to the syllabus's own command words (as P1). The
+ * frozen EA-1 profile file is not edited.
+ */
+const CIE_9709_COMPONENT_FROM_P1 = (key: 'p2' | 'p4' | 'p5'): AssessmentComponentProfile => {
+  const rec = AICE_SYLLABI.find((x) => x.code === '9709')?.components.find((c) => c.key === key);
+  if (!rec || rec.minutes === null || rec.marks === null) throw new Error(`REGISTERED_SYSTEMS_INVALID: 9709 components[${key}] is not in the sourced syllabus record`);
+  const P = key.toUpperCase();
+  const json = JSON.stringify(CAMBRIDGE_9709_P1_COMPONENT).split('components[p1]').join(`components[${key}]`).split('CAMBRIDGE.9709.P1').join(`CAMBRIDGE.9709.${P}`).split('cambridge.9709.p1').join(`cambridge.9709.${key}`).split('"componentKey":"p1"').join(`"componentKey":"${key}"`).split('of component 1').join(`of component ${rec.number}`).split('Pure Mathematics 1').join(rec.name);
+  const p = JSON.parse(json) as AssessmentComponentProfile & { overrides: Record<string, { value: unknown }> };
+  p.overrides.timePressure!.value = { officialMinutes: rec.minutes, officialItems: null, officialMarks: rec.marks };
+  return p;
+};
+const CIE_9709_P2P4P5 = (['p2', 'p4', 'p5'] as const).map(CIE_9709_COMPONENT_FROM_P1);
+export const TRACK_B_COMPONENT_PROFILES: readonly AssessmentComponentProfile[] = [IB_P3_FROM_P2(), ...CIE_9709_P2P4P5];
+/** The pairs Track B registers for its components that need the governed system rules (the Cambridge 9709 command words). */
+const TRACK_B_REBINDINGS: Readonly<Record<string, () => { system: ReturnType<typeof cambridge9709P1BoundToGovernedSyllabus>['system']; component: AssessmentComponentProfile }>> =
+  Object.fromEntries(CIE_9709_P2P4P5.map((c) => [c.componentId, () => ({ system: cambridge9709P1BoundToGovernedSyllabus().system, component: c })]));
+/** V5 generation profile -> the EA-1 component that is the SAME component. Only real identities are listed. */
+export const GENERATION_PROFILE_COMPONENT: Readonly<Record<string, string>> = {
+  'PAA.MATEMATICAS': 'PAA.MATEMATICAS',
+  'IB.MATH_AA.HL.P1': 'IB.MATH_AA_HL.P1',
+  'IB.MATH_AA.HL.P2': 'IB.MATH_AA_HL.P2',
+  'PISA.MATHEMATICS': 'PISA.MATHEMATICS',
+  'ICFES.SABER11.MATEMATICAS': 'ICFES.SABER11_MATEMATICAS',
+};
+
+/** The one version registered for a system that has no EA-1 profile of its own. */
+const UNPROFILED_VERSION = 'repository-recorded';
+
+function build(rebindings: typeof ACTIVE_CONFIGURATION_REBINDINGS = ACTIVE_CONFIGURATION_REBINDINGS, extraComponents: readonly AssessmentComponentProfile[] = TRACK_B_COMPONENT_PROFILES): AssessmentSystemRegistry {
+  // an adapter bound to a retired configuration cannot be registered here
+  const registry = createAssessmentSystemRegistry({ retiredConfigurationsOf: retiredConfigurationsReferencedBy });
+  // the pair V5.1 registers for a component: the EA-1 profile, or its rebinding where that profile cites a retired configuration
+  const pairOf = (c: (typeof EA1_COMPONENT_PROFILES)[number]) => rebindings[c.componentId]?.() ?? TRACK_B_REBINDINGS[c.componentId]?.() ?? (() => { const system = EA1_SYSTEM_PROFILES.find((p) => p.profileId === c.systemProfileId); return system ? { system, component: c } : null; })();
+  const must = <T>(r: { ok: true; value: T } | { ok: false; code: string; detail: string }): T => { if (!r.ok) throw new Error(`REGISTERED_SYSTEMS_INVALID: ${r.code} ${r.detail}`); return r.value; };
+  const provenance = { basis: 'STUDYUS_POLICY' as const, sources: ['src/lib/assessment-adaptation/system-profiles.ts', 'src/lib/assessment-instance/active-configuration-binding.ts'], recordedBy: RECORDED_BY };
+  const versionOf = new Map<string, string>();
+  for (const s of SYSTEMS) {
+    must(registry.registerSystem({ v: 1, ...s, lifecycle: 'ACTIVE', provenance }));
+    // the version of a system is the version of the rules V5.1 actually registers for it
+    const profile = EA1_COMPONENT_PROFILES.filter((c) => c.systemProfileId === s.systemId).map((c) => pairOf(c)?.system).find(Boolean) ?? EA1_SYSTEM_PROFILES.find((p) => p.profileId === s.systemId);
+    const versionId = profile ? slug(profile.version) : UNPROFILED_VERSION;
+    must(registry.registerVersion({ v: 1, systemId: s.systemId, versionId, label: profile ? `Rules as recorded in the repository (profile ${profile.version})` : 'As recorded in the repository; no rule profile yet', lifecycle: 'ACTIVE', effectiveFrom: null, effectiveTo: null, provenance }));
+    versionOf.set(s.systemId, versionId);
+  }
+  const component = (adapterId: string, displayName: string): string => {
+    const systemId = adapterId.split('.')[0];
+    const versionId = versionOf.get(systemId);
+    if (!versionId) throw new Error(`REGISTERED_SYSTEMS_INVALID: ${adapterId} belongs to no registered system`);
+    must(registry.registerNode({ v: 1, nodeId: adapterId, systemId, versionId, kind: 'COMPONENT', parentNodeId: null, code: adapterId.slice(systemId.length + 1), displayName }));
+    return versionId;
+  };
+  for (const c of [...EA1_COMPONENT_PROFILES, ...extraComponents]) {
+    const pair = pairOf(c);
+    if (!pair) continue;
+    must(registry.registerAdapter({ versionId: component(c.componentId, c.displayName), definition: { kind: 'EA1_PROFILE_PAIR', system: pair.system, component: pair.component } }));
+  }
+  for (const a of uncoveredGenerationProfileAdapters(new Set(Object.keys(GENERATION_PROFILE_COMPONENT)))) must(registry.registerAdapter({ versionId: component(a.adapterId, a.component), definition: { kind: 'PROVISIONAL_ADAPTER', adapter: a } }));
+  return registry;
+}
+
+/** The registry of the systems StudyUs ships. Read-only use: a caller that needs another system builds its own registry. */
+export const STUDYUS_ASSESSMENT_REGISTRY: AssessmentSystemRegistry = build();
+/**
+ * The registry AS THE QF V5.2 RUN CERTIFIED AGAINST IT: every rebinding except the Cambridge 9709 P1 one made after it
+ * (2026-10-14). Read only by the archived V5.2 run and its publication batch (qf52-batch-1), whose inputs are history.
+ */
+export const V52_ASSESSMENT_REGISTRY: AssessmentSystemRegistry = build(Object.fromEntries(Object.entries(ACTIVE_CONFIGURATION_REBINDINGS).filter(([componentId]) => componentId !== 'CAMBRIDGE.9709.P1')), []);
+/** The registry as it was before the IB Paper 3 component was registered (2026-10-15): the input of the batches published until then. */
+export const STUDYUS_ASSESSMENT_REGISTRY_2026_10_15: AssessmentSystemRegistry = build(ACTIVE_CONFIGURATION_REBINDINGS, []);
+/** The registry as it was when IB Paper 3 was published (2026-10-15): IB P3 only, before the Cambridge 9709 P2/P4/P5 components. */
+export const STUDYUS_ASSESSMENT_REGISTRY_2026_10_15_P3: AssessmentSystemRegistry = build(ACTIVE_CONFIGURATION_REBINDINGS, [IB_P3_FROM_P2()]);
+
+/** Every adapter StudyUs has, each defined once and each bound to a registered system version. */
+export const ASSESSMENT_ADAPTERS: readonly AssessmentAdapter[] = Object.freeze([...STUDYUS_ASSESSMENT_REGISTRY.adapters()]);
+export const adapterById = (adapterId: string): AssessmentAdapter | null => STUDYUS_ASSESSMENT_REGISTRY.adapter(adapterId);
+/** The adapter a V5 generation profile must consume. Never the profile's own fields when an EA-1 component exists. */
+export const adapterForGenerationProfile = (profileId: string): AssessmentAdapter | null => adapterById(GENERATION_PROFILE_COMPONENT[profileId] ?? profileId);
+export const adapterConflicts = (): AdapterConflict[] => adapterConflictsWith(adapterById, GENERATION_PROFILE_COMPONENT);

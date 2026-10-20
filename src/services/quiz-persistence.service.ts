@@ -10,7 +10,9 @@ import { db } from '@/lib/db';
 import { GeneratedQuestion } from '@/services/quiz-generation.service';
 import { evidenceModeForActivity, type ActivityType, type EvidenceMode } from '@/lib/activity-taxonomy';
 import { fingerprintQuestion } from '@/lib/lx/exact-duplicate-novelty';
+import { sessionQuestionHistory } from '@/lib/quiz/session-question-history';
 import type { ExactDuplicateNoveltyMarker } from '@/lib/lx/novelty-marker';
+import type { PracticeMix, ProveMix } from '@/lib/pedagogical-engine/types';
 
 export type QuizMode =
   | 'topic_practice'
@@ -135,6 +137,15 @@ export interface QuizSessionV1Marker {
    * `isExactDuplicateNoveltyCertified` to stamp `metadata.novel`.
    */
   novelty?: ExactDuplicateNoveltyMarker | null;
+  /** D78 -- PRACTICE / REINFORCE sessions only: the per-level mix this session was built for (absent on pre-D78 rows). */
+  practiceMix?: PracticeMix | null;
+  /** D79 -- PROVE sessions only: the per-level composition this session was built for. */
+  proveMix?: ProveMix | null;
+  /**
+   * D79/D80 -- READ-ONLY on a loaded session: the `practiceMixFallback` record the delivery wrote
+   * into canonical_activity_contract after the session was stored (never written by storeQuiz).
+   */
+  practiceMixFallback?: unknown;
 }
 
 export interface QuizSession {
@@ -150,6 +161,14 @@ export interface QuizSession {
   language: string;
   createdAt: Date;
   expiresAt: Date;
+  /**
+   * Human Agency P0-2: decided by the DATABASE clock (`now() >= expires_at`),
+   * the exact complement of the cross-surface guard's "active" predicate
+   * (`expires_at > NOW()`, getStudentActiveQuizzes) -- so a session can never
+   * be both "no longer restricting the Tutor" and "still accepted as
+   * restricted evidence".
+   */
+  isExpired: boolean;
   status: 'active' | 'completed' | 'expired';
   hintsUsedQuestions: number[];
   v1Marker: QuizSessionV1Marker | null;
@@ -250,6 +269,10 @@ export async function storeQuiz(
           // CANON-R6R1 -- additive; `undefined` (omitted from the JSON)
           // for every marker without novelty filtering (non-Prove/Retain).
           novelty: v1Marker.novelty ?? undefined,
+          // D78 -- additive; omitted for every non-Practice marker.
+          practiceMix: v1Marker.practiceMix ?? undefined,
+          // D79 -- additive; omitted for every non-Prove marker.
+          proveMix: v1Marker.proveMix ?? undefined,
         })
       : null;
 
@@ -328,9 +351,42 @@ export async function loadPriorPracticeQuestionFingerprints(studentId: string, c
 
   const fingerprints = new Set<string>();
   for (const row of result.rows) {
-    const questions: GeneratedQuestion[] = row.questions || [];
-    for (const question of questions) {
-      if (question.conceptId === conceptId && typeof question.question === 'string') {
+    for (const question of sessionQuestionHistory(row.questions)) {
+      if (question.conceptId === conceptId) {
+        fingerprints.add(fingerprintQuestion(question));
+      }
+    }
+  }
+  return fingerprints;
+}
+
+/**
+ * D75 -- PROVE EXACT-ITEM NOVELTY: the REAL question text of every prior
+ * v1 Prove attempt (`canonical_prove`) for this exact (student, concept)
+ * pair, as the SAME exact-novelty fingerprints Practice uses
+ * (exact-duplicate-novelty.ts -- normalized exact text only, never
+ * paraphrase / semantic detection). A Prove retry must never re-administer
+ * one of these exact items. A Prove session is single-concept (the SQL
+ * already scopes it), so an item without its own `conceptId` belongs to
+ * the session's concept.
+ */
+export async function loadPriorProveQuestionFingerprints(studentId: string, conceptId: string): Promise<Set<string>> {
+  const result = await db.query(
+    `
+    SELECT questions
+    FROM quiz_sessions
+    WHERE student_id = $1
+      AND quiz_mode = 'canonical_prove'
+      AND pedagogical_policy_version IS NOT NULL
+      AND $2::uuid = ANY(concept_ids)
+    `,
+    [studentId, conceptId]
+  );
+
+  const fingerprints = new Set<string>();
+  for (const row of result?.rows ?? []) {
+    for (const question of sessionQuestionHistory(row.questions)) {
+      if ((question.conceptId ?? conceptId) === conceptId) {
         fingerprints.add(fingerprintQuestion(question));
       }
     }
@@ -363,9 +419,8 @@ export async function loadPriorCanonicalQuestionFingerprintsForRetain(studentId:
 
   const fingerprints = new Set<string>();
   for (const row of result.rows) {
-    const questions: GeneratedQuestion[] = row.questions || [];
-    for (const question of questions) {
-      if (question.conceptId === conceptId && typeof question.question === 'string') {
+    for (const question of sessionQuestionHistory(row.questions)) {
+      if (question.conceptId === conceptId) {
         fingerprints.add(fingerprintQuestion(question));
       }
     }
@@ -540,7 +595,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
     const result = await db.query(
       `
       SELECT id, student_id, concept_id, subject_id,
-             questions, language, status, created_at, expires_at,
+             questions, language, status, created_at, expires_at, (now() >= expires_at) AS is_expired,
              quiz_mode, concept_ids, hints_used_questions, activity_type, evidence_mode,
              pedagogical_policy_version, canonical_revision, canonical_stage,
              canonical_activity_contract, target_skill_ids, target_competency_ids
@@ -590,6 +645,9 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
         supportLevel: contract.supportLevel ?? 'ASSISTED',
         minimumScorePercent: contract.minimumScorePercent ?? 80,
         novelty: contract.novelty ?? null,
+        ...(contract.practiceMix ? { practiceMix: contract.practiceMix } : {}),
+        ...(contract.proveMix ? { proveMix: contract.proveMix } : {}),
+        ...(contract.practiceMixFallback ? { practiceMixFallback: contract.practiceMixFallback } : {}),
       };
     }
 
@@ -606,6 +664,7 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
       language: row.language,
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at),
+      isExpired: row.is_expired === true,
       status: row.status,
       hintsUsedQuestions: row.hints_used_questions || [],
       v1Marker,
@@ -621,20 +680,31 @@ export async function getQuizSession(quizId: string): Promise<QuizSession | null
 /**
  * Get all active quizzes for a student
  */
+/**
+ * Overnight 2026-10-16: a SCHEDULED subject Test / Mock that the Student has not started yet is frozen but not being
+ * taken -- it must not restrict the Tutor all day. Every other active session (including a started subject attempt)
+ * is listed exactly as before.
+ */
+export const NOT_STARTED_SUBJECT_ASSESSMENT_PREDICATE = `(subject_assessment_setup IS NOT NULL AND subject_assessment_setup->>'version' = 'subject-assessment-v2' AND (subject_assessment_setup->'timing'->>'startedAt') IS NULL)`;
+
 export async function getStudentActiveQuizzes(studentId: string): Promise<QuizSession[]> {
   try {
-    const result = await db.query(
-      `
+    const listSql = (excludeNotStarted: boolean) => `
       SELECT id, student_id, concept_id, subject_id,
              questions, status, created_at, expires_at, quiz_mode, concept_ids, activity_type, evidence_mode
       FROM quiz_sessions
       WHERE student_id = $1
       AND status = 'active'
       AND expires_at > NOW()
+      ${excludeNotStarted ? `AND NOT ${NOT_STARTED_SUBJECT_ASSESSMENT_PREDICATE}` : ''}
       ORDER BY created_at DESC
-      `,
-      [studentId]
-    );
+      `;
+    // A schema without subject_assessment_setup (migration 20261127_1100 not applied) has no such sessions: fall back to
+    // the unfiltered listing rather than failing open (an error here would return [] and lift every restriction).
+    const result = await db.query(listSql(true), [studentId]).catch((e: { code?: string }) => {
+      if (e?.code === '42703') return db.query(listSql(false), [studentId]);
+      throw e;
+    });
 
     return result.rows.map((row) => {
       const quizMode: QuizMode = row.quiz_mode || 'topic_practice';
@@ -652,6 +722,7 @@ export async function getStudentActiveQuizzes(studentId: string): Promise<QuizSe
         questions: row.questions,
         createdAt: new Date(row.created_at),
         expiresAt: new Date(row.expires_at),
+        isExpired: false, // filtered above: expires_at > NOW()
         status: row.status,
         hintsUsedQuestions: [],
         // This listing query doesn't select the v1 marker columns --

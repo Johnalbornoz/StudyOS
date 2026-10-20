@@ -24,7 +24,7 @@
  * (Policy V2 Section 1/12), so it resolves to the exact same
  * `implementationId`/`quizMode` as PRACTICE itself.
  */
-import type { PedagogicalActivityType } from '@/lib/pedagogical-engine';
+import type { PedagogicalActivityType, StageActivityType } from '@/lib/pedagogical-engine';
 
 /** The concrete, server-only quiz mode each canonical implementation actually launches through generate-and-take. */
 export type CanonicalQuizMode =
@@ -35,7 +35,7 @@ export type CanonicalQuizMode =
   | 'canonical_learn_check';
 
 export interface CanonicalImplementationEntry {
-  activityType: PedagogicalActivityType | 'REINFORCE';
+  activityType: StageActivityType | 'REINFORCE';
   /** A stable, documented identifier for THIS implementation -- never guessed or reconstructed from a mode string at a call site. */
   implementationId: string;
   /** Bumped whenever this implementation's own contract (item count, difficulty range, response contract) changes in a way a consumer should be able to distinguish. */
@@ -50,7 +50,10 @@ export interface CanonicalImplementationEntry {
  * below), so this can never silently drift out of sync with the pure
  * engine's own vocabulary.
  */
-const REGISTRY: Record<PedagogicalActivityType | 'REINFORCE', CanonicalImplementationEntry> = {
+// 2026-10-16 contract 1.3: keyed by every LAUNCHABLE activity type. INTERNAL_ASSESSMENT is replayed evidence only (a
+// subject Test / Mock, launched by the subject-assessment flow, never by the engine), so it has no entry and resolves
+// to null -- the engine never emits it as an ActivityContract.
+const REGISTRY: Record<StageActivityType | 'REINFORCE', CanonicalImplementationEntry> = {
   LEARN_CHECK: { activityType: 'LEARN_CHECK', implementationId: 'canonical_learn_check', contractVersion: 'v1', quizMode: 'canonical_learn_check' },
   PRACTICE: { activityType: 'PRACTICE', implementationId: 'canonical_practice', contractVersion: 'v1', quizMode: 'topic_practice' },
   // REINFORCE is an overlay on PRACTICE, never a separate implementation.
@@ -73,7 +76,7 @@ const REGISTRY: Record<PedagogicalActivityType | 'REINFORCE', CanonicalImplement
  * never a learner-facing "not ready yet" state.
  */
 export function resolveCanonicalImplementation(activityType: PedagogicalActivityType | 'REINFORCE'): CanonicalImplementationEntry | null {
-  return REGISTRY[activityType] ?? null;
+  return activityType === 'INTERNAL_ASSESSMENT' ? null : (REGISTRY[activityType] ?? null);
 }
 
 /** Every registry entry, for certification tests that must prove the registry is exhaustive over the engine's own vocabulary. */

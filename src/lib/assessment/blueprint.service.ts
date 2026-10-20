@@ -4,6 +4,7 @@
  * (INV-F6-05/INV-F7-05, adversarial case K).
  */
 import { db } from '@/lib/db';
+import { constraintsFromJson } from '@/lib/exam-core/slot-constraints';
 import type { AssessmentBlueprint, BlueprintObjectiveTarget } from './types';
 
 function toBlueprint(r: any): AssessmentBlueprint {
@@ -22,16 +23,22 @@ function toTarget(r: any): BlueprintObjectiveTarget {
     difficultyMin: r.difficulty_min,
     difficultyMax: r.difficulty_max,
     skillId: r.skill_id,
+    // Column from 20261102_1000; absent (older schema) or [] = no constraint, and the key is omitted.
+    ...(() => {
+      const c = constraintsFromJson(r.constraints ?? []);
+      return c.length ? { constraints: c } : {};
+    })(),
   };
 }
 
+/** Creates the LEGACY blueprint of a version (purpose NULL; one per version). Variants are created by the B2 persistence adapter only. */
 export async function createBlueprint(examVersionId: string): Promise<AssessmentBlueprint> {
   const result = await db.query(`INSERT INTO assessment_blueprints (exam_version_id) VALUES ($1) RETURNING *`, [examVersionId]);
   return toBlueprint(result.rows[0]);
 }
 
 export async function publishBlueprint(blueprintId: string): Promise<AssessmentBlueprint> {
-  const result = await db.query(`UPDATE assessment_blueprints SET status = 'PUBLISHED' WHERE id = $1 AND status = 'DRAFT' RETURNING *`, [blueprintId]);
+  const result = await db.query(`UPDATE assessment_blueprints SET status = 'PUBLISHED' WHERE id = $1 AND status = 'DRAFT' AND purpose IS NULL RETURNING *`, [blueprintId]);
   if (result.rows.length === 0) throw new Error(`blueprint ${blueprintId} could not be published from its current status`);
   return toBlueprint(result.rows[0]);
 }
@@ -77,13 +84,15 @@ export async function addObjectiveTarget(params: {
   return toTarget(result.rows[0]);
 }
 
+/** The LEGACY blueprint of a version. A version may also carry variants (purpose FULL / REDUCED / DIAGNOSTIC, migration 20261110_1600): no existing flow may bind to one. */
 export async function getBlueprintForVersion(examVersionId: string): Promise<AssessmentBlueprint | null> {
-  const result = await db.query(`SELECT * FROM assessment_blueprints WHERE exam_version_id = $1`, [examVersionId]);
+  const result = await db.query(`SELECT * FROM assessment_blueprints WHERE exam_version_id = $1 AND purpose IS NULL`, [examVersionId]);
   return result.rows.length === 0 ? null : toBlueprint(result.rows[0]);
 }
 
 export async function listObjectiveTargets(blueprintId: string): Promise<BlueprintObjectiveTarget[]> {
-  const result = await db.query(`SELECT * FROM blueprint_objective_targets WHERE blueprint_id = $1`, [blueprintId]);
+  // Track B: deterministic order (the plan builder groups these into sections).
+  const result = await db.query(`SELECT * FROM blueprint_objective_targets WHERE blueprint_id = $1 ORDER BY created_at ASC, id ASC`, [blueprintId]);
   return result.rows.map(toTarget);
 }
 

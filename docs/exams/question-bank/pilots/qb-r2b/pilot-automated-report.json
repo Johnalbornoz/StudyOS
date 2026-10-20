@@ -1,0 +1,952 @@
+{
+ "batchKey": "qb-r2b-pilot-001",
+ "generated": 24,
+ "stimuli": 4,
+ "bankCompared": {
+  "environmentFingerprint": "2a29b99ee14a22b4",
+  "items": 496
+ },
+ "structural": {
+  "PASS": 24
+ },
+ "originality": {
+  "PASS_LOW_SIMILARITY": 24
+ },
+ "automatedStatus": {
+  "READY_FOR_HUMAN_REVIEW": 24
+ },
+ "reviewStatus": {
+  "BLOCKED_NO_QUALIFIED_REVIEWER": 24
+ },
+ "rights": {
+  "NOT_ESTABLISHABLE": 24
+ },
+ "bySection": {
+  "paa.sec.lectura": {
+   "generated": 6,
+   "structurallyValid": 6,
+   "lowSimilarity": 6
+  },
+  "paa.sec.redaccion": {
+   "generated": 6,
+   "structurallyValid": 6,
+   "lowSimilarity": 6
+  },
+  "paa.sec.matematicas": {
+   "generated": 6,
+   "structurallyValid": 6,
+   "lowSimilarity": 6
+  },
+  "paa.sec.ingles": {
+   "generated": 6,
+   "structurallyValid": 6,
+   "lowSimilarity": 6
+  }
+ },
+ "byPool": {
+  "PRACTICE": 13,
+  "DIAGNOSTIC": 5,
+  "VERIFICATION": 4,
+  "FULL_MOCK_1": 2
+ },
+ "byBand": {
+  "FOUNDATIONAL": 8,
+  "STANDARD": 12,
+  "CHALLENGE": 4
+ },
+ "byFormat": {
+  "MULTIPLE_CHOICE": 23,
+  "STUDENT_PRODUCED": 1
+ },
+ "stimulusBased": 14,
+ "standalone": 10,
+ "stimulusPools": [
+  {
+   "stimulusKey": "r2b.lect.huertos",
+   "questions": 4,
+   "pools": [
+    "DIAGNOSTIC",
+    "PRACTICE",
+    "VERIFICATION"
+   ]
+  },
+  {
+   "stimulusKey": "r2b.lect.tarde",
+   "questions": 2,
+   "pools": [
+    "DIAGNOSTIC",
+    "PRACTICE"
+   ]
+  },
+  {
+   "stimulusKey": "r2b.red.vidrio",
+   "questions": 6,
+   "pools": [
+    "DIAGNOSTIC",
+    "FULL_MOCK_1",
+    "PRACTICE",
+    "VERIFICATION"
+   ]
+  },
+  {
+   "stimulusKey": "r2b.ing.mobile-library",
+   "questions": 2,
+   "pools": [
+    "PRACTICE",
+    "VERIFICATION"
+   ]
+  }
+ ],
+ "stimuliSpanningPools": 4,
+ "maxSiblingSimilarity": 0.214,
+ "stimulusSimilarity": [
+  {
+   "a": "r2b.lect.huertos",
+   "b": "r2b.lect.tarde",
+   "similarity": 0
+  },
+  {
+   "a": "r2b.lect.huertos",
+   "b": "r2b.red.vidrio",
+   "similarity": 0
+  },
+  {
+   "a": "r2b.lect.huertos",
+   "b": "r2b.ing.mobile-library",
+   "similarity": 0
+  },
+  {
+   "a": "r2b.lect.tarde",
+   "b": "r2b.red.vidrio",
+   "similarity": 0
+  },
+  {
+   "a": "r2b.lect.tarde",
+   "b": "r2b.ing.mobile-library",
+   "similarity": 0
+  },
+  {
+   "a": "r2b.red.vidrio",
+   "b": "r2b.ing.mobile-library",
+   "similarity": 0
+  }
+ ],
+ "rows": [
+  {
+   "candidateKey": "r2b-L1",
+   "cellKey": "PRACTICE|001|read.vocabulary-in-context|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "band": "FOUNDATIONAL",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.lect.huertos",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.136,
+   "closest": "INTERNAL_QUESTION_BANK:paa.lec.03",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-L2",
+   "cellKey": "DIAGNOSTIC|004|read.explicit-information|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.lectura",
+   "pool": "DIAGNOSTIC",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.lect.huertos",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.029,
+   "closest": "INTERNAL_QUESTION_BANK:paa.lec.04",
+   "closestSibling": {
+    "key": "r2b-L4",
+    "similarity": 0.024
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-L3",
+   "cellKey": "PRACTICE|008|read.inference|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "band": "CHALLENGE",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.lect.huertos",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.05,
+   "closest": "INTERNAL_QUESTION_BANK:paa.l.abejas.inferencia",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-L4",
+   "cellKey": "VERIFICATION|007|read.central-idea|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.lectura",
+   "pool": "VERIFICATION",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.lect.huertos",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.025,
+   "closest": "INTERNAL_QUESTION_BANK:pisa.r.tren.idea",
+   "closestSibling": {
+    "key": "r2b-L2",
+    "similarity": 0.024
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-L5",
+   "cellKey": "PRACTICE|020|lit.figurative-language|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.lectura",
+   "pool": "PRACTICE",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.lect.tarde",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "INTERNAL_QUESTION_BANK:9093-a.p1.analysis",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-L6",
+   "cellKey": "DIAGNOSTIC|019|lit.poetic-elements|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.lectura",
+   "pool": "DIAGNOSTIC",
+   "band": "FOUNDATIONAL",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.lect.tarde",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.038,
+   "closest": "INTERNAL_QUESTION_BANK:paa.alg.ecuacion",
+   "closestSibling": {
+    "key": "r2b-M2",
+    "similarity": 0.037
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-R1",
+   "cellKey": "PRACTICE|021|write.concision-elision|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.redaccion",
+   "pool": "PRACTICE",
+   "band": "FOUNDATIONAL",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.red.vidrio",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.022,
+   "closest": "INTERNAL_QUESTION_BANK:paa.r.seg1.adicion",
+   "closestSibling": {
+    "key": "r2b-L4",
+    "similarity": 0.01
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-R2",
+   "cellKey": "DIAGNOSTIC|023|write.generalization|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.redaccion",
+   "pool": "DIAGNOSTIC",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.red.vidrio",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.02,
+   "closest": "GENERATION_BATCH_SIBLING:r2b-R6",
+   "closestSibling": {
+    "key": "r2b-R6",
+    "similarity": 0.02
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-R3",
+   "cellKey": "PRACTICE|024|write.global-synthesis|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.redaccion",
+   "pool": "PRACTICE",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.red.vidrio",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.049,
+   "closest": "INTERNAL_QUESTION_BANK:paa.r.seg2.cohesion",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-R4",
+   "cellKey": "VERIFICATION|022|write.stylistic-addition|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.redaccion",
+   "pool": "VERIFICATION",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.red.vidrio",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.023,
+   "closest": "GENERATION_BATCH_SIBLING:r2b-R5",
+   "closestSibling": {
+    "key": "r2b-R5",
+    "similarity": 0.023
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-R5",
+   "cellKey": "PRACTICE|025|write.indirect-expression|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.redaccion",
+   "pool": "PRACTICE",
+   "band": "CHALLENGE",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.red.vidrio",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.023,
+   "closest": "GENERATION_BATCH_SIBLING:r2b-R4",
+   "closestSibling": {
+    "key": "r2b-R4",
+    "similarity": 0.023
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-R6",
+   "cellKey": "FULL_MOCK_1|021|write.concision-elision|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.redaccion",
+   "pool": "FULL_MOCK_1",
+   "band": "FOUNDATIONAL",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.red.vidrio",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.026,
+   "closest": "INTERNAL_QUESTION_BANK:paa.l.abejas.vocab",
+   "closestSibling": {
+    "key": "r2b-R2",
+    "similarity": 0.02
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 2,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-M1",
+   "cellKey": "PRACTICE|029|math.num.percent|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.matematicas",
+   "pool": "PRACTICE",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": null,
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.042,
+   "closest": "INTERNAL_QUESTION_BANK:pisa.cant.empl.encuesta",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 6
+   }
+  },
+  {
+   "candidateKey": "r2b-M2",
+   "cellKey": "DIAGNOSTIC|036|math.alg.linear-equations|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.matematicas",
+   "pool": "DIAGNOSTIC",
+   "band": "FOUNDATIONAL",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": null,
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.227,
+   "closest": "INTERNAL_QUESTION_BANK:paa.alg.ecuacion",
+   "closestSibling": {
+    "key": "r2b-L6",
+    "similarity": 0.037
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 6
+   }
+  },
+  {
+   "candidateKey": "r2b-M3",
+   "cellKey": "FULL_MOCK_1|028|math.num.ratio-proportion|STUDENT_PRODUCED|STANDARD",
+   "section": "paa.sec.matematicas",
+   "pool": "FULL_MOCK_1",
+   "band": "STANDARD",
+   "format": "STUDENT_PRODUCED",
+   "stimulus": null,
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "INTERNAL_QUESTION_BANK:9093-a.p1.analysis",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 3,
+    "NOT_YET_APPLICABLE": 6
+   }
+  },
+  {
+   "candidateKey": "r2b-M4",
+   "cellKey": "PRACTICE|066|math.prob.counting|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.matematicas",
+   "pool": "PRACTICE",
+   "band": "CHALLENGE",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": null,
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.034,
+   "closest": "INTERNAL_QUESTION_BANK:paa.ari.fracciones",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 6
+   }
+  },
+  {
+   "candidateKey": "r2b-M5",
+   "cellKey": "VERIFICATION|051|math.alg.linear-systems|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.matematicas",
+   "pool": "VERIFICATION",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": null,
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.019,
+   "closest": "INTERNAL_QUESTION_BANK:icfes.mat.02",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 6
+   }
+  },
+  {
+   "candidateKey": "r2b-M6",
+   "cellKey": "PRACTICE|027|math.num.fractions-decimals|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.matematicas",
+   "pool": "PRACTICE",
+   "band": "FOUNDATIONAL",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": null,
+   "currentness": "CURRICULUM_CURRENTNESS_BLOCKED_UNTIL_PAA_CUTOVER",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.038,
+   "closest": "INTERNAL_QUESTION_BANK:paa.alg.ecuacion",
+   "closestSibling": {
+    "key": "r2b-L6",
+    "similarity": 0.037
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 2,
+    "NOT_YET_APPLICABLE": 6
+   }
+  },
+  {
+   "candidateKey": "r2b-E1",
+   "cellKey": "PRACTICE|073|efl.grammar.verb-forms|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.ingles",
+   "pool": "PRACTICE",
+   "band": "FOUNDATIONAL",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": null,
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.217,
+   "closest": "INTERNAL_QUESTION_BANK:icfes.ing.01",
+   "closestSibling": {
+    "key": "r2b-E2",
+    "similarity": 0.214
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 7
+   }
+  },
+  {
+   "candidateKey": "r2b-E2",
+   "cellKey": "DIAGNOSTIC|072|efl.grammar.function-words|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.ingles",
+   "pool": "DIAGNOSTIC",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": null,
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.214,
+   "closest": "GENERATION_BATCH_SIBLING:r2b-E1",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0.214
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 7
+   }
+  },
+  {
+   "candidateKey": "r2b-E3",
+   "cellKey": "PRACTICE|070|efl.vocabulary|MULTIPLE_CHOICE|CHALLENGE",
+   "section": "paa.sec.ingles",
+   "pool": "PRACTICE",
+   "band": "CHALLENGE",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": null,
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0.171,
+   "closest": "GENERATION_BATCH_SIBLING:r2b-E1",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0.171
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 7
+   }
+  },
+  {
+   "candidateKey": "r2b-E4",
+   "cellKey": "PRACTICE|075|efl.reading.literal|MULTIPLE_CHOICE|FOUNDATIONAL",
+   "section": "paa.sec.ingles",
+   "pool": "PRACTICE",
+   "band": "FOUNDATIONAL",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.ing.mobile-library",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "INTERNAL_QUESTION_BANK:9093-a.p1.analysis",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-E5",
+   "cellKey": "VERIFICATION|080|efl.reading.interpretive|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.ingles",
+   "pool": "VERIFICATION",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": "r2b.ing.mobile-library",
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "INTERNAL_QUESTION_BANK:9093-a.p1.analysis",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 3,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 8
+   }
+  },
+  {
+   "candidateKey": "r2b-E6",
+   "cellKey": "PRACTICE|083|efl.writing.complex-sentences|MULTIPLE_CHOICE|STANDARD",
+   "section": "paa.sec.ingles",
+   "pool": "PRACTICE",
+   "band": "STANDARD",
+   "format": "MULTIPLE_CHOICE",
+   "stimulus": null,
+   "currentness": "CURRENT",
+   "structural": "PASS",
+   "structuralIssues": [],
+   "originality": "PASS_LOW_SIMILARITY",
+   "maxSimilarity": 0,
+   "closest": "INTERNAL_QUESTION_BANK:9093-a.p1.analysis",
+   "closestSibling": {
+    "key": "r2b-E1",
+    "similarity": 0
+   },
+   "automatedStatus": "READY_FOR_HUMAN_REVIEW",
+   "rights": {
+    "status": "NOT_ESTABLISHABLE",
+    "supportedReuseRights": null,
+    "blockers": [
+     "AUTHORSHIP_TERMS_MISSING"
+    ]
+   },
+   "reviewStatus": "BLOCKED_NO_QUALIFIED_REVIEWER",
+   "projection": {
+    "SATISFIED": 4,
+    "UNSATISFIED": 0,
+    "BLOCKED": 1,
+    "NOT_YET_APPLICABLE": 7
+   }
+  }
+ ]
+}

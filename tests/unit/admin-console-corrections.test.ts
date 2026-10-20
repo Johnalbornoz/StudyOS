@@ -87,9 +87,13 @@ describe('A01-UX-02 / A01-LOGIC-01 -- shell context', () => {
   });
 
   it('the ADMIN workspace gets its own navigation with every console section', () => {
-    const items = buildAdminNav().flatMap((g) => g.items);
+    const nav = buildAdminNav({ notifCount: 3 });
+    const items = nav.find((g) => g.kind === 'PRIMARY')!.items;
     expect(items.map((i) => i.href)).toEqual(ADMIN_SECTIONS.map((s) => s.href));
     expect(items.every((i) => typeof i.label === 'string' && i.label.length > 0)).toBe(true);
+    // Track A: the same account inbox + unread badge as every other role.
+    expect(nav.flatMap((g) => g.items).find((i) => i.key === 'notifications')).toMatchObject({ href: '/dashboard/notifications', badge: 3 });
+    expect(buildAdminNav().flatMap((g) => g.items).find((i) => i.key === 'notifications')?.badge).toBeUndefined();
   });
 });
 

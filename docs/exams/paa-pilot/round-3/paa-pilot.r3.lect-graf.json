@@ -1,0 +1,358 @@
+{
+  "plan": {
+    "unitId": "paa-pilot.r3.lect-graf",
+    "component": "lectura",
+    "language": "es",
+    "stimulusKind": "DATA_TABLE",
+    "stimulusBrief": "Tabla ORIGINAL con datos inventados y verosímiles sobre las horas de lectura semanal por grupo de edad en una encuesta escolar: 4 a 6 filas y 3 a 4 columnas, con título descriptivo. Los números deben permitir comparar, ordenar y calcular diferencias simples sin ambigüedad.",
+    "slots": [
+      {
+        "slot": "s1",
+        "objectiveCode": "paa.lect.graficos",
+        "conceptStableId": "read.tables-and-graphics",
+        "difficulty": 2,
+        "focus": "la lectura directa o comparación de valores de la tabla"
+      },
+      {
+        "slot": "s2",
+        "objectiveCode": "paa.lect.graficos",
+        "conceptStableId": "read.tables-and-graphics",
+        "difficulty": 3,
+        "focus": "una conclusión que se obtiene relacionando dos filas o columnas de la tabla"
+      }
+    ]
+  },
+  "generated": {
+    "stimulus": {
+      "title": "Promedio semanal de lectura por grupo de edad en una encuesta escolar ficticia",
+      "text": null,
+      "table": {
+        "caption": "Resultados de estudiantes que registraron su lectura durante una semana.",
+        "headers": [
+          "Grupo de edad",
+          "Horas promedio de lectura",
+          "Libros terminados en promedio"
+        ],
+        "rows": [
+          [
+            "7 a 8 años",
+            "3,5",
+            "1,8"
+          ],
+          [
+            "9 a 10 años",
+            "4,2",
+            "2,1"
+          ],
+          [
+            "11 a 13 años",
+            "5,2",
+            "2,6"
+          ],
+          [
+            "14 a 16 años",
+            "6,0",
+            "3,0"
+          ],
+          [
+            "17 a 18 años",
+            "4,8",
+            "2,4"
+          ]
+        ]
+      }
+    },
+    "items": [
+      {
+        "slot": "s1",
+        "stem": "¿Qué grupo de edad registra el mayor promedio semanal de horas de lectura?",
+        "options": [
+          {
+            "text": "El grupo de 7 a 8 años.",
+            "isKey": false,
+            "misconception": "SELECTS_LOWEST_VALUE",
+            "rationale": "Este grupo tiene 3,5 horas, el valor más bajo de la tabla; puede atraer a quien invierte el orden de comparación."
+          },
+          {
+            "text": "El grupo de 11 a 13 años.",
+            "isKey": false,
+            "misconception": "SELECTS_INTERMEDIATE_VALUE",
+            "rationale": "Este grupo registra 5,2 horas, un valor alto pero menor que el máximo mostrado."
+          },
+          {
+            "text": "El grupo de 14 a 16 años.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Este grupo registra 6,0 horas promedio, la cifra más alta de la columna."
+          },
+          {
+            "text": "El grupo de 17 a 18 años.",
+            "isKey": false,
+            "misconception": "USES_LAST_ROW_HEURISTIC",
+            "rationale": "Este grupo aparece al final de la tabla, pero sus 4,8 horas no constituyen el valor más alto."
+          }
+        ],
+        "evidenceQuote": "6,0"
+      },
+      {
+        "slot": "s2",
+        "stem": "¿Cuál conclusión compara correctamente los cambios entre los grupos de 11 a 13 años y de 14 a 16 años?",
+        "options": [
+          {
+            "text": "Las horas aumentan 0,8 y los libros aumentan 0,4.",
+            "isKey": true,
+            "misconception": null,
+            "rationale": "Las horas pasan de 5,2 a 6,0, y los libros pasan de 2,6 a 3,0."
+          },
+          {
+            "text": "Las horas aumentan 0,4 y los libros aumentan 0,8.",
+            "isKey": false,
+            "misconception": "SWAPS_DIFFERENCES",
+            "rationale": "Esta opción intercambia las diferencias calculadas para horas y para libros."
+          },
+          {
+            "text": "Las horas disminuyen 0,8 y los libros aumentan 0,4.",
+            "isKey": false,
+            "misconception": "REVERSES_CHANGE_DIRECTION",
+            "rationale": "Ambas medidas aumentan entre esos grupos; las horas no disminuyen."
+          },
+          {
+            "text": "Las horas aumentan 1,0 y los libros aumentan 0,5.",
+            "isKey": false,
+            "misconception": "MISREADS_NUMERICAL_DIFFERENCE",
+            "rationale": "Estas diferencias no corresponden a restar los valores de las dos filas indicadas."
+          }
+        ],
+        "evidenceQuote": "3,0"
+      }
+    ]
+  },
+  "provenance": {
+    "generationService": "studyus-ai-gateway/executeAI+callModel",
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "promptId": "exam_bank.paa_pilot.generate_unit",
+    "promptVersion": "v1",
+    "executionId": "00c3d04a-6c34-4333-94c3-77044ccc1e0f",
+    "generatedAt": "2026-10-14T01:35:18.613Z",
+    "unitId": "paa-pilot.r3.lect-graf"
+  },
+  "runs": [
+    {
+      "solver": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-terra",
+      "executionId": "778cc53f-0bb6-41bc-bd1d-d36af342acad",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "B",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "D",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    },
+    {
+      "solver": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "executionId": "f50307dd-7c81-4848-8445-acdfd3b518aa",
+      "verification": {
+        "stimulusLooksReproduced": false,
+        "stimulusProblems": null,
+        "items": [
+          {
+            "n": 1,
+            "answer": "A",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          },
+          {
+            "n": 2,
+            "answer": "C",
+            "otherDefensible": [],
+            "ambiguous": false,
+            "answerableFromStimulusAlone": true,
+            "testsTheStatedSkill": true,
+            "languageProblems": null
+          }
+        ]
+      }
+    }
+  ],
+  "certification": {
+    "policyVersion": "PAA_PILOT_CERT_POLICY_V1",
+    "policyHash": "fa55651e5015898288a26563ec2fc15c1ada7feee1d1b1183e595a73d1156fe2",
+    "decidedBy": "policy:PAA_PILOT_CERT_POLICY_V1",
+    "stimulusState": "AUTOMATED_CERTIFIED_PILOT",
+    "decisions": [
+      {
+        "itemId": "paa.pilot.lect-graficos.ca01519dfed2",
+        "slot": "s1",
+        "objectiveCode": "paa.lect.graficos",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.graficos / read.tables-and-graphics"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.137c6a6e94ef@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      },
+      {
+        "itemId": "paa.pilot.lect-graficos.9f4f13f4b403",
+        "slot": "s2",
+        "objectiveCode": "paa.lect.graficos",
+        "state": "AUTOMATED_CERTIFIED_PILOT",
+        "failed": [],
+        "gates": [
+          {
+            "code": "STRUCTURE",
+            "passed": true,
+            "detail": "four options, one key, modelled distractors, no leakage found"
+          },
+          {
+            "code": "BLUEPRINT_FIT",
+            "passed": true,
+            "detail": "paa.lect.graficos / read.tables-and-graphics"
+          },
+          {
+            "code": "LANGUAGE",
+            "passed": true,
+            "detail": "expected es, read es"
+          },
+          {
+            "code": "STIMULUS",
+            "passed": true,
+            "detail": "stim.paa.lectura.137c6a6e94ef@1"
+          },
+          {
+            "code": "KEY_SUPPORTED_BY_STIMULUS",
+            "passed": true,
+            "detail": "the cited support is in the frozen stimulus verbatim"
+          },
+          {
+            "code": "ANSWER_VALIDITY",
+            "passed": true,
+            "detail": "A:key B:key"
+          },
+          {
+            "code": "SINGLE_DEFENSIBLE_ANSWER",
+            "passed": true,
+            "detail": "no other defensible option, no ambiguity"
+          },
+          {
+            "code": "CONSTRUCT_FIT",
+            "passed": true,
+            "detail": "skill and language confirmed"
+          },
+          {
+            "code": "ORIGINALITY",
+            "passed": true,
+            "detail": "as its stimulus"
+          },
+          {
+            "code": "NO_OFFICIAL_CLAIM",
+            "passed": true,
+            "detail": "no exam or owner named"
+          },
+          {
+            "code": "RIGHTS",
+            "passed": true,
+            "detail": "STUDYUS_ORIGINAL_GENERATED"
+          },
+          {
+            "code": "LINEAGE",
+            "passed": true,
+            "detail": "complete"
+          },
+          {
+            "code": "SCORING_COMPATIBILITY",
+            "passed": true,
+            "detail": "validated by the Exam Core; key is an option id"
+          }
+        ]
+      }
+    ]
+  }
+}

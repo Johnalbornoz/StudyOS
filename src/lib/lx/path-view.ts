@@ -29,6 +29,7 @@
  * Concept Mission itself calls.
  */
 
+import { projectCanonicalJourneyStage, canonicalEngineHasEvidence } from './learner-journey-contract';
 import { db, query } from '@/lib/db';
 import { getLearningOSSnapshot, loadConceptLabels, type LearningOSSnapshot } from '@/services/learning-os-snapshot.service';
 import { getSubjectHierarchy, type SubjectHierarchy, type HierarchyConcept } from '@/services/topic-hierarchy.service';
@@ -272,13 +273,16 @@ async function resolveJourneyResultAuthoritative(
         // direct assignment `progress-overview.service.ts`'s own
         // canonical override already uses, never a second mapping
         // table.
-        stage: decision.stage,
+        // 2026-10-17 pilot journey: the deterministic projection (NOT_STARTED / READY_TO_PROVE / WAIT_FOR_RETENTION)
+        stage: projectCanonicalJourneyStage(decision, canonicalEngineHasEvidence(decision)),
         intervention: decision.intervention,
         reason: 'CANONICAL_ENGINE_V1',
         contractVersion: LEARNER_JOURNEY_CONTRACT_VERSION,
         // UX-4: an existing engine fact, not a derivation -- any attempt the
         // engine replayed for this concept, qualifying or not.
         engineHasEvidence: decision.qualifiedEvidence.some((q) => q.qualifyingEvidenceIds.length + q.nonQualifyingEvidenceIds.length > 0),
+        // 2026-10-16 contract 1.2: the engine's own consolidation level (MEDIUM / HIGH), never derived here.
+        consolidationLevel: decision.consolidationLevel ?? null,
       };
     } catch (error) {
       if (!(error instanceof CanonicalDecisionUnavailableError)) throw error;

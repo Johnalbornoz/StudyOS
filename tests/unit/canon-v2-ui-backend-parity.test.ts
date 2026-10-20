@@ -109,17 +109,16 @@ describe('TRANSFER / EXECUTABLE -- UI shows the Transfer CTA, session/start laun
     expect(view.now.activityType).toBe('TRANSFER');
   });
 
-  it('backend (session/start): resolveCanonicalLaunch is READY, launch URL uses mode=canonical_transfer', () => {
+  it('backend (session/start): resolveCanonicalLaunch is READY, launch URL is the APPLY transfer ladder page (overnight 2026-10-16)', () => {
     const launch = resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d });
     expect(launch.launchStatus).toBe('READY');
-    expect(launch.launchTarget).toContain('mode=canonical_transfer');
-    expect(launch.launchTarget).toContain('maxQuestions=3');
+    expect(launch.launchTarget).toBe(`/dashboard/apply/${CONCEPT}?subjectId=subj1`);
   });
 });
 
 describe('PRACTICE with 1 qualifying attempt -- UI never shows a Prove CTA (stage remains PRACTICE, not PROVE)', () => {
-  it('the fresh decision itself reports stage PRACTICE (not PROVE) whenever the engine has not yet satisfied the 2-of-3 rule -- the UI/backend CTA is derived from `decision.stage`, so it is structurally impossible for the UI to show Prove while stage is PRACTICE', () => {
-    // This is a UI/backend WIRING proof, not a re-test of the 2-of-3
+  it('the fresh decision itself reports stage PRACTICE (not PROVE) whenever the engine has not yet satisfied the Practice window rule (3 of the last 3 since 2026-10-17) -- the UI/backend CTA is derived from `decision.stage`, so it is structurally impossible for the UI to show Prove while stage is PRACTICE', () => {
+    // This is a UI/backend WIRING proof, not a re-test of the Practice window
     // pedagogy rule itself (canon-v2-journey-matrix-a-j.test.ts
     // SCENARIO B / audit-canon-v2-practice-consistency.test.ts already
     // prove the rule). Here: an EXECUTABLE PRACTICE decision (exactly
@@ -293,7 +292,7 @@ describe('RETAIN second-fail rollback -- rolled back to PROVE, UI/backend agree,
 describe('TRANSFER Case A/B/C/D rollback destinations -- UI/backend both reflect whichever stage the engine actually rolled back to, never independently re-derived from the diagnostic', () => {
   it('Case A (application-context weakness) -- stays TRANSFER', () => {
     const d = decision({ stage: 'TRANSFER', actionState: 'EXECUTABLE', nextCanonicalAction: 'TRANSFER', rollback: { case: 'TRANSFER_CASE_A_APPLICATION_CONTEXT_WEAKNESS', rolledBackTo: 'TRANSFER', reasonCodes: [] } as any, activityContract: { ...decision().activityContract!, activityType: 'TRANSFER', itemCount: { min: 3, max: 3 }, independence: true } });
-    expect(resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d }).launchTarget).toContain('mode=canonical_transfer');
+    expect(resolveCanonicalLaunch({ subjectId: 'subj1', conceptId: CONCEPT, decision: d }).launchTarget).toContain('/dashboard/apply/');
   });
   it('Case B (retention weakness) -- rolled back to RETAIN', () => {
     const d = decision({ stage: 'RETAIN', actionState: 'EXECUTABLE', nextCanonicalAction: 'RETENTION_CHECK', rollback: { case: 'TRANSFER_CASE_B_RETENTION_WEAKNESS', rolledBackTo: 'RETAIN', reasonCodes: [] } as any, activityContract: { ...decision().activityContract!, activityType: 'RETENTION_CHECK', itemCount: { min: 10, max: 10 }, independence: true } });

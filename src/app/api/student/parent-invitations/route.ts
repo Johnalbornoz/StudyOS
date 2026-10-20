@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
 import { requireStudentId } from '@/lib/auth';
-import { inviteParentByEmail, listInvitationsSentByStudent, revokeInvitationByStudent } from '@/services/parent.service';
+import { ParentInvitationRefusedError, inviteParentByEmail, listInvitationsSentByStudent, revokeInvitationByStudent } from '@/services/parent.service';
 import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
 const InviteSchema = z.object({ email: z.string().email() });
@@ -39,8 +39,14 @@ async function handlePOST(request: NextRequest) {
     return NextResponse.json({ error: 'INVALID_INPUT', message: error.errors?.[0]?.message }, { status: 400 });
   }
 
-  const invitation = await inviteParentByEmail(studentId, validated.email);
-  return NextResponse.json({ success: true, data: { invitation } });
+  // CR-L7-01: the Student's own email, or an email that already has access, is refused (409) and nothing is written.
+  try {
+    const { created, ...invitation } = await inviteParentByEmail(studentId, validated.email);
+    return NextResponse.json({ success: true, data: { invitation, alreadyPending: !created } });
+  } catch (error) {
+    if (error instanceof ParentInvitationRefusedError) return NextResponse.json({ error: error.code }, { status: 409 });
+    throw error;
+  }
 }
 
 async function handleDELETE(request: NextRequest) {

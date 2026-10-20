@@ -1,5 +1,4 @@
 import { auth } from '@clerk/nextjs/server';
-import { after } from 'next/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { query } from '@/lib/db';
@@ -18,8 +17,9 @@ import { masteryStateLabel, masteryStateColor, knowledgeKpis } from '@/lib/knowl
 import { formatMasteryPercent, tryMasteryScore } from '@/lib/mastery-format';
 import { conceptSituation, conceptSituationLabel } from '@/lib/concept-situation-labels';
 import { getConceptMissionView } from '@/services/concept-mission-view.service';
+import { learnerConceptDisplayLabel } from '@/lib/learning-plan/labels';
+import { localizeSubjectName } from '@/lib/i18n/catalog-labels';
 import ConceptMission from './ConceptMission';
-import { scheduleDeliveryReplenishment } from '@/services/activity-delivery-worker.service';
 import { buildProgressExplanation, fillLine, isFutureStage } from '@/lib/lx/progress-explanation';
 
 const pct = (v: number | null) => (v !== null ? `${Math.round(v)}%` : null);
@@ -98,7 +98,8 @@ export default async function ConceptDetailPage({
   const [subjectResult, conceptResult] = await Promise.all([
     query(`SELECT name FROM subjects WHERE id = $1 AND student_id = $2`, [subjectId, studentId]),
     query(
-      `SELECT COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label
+      `SELECT COALESCE(cl.label, (SELECT anyl.label FROM concept_localizations anyl WHERE anyl.concept_id = c.id ORDER BY anyl.language LIMIT 1), c.canonical_id) AS label,
+              c.origin, (SELECT k.name FROM classes k WHERE k.id = c.origin_class_id) AS origin_class_name
        FROM concepts c
        LEFT JOIN concept_localizations cl ON cl.concept_id = c.id AND cl.language = $3
        WHERE c.id = $1 AND c.subject_id = $2`,
@@ -109,10 +110,15 @@ export default async function ConceptDetailPage({
   const concept = conceptResult.rows[0];
   if (!subject || !concept) notFound();
 
-  const goalFallbackText = t['conceptMission.goalFallbackTemplate'].replace('{concept}', concept.label);
+  // T1 concept-detail localization: the concept name goes through the SAME shared resolver as Exam Prep / Home /
+  // Learn (stored localization -> governed list -> stored name, for concepts linked to the catalogue; a concept the
+  // Student typed is shown exactly as written). The subject uses the localized subject display label.
+  const conceptLabel = await learnerConceptDisplayLabel(conceptId, concept.label, locale);
+  const subjectLabel = localizeSubjectName(subject.name, locale);
+  const goalFallbackText = t['conceptMission.goalFallbackTemplate'].replace('{concept}', conceptLabel);
 
   const [missionResult, conceptView, evidence, activeDebt, history, transferDepth, knowledgeState] = await Promise.all([
-    getConceptMissionView(studentId, subjectId, conceptId, locale, goalFallbackText),
+    getConceptMissionView(studentId, subjectId, conceptId, locale, goalFallbackText, { conceptName: conceptLabel, subjectName: subjectLabel }),
     getConceptView(studentId, conceptId),
     getConceptEvidenceSummary(studentId, conceptId),
     query(
@@ -133,11 +139,8 @@ export default async function ConceptDetailPage({
     throw new Error('CANONICAL_DECISION_UNAVAILABLE');
   }
   const missionView = missionResult.view;
-  // LEARNING_ACTIVITY_DELIVERY -- the learner decides what to launch here:
-  // keep this concept's next activity READY (background, after the response).
-  if (missionResult.canonicalDecision) {
-    after(() => scheduleDeliveryReplenishment({ studentId, subjectId, conceptId }).catch((err) => console.error('[activity-delivery] replenishment failed', err)));
-  }
+  // OE-011: rendering this page is read-only. It never queues inventory replenishment or generation;
+  // what the learner can launch is what is already eligible.
   // Canonical progress explanation (gate on): the ONE phase + its real requirement.
   const progress = missionResult.canonicalDecision
     ? buildProgressExplanation(missionResult.canonicalDecision, (iso) => new Date(iso).toLocaleDateString(locale))
@@ -221,6 +224,12 @@ export default async function ConceptDetailPage({
 
   return (
     <div style={{ maxWidth: 640 }}>
+      {/* Track A: provenance only -- this concept entered the plan through a teacher assignment. */}
+      {concept.origin === 'TEACHER_ASSIGNMENT' && (
+        <p className="ta-msg" style={{ margin: '0 0 var(--space-3)' }}>
+          {t['plan.assignedByClass'].replace('{className}', concept.origin_class_name ?? '')}
+        </p>
+      )}
       <ConceptMission view={missionView} studentId={studentId} conceptId={conceptId} locale={locale} />
 
       {(state || progress) && (
@@ -288,6 +297,12 @@ export default async function ConceptDetailPage({
                             <span className="sr-only">{a.passed ? t['conceptDetail.criterionMet'] : t['conceptDetail.criterionNotMet']}</span>
                           </span>
                         ))}
+                  </dd>
+                  <dt style={{ color: 'var(--text-secondary)' }}>{t['progress.criterionAverage']}</dt>
+                  <dd style={{ margin: 0 }} className="tabular" data-testid="practice-rolling-average">
+                    {progress.practice.averagePercent === null
+                      ? t['progress.criterionAverageNone']
+                      : t['progress.criterionAverageValue'].replace('{avg}', String(progress.practice.averagePercent)).replace('{min}', String(progress.practice.minimumAveragePercent))}
                   </dd>
                   <dt style={{ color: 'var(--text-secondary)' }}>{t['progress.criterionTarget']}</dt>
                   <dd style={{ margin: 0 }}>

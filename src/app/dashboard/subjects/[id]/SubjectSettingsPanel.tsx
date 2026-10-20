@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMessages, LOCALES, LOCALE_NAMES, Locale } from '@/lib/i18n/messages';
 import StatusToggle from '../StatusToggle';
@@ -45,6 +45,9 @@ export default function SubjectSettingsPanel({
   const t = getMessages(locale);
   const router = useRouter();
 
+  const nameId = useId();
+  const targetLanguageId = useId();
+  const quizLanguageId = useId();
   const [name, setName] = useState(initialName);
   const [targetLanguage, setTargetLanguage] = useState<Locale | ''>((initialTargetLanguage as Locale) || '');
   const [quizLanguageMode, setQuizLanguageMode] = useState(initialQuizLanguageMode);
@@ -157,10 +160,11 @@ export default function SubjectSettingsPanel({
       )}
 
       <form onSubmit={handleSave} style={{ marginBottom: 'var(--space-6)' }}>
-        <label className="label" style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 'var(--space-2)' }}>
+        <label className="label" htmlFor={nameId} style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 'var(--space-2)' }}>
           {t['subjectNew.nameLabel']}
         </label>
         <input
+          id={nameId}
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -173,10 +177,11 @@ export default function SubjectSettingsPanel({
 
         {initialTargetLanguage !== null && (
           <div style={{ marginBottom: 'var(--space-4)' }}>
-            <label className="label" style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 'var(--space-2)' }}>
+            <label className="label" htmlFor={targetLanguageId} style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 'var(--space-2)' }}>
               {t['subjectNew.targetLanguageLabel']}
             </label>
             <select
+              id={targetLanguageId}
               value={targetLanguage}
               onChange={(e) => setTargetLanguage(e.target.value as Locale)}
               style={{
@@ -193,10 +198,11 @@ export default function SubjectSettingsPanel({
         )}
 
         <div style={{ marginBottom: 'var(--space-4)' }}>
-          <label className="label" style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 'var(--space-2)' }}>
+          <label className="label" htmlFor={quizLanguageId} style={{ color: 'var(--text-muted)', display: 'block', marginBottom: 'var(--space-2)' }}>
             {t['subjectNew.quizLanguageLabel']}
           </label>
           <select
+            id={quizLanguageId}
             value={quizLanguageMode}
             onChange={(e) => setQuizLanguageMode(e.target.value)}
             style={{
@@ -260,6 +266,7 @@ export default function SubjectSettingsPanel({
             type="text"
             value={deleteText}
             onChange={(e) => setDeleteText(e.target.value)}
+            aria-label={t['subjects.deleteConfirmBody']}
             placeholder={t['subjects.deleteConfirmPlaceholder']}
             style={{
               width: '100%', maxWidth: 320, height: 38, padding: '0 var(--space-3)', marginBottom: 'var(--space-3)',

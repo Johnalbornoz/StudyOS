@@ -1,89 +1,34 @@
 /**
- * POST /api/learning-debt/check-and-resolve
+ * POST /api/learning-debt/check-and-resolve -- RETIRED (L6 ST-3).
  *
- * Check if a learning debt should be resolved based on student progress
+ * This route resolved a learning debt from client-supplied currentMastery,
+ * daysSinceLastSuccess and forgettingRisk, so the owner could clear their
+ * own debt by asserting the numbers. Nothing in the app called it. Debts
+ * are resolved server-side, from the mastery the server itself computed.
  *
- * Request body:
- * {
- *   studentId: string
- *   conceptId: string
- *   currentMastery: number (0-100)
- *   daysSinceLastSuccess: number
- *   forgettingRisk: number (0-100)
- * }
- *
- * Response:
- * {
- *   resolved: boolean
- *   debt?: { id, severity, status, ... }
- * }
+ * The file stays so the route answers deliberately rather than by
+ * omission: callers are still authenticated and bound to the Student
+ * first (401 / 403 unchanged), and the owner gets 404. It never imports
+ * the debt resolver.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, verifyStudentAccess } from '@/lib/auth';
-import { checkAndResolveDebt } from '@/services/learning-debt.service';
-import { withAiRequestMetrics } from '@/lib/ai/request-metrics';
 
-interface CheckAndResolveRequest {
-  studentId: string;
-  conceptId: string;
-  currentMastery: number;
-  daysSinceLastSuccess: number;
-  forgettingRisk: number;
-}
-
-async function handlePOST(request: NextRequest) {
-  try {
-    const authContext = await verifyAuth();
-    if (!authContext) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const body: CheckAndResolveRequest = await request.json();
-
-    // Validate required fields
-    const required = ['studentId', 'conceptId', 'currentMastery', 'daysSinceLastSuccess', 'forgettingRisk'];
-    for (const field of required) {
-      if (body[field as keyof CheckAndResolveRequest] === undefined) {
-        return NextResponse.json(
-          { error: `Missing required field: ${field}` },
-          { status: 400 }
-        );
-      }
-    }
-
-    // STUDENT E2E security: a Student can only touch their OWN debts (the
-    // service's UPDATE is scoped by this verified studentId).
-    if (!(await verifyStudentAccess(authContext.userId, body.studentId, authContext.role))) {
-      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
-    }
-
-    const resolved = await checkAndResolveDebt(
-      body.studentId,
-      body.conceptId,
-      body.currentMastery,
-      body.daysSinceLastSuccess,
-      body.forgettingRisk
-    );
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        resolved: !!resolved,
-        debt: resolved,
-      },
-    });
-  } catch (error) {
-    console.error('Error checking/resolving debt:', error);
-    return NextResponse.json(
-      { error: 'Failed to check debt resolution' },
-      { status: 500 }
-    );
+export async function POST(request: NextRequest) {
+  const authContext = await verifyAuth();
+  if (!authContext) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-}
 
-// AI request metrics: one [ai-request-summary] per request (src/lib/ai/request-metrics.ts).
-export const POST = withAiRequestMetrics('POST /api/learning-debt/check-and-resolve', handlePOST);
+  const body = (await request.json().catch(() => null)) as { studentId?: unknown } | null;
+  if (!body || typeof body.studentId !== 'string') {
+    return NextResponse.json({ error: 'Missing required field: studentId' }, { status: 400 });
+  }
+
+  if (!(await verifyStudentAccess(authContext.userId, body.studentId, authContext.role))) {
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  return NextResponse.json({ error: 'ENDPOINT_RETIRED' }, { status: 404 });
+}

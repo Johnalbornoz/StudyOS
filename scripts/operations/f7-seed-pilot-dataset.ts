@@ -113,13 +113,13 @@ async function main() {
   // --- Task 33-N: a second, minimal Exam Definition for Cambridge --
   // same underlying canonical concept, genuinely different assessment
   // configuration (CURRICULUM subject-assessment vs. PAA's ADMISSION_EXAM). ---
-  const cambridgeExamDef = await createExamDefinition({ academicProgrammeId: cambridgeProgramme.id, name: 'Cambridge IGCSE Mathematics Assessment', examFamily: 'SUBJECT_ASSESSMENT', purpose: 'end-of-programme certification', domains: ['Mathematics'] });
+  const cambridgeExamDef = await createExamDefinition({ academicProgrammeId: cambridgeProgramme.id, name: 'Cambridge IGCSE Mathematics Assessment', examFamily: 'CAMBRIDGE', purpose: 'end-of-programme certification', domains: ['Mathematics'] });
   const cambridgeScoringModel = await createScoringModel({ name: 'Cambridge Mark Scheme v1', scoringType: 'MARK_SCHEME' });
   const cambridgeExamVersion = await createExamVersion({ examDefinitionId: cambridgeExamDef.id, versionLabel: '2023-2025', scoringModelId: cambridgeScoringModel.id, supportedModalities: ['PAPER'] });
   console.log('  seeded a second Exam Definition (Cambridge, SUBJECT_ASSESSMENT/MARK_SCHEME) -- distinct config, same underlying canonical concept as PAA');
 
   // --- F7: PAA Exam Definition/Version/Components/Blueprint ---
-  const paaExamDef = await createExamDefinition({ academicProgrammeId: paaProgramme.id, name: 'PAA', examFamily: 'ADMISSION_EXAM', purpose: 'university admission', domains: ['Reading', 'Writing', 'Mathematics', 'English'] });
+  const paaExamDef = await createExamDefinition({ academicProgrammeId: paaProgramme.id, name: 'PAA', examFamily: 'PAA', purpose: 'university admission', domains: ['Reading', 'Writing', 'Mathematics', 'English'] });
   const scoringModel = await createScoringModel({ name: 'PAA Partial Credit v1', scoringType: 'PARTIAL_CREDIT', config: { note: 'fixture only' } });
   const paaExamVersion = await createExamVersion({ examDefinitionId: paaExamDef.id, versionLabel: '2024', scoringModelId: scoringModel.id, supportedModalities: ['ONLINE'] });
 

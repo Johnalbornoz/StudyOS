@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { getOrCreateStudentId } from '@/lib/auth';
 import { getInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
-import { isAdminEmail, getStudentById } from '@/services/admin.service';
+import { getStudentById } from '@/services/admin.service';
+import { isAllowlistedAdminUser } from '@/lib/admin/admin-identity';
 import { getChildOverview } from '@/services/parent.service';
 import { getSubscriptionStatus } from '@/services/payment.service';
 import AdminSubjectRow from './AdminSubjectRow';
@@ -13,13 +14,16 @@ import PaymentStatusEditor from './PaymentStatusEditor';
 export default async function AdminStudentDetailPage({ params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params;
   const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
-  if (!isAdminEmail(email)) {
+  if (!isAllowlistedAdminUser(user)) {
     redirect('/dashboard');
   }
 
-  const adminStudentId = await getOrCreateStudentId(user!.id);
-  const locale = await getInterfaceLanguage(adminStudentId);
+  // L10-R1: an administrator is not necessarily a Student. This page only needs a learner id to read the
+  // administrator's own interface language; an admin-only account (no ACTIVE Student role) used to fail
+  // here with a server error. It now falls back to the default language. Authorization is unchanged
+  // (the verified-primary allowlist check above).
+  const adminStudentId = await getOrCreateStudentId(user!.id).catch(() => null);
+  const locale = adminStudentId ? await getInterfaceLanguage(adminStudentId) : ('es' as const);
   const t = getMessages(locale);
 
   const student = await getStudentById(studentId);

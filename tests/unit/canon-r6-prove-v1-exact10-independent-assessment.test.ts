@@ -42,14 +42,19 @@ function practiceEvidence(overrides: Partial<RawEvidenceItem> = {}): RawEvidence
 }
 
 /**
- * CANON-V2-REMEDIATION Part 1A: PRACTICE now requires 2 of the last 3
- * valid attempts >=80% (AUDIT-001) -- a single qualifying attempt is no
- * longer sufficient to genuinely satisfy PRACTICE, so any fixture that
- * needs Prove/Retain to be REACHABLE (not merely premature) supplies
- * this second attempt alongside `practiceEvidence()`.
+ * 2026-10-17 pilot pass policy: PRACTICE requires the LAST 3 valid
+ * attempts each >=80% (average >=80%) -- fewer never genuinely satisfies
+ * PRACTICE, so any fixture that needs Prove/Retain to be REACHABLE (not
+ * merely premature) supplies `qualifiedPractice()` (3 passing attempts).
  */
 function practiceEvidence2(overrides: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
   return practiceEvidence({ id: 'p2', timestamp: '2026-09-20T01:00:00.000Z', ...overrides });
+}
+function practiceEvidence3(overrides: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
+  return practiceEvidence({ id: 'p3', timestamp: '2026-09-20T02:00:00.000Z', ...overrides });
+}
+function qualifiedPractice(): RawEvidenceItem[] {
+  return [practiceEvidence(), practiceEvidence2(), practiceEvidence3()];
 }
 
 function proveEvidence(overrides: Partial<RawEvidenceItem> = {}): RawEvidenceItem {
@@ -83,7 +88,7 @@ describe('26/27 -- real-engine PROVE qualification: 8/10 (80%) passes, 7/10 (70%
       studentId: STUDENT,
       now: NOW,
       recognizedRequirements: LEARN_RECOGNIZED,
-      evidence: [practiceEvidence(), practiceEvidence2(), proveEvidence({ correctCount: 8, scorePercent: 80 })],
+      evidence: [...qualifiedPractice(), proveEvidence({ correctCount: 8, scorePercent: 80 })],
       activeCriticalMisconception: false,
     });
     const prove = decision.requirements.find((r) => r.stage === 'PROVE');
@@ -96,11 +101,12 @@ describe('26/27 -- real-engine PROVE qualification: 8/10 (80%) passes, 7/10 (70%
       studentId: STUDENT,
       now: NOW,
       recognizedRequirements: LEARN_RECOGNIZED,
-      evidence: [practiceEvidence(), proveEvidence({ correctCount: 7, scorePercent: 70 })],
+      evidence: [...qualifiedPractice(), proveEvidence({ correctCount: 7, scorePercent: 70 })],
       activeCriticalMisconception: false,
     });
     const prove = decision.requirements.find((r) => r.stage === 'PROVE');
     expect(prove?.status).not.toBe('SATISFIED');
+    expect(prove?.reasonCodes).toContain('FAILED_ATTEMPT'); // a genuine (reachable) failure, not premature evidence
   });
 
   it('an itemCount other than exactly 10 never qualifies as PROVE evidence, even with a passing score -- the frozen engine itself is a second, independent backstop behind the route\'s own contract-compliance check', () => {
@@ -109,7 +115,7 @@ describe('26/27 -- real-engine PROVE qualification: 8/10 (80%) passes, 7/10 (70%
       studentId: STUDENT,
       now: NOW,
       recognizedRequirements: LEARN_RECOGNIZED,
-      evidence: [practiceEvidence(), proveEvidence({ itemCount: 8, correctCount: 8, scorePercent: 100 })],
+      evidence: [...qualifiedPractice(), proveEvidence({ itemCount: 8, correctCount: 8, scorePercent: 100 })],
       activeCriticalMisconception: false,
     });
     const prove = decision.requirements.find((r) => r.stage === 'PROVE');
@@ -122,7 +128,7 @@ describe('26/27 -- real-engine PROVE qualification: 8/10 (80%) passes, 7/10 (70%
       studentId: STUDENT,
       now: NOW,
       recognizedRequirements: LEARN_RECOGNIZED,
-      evidence: [practiceEvidence(), proveEvidence({ independent: false, correctCount: 10, scorePercent: 100 })],
+      evidence: [...qualifiedPractice(), proveEvidence({ independent: false, correctCount: 10, scorePercent: 100 })],
       activeCriticalMisconception: false,
     });
     const prove = decision.requirements.find((r) => r.stage === 'PROVE');
@@ -137,7 +143,7 @@ describe('28 -- a valid PROVE pass advances to RETAIN, WAITING (the frozen 3-day
       studentId: STUDENT,
       now: NOW,
       recognizedRequirements: LEARN_RECOGNIZED,
-      evidence: [practiceEvidence(), practiceEvidence2(), proveEvidence({ correctCount: 8, scorePercent: 80 })],
+      evidence: [...qualifiedPractice(), proveEvidence({ correctCount: 8, scorePercent: 80 })],
       activeCriticalMisconception: false,
     });
     expect(decision.stage).toBe('RETAIN');
@@ -145,21 +151,24 @@ describe('28 -- a valid PROVE pass advances to RETAIN, WAITING (the frozen 3-day
   });
 });
 
-describe('29 -- a valid PROVE fail rolls back to PRACTICE, decided by the frozen engine, never by client/UI logic', () => {
-  it('stage remains/returns to PRACTICE after a genuinely failed (70%) PROVE attempt', () => {
+describe('29 -- a valid PROVE fail keeps the learner in PROVE (2026-10-17 pilot policy), decided by the frozen engine, never by client/UI logic', () => {
+  it('stage stays PROVE, EXECUTABLE for an immediate retry, with no rollback, after a genuinely failed (70%) PROVE attempt', () => {
     const decision = evaluateCanonicalLearningState({
       conceptId: CONCEPT,
       studentId: STUDENT,
       now: NOW,
       recognizedRequirements: LEARN_RECOGNIZED,
-      evidence: [practiceEvidence(), practiceEvidence2(), proveEvidence({ correctCount: 7, scorePercent: 70 })],
+      evidence: [...qualifiedPractice(), proveEvidence({ correctCount: 7, scorePercent: 70 })],
       activeCriticalMisconception: false,
     });
-    expect(decision.stage).toBe('PRACTICE');
-    expect(decision.rollback?.case).toBe('PROVE_FAILURE_RETURN_TO_PRACTICE');
+    expect(decision.stage).toBe('PROVE');
+    expect(decision.actionState).toBe('EXECUTABLE');
+    expect(decision.nextCanonicalAction).toBe('PROVE');
+    expect(decision.rollback).toBeNull();
+    expect(decision.requirements.find((r) => r.stage === 'PRACTICE')?.status).toBe('SATISFIED');
   });
 
-  it('the route never implements this rollback itself -- it only writes evidence, then re-fetches; no PRACTICE/RETAIN literal assignment exists anywhere near the submission response construction', () => {
+  it('the route never implements a stage transition itself -- it only writes evidence, then re-fetches; no PRACTICE/RETAIN literal assignment exists anywhere near the submission response construction', () => {
     const canonicalResultsBlockIdx = ROUTE_SRC.indexOf('let canonicalResults:');
     const responseIdx = ROUTE_SRC.indexOf('return NextResponse.json({\n      success: true,\n      data: {\n        quizId: validated.quizId,');
     const block = ROUTE_SRC.slice(canonicalResultsBlockIdx, responseIdx);
@@ -239,8 +248,14 @@ describe('8 -- fewer than 10 is rejected, never silently administered as v1 Prov
     // passed to toCanonicalErrorCode(...) at each of those two guards
     // to derive the additive canonicalErrorCode field -- same code,
     // never a new/different one.
-    const occurrences = (ROUTE_SRC.match(/V1_PROVE_GENERATION_INCOMPLETE/g) ?? []).length;
-    expect(occurrences).toBe(6);
+    // D75 (approved): the generic shortfall keeps V1_PROVE_GENERATION_INCOMPLETE; a shortfall caused by exact
+    // prior-item rejections reports PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE. Both guards (JSON body, observability
+    // summary, toCanonicalErrorCode) read the ONE resolved `proveReasonCode`.
+    // D79 (approved): a level-mix shortfall reports PROVE_LEVEL_MIX_SUPPLY_SHORTAGE through the same ONE `proveReasonCode`.
+    expect(ROUTE_SRC).toMatch(/let proveReasonCode: 'V1_PROVE_GENERATION_INCOMPLETE' \| typeof PROVE_EXACT_NOVELTY_SUPPLY_SHORTAGE \| typeof PROVE_LEVEL_MIX_SUPPLY_SHORTAGE = 'V1_PROVE_GENERATION_INCOMPLETE';/);
+    expect((ROUTE_SRC.match(/reason: proveReasonCode,/g) ?? []).length).toBe(2);
+    expect((ROUTE_SRC.match(/emitCanonicalProveSummary\('INCOMPLETE', questions\.length, proveReasonCode\)/g) ?? []).length).toBe(2);
+    expect((ROUTE_SRC.match(/toCanonicalErrorCode\(proveReasonCode\)/g) ?? []).length).toBe(2);
   });
 });
 

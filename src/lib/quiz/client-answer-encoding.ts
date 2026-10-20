@@ -28,3 +28,30 @@ export function encodeClientAnswer(question: ClientQuestionLike, staged: unknown
   if (question.answerFormat === 'classification') return JSON.stringify(staged || {});
   return '';
 }
+
+/**
+ * B5-D -- the inverse of `encodeClientAnswer`, for restoring a saved draft into the answer controls. A value
+ * that does not parse for its format restores as "no answer" (never as a guess).
+ */
+export function decodeClientAnswer(question: ClientQuestionLike, encoded: string): unknown {
+  if (!encoded) return undefined;
+  const json = (): unknown => {
+    try {
+      return JSON.parse(encoded);
+    } catch {
+      return undefined;
+    }
+  };
+  if (question.answerFormat === 'single_choice' || question.answerFormat === 'text') return encoded;
+  if (question.answerFormat === 'multi_choice') return encoded.split(',').filter(Boolean);
+  if (question.answerFormat === 'matching' || question.answerFormat === 'classification') {
+    const v = json();
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : undefined;
+  }
+  if (question.answerFormat === 'ordering') {
+    const v = json();
+    if (!Array.isArray(v)) return undefined;
+    return Object.fromEntries((v as unknown[]).filter((x): x is string => typeof x === 'string').map((item, i) => [item, i + 1]));
+  }
+  return undefined;
+}

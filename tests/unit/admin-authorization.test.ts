@@ -27,7 +27,7 @@ vi.mock('@/lib/identity', () => ({
 import { requireStudyUSAdmin, countActiveStudyUSAdmins } from '@/lib/admin/authorization';
 
 beforeEach(() => {
-  currentUserMock.mockReset().mockResolvedValue({ primaryEmailAddress: { emailAddress: 'admin@test.com' }, emailAddresses: [] });
+  currentUserMock.mockReset().mockResolvedValue({ primaryEmailAddressId: 'e1', primaryEmailAddress: { emailAddress: 'admin@test.com' }, emailAddresses: [{ id: 'e1', emailAddress: 'admin@test.com', verification: { status: 'verified' } }] });
   dbQueryMock.mockReset().mockResolvedValue({ rows: [] });
   isAdminEmailMock.mockReset().mockReturnValue(false);
   getOrCreateCanonicalUserMock.mockReset().mockResolvedValue({ id: 'user-1', status: 'ACTIVE' });

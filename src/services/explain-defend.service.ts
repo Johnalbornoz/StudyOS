@@ -9,6 +9,8 @@
  * parallel evidence system; the rubric result lives in metadata.
  */
 
+import { withStudentFacingPolicy } from '@/lib/ai/policy/student-facing-policy';
+import { assertNoSafetySignal } from '@/lib/safety/safety-gate';
 import { parseAIJson } from '@/lib/ai-json';
 import { LOCALE_FULL_NAME } from '@/lib/i18n/messages';
 import { retrieveContext } from './rag.service';
@@ -81,7 +83,7 @@ expectedElements should have 3-5 items -- these become the grading rubric, so ke
     promptVersion: prompt.version,
     context: { studentId, subjectId, conceptId, sourceComponent: 'explain-defend.service.ts:generateExplainPrompt' },
     call: (signal) =>
-      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 700, system: systemPrompt, user: 'Write the question.' }, signal),
+      callModel({ provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 700, system: withStudentFacingPolicy(systemPrompt), user: 'Write the question.' }, signal),
     validate: (raw) =>
       validateJson<{ prompt: string; expectedElements: string[] }>({ text: raw.text || '{}' }, (parsed) => ({
         value: { prompt: parsed.prompt, expectedElements: parsed.expectedElements || [] },
@@ -123,6 +125,9 @@ export async function evaluateExplanation(
   /** Phase 0E2 Step 11: optional, purely additive. */
   context?: { studentId?: string; subjectId?: string; conceptId?: string }
 ): Promise<RubricResultWithProvenance> {
+  // Human Agency P0-4 (Layer B, defence in depth): Student text carrying a safety
+  // signal never reaches a model (the route answers with the fixed response first).
+  assertNoSafetySignal(studentResponse);
   const languageName = LOCALE_FULL_NAME[language] || language;
   const systemPrompt = `Grade a student's open-ended answer about "${conceptLabel}" using a structured rubric. Do not invent a holistic verdict -- score only the dimensions below.
 
@@ -152,7 +157,7 @@ Output ONLY this JSON, no markdown fences, no other text:
     promptVersion: registeredPrompt.version,
     context: { ...context, sourceComponent: 'explain-defend.service.ts:evaluateExplanation' },
     call: (signal) =>
-      callModel({ provider: EVAL_ROUTE.provider, model: EVAL_ROUTE.primary, maxTokens: 600, system: systemPrompt, user: 'Grade this answer.' }, signal),
+      callModel({ provider: EVAL_ROUTE.provider, model: EVAL_ROUTE.primary, maxTokens: 600, system: withStudentFacingPolicy(systemPrompt), user: 'Grade this answer.' }, signal),
     validate: (raw) =>
       validateJson<RubricResult>({ text: raw.text || '{}' }, (parsed) => ({
         value: {

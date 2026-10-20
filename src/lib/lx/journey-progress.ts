@@ -54,6 +54,8 @@ const STAGE_PROGRESS_PERCENT: Record<LearnerJourneyStage, number> = {
   PRACTICE: 35,
   READY_TO_PROVE: 50,
   PROVE: 55,
+  // Prove passed; the first Retain check opens 3 days later (between Prove and Retain, never a fake decimal)
+  WAIT_FOR_RETENTION: 62,
   RETAIN: 70,
   TRANSFER: 85,
   CONSOLIDATED: 100,

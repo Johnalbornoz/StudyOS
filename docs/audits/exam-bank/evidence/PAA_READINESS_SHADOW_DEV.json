@@ -1,0 +1,1153 @@
+{
+  "kind": "PAA_READINESS_SHADOW",
+  "database": "DEV",
+  "fingerprint": "2a29b99ee14a22b4",
+  "generatedAt": "2026-10-14T20:06:34.275Z",
+  "adapter": "exam-bank-readiness-adapter-1",
+  "engineVersion": "exam-bank-readiness-1",
+  "configuration": {
+    "EXAM_BANK_DELIVERY_SCOPE": "PILOT_PREVIEW",
+    "QUESTION_BANK_READINESS_MODE": "ENFORCE"
+  },
+  "examVersion": {
+    "id": "ebb5f8cc-984c-49bf-8b8e-53ecec8f75e7",
+    "family": "PAA",
+    "label": "V2.1 PAA revisada (guía 2021)",
+    "sections": [
+      "lectura",
+      "redaccion",
+      "matematicas",
+      "ingles"
+    ],
+    "cells": 20,
+    "versionsRead": 655,
+    "pilotEnvironmentDeclared": true
+  },
+  "exposureStudent": null,
+  "engine": {
+    "practice:lectura": {
+      "status": "NOT_READY",
+      "blockingReasons": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "reasonCodes": [
+        "BUCKET_UNCOVERED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "LINEAGE_INCOMPLETE",
+        "NOT_CERTIFIED",
+        "NO_CERTIFIED_SUPPLY",
+        "RETIRED",
+        "RIGHTS_NOT_CLEARED"
+      ],
+      "warnings": [],
+      "requiredPositions": 10,
+      "coveredPositions": 0,
+      "missingBuckets": 6,
+      "certifiedItemCount": 0,
+      "runtimeEligibleItemCount": 0,
+      "uniqueFormDepth": 0,
+      "expectedOverlapNextForm": 0,
+      "studentEffectiveDepth": null,
+      "scoringCapability": "FULL",
+      "difficultyCapability": "NOT_REQUIRED",
+      "rightsStatus": "NONE",
+      "certificationStatus": "NONE",
+      "certifiedNotDeliverableCount": 0,
+      "bucketExhaustion": [
+        {
+          "bucketId": "lectura|paa.lect.evidencia|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "lectura|paa.lect.explicitas|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "lectura|paa.lect.graficos|*|*-*|*",
+          "formsUntilExhausted": 0
+        }
+      ]
+    },
+    "practice:redaccion": {
+      "status": "NOT_READY",
+      "blockingReasons": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "reasonCodes": [
+        "BUCKET_UNCOVERED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "LINEAGE_INCOMPLETE",
+        "NOT_CERTIFIED",
+        "NO_CERTIFIED_SUPPLY",
+        "RIGHTS_NOT_CLEARED"
+      ],
+      "warnings": [],
+      "requiredPositions": 6,
+      "coveredPositions": 0,
+      "missingBuckets": 6,
+      "certifiedItemCount": 0,
+      "runtimeEligibleItemCount": 0,
+      "uniqueFormDepth": 0,
+      "expectedOverlapNextForm": 0,
+      "studentEffectiveDepth": null,
+      "scoringCapability": "FULL",
+      "difficultyCapability": "NOT_REQUIRED",
+      "rightsStatus": "NONE",
+      "certificationStatus": "NONE",
+      "certifiedNotDeliverableCount": 0,
+      "bucketExhaustion": [
+        {
+          "bucketId": "redaccion|paa.red.adicion|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "redaccion|paa.red.cohesion|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "redaccion|paa.red.elision|*|*-*|*",
+          "formsUntilExhausted": 0
+        }
+      ]
+    },
+    "practice:matematicas": {
+      "status": "READY",
+      "blockingReasons": [],
+      "reasonCodes": [
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "LINEAGE_INCOMPLETE",
+        "NOT_CERTIFIED",
+        "RETIRED",
+        "RIGHTS_NOT_CLEARED"
+      ],
+      "warnings": [],
+      "requiredPositions": 12,
+      "coveredPositions": 12,
+      "missingBuckets": 0,
+      "certifiedItemCount": 296,
+      "runtimeEligibleItemCount": 296,
+      "uniqueFormDepth": 13,
+      "expectedOverlapNextForm": 0,
+      "studentEffectiveDepth": null,
+      "scoringCapability": "FULL",
+      "difficultyCapability": "NOT_REQUIRED",
+      "rightsStatus": "PARTIAL",
+      "certificationStatus": "PARTIAL",
+      "certifiedNotDeliverableCount": 0,
+      "bucketExhaustion": [
+        {
+          "bucketId": "matematicas|paa.mat.datos|*|*-*|*",
+          "formsUntilExhausted": 13
+        },
+        {
+          "bucketId": "matematicas|paa.mat.aritmetica|*|*-*|*",
+          "formsUntilExhausted": 20
+        },
+        {
+          "bucketId": "matematicas|paa.mat.geometria|*|*-*|*",
+          "formsUntilExhausted": 20
+        }
+      ]
+    },
+    "practice:ingles": {
+      "status": "NOT_READY",
+      "blockingReasons": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "reasonCodes": [
+        "BUCKET_UNCOVERED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "LINEAGE_INCOMPLETE",
+        "NOT_CERTIFIED",
+        "NO_CERTIFIED_SUPPLY",
+        "RIGHTS_NOT_CLEARED"
+      ],
+      "warnings": [],
+      "requiredPositions": 8,
+      "coveredPositions": 0,
+      "missingBuckets": 3,
+      "certifiedItemCount": 0,
+      "runtimeEligibleItemCount": 0,
+      "uniqueFormDepth": 0,
+      "expectedOverlapNextForm": 0,
+      "studentEffectiveDepth": null,
+      "scoringCapability": "FULL",
+      "difficultyCapability": "NOT_REQUIRED",
+      "rightsStatus": "NONE",
+      "certificationStatus": "NONE",
+      "certifiedNotDeliverableCount": 0,
+      "bucketExhaustion": [
+        {
+          "bucketId": "ingles|paa.ing.lectura|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.lenguaje|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.redaccion|*|*-*|*",
+          "formsUntilExhausted": 0
+        }
+      ]
+    },
+    "practiceWhole": {
+      "status": "PARTIAL",
+      "blockingReasons": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "reasonCodes": [
+        "BUCKET_UNCOVERED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "LINEAGE_INCOMPLETE",
+        "NOT_CERTIFIED",
+        "RETIRED",
+        "RIGHTS_NOT_CLEARED"
+      ],
+      "warnings": [],
+      "requiredPositions": 36,
+      "coveredPositions": 12,
+      "missingBuckets": 15,
+      "certifiedItemCount": 296,
+      "runtimeEligibleItemCount": 296,
+      "uniqueFormDepth": 0,
+      "expectedOverlapNextForm": 0,
+      "studentEffectiveDepth": null,
+      "scoringCapability": "FULL",
+      "difficultyCapability": "NOT_REQUIRED",
+      "rightsStatus": "PARTIAL",
+      "certificationStatus": "PARTIAL",
+      "certifiedNotDeliverableCount": 0,
+      "bucketExhaustion": [
+        {
+          "bucketId": "ingles|paa.ing.lectura|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.lenguaje|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.redaccion|*|*-*|*",
+          "formsUntilExhausted": 0
+        }
+      ]
+    },
+    "diagnostic": {
+      "status": "PARTIAL",
+      "blockingReasons": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "reasonCodes": [
+        "BUCKET_UNCOVERED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "LINEAGE_INCOMPLETE",
+        "NOT_CERTIFIED",
+        "RETIRED",
+        "RIGHTS_NOT_CLEARED"
+      ],
+      "warnings": [],
+      "requiredPositions": 36,
+      "coveredPositions": 12,
+      "missingBuckets": 15,
+      "certifiedItemCount": 296,
+      "runtimeEligibleItemCount": 296,
+      "uniqueFormDepth": 0,
+      "expectedOverlapNextForm": 0,
+      "studentEffectiveDepth": null,
+      "scoringCapability": "FULL",
+      "difficultyCapability": "NOT_REQUIRED",
+      "rightsStatus": "PARTIAL",
+      "certificationStatus": "PARTIAL",
+      "certifiedNotDeliverableCount": 0,
+      "bucketExhaustion": [
+        {
+          "bucketId": "ingles|paa.ing.lectura|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.lenguaje|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.redaccion|*|*-*|*",
+          "formsUntilExhausted": 0
+        }
+      ]
+    },
+    "reducedMock": {
+      "status": "PARTIAL",
+      "blockingReasons": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "reasonCodes": [
+        "BUCKET_UNCOVERED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "LINEAGE_INCOMPLETE",
+        "NOT_CERTIFIED",
+        "RETIRED",
+        "RIGHTS_NOT_CLEARED"
+      ],
+      "warnings": [],
+      "requiredPositions": 36,
+      "coveredPositions": 12,
+      "missingBuckets": 15,
+      "certifiedItemCount": 296,
+      "runtimeEligibleItemCount": 296,
+      "uniqueFormDepth": 0,
+      "expectedOverlapNextForm": 0,
+      "studentEffectiveDepth": null,
+      "scoringCapability": "FULL",
+      "difficultyCapability": "NOT_REQUIRED",
+      "rightsStatus": "PARTIAL",
+      "certificationStatus": "PARTIAL",
+      "certifiedNotDeliverableCount": 0,
+      "bucketExhaustion": [
+        {
+          "bucketId": "ingles|paa.ing.lectura|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.lenguaje|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.redaccion|*|*-*|*",
+          "formsUntilExhausted": 0
+        }
+      ]
+    },
+    "fullMock": {
+      "status": "NOT_READY",
+      "blockingReasons": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "reasonCodes": [
+        "BUCKET_UNCOVERED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "LINEAGE_INCOMPLETE",
+        "NOT_CERTIFIED",
+        "RETIRED",
+        "RIGHTS_NOT_CLEARED"
+      ],
+      "warnings": [
+        "CERTIFIED_NOT_DELIVERABLE_PRESENT"
+      ],
+      "requiredPositions": 175,
+      "coveredPositions": 0,
+      "missingBuckets": 20,
+      "certifiedItemCount": 296,
+      "runtimeEligibleItemCount": 0,
+      "uniqueFormDepth": 0,
+      "expectedOverlapNextForm": 0,
+      "studentEffectiveDepth": null,
+      "scoringCapability": "FULL",
+      "difficultyCapability": "NOT_REQUIRED",
+      "rightsStatus": "PARTIAL",
+      "certificationStatus": "PARTIAL",
+      "certifiedNotDeliverableCount": 296,
+      "bucketExhaustion": [
+        {
+          "bucketId": "ingles|paa.ing.lectura|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.lenguaje|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.redaccion|*|*-*|*",
+          "formsUntilExhausted": 0
+        }
+      ]
+    },
+    "challenge": {
+      "status": "NOT_READY",
+      "blockingReasons": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "CALIBRATION_REQUIRED",
+        "RETIRED"
+      ],
+      "reasonCodes": [
+        "BUCKET_UNCOVERED",
+        "CALIBRATION_REQUIRED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "LINEAGE_INCOMPLETE",
+        "NOT_CERTIFIED",
+        "RETIRED",
+        "RIGHTS_NOT_CLEARED"
+      ],
+      "warnings": [
+        "CERTIFIED_NOT_DELIVERABLE_PRESENT"
+      ],
+      "requiredPositions": 36,
+      "coveredPositions": 0,
+      "missingBuckets": 20,
+      "certifiedItemCount": 296,
+      "runtimeEligibleItemCount": 0,
+      "uniqueFormDepth": 0,
+      "expectedOverlapNextForm": 0,
+      "studentEffectiveDepth": null,
+      "scoringCapability": "FULL",
+      "difficultyCapability": "NONE",
+      "rightsStatus": "PARTIAL",
+      "certificationStatus": "PARTIAL",
+      "certifiedNotDeliverableCount": 296,
+      "bucketExhaustion": [
+        {
+          "bucketId": "ingles|paa.ing.lectura|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.lenguaje|*|*-*|*",
+          "formsUntilExhausted": 0
+        },
+        {
+          "bucketId": "ingles|paa.ing.redaccion|*|*-*|*",
+          "formsUntilExhausted": 0
+        }
+      ]
+    }
+  },
+  "calibratedDefinitions": [
+    {
+      "definition": "C7 examVersionHasCalibratedDifficulty (assessment-experience.service.ts:143)",
+      "rule": "any Student-deliverable version has difficulty_index OR content.difficultyIndex",
+      "verdict": false
+    },
+    {
+      "definition": "Health FULL_MOCK_CALIBRATED (question-bank/lifecycle.ts DEFAULT_ELIGIBILITY)",
+      "rule": "calibration_confidence >= MODERATE_CONFIDENCE and a full calibrated form assembles",
+      "verdict": false
+    },
+    {
+      "definition": "form-assembly.ts DEFAULT_INDEX",
+      "rule": "a missing difficultyIndex is read as 1.0 (the official difficulty)",
+      "verdict": "every uncalibrated item counts as exactly on-target"
+    },
+    {
+      "definition": "Engine isCalibrated (exam-bank-readiness-1)",
+      "rule": "EMPIRICAL source, sample >= 200, fresh, with an exam-relative index; a missing index is NOT_CALIBRATED",
+      "verdict": "0 calibrated of 655 rows (63 carry any index)"
+    }
+  ],
+  "ibMathAaHlAppendix": {
+    "examVersionId": "67350668-c383-4595-8500-cfaf1b1b21e2",
+    "sections": [
+      "p1",
+      "p2",
+      "p3"
+    ],
+    "cells": 8,
+    "versionsRead": 19,
+    "engine": {
+      "practice:p1": {
+        "status": "PARTIAL",
+        "coveredPositions": 1,
+        "requiredPositions": 5,
+        "blockingReasons": [
+          "BUCKET_UNCOVERED",
+          "NOT_CERTIFIED",
+          "LINEAGE_INCOMPLETE",
+          "RIGHTS_NOT_CLEARED",
+          "LIFECYCLE_NOT_DELIVERABLE"
+        ],
+        "certifiedItemCount": 1,
+        "runtimeEligibleItemCount": 1,
+        "rowsByFormat": {
+          "MULTI_PART": 4,
+          "NUMERIC_ENTRY": 4,
+          "MATH_EXPRESSION": 1,
+          "SHORT_RESPONSE_KEYED": 1
+        },
+        "rowsByCertification": {
+          "LEGACY_UNGOVERNED": 9,
+          "AUTOMATED_CERTIFIED_PILOT": 1
+        }
+      },
+      "practice:p2": {
+        "status": "NOT_READY",
+        "coveredPositions": 0,
+        "requiredPositions": 4,
+        "blockingReasons": [
+          "BUCKET_UNCOVERED",
+          "NOT_CERTIFIED",
+          "LINEAGE_INCOMPLETE",
+          "RIGHTS_NOT_CLEARED",
+          "LIFECYCLE_NOT_DELIVERABLE",
+          "NO_CERTIFIED_SUPPLY"
+        ],
+        "certifiedItemCount": 0,
+        "runtimeEligibleItemCount": 0,
+        "rowsByFormat": {
+          "MULTI_PART": 3,
+          "NUMERIC_ENTRY": 4
+        },
+        "rowsByCertification": {
+          "LEGACY_UNGOVERNED": 7
+        }
+      },
+      "practice:p3": {
+        "status": "NOT_READY",
+        "coveredPositions": 0,
+        "requiredPositions": 1,
+        "blockingReasons": [
+          "BUCKET_UNCOVERED",
+          "NOT_CERTIFIED",
+          "LINEAGE_INCOMPLETE",
+          "RIGHTS_NOT_CLEARED",
+          "LIFECYCLE_NOT_DELIVERABLE",
+          "NO_CERTIFIED_SUPPLY"
+        ],
+        "certifiedItemCount": 0,
+        "runtimeEligibleItemCount": 0,
+        "rowsByFormat": {
+          "MULTI_PART": 2
+        },
+        "rowsByCertification": {
+          "LEGACY_UNGOVERNED": 2
+        }
+      },
+      "reducedMock": {
+        "status": "PARTIAL",
+        "coveredPositions": 1,
+        "requiredPositions": 10,
+        "blockingReasons": [
+          "BUCKET_UNCOVERED",
+          "NOT_CERTIFIED",
+          "LINEAGE_INCOMPLETE",
+          "RIGHTS_NOT_CLEARED",
+          "LIFECYCLE_NOT_DELIVERABLE"
+        ],
+        "certifiedItemCount": 1,
+        "runtimeEligibleItemCount": 1,
+        "rowsByFormat": {
+          "MULTI_PART": 9,
+          "NUMERIC_ENTRY": 8,
+          "MATH_EXPRESSION": 1,
+          "SHORT_RESPONSE_KEYED": 1
+        },
+        "rowsByCertification": {
+          "LEGACY_UNGOVERNED": 18,
+          "AUTOMATED_CERTIFIED_PILOT": 1
+        }
+      }
+    }
+  },
+  "matrix": [
+    {
+      "surface": "catalogue",
+      "location": "catalog/structure.service.ts listStructureChildren",
+      "subject": "paa.full",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "PARTIAL",
+      "current_reason": "available=false readiness=STRUCTURE_READY",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "catalogue",
+      "location": "catalog/structure.service.ts listStructureChildren",
+      "subject": "paa.practice",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "READY",
+      "current_reason": "available=false readiness=STRUCTURE_READY",
+      "engine_reason_codes": [],
+      "agreement": "NO"
+    },
+    {
+      "surface": "catalogue",
+      "location": "catalog/structure.service.ts listStructureChildren",
+      "subject": "paa.practice.lectura",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "available=false readiness=STRUCTURE_READY",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "catalogue",
+      "location": "catalog/structure.service.ts listStructureChildren",
+      "subject": "paa.practice.redaccion",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "available=false readiness=STRUCTURE_READY",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "catalogue",
+      "location": "catalog/structure.service.ts listStructureChildren",
+      "subject": "paa.practice.matematicas",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "READY",
+      "current_reason": "available=false readiness=STRUCTURE_READY",
+      "engine_reason_codes": [],
+      "agreement": "NO"
+    },
+    {
+      "surface": "catalogue",
+      "location": "catalog/structure.service.ts listStructureChildren",
+      "subject": "paa.practice.ingles",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "available=false readiness=STRUCTURE_READY",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "instance API",
+      "location": "structure.service.ts resolveExamLevel",
+      "subject": "paa.full MOCK",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "PARTIAL",
+      "current_reason": "not selectable",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "instance API",
+      "location": "structure.service.ts resolveExamLevel",
+      "subject": "paa.full PRACTICE (whole test)",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "PARTIAL",
+      "current_reason": "not selectable",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "instance API",
+      "location": "structure.service.ts resolveExamLevel",
+      "subject": "paa.practice.ingles PRACTICE",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "not selectable",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "instance API",
+      "location": "structure.service.ts resolveExamLevel",
+      "subject": "paa.practice.lectura PRACTICE",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "not selectable",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "instance API",
+      "location": "structure.service.ts resolveExamLevel",
+      "subject": "paa.practice.matematicas PRACTICE",
+      "current_status": "READY",
+      "shadow_engine_status": "READY",
+      "current_reason": "readiness=PRACTICE_READY modes=PRACTICE",
+      "engine_reason_codes": [],
+      "agreement": "YES"
+    },
+    {
+      "surface": "instance API",
+      "location": "structure.service.ts resolveExamLevel",
+      "subject": "paa.practice.redaccion PRACTICE",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "not selectable",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Actividades disponibles",
+      "location": "objectives/capabilities.ts computeCapabilities",
+      "subject": "practice",
+      "current_status": "READY",
+      "shadow_engine_status": "READY",
+      "current_reason": "available",
+      "engine_reason_codes": [],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Actividades disponibles",
+      "location": "objectives/capabilities.ts computeCapabilities",
+      "subject": "diagnostic",
+      "current_status": "READY",
+      "shadow_engine_status": "PARTIAL",
+      "current_reason": "available",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "NO",
+      "note": "The diagnostic samples the practice-ready areas; the engine asks for the whole governed blueprint."
+    },
+    {
+      "surface": "Actividades disponibles",
+      "location": "objectives/capabilities.ts computeCapabilities",
+      "subject": "Simulacro reducido (PreparationHome card)",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "PARTIAL",
+      "current_reason": "PRACTICE_ONLY",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Actividades disponibles",
+      "location": "objectives/capabilities.ts computeCapabilities",
+      "subject": "full mock",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "PRACTICE_ONLY",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Simulacro reducido card",
+      "location": "assessment-experience.service.ts examAvailabilityForVersion",
+      "subject": "REDUCED_MOCK",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "PARTIAL",
+      "current_reason": "CONTENT_NOT_READY",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES",
+      "note": "officialForm is hard-coded null: this card can never be available (PAA-FOLLOWUP-01)."
+    },
+    {
+      "surface": "Simulacro reducido card",
+      "location": "assessment-experience.service.ts examAvailabilityForVersion",
+      "subject": "FULL_MOCK",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "CONTENT_NOT_READY",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Simulacro reducido card",
+      "location": "assessment-experience.service.ts examAvailabilityForVersion",
+      "subject": "EXAM_PRACTICE",
+      "current_status": "READY",
+      "shadow_engine_status": "READY",
+      "current_reason": "available (eligibleQuestions=296)",
+      "engine_reason_codes": [],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Challenge",
+      "location": "(a) question-bank/readiness-overlay.ts overlayNodeReadiness -> catalog/readiness.ts modesFor",
+      "subject": "paa.full",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "overlay modes=none",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "CALIBRATION_REQUIRED",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Challenge",
+      "location": "(b) structure.service.ts offeredModes (resolveExamLevel)",
+      "subject": "paa.full",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "offered modes=none",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "CALIBRATION_REQUIRED",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Challenge",
+      "location": "(c) objectives/capabilities.ts computeCapabilities",
+      "subject": "PAA objective",
+      "current_status": "NOT_REPRESENTED",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "capabilities carry no Challenge (practiceModes only)",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "CALIBRATION_REQUIRED",
+        "RETIRED"
+      ],
+      "agreement": "NO"
+    },
+    {
+      "surface": "Challenge",
+      "location": "(d) assessment-experience/views.ts examAttemptOptions",
+      "subject": "EXAM_CHALLENGE",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "DIFFICULTY_NOT_CALIBRATED",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "CALIBRATION_REQUIRED",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Challenge",
+      "location": "(e) exam-core/form-fidelity.ts deriveInstanceAttemptType",
+      "subject": "mode CHALLENGE at start",
+      "current_status": "READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "always startable",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "CALIBRATION_REQUIRED",
+        "RETIRED"
+      ],
+      "agreement": "NO",
+      "note": "Reached only through the instance API; it does not check calibration itself."
+    },
+    {
+      "surface": "Calibrated difficulty",
+      "location": "C7 examVersionHasCalibratedDifficulty",
+      "subject": "PAA version",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "no index present",
+      "engine_reason_codes": [
+        "CALIBRATION_REQUIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Calibrated difficulty",
+      "location": "Health FULL_MOCK_CALIBRATED",
+      "subject": "PAA version",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "[\"FULL_MOCK_READY = NO\",\"Lectura · paa.lect.evidencia: 0/4 (faltan 4)\",\"Lectura · paa.lect.explicitas: 0/9 (faltan 9)\",\"Lectura · paa.lect.graficos: 0/5 (faltan 5)\",\"Lectura · paa.lect.inferencia: 0/9 (faltan 9)\",\"Lectura · paa.lect.literario: 0/9 (faltan 9)\",\"Lectura · paa.lect.vocabulario: 0/9 (faltan 9)\",\"Redacción · paa.red.adicion: 0/4 (faltan 4)\",\"Redacción · paa.red.cohesion: 0/4 (faltan 4)\",\"Redacción · paa.red.elision: 0/4 (faltan 4)\",\"Redacción · paa.red.generalizacion: 0/5 (faltan 5)\",\"Redacción · paa.red.integracion: 0/4 (faltan 4)\",\"Redacción · paa.red.particularizacion: 0/4 (faltan 4)\",\"Matemáticas · paa.mat.algebra: 0/14 (faltan 14)\",\"Matemáticas · paa.mat.aritmetica: 0/14 (faltan 14)\",\"Matemáticas · paa.mat.datos: 0/9 (faltan 9)\",\"Matemáticas · paa.mat.geometria: 0/14 (faltan 14)\",\"Matemáticas · paa.mat.probabilidad: 0/4 (faltan 4)\",\"Inglés como lengua extranjera (ESLAT) · paa.ing.lectura: 0/19 (faltan 19)\",\"Inglés como lengua extranjera (ESLAT) · paa.ing.lenguaje: 0/19 (faltan 19)\",\"Inglés como lengua extranjera (ESLAT) · paa.ing.redaccion: 0/12 (faltan 12)\"]",
+      "engine_reason_codes": [
+        "CALIBRATION_REQUIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Admin health / coverage report",
+      "location": "scripts/operations/exam-bank/paa-coverage.ts (live)",
+      "subject": "reduced blueprint coverage",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "PARTIAL",
+      "current_reason": "12/36 positions",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES",
+      "note": "engine covers 12/36"
+    },
+    {
+      "surface": "Admin health / coverage report",
+      "location": "question-bank/health.ts readinessFrom (live)",
+      "subject": "reducedMock gate",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "PARTIAL",
+      "current_reason": "[\"Lectura · paa.lect.evidencia: 0/1 (faltan 1)\",\"Lectura · paa.lect.explicitas: 0/2 (faltan 2)\",\"Lectura · paa.lect.graficos: 0/1 (faltan 1)\",\"Lectura · paa.lect.inferencia: 0/2 (faltan 2)\",\"Lectura · paa.lect.literario: 0/2 (faltan 2)\",\"Lectura · paa.lect.vocabulario: 0/2 (faltan 2)\",\"Redacción · paa.red.adicion: 0/1 (faltan 1)\",\"Redacción · paa.red.cohesion: 0/1 (faltan 1)\",\"Redacción · paa.red.elision: 0/1 (faltan 1)\",\"Redacción · paa.red.generalizacion: 0/1 (faltan 1)\",\"Redacción · paa.red.integracion: 0/1 (faltan 1)\",\"Redacción · paa.red.particularizacion: 0/1 (faltan 1)\",\"Matemáticas · paa.mat.algebra: 0/3 (faltan 3)\",\"Matemáticas · paa.mat.aritmetica: 0/3 (faltan 3)\",\"Matemáticas · paa.mat.datos: 0/2 (faltan 2)\",\"Matemáticas · paa.mat.geometria: 0/3 (faltan 3)\",\"Matemáticas · paa.mat.probabilidad: 0/1 (faltan 1)\",\"Inglés como lengua extranjera (ESLAT) · paa.ing.lectura: 0/3 (faltan 3)\",\"Inglés como lengua extranjera (ESLAT) · paa.ing.lenguaje: 0/3 (faltan 3)\",\"Inglés como lengua extranjera (ESLAT) · paa.ing.redaccion: 0/2 (faltan 2)\"]",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Admin health / coverage report",
+      "location": "question-bank/health.ts ComponentAssembly (live)",
+      "subject": "lectura practice",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "practice=false reducedAssembles=false",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Admin health / coverage report",
+      "location": "question-bank/health.ts ComponentAssembly (live)",
+      "subject": "redaccion practice",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "practice=false reducedAssembles=false",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Admin health / coverage report",
+      "location": "question-bank/health.ts ComponentAssembly (live)",
+      "subject": "matematicas practice",
+      "current_status": "READY",
+      "shadow_engine_status": "READY",
+      "current_reason": "practice=true reducedAssembles=true",
+      "engine_reason_codes": [],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Admin health / coverage report",
+      "location": "question-bank/health.ts ComponentAssembly (live)",
+      "subject": "ingles practice",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "practice=false reducedAssembles=false",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "NO_CERTIFIED_SUPPLY"
+      ],
+      "agreement": "YES"
+    },
+    {
+      "surface": "Admin health (persisted)",
+      "location": "health.service.ts latestSnapshots (what the ENFORCE overlay reads)",
+      "subject": "reducedMock gate",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "PARTIAL",
+      "current_reason": "snapshot qb-health-v2 2026-10-14T19:47:29.993Z",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES",
+      "note": "A snapshot records no delivery scope."
+    },
+    {
+      "surface": "Legacy full-mock guard",
+      "location": "assessment/full-mock-guard.service.ts canFullMockBeOffered",
+      "subject": "FULL_MOCK",
+      "current_status": "NOT_READY",
+      "shadow_engine_status": "NOT_READY",
+      "current_reason": "NO_REAL_MOCK_CONTENT: a6c60ecb-0cd2-438a-947f-fb6f56252fd8,NO_REAL_MOCK_CONTENT: 9e9489bd-2be3-4f6a-b44a-01798e655582,NO_REAL_MOCK_CONTENT: ff43c61f-ffdb-4808-83f7-7cccf87af76d,NO_REAL_MOCK_CONTENT: 1db8c562-ef52-4293-bba0-38cbdb908d6e,NO_REAL_MOCK_CONTENT: 8e0c5fea-08d9-4120-94b7-8a71d218317d,NO_REAL_MOCK_CONTENT: 3962bec2-a4c5-4b41-bdf8-2b543f7948f4,NO_REAL_MOCK_CONTENT: f8ffa985-2a78-4ce0-af62-00c1d5b8a343,NO_REAL_MOCK_CONTENT: 8e0c5fea-08d9-4120-94b7-8a71d218317d,NO_REAL_MOCK_CONTENT: 8bf5dc9d-243e-4af4-b8a3-377691123f4c,NO_REAL_MOCK_CONTENT: fc4bd803-6b3a-46ae-8444-548427b5630b,NO_REAL_MOCK_CONTENT: 8e0c5fea-08d9-4120-94b7-8a71d218317d,NO_REAL_MOCK_CONTENT: 3962bec2-a4c5-4b41-bdf8-2b543f7948f4,NO_REAL_MOCK_CONTENT: b042eb9a-4003-405d-bbe2-5d908cea1098,NO_REAL_MOCK_CONTENT: f8ffa985-2a78-4ce0-af62-00c1d5b8a343,NO_REAL_MOCK_CONTENT: 540e9f66-d2c0-4895-8f42-4d370e89bff6,NO_REAL_MOCK_CONTENT: c0a8cced-ce38-48ec-a886-448bc2e15fc1,NO_REAL_MOCK_CONTENT: 1db8c562-ef52-4293-bba0-38cbdb908d6e,NO_REAL_MOCK_CONTENT: 8bf5dc9d-243e-4af4-b8a3-377691123f4c,NO_REAL_MOCK_CONTENT: 540e9f66-d2c0-4895-8f42-4d370e89bff6,NO_REAL_MOCK_CONTENT: 41047871-dd32-4116-8e30-9b485f3cab4f,NO_REAL_MOCK_CONTENT: a6c60ecb-0cd2-438a-947f-fb6f56252fd8,NO_REAL_MOCK_CONTENT: 41047871-dd32-4116-8e30-9b485f3cab4f,NO_REAL_MOCK_CONTENT: 9e9489bd-2be3-4f6a-b44a-01798e655582,NO_REAL_MOCK_CONTENT: fc4bd803-6b3a-46ae-8444-548427b5630b,NO_REAL_MOCK_CONTENT: 8bf5dc9d-243e-4af4-b8a3-377691123f4c,NO_REAL_MOCK_CONTENT: a784c061-fd3d-43b7-9433-340513b3dd3e,NO_REAL_MOCK_CONTENT: 09139c30-5f57-4c80-8ae7-0714c00f8f07,NO_REAL_MOCK_CONTENT: 8b1f9765-2525-4d01-aacf-03ddacd65b98,NO_REAL_MOCK_CONTENT: 9c932e74-e074-40d7-946e-2eee39629e02,NO_REAL_MOCK_CONTENT: a6c60ecb-0cd2-438a-947f-fb6f56252fd8,NO_REAL_MOCK_CONTENT: 5c421a35-4e1b-4eef-8079-8803656f05e9,NO_REAL_MOCK_CONTENT: 540e9f66-d2c0-4895-8f42-4d370e89bff6,NO_REAL_MOCK_CONTENT: 3f3aefdf-66d8-4810-805d-a0902d05cba6,NO_REAL_MOCK_CONTENT: 09139c30-5f57-4c80-8ae7-0714c00f8f07,NO_REAL_MOCK_CONTENT: f8ffa985-2a78-4ce0-af62-00c1d5b8a343,NO_REAL_MOCK_CONTENT: a7614dba-ddfa-4c93-b2e7-6a26d14f4546",
+      "engine_reason_codes": [
+        "BUCKET_UNCOVERED",
+        "NOT_CERTIFIED",
+        "LINEAGE_INCOMPLETE",
+        "RIGHTS_NOT_CLEARED",
+        "LIFECYCLE_NOT_DELIVERABLE",
+        "RETIRED"
+      ],
+      "agreement": "YES"
+    }
+  ],
+  "agreement": {
+    "rows": 34,
+    "agree": 29,
+    "disagree": 5
+  },
+  "readOnly": {
+    "guard": "every statement inspected",
+    "stateBefore": {
+      "ledger": "95",
+      "exam_instances": "0",
+      "exam_attempts": "0",
+      "responses": "0",
+      "evidence": "0",
+      "usage": "0",
+      "snapshots": "316",
+      "plan_entries": "0",
+      "nodes": "360978eb3eae4f62c15b7ca770273a1f",
+      "items": "128491f011568c816e016e2466d73e41",
+      "instances": "f94f051b157fd9aef8e25cff7c9a2ab7"
+    },
+    "stateAfter": {
+      "ledger": "95",
+      "exam_instances": "0",
+      "exam_attempts": "0",
+      "responses": "0",
+      "evidence": "0",
+      "usage": "0",
+      "snapshots": "316",
+      "plan_entries": "0",
+      "nodes": "360978eb3eae4f62c15b7ca770273a1f",
+      "items": "128491f011568c816e016e2466d73e41",
+      "instances": "f94f051b157fd9aef8e25cff7c9a2ab7"
+    },
+    "unchanged": true
+  }
+}

@@ -15,6 +15,12 @@
  * change. `scripts/canon-r3-shadow-compare.ts` is updated in this same
  * phase to import this function instead of keeping its own copy.
  *
+ * 2026-10-16 (overnight contracts 1.1-1.3): no WHERE filter on activity type, so subject Test / Mock rows
+ * (metadata.activityType CUMULATIVE_ASSESSMENT / MOCK_EXAM, per-concept score_percent, written by
+ * generate-and-take's submission for quiz modes cumulative_assessment / exam_simulation) are loaded and mapped to
+ * INTERNAL_ASSESSMENT by the adapter; `metadata.learnSession` and `metadata.transferLadder` are selected for the
+ * guided LEARN and APPLY ladder rows.
+ *
  * Read-only. One SELECT against `learning_evidence`, LEFT JOINed
  * against `decision_events` for the historical fallback item count
  * (`reason_details->>'sampleSize'`) pre-v1 rows persist there (see
@@ -56,6 +62,10 @@ export async function fetchStudyUSEvidenceRows(
       le.metadata->>'novel' AS novel,
       le.metadata->'transferChallenges' AS transfer_challenges,
       le.metadata->>'transferFailureDiagnostic' AS transfer_failure_diagnostic,
+      le.metadata->'learnSession' AS learn_session,
+      le.metadata->'practiceExposure' AS practice_exposure,
+      le.metadata->'transferLadder' AS transfer_ladder,
+      le.metadata->>'assignmentId' AS assignment_id,
       EXISTS (
         SELECT 1 FROM student_misconceptions sm
         JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id
@@ -74,8 +84,23 @@ export async function fetchStudyUSEvidenceRows(
     `,
     [studentId, conceptId],
   );
-  return result.rows.map(
-    (row: any): StudyUSEvidenceRow => ({
+  return result.rows.map(mapStudyUSEvidenceRow);
+}
+
+/** jsonb comes back parsed from `pg`; guard against a driver returning the raw string (same defensive pattern as transferChallenges). */
+function parseJsonb(value: unknown): unknown {
+  if (value == null) return undefined;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+/** The ONE row mapping for an evidence row (shared by the single and the batched read). */
+export function mapStudyUSEvidenceRow(row: any): StudyUSEvidenceRow {
+  return {
       id: row.id,
       sourceType: row.source_type,
       result: row.result,
@@ -107,6 +132,13 @@ export async function fetchStudyUSEvidenceRows(
             ? JSON.parse(row.transfer_challenges)
             : row.transfer_challenges,
       transferFailureDiagnostic: row.transfer_failure_diagnostic ?? undefined,
+      // 2026-10-16 contracts 1.1 / 1.2 -- raw jsonb, validated by the adapter (parseLearnSession /
+      // parseTransferLadder). NULL on every row the guided LEARN / APPLY ladder flows did not write.
+      learnSession: parseJsonb(row.learn_session),
+      // D78 -- raw jsonb, validated by the adapter (parsePracticeExposure); NULL on every pre-D78 row.
+      practiceExposure: parseJsonb(row.practice_exposure),
+      transferLadder: parseJsonb(row.transfer_ladder),
+      assignmentId: row.assignment_id ?? null,
       // CANON-V2-REMEDIATION Part 7 (AUDIT-005 closed): wired to the
       // REAL per-attempt link `mastery.service.ts`'s own `updateMastery`
       // already writes -- `recordStudentMisconception`'s
@@ -120,6 +152,70 @@ export async function fetchStudyUSEvidenceRows(
       // (`activeCriticalMisconception`) is what resolution actually
       // affects, never this per-attempt one.
       hasItemCriticalMisconception: row.has_item_critical_misconception === true,
-    }),
+    };
+}
+
+/**
+ * Batched read for MANY (student, concept) pairs -- the same SELECT list,
+ * joins and row mapping as `fetchStudyUSEvidenceRows`, in ONE query (class
+ * analytics must not issue one query per learner × concept). Grouped by
+ * `${studentId}:${conceptId}`; each group is ordered by timestamp ASC
+ * exactly like the single read. Read-only.
+ */
+export async function fetchStudyUSEvidenceRowsForPairs(
+  pairs: Array<{ studentId: string; conceptId: string }>,
+  client: DbExecutor = db,
+): Promise<Map<string, StudyUSEvidenceRow[]>> {
+  const out = new Map<string, StudyUSEvidenceRow[]>();
+  const unique = [...new Map(pairs.map((p) => [`${p.studentId}:${p.conceptId}`, p])).values()];
+  if (unique.length === 0) return out;
+  const result = await client.query(
+    `
+    WITH pairs AS (SELECT * FROM unnest($1::uuid[], $2::uuid[]) AS p(student_id, concept_id))
+    SELECT
+      le.student_id AS pair_student_id,
+      le.concept_id AS pair_concept_id,
+      le.id,
+      le.source_type,
+      le.result,
+      le.score_percent,
+      le.difficulty,
+      le.timestamp,
+      le.hints_used,
+      le.ai_assistance_type,
+      le.metadata->>'activityType' AS activity_type,
+      COALESCE(le.metadata->>'itemCount', de.reason_details->>'sampleSize') AS item_count,
+      le.metadata->>'correctCount' AS correct_count,
+      le.metadata->>'novel' AS novel,
+      le.metadata->'transferChallenges' AS transfer_challenges,
+      le.metadata->>'transferFailureDiagnostic' AS transfer_failure_diagnostic,
+      le.metadata->'learnSession' AS learn_session,
+      le.metadata->'practiceExposure' AS practice_exposure,
+      le.metadata->'transferLadder' AS transfer_ladder,
+      le.metadata->>'assignmentId' AS assignment_id,
+      EXISTS (
+        SELECT 1 FROM student_misconceptions sm
+        JOIN misconception_signatures ms ON ms.id = sm.misconception_signature_id
+        WHERE sm.student_id = le.student_id
+          AND ms.concept_id = le.concept_id
+          AND ms.is_critical = true
+          AND sm.evidence @> jsonb_build_array(jsonb_build_object('observedByEvidenceId', le.id::text))
+      ) AS has_item_critical_misconception
+    FROM learning_evidence le
+    JOIN pairs ON pairs.student_id = le.student_id AND pairs.concept_id = le.concept_id
+    LEFT JOIN decision_events de
+      ON de.source_event_type = 'learning_evidence'
+      AND de.source_event_id = le.id
+      AND de.decision_type = 'MASTERY_UPDATED'
+    ORDER BY le.student_id, le.concept_id, le.timestamp ASC
+    `,
+    [unique.map((p) => p.studentId), unique.map((p) => p.conceptId)],
   );
+  for (const row of result.rows) {
+    const key = `${row.pair_student_id}:${row.pair_concept_id}`;
+    const list = out.get(key) ?? [];
+    list.push(mapStudyUSEvidenceRow(row));
+    out.set(key, list);
+  }
+  return out;
 }
