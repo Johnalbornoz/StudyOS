@@ -19,6 +19,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { QuestionAnswerFields, type ClientQuestionForInput } from '@/components/quiz/QuestionAnswerFields';
+import MathText from '@/components/MathText';
 import { encodeClientAnswer } from '@/lib/quiz/client-answer-encoding';
 
 interface ClientQuestion extends ClientQuestionForInput {
@@ -143,7 +144,7 @@ export function PracticeRunner({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       {questions.map((q) => (
         <div key={q.index} className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-          <div style={{ fontWeight: 600 }}>{q.question}</div>
+          <div style={{ fontWeight: 600 }}><MathText text={q.question} /></div>
           <QuestionAnswerFields question={q} staged={staged[q.index]} onChange={(value) => setStaged((s) => ({ ...s, [q.index]: value }))} />
         </div>
       ))}

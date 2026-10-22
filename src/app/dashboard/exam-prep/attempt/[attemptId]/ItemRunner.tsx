@@ -27,6 +27,7 @@ import { PortfolioPanel, type PortfolioRequirements } from './PortfolioPanel';
 // MathLive is browser-only.
 const MathExpressionEditor = dynamic(() => import('@/components/MathExpressionEditor'), { ssr: false });
 import { QuestionAnswerFields } from '@/components/quiz/QuestionAnswerFields';
+import MathText from '@/components/MathText';
 import { encodeClientAnswer } from '@/lib/quiz/client-answer-encoding';
 import { SafetyNotice, safetyFromBody, type SafetyNoticeData } from '@/components/safety/SafetyNotice';
 
@@ -263,7 +264,7 @@ function ChoiceList({ name, options, multi, value, onChange }: { name: string; o
               }}
             />
             <span className="xr-choice-key" aria-hidden>{label}</span>
-            <span className="xr-choice-text">{opt.text}</span>
+            <span className="xr-choice-text"><MathText text={opt.text} /></span>
           </label>
         );
       })}
@@ -790,7 +791,7 @@ export function ItemRunner({ attemptId, labels, locale = 'es', instanceId = null
             <span className="xr-q-num">{labels.question.replace('{n}', String(question.index + 1))}</span>
             <span className="xr-marks">{labels.marks.replace('{n}', String(question.marks))}</span>
           </div>
-          <p id={`xr-q-${question.index}`} className="xr-q-text">{question.question}</p>
+          <p id={`xr-q-${question.index}`} className="xr-q-text"><MathText text={question.question} /></p>
           {question.calculator ? (
             <p className="ui-hint">{labels.v2?.[`exv2.calculator.${question.calculator}`] ?? labels.calculator}</p>
           ) : (
