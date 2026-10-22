@@ -17,6 +17,7 @@ import { ensureCatalogMapping } from '@/lib/catalog/mapping.service';
 import { executeAI, validateJson, getPrompt } from '@/lib/ai';
 import { callModel } from '@/lib/ai/adapters/call-model';
 import { resolveModels } from '@/lib/ai/model-routing';
+import { budgetFor } from '@/lib/ai/token-budgets';
 
 export interface ExtractedConcept {
   canonicalId: string; // Language-independent ID (e.g., MATH_ALG_LINEAR_EQ)
@@ -426,6 +427,27 @@ export async function createConceptManually(
 }
 
 /**
+ * PERF-AI-LR P6: per-instance memo of topic-name suggestions. The answer
+ * is a pure function of (subject name, typed text, language) -- no
+ * student data reaches the prompt -- so repeated queries (the same
+ * student retyping, or students of a same-named subject) skip the model.
+ * Bounded (oldest entry evicted first) and short-lived; empty results
+ * and fallbacks are never stored.
+ */
+const SUGGESTION_CACHE_TTL_MS = 60 * 60 * 1000;
+const SUGGESTION_CACHE_MAX = 500;
+const suggestionCache = new Map<string, { at: number; value: string[] }>();
+
+function suggestionCacheKey(subjectName: string, partialText: string, language: string): string {
+  return `${language}|${subjectName.trim().toLowerCase()}|${partialText.trim().toLowerCase().replace(/\s+/g, ' ')}`;
+}
+
+/** Test seam: clears the suggestion memo. */
+export function clearConceptSuggestionCache(): void {
+  suggestionCache.clear();
+}
+
+/**
  * Suggest concept/topic names as the student types, matching the
  * subject they're adding to. Kept deliberately cheap (small
  * max_tokens, no RAG) since this fires on a debounced keystroke, not
@@ -443,6 +465,9 @@ export async function suggestConceptNames(
   assertNoSafetySignal(partialText);
 
   const languageName = LOCALE_FULL_NAME[language] || language;
+  const cacheKey = suggestionCacheKey(subjectName, partialText, language);
+  const hit = suggestionCache.get(cacheKey);
+  if (hit && Date.now() - hit.at < SUGGESTION_CACHE_TTL_MS) return hit.value;
 
   try {
     // LX-9 B3/B32: OTHER routes through the central Luna/Terra authority
@@ -452,6 +477,7 @@ export async function suggestConceptNames(
     // rooted response ({"suggestions": [...]}) for OpenAI compatibility.
     const prompt = getPrompt('concept.name_suggestions');
     const route = resolveModels(prompt.capability);
+    const budget = budgetFor('concept_name_suggestions');
     const { result } = await executeAI({
       capability: prompt.capability,
       risk: 'LOW_RISK',
@@ -459,12 +485,14 @@ export async function suggestConceptNames(
       model: route.primary,
       promptId: prompt.id,
       promptVersion: prompt.version,
+      timeoutMs: budget.timeoutMs,
       call: (signal) =>
         callModel(
           {
             provider: route.provider,
             model: route.primary,
-            maxTokens: 300,
+            maxTokens: budget.maxOutputTokens,
+            reasoningEffort: budget.reasoningEffort,
             system: withStudentFacingPolicy(`You suggest concept/topic names for a student's study subject, written in ${languageName}. Reply with ONLY this JSON object, no markdown, no explanation: {"suggestions": [...]}`),
             user: `Subject: "${subjectName}"\nThe student is typing a concept name and has written so far: "${partialText}"\n\nSuggest up to 5 concept or topic names for this subject that match or naturally complete what they've typed, written in ${languageName}. Return ONLY a JSON object: {"suggestions": ["...", ...]}.`,
           },
@@ -478,6 +506,10 @@ export async function suggestConceptNames(
         }),
       fallback: () => [] as string[],
     });
+    if (result.length > 0) {
+      if (suggestionCache.size >= SUGGESTION_CACHE_MAX) suggestionCache.delete(suggestionCache.keys().next().value as string);
+      suggestionCache.set(cacheKey, { at: Date.now(), value: result });
+    }
     return result;
   } catch (error) {
     console.error('Error suggesting concept names:', error);

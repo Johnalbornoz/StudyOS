@@ -21,6 +21,14 @@ export interface TokenBudget {
    * depth, but the canonical fix is here, at the source of truth).
    */
   reasoningEffort?: ReasoningEffort;
+  /**
+   * PERF-AI-LR P9: interactive per-attempt timeout (ms). A student is
+   * waiting on screen, so a stalled provider call must fail over (or
+   * fall back) well before the Gateway's 30 s default. Omitted = the
+   * Gateway default (DEFAULT_AI_TIMEOUT_MS). Sized at roughly 2x the
+   * worst observed latency for the budget's maxOutputTokens.
+   */
+  timeoutMs?: number;
 }
 
 export const TOKEN_BUDGETS = {
@@ -45,14 +53,29 @@ export const TOKEN_BUDGETS = {
   /** LX-4P-PERF-R1D: optional interactive-formula widget enrichment -- off the MODEL critical path, bounded, generated once. */
   interactive_formula: { maxOutputTokens: 1500, maxContextChars: 3000, reasoningEffort: 'low' },
   /** LX-9R9: same fix/rationale as question_generation_slot -- a short hint, no deep reasoning need, 'none' is the lowest supported value. */
-  contextual_help: { maxOutputTokens: 700, maxContextChars: 3000, reasoningEffort: 'none' },
+  contextual_help: { maxOutputTokens: 700, maxContextChars: 3000, reasoningEffort: 'none', timeoutMs: 12_000 },
   /** LX-9R9: same fix/rationale as question_generation_slot -- structured localization mapping, no deep reasoning need. */
   question_localization: { maxOutputTokens: 2000, maxContextChars: 0, reasoningEffort: 'none' },
   semantic_verification: { maxOutputTokens: 900, maxContextChars: 0, reasoningEffort: 'low' },
   /** LX-9 B6/B19: tutor conversational replies -- previously unbounded (a bare `maxTokens: 2048` literal, uncapped RAG context). */
-  tutor_reply: { maxOutputTokens: 2048, maxContextChars: 6000, reasoningEffort: 'low' },
+  tutor_reply: { maxOutputTokens: 2048, maxContextChars: 6000, reasoningEffort: 'low', timeoutMs: 25_000 },
   /** LEARN guided-understanding turn: feedback + close recommendation + the next interaction, one structured reply. */
-  learn_guided_turn: { maxOutputTokens: 1800, maxContextChars: 3000, reasoningEffort: 'low' },
+  learn_guided_turn: { maxOutputTokens: 1800, maxContextChars: 3000, reasoningEffort: 'low', timeoutMs: 25_000 },
+  /**
+   * PERF-AI-LR P5: "Mejorar" error-pattern guidance -- previously a bare
+   * `maxTokens: 1200` literal with NO reasoning effort (model default),
+   * ~15 s observed. Display-only formative text, no deep reasoning need.
+   */
+  error_pattern_guidance: { maxOutputTokens: 1200, maxContextChars: 6000, reasoningEffort: 'low', timeoutMs: 20_000 },
+  /** PERF-AI-LR P5: topic-search name suggestions -- previously `maxTokens: 300`, no effort; fires while typing, falls back to []. */
+  concept_name_suggestions: { maxOutputTokens: 300, maxContextChars: 0, reasoningEffort: 'none', timeoutMs: 8_000 },
+  /**
+   * PERF-AI-LR P5: free-text answer grading (Terra) -- previously a bare
+   * `maxTokens: 1536` with no effort. 'low' matches the other
+   * evaluation-grade budget (semantic_verification). Timeout left at the
+   * Gateway default: a timed-out grade is a hard "please try again".
+   */
+  free_text_grading: { maxOutputTokens: 1536, maxContextChars: 0, reasoningEffort: 'low' },
 } as const satisfies Record<string, TokenBudget>;
 
 export type TokenBudgetKey = keyof typeof TOKEN_BUDGETS;

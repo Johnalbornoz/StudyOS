@@ -14,6 +14,7 @@
 import { generateQuestionHint, type GeneratedQuestion } from '@/services/quiz-generation.service';
 import { stripAnswerReveals } from '@/lib/quiz/feedback-leak-guard';
 import { getMessages, type Locale } from '@/lib/i18n/messages';
+import { budgetFor } from '@/lib/ai/token-budgets';
 
 export type SafeHintSource = 'ai' | 'ai_regenerated' | 'fallback';
 
@@ -24,7 +25,8 @@ export interface SafeHintResult {
   discarded: Array<'EMPTY' | 'ALL_REVEALING' | 'ERROR' | 'TIMEOUT'>;
 }
 
-const ATTEMPT_TIMEOUT_MS = 20_000;
+// PERF-AI-LR P9: the provider call itself is bounded by the contextual_help budget (12 s); this outer guard adds 1 s for the Gateway's DB bookkeeping (was 20 s).
+const ATTEMPT_TIMEOUT_MS = (budgetFor('contextual_help').timeoutMs ?? 20_000) + 1_000;
 const MAX_ATTEMPTS = 2;
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {

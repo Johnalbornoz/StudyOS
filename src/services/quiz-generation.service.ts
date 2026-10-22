@@ -2892,7 +2892,7 @@ Mathematical check of the final value: ${MATH_CHECK_FACT[det.result]}`;
     context: { studentId: context?.studentId, subjectId: context?.subjectId, conceptId: question.conceptId, sourceComponent: 'quiz-generation.service.ts:gradeAnswer' },
     call: (signal) =>
       callModel(
-        { provider: GRADE_ROUTE.provider, model: GRADE_ROUTE.primary, maxTokens: 1536, system: withStudentFacingPolicy(systemPrompt), user: userPrompt, jsonSchema: PEDAGOGICAL_GRADE_SCHEMA },
+        { provider: GRADE_ROUTE.provider, model: GRADE_ROUTE.primary, maxTokens: budgetFor('free_text_grading').maxOutputTokens, reasoningEffort: budgetFor('free_text_grading').reasoningEffort, system: withStudentFacingPolicy(systemPrompt), user: userPrompt, jsonSchema: PEDAGOGICAL_GRADE_SCHEMA },
         signal
       ),
     validate: (raw) =>
@@ -3185,6 +3185,7 @@ Give 2-3 hints following the rules above.`;
       model: HINT_ROUTE.primary,
       promptId: prompt.id,
       promptVersion: prompt.version,
+      timeoutMs: HINT_BUDGET.timeoutMs,
       context: aiContext ? { ...aiContext, sourceComponent: 'quiz-generation.service.ts:generateQuestionHint' } : undefined,
       call: (signal) =>
         callModel(

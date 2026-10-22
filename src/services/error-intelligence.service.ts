@@ -17,6 +17,7 @@ import { parseAIJson } from '@/lib/ai-json';
 import { executeAI, getPrompt } from '@/lib/ai';
 import { callModel } from '@/lib/ai/adapters/call-model';
 import { resolveModels } from '@/lib/ai/model-routing';
+import { budgetFor, fitContextChunks } from '@/lib/ai/token-budgets';
 
 export type ErrorType = 'CONCEPTUAL' | 'PROCEDURAL' | 'CARELESS' | 'INCOMPLETE' | 'MISREADING';
 
@@ -231,7 +232,8 @@ export async function getErrorPatternGuidance(
   const context = topConceptId
     ? await retrieveContext(studentId, subjectId, { conceptId: topConceptId, limit: 4 }).catch(() => ({ chunks: [] as any[] }))
     : { chunks: [] as any[] };
-  const contextChunks = context.chunks.map((c: any) => c.text);
+  const budget = budgetFor('error_pattern_guidance');
+  const contextChunks = fitContextChunks(context.chunks, budget.maxContextChars).map((c: any) => c.text);
 
   const languageName = LOCALE_FULL_NAME[language] || language;
   const errorMeaning = ERROR_TYPE_MEANING[errorType] || 'a recurring mistake pattern';
@@ -267,9 +269,10 @@ Use 2 to 3 "sections" covering, in this spirit: (1) what is likely going wrong c
     model: resolveModels('CONTENT_GENERATION').primary,
     promptId: prompt.id,
     promptVersion: prompt.version,
+    timeoutMs: budget.timeoutMs,
     call: (signal) =>
       callModel(
-        { provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: 1200, system: withStudentFacingPolicy(systemPrompt), user: 'Help me understand this pattern of mistakes.' },
+        { provider: resolveModels('CONTENT_GENERATION').provider, model: resolveModels('CONTENT_GENERATION').primary, maxTokens: budget.maxOutputTokens, reasoningEffort: budget.reasoningEffort, system: withStudentFacingPolicy(systemPrompt), user: 'Help me understand this pattern of mistakes.' },
         signal
       ),
     validate: (raw: { text: string }) => ({ valid: true, value: coerceGuidance(raw.text || '{}') }),

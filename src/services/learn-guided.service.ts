@@ -313,7 +313,7 @@ export function validateGuidedTurnOutput(parsed: any, ctx: Pick<GuidedTurnContex
 }
 
 const TURN_ATTEMPTS = 2;
-const TURN_TIMEOUT_MS = 45_000;
+// PERF-AI-LR P9: per-attempt timeout comes from the learn_guided_turn budget (25 s; was 45 s x 2 attempts = 90 s worst case).
 
 /** One guided turn from the model -- Luna first, Terra on the retry. Throws after the last failed attempt. */
 export async function generateGuidedTurn(ctx: GuidedTurnContext): Promise<GuidedTurnModelOutput> {
@@ -333,7 +333,7 @@ export async function generateGuidedTurn(ctx: GuidedTurnContext): Promise<Guided
         model,
         promptId: prompt.id,
         promptVersion: prompt.version,
-        timeoutMs: TURN_TIMEOUT_MS,
+        timeoutMs: budget.timeoutMs,
         context: { studentId: ctx.studentId, subjectId: ctx.subjectId, conceptId: ctx.conceptId, sourceId: ctx.sessionId, sourceComponent: 'learn-guided.service.ts:generateGuidedTurn' },
         call: (signal) =>
           callModel({ provider: route.provider, model, maxTokens: budget.maxOutputTokens, reasoningEffort: budget.reasoningEffort, system, user, jsonSchema: GUIDED_TURN_SCHEMA }, signal),

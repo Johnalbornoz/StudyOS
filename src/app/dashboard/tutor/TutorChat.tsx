@@ -242,7 +242,8 @@ export default function TutorChat({
       const body = await res.json().catch(() => null);
       if (!res.ok || !body?.data?.reply) throw new Error();
       setItems((prev) => [...prev, { kind: 'message', message: body.data.reply }]);
-      await loadConversations();
+      // PERF-AI-LR P7: refresh the conversation list in the background -- the reply is already shown, the composer need not wait.
+      void loadConversations();
     } catch {
       // Nothing is lost: the text goes back into the composer and the failure is stated.
       setItems((prev) => prev.filter((i) => !(i.kind === 'message' && i.message.id === optimistic.id)));

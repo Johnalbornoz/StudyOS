@@ -45,6 +45,7 @@ export default function ConceptFinder({
   const [error, setError] = useState(false);
   const seq = useRef(0);
   const inFlight = useRef(false);
+  const proposalCache = useRef(new Map<string, string[]>());
 
   const matches = useMemo(() => matchConcepts(q, concepts, subjectId).slice(0, 6), [q, concepts, subjectId]);
   const wantsProposals = q.trim().length >= 3 && matches.length < 2;
@@ -56,26 +57,46 @@ export default function ConceptFinder({
       return;
     }
     const id = ++seq.current;
+    // never propose as "new" something the Student already has
+    const showProposals = (list: string[]) =>
+      setProposals(list.filter((p) => typeof p === 'string' && p.trim() && !concepts.some((c) => isSameConcept(c.title, p))).slice(0, 4));
+    // PERF-AI-LR P6: a query already answered in this visit (e.g. after a
+    // backspace) is shown at once -- no debounce, no second AI call.
+    const cacheKey = `${subjectId}|${locale}|${q.trim().toLowerCase()}`;
+    const cached = proposalCache.current.get(cacheKey);
+    if (cached) {
+      setSafety(null);
+      showProposals(cached);
+      setLoadingProposals(false);
+      return;
+    }
     setLoadingProposals(true);
+    // PERF-AI-LR P6: a request superseded by further typing is cancelled, not just ignored.
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
           `/api/concepts/suggest?studentId=${studentId}&subjectId=${subjectId}&partial=${encodeURIComponent(q.trim())}&language=${locale}`,
+          { signal: controller.signal },
         );
         const body = await res.json().catch(() => null);
         if (id !== seq.current) return;
         // Human Agency P0-4: fixed safety response (no suggestions, no AI involved).
-        setSafety(safetyFromBody(body));
+        const safetyNotice = safetyFromBody(body);
+        setSafety(safetyNotice);
         const list: string[] = res.ok && Array.isArray(body?.data?.suggestions) ? body.data.suggestions : [];
-        // never propose as "new" something the Student already has
-        setProposals(list.filter((p) => typeof p === 'string' && p.trim() && !concepts.some((c) => isSameConcept(c.title, p))).slice(0, 4));
+        if (res.ok && !safetyNotice && list.length > 0) proposalCache.current.set(cacheKey, list);
+        showProposals(list);
       } catch {
         if (id === seq.current) setProposals([]);
       } finally {
         if (id === seq.current) setLoadingProposals(false);
       }
     }, 600);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [q, wantsProposals, studentId, subjectId, locale, concepts]);
 
   async function add(label: string) {

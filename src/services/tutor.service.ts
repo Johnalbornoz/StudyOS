@@ -202,7 +202,11 @@ export async function sendMessage(
 
   let contextChunks: string[] = [];
   if (conv.subject_id) {
-    const context = await retrieveContext(studentId, conv.subject_id, { query: userMessage, limit: 5 }).catch(
+    // PERF-AI-LR P7: when the Tutor is scoped to a (caller-verified)
+    // concept, retrieve that concept's chunks directly -- one DB read, no
+    // per-message embedding call. retrieveContext still falls back to
+    // semantic search on `query` when the concept has no chunks.
+    const context = await retrieveContext(studentId, conv.subject_id, { query: userMessage, conceptId, limit: 5 }).catch(
       () => ({ chunks: [] as any[] })
     );
     // LX-9 B5: previously inserted verbatim with no char budget --
@@ -330,6 +334,7 @@ Write your entire response in ${languageName}.`;
       ...baseCallArgs,
       provider: route.provider,
       model: route.primary,
+      timeoutMs: budget.timeoutMs,
       call: (signal) => callModel({ provider: route.provider, model: route.primary, maxTokens: budget.maxOutputTokens, reasoningEffort: budget.reasoningEffort, system: withStudentFacingPolicy(systemPrompt), user: userTurn, plainText: true }, signal),
     });
     replyText = result;
@@ -379,6 +384,7 @@ Write your entire response in ${languageName}.`;
       ...baseCallArgs,
       provider: route.provider,
       model: TERRA,
+      timeoutMs: budget.timeoutMs,
       call: (signal) => callModel({ provider: route.provider, model: TERRA, maxTokens: budget.maxOutputTokens, reasoningEffort: budget.reasoningEffort, system: withStudentFacingPolicy(systemPrompt), user: userTurn, plainText: true }, signal),
     });
     replyText = result;
