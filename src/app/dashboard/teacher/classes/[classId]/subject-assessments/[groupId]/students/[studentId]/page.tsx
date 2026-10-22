@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
+import MathText from '@/components/MathText';
 import { getOrCreateCanonicalUser } from '@/lib/identity';
 import { getUserInterfaceLanguage } from '@/lib/i18n/language';
 import { getMessages } from '@/lib/i18n/messages';
@@ -78,11 +79,11 @@ export default async function SubjectAssessmentStudentPage({ params }: { params:
             <ol style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 12 }}>
               {r.responses.map((q) => (
                 <li key={q.questionIndex} data-status={q.status}>
-                  <div>{q.question}</div>
+                  <div><MathText text={q.question} /></div>
                   <div className="ta-msg"><span className={`chip ${q.status === 'CORRECT' ? 'chip-good' : q.status === 'INCORRECT' ? 'chip-critical' : 'chip-warn'}`}>{t[`tsa.status.${q.status}`]}</span> · {q.conceptLabel}</div>
-                  <div className="ta-msg">{t['tsa.drill.answer']}: {q.studentAnswer || '—'}</div>
-                  {q.status !== 'CORRECT' && <div className="ta-msg">{t['tsa.drill.expected']}: {q.correctAnswer}</div>}
-                  {q.explanation && <div className="ta-msg">{t['tsa.drill.explanation']}: {q.explanation}</div>}
+                  <div className="ta-msg">{t['tsa.drill.answer']}: {q.studentAnswer ? <MathText text={q.studentAnswer} /> : '—'}</div>
+                  {q.status !== 'CORRECT' && <div className="ta-msg">{t['tsa.drill.expected']}: <MathText text={q.correctAnswer} /></div>}
+                  {q.explanation && <div className="ta-msg">{t['tsa.drill.explanation']}: <MathText text={q.explanation} /></div>}
                 </li>
               ))}
             </ol>
